@@ -5,8 +5,9 @@
 import json, requests
 
 root_url = 'http://localhost:9000/'
-credentials = ('2a9e1ccb0a18f9626d2f90f5cdac391e6280f7d1', '')
+credentials = ('65a1a3d690093290ea645edb1f100be7416059ad', '')
 project_key = 'issuelifecycle'
+apply_changes = False
 
 
 def has_been_marked_as_statuses(diffs, statuses):
@@ -93,42 +94,48 @@ def apply_changelog(new_issue, closed_issue, do_it_really=True):
     comments_by_date = sort_comments(get_comments(closed_issue))
     for date in comments_by_date:
         events_by_date[date] = comments_by_date[date]
-
+    if do_it_really:
+        print('   Not joking I am doing it')
     for date in sorted(events_by_date):
-        print_object(events_by_date[date])
+        # print_object(events_by_date[date])
         if events_by_date[date][0] == 'log' and is_log_a_severity_change(events_by_date[date][1]):
             params = dict(issue=new_issue, severity=get_log_new_severity(events_by_date[date][1]))
-            print('Changing severity to ', params['severity'])
+            print('   Changing severity to: ' + params['severity'])
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/set_severity', auth=credentials, params=params)
         elif events_by_date[date][0] == 'log' and is_log_a_type_change(events_by_date[date][1]):
             params = dict(issue=new_issue, type=get_log_new_type(events_by_date[date][1]))
-            print('Changing type to ', params['type'])
+            print('   Changing type to: ' + params['type'])
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/set_type', auth=credentials, params=params)
         elif events_by_date[date][0] == 'log' and is_log_a_reopen(events_by_date[date][1]):
             params = dict(issue=new_issue, type='reopen')
-            print('Reopening issue ')
+            print('   Reopening issue')
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/set_type', auth=credentials, params=params)
         elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_fp(events_by_date[date][1]):
             params = dict(issue=new_issue, transition='falsepositive')
-            print('Setting as False Positive')
+            print('   Setting as False Positive')
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/do_transition', auth=credentials, params=params)
         elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_wf(events_by_date[date][1]):
             params = dict(issue=new_issue, transition='wontfix')
-            print('Setting as wontfix')
+            print('   Setting as wontfix')
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/do_transition', auth=credentials, params=params)
         elif events_by_date[date][0] == 'log' and is_log_an_assignee(events_by_date[date][1]):
             params = dict(issue=new_issue, assignee=get_log_assignee(events_by_date[date][1]))
-            print('Assigning issue to')
+            print('   Assigning issue to: ' + params['assignee'])
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/assign', auth=credentials, params=params)
+        elif events_by_date[date][0] == 'log' and is_log_a_tag_change(events_by_date[date][1]):
+            params = dict(key=new_issue, tags=get_log_new_tag(events_by_date[date][1]).replace(' ', ','))
+            print('   Setting new tags to: ' + params['tags'])
+            if do_it_really:
+                resp = requests.post(url=root_url + 'api/issues/set_tags', auth=credentials, params=params)
         elif events_by_date[date][0] == 'comment' and is_log_a_comment(events_by_date[date][1]):
             params = dict(issue=new_issue, text=events_by_date[date][1]['markdown'])
-            print('Adding comment', events_by_date[date][1]['markdown'])
+            print('   Adding comment: ' + params['text'])
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/add_comment', auth=credentials, params=params)
 
@@ -207,42 +214,50 @@ def is_log_a_reopen(log):
             cond2 = True
     return cond1 and cond2
 
-
 def is_log_a_resolve_as_fp(log):
     return is_log_a_resolve_as(log, 'FALSE-POSITIVE')
-
 
 def is_log_a_resolve_as_wf(log):
     return is_log_a_resolve_as(log, 'WONTFIX')
 
 
-def is_log_a_severity_change(log):
-    return log['diffs'][0]['key'] == 'severity'
+def log_change_type(log):
+    return log['diffs'][0]['key']
 
+def is_log_a_severity_change(log):
+    return log_change_type(log) == 'severity'
 
 def is_log_a_type_change(log):
-    return log['diffs'][0]['key'] == 'type'
+    return log_change_type(log) == 'type'
+
+
+def is_log_an_assignee_change(log):
+    return log_change_type(log) == 'assignee'
+
+
+def is_log_a_tag_change(log):
+    return log_change_type(log) == 'tags'
+
+
+def get_log_new_value(log, key_type):
+    for diff in log['diffs']:
+        if diff['key'] == key_type:
+            return diff['newValue']
+    return 'undefined'
+
+def get_log_assignee(log):
+    return get_log_new_value(log, 'assignee')
+
+def get_log_new_severity(log):
+    return get_log_new_value(log, 'severity')
 
 
 def get_log_new_type(log):
-    for diff in log['diffs']:
-        if diff['key'] == 'type':
-            return diff['newValue']
-    return 'undefined'
+    return get_log_new_value(log, 'type')
 
 
-def get_log_assignee(log):
-    for diff in log['diffs']:
-        if diff['key'] == 'assignee':
-            return diff['newValue']
-    return 'undefined'
-
-def get_log_new_severity(log):
-    for diff in log['diffs']:
-        if diff['key'] == 'severity':
-            return diff['newValue']
-    return 'undefined'
-
+def get_log_new_tag(log):
+    return get_log_new_value(log, 'tags')
 
 def identical_attributes(o1, o2, key_list):
     for key in key_list:
@@ -278,6 +293,12 @@ def parse_args():
     parser = argparse.ArgumentParser(
             description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
     parser.add_argument('-p', '--projectKey', help='Project key of the project to search', required=True)
+    parser.add_argument('-r', '--recover',
+                        help='What information to recover (default is FP and WF, but issue assignment, tags, severity and type change can be recovered too',
+                        required=False)
+    parser.add_argument('-d', '--dryrun',
+                        help='If True, show changes but don\'t apply, if False, apply changes - Default is true',
+                        required=False)
     parser.add_argument('-u', '--url', help='Root URL of the SonarQube server, default is http://localhost:9000',
                         required=False)
 
@@ -287,6 +308,9 @@ def parse_args():
 
     if args.url != "":
         root_url = args.url
+
+    if args.dryrun == "False":
+        apply_changes = True
 
 
 # ------------------------------------------------------------------------------
@@ -316,8 +340,8 @@ mistakenly_closed_issues = []
 for issue in all_issues:
     print('----ISSUE-------------------------------------------------------------')
     print_object(issue)
-    print('----CHANGELOG-------------')
-    print_object(get_changelog(issue['key']))
+    # print('----CHANGELOG-------------')
+    # print_object(get_changelog(issue['key']))
     print('----------------------------------------------------------------------')
     if issue['status'] == 'CLOSED':
         if was_fp_or_wf(issue['key']):
@@ -330,16 +354,18 @@ print('        ', len(mistakenly_closed_issues), 'mistakenly closed issues')
 print('----------------------------------------------------------------------')
 
 for issue in mistakenly_closed_issues:
-    print_issue(issue)
-    print_change_log(issue['key'])
-    siblings = search_siblings(issue, non_closed_issues)
-    if len(siblings) > 0:
+    # print_issue(issue)
+    # print_change_log(issue['key'])
+    print('Searching sibling for issue key ', issue['key'])
+    siblings = search_siblings(issue, non_closed_issues, False)
+    if len(siblings) >= 0:
         print('   Found', len(siblings), 'SIBLING(S)')
         for sibling in siblings:
             print('  ')
             print_issue(sibling)
         if len(siblings) == 1:
-            print('Applying changelog')
-            apply_changelog(siblings[0]['key'], issue['key'], False)
-
+            print('   Automatically applying changelog')
+            apply_changelog(siblings[0]['key'], issue['key'], apply_changes)
+        else:
+            print('Ambiguity for issue, cannot automatically apply changelog')
     print('----------------------------------------------------------------------')
