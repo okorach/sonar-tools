@@ -121,6 +121,11 @@ def apply_changelog(new_issue, closed_issue, do_it_really=True):
             print('Setting as wontfix')
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/do_transition', auth=credentials, params=params)
+        elif events_by_date[date][0] == 'log' and is_log_an_assignee(events_by_date[date][1]):
+            params = dict(issue=new_issue, assignee=get_log_assignee(events_by_date[date][1]))
+            print('Assigning issue to')
+            if do_it_really:
+                resp = requests.post(url=root_url + 'api/issues/assign', auth=credentials, params=params)
         elif events_by_date[date][0] == 'comment' and is_log_a_comment(events_by_date[date][1]):
             params = dict(issue=new_issue, text=events_by_date[date][1]['markdown'])
             print('Adding comment', events_by_date[date][1]['markdown'])
@@ -187,6 +192,11 @@ def is_log_a_resolve_as(log, resolve_reason):
     return cond1 and cond2
 
 
+def is_log_an_assignee(log):
+    for diff in log['diffs']:
+        if diff['key'] == 'assignee':
+            return True
+
 def is_log_a_reopen(log):
     cond1 = False
     cond2 = False
@@ -220,6 +230,12 @@ def get_log_new_type(log):
             return diff['newValue']
     return 'undefined'
 
+
+def get_log_assignee(log):
+    for diff in log['diffs']:
+        if diff['key'] == 'assignee':
+            return diff['newValue']
+    return 'undefined'
 
 def get_log_new_severity(log):
     for diff in log['diffs']:
@@ -324,6 +340,6 @@ for issue in mistakenly_closed_issues:
             print_issue(sibling)
         if len(siblings) == 1:
             print('Applying changelog')
-            apply_changelog(siblings[0]['key'], issue['key'], True)
+            apply_changelog(siblings[0]['key'], issue['key'], False)
 
     print('----------------------------------------------------------------------')
