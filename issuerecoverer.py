@@ -138,7 +138,8 @@ def apply_changelog(new_issue, closed_issue, do_it_really=True):
             print('   Adding comment: ' + params['text'])
             if do_it_really:
                 resp = requests.post(url=root_url + 'api/issues/add_comment', auth=credentials, params=params)
-
+        if resp.status_code != 200:
+            print('HTTP Error ' + resp.status_code + ' from SonarQube API query')
 
 def was_fp_or_wf(key):
     changelog = get_changelog(key)
@@ -290,6 +291,10 @@ def print_issue(issue):
 
 
 def parse_args():
+    global project_key
+    global root_url
+    global apply_changes
+
     parser = argparse.ArgumentParser(
             description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
     parser.add_argument('-p', '--projectKey', help='Project key of the project to search', required=True)
