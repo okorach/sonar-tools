@@ -1,0 +1,451 @@
+Number of issues: 10
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "component": "issuelifecycle:src/ComplexMethod.java", 
+   "componentId": 22803, 
+   "creationDate": "2017-07-05T17:15:08+0200", 
+   "debt": "30min", 
+   "effort": "30min", 
+   "flows": [], 
+   "key": "AV0TUccQDj7Z1DtCu3Ce", 
+   "message": "2 duplicated blocks of code must be removed.", 
+   "project": "issuelifecycle", 
+   "rule": "common-java:DuplicatedBlocks", 
+   "severity": "MAJOR", 
+   "status": "REOPENED", 
+   "tags": [
+      "pitfall"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:47+0200"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-05T17:15:33+0200", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FALSE-POSITIVE"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "RESOLVED", 
+            "oldValue": "OPEN"
+         }
+      ], 
+      "email": null, 
+      "user": "admin", 
+      "userName": "Administrator"
+   }, 
+   {
+      "creationDate": "2017-07-05T17:15:47+0200", 
+      "diffs": [
+         {
+            "key": "resolution"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "REOPENED", 
+            "oldValue": "RESOLVED"
+         }
+      ], 
+      "email": null, 
+      "user": "admin", 
+      "userName": "Administrator"
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "component": "issuelifecycle:src/ComplexMethod.java", 
+   "componentId": 22803, 
+   "creationDate": "2017-07-05T17:15:08+0200", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV0TUccRDj7Z1DtCu3Cf", 
+   "message": "Move this file to a named package.", 
+   "project": "issuelifecycle", 
+   "rule": "squid:S1220", 
+   "severity": "MINOR", 
+   "status": "OPEN", 
+   "tags": [
+      "convention"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:08+0200"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 22804, 
+   "creationDate": "2017-07-05T17:15:08+0200", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV0TUccTDj7Z1DtCu3Cg", 
+   "line": 6, 
+   "message": "Replace this use of System.out or System.err by a logger.", 
+   "project": "issuelifecycle", 
+   "rule": "squid:S106", 
+   "severity": "MAJOR", 
+   "status": "OPEN", 
+   "tags": [
+      "bad-practice", 
+      "cert"
+   ], 
+   "textRange": {
+      "endLine": 6, 
+      "endOffset": 14, 
+      "startLine": 6, 
+      "startOffset": 4
+   }, 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:08+0200"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 22804, 
+   "creationDate": "2017-07-05T17:15:08+0200", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV0TUccTDj7Z1DtCu3Ch", 
+   "line": 9, 
+   "message": "Replace this use of System.out or System.err by a logger.", 
+   "project": "issuelifecycle", 
+   "rule": "squid:S106", 
+   "severity": "MAJOR", 
+   "status": "OPEN", 
+   "tags": [
+      "bad-practice", 
+      "cert"
+   ], 
+   "textRange": {
+      "endLine": 9, 
+      "endOffset": 14, 
+      "startLine": 9, 
+      "startOffset": 4
+   }, 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:08+0200"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 22804, 
+   "creationDate": "2017-07-05T17:15:08+0200", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV0TUccUDj7Z1DtCu3Ci", 
+   "message": "Move this file to a named package.", 
+   "project": "issuelifecycle", 
+   "rule": "squid:S1220", 
+   "severity": "MINOR", 
+   "status": "OPEN", 
+   "tags": [
+      "convention"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:08+0200"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "closeDate": "2017-07-05T17:15:02+0200", 
+   "component": "issuelifecycle:src/ComplexMethod.java", 
+   "componentId": 22803, 
+   "creationDate": "2017-07-05T17:14:25+0200", 
+   "debt": "30min", 
+   "effort": "30min", 
+   "flows": [], 
+   "key": "AV0TUSCkDj7Z1DtCu3CT", 
+   "message": "2 duplicated blocks of code must be removed.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "common-java:DuplicatedBlocks", 
+   "severity": "MAJOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "pitfall"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:02+0200"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-05T17:14:48+0200", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FALSE-POSITIVE"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "RESOLVED", 
+            "oldValue": "OPEN"
+         }
+      ], 
+      "email": null, 
+      "user": "admin", 
+      "userName": "Administrator"
+   }, 
+   {
+      "creationDate": "2017-07-05T17:15:02+0200", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED", 
+            "oldValue": "FALSE-POSITIVE"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "RESOLVED"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "closeDate": "2017-07-05T17:15:02+0200", 
+   "component": "issuelifecycle:src/ComplexMethod.java", 
+   "componentId": 22803, 
+   "creationDate": "2017-07-05T17:14:25+0200", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV0TUSCkDj7Z1DtCu3CU", 
+   "message": "Move this file to a named package.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "squid:S1220", 
+   "severity": "MINOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "convention"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:02+0200"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-05T17:15:02+0200", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "closeDate": "2017-07-05T17:15:02+0200", 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 22804, 
+   "creationDate": "2017-07-05T17:14:25+0200", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV0TUSCnDj7Z1DtCu3CV", 
+   "message": "Replace this use of System.out or System.err by a logger.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "squid:S106", 
+   "severity": "MAJOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "bad-practice", 
+      "cert"
+   ], 
+   "textRange": {
+      "endLine": 6, 
+      "endOffset": 14, 
+      "startLine": 6, 
+      "startOffset": 4
+   }, 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:02+0200"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-05T17:15:02+0200", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "closeDate": "2017-07-05T17:15:02+0200", 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 22804, 
+   "creationDate": "2017-07-05T17:14:25+0200", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV0TUSCoDj7Z1DtCu3CW", 
+   "message": "Replace this use of System.out or System.err by a logger.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "squid:S106", 
+   "severity": "MAJOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "bad-practice", 
+      "cert"
+   ], 
+   "textRange": {
+      "endLine": 9, 
+      "endOffset": 14, 
+      "startLine": 9, 
+      "startOffset": 4
+   }, 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:02+0200"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-05T17:15:02+0200", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "author": "", 
+   "closeDate": "2017-07-05T17:15:02+0200", 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 22804, 
+   "creationDate": "2017-07-05T17:14:25+0200", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV0TUSCoDj7Z1DtCu3CX", 
+   "message": "Move this file to a named package.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "squid:S1220", 
+   "severity": "MINOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "convention"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-05T17:15:02+0200"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-05T17:15:02+0200", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+         1 mistakenly closed issues
+----------------------------------------------------------------------
+common-java:DuplicatedBlocks , issuelifecycle:src/ComplexMethod.java , 2 duplicated blocks of code must be removed. , 30min ,  , AV0TUSCkDj7Z1DtCu3CT , CLOSED ,
+2017-07-05T17:14:48+0200 :
+{
+   "creationDate": "2017-07-05T17:14:48+0200", 
+   "diffs": [
+      {
+         "key": "resolution", 
+         "newValue": "FALSE-POSITIVE"
+      }, 
+      {
+         "key": "status", 
+         "newValue": "RESOLVED", 
+         "oldValue": "OPEN"
+      }
+   ], 
+   "email": null, 
+   "user": "admin", 
+   "userName": "Administrator"
+}
+2017-07-05T17:15:02+0200 :
+{
+   "creationDate": "2017-07-05T17:15:02+0200", 
+   "diffs": [
+      {
+         "key": "resolution", 
+         "newValue": "FIXED", 
+         "oldValue": "FALSE-POSITIVE"
+      }, 
+      {
+         "key": "status", 
+         "newValue": "CLOSED", 
+         "oldValue": "RESOLVED"
+      }
+   ]
+}
+   Found 1 SIBLING(S)
+   common-java:DuplicatedBlocks , issuelifecycle:src/ComplexMethod.java , 2 duplicated blocks of code must be removed. , 30min ,  , AV0TUccQDj7Z1DtCu3Ce , REOPENED ,
+Applying changelog
+Setting as False Positive
+----------------------------------------------------------------------

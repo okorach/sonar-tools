@@ -1,0 +1,688 @@
+('Number of issues:', 10)
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment", 
+      "assign", 
+      "set_tags", 
+      "set_type", 
+      "assign_to_me", 
+      "set_severity"
+   ], 
+   "author": "", 
+   "comments": [], 
+   "component": "issuelifecycle:src/ComplexMethod.java", 
+   "componentId": 23231, 
+   "creationDate": "2017-07-13T22:46:51+0530", 
+   "debt": "30min", 
+   "effort": "30min", 
+   "flows": [], 
+   "key": "AV089BWG0WIV9xVyXZTe", 
+   "message": "2 duplicated blocks of code must be removed.", 
+   "project": "issuelifecycle", 
+   "rule": "common-java:DuplicatedBlocks", 
+   "severity": "MAJOR", 
+   "status": "OPEN", 
+   "tags": [
+      "pitfall"
+   ], 
+   "transitions": [
+      "confirm", 
+      "resolve", 
+      "falsepositive", 
+      "wontfix"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:51+0530"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment", 
+      "assign", 
+      "set_tags", 
+      "set_type", 
+      "assign_to_me", 
+      "set_severity"
+   ], 
+   "author": "", 
+   "comments": [], 
+   "component": "issuelifecycle:src/ComplexMethod.java", 
+   "componentId": 23231, 
+   "creationDate": "2017-07-13T22:46:51+0530", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV089BWG0WIV9xVyXZTf", 
+   "message": "Move this file to a named package.", 
+   "project": "issuelifecycle", 
+   "rule": "squid:S1220", 
+   "severity": "MINOR", 
+   "status": "OPEN", 
+   "tags": [
+      "convention"
+   ], 
+   "transitions": [
+      "confirm", 
+      "resolve", 
+      "falsepositive", 
+      "wontfix"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:51+0530"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment", 
+      "assign", 
+      "set_tags", 
+      "set_type", 
+      "assign_to_me", 
+      "set_severity"
+   ], 
+   "author": "", 
+   "comments": [], 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 23232, 
+   "creationDate": "2017-07-13T22:46:51+0530", 
+   "debt": "5min", 
+   "effort": "5min", 
+   "flows": [], 
+   "key": "AV089BWJ0WIV9xVyXZTg", 
+   "line": 6, 
+   "message": "Replace this use of System.out or System.err by a logger.", 
+   "project": "issuelifecycle", 
+   "rule": "squid:S106", 
+   "severity": "MAJOR", 
+   "status": "OPEN", 
+   "tags": [
+      "bad-practice", 
+      "cert"
+   ], 
+   "textRange": {
+      "endLine": 6, 
+      "endOffset": 14, 
+      "startLine": 6, 
+      "startOffset": 4
+   }, 
+   "transitions": [
+      "confirm", 
+      "resolve", 
+      "falsepositive", 
+      "wontfix"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:51+0530"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment", 
+      "assign", 
+      "set_tags", 
+      "set_type", 
+      "assign_to_me", 
+      "set_severity"
+   ], 
+   "author": "", 
+   "comments": [], 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 23232, 
+   "creationDate": "2017-07-13T22:46:51+0530", 
+   "debt": "5min", 
+   "effort": "5min", 
+   "flows": [], 
+   "key": "AV089BWJ0WIV9xVyXZTh", 
+   "line": 9, 
+   "message": "Replace this use of System.out or System.err by a logger.", 
+   "project": "issuelifecycle", 
+   "rule": "squid:S106", 
+   "severity": "MAJOR", 
+   "status": "OPEN", 
+   "tags": [
+      "bad-practice", 
+      "cert"
+   ], 
+   "textRange": {
+      "endLine": 9, 
+      "endOffset": 14, 
+      "startLine": 9, 
+      "startOffset": 4
+   }, 
+   "transitions": [
+      "confirm", 
+      "resolve", 
+      "falsepositive", 
+      "wontfix"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:51+0530"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment", 
+      "assign", 
+      "set_tags", 
+      "set_type", 
+      "assign_to_me", 
+      "set_severity"
+   ], 
+   "author": "", 
+   "comments": [], 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 23232, 
+   "creationDate": "2017-07-13T22:46:51+0530", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV089BWJ0WIV9xVyXZTi", 
+   "message": "Move this file to a named package.", 
+   "project": "issuelifecycle", 
+   "rule": "squid:S1220", 
+   "severity": "MINOR", 
+   "status": "OPEN", 
+   "tags": [
+      "convention"
+   ], 
+   "transitions": [
+      "confirm", 
+      "resolve", 
+      "falsepositive", 
+      "wontfix"
+   ], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:51+0530"
+}
+----CHANGELOG-------------
+[]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment"
+   ], 
+   "author": "", 
+   "closeDate": "2017-07-13T22:46:44+0530", 
+   "comments": [], 
+   "component": "issuelifecycle:src/ComplexMethod.java", 
+   "componentId": 23231, 
+   "creationDate": "2017-07-13T22:35:58+0530", 
+   "debt": "30min", 
+   "effort": "30min", 
+   "flows": [], 
+   "key": "AV086htU0WIV9xVyXZTT", 
+   "message": "2 duplicated blocks of code must be removed.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "common-java:DuplicatedBlocks", 
+   "severity": "CRITICAL", 
+   "status": "CLOSED", 
+   "tags": [
+      "api-design", 
+      "fix-for-next-release", 
+      "ipreo-must-fix", 
+      "backbone", 
+      "fix-it", 
+      "pitfall"
+   ], 
+   "transitions": [], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:44+0530"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-13T22:45:59+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "fix-it pitfall", 
+            "oldValue": "pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }, 
+   {
+      "creationDate": "2017-07-13T22:46:01+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "ipreo-must-fix fix-it pitfall", 
+            "oldValue": "fix-it pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }, 
+   {
+      "creationDate": "2017-07-13T22:46:09+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "fix-for-next-release ipreo-must-fix fix-it pitfall", 
+            "oldValue": "ipreo-must-fix fix-it pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }, 
+   {
+      "creationDate": "2017-07-13T22:46:19+0530", 
+      "diffs": [
+         {
+            "key": "severity", 
+            "newValue": "CRITICAL", 
+            "oldValue": "MAJOR"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }, 
+   {
+      "creationDate": "2017-07-13T22:46:24+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "api-design fix-for-next-release ipreo-must-fix fix-it pitfall", 
+            "oldValue": "fix-for-next-release ipreo-must-fix fix-it pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }, 
+   {
+      "creationDate": "2017-07-13T22:46:25+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "api-design fix-for-next-release ipreo-must-fix backbone fix-it pitfall", 
+            "oldValue": "api-design fix-for-next-release ipreo-must-fix fix-it pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }, 
+   {
+      "creationDate": "2017-07-13T22:46:44+0530", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment"
+   ], 
+   "author": "", 
+   "closeDate": "2017-07-13T22:46:44+0530", 
+   "comments": [], 
+   "component": "issuelifecycle:src/ComplexMethod.java", 
+   "componentId": 23231, 
+   "creationDate": "2017-07-13T22:35:58+0530", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV086htV0WIV9xVyXZTU", 
+   "message": "Move this file to a named package.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "squid:S1220", 
+   "severity": "MINOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "convention"
+   ], 
+   "transitions": [], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:44+0530"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-13T22:46:44+0530", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment"
+   ], 
+   "author": "", 
+   "closeDate": "2017-07-13T22:46:44+0530", 
+   "comments": [], 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 23232, 
+   "creationDate": "2017-07-13T22:35:58+0530", 
+   "debt": "5min", 
+   "effort": "5min", 
+   "flows": [], 
+   "key": "AV086htX0WIV9xVyXZTV", 
+   "message": "Replace this use of System.out or System.err by a logger.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "squid:S106", 
+   "severity": "MAJOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "bad-practice", 
+      "cert"
+   ], 
+   "textRange": {
+      "endLine": 6, 
+      "endOffset": 14, 
+      "startLine": 6, 
+      "startOffset": 4
+   }, 
+   "transitions": [], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:44+0530"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-13T22:46:44+0530", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment"
+   ], 
+   "author": "", 
+   "closeDate": "2017-07-13T22:46:44+0530", 
+   "comments": [], 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 23232, 
+   "creationDate": "2017-07-13T22:35:58+0530", 
+   "debt": "5min", 
+   "effort": "5min", 
+   "flows": [], 
+   "key": "AV086htY0WIV9xVyXZTW", 
+   "message": "Replace this use of System.out or System.err by a logger.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "squid:S106", 
+   "severity": "MAJOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "bad-practice", 
+      "cert"
+   ], 
+   "textRange": {
+      "endLine": 9, 
+      "endOffset": 14, 
+      "startLine": 9, 
+      "startOffset": 4
+   }, 
+   "transitions": [], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:44+0530"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-13T22:46:44+0530", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----ISSUE-------------------------------------------------------------
+{
+   "actions": [
+      "comment"
+   ], 
+   "author": "", 
+   "closeDate": "2017-07-13T22:46:44+0530", 
+   "comments": [], 
+   "component": "issuelifecycle:src/HelloWorld.java", 
+   "componentId": 23232, 
+   "creationDate": "2017-07-13T22:35:58+0530", 
+   "debt": "10min", 
+   "effort": "10min", 
+   "flows": [], 
+   "key": "AV086htY0WIV9xVyXZTX", 
+   "message": "Move this file to a named package.", 
+   "project": "issuelifecycle", 
+   "resolution": "FIXED", 
+   "rule": "squid:S1220", 
+   "severity": "MINOR", 
+   "status": "CLOSED", 
+   "tags": [
+      "convention"
+   ], 
+   "transitions": [], 
+   "type": "CODE_SMELL", 
+   "updateDate": "2017-07-13T22:46:44+0530"
+}
+----CHANGELOG-------------
+[
+   {
+      "creationDate": "2017-07-13T22:46:44+0530", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+('        ', 1, 'mistakenly closed issues')
+----------------------------------------------------------------------
+(u'common-java:DuplicatedBlocks', ',')
+(u'issuelifecycle:src/ComplexMethod.java', ',')
+(u'2 duplicated blocks of code must be removed.', ',')
+(u'30min', ',')
+(u'', ',')
+(u'AV086htU0WIV9xVyXZTT', ',')
+(u'CLOSED', ',')
+()
+(u'2017-07-13T22:45:59+0530', ':')
+[
+   "log", 
+   {
+      "creationDate": "2017-07-13T22:45:59+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "fix-it pitfall", 
+            "oldValue": "pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }
+]
+(u'2017-07-13T22:46:01+0530', ':')
+[
+   "log", 
+   {
+      "creationDate": "2017-07-13T22:46:01+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "ipreo-must-fix fix-it pitfall", 
+            "oldValue": "fix-it pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }
+]
+(u'2017-07-13T22:46:09+0530', ':')
+[
+   "log", 
+   {
+      "creationDate": "2017-07-13T22:46:09+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "fix-for-next-release ipreo-must-fix fix-it pitfall", 
+            "oldValue": "ipreo-must-fix fix-it pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }
+]
+(u'2017-07-13T22:46:19+0530', ':')
+[
+   "log", 
+   {
+      "creationDate": "2017-07-13T22:46:19+0530", 
+      "diffs": [
+         {
+            "key": "severity", 
+            "newValue": "CRITICAL", 
+            "oldValue": "MAJOR"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }
+]
+(u'2017-07-13T22:46:24+0530', ':')
+[
+   "log", 
+   {
+      "creationDate": "2017-07-13T22:46:24+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "api-design fix-for-next-release ipreo-must-fix fix-it pitfall", 
+            "oldValue": "fix-for-next-release ipreo-must-fix fix-it pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }
+]
+(u'2017-07-13T22:46:25+0530', ':')
+[
+   "log", 
+   {
+      "creationDate": "2017-07-13T22:46:25+0530", 
+      "diffs": [
+         {
+            "key": "tags", 
+            "newValue": "api-design fix-for-next-release ipreo-must-fix backbone fix-it pitfall", 
+            "oldValue": "api-design fix-for-next-release ipreo-must-fix fix-it pitfall"
+         }
+      ], 
+      "email": "admin@sonarsource.com", 
+      "user": "admin", 
+      "userName": "Administrator"
+   }
+]
+(u'2017-07-13T22:46:44+0530', ':')
+[
+   "log", 
+   {
+      "creationDate": "2017-07-13T22:46:44+0530", 
+      "diffs": [
+         {
+            "key": "resolution", 
+            "newValue": "FIXED"
+         }, 
+         {
+            "key": "status", 
+            "newValue": "CLOSED", 
+            "oldValue": "OPEN"
+         }
+      ]
+   }
+]
+('   Found', 1, 'SIBLING(S)')
+  
+(u'common-java:DuplicatedBlocks', ',')
+(u'issuelifecycle:src/ComplexMethod.java', ',')
+(u'2 duplicated blocks of code must be removed.', ',')
+(u'30min', ',')
+(u'', ',')
+(u'AV089BWG0WIV9xVyXZTe', ',')
+(u'OPEN', ',')
+()
+Automatically applying changelog
+('Setting new tags to', u'fix-it,pitfall')
+('Setting new tags to', u'ipreo-must-fix,fix-it,pitfall')
+('Setting new tags to', u'fix-for-next-release,ipreo-must-fix,fix-it,pitfall')
+('Changing severity to ', u'CRITICAL')
+('Setting new tags to', u'api-design,fix-for-next-release,ipreo-must-fix,fix-it,pitfall')
+('Setting new tags to', u'api-design,fix-for-next-release,ipreo-must-fix,backbone,fix-it,pitfall')
+----------------------------------------------------------------------
