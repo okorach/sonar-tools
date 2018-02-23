@@ -17,13 +17,11 @@ class UnknownIssueError(ApiError):
 
 
 class IssueChangeLog:
-    def __init__(self, id):
-        self.id = id
-        params = dict(format='json', issue=self.id)
+    def __init__(self, issue_key):
+        params = dict(format='json', issue=issue_key)
         resp = requests.get(url=root_url + '/api/issues/changelog', auth=credentials, params=params)
         data = json.loads(resp.text)
         self.json = data['changelog']
-
 
 class Issue:
 
@@ -69,11 +67,8 @@ class Issue:
         print(resp)
 
     def get_changelog(self):
-        params = dict(format='json', issue=self.id)
-        resp = requests.get(url=root_url + '/api/issues/changelog', auth=credentials, params=params)
-        data = json.loads(resp.text)
-        return data['changelog']
-
+        self.changelog = IssueChangeLog(self.id)
+        
     def add_comment(self, comment_text):
         params = dict(issue=self.id, text=comment_text)
         resp = requests.get(url=root_url + '/api/issues/add_comment', auth=credentials, params=params)
@@ -116,6 +111,71 @@ class Issue:
     def toString(self):
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
+
+
+def has_been_marked_as_statuses(diffs, statuses):
+    for diff in diffs:
+        if diff["key"] == "resolution":
+            for status in statuses:
+                if diff["newValue"] == status:
+                    return True
+    return False
+
+
+def has_been_marked_as_false_positive(issue_key):
+    changelog = get_changelog(issue_key)
+    for log in changelog:
+        for diff in log['diffs']:
+            if diff["key"] == "resolution" and diff["newValue"] == "FALSE-POSITIVE":
+                return True
+    return False
+
+
+def has_been_marked_as_wont_fix(issue_key):
+    changelog = get_changelog(issue_key)
+    for log in changelog:
+        for diff in log['diffs']:
+            if diff["key"] == "resolution" and diff["newValue"] == "WONTFIX":
+                return True
+    return False
+
+
+def check_fp_transition(diffs):
+    print("----------------- DIFFS     -----------------")
+    print_object(diffs)
+    if diffs[0]['key'] == "resolution" and (
+        diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX") and diffs[0]["newValue"] == "FIXED":
+        return True
+    return False
+
+
+def print_object(o):
+    print(json.dumps(o, indent=3, sort_keys=True))
+
+
+
+
+
+def get_comments(issue_key):
+    # print('Searching comments for issue key ', issue_key)
+    params = dict(format='json', issues=issue_key, additionalFields='comments')
+    resp = requests.get(url=root_url + 'api/issues/search', auth=credentials, params=params)
+    data = json.loads(resp.text)
+    return data['issues'][0]['comments']
+
+
+def sort_changelog(changelog):
+    sorted_log = dict()
+    for log in changelog:
+        sorted_log[log['creationDate']] = ('log', log)
+    return sorted_log
+
+
+def sort_comments(comments):
+    sorted_comments = dict()
+    for comment in comments:
+        sorted_comments[comment['createdAt']] = ('comment', comment)
+    return sorted_comments
 
 def search(project_key, sq_url = root_url):
     params = dict(ps='1', componentKeys=project_key, additionalFields='_all')
