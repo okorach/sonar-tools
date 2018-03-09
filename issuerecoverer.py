@@ -4,7 +4,8 @@
 
 import json
 import requests
-from sonarqube import issues
+import sonarqube.env
+import sonarqube.issues
 
 # Mandatory script input parameters
 global token
@@ -20,81 +21,13 @@ dry_run_mode = False
 
 def search(project_key):
     params = dict(ps='10', componentKeys=project_key, additionalFields='_all')
-    root_url = 'http://localhost:9000/'
-    resp = requests.get(url=root_url + 'api/issues/search', auth=credentials, params=params)
+    resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/search', auth=sonarqube.env.get_credentials(), params=params)
     data = json.loads(resp.text)
     print("Number of issues:", data['paging']['total'])
 
     all_issues = data['issues']
     print(all_issues)
 
-def has_been_marked_as_statuses(diffs, statuses):
-    for diff in diffs:
-        if diff["key"] == "resolution":
-            for status in statuses:
-                if diff["newValue"] == status:
-                    return True
-    return False
-
-
-def has_been_marked_as_false_positive(issue_key):
-    changelog = get_changelog(issue_key)
-    for log in changelog:
-        for diff in log['diffs']:
-            if diff["key"] == "resolution" and diff["newValue"] == "FALSE-POSITIVE":
-                return True
-    return False
-
-
-def has_been_marked_as_wont_fix(issue_key):
-    changelog = get_changelog(issue_key)
-    for log in changelog:
-        for diff in log['diffs']:
-            if diff["key"] == "resolution" and diff["newValue"] == "WONTFIX":
-                return True
-    return False
-
-
-def check_fp_transition(diffs):
-    print("----------------- DIFFS     -----------------")
-    print_object(diffs)
-    if diffs[0]['key'] == "resolution" and (
-        diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX") and diffs[0]["newValue"] == "FIXED":
-        return True
-    return False
-
-
-def print_object(o):
-    print(json.dumps(o, indent=3, sort_keys=True))
-
-
-def get_changelog(issue_key):
-    params = dict(format='json', issue=issue_key)
-    resp = requests.get(url=root_url + 'api/issues/changelog', auth=credentials, params=params)
-    data = json.loads(resp.text)
-    return data['changelog']
-
-
-def get_comments(issue_key):
-    # print('Searching comments for issue key ', issue_key)
-    params = dict(format='json', issues=issue_key, additionalFields='comments')
-    resp = requests.get(url=root_url + 'api/issues/search', auth=credentials, params=params)
-    data = json.loads(resp.text)
-    return data['issues'][0]['comments']
-
-
-def sort_changelog(changelog):
-    sorted_log = dict()
-    for log in changelog:
-        sorted_log[log['creationDate']] = ('log', log)
-    return sorted_log
-
-
-def sort_comments(comments):
-    sorted_comments = dict()
-    for comment in comments:
-        sorted_comments[comment['createdAt']] = ('comment', comment)
-    return sorted_comments
 
 
 def print_change_log(issue_key):
@@ -161,7 +94,7 @@ def apply_changelog(new_issue, closed_issue, do_it_really=True):
         if is_applicable_event:
             if do_it_really:
                 print('   ' + operation)
-                resp = requests.post(url=root_url + 'api/' + api, auth=credentials, params=params)
+                resp = requests.post(url=sonarqube.env.get_url() + '/api/' + api, auth=sonarqube.env.get_credentials(), params=params)
                 if resp.status_code != 200:
                     print('HTTP Error ' + resp.status_code + ' from SonarQube API query')
             else:
@@ -209,11 +142,8 @@ def is_log_an_assign(log):
 def is_log_a_tag(log):
     return False
 
-
-
 def is_log_a_closed_fp(log):
     return is_log_a_closed_resolved_as(log, 'FALSE-POSITIVE')
-
 
 def is_log_a_resolve_as(log, resolve_reason):
     cond1 = False
@@ -225,12 +155,10 @@ def is_log_a_resolve_as(log, resolve_reason):
             cond2 = True
     return cond1 and cond2
 
-
 def is_log_an_assignee(log):
     for diff in log['diffs']:
         if diff['key'] == 'assignee':
             return True
-
 
 def is_log_a_reopen(log):
     cond1 = False
@@ -242,10 +170,8 @@ def is_log_a_reopen(log):
             cond2 = True
     return cond1 and cond2
 
-
 def is_log_a_resolve_as_fp(log):
     return is_log_a_resolve_as(log, 'FALSE-POSITIVE')
-
 
 def is_log_a_resolve_as_wf(log):
     return is_log_a_resolve_as(log, 'WONTFIX')
@@ -349,10 +275,8 @@ def parse_args():
     args = parser.parse_args()
 
     project_key = args.projectKey
-    token = args.token
-    credentials = (token, '')
-    if args.url != "":
-        root_url = args.url
+    soanrqube.env.set_token(args.token)
+    sonarqube.env.set_url(args.url if args.url != None else "http://localhost:9000")
 
     if args.dryrun == "False":
         dry_run_mode = True

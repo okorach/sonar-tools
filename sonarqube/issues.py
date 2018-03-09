@@ -3,10 +3,7 @@
 import json
 import requests
 import sys
-
-token = '2a9e1ccb0a18f9626d2f90f5cdac391e6280f7d1'
-credentials = (token, '')
-root_url = "http://localhost:9000"
+import sonarqube.env
 
 class ApiError(Exception):
     pass
@@ -19,7 +16,7 @@ class UnknownIssueError(ApiError):
 class IssueChangeLog:
     def __init__(self, issue_key):
         params = dict(format='json', issue=issue_key)
-        resp = requests.get(url=root_url + '/api/issues/changelog', auth=credentials, params=params)
+        resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/changelog', auth=sonarqube.env.get_credentials(), params=params)
         data = json.loads(resp.text)
         self.json = data['changelog']
 
@@ -63,7 +60,7 @@ class Issue:
         self.line = json['line']
 
     def read(self):
-        resp = requests.get(url=root_url + '/api/issues/search', auth=credentials, params=dict(issues=self.id))
+        resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/search', auth=sonarqube.env.get_credentials(), params=dict(issues=self.id))
         print(resp)
 
     def get_changelog(self):
@@ -71,7 +68,7 @@ class Issue:
         
     def add_comment(self, comment_text):
         params = dict(issue=self.id, text=comment_text)
-        resp = requests.get(url=root_url + '/api/issues/add_comment', auth=credentials, params=params)
+        resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/add_comment', auth=sonarqube.env.get_credentials(), params=params)
 
     # def delete_comment(self, comment_id):
 
@@ -81,7 +78,7 @@ class Issue:
         if (force_api or self.severity == ''):
             self.read()
             params = dict(issues=self.id)
-            resp = requests.get(url=root_url + '/api/issues/add_comment', auth=credentials, params=params)
+            resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/add_comment', auth=sonarqube.env.get_credentials(), params=params)
         return self.severity
 
     def set_severity(self, severity):
@@ -159,7 +156,7 @@ def print_object(o):
 def get_comments(issue_key):
     # print('Searching comments for issue key ', issue_key)
     params = dict(format='json', issues=issue_key, additionalFields='comments')
-    resp = requests.get(url=root_url + 'api/issues/search', auth=credentials, params=params)
+    resp = requests.get(url=sonarqube.env.get_url() + 'api/issues/search', auth=sonarqube.env.get_credentials(), params=params)
     data = json.loads(resp.text)
     return data['issues'][0]['comments']
 
@@ -177,9 +174,9 @@ def sort_comments(comments):
         sorted_comments[comment['createdAt']] = ('comment', comment)
     return sorted_comments
 
-def search(project_key, sq_url = root_url):
+def search(project_key, sq_url = sonarqube.env.get_url()):
     params = dict(ps='1', componentKeys=project_key, additionalFields='_all')
-    resp = requests.get(url=sq_url + '/api/issues/search', auth=credentials, params=params)
+    resp = requests.get(url=sq_url + '/api/issues/search', auth=sonarqube.env.get_credentials(), params=params)
     data = json.loads(resp.text)
     json.dump(data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
     print("Number of issues:", data['paging']['total'])
