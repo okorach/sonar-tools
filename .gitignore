@@ -1,0 +1,7 @@
+metrics.csv
+metrics.xlsx
+~$metrics.xlsx
+sonarqube/env.pyc
+sonarqube/issues.pyc
+sonarqube/measures.pyc
+sonarqube/projects.pyc
