@@ -5,3 +5,5 @@ sonarqube/env.pyc
 sonarqube/issues.pyc
 sonarqube/measures.pyc
 sonarqube/projects.pyc
+.idea
+.scannerwork
