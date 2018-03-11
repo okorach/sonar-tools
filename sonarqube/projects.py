@@ -17,7 +17,7 @@ def count(include_applications):
     data = json.loads(resp.text)
     return(data['paging']['total'])
 
-def get_projects(include_applications, page_size, page_nbr):
+def get_projects(include_applications, page_size=500, page_nbr=1):
     qualifiers = "TRK,APP" if include_applications else "TRK"
     params = dict(ps=page_size, p=page_nbr, qualifiers=qualifiers)
     resp = requests.get(url=env.get_url() + '/api/projects/search', auth=env.get_credentials(), params=params)

@@ -61,14 +61,14 @@ class Issue:
 
     def read(self):
         resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/search', auth=sonarqube.env.get_credentials(), params=dict(issues=self.id))
-        print(resp)
+        self.feed(resp.issues[0])
 
     def get_changelog(self):
         self.changelog = IssueChangeLog(self.id)
         
     def add_comment(self, comment_text):
         params = dict(issue=self.id, text=comment_text)
-        resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/add_comment', auth=sonarqube.env.get_credentials(), params=params)
+        resp = requests.post(url=sonarqube.env.get_url() + '/api/issues/add_comment', auth=sonarqube.env.get_credentials(), params=params)
 
     # def delete_comment(self, comment_id):
 
@@ -77,8 +77,6 @@ class Issue:
     def get_severity(self, force_api = False):
         if (force_api or self.severity == ''):
             self.read()
-            params = dict(issues=self.id)
-            resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/add_comment', auth=sonarqube.env.get_credentials(), params=params)
         return self.severity
 
     def set_severity(self, severity):
@@ -105,7 +103,7 @@ class Issue:
     def get_status(self):
         return self.status
     
-    def toString(self):
+    def tostring(self):
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 
