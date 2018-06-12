@@ -17,6 +17,12 @@ def print_object(o):
     print(json.dumps(o, indent=3, sort_keys=True))
 
 def parse_args():
+<<<<<<< HEAD
+=======
+    global project_key
+    global dry_run_mode
+
+>>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
     parser = argparse.ArgumentParser(
             description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
     parser.add_argument('-p', '--projectKey', help='Project key of the project to search', required=True)
@@ -35,8 +41,17 @@ def parse_args():
     args = parser.parse_args()
     url = (args.url if args.url != None else "http://localhost:9000")
 
+<<<<<<< HEAD
     dry_run_mode = (args.dryrun != "False")
         
+=======
+    project_key = args.projectKey
+    sonarqube.env.set_token(args.token)
+    sonarqube.env.set_url(args.url if args.url != None else "http://localhost:9000")
+
+    if args.dryrun == "False":
+        dry_run_mode = False
+>>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
 
     return dict(project_key=args.projectKey,url=url,token=args.token,dry_run=dry_run_mode)
 
@@ -57,7 +72,11 @@ sqenv = sonarqube.env.Environment()
 sqenv.set_env(cmdline['url'], cmdline['token'])
 sonarqube.env.set_env(cmdline['url'], cmdline['token'])
 
+<<<<<<< HEAD
 all_issues = sonarqube.issues.search(cmdline['project_key'], sqenv)
+=======
+all_issues = sonarqube.issues.search(project_key)
+>>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
 
 non_closed_issues = []
 mistakenly_closed_issues = []
@@ -65,6 +84,12 @@ mistakenly_closed_issues = []
 for issue in all_issues:
     print('----ISSUE-------------------------------------------------------------')
     print(issue.to_string())
+<<<<<<< HEAD
+=======
+    # print('----CHANGELOG-------------')
+    # print_object(get_changelog(issue['key']))
+    print('----------------------------------------------------------------------')
+>>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
     if issue.get_status() == 'CLOSED':
         if issue.was_fp_or_wf():
             print("Mistakenly closed: " + issue.to_string())
@@ -77,12 +102,25 @@ print('        ' + str(len(mistakenly_closed_issues)) + 'mistakenly closed issue
 print('----------------------------------------------------------------------')
 
 for issue in mistakenly_closed_issues:
+<<<<<<< HEAD
     print('Searching sibling for issue key ', issue.id)
     siblings = sonarqube.issues.search_siblings(issue, non_closed_issues, False)
     nb_siblings = len(siblings)
     if nb_siblings >= 0:
         print('   Found' + str(nb_siblings) + 'SIBLING(S)')
         if nb_siblings == 1:
+=======
+    # print_issue(issue)
+    # print_change_log(issue['key'])
+    print('Searching sibling for issue key ', issue.id)
+    siblings = sonarqube.issues.search_siblings(issue, non_closed_issues, False)
+    if len(siblings) >= 0:
+        print('   Found', len(siblings), 'SIBLING(S)')
+        for sibling in siblings:
+            print('  ')
+            sibling.print_issue()
+        if len(siblings) == 1:
+>>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
             print('   Automatically applying changelog')
             sonarqube.issues.apply_changelog(siblings[0], issue, True)
         else:
