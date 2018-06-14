@@ -29,12 +29,9 @@ class IssueComments:
             n = n + 1
         return n
 
-<<<<<<< HEAD
     def size2(self):
         return len(self.json)
     
-=======
->>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
 class IssueChangeLog:
     def __init__(self, issue_key, myenv = None):
         env.debug('Getting changelog for issue key ' + issue_key)
@@ -57,7 +54,6 @@ class IssueChangeLog:
         for items in self.json:
             n = n + 1
         return n
-<<<<<<< HEAD
 
     def size2(self):
         return len(self.json)
@@ -66,13 +62,6 @@ class IssueChangeLog:
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 
-=======
-
-    def to_string(self):
-        """Dumps the object in a string"""
-        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
-
->>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
     def get_json(self):
         return self.json
 
@@ -128,7 +117,6 @@ class Issue:
             self.message = json['message']
         except KeyError:
             self.message = None
-<<<<<<< HEAD
         try:
             self.debt = json['debt']
         except KeyError:
@@ -140,12 +128,6 @@ class Issue:
             resp = env.get('/api/issues/search', parms)
         else:
             resp = myenv.get('/api/issues/search', parms)
-=======
-        self.debt = json['debt']
-
-    def read(self):
-        resp = requests.get(url=sonarqube.env.get_url() + '/api/issues/search', auth=sonarqube.env.get_credentials(), params=dict(issues=self.id, additionalFields='_all'))
->>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
         self.feed(resp.issues[0])
 
     def get_changelog(self, force_api = False):
@@ -154,7 +136,6 @@ class Issue:
             print('---In get_changelog----')
             print(self.changelog.to_string())
         return self.changelog
-<<<<<<< HEAD
 
     def has_changelog(self):
         return self.get_changelog().size() > 0
@@ -178,12 +159,6 @@ class Issue:
             env.post('/api/issues/add_comment', parms)
         else:
             myenv.post('/api/issues/add_comment', parms)
-=======
-        
-    def add_comment(self, comment_text):
-        params = dict(issue=self.id, text=comment_text)
-        requests.post(url=sonarqube.env.get_url() + '/api/issues/add_comment', auth=sonarqube.env.get_credentials(), params=params)
->>>>>>> e2885ce4159f6dff5c5e472733ed4c29faee63ef
 
     # def delete_comment(self, comment_id):
 
