@@ -107,7 +107,10 @@ class Issue:
         self.project = json['project']
         self.language = ''
         self.changelog = None
-        self.comments = json['comments']
+        try:
+            self.comments = json['comments']
+        except KeyError:
+            self.comments = None
         self.component = json['component']
         try:
             self.hash = json['hash']
@@ -269,25 +272,32 @@ def sort_comments(comments):
         sorted_comments[comment['createdAt']] = ('comment', comment)
     return sorted_comments
 
-def search(project_key, theenv=None):
-    parms = dict(ps='500', componentKeys=project_key, additionalFields='_all')
-    if theenv is None:
+def search(**kwargs):
+    parms = dict()
+    # for key, value in kwargs.items():
+    for arg in kwargs:
+        if arg is not 'env':
+            parms[arg] = kwargs[arg]
+    if kwargs is None or 'env' not in kwargs:
         resp = env.get( '/api/issues/search', parms)
     else:
-        resp = theenv.get('/api/issues/search', parms)
+        resp = kwargs['env'].get('/api/issues/search', parms)
     data = json.loads(resp.text)
     json.dump(data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
-    print("Number of issues:", data['paging']['total'])
+    nbr_issues = data['paging']['total']
+    page = data['paging']['pageIndex']
+    nbr_pages = ((data['paging']['total']-1) // data['paging']['pageSize'])+1
+    print("Number of issues: ", nbr_issues)
+    print("Page: ", data['paging']['pageIndex'], '/', nbr_pages)
     all_issues = []
     for json_issue in data['issues']:
         issue = Issue(0)
         issue.feed(json_issue)
         all_issues = all_issues + [issue]
-        print('----issues.ISSUE-------------------------------------------------------------')
+        print('----issues.ISSUE---------------------------------------------------------------------------------------------------------------------------------')
         json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
         #print(issue.toString)
-    return all_issues
-
+    return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
 def apply_changelog(new_issue, closed_issue, do_it_really=True):
     events_by_date = closed_issue.get_changelog().sort()

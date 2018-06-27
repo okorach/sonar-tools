@@ -11,9 +11,9 @@ this.debug = True
 
 class Environment:
 
-    def __init__(self):
-        self.root_url = ''
-        self.token = ''
+    def __init__(self, **kwargs):
+        self.root_url = kwargs['url']
+        self.token = kwargs['token']
 
     def set_env(self, url, token):
         self.root_url = url
@@ -35,13 +35,6 @@ class Environment:
 
     def get_url(self):
         return self.root_url
-    
-    def get2(self, api, parms):
-        if (this.debug):
-            print ('GET environment: '+ self.token + '@' + self.root_url)
-        for p in parms:
-            print(p + " = " + parms[p])
-        return requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def get(self, api, parms):
         if (this.debug):
@@ -64,10 +57,11 @@ class Environment:
     def urlstring(self, api, parms):
         pstr = None
         for p in parms:
+            print(p, '->', parms[p])
             if pstr is None:
                 pstr = p + '=' + parms[p]
             else:
-                pstr = pstr + '&' + p + '=' + parms[p]
+                pstr = pstr + '&' + p + '=' + str(parms[p])
         return this.token + '@' + this.root_url + api + '?' + pstr
 
 #--------------------- Static methods, not recommended -----------------
