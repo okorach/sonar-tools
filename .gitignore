@@ -7,3 +7,4 @@ sonarqube/measures.pyc
 sonarqube/projects.pyc
 .idea
 .scannerwork
+sonarqube/*.pyc
