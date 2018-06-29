@@ -136,8 +136,8 @@ class Issue:
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
             self.changelog = IssueChangeLog(self.id)
-            print('---In get_changelog----')
-            print(self.changelog.to_string())
+            #print('---In get_changelog----')
+            #print(self.changelog.to_string())
         return self.changelog
 
     def has_changelog(self):
@@ -151,7 +151,8 @@ class Issue:
         return self.comments
 
     def has_comments(self):
-        return self.get_comments().size() > 0
+        comments = self.get_comments()
+        return False if comments is None else comments.size() > 0
 
     def has_changelog_or_comments(self):
         return self.has_changelog() or self.has_comments()
@@ -243,8 +244,16 @@ class Issue:
 
             
     def identical_to(self, another_issue):
-        return (self.rule == another_issue.rule and self.component == another_issue.component and
+        print("===============")
+        print("Comparing potential siblings:")
+        print(self.to_string())
+        print(another_issue.to_string())
+        print("===============")
+        identical = (self.rule == another_issue.rule and self.component == another_issue.component and
             self.message == another_issue.message and self.debt == another_issue.debt and self.hash == another_issue.hash)
+        print(identical)
+        print("===============")
+        return identical
 
     def was_fp_or_wf(self):
         changelog = self.get_changelog()
@@ -276,14 +285,14 @@ def search(**kwargs):
     parms = dict()
     # for key, value in kwargs.items():
     for arg in kwargs:
-        if arg is not 'env':
+        if arg is not 'env' and arg is not 'url' and arg is not 'token':
             parms[arg] = kwargs[arg]
     if kwargs is None or 'env' not in kwargs:
         resp = env.get( '/api/issues/search', parms)
     else:
         resp = kwargs['env'].get('/api/issues/search', parms)
     data = json.loads(resp.text)
-    json.dump(data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
+    #json.dump(data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
     nbr_issues = data['paging']['total']
     page = data['paging']['pageIndex']
     nbr_pages = ((data['paging']['total']-1) // data['paging']['pageSize'])+1
@@ -294,70 +303,73 @@ def search(**kwargs):
         issue = Issue(0)
         issue.feed(json_issue)
         all_issues = all_issues + [issue]
-        print('----issues.ISSUE---------------------------------------------------------------------------------------------------------------------------------')
-        json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
+        #print('----issues.ISSUE---------------------------------------------------------------------------------------------------------------------------------')
+        #json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
         #print(issue.toString)
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
 def apply_changelog(new_issue, closed_issue, do_it_really=True):
-    events_by_date = closed_issue.get_changelog().sort()
-    comments_by_date = closed_issue.get_comments().sort()
-    key = new_issue.id
-    for date in comments_by_date:
-        events_by_date[date] = comments_by_date[date]
+    if (closed_issue.has_changelog()):
+        events_by_date = closed_issue.get_changelog().sort()
+    if (closed_issue.has_comments()):
+        comments_by_date = closed_issue.get_comments().sort()
+        for date in comments_by_date:
+            events_by_date[date] = comments_by_date[date]
     if do_it_really:
         print('   Not joking I am doing it')
-    for date in sorted(events_by_date):
-        # print_object(events_by_date[date])
-        is_applicable_event = True
 
-        if events_by_date[date][0] == 'log' and is_log_a_severity_change(events_by_date[date][1]):
-            params = dict(issue=key, severity=get_log_new_severity(events_by_date[date][1]))
-            operation = 'Changing severity to: ' + params['severity']
-            api = 'issues/set_severity'
-        elif events_by_date[date][0] == 'log' and is_log_a_type_change(events_by_date[date][1]):
-            params = dict(issue=key, type=get_log_new_type(events_by_date[date][1]))
-            operation = 'Changing type to: ' + params['type']
-            api = 'issues/set_type'
-        elif events_by_date[date][0] == 'log' and is_log_a_reopen(events_by_date[date][1]):
-            params = dict(issue=key, type='reopen')
-            operation = 'Reopening issue'
-            api = 'issues/do_transition'
-        elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_fp(events_by_date[date][1]):
-            params = dict(issue=key, transition='falsepositive')
-            operation = 'Setting as False Positive'
-            api = 'issues/do_transition'
-        elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_wf(events_by_date[date][1]):
-            params = dict(issue=key, transition='wontfix')
-            operation = 'Setting as wontfix'
-            api = 'issues/do_transition'
-        elif events_by_date[date][0] == 'log' and is_log_an_assignee(events_by_date[date][1]):
-            params = dict(issue=key, assignee=get_log_assignee(events_by_date[date][1]))
-            operation = 'Assigning issue to: ' + params['assignee']
-            api = 'issues/assign'
-        elif events_by_date[date][0] == 'log' and is_log_a_tag_change(events_by_date[date][1]):
-            params = dict(key=key, tags=get_log_new_tag(events_by_date[date][1]).replace(' ', ','))
-            operation = 'Setting new tags to: ' + params['tags']
-            api = 'issues/set_tags'
-        elif events_by_date[date][0] == 'comment' and is_log_a_comment(events_by_date[date][1]):
-            params = dict(issue=key, text=events_by_date[date][1]['markdown'])
-            operation = 'Adding comment: ' + params['text']
-            api = 'issues/add_comment'
-        else:
-            is_applicable_event = False
-            api = ''
+    if len(events_by_date) > 0:
+        key = new_issue.id
+        for date in sorted(events_by_date):
+            # print_object(events_by_date[date])
+            is_applicable_event = True
 
-
-        if is_applicable_event:
-            if do_it_really:
-                print('   ' + operation)
-                resp = env.post('/api/' + api, parms=params)
-                if resp.status_code != 200:
-                    print('HTTP Error ' + str(resp.status_code) + ' from SonarQube API query')
+            if events_by_date[date][0] == 'log' and is_log_a_severity_change(events_by_date[date][1]):
+                params = dict(issue=key, severity=get_log_new_severity(events_by_date[date][1]))
+                operation = 'Changing severity to: ' + params['severity']
+                api = 'issues/set_severity'
+            elif events_by_date[date][0] == 'log' and is_log_a_type_change(events_by_date[date][1]):
+                params = dict(issue=key, type=get_log_new_type(events_by_date[date][1]))
+                operation = 'Changing type to: ' + params['type']
+                api = 'issues/set_type'
+            elif events_by_date[date][0] == 'log' and is_log_a_reopen(events_by_date[date][1]):
+                params = dict(issue=key, type='reopen')
+                operation = 'Reopening issue'
+                api = 'issues/do_transition'
+            elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_fp(events_by_date[date][1]):
+                params = dict(issue=key, transition='falsepositive')
+                operation = 'Setting as False Positive'
+                api = 'issues/do_transition'
+            elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_wf(events_by_date[date][1]):
+                params = dict(issue=key, transition='wontfix')
+                operation = 'Setting as wontfix'
+                api = 'issues/do_transition'
+            elif events_by_date[date][0] == 'log' and is_log_an_assignee(events_by_date[date][1]):
+                params = dict(issue=key, assignee=get_log_assignee(events_by_date[date][1]))
+                operation = 'Assigning issue to: ' + params['assignee']
+                api = 'issues/assign'
+            elif events_by_date[date][0] == 'log' and is_log_a_tag_change(events_by_date[date][1]):
+                params = dict(key=key, tags=get_log_new_tag(events_by_date[date][1]).replace(' ', ','))
+                operation = 'Setting new tags to: ' + params['tags']
+                api = 'issues/set_tags'
+            elif events_by_date[date][0] == 'comment' and is_log_a_comment(events_by_date[date][1]):
+                params = dict(issue=key, text=events_by_date[date][1]['markdown'])
+                operation = 'Adding comment: ' + params['text']
+                api = 'issues/add_comment'
             else:
-                print('   DRY RUN for ' + operation)
+                is_applicable_event = False
+                api = ''
 
 
+            if is_applicable_event:
+                if do_it_really:
+                    resp = env.post('/api/' + api, parms=params)
+                    if resp.status_code != 200:
+                        print('HTTP Error ' + str(resp.status_code) + ' from SonarQube API query')
+                else:
+                    print('   DRY RUN for ' + operation)
+        else:
+            print("Closed sibling has no changelog")
 
 
 def get_log_date(log):
@@ -482,13 +494,12 @@ def search_siblings(closed_issue, issue_list, only_new_issues=True):
     siblings = []
     for issue in issue_list:
         #if identical_attributes(closed_issue, iss, ['rule', 'component', 'message', 'debt']):
-        print("Looking at CLOSED " + closed_issue.to_string())
-        print("Looking at ISSUE " + issue.to_string())
+        #print("Looking at CLOSED " + closed_issue.to_string())
+        #print("Looking at ISSUE " + issue.to_string())
         if issue.identical_to(closed_issue):
             if only_new_issues:
                 if issue.get_changelog.size() == 0:
                     # Add issue only if it has no change log, meaning it's brand new
-                    print("Appending issue")
                     siblings.append(issue)
             else:
                 siblings.append(issue)

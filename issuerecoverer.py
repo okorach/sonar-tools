@@ -19,26 +19,16 @@ def print_object(o):
 def parse_args():
     parser = argparse.ArgumentParser(
             description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
-    parser.add_argument('-p', '--projectKey', help='Project key of the project to search', required=True)
-    parser.add_argument('-t', '--token',
-                        help='Token to authenticate to SonarQube - Unauthenticated usage is not possible',
-                        required=True)
+    sonarqube.env.add_standard_arguments(parser)
     parser.add_argument('-r', '--recover',
                         help='What information to recover. Default is FP and WF, but issue assignment, tags, severity and type change can be recovered too',
                         required=False)
     parser.add_argument('-d', '--dryrun',
                         help='If True, show changes but don\'t apply, if False, apply changes - Default is true',
                         required=False)
-    parser.add_argument('-u', '--url', help='Root URL of the SonarQube server, default is http://localhost:9000',
-                        required=False)
-
     args = parser.parse_args()
-    url = (args.url if args.url != None else "http://localhost:9000")
 
-    dry_run_mode = (args.dryrun != "False")
-        
-
-    return dict(project_key=args.projectKey,url=url,token=args.token,dry_run=dry_run_mode)
+    return args;
 
 # ------------------------------------------------------------------------------
 
@@ -52,41 +42,80 @@ except ImportError:
         print("  Option 2: Install argparse library for the current python version")
         print("            See: https://pypi.python.org/pypi/argparse")
 
-cmdline = parse_args()
-sqenv = sonarqube.env.Environment()
-sqenv.set_env(cmdline['url'], cmdline['token'])
-sonarqube.env.set_env(cmdline['url'], cmdline['token'])
+args = parse_args()
+sqenv = sonarqube.env.Environment(url=args.url, token=args.token)
+sonarqube.env.set_env(args.url, args.token)
 
-#all_issues = sonarqube.issues.search(cmdline['project_key'], sqenv)
-all_issues = sonarqube.issues.search(env=sqenv, componentKey=cmdline['project_key'], ps=500, additionalFields='_all')
+# Remove unset params from the dict
+noneparms = vars(args)
+parms = dict()
+for parm in noneparms:
+    if noneparms[parm] is not None:
+        parms[parm] = noneparms[parm]
+# Add SQ environment
+parms.update(dict(env=sqenv))
 
+for parm in parms:
+    print(parm, '->', parms[parm])
+
+returned_data = dict()
+
+search_parms = parms
+search_parms['ps'] = 500
+
+# Fetch all closed issues
+search_parms = parms
+search_parms['statuses'] = 'CLOSED'
+search_parms['ps'] = 500
+page=1
+nbr_pages=1
+closed_issues = []
+while page <= nbr_pages:
+    search_parms['p'] = page
+    returned_data = sonarqube.issues.search(**search_parms)
+    closed_issues = closed_issues + returned_data['issues']
+    page = returned_data['page']
+    nbr_pages = returned_data['pages']
+    page = page+1
+    search_parms['p'] = page
+    print ("Number of closed issues: ", len(closed_issues))
+print ("Total number of closed issues: ", len(closed_issues))
+
+
+
+# Fetch all open issues
+search_parms['statuses'] = 'OPEN,CONFIRMED,REOPENED,RESOLVED'
+page=1
+nbr_pages=1
 non_closed_issues = []
+while page <= nbr_pages:
+    search_parms['p'] = page
+    returned_data = sonarqube.issues.search(**search_parms)
+    non_closed_issues = non_closed_issues + returned_data['issues']
+    page = returned_data['page']
+    nbr_pages = returned_data['pages']
+    page = page+1
+    search_parms['p'] = page
+print ("Number of open issues: ", len(non_closed_issues))
+
+# Search for mistakenly closed issues
 mistakenly_closed_issues = []
+for issue in closed_issues:
+    if issue.was_fp_or_wf():
+        print("Mistakenly closed: " + issue.to_string())
+        mistakenly_closed_issues.append(issue)
 
-for issue in all_issues:
-    print('----ISSUE-------------------------------------------------------------')
-    print(issue.to_string())
-    if issue.get_status() == 'CLOSED':
-        if issue.was_fp_or_wf():
-            print("Mistakenly closed: " + issue.to_string())
-            mistakenly_closed_issues.append(issue)
-    else:
-        non_closed_issues.append(issue)
-
-print('----------------------------------------------------------------------')
-print('        ' + str(len(mistakenly_closed_issues)) + 'mistakenly closed issues')
-print('----------------------------------------------------------------------')
+print ("Number of mistakenly closed issues: ", len(mistakenly_closed_issues))
 
 for issue in mistakenly_closed_issues:
-    print('Searching sibling for issue key ', issue.id)
+    print('Searching sibling for issue key: ', issue.id)
     siblings = sonarqube.issues.search_siblings(issue, non_closed_issues, False)
     nb_siblings = len(siblings)
-    if nb_siblings >= 0:
-        print('   Found' + str(nb_siblings) + 'SIBLING(S)')
-        if nb_siblings == 1:
-            print('   Automatically applying changelog')
-            sonarqube.issues.apply_changelog(siblings[0], issue, True)
-        else:
-            print('   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below')
-            for sibling in siblings:
-                print(sibling.id + ', ')
+    print ("Number of siblings: ", nb_siblings)
+    if nb_siblings == 1:
+        print('   Automatically applying changelog')
+        sonarqube.issues.apply_changelog(siblings[0], issue, True)
+    elif nb_siblings > 1:
+        print('   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below')
+        for sibling in siblings:
+            print(sibling.id + ', ')

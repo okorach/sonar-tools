@@ -19,14 +19,7 @@ def print_object(o):
 def parse_args():
     parser = argparse.ArgumentParser(
             description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
-
-    parser.add_argument('-t', '--token',
-                        help='Token to authenticate to SonarQube - Unauthenticated usage is not possible',
-                        required=True)
-    parser.add_argument('-u', '--url', help='Root URL of the SonarQube server, default is http://localhost:9000',
-                        required=False, default='http://localhost:9000')
-
-    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', help='Commas separated key of the components', required=False)
+    sonarqube.env.add_standard_arguments(parser)
     parser.add_argument('-s', '--statuses', help='comma separated issue status', required=False)
     parser.add_argument('-a', '--createdAfter', help='issues created after a given date', required=False)
     parser.add_argument('-b', '--createdBefore', help='issues created before a given date', required=False)
@@ -56,12 +49,13 @@ args = parse_args()
 sqenv = sonarqube.env.Environment(url=args.url, token=args.token)
 sonarqube.env.set_env(args.url, args.token)
 
+# Remove unset params from the dict
 noneparms = vars(args)
 parms = dict()
 for parm in noneparms:
     if noneparms[parm] is not None:
         parms[parm] = noneparms[parm]
-
+# Add SQ environment
 parms.update(dict(env=sqenv))
 
 for parm in parms:

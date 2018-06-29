@@ -37,40 +37,25 @@ class Environment:
         return self.root_url
 
     def get(self, api, parms):
-        if (this.debug):
-            print ('GET: '+ self.urlstring(api, parms))
+        debug('GET: '+ urlstring(api, parms))
         return requests.get(url=this.root_url + api, auth=self.get_credentials(), params=parms)
 
     def post(self, api, parms):
-        if (this.debug):
-            print ('POST: '+ self.urlstring(api, parms))
+        debug('POST: '+ urlstring(api, parms))
         return requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def delete(self, api, parms):
-        if (this.debug):
-            print ('DELETE: '+ self.urlstring(api, parms))
+        debug('DELETE: '+ urlstring(api, parms))
         return requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def to_string(self):
         return "URL = " + self.root_url + "\n" + "TOKEN = " + self.token
 
-    def urlstring(self, api, parms):
-        pstr = None
-        for p in parms:
-            print(p, '->', parms[p])
-            if pstr is None:
-                pstr = p + '=' + parms[p]
-            else:
-                pstr = pstr + '&' + p + '=' + str(parms[p])
-        return this.token + '@' + this.root_url + api + '?' + pstr
-
 #--------------------- Static methods, not recommended -----------------
 def set_env(url, tok):
     this.root_url = url
     this.token = tok
-    if (this.debug):
-        print ('Setting GLOBAL environment: '+ this.token + '@' + this.root_url)
-
+    debug('Setting GLOBAL environment: '+ this.token + '@' + this.root_url)
 
 def set_token(tok):
     this.token = tok
@@ -92,25 +77,31 @@ def debug(str):
         print(str)
 
 def get(api, parms):
-    if (this.debug):
-        pstr = ''
-        for p in parms:
-            pstr = pstr + p + '=' + parms[p] + '&'
-        print ('GLOBAL GET: ' + this.token + '@' + this.root_url + api + '?' + pstr)
+    debug('GLOBAL GET: ' + urlstring(api, parms))
     return requests.get(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def post(api, parms):
-    if (this.debug):
-        pstr = ''
-        for p in parms:
-            pstr = pstr + p + '=' + parms[p] + '&'
-        print ('GLOBAL POST: ' + this.token + '@' + this.root_url + api + '?' + pstr)
+    debug('GLOBAL POST: ' + urlstring(api, parms))
     return requests.post(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def delete(api, parms):
-    if (this.debug):
-        pstr = ''
-        for p in parms:
-            pstr = pstr + p + '=' + parms[p] + '&'
-        print ('GLOBAL DELETE: ' + this.token + '@' + this.root_url + api + '?' + pstr)
+    debug('GLOBAL DELETE: '+ urlstring(api, parms))
     return requests.delete(url=this.root_url + api, auth=get_credentials(), params=parms)
+
+def add_standard_arguments(parser):
+    parser.add_argument('-t', '--token',
+                        help='Token to authenticate to SonarQube - Unauthenticated usage is not possible',
+                        required=True)
+    parser.add_argument('-u', '--url', help='Root URL of the SonarQube server, default is http://localhost:9000',
+                        required=False, default='http://localhost:9000')
+    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', help='Commas separated key of the components', required=False)
+
+def urlstring(api, parms):
+    pstr = None
+    for p in parms:
+        #print(p, '->', parms[p])
+        if pstr is None:
+            pstr = p + '=' + str(parms[p])
+        else:
+            pstr = pstr + '&' + p + '=' + str(parms[p])
+    return this.token + '@' + this.root_url + api + '?' + pstr

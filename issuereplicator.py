@@ -20,9 +20,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
             description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
     parser.add_argument('-p', '--projectKey', help='Project key of the project to search', required=True)
-    parser.add_argument('-t', '--tokenSource',
-                        help='Token to authenticate to SonarQube - Unauthenticated usage is not possible',
-                        required=True)
+
     parser.add_argument('-T', '--tokenTarget',
                         help='Token to authenticate to SonarQube - Unauthenticated usage is not possible',
                         required=True)
@@ -32,19 +30,11 @@ def parse_args():
     parser.add_argument('-d', '--dryrun',
                         help='If True, show changes but don\'t apply, if False, apply changes - Default is true',
                         required=False)
-    parser.add_argument('-u', '--urlSource', help='Root URL of the source SonarQube server, default is http://localhost:9000',
-                        required=False)
     parser.add_argument('-U', '--urlTarget', help='Root URL of the target SonarQube server',
                         required=True)
 
     args = parser.parse_args()
-    url_source = (args.urlSource if args.urlSource != None else "http://localhost:9000")
-
-    dry_run_mode = (args.dryrun != "False")
-        
-
-    return dict(project_key=args.projectKey,url_source=url_source,token_source=args.tokenSource,
-        url_target=args.urlTarget, token_target=args.tokenTarget, dry_run=dry_run_mode)
+    return args
 
 # ------------------------------------------------------------------------------
 
@@ -58,7 +48,10 @@ except ImportError:
         print("  Option 2: Install argparse library for the current python version")
         print("            See: https://pypi.python.org/pypi/argparse")
 
-cmdline = parse_args()
+args = parse_args()
+source_env = sonarqube.env.Environment(url=args.url, token=args.token)
+
+
 source_env = sonarqube.env.Environment()
 source_env.set_env(cmdline['url_source'], cmdline['token_source'])
 target_env = sonarqube.env.Environment()
