@@ -1,0 +1,505 @@
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/search?componentKeys=training:Gov2&ps=500&p=1
+('Number of issues: ', 49)
+('Page: ', 1, '/', 1)
+('Number of issues: ', 49)
+('Total number of issues: ', 49)
+Found 49 source issues
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9730/api/issues/search?componentKeys=training:Gov2&ps=500&p=1
+('Number of issues: ', 49)
+('Page: ', 1, '/', 1)
+('Number of issues: ', 49)
+('Total number of issues: ', 49)
+Found 49 target issues
+('Searching sibling for issue key ', u'AWVnvk70iMcr9RchY-Zt')
+   Found 1 sibling(s)
+Found a match issue id AWSOvvGjor5MB3iflsvh
+Getting changelog for issue key AWSOvvGjor5MB3iflsvh
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWSOvvGjor5MB3iflsvh&format=json
+   Automatically applying changelog
+   Not joking I am doing it
+POST: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9730/api/issues/do_transition?transition=falsepositive&issue=AWVnvk70iMcr9RchY-Zt
+Closed sibling has no changelog
+('Searching sibling for issue key ', u'AWVnvk70iMcr9RchY-Zu')
+   Found 1 sibling(s)
+Found a match issue id AWSOu3vFor5MB3iflsvE
+Getting changelog for issue key AWSOu3vFor5MB3iflsvE
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWSOu3vFor5MB3iflsvE&format=json
+   Automatically applying changelog
+   Not joking I am doing it
+POST: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9730/api/issues/do_transition?transition=falsepositive&issue=AWVnvk70iMcr9RchY-Zu
+Closed sibling has no changelog
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-Y-')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUZ
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUZ
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUZ&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZD')
+   Found 4 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUe, 
+AWRKrbsWQZ5w2TS4xHUf, 
+AWRKrbsWQZ5w2TS4xHUh, 
+AWRKrbsWQZ5w2TS4xHUi, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZE')
+   Found 4 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUe, 
+AWRKrbsWQZ5w2TS4xHUf, 
+AWRKrbsWQZ5w2TS4xHUh, 
+AWRKrbsWQZ5w2TS4xHUi, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZF')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUg
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUg
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUg&format=json
+   Automatically applying changelog
+   Not joking I am doing it
+POST: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9730/api/issues/do_transition?transition=falsepositive&issue=AWVnvk7DiMcr9RchY-ZF
+Closed sibling has no changelog
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZG')
+   Found 4 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUe, 
+AWRKrbsWQZ5w2TS4xHUf, 
+AWRKrbsWQZ5w2TS4xHUh, 
+AWRKrbsWQZ5w2TS4xHUi, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZH')
+   Found 4 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUe, 
+AWRKrbsWQZ5w2TS4xHUf, 
+AWRKrbsWQZ5w2TS4xHUh, 
+AWRKrbsWQZ5w2TS4xHUi, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-Y_')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUa
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUa
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUa&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZI')
+   Found 6 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUj, 
+AWRKrbsWQZ5w2TS4xHUk, 
+AWRKrbsWQZ5w2TS4xHUl, 
+AWRKrbsWQZ5w2TS4xHUm, 
+AWRKrbsWQZ5w2TS4xHUn, 
+AWRKrbsWQZ5w2TS4xHUo, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZJ')
+   Found 6 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUj, 
+AWRKrbsWQZ5w2TS4xHUk, 
+AWRKrbsWQZ5w2TS4xHUl, 
+AWRKrbsWQZ5w2TS4xHUm, 
+AWRKrbsWQZ5w2TS4xHUn, 
+AWRKrbsWQZ5w2TS4xHUo, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZK')
+   Found 6 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUj, 
+AWRKrbsWQZ5w2TS4xHUk, 
+AWRKrbsWQZ5w2TS4xHUl, 
+AWRKrbsWQZ5w2TS4xHUm, 
+AWRKrbsWQZ5w2TS4xHUn, 
+AWRKrbsWQZ5w2TS4xHUo, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZL')
+   Found 6 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUj, 
+AWRKrbsWQZ5w2TS4xHUk, 
+AWRKrbsWQZ5w2TS4xHUl, 
+AWRKrbsWQZ5w2TS4xHUm, 
+AWRKrbsWQZ5w2TS4xHUn, 
+AWRKrbsWQZ5w2TS4xHUo, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZM')
+   Found 6 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUj, 
+AWRKrbsWQZ5w2TS4xHUk, 
+AWRKrbsWQZ5w2TS4xHUl, 
+AWRKrbsWQZ5w2TS4xHUm, 
+AWRKrbsWQZ5w2TS4xHUn, 
+AWRKrbsWQZ5w2TS4xHUo, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZN')
+   Found 6 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUj, 
+AWRKrbsWQZ5w2TS4xHUk, 
+AWRKrbsWQZ5w2TS4xHUl, 
+AWRKrbsWQZ5w2TS4xHUm, 
+AWRKrbsWQZ5w2TS4xHUn, 
+AWRKrbsWQZ5w2TS4xHUo, 
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZA')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUb
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUb
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUb&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZO')
+   Found 5 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUp, 
+AWRKrbsWQZ5w2TS4xHUq, 
+AWRKrbsWQZ5w2TS4xHUr, 
+AWRKrbsWQZ5w2TS4xHUs, 
+AWRKrbsWQZ5w2TS4xHUt, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZP')
+   Found 5 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUp, 
+AWRKrbsWQZ5w2TS4xHUq, 
+AWRKrbsWQZ5w2TS4xHUr, 
+AWRKrbsWQZ5w2TS4xHUs, 
+AWRKrbsWQZ5w2TS4xHUt, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZQ')
+   Found 5 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUp, 
+AWRKrbsWQZ5w2TS4xHUq, 
+AWRKrbsWQZ5w2TS4xHUr, 
+AWRKrbsWQZ5w2TS4xHUs, 
+AWRKrbsWQZ5w2TS4xHUt, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZR')
+   Found 5 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUp, 
+AWRKrbsWQZ5w2TS4xHUq, 
+AWRKrbsWQZ5w2TS4xHUr, 
+AWRKrbsWQZ5w2TS4xHUs, 
+AWRKrbsWQZ5w2TS4xHUt, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZS')
+   Found 5 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsWQZ5w2TS4xHUp, 
+AWRKrbsWQZ5w2TS4xHUq, 
+AWRKrbsWQZ5w2TS4xHUr, 
+AWRKrbsWQZ5w2TS4xHUs, 
+AWRKrbsWQZ5w2TS4xHUt, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZU')
+   Found 4 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRlNXcjQZ5w2TS4xHqP, 
+AWRKrbsWQZ5w2TS4xHUv, 
+AWRKrbsWQZ5w2TS4xHUx, 
+AWRKrbsWQZ5w2TS4xHUy, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZV')
+   Found 4 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRlNXcjQZ5w2TS4xHqP, 
+AWRKrbsWQZ5w2TS4xHUv, 
+AWRKrbsWQZ5w2TS4xHUx, 
+AWRKrbsWQZ5w2TS4xHUy, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZW')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUw
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUw
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUw&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-Za')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHU0
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHU0
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHU0&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-Zc')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHU2
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHU2
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHU2&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZC')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUd
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUd
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUd&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZT')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUu
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUu
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUu&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7DiMcr9RchY-ZB')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUc
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUc
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUc&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-Zb')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHU1
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHU1
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHU1&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZZ')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHUz
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHUz
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHUz&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-Zd')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsWQZ5w2TS4xHU3
+Getting changelog for issue key AWRKrbsWQZ5w2TS4xHU3
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsWQZ5w2TS4xHU3&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZX')
+   Found 4 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRlNXcjQZ5w2TS4xHqP, 
+AWRKrbsWQZ5w2TS4xHUv, 
+AWRKrbsWQZ5w2TS4xHUx, 
+AWRKrbsWQZ5w2TS4xHUy, 
+('Searching sibling for issue key ', u'AWVnvk7EiMcr9RchY-ZY')
+   Found 4 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRlNXcjQZ5w2TS4xHqP, 
+AWRKrbsWQZ5w2TS4xHUv, 
+AWRKrbsWQZ5w2TS4xHUx, 
+AWRKrbsWQZ5w2TS4xHUy, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Ze')
+   Found 1 sibling(s)
+Found a match issue id AWRKrbsOQZ5w2TS4xHUK
+Getting changelog for issue key AWRKrbsOQZ5w2TS4xHUK
+GET: 417f1914d95a81699b27a369cceb6e8d139f15b2@http://localhost:9675/api/issues/changelog?issue=AWRKrbsOQZ5w2TS4xHUK&format=json
+   No changelog to apply
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zf')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zg')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zh')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zi')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zj')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zk')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zl')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zm')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7liMcr9RchY-Zn')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7miMcr9RchY-Zo')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7miMcr9RchY-Zp')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7miMcr9RchY-Zq')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7miMcr9RchY-Zr')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 
+('Searching sibling for issue key ', u'AWVnvk7miMcr9RchY-Zs')
+   Found 14 sibling(s)
+   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below
+AWRKrbsOQZ5w2TS4xHUL, 
+AWRKrbsOQZ5w2TS4xHUM, 
+AWRKrbsOQZ5w2TS4xHUN, 
+AWRKrbsOQZ5w2TS4xHUO, 
+AWRKrbsOQZ5w2TS4xHUP, 
+AWRKrbsOQZ5w2TS4xHUQ, 
+AWRKrbsOQZ5w2TS4xHUR, 
+AWRKrbsOQZ5w2TS4xHUS, 
+AWRKrbsOQZ5w2TS4xHUT, 
+AWRKrbsOQZ5w2TS4xHUU, 
+AWRKrbsOQZ5w2TS4xHUV, 
+AWRKrbsOQZ5w2TS4xHUW, 
+AWRKrbsOQZ5w2TS4xHUX, 
+AWRKrbsOQZ5w2TS4xHUY, 

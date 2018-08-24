@@ -37,19 +37,29 @@ class Environment:
         return self.root_url
 
     def get(self, api, parms):
-        debug('GET: '+ urlstring(api, parms))
-        return requests.get(url=this.root_url + api, auth=self.get_credentials(), params=parms)
+        debug('GET: '+ self.urlstring(api, parms))
+        return requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def post(self, api, parms):
-        debug('POST: '+ urlstring(api, parms))
+        debug('POST: '+ self.urlstring(api, parms))
         return requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def delete(self, api, parms):
-        debug('DELETE: '+ urlstring(api, parms))
+        debug('DELETE: '+ self.urlstring(api, parms))
         return requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def to_string(self):
         return "URL = " + self.root_url + "\n" + "TOKEN = " + self.token
+
+    def urlstring(self, api, parms):
+        pstr = None
+        for p in parms:
+            #print(p, '->', parms[p])
+            if pstr is None:
+                pstr = p + '=' + str(parms[p])
+            else:
+                pstr = pstr + '&' + p + '=' + str(parms[p])
+        return self.token + '@' + self.root_url + api + '?' + pstr
 
 #--------------------- Static methods, not recommended -----------------
 def set_env(url, tok):
@@ -96,12 +106,3 @@ def add_standard_arguments(parser):
                         required=False, default='http://localhost:9000')
     parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', help='Commas separated key of the components', required=False)
 
-def urlstring(api, parms):
-    pstr = None
-    for p in parms:
-        #print(p, '->', parms[p])
-        if pstr is None:
-            pstr = p + '=' + str(parms[p])
-        else:
-            pstr = pstr + '&' + p + '=' + str(parms[p])
-    return this.token + '@' + this.root_url + api + '?' + pstr

@@ -33,13 +33,13 @@ class IssueComments:
         return len(self.json)
     
 class IssueChangeLog:
-    def __init__(self, issue_key, myenv = None):
+    def __init__(self, issue_key, sonarqube):
         env.debug('Getting changelog for issue key ' + issue_key)
         parms = dict(format='json', issue=issue_key)
-        if (myenv is None):
+        if (sonarqube is None):
             resp = env.get('/api/issues/changelog', parms)
         else:
-            resp = myenv.get('/api/issues/changelog', parms)
+            resp = sonarqube.get('/api/issues/changelog', parms)
         data = json.loads(resp.text)
         self.json = data['changelog']
 
@@ -85,11 +85,15 @@ class Issue:
         self.component = ''
         self.message = ''
         self.debt = ''
+        self.sonarqube = None
+
+    def set_env(self, env):
+        self.sonarqube = env
 
     def feed(self, json):
         self.json = json
-        env.debug('------ISSUE------')
-        env.debug(self.to_string())
+        #env.debug('------ISSUE------')
+        #env.debug(self.to_string())
 
         self.id = json['key']
         self.severity = json['severity']
@@ -125,17 +129,17 @@ class Issue:
         except KeyError:
             self.debt = None
 
-    def read(self, myenv = None):
+    def read(self):
         parms = dict(issues=self.id, additionalFields='_all')
-        if (myenv is None):
+        if (self.sonarqube is None):
             resp = env.get('/api/issues/search', parms)
         else:
-            resp = myenv.get('/api/issues/search', parms)
+            resp = self.sonarqube.get('/api/issues/search', parms)
         self.feed(resp.issues[0])
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
-            self.changelog = IssueChangeLog(self.id)
+            self.changelog = IssueChangeLog(self.id, self.sonarqube)
             #print('---In get_changelog----')
             #print(self.changelog.to_string())
         return self.changelog
@@ -145,7 +149,7 @@ class Issue:
 
     def get_comments(self):
         try:
-            self.comments = IssueComments(self.json['comments'])
+            self.comments = IssueComments(self.json['comments'], self.env)
         except KeyError:
             self.comments = None
         return self.comments
@@ -244,15 +248,15 @@ class Issue:
 
             
     def identical_to(self, another_issue):
-        print("===============")
-        print("Comparing potential siblings:")
-        print(self.to_string())
-        print(another_issue.to_string())
-        print("===============")
+        #print("===============")
+        #print("Comparing potential siblings:")
+        #print(self.to_string())
+        #print(another_issue.to_string())
+        #print("===============")
         identical = (self.rule == another_issue.rule and self.component == another_issue.component and
             self.message == another_issue.message and self.debt == another_issue.debt and self.hash == another_issue.hash)
-        print(identical)
-        print("===============")
+        #print(identical)
+        #print("===============")
         return identical
 
     def was_fp_or_wf(self):
@@ -302,11 +306,34 @@ def search(**kwargs):
     for json_issue in data['issues']:
         issue = Issue(0)
         issue.feed(json_issue)
+        issue.set_env(kwargs['env'])
         all_issues = all_issues + [issue]
         #print('----issues.ISSUE---------------------------------------------------------------------------------------------------------------------------------')
         #json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
         #print(issue.toString)
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
+
+def search_all_issues(**kwargs):
+    parms = dict()
+    for arg in kwargs:
+        parms[arg] = kwargs[arg]
+    parms['ps'] = 500
+    page=1
+    nbr_pages=1
+    issues = []
+    while page <= nbr_pages:
+        parms['p'] = page
+        returned_data = search(**parms)
+        issues = issues + returned_data['issues']
+        page = returned_data['page']
+        nbr_pages = returned_data['pages']
+        page = page+1
+        parms['p'] = page
+        print ("Number of issues: ", len(issues))
+    print ("Total number of issues: ", len(issues))
+    return issues
+
+
 
 def apply_changelog(new_issue, closed_issue, do_it_really=True):
     if (closed_issue.has_changelog()):
@@ -363,7 +390,7 @@ def apply_changelog(new_issue, closed_issue, do_it_really=True):
 
             if is_applicable_event:
                 if do_it_really:
-                    resp = env.post('/api/' + api, parms=params)
+                    resp = new_issue.sonarqube.post('/api/' + api, parms=params)
                     if resp.status_code != 200:
                         print('HTTP Error ' + str(resp.status_code) + ' from SonarQube API query')
                 else:

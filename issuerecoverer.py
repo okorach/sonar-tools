@@ -28,7 +28,7 @@ def parse_args():
                         required=False)
     args = parser.parse_args()
 
-    return args;
+    return args
 
 # ------------------------------------------------------------------------------
 
