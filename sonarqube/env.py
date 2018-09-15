@@ -2,12 +2,13 @@
 
 import sys
 import requests
+import json
 
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
 this.token = ''
 this.root_url= "http://localhost:9000"
-this.debug = True
+this.debug = False
 
 class Environment:
 
@@ -59,7 +60,10 @@ class Environment:
                 pstr = p + '=' + str(parms[p])
             else:
                 pstr = pstr + '&' + p + '=' + str(parms[p])
-        return self.token + '@' + self.root_url + api + '?' + pstr
+        urlstring = self.token + '@' + self.root_url + api
+        if pstr is not None:
+            urlstring = urlstring + '?' + pstr
+        return urlstring
 
 #--------------------- Static methods, not recommended -----------------
 def set_env(url, tok):
@@ -82,9 +86,22 @@ def set_url(url):
 def get_url():
     return this.root_url
 
-def debug(str):
-    if this.debug:
-        print(str)
+def debug(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
+    if this.debug is True:
+        print( ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
+            
+
+def urlstring(api, parms):
+    pstr = None
+    for p in parms:
+        if pstr is None:
+            pstr = p + '=' + str(parms[p])
+        else:
+            pstr = pstr + '&' + p + '=' + str(parms[p])
+    urlstring = this.token + '@' + this.root_url + api
+    if pstr is not None:
+        urlstring = urlstring + '?' + pstr
+    return urlstring
 
 def get(api, parms):
     debug('GLOBAL GET: ' + urlstring(api, parms))

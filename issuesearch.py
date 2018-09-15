@@ -23,8 +23,7 @@ def parse_args():
     parser.add_argument('-s', '--statuses', help='comma separated issue status', required=False)
     parser.add_argument('-a', '--createdAfter', help='issues created after a given date', required=False)
     parser.add_argument('-b', '--createdBefore', help='issues created before a given date', required=False)
-    parser.add_argument('-p', '--p', help='page number', required=False)
-    parser.add_argument('--ps', help='page size', required=False)
+    #parser.add_argument('-p', '--projectKey', help='projectKey', required=False)
     parser.add_argument('-r', '--resolutions', help='Comma separated resolution state of the issues', required=False)
     parser.add_argument('--severities', help='Comma separated severities', required=False)
     parser.add_argument('--types', help='Comma separated issue types', required=False)
@@ -59,25 +58,10 @@ for parm in noneparms:
 parms.update(dict(env=sqenv))
 
 for parm in parms:
-    print(parm, '->', parms[parm])
+    sonarqube.env.debug(parm, '->', parms[parm])
 
-issue_slice = dict(page=0,pages=0,total=0,issues=None) 
-
-page=1
-nbr_pages=1
-while page <= nbr_pages:
-    issue_slice = sonarqube.issues.search(**parms)
-    all_issues = issue_slice['issues']
-
-    for issue in all_issues:
-        print('----ISSUE' + '-' * 40)
-        print(issue.to_string())
-
-    page = issue_slice['page']
-    nbr_pages = issue_slice['pages']
-    print ("Total issues: ", issue_slice['total'])
-    print ("Returned issues: ", len(all_issues))
-    print ("Page: ", page)
-    print ("Nbr pages: ", nbr_pages)
-    page = page+1
-    parms['p'] = page
+all_issues = sonarqube.issues.search_all_issues_unlimited(**parms)
+print(sonarqube.issues.to_csv_header())
+for issue in all_issues:
+    print(issue.to_csv())
+sonarqube.env.debug ("Returned issues: ", len(all_issues))

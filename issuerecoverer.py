@@ -66,36 +66,12 @@ search_parms['ps'] = 500
 # Fetch all closed issues
 search_parms = parms
 search_parms['statuses'] = 'CLOSED'
-search_parms['ps'] = 500
-page=1
-nbr_pages=1
-closed_issues = []
-while page <= nbr_pages:
-    search_parms['p'] = page
-    returned_data = sonarqube.issues.search(**search_parms)
-    closed_issues = closed_issues + returned_data['issues']
-    page = returned_data['page']
-    nbr_pages = returned_data['pages']
-    page = page+1
-    search_parms['p'] = page
-    print ("Number of closed issues: ", len(closed_issues))
+closed_issues = sonarqube.issues.search_all_issues(**search_parms)
 print ("Total number of closed issues: ", len(closed_issues))
-
-
 
 # Fetch all open issues
 search_parms['statuses'] = 'OPEN,CONFIRMED,REOPENED,RESOLVED'
-page=1
-nbr_pages=1
-non_closed_issues = []
-while page <= nbr_pages:
-    search_parms['p'] = page
-    returned_data = sonarqube.issues.search(**search_parms)
-    non_closed_issues = non_closed_issues + returned_data['issues']
-    page = returned_data['page']
-    nbr_pages = returned_data['pages']
-    page = page+1
-    search_parms['p'] = page
+non_closed_issues = sonarqube.issues.search(**search_parms)
 print ("Number of open issues: ", len(non_closed_issues))
 
 # Search for mistakenly closed issues

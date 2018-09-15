@@ -4,6 +4,7 @@ import json
 import sys
 import env
 import requests
+import projects
 
 class ApiError(Exception):
     pass
@@ -62,6 +63,8 @@ class IssueChangeLog:
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 
+
+
     def get_json(self):
         return self.json
 
@@ -86,14 +89,16 @@ class Issue:
         self.message = ''
         self.debt = ''
         self.sonarqube = None
+        self.creation_date = ''
+        self.modification_date = ''
 
     def set_env(self, env):
         self.sonarqube = env
 
     def feed(self, json):
         self.json = json
-        #env.debug('------ISSUE------')
-        #env.debug(self.to_string())
+        env.debug('------ISSUE------')
+        env.debug(self.to_string())
 
         self.id = json['key']
         self.severity = json['severity']
@@ -110,6 +115,10 @@ class Issue:
         self.rule = json['rule']
         self.project = json['project']
         self.language = ''
+        self.changelog = None
+        self.creation_date = json['creationDate']
+        self.modification_date = json['updateDate']
+        
         self.changelog = None
         try:
             self.comments = json['comments']
@@ -140,8 +149,8 @@ class Issue:
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
             self.changelog = IssueChangeLog(self.id, self.sonarqube)
-            #print('---In get_changelog----')
-            #print(self.changelog.to_string())
+            env.debug('---In get_changelog----')
+            env.debug(self.changelog.to_string())
         return self.changelog
 
     def has_changelog(self):
@@ -248,31 +257,40 @@ class Issue:
 
             
     def identical_to(self, another_issue):
-        #print("===============")
-        #print("Comparing potential siblings:")
-        #print(self.to_string())
-        #print(another_issue.to_string())
-        #print("===============")
+        env.debug("=" * 20)
+        env.debug("Comparing potential siblings:")
+        env.debug(self.to_string())
+        env.debug(another_issue.to_string())
+        env.debug("=" * 20)
         identical = (self.rule == another_issue.rule and self.component == another_issue.component and
             self.message == another_issue.message and self.debt == another_issue.debt and self.hash == another_issue.hash)
-        #print(identical)
-        #print("===============")
+        env.debug(identical)
+        env.debug("=" * 20)
         return identical
 
     def was_fp_or_wf(self):
         changelog = self.get_changelog()
-        print('------- ISS ChangeLog--------')
-        print(changelog)
-        print(changelog.to_string())
+        env.debug('------- ISS ChangeLog--------')
+        env.debug(changelog)
+        env.debug(changelog.to_string())
         for log in changelog.get_json():
             if is_log_a_closed_fp(log) or is_log_a_closed_wf(log) or is_log_a_severity_change(log) or is_log_a_type_change(
                     log):
                 return True
         return False
 
+    def to_csv(self):
+        # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
+
+        # TODO: Convert debt (a string) in integer minutes
+        # TODO: Escape ";" in values
+        csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status, self.creation_date,
+            self.modification_date, self.project, '', self.component, self.line, self.debt, self.message]])
+        return csv
+
 #------------------------------- Static methods --------------------------------------
 def check_fp_transition(diffs):
-    print("----------------- DIFFS     -----------------")
+    env.debug("----------------- DIFFS     -----------------")
     #print_object(diffs)
     if diffs[0]['key'] == "resolution" and (
         diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX") and diffs[0]["newValue"] == "FIXED":
@@ -300,8 +318,8 @@ def search(**kwargs):
     nbr_issues = data['paging']['total']
     page = data['paging']['pageIndex']
     nbr_pages = ((data['paging']['total']-1) // data['paging']['pageSize'])+1
-    print("Number of issues: ", nbr_issues)
-    print("Page: ", data['paging']['pageIndex'], '/', nbr_pages)
+    env.debug("Number of issues: ", nbr_issues)
+    env.debug("Page: ", data['paging']['pageIndex'], '/', nbr_pages)
     all_issues = []
     for json_issue in data['issues']:
         issue = Issue(0)
@@ -321,7 +339,7 @@ def search_all_issues(**kwargs):
     page=1
     nbr_pages=1
     issues = []
-    while page <= nbr_pages:
+    while page <= nbr_pages and page <= 20:
         parms['p'] = page
         returned_data = search(**parms)
         issues = issues + returned_data['issues']
@@ -329,11 +347,30 @@ def search_all_issues(**kwargs):
         nbr_pages = returned_data['pages']
         page = page+1
         parms['p'] = page
-        print ("Number of issues: ", len(issues))
-    print ("Total number of issues: ", len(issues))
+    env.debug ("Total number of issues: ", len(issues))
     return issues
 
+def search_all_issues_unlimited(**kwargs):
+    if kwargs is None or 'componentKeys' not in kwargs:
+        project_list = projects.get_projects_list()
+    else:
+        project_list= { kwargs['componentKeys'] }
 
+    if kwargs is None or 'severities' not in kwargs:
+        severities = {'INFO','MINOR','MAJOR','CRITICAL','BLOCKER'}
+    else:
+        severities = {kwargs['severities']}
+
+    parms = dict()
+    for arg in kwargs:
+        parms[arg] = kwargs[arg]
+    issues = []
+    for pk in project_list:
+        for severity in severities:
+            parms['componentKeys'] = pk
+            parms['severities'] = severity
+            issues = issues + search_all_issues(**parms)
+    return issues
 
 def apply_changelog(new_issue, closed_issue, do_it_really=True):
     if (closed_issue.has_changelog()):
@@ -536,3 +573,6 @@ def print_issue(issue):
     for attr in ['rule', 'component', 'message', 'debt', 'author', 'key', 'status']:
         print (issue[attr], ',')
     print()
+
+def to_csv_header():
+    return "# id;rule;type;severity;status;creation;modification;project key;project name;file;line;debt;message"

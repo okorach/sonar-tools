@@ -23,4 +23,10 @@ def get_projects(include_applications, page_size=500, page_nbr=1):
     resp = requests.get(url=env.get_url() + '/api/projects/search', auth=env.get_credentials(), params=params)
     data = json.loads(resp.text)
     return data['components']
-    
+
+def get_projects_list():
+    projects = get_projects(False)
+    prjlist = []
+    for prj in projects:
+        prjlist.append(prj['key'])
+    return prjlist
