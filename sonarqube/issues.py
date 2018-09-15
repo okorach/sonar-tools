@@ -5,6 +5,7 @@ import sys
 import env
 import requests
 import projects
+import re
 
 class ApiError(Exception):
     pass
@@ -281,11 +282,28 @@ class Issue:
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
+        if self.debt is None:
+            hours = 0
+            minutes = 0
+        elif re.match(r".*h", self.debt):
+            hours = int(re.sub(r"h.*", "", self.debt))
+            minutes = re.sub(r".*h", "", self.debt)
+            minutes = int(re.sub(r"min", "", minutes)) if re.match(r".*min", self.debt) else 0
+        else:
+            hours = 0
+            minutes = int(re.sub(r"min", "", self.debt))
 
-        # TODO: Convert debt (a string) in integer minutes
-        # TODO: Escape ";" in values
-        csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status, self.creation_date,
-            self.modification_date, self.project, '', self.component, self.line, self.debt, self.message]])
+        debt = str(hours * 60 + int(minutes))
+        cdate = re.sub(r"T.*", "", self.creation_date)
+        ctime = re.sub(r".*T", "", self.creation_date)
+        ctime = re.sub(r"\+.*", "", ctime) # Strip timezone
+        mdate = re.sub(r"T.*", "", self.modification_date)
+        mtime = re.sub(r".*T", "", self.modification_date)
+        mtime = re.sub(r"\+.*", "", mtime) # Strip timezone
+        msg = re.sub('"','""', self.message)
+        line = '-' if self.line is None else self.line
+        csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status, cdate, ctime,
+            mdate, mtime, self.project, '', self.component, line, debt, '"'+msg+'"']])
         return csv
 
 #------------------------------- Static methods --------------------------------------
@@ -575,4 +593,4 @@ def print_issue(issue):
     print()
 
 def to_csv_header():
-    return "# id;rule;type;severity;status;creation;modification;project key;project name;file;line;debt;message"
+    return "# id;rule;type;severity;status;creation date;creation time;modification date;modification time;project key;project name;file;line;debt(min);message"
