@@ -1,4 +1,4 @@
-#!python3
+#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
 import sys
 import requests
@@ -8,7 +8,9 @@ import json
 this = sys.modules[__name__]
 this.token = ''
 this.root_url= "http://localhost:9000"
-this.debug = False
+
+global my_debug
+my_debug = False
 
 class Environment:
 
@@ -19,7 +21,8 @@ class Environment:
     def set_env(self, url, token):
         self.root_url = url
         self.token = token
-        if (this.debug):
+        global my_debug
+        if my_debug:
             print ('Setting environment: '+ self.token + '@' + self.root_url)
 
     def set_token(self, token):
@@ -87,9 +90,14 @@ def get_url():
     return this.root_url
 
 def debug(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
-    if this.debug is True:
+    global my_debug
+    if my_debug is True:
         print( ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
-            
+
+def json_dump_debug(json):
+    global my_debug
+    if my_debug is True:
+        json.dump(json, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
 
 def urlstring(api, parms):
     pstr = None
