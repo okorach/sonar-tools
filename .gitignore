@@ -5,3 +5,4 @@ sonarqube/*.pyc
 *.csv
 *.pyc
 .vscode/*
+**/*.csv
