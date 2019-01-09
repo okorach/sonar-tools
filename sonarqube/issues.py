@@ -1,11 +1,11 @@
 #!python3
 
-import json
 import sys
-import env
-import requests
-import projects
 import re
+import json
+import requests
+import sonarqube.env as env
+import sonarqube.projects as projects
 
 class ApiError(Exception):
     pass
@@ -16,8 +16,8 @@ class UnknownIssueError(ApiError):
 
 
 class IssueComments:
-    def __init__(self, json):
-        self.json = json
+    def __init__(self, json_data):
+        self.json = json_data
 
     def sort(self):
         sorted_comment = dict()
@@ -159,7 +159,7 @@ class Issue:
 
     def get_comments(self):
         try:
-            self.comments = IssueComments(self.json['comments'], self.env)
+            self.comments = IssueComments(self.json['comments'])
         except KeyError:
             self.comments = None
         return self.comments
@@ -451,8 +451,8 @@ def apply_changelog(new_issue, closed_issue, do_it_really=True):
                         print('HTTP Error ' + str(resp.status_code) + ' from SonarQube API query')
                 else:
                     print('   DRY RUN for ' + operation)
-        else:
-            print("Closed sibling has no changelog")
+    else:
+        print("Closed sibling has no changelog")
 
 
 def get_log_date(log):
