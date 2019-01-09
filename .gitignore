@@ -4,3 +4,4 @@ sonarqube/*.pyc
 *.xlsx
 *.csv
 *.pyc
+.vscode/*
