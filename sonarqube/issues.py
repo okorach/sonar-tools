@@ -282,18 +282,19 @@ class Issue:
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
+        minutes = 0
         if self.debt is None:
-            hours = 0
-            minutes = 0
-        elif re.match(r".*h", self.debt):
-            hours = int(re.sub(r"h.*", "", self.debt))
-            minutes = re.sub(r".*h", "", self.debt)
-            minutes = int(re.sub(r"min", "", minutes)) if re.match(r".*min", self.debt) else 0
+            debt = 0
         else:
-            hours = 0
-            minutes = int(re.sub(r"min", "", self.debt))
-
-        debt = str(hours * 60 + int(minutes))
+            m = re.search(r'(\d+)kd', self.debt)
+            kdays = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)d', self.debt)
+            days = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)h', self.debt)
+            hours = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)min', self.debt)
+            minutes = int(m.group(1)) if m else 0    
+            debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         cdate = re.sub(r"T.*", "", self.creation_date)
         ctime = re.sub(r".*T", "", self.creation_date)
         ctime = re.sub(r"\+.*", "", ctime) # Strip timezone
@@ -303,7 +304,7 @@ class Issue:
         msg = re.sub('"','""', self.message)
         line = '-' if self.line is None else self.line
         csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status, cdate, ctime,
-            mdate, mtime, self.project, '', self.component, line, debt, '"'+msg+'"']])
+            mdate, mtime, self.project, projects.get_project_name(self.project), self.component, line, debt, '"'+msg+'"']])
         return csv
 
 #------------------------------- Static methods --------------------------------------
@@ -332,7 +333,7 @@ def search(**kwargs):
     else:
         resp = kwargs['env'].get('/api/issues/search', parms)
     data = json.loads(resp.text)
-    #json.dump(data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
+    env.json_dump_debug(data)
     nbr_issues = data['paging']['total']
     page = data['paging']['pageIndex']
     nbr_pages = ((data['paging']['total']-1) // data['paging']['pageSize'])+1
