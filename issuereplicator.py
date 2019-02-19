@@ -19,7 +19,7 @@ def print_object(o):
 # ------------------------------------------------------------------------------
 
 parser = argparse.ArgumentParser(
-    description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
+    description='Search for same issues in the same project on 2 different platforms and applies changes from source to target.')
 parser.add_argument('-p', '--projectKey', required=True, help='Project key of the project to search')
 parser.add_argument('-u', '--urlSource', required=True, help='Root URL of the source SonarQube server')
 parser.add_argument('-t', '--tokenSource', required=True,
@@ -39,22 +39,23 @@ noneparms = vars(args)
 parms = dict()
 parms['componentKeys'] = noneparms['projectKey']
 # Add SQ environment
+
 parms.update(dict(env=source_env))
 all_source_issues = issues.search_all_issues(**parms)
-print('Found ' + str(len(all_source_issues)) + " source issues")
+print("Found %d issues with manual changes on source project\n" % len(all_source_issues))
+
 parms.update(dict(env=target_env))
 all_target_issues = issues.search_all_issues(**parms)
-
-print('Found ' + str(len(all_target_issues)) + " target issues")
+print("Found %d target issues on target project\n" % len(all_target_issues))
 
 for issue in all_target_issues:
-    print('Searching sibling for issue key ', issue.id)
+    print('Searching sibling for issue key %s\n' % issue.id)
     siblings = issues.search_siblings(issue, all_source_issues, False)
     nb_siblings = len(siblings)
     if nb_siblings >= 0:
-        print('   Found ' + str(nb_siblings) + ' sibling(s)')
+        print('   Found %d sibling(s)\n' % nb_siblings)
         if nb_siblings == 1:
-            print('Found a match issue id ' + siblings[0].id)
+            print('Found a match issue id %s' % siblings[0].id)
             if siblings[0].has_changelog_or_comments():
                 print('   Automatically applying changelog')
                 issues.apply_changelog(issue, siblings[0], True)
