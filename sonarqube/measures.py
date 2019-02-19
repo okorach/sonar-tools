@@ -27,10 +27,9 @@ class Measure (sonarqube.sqobject.SqObject):
 
 def load_measures(project_key, metrics_list, myenv = None):
     parms = dict(component=project_key, metricKeys=metrics_list)
-    if (myenv is None):
+    if myenv is None:
         resp = env.get('/api/measures/component',  parms)
     else:
         resp = myenv.get('/api/measures/component', parms)
     data = json.loads(resp.text)
     return data['component']['measures']
-
