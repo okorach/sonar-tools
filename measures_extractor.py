@@ -37,7 +37,7 @@ if args.metricKeys == '_all':
 elif args.metricKeys == '_main':
     metrics = MAIN_METRICS
 elif args.metricKeys is not None:
-    metrics = args.metricKey
+    metrics = args.metricKeys
 else:
     metrics = MAIN_METRICS
 
