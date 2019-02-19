@@ -252,22 +252,36 @@ class Issue:
         for date in sorted(events_by_date):
             print(date, ':')
             # print_object(events_by_date[date])
-    
+
     def get_key(self):
         return self.id
 
-            
     def identical_to(self, another_issue):
         env.debug("=" * 20)
-        env.debug("Comparing potential siblings:")
-        env.debug(self.to_string())
-        env.debug(another_issue.to_string())
+        env.debug("Comparing 2 issues: %s and %s" % (self.to_string, another_issue.to_string()))
         env.debug("=" * 20)
-        identical = (self.rule == another_issue.rule and self.component == another_issue.component and
-            self.message == another_issue.message and self.debt == another_issue.debt and self.hash == another_issue.hash)
+        identical = (self.rule == another_issue.rule and self.hash == another_issue.hash and self.component == another_issue.component and
+            self.message == another_issue.message and self.debt == another_issue.debt)
         env.debug(identical)
         env.debug("=" * 20)
         return identical
+
+    def match(self, another_issue):
+        env.debug("=" * 20)
+        env.debug("Comparing 2 issues: %s and %s" % (self.to_string, another_issue.to_string()))
+        if self.rule != another_issue.rule or self.hash != another_issue.hash:
+            match_level = 0
+        else:
+            match_level = 1
+            if (self.component != another_issue.component):
+                match_level -= 0.1
+            if (self.message != another_issue.message):
+                match_level -= 0.1
+            if (self.debt != another_issue.debt):
+                match_level -= 0.1
+        env.debug("Match level %3.0f%%\n" % (match_level * 100))
+        env.debug("=" * 20)
+        return match_level
 
     def was_fp_or_wf(self):
         changelog = self.get_changelog()
@@ -573,13 +587,13 @@ def identical_attributes(o1, o2, key_list):
     return True
 
 
-def search_siblings(closed_issue, issue_list, only_new_issues=True):
+def search_siblings(an_issue, issue_list, only_new_issues=True):
     siblings = []
     for issue in issue_list:
         #if identical_attributes(closed_issue, iss, ['rule', 'component', 'message', 'debt']):
         #print("Looking at CLOSED " + closed_issue.to_string())
         #print("Looking at ISSUE " + issue.to_string())
-        if issue.identical_to(closed_issue):
+        if issue.identical_to(an_issue):
             if only_new_issues:
                 if issue.get_changelog.size() == 0:
                     # Add issue only if it has no change log, meaning it's brand new
