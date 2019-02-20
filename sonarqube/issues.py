@@ -6,6 +6,12 @@ import json
 import requests
 import sonarqube.env as env
 import sonarqube.projects as projects
+import sonarqube.sqobject as sq
+
+OPTIONS_ISSUES_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'authors', 'componentKeys',
+                         'createdAfter', 'createdAt', 'createdBefore', 'createdInLast', 'facetMode', 'facets',
+                         'issues', 'languages', 'onComponentOnly', 'p', 'ps', 'resolutions', 'resolved',
+                         'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
 class ApiError(Exception):
     pass
@@ -33,15 +39,13 @@ class IssueComments:
 
     def size2(self):
         return len(self.json)
-    
-class IssueChangeLog:
-    def __init__(self, issue_key, sonarqube):
+
+class IssueChangeLog(sq.SqObject):
+    def __init__(self, issue_key, sqenv):
+        super(IssueChangeLog, self).__init__(sqenv)
         env.debug('Getting changelog for issue key ' + issue_key)
         parms = dict(format='json', issue=issue_key)
-        if (sonarqube is None):
-            resp = env.get('/api/issues/changelog', parms)
-        else:
-            resp = sonarqube.get('/api/issues/changelog', parms)
+        resp = self.get('/api/issues/changelog', parms)
         data = json.loads(resp.text)
         self.json = data['changelog']
 
@@ -70,31 +74,30 @@ class IssueChangeLog:
         return self.json
 
 
-class Issue:
-    def __init__(self, issue_key):
+class Issue(sq.SqObject):
+    def __init__(self, issue_key, env):
+        super(Issue, self).__init__(env)
         self.id = issue_key
-        self.json = ''
-        self.severity = ''
-        self.type = ''
-        self.author = ''
-        self.assignee = ''
-        self.status = ''
-        self.resolution = ''
-        self.rule = ''
-        self.project = ''
-        self.language = ''
+        self.json = None
+        self.severity = None
+        self.type = None
+        self.author = None
+        self.assignee = None
+        self.status = None
+        self.resolution = None
+        self.rule = None
+        self.project = None
+        self.language = None
         self.changelog = None
-        self.comments = ''
+        self.comments = None
         self.line = None
-        self.component = ''
-        self.message = ''
-        self.debt = ''
+        self.component = None
+        self.message = None
+        self.debt = None
         self.sonarqube = None
-        self.creation_date = ''
-        self.modification_date = ''
-
-    def set_env(self, env):
-        self.sonarqube = env
+        self.creation_date = None
+        self.modification_date = None
+        self.hash = None
 
     def feed(self, json):
         self.json = json
@@ -105,21 +108,21 @@ class Issue:
         self.severity = json['severity']
         self.type = json['type']
         self.author = json['author']
-        self.assignee = '' # json['assignee']
+        self.assignee = None # json['assignee']
         self.status = json['status']
         try:
             self.line = json['line']
         except KeyError:
             self.line = None
 
-        self.resolution = '' # json['resolution']
+        self.resolution = None # json['resolution']
         self.rule = json['rule']
         self.project = json['project']
-        self.language = ''
+        self.language = None
         self.changelog = None
         self.creation_date = json['creationDate']
         self.modification_date = json['updateDate']
-        
+
         self.changelog = None
         try:
             self.comments = json['comments']
@@ -141,17 +144,13 @@ class Issue:
 
     def read(self):
         parms = dict(issues=self.id, additionalFields='_all')
-        if (self.sonarqube is None):
-            resp = env.get('/api/issues/search', parms)
-        else:
-            resp = self.sonarqube.get('/api/issues/search', parms)
+        resp = self.get('/api/issues/search', parms)
         self.feed(resp.issues[0])
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
-            self.changelog = IssueChangeLog(self.id, self.sonarqube)
-            env.debug('---In get_changelog----')
-            env.debug(self.changelog.to_string())
+            self.changelog = IssueChangeLog(self.id, self.env)
+            env.debug('---In get_changelog----\n%s' % self.changelog.to_string())
         return self.changelog
 
     def has_changelog(self):
@@ -170,20 +169,17 @@ class Issue:
 
     def has_changelog_or_comments(self):
         return self.has_changelog() or self.has_comments()
-        
-    def add_comment(self, comment_text, myenv = None):
+
+    def add_comment(self, comment_text):
         parms = dict(issue=self.id, text=comment_text)
-        if (myenv is None):
-            env.post('/api/issues/add_comment', parms)
-        else:
-            myenv.post('/api/issues/add_comment', parms)
+        self.post('/api/issues/add_comment', parms)
 
     # def delete_comment(self, comment_id):
 
     # def edit_comment(self, comment_id, comment_str)
 
     def get_severity(self, force_api = False):
-        if (force_api or self.severity == ''):
+        if force_api or self.severity is None:
             self.read()
         return self.severity
 
@@ -202,15 +198,14 @@ class Issue:
     def get_tags(self):
         """Gets tags"""
 
-    def set_type(self, type):
+    def set_type(self, issue_type):
         """Sets type"""
-    
+
     def get_type(self):
         """Gets type"""
-    
+
     def get_status(self):
         return self.status
-    
 
     def to_string(self):
         """Dumps the object in a string"""
@@ -260,8 +255,9 @@ class Issue:
         env.debug("=" * 20)
         env.debug("Comparing 2 issues: %s and %s" % (self.to_string, another_issue.to_string()))
         env.debug("=" * 20)
-        identical = (self.rule == another_issue.rule and self.hash == another_issue.hash and self.component == another_issue.component and
-            self.message == another_issue.message and self.debt == another_issue.debt)
+        identical = (self.rule == another_issue.rule and self.hash == another_issue.hash and
+                     self.component == another_issue.component and
+                     self.message == another_issue.message and self.debt == another_issue.debt)
         env.debug(identical)
         env.debug("=" * 20)
         return identical
@@ -273,11 +269,11 @@ class Issue:
             match_level = 0
         else:
             match_level = 1
-            if (self.component != another_issue.component):
+            if self.component != another_issue.component:
                 match_level -= 0.1
-            if (self.message != another_issue.message):
+            if self.message != another_issue.message:
                 match_level -= 0.1
-            if (self.debt != another_issue.debt):
+            if self.debt != another_issue.debt:
                 match_level -= 0.1
         env.debug("Match level %3.0f%%\n" % (match_level * 100))
         env.debug("=" * 20)
@@ -307,7 +303,7 @@ class Issue:
             m = re.search(r'(\d+)h', self.debt)
             hours = int(m.group(1)) if m else 0
             m = re.search(r'(\d+)min', self.debt)
-            minutes = int(m.group(1)) if m else 0    
+            minutes = int(m.group(1)) if m else 0
             debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         cdate = re.sub(r"T.*", "", self.creation_date)
         ctime = re.sub(r".*T", "", self.creation_date)
@@ -317,16 +313,18 @@ class Issue:
         mtime = re.sub(r"\+.*", "", mtime) # Strip timezone
         msg = re.sub('"','""', self.message)
         line = '-' if self.line is None else self.line
-        csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status, cdate, ctime,
-            mdate, mtime, self.project, projects.get_project_name(self.project), self.component, line, debt, '"'+msg+'"']])
+        csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status,
+                                         cdate, ctime, mdate, mtime, self.project,
+                                         projects.get_project_name(self.project), self.component, line,
+                                         debt, '"'+msg+'"']])
         return csv
 
 #------------------------------- Static methods --------------------------------------
 def check_fp_transition(diffs):
     env.debug("----------------- DIFFS     -----------------")
     #print_object(diffs)
-    if diffs[0]['key'] == "resolution" and (
-        diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX") and diffs[0]["newValue"] == "FIXED":
+    if diffs[0]['key'] == "resolution" and diffs[0]["newValue"] == "FIXED" and (
+       diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX"):
         return True
     return False
 
@@ -339,11 +337,9 @@ def sort_comments(comments):
 def search(**kwargs):
     parms = dict()
     # for key, value in kwargs.items():
-    for arg in kwargs:
-        if arg is not 'env' and arg is not 'url' and arg is not 'token':
-            parms[arg] = kwargs[arg]
+    parms = get_issues_search_parms(kwargs)
     if kwargs is None or 'env' not in kwargs:
-        resp = env.get( '/api/issues/search', parms)
+        resp = env.get('/api/issues/search', parms)
     else:
         resp = kwargs['env'].get('/api/issues/search', parms)
     data = json.loads(resp.text)
@@ -355,31 +351,27 @@ def search(**kwargs):
     env.debug("Page: ", data['paging']['pageIndex'], '/', nbr_pages)
     all_issues = []
     for json_issue in data['issues']:
-        issue = Issue(0)
+        issue = Issue(json_issue['key'], kwargs['env'])
         issue.feed(json_issue)
-        issue.set_env(kwargs['env'])
         all_issues = all_issues + [issue]
-        #print('----issues.ISSUE---------------------------------------------------------------------------------------------------------------------------------')
+        #print('----issues.ISSUE%s' % ('-'*30))
         #json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
         #print(issue.toString)
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
 def search_all_issues(**kwargs):
-    parms = dict()
-    for arg in kwargs:
-        parms[arg] = kwargs[arg]
-    parms['ps'] = 500
-    page=1
-    nbr_pages=1
+    kwargs['ps'] = 500
+    page = 1
+    nbr_pages = 1
     issues = []
     while page <= nbr_pages and page <= 20:
-        parms['p'] = page
-        returned_data = search(**parms)
+        kwargs['p'] = page
+        returned_data = search(**kwargs)
         issues = issues + returned_data['issues']
         page = returned_data['page']
         nbr_pages = returned_data['pages']
-        page = page+1
-        parms['p'] = page
+        page = page + 1
+        kwargs['p'] = page
     env.debug ("Total number of issues: ", len(issues))
     return issues
 
@@ -394,80 +386,74 @@ def search_all_issues_unlimited(**kwargs):
     else:
         severities = {kwargs['severities']}
 
-    parms = dict()
-    for arg in kwargs:
-        parms[arg] = kwargs[arg]
     issues = []
     for pk in project_list:
+        kwargs['componentKeys'] = pk
         for severity in severities:
-            parms['componentKeys'] = pk
-            parms['severities'] = severity
-            issues = issues + search_all_issues(**parms)
+            kwargs['severities'] = severity
+            issues = issues + search_all_issues(**kwargs)
     return issues
 
-def apply_changelog(new_issue, closed_issue, do_it_really=True):
-    if (closed_issue.has_changelog()):
-        events_by_date = closed_issue.get_changelog().sort()
-    if (closed_issue.has_comments()):
-        comments_by_date = closed_issue.get_comments().sort()
+def apply_changelog(target_issue, source_issue, do_it_really=True):
+    if source_issue.has_changelog():
+        events_by_date = source_issue.get_changelog().sort()
+    if source_issue.has_comments():
+        comments_by_date = source_issue.get_comments().sort()
         for date in comments_by_date:
             events_by_date[date] = comments_by_date[date]
+
+    if not events_by_date:
+        print("Sibling has no changelog, no action taken")
+        return
+
     if do_it_really:
         print('   Not joking I am doing it')
+    key = target_issue.id
+    for date in sorted(events_by_date):
+        # print_object(events_by_date[date])
+        is_applicable_event = True
 
-    if len(events_by_date) > 0:
-        key = new_issue.id
-        for date in sorted(events_by_date):
-            # print_object(events_by_date[date])
-            is_applicable_event = True
-
-            if events_by_date[date][0] == 'log' and is_log_a_severity_change(events_by_date[date][1]):
-                params = dict(issue=key, severity=get_log_new_severity(events_by_date[date][1]))
-                operation = 'Changing severity to: ' + params['severity']
-                api = 'issues/set_severity'
-            elif events_by_date[date][0] == 'log' and is_log_a_type_change(events_by_date[date][1]):
-                params = dict(issue=key, type=get_log_new_type(events_by_date[date][1]))
-                operation = 'Changing type to: ' + params['type']
-                api = 'issues/set_type'
-            elif events_by_date[date][0] == 'log' and is_log_a_reopen(events_by_date[date][1]):
-                params = dict(issue=key, type='reopen')
-                operation = 'Reopening issue'
-                api = 'issues/do_transition'
-            elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_fp(events_by_date[date][1]):
-                params = dict(issue=key, transition='falsepositive')
-                operation = 'Setting as False Positive'
-                api = 'issues/do_transition'
-            elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_wf(events_by_date[date][1]):
-                params = dict(issue=key, transition='wontfix')
-                operation = 'Setting as wontfix'
-                api = 'issues/do_transition'
-            elif events_by_date[date][0] == 'log' and is_log_an_assignee(events_by_date[date][1]):
-                params = dict(issue=key, assignee=get_log_assignee(events_by_date[date][1]))
-                operation = 'Assigning issue to: ' + params['assignee']
-                api = 'issues/assign'
-            elif events_by_date[date][0] == 'log' and is_log_a_tag_change(events_by_date[date][1]):
-                params = dict(key=key, tags=get_log_new_tag(events_by_date[date][1]).replace(' ', ','))
-                operation = 'Setting new tags to: ' + params['tags']
-                api = 'issues/set_tags'
-            elif events_by_date[date][0] == 'comment' and is_log_a_comment(events_by_date[date][1]):
-                params = dict(issue=key, text=events_by_date[date][1]['markdown'])
-                operation = 'Adding comment: ' + params['text']
-                api = 'issues/add_comment'
-            else:
-                is_applicable_event = False
-                api = ''
-
-
-            if is_applicable_event:
-                if do_it_really:
-                    resp = new_issue.sonarqube.post('/api/' + api, parms=params)
-                    if resp.status_code != 200:
-                        print('HTTP Error ' + str(resp.status_code) + ' from SonarQube API query')
-                else:
-                    print('   DRY RUN for ' + operation)
-    else:
-        print("Closed sibling has no changelog")
-
+        if events_by_date[date][0] == 'log' and is_log_a_severity_change(events_by_date[date][1]):
+            params = dict(issue=key, severity=get_log_new_severity(events_by_date[date][1]))
+            operation = 'Changing severity to: ' + params['severity']
+            api = 'issues/set_severity'
+        elif events_by_date[date][0] == 'log' and is_log_a_type_change(events_by_date[date][1]):
+            params = dict(issue=key, type=get_log_new_type(events_by_date[date][1]))
+            operation = 'Changing type to: ' + params['type']
+            api = 'issues/set_type'
+        elif events_by_date[date][0] == 'log' and is_log_a_reopen(events_by_date[date][1]):
+            params = dict(issue=key, type='reopen')
+            operation = 'Reopening issue'
+            api = 'issues/do_transition'
+        elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_fp(events_by_date[date][1]):
+            params = dict(issue=key, transition='falsepositive')
+            operation = 'Setting as False Positive'
+            api = 'issues/do_transition'
+        elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_wf(events_by_date[date][1]):
+            params = dict(issue=key, transition='wontfix')
+            operation = 'Setting as wontfix'
+            api = 'issues/do_transition'
+        elif events_by_date[date][0] == 'log' and is_log_an_assignee(events_by_date[date][1]):
+            params = dict(issue=key, assignee=get_log_assignee(events_by_date[date][1]))
+            operation = 'Assigning issue to: ' + params['assignee']
+            api = 'issues/assign'
+        elif events_by_date[date][0] == 'log' and is_log_a_tag_change(events_by_date[date][1]):
+            params = dict(key=key, tags=get_log_new_tag(events_by_date[date][1]).replace(' ', ','))
+            operation = 'Setting new tags to: ' + params['tags']
+            api = 'issues/set_tags'
+        elif events_by_date[date][0] == 'comment' and is_log_a_comment(events_by_date[date][1]):
+            params = dict(issue=key, text=events_by_date[date][1]['markdown'])
+            operation = 'Adding comment: ' + params['text']
+            api = 'issues/add_comment'
+        else:
+            continue
+   
+        if not do_it_really:
+            print('   DRY RUN for %s' % operation)
+            continue
+        resp = target_issue.post('/api/' + api, params)
+        if resp.status_code != 200:
+            print('HTTP Error %d from SonarQube API query' % resp.status_code)
 
 def get_log_date(log):
     return log['creationDate']
@@ -494,10 +480,8 @@ def is_log_a_closed_wf(log):
 def is_log_a_comment(log):
     return True
 
-
 def is_log_an_assign(log):
     return False
-
 
 def is_log_a_tag(log):
     return False
@@ -609,3 +593,10 @@ def print_issue(issue):
 
 def to_csv_header():
     return "# id;rule;type;severity;status;creation date;creation time;modification date;modification time;project key;project name;file;line;debt(min);message"
+
+def get_issues_search_parms(parms):
+    outparms= dict()
+    for key in parms:
+        if parms[key] is not None and key in OPTIONS_ISSUES_SEARCH:
+            outparms[key] = parms[key]
+    return outparms
