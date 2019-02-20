@@ -1,11 +1,11 @@
 #!/usr/local/bin/python
-#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
+import sys
 import json
 import requests
 import sonarqube.env
 import sonarqube.issues
-import sys
+import sonarqube.utilities as utils
 
 # Mandatory script input parameters
 global project_key
@@ -16,42 +16,26 @@ dry_run_mode = False
 def print_object(o):
     print(json.dumps(o, indent=3, sort_keys=True))
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-            description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
-    sonarqube.env.add_standard_arguments(parser)
-    parser.add_argument('-r', '--recover',
-                        help='What information to recover. Default is FP and WF, but issue assignment, tags, severity and type change can be recovered too',
-                        required=False)
-    parser.add_argument('-d', '--dryrun',
-                        help='If True, show changes but don\'t apply, if False, apply changes - Default is true',
-                        required=False)
-    args = parser.parse_args()
-
-    return args
+def parse_args(desc):
+    parser = utils.set_common_args(desc)
+    parser.add_argument('-r', '--recover', required=False,
+                        help='''What information to recover. Default is FP and WF, but issue assignment,
+                        tags, severity and type change can be recovered too''')
+    parser.add_argument('-d', '--dryrun', required=False,
+                        help='If True, show changes but don\'t apply, if False, apply changes - Default is true')
+    return parser.parse_args()
 
 # ------------------------------------------------------------------------------
 
-try:
-    import argparse
-except ImportError:
-    if sys.version_info < (2, 7, 0):
-        print("Error:")
-        print("You are running an old version of python. Two options to fix the problem")
-        print("  Option 1: Upgrade to python version >= 2.7")
-        print("  Option 2: Install argparse library for the current python version")
-        print("            See: https://pypi.python.org/pypi/argparse")
-
-args = parse_args()
+args = parse_args('Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
 sqenv = sonarqube.env.Environment(url=args.url, token=args.token)
 sonarqube.env.set_env(args.url, args.token)
 
 # Remove unset params from the dict
-noneparms = vars(args)
-parms = dict()
-for parm in noneparms:
-    if noneparms[parm] is not None:
-        parms[parm] = noneparms[parm]
+parms = vars(args)
+for key in parms:
+    if parms[key] is None:
+        del parms[key]
 # Add SQ environment
 parms.update(dict(env=sqenv))
 
