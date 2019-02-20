@@ -4,8 +4,8 @@ import sonarqube.env
 
 class SqObject:
 
-    def __init__(self, **kwargs):
-        self.env = kwargs['env']
+    def __init__(self, env):
+        self.env = env
 
     def set_env(self, env):
         self.env = env
