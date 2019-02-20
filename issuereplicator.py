@@ -7,6 +7,7 @@ import argparse
 import requests
 import sonarqube.env as env
 import sonarqube.issues as issues
+import sonarqube.utilities as utils
 
 # Mandatory script input parameters
 global project_key
@@ -18,26 +19,26 @@ def print_object(o):
 
 # ------------------------------------------------------------------------------
 
-parser = argparse.ArgumentParser(
-    description='Search for same issues in the same project on 2 different platforms and applies changes from source to target.')
-parser.add_argument('-p', '--projectKey', required=True, help='Project key of the project to search')
-parser.add_argument('-u', '--urlSource', required=True, help='Root URL of the source SonarQube server')
-parser.add_argument('-t', '--tokenSource', required=True,
-                    help='Token to authenticate to source SonarQube - Unauthenticated usage is not possible')
-parser.add_argument('-U', '--urlTarget', required=True, help='Root URL of the target SonarQube server')
-parser.add_argument('-T', '--tokenTarget', required=True,
-                    help='Token to authenticate to target SonarQube - Unauthenticated usage is not possible')
-parser.add_argument('-r', '--recover',required=False,
-                    help='What information to recover (default is FP and WF, but issue assignment, tags, severity and type change can be recovered too')
-parser.add_argument('-d', '--dryrun', required=False,
-                    help='If True, show changes but don\'t apply, if False, apply changes - Default is true')
-args = parser.parse_args()
-source_env = env.Environment(url=args.urlSource, token=args.tokenSource)
+
+def parse_args(desc):
+    parser = utils.set_common_args(desc)
+    parser.add_argument('-r', '--recover', required=False,
+                        help='''What information to replicate. Default is FP and WF, but issue assignment,
+                        tags, severity and type change can be recovered too''')
+    parser.add_argument('-d', '--dryrun', required=False,
+                        help='If True, show changes but don\'t apply, if False, apply changes - Default is true')
+    return parser.parse_args()
+
+
+args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
+source_env = env.Environment(url=args.url, token=args.token)
 target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
 
-noneparms = vars(args)
-parms = dict()
-parms['componentKeys'] = noneparms['projectKey']
+parms = vars(args)
+for key in parms:
+    if parms[key] is None:
+        del parms[key]
+parms['componentKeys'] = parms['projectKey']
 # Add SQ environment
 
 parms.update(dict(env=source_env))
