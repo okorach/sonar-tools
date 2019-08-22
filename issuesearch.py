@@ -3,8 +3,8 @@
 
 import json
 import requests
-import sonarqube.env
-import sonarqube.issues
+import sonarqube.env as env
+import sonarqube.issues as issues
 import sys
 
 # Mandatory script input parameters
@@ -19,7 +19,7 @@ def print_object(o):
 def parse_args():
     parser = argparse.ArgumentParser(
             description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
-    sonarqube.env.add_standard_arguments(parser)
+    env.add_standard_arguments(parser)
     parser.add_argument('-s', '--statuses', help='comma separated issue status', required=False)
     parser.add_argument('-a', '--createdAfter', help='issues created after a given date', required=False)
     parser.add_argument('-b', '--createdBefore', help='issues created before a given date', required=False)
@@ -45,8 +45,8 @@ except ImportError:
         print("            See: https://pypi.python.org/pypi/argparse")
 
 args = parse_args()
-sqenv = sonarqube.env.Environment(url=args.url, token=args.token)
-sonarqube.env.set_env(args.url, args.token)
+sqenv = env.Environment(url=args.url, token=args.token)
+sqenv.set_env(args.url, args.token)
 
 # Remove unset params from the dict
 noneparms = vars(args)
@@ -58,10 +58,10 @@ for parm in noneparms:
 parms.update(dict(env=sqenv))
 
 for parm in parms:
-    sonarqube.env.debug(parm, '->', parms[parm])
+    env.debug(parm, '->', parms[parm])
 
-all_issues = sonarqube.issues.search_all_issues_unlimited(**parms)
-print(sonarqube.issues.to_csv_header())
+all_issues = issues.search_all_issues_unlimited(**parms)
+print(issues.to_csv_header())
 for issue in all_issues:
     print(issue.to_csv())
-sonarqube.env.debug ("Returned issues: ", len(all_issues))
+env.debug ("Returned issues: ", len(all_issues))
