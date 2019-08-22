@@ -15,8 +15,10 @@ my_debug = False
 class Environment:
 
     def __init__(self, **kwargs):
-        self.root_url = kwargs['url']
-        self.token = kwargs['token']
+        if 'url' in kwargs:
+            self.root_url = kwargs['url']
+        if 'token ' in kwargs:
+            self.token = kwargs['token']
 
     def set_env(self, url, token):
         self.root_url = url
@@ -94,10 +96,10 @@ def debug(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
     if my_debug is True:
         print( ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
 
-def json_dump_debug(json):
+def json_dump_debug(json_data):
     global my_debug
     if my_debug is True:
-        json.dump(json, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
+        json.dump(json_data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
 
 def urlstring(api, parms):
     pstr = None
