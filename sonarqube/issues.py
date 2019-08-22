@@ -42,8 +42,8 @@ class IssueComments:
 
 class IssueChangeLog(sq.SqObject):
     def __init__(self, issue_key, sqenv):
-        super(IssueChangeLog, self).__init__(sqenv)
-        env.debug('Getting changelog for issue key ' + issue_key)
+        self.env = sqenv
+        self.env.debug('Getting changelog for issue key ' + issue_key)
         parms = dict(format='json', issue=issue_key)
         resp = self.get('/api/issues/changelog', parms)
         data = json.loads(resp.text)
@@ -76,7 +76,7 @@ class IssueChangeLog(sq.SqObject):
 
 class Issue(sq.SqObject):
     def __init__(self, issue_key, env):
-        super(Issue, self).__init__(env)
+        self.env = env
         self.id = issue_key
         self.json = None
         self.severity = None
@@ -315,7 +315,7 @@ class Issue(sq.SqObject):
         line = '-' if self.line is None else self.line
         csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status,
                                          cdate, ctime, mdate, mtime, self.project,
-                                         projects.get_project_name(self.project), self.component, line,
+                                         projects.get_project_name(self.project, self.env), self.component, line,
                                          debt, '"'+msg+'"']])
         return csv
 
@@ -380,7 +380,6 @@ def search_all_issues_unlimited(**kwargs):
         project_list = projects.get_projects_list()
     else:
         project_list= { kwargs['componentKeys'] }
-
     if kwargs is None or 'severities' not in kwargs:
         severities = {'INFO','MINOR','MAJOR','CRITICAL','BLOCKER'}
     else:
@@ -447,7 +446,7 @@ def apply_changelog(target_issue, source_issue, do_it_really=True):
             api = 'issues/add_comment'
         else:
             continue
-   
+
         if not do_it_really:
             print('   DRY RUN for %s' % operation)
             continue
