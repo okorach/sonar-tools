@@ -32,8 +32,9 @@ sqenv = sonarqube.env.Environment(url=args.url, token=args.token)
 sonarqube.env.set_env(args.url, args.token)
 
 # Remove unset params from the dict
-parms = vars(args)
-for key in parms:
+tmpparms = vars(args)
+parms = tmpparms.copy()
+for key in tmpparms:
     if parms[key] is None:
         del parms[key]
 # Add SQ environment
