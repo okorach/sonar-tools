@@ -10,7 +10,7 @@ import sonarqube.env as env
 
 
 MAIN_METRICS = 'bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
-    'sqale_rating,technical_debt,coverage,duplications,new_bugs,new_vulnerabilities,new_code_smells,' + \
+    'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
     'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
     'new_coverage,new_duplicated_lines_density'
 
@@ -27,8 +27,10 @@ parser.add_argument('-u', '--url', required=False, default='http://localhost:900
 parser.add_argument('-m', '--metricKeys', required=False, help='Comma separated list of metrics or _all or _main')
 
 args = parser.parse_args()
-env.set_token(args.token)
-env.set_url(args.url)
+myenv = env.Environment()
+
+myenv.set_token(args.token)
+myenv.set_url(args.url)
 # Mandatory script input parameters
 csv_sep = ";"
 
@@ -52,25 +54,30 @@ if args.metricKeys == '_all':
 for m in metrics_list:
     print ("%s" % m, end=csv_sep)
 print('')
-
-project_list = projects.get_projects(True)
+project_list = projects.get_projects(True, myenv)
 for project in project_list:
     key = project['key']
     p_name = project['name']
     last_analysis = project['lastAnalysisDate'] if 'lastAnalysisDate' in project else 'Not analyzed yet'
-    all_measures = measures.load_measures(key, metrics)
+    all_measures = measures.load_measures(key, metrics, myenv)
+    #env.json_dump_debug(all_measures)
     p_meas = {}
     for measure in all_measures:
         name = measure['metric'] if 'metric' in measure else ''
-        value = measure['value'] if 'value' in measure else ''
+        if 'value' in measure:
+            value = measure['value']
+        elif 'periods' in measure:
+            value = measure['periods'][0]['value']
+        else:
+            value = ''
         p_meas[name] = value
     line = ''
-    print("%s%s%s%s%s" % (key, csv_sep, p_name, csv_sep, last_analysis), end=csv_sep)
+    print("%s%s%s%s%s" % (key, csv_sep, p_name, csv_sep, last_analysis), end='')
     if args.metricKeys == '_all':
         for metric in main_metrics_list:
             line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep
     for metric in metrics_list:
-        line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep
+        line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep + "None"
     print(line)
 
-print("%d PROJECTS" % projects.count(True))
+print("%d PROJECTS" % projects.count(True, myenv))
