@@ -2,6 +2,7 @@
 
 import sys
 import re
+import datetime
 import json
 import requests
 import sonarqube.env as env
@@ -334,14 +335,14 @@ def sort_comments(comments):
         sorted_comments[comment['createdAt']] = ('comment', comment)
     return sorted_comments
 
-def search(**kwargs):
+def search(sqenv = None, **kwargs):
     parms = dict()
     # for key, value in kwargs.items():
     parms = get_issues_search_parms(kwargs)
-    if kwargs is None or 'env' not in kwargs:
+    if sqenv is None:
         resp = env.get('/api/issues/search', parms)
     else:
-        resp = kwargs['env'].get('/api/issues/search', parms)
+        resp = sqenv.get('/api/issues/search', parms)
     data = json.loads(resp.text)
     env.json_dump_debug(data)
     nbr_issues = data['paging']['total']
@@ -359,14 +360,14 @@ def search(**kwargs):
         #print(issue.toString)
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
-def search_all_issues(**kwargs):
+def search_all_issues(sqenv = None, **kwargs):
     kwargs['ps'] = 500
     page = 1
     nbr_pages = 1
     issues = []
     while page <= nbr_pages and page <= 20:
         kwargs['p'] = page
-        returned_data = search(**kwargs)
+        returned_data = search(sqenv = sqenv, **kwargs)
         issues = issues + returned_data['issues']
         page = returned_data['page']
         nbr_pages = returned_data['pages']
@@ -375,9 +376,18 @@ def search_all_issues(**kwargs):
     env.debug ("Total number of issues: ", len(issues))
     return issues
 
-def search_all_issues_unlimited(**kwargs):
+def get_oldest_issue(sqenv=None, **kwargs):
+    ''' Returns the oldest date of all issues found '''
+    kwtemp = kwargs.copy()
+    kwtemp['s'] = 'CREATION_DATE'
+    kwtemp['ps'] = 1
+    returned_data = search(sqenv=sqenv, **kwtemp)
+    oldest = returned_data['issues'][0].creation_date
+    return oldest
+
+def search_all_issues_unlimited(sqenv=None, **kwargs):
     if kwargs is None or 'componentKeys' not in kwargs:
-        project_list = projects.get_projects_list()
+        project_list = projects.get_projects_list(sqenv=kwargs['env'])
     else:
         project_list= { kwargs['componentKeys'] }
     if kwargs is None or 'severities' not in kwargs:
@@ -385,12 +395,37 @@ def search_all_issues_unlimited(**kwargs):
     else:
         severities = {kwargs['severities']}
 
+    if kwargs is None or 'types' not in kwargs:
+        types = {'CODE_SMELL','VULNERABILITY','BUG','SECURITY_HOTSPOT'}
+    else:
+        types = {kwargs['types']}
+
+    creation_periods = []
+    if kwargs is None or 'creation_date' not in kwargs:
+        oldest = get_oldest_issue(sqenv=sqenv, **kwargs)
+        startdate = datetime.datetime.strptime(oldest, '%Y-%m-%dT%H:%M:%S%z')
+        today = datetime.datetime.now(startdate.tzinfo)
+        date_increment = datetime.timedelta(days=10)
+
+        while startdate <= today:
+            s_date = "%04d-%02d-%02d" % (startdate.year, startdate.month, startdate.day)
+            enddate = startdate + date_increment
+            e_date = "%04d-%02d-%02d" % (enddate.year, enddate.month, enddate.day)
+            creation_periods.append([s_date, e_date])
+            startdate = enddate + datetime.timedelta(days=1)
+    else:
+        s, e = re.split( ':', kwargs['creation_period'])
+        creation_periods = { [s, e] }
     issues = []
-    for pk in project_list:
-        kwargs['componentKeys'] = pk
+#    for pk in project_list:
+#        kwargs['componentKeys'] = pk
+    for creation_period in creation_periods:
+        kwargs['createdAfter'], kwargs['createdBefore'] = creation_period
         for severity in severities:
             kwargs['severities'] = severity
-            issues = issues + search_all_issues(**kwargs)
+            for issue_type in types:
+                kwargs['types'] = issue_type
+                issues = issues + search_all_issues(sqenv=sqenv, **kwargs)
     return issues
 
 def apply_changelog(target_issue, source_issue, do_it_really=True):
@@ -568,7 +603,6 @@ def identical_attributes(o1, o2, key_list):
         if o1[key] != o2[key]:
             return False
     return True
-
 
 def search_siblings(an_issue, issue_list, only_new_issues=True):
     siblings = []
