@@ -1,8 +1,9 @@
 #!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
 import sys
-import requests
 import json
+import requests
+
 
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
