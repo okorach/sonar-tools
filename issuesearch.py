@@ -1,11 +1,11 @@
 #!/usr/local/bin/python
 #!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
+import sys
 import json
 import requests
 import sonarqube.env as env
 import sonarqube.issues as issues
-import sys
 
 # Mandatory script input parameters
 global project_key
@@ -18,7 +18,7 @@ def print_object(o):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-            description='Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
+            description='SonarQube issues extractor')
     env.add_standard_arguments(parser)
     parser.add_argument('-s', '--statuses', help='comma separated issue status', required=False)
     parser.add_argument('-a', '--createdAfter', help='issues created after a given date', required=False)
@@ -60,7 +60,7 @@ parms.update(dict(env=sqenv))
 for parm in parms:
     env.debug(parm, '->', parms[parm])
 
-all_issues = issues.search_all_issues_unlimited(**parms)
+all_issues = issues.search_all_issues_unlimited(sqenv=sqenv, **parms)
 print(issues.to_csv_header())
 for issue in all_issues:
     print(issue.to_csv())
