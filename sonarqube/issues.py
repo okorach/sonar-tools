@@ -23,6 +23,7 @@ class UnknownIssueError(ApiError):
 
 class TooManyIssuesError(Exception):
     def __init__(self, nbr_issues, message):
+        super(TooManyIssuesError, self).__init__()
         self.nbr_issues = nbr_issues
         self.message = message
 
