@@ -351,10 +351,9 @@ def search(sqenv = None, **kwargs):
     data = json.loads(resp.text)
     #env.json_dump_debug(data)
     nbr_issues = data['paging']['total']
-    env.debug("Number of issues: ", nbr_issues)        
+    env.debug("Number of issues: ", nbr_issues)
     page = data['paging']['pageIndex']
     nbr_pages = ((data['paging']['total']-1) // data['paging']['pageSize'])+1
-    
     env.debug("Page: ", data['paging']['pageIndex'], '/', nbr_pages)
     all_issues = []
     for json_issue in data['issues']:
@@ -375,8 +374,8 @@ def search_all_issues(sqenv = None, **kwargs):
         kwargs['p'] = page
         returned_data = search(sqenv = sqenv, **kwargs)
         issues = issues + returned_data['issues']
-        #if returned_data['total'] > 10000 and page == 20:
-        #    raise TooManyIssuesError(returned_data['total'], 'Request found %d issues which is more than the maximum allowed 10000' % returned_data['total'])
+        #if returned_data['total'] > 10000 and page == 20: NOSONAR
+        #    raise TooManyIssuesError(returned_data['total'], 'Request found %d issues which is more than the maximum allowed 10000' % returned_data['total']) NOSONAR
         page = returned_data['page']
         nbr_pages = returned_data['pages']
         page = page + 1
@@ -444,8 +443,7 @@ def search_project_issues(key, sqenv=None, **kwargs):
     if oldest is None:
         return []
     startdate = datetime.datetime.strptime(oldest, '%Y-%m-%dT%H:%M:%S%z')
-    newest = get_newest_issue(sqenv=sqenv, **kwargs)
-    enddate = datetime.datetime.strptime(newest, '%Y-%m-%dT%H:%M:%S%z')
+    enddate = datetime.datetime.strptime(get_newest_issue(sqenv=sqenv, **kwargs), '%Y-%m-%dT%H:%M:%S%z')
 
     nbr_issues = get_number_of_issues(sqenv=sqenv, **kwargs)
     days_slice = abs((enddate - startdate).days)+1
@@ -473,8 +471,8 @@ def search_project_issues(key, sqenv=None, **kwargs):
                 found_issues = search_project_daily_issues(key, kwargs['createdAfter'], sqenv, **kwargs)
                 issues = issues + found_issues
                 sliced_enough = True
-                env.log("ERROR: Project key %s has many issues on %s, showing only the first %d" % 
-                    (key, window_start, len(found_issues)))
+                env.log("ERROR: Project key %s has many issues on %s, showing only the first %d" %
+                        (key, window_start, len(found_issues)))
                 window_start = window_stop + datetime.timedelta(days=1)
             else:
                 sliced_enough = False
