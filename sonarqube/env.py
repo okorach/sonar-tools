@@ -95,7 +95,10 @@ def get_url():
 def debug(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
     global my_debug
     if my_debug is True:
-        print( ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
+        print( 'DEBUG: %s' % ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
+
+def log(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
+    print( 'LOG: %s' % ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
 
 def json_dump_debug(json_data):
     global my_debug
