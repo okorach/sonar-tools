@@ -21,6 +21,10 @@ class ApiError(Exception):
 class UnknownIssueError(ApiError):
     pass
 
+class TooManyIssuesError(Exception):
+    def __init__(self, nbr_issues, message):
+        self.nbr_issues = nbr_issues
+        self.message = message
 
 class IssueComments:
     def __init__(self, json_data):
@@ -102,12 +106,13 @@ class Issue(sq.SqObject):
 
     def feed(self, json):
         self.json = json
-        env.debug('------ISSUE------')
-        env.debug(self.to_string())
+        #env.debug('------ISSUE------')
+        #env.debug(self.to_string())
 
         self.id = json['key']
-        self.severity = json['severity']
         self.type = json['type']
+        if self.type != 'SECURITY_HOTSPOT':
+            self.severity = json['severity']
         self.author = json['author']
         self.assignee = None # json['assignee']
         self.status = json['status']
@@ -344,11 +349,12 @@ def search(sqenv = None, **kwargs):
     else:
         resp = sqenv.get('/api/issues/search', parms)
     data = json.loads(resp.text)
-    env.json_dump_debug(data)
+    #env.json_dump_debug(data)
     nbr_issues = data['paging']['total']
+    env.debug("Number of issues: ", nbr_issues)        
     page = data['paging']['pageIndex']
     nbr_pages = ((data['paging']['total']-1) // data['paging']['pageSize'])+1
-    env.debug("Number of issues: ", nbr_issues)
+    
     env.debug("Page: ", data['paging']['pageIndex'], '/', nbr_pages)
     all_issues = []
     for json_issue in data['issues']:
@@ -369,6 +375,8 @@ def search_all_issues(sqenv = None, **kwargs):
         kwargs['p'] = page
         returned_data = search(sqenv = sqenv, **kwargs)
         issues = issues + returned_data['issues']
+        #if returned_data['total'] > 10000 and page == 20:
+        #    raise TooManyIssuesError(returned_data['total'], 'Request found %d issues which is more than the maximum allowed 10000' % returned_data['total'])
         page = returned_data['page']
         nbr_pages = returned_data['pages']
         page = page + 1
@@ -376,16 +384,107 @@ def search_all_issues(sqenv = None, **kwargs):
     env.debug ("Total number of issues: ", len(issues))
     return issues
 
-def get_oldest_issue(sqenv=None, **kwargs):
-    ''' Returns the oldest date of all issues found '''
+def get_one_issue_date(sqenv=None, asc_sort='true', **kwargs):
+    ''' Returns the date of one issue found '''
     kwtemp = kwargs.copy()
     kwtemp['s'] = 'CREATION_DATE'
+    kwtemp['asc'] = asc_sort
+    kwtemp['ps'] = 1
+    try:
+        returned_data = search(sqenv=sqenv, **kwtemp)
+    except TooManyIssuesError:
+        pass
+
+    if returned_data['total'] == 0:
+        return None
+    else:
+        return returned_data['issues'][0].creation_date
+
+def get_oldest_issue(sqenv=None, **kwargs):
+    ''' Returns the oldest date of all issues found '''
+    return get_one_issue_date(sqenv=sqenv, asc_sort='true', **kwargs)
+
+def get_newest_issue(sqenv=None, **kwargs):
+    ''' Returns the newest date of all issues found '''
+    return get_one_issue_date(sqenv=sqenv, asc_sort='false', **kwargs)
+
+def get_number_of_issues(sqenv=None, **kwargs):
+    ''' Returns number of issues of a search '''
+    kwtemp = kwargs.copy()
     kwtemp['ps'] = 1
     returned_data = search(sqenv=sqenv, **kwtemp)
-    oldest = returned_data['issues'][0].creation_date
-    return oldest
+    env.debug("Project %s has %d issues" % (kwargs['componentKeys'], returned_data['total']))
+    return returned_data['total']
 
-def search_all_issues_unlimited(sqenv=None, **kwargs):
+def search_project_daily_issues(key, day, sqenv=None, **kwargs):
+    kw = kwargs.copy()
+    kw['componentKeys'] = key
+    if kwargs is None or 'severities' not in kwargs:
+        severities = {'INFO','MINOR','MAJOR','CRITICAL','BLOCKER'}
+    else:
+        severities = re.split(',', kwargs['severities'])
+    if kwargs is None or 'types' not in kwargs:
+        types = {'CODE_SMELL','VULNERABILITY','BUG','SECURITY_HOTSPOT'}
+    else:
+        types = re.split(',', kwargs['types'])
+    kw['createdAfter'] = day
+    kw['createdBefore'] = day
+    issues = []
+    for severity in severities:
+        kw['severities'] = severity
+        for issue_type in types:
+            kw['types'] = issue_type
+            issues = issues + search_all_issues(sqenv=sqenv, **kw)
+    env.log("INFO: %d daily issues for project key %s on %s" % (len(issues), key, day))
+    return issues
+
+def search_project_issues(key, sqenv=None, **kwargs):
+    kwargs['componentKeys'] = key
+    oldest = get_oldest_issue(sqenv=sqenv, **kwargs)
+    if oldest is None:
+        return []
+    startdate = datetime.datetime.strptime(oldest, '%Y-%m-%dT%H:%M:%S%z')
+    newest = get_newest_issue(sqenv=sqenv, **kwargs)
+    enddate = datetime.datetime.strptime(newest, '%Y-%m-%dT%H:%M:%S%z')
+
+    nbr_issues = get_number_of_issues(sqenv=sqenv, **kwargs)
+    days_slice = abs((enddate - startdate).days)+1
+    if nbr_issues > 10000:
+        days_slice = (10000 * days_slice) // (nbr_issues * 4)
+    env.debug("For project %s, slicing by %d days, between %s and %s" % (key, days_slice, startdate, enddate))
+
+    issues = []
+    window_start = startdate
+    while window_start <= enddate:
+        current_slice = days_slice
+        sliced_enough = False
+        while not sliced_enough:
+            window_size = datetime.timedelta(days=current_slice)
+            kwargs['createdAfter']  = "%04d-%02d-%02d" % (window_start.year, window_start.month, window_start.day)
+            window_stop = window_start + window_size
+            kwargs['createdBefore'] = "%04d-%02d-%02d" % (window_stop.year, window_stop.month, window_stop.day)
+            found_issues = search_all_issues(sqenv=sqenv, **kwargs)
+            if len(found_issues) < 10000:
+                issues = issues + found_issues
+                env.debug("Got %d issue, OK, go to next window" % len(found_issues))
+                sliced_enough = True
+                window_start = window_stop + datetime.timedelta(days=1)
+            elif current_slice == 0:
+                found_issues = search_project_daily_issues(key, kwargs['createdAfter'], sqenv, **kwargs)
+                issues = issues + found_issues
+                sliced_enough = True
+                env.log("ERROR: Project key %s has many issues on %s, showing only the first %d" % 
+                    (key, window_start, len(found_issues)))
+                window_start = window_stop + datetime.timedelta(days=1)
+            else:
+                sliced_enough = False
+                current_slice = current_slice // 2
+                env.debug("Reslicing with a thinner slice of %d days" % current_slice)
+
+    env.debug("For project %s, %d issues found" % (key, len(issues)))
+    return issues
+
+def search_all_issues_unlimited_old(sqenv=None, **kwargs):
     if kwargs is None or 'componentKeys' not in kwargs:
         project_list = projects.get_projects_list(sqenv=kwargs['env'])
     else:
@@ -426,6 +525,17 @@ def search_all_issues_unlimited(sqenv=None, **kwargs):
             for issue_type in types:
                 kwargs['types'] = issue_type
                 issues = issues + search_all_issues(sqenv=sqenv, **kwargs)
+    return issues
+
+def search_all_issues_unlimited(sqenv=None, **kwargs):
+
+    if kwargs is None or 'componentKeys' not in kwargs:
+        project_list = projects.get_projects_list(sqenv=sqenv)
+    else:
+        project_list= re.split(',', kwargs['componentKeys'])
+    issues = []
+    for project in project_list:
+        issues = issues + search_project_issues(key=project, sqenv=sqenv, **kwargs)
     return issues
 
 def apply_changelog(target_issue, source_issue, do_it_really=True):
