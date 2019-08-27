@@ -483,49 +483,6 @@ def search_project_issues(key, sqenv=None, **kwargs):
     env.debug("For project %s, %d issues found" % (key, len(issues)))
     return issues
 
-def search_all_issues_unlimited_old(sqenv=None, **kwargs):
-    if kwargs is None or 'componentKeys' not in kwargs:
-        project_list = projects.get_projects_list(sqenv=kwargs['env'])
-    else:
-        project_list= { kwargs['componentKeys'] }
-    if kwargs is None or 'severities' not in kwargs:
-        severities = {'INFO','MINOR','MAJOR','CRITICAL','BLOCKER'}
-    else:
-        severities = {kwargs['severities']}
-
-    if kwargs is None or 'types' not in kwargs:
-        types = {'CODE_SMELL','VULNERABILITY','BUG','SECURITY_HOTSPOT'}
-    else:
-        types = {kwargs['types']}
-
-    creation_periods = []
-    if kwargs is None or 'creation_date' not in kwargs:
-        oldest = get_oldest_issue(sqenv=sqenv, **kwargs)
-        startdate = datetime.datetime.strptime(oldest, '%Y-%m-%dT%H:%M:%S%z')
-        today = datetime.datetime.now(startdate.tzinfo)
-        date_increment = datetime.timedelta(days=10)
-
-        while startdate <= today:
-            s_date = "%04d-%02d-%02d" % (startdate.year, startdate.month, startdate.day)
-            enddate = startdate + date_increment
-            e_date = "%04d-%02d-%02d" % (enddate.year, enddate.month, enddate.day)
-            creation_periods.append([s_date, e_date])
-            startdate = enddate + datetime.timedelta(days=1)
-    else:
-        s, e = re.split( ':', kwargs['creation_period'])
-        creation_periods = { [s, e] }
-    issues = []
-#    for pk in project_list:
-#        kwargs['componentKeys'] = pk
-    for creation_period in creation_periods:
-        kwargs['createdAfter'], kwargs['createdBefore'] = creation_period
-        for severity in severities:
-            kwargs['severities'] = severity
-            for issue_type in types:
-                kwargs['types'] = issue_type
-                issues = issues + search_all_issues(sqenv=sqenv, **kwargs)
-    return issues
-
 def search_all_issues_unlimited(sqenv=None, **kwargs):
 
     if kwargs is None or 'componentKeys' not in kwargs:
