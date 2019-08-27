@@ -361,9 +361,9 @@ def search(sqenv = None, **kwargs):
         issue = Issue(json_issue['key'], kwargs['env'])
         issue.feed(json_issue)
         all_issues = all_issues + [issue]
-        #print('----issues.ISSUE%s' % ('-'*30))
-        #json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
-        #print(issue.toString)
+        #print('----issues.ISSUE%s' % ('-'*30)) # NOSONAR
+        #json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')) # NOSONAR
+        #print(issue.toString) # NOSONAR
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
 def search_all_issues(sqenv = None, **kwargs):
