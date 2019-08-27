@@ -107,9 +107,6 @@ class Issue(sq.SqObject):
 
     def feed(self, json):
         self.json = json
-        #env.debug('------ISSUE------')
-        #env.debug(self.to_string())
-
         self.id = json['key']
         self.type = json['type']
         if self.type != 'SECURITY_HOTSPOT':
