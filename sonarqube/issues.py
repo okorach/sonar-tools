@@ -81,8 +81,8 @@ class IssueChangeLog(sq.SqObject):
 
 
 class Issue(sq.SqObject):
-    def __init__(self, issue_key, env):
-        self.env = env
+    def __init__(self, issue_key, sqenv):
+        self.env = sqenv
         self.id = issue_key
         self.json = None
         self.severity = None
