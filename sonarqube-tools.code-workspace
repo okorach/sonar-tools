@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"sonarlint.connectedMode.project": {
+			"serverId": "SQ67",
+			"projectKey": "sonarqube-tools"
+		},
+		"python.pythonPath": "/Library/Frameworks/Python.framework/Versions/3.6/bin/python3",
+		"sonarlint.analyzerProperties": null,
+		"git.confirmSync": false,
+		"git.autofetch": true,
+		"window.zoomLevel": 0,
+		"files.autoSave": "afterDelay"
+	}
+}
