@@ -15,28 +15,21 @@ class Rule:
         self.status = None
         self.actives = None
         self.params = None
-        self.remFn = None
-        self.createdAt = None
-        self.htmlDesc = None
-        self.debtOverloaded = False
-        self.debtRemFn = None
-        self.defaultDebtRemFn = None
-        self.defaultRemFn
-        self.effortToFixDescription
-        self.gapDescription
-        self.htmlNote
-        self.internalKey
-        self.isTemplate
-        self.lang
-        self.langName
-        self.mdDesc
-        self.mdNote
-        self.noteLogin
-        self.remFnOverloaded
-        self.sysTags
-        self.tags
-        self.templateKey
-    
+        self.rem_fn = None
+        self.created_at = None
+        self.html_desc = None
+        self.debt_rem_fn = None
+        self.default_debt_rem_fn = None
+        self.default_rem_fn = None
+        self.effort_to_fix_desc = None
+        self.gap_desc = None
+        self.html_note = None
+        self.internal_key = None
+        self.is_template = None
+        self.sys_tags = None
+        self.tags = None
+        self.template_key = None
+
     def get_rule(self, key):
         params = dict(projets=self.key)
         resp = requests.get(url=get_url() + '/api/projects/search', auth=get_credentials(), params=params)
@@ -66,13 +59,13 @@ def get_all_rules():
         resp = requests.get(url=get_url() + '/api/rules/search', auth=get_credentials(), params=params)
         data = json.loads(resp.text)
         for rule in data['rules']:
-            rules_list.append(rules['key'])
+            rules_list.append(rule['key'])
 
 def get_rules_list():
     rules = get_rules()
     rules_list = []
     for rule in rules:
-        rules_list.append(rules['key'])
+        rules_list.append(rule['key'])
     return rules_list
 
 def get_project_name(key):

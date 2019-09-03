@@ -37,12 +37,6 @@ class IssueComments:
         return sorted_comment
 
     def size(self):
-        n = 0
-        for items in self.json:
-            n = n + 1
-        return n
-
-    def size2(self):
         return len(self.json)
 
 class IssueChangeLog(sq.SqObject):
@@ -61,12 +55,6 @@ class IssueChangeLog(sq.SqObject):
         return sorted_log
 
     def size(self):
-        n = 0
-        for items in self.json:
-            n = n + 1
-        return n
-
-    def size2(self):
         return len(self.json)
 
     def to_string(self):
@@ -507,8 +495,6 @@ def apply_changelog(target_issue, source_issue, do_it_really=True):
         print('   Not joking I am doing it')
     key = target_issue.id
     for date in sorted(events_by_date):
-        # print_object(events_by_date[date])
-        is_applicable_event = True
 
         if events_by_date[date][0] == 'log' and is_log_a_severity_change(events_by_date[date][1]):
             params = dict(issue=key, severity=get_log_new_severity(events_by_date[date][1]))
