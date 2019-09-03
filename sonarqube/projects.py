@@ -5,7 +5,6 @@ import json
 import requests
 import sonarqube.env as env
 import sonarqube.components as comp
-# from sonarqube.env import get_url, get_credentials, json_dump_debug
 
 global PROJECTS
 
