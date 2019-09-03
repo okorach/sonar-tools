@@ -6,7 +6,6 @@ import datetime
 import json
 import requests
 import sonarqube.env as env
-import sonarqube.projects as projects
 import sonarqube.sqobject as sq
 
 OPTIONS_ISSUES_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'authors', 'componentKeys',
@@ -81,9 +80,9 @@ class IssueChangeLog(sq.SqObject):
 
 
 class Issue(sq.SqObject):
-    def __init__(self, issue_key, sqenv):
+    def __init__(self, key, sqenv):
         self.env = sqenv
-        self.id = issue_key
+        self.id = key
         self.json = None
         self.severity = None
         self.type = None
@@ -317,6 +316,7 @@ class Issue(sq.SqObject):
         mtime = re.sub(r"\+.*", "", mtime) # Strip timezone
         msg = re.sub('"','""', self.message)
         line = '-' if self.line is None else self.line
+        import sonarqube.projects as projects
         csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status,
                                          cdate, ctime, mdate, mtime, self.project,
                                          projects.get_project_name(self.project, self.env), self.component, line,
@@ -355,7 +355,7 @@ def search(sqenv = None, **kwargs):
     env.debug("Page: ", data['paging']['pageIndex'], '/', nbr_pages)
     all_issues = []
     for json_issue in data['issues']:
-        issue = Issue(json_issue['key'], kwargs['env'])
+        issue = Issue(key = json_issue['key'], sqenv = sqenv)
         issue.feed(json_issue)
         all_issues = all_issues + [issue]
         #print('----issues.ISSUE%s' % ('-'*30)) # NOSONAR
@@ -481,14 +481,14 @@ def search_project_issues(key, sqenv=None, **kwargs):
     return issues
 
 def search_all_issues_unlimited(sqenv=None, **kwargs):
-
+    import sonarqube.projects as projects
     if kwargs is None or 'componentKeys' not in kwargs:
         project_list = projects.get_projects_list(sqenv=sqenv)
     else:
         project_list= re.split(',', kwargs['componentKeys'])
     issues = []
     for project in project_list:
-        issues = issues + search_project_issues(key=project, sqenv=sqenv, **kwargs)
+        issues = issues + projects.Project(key=project, sqenv=sqenv).get_all_issues()
     return issues
 
 def apply_changelog(target_issue, source_issue, do_it_really=True):
