@@ -10,7 +10,6 @@ this = sys.modules[__name__]
 this.token = ''
 this.root_url= "http://localhost:9000"
 
-global my_debug
 my_debug = False
 
 class Environment:
@@ -66,10 +65,10 @@ class Environment:
                 pstr = p + '=' + str(parms[p])
             else:
                 pstr = pstr + '&' + p + '=' + str(parms[p])
-        urlstring = self.token + '@' + self.root_url + api
+        url = self.token + '@' + self.root_url + api
         if pstr is not None:
-            urlstring = urlstring + '?' + pstr
-        return urlstring
+            url = url + '?' + pstr
+        return url
 
 #--------------------- Static methods, not recommended -----------------
 def set_env(url, tok):
@@ -112,10 +111,10 @@ def urlstring(api, parms):
             pstr = p + '=' + str(parms[p])
         else:
             pstr = pstr + '&' + p + '=' + str(parms[p])
-    urlstring = this.token + '@' + this.root_url + api
+    url = this.token + '@' + this.root_url + api
     if pstr is not None:
-        urlstring = urlstring + '?' + pstr
-    return urlstring
+        url = url + '?' + pstr
+    return url
 
 def get(api, parms):
     debug('GLOBAL GET: ' + urlstring(api, parms))
@@ -135,5 +134,5 @@ def add_standard_arguments(parser):
                         required=True)
     parser.add_argument('-u', '--url', help='Root URL of the SonarQube server, default is http://localhost:9000',
                         required=False, default='http://localhost:9000')
-    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', help='Commas separated key of the components', required=False)
-
+    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', \
+        help='Commas separated key of the components', required=False)

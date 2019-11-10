@@ -92,44 +92,44 @@ class Issue(sq.SqObject):
         self.modification_date = None
         self.hash = None
 
-    def feed(self, json):
-        self.json = json
-        self.id = json['key']
-        self.type = json['type']
+    def feed(self, jsondata):
+        self.json = jsondata
+        self.id = jsondata['key']
+        self.type = jsondata['type']
         if self.type != 'SECURITY_HOTSPOT':
-            self.severity = json['severity']
-        self.author = json['author']
+            self.severity = jsondata['severity']
+        self.author = jsondata['author']
         self.assignee = None # json['assignee']
-        self.status = json['status']
+        self.status = jsondata['status']
         try:
-            self.line = json['line']
+            self.line = jsondata['line']
         except KeyError:
             self.line = None
 
         self.resolution = None # json['resolution']
-        self.rule = json['rule']
-        self.project = json['project']
+        self.rule = jsondata['rule']
+        self.project = jsondata['project']
         self.language = None
         self.changelog = None
-        self.creation_date = json['creationDate']
-        self.modification_date = json['updateDate']
+        self.creation_date = jsondata['creationDate']
+        self.modification_date = jsondata['updateDate']
 
         self.changelog = None
         try:
-            self.comments = json['comments']
+            self.comments = jsondata['comments']
         except KeyError:
             self.comments = None
-        self.component = json['component']
+        self.component = jsondata['component']
         try:
-            self.hash = json['hash']
+            self.hash = jsondata['hash']
         except KeyError:
             self.hash = None
         try:
-            self.message = json['message']
+            self.message = jsondata['message']
         except KeyError:
             self.message = None
         try:
-            self.debt = json['debt']
+            self.debt = jsondata['debt']
         except KeyError:
             self.debt = None
 
@@ -276,8 +276,8 @@ class Issue(sq.SqObject):
         env.debug(changelog)
         env.debug(changelog.to_string())
         for log in changelog.get_json():
-            if is_log_a_closed_fp(log) or is_log_a_closed_wf(log) or is_log_a_severity_change(log) or is_log_a_type_change(
-                    log):
+            if is_log_a_closed_fp(log) or is_log_a_closed_wf(log) or \
+            is_log_a_severity_change(log) or is_log_a_type_change(log):
                 return True
         return False
 
@@ -316,7 +316,7 @@ def check_fp_transition(diffs):
     env.debug("----------------- DIFFS     -----------------")
     #print_object(diffs)
     if diffs[0]['key'] == "resolution" and diffs[0]["newValue"] == "FIXED" and (
-       diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX"):
+        diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX"):
         return True
     return False
 
@@ -674,7 +674,8 @@ def print_issue(issue):
     print()
 
 def to_csv_header():
-    return "# id;rule;type;severity;status;creation date;creation time;modification date;modification time;project key;project name;file;line;debt(min);message"
+    return "# id;rule;type;severity;status;creation date;creation time;modification date;" + \
+    "modification time;project key;project name;file;line;debt(min);message"
 
 def get_issues_search_parms(parms):
     outparms= dict()
