@@ -7,6 +7,7 @@ import json
 import requests
 import sonarqube.env as env
 import sonarqube.sqobject as sq
+import sonarqube.utilities as util
 
 OPTIONS_ISSUES_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'authors', 'componentKeys',
                          'createdAfter', 'createdAt', 'createdBefore', 'createdInLast', 'facetMode', 'facets',
@@ -92,6 +93,10 @@ class Issue(sq.SqObject):
         self.modification_date = None
         self.hash = None
 
+    def __str__(self):
+        return "Key:{0} - Type:{1} - Severity:{2} - File/Line:{3}/{4} - Rule:{5}".format( \
+            self.id, self.type, self.severity, self.component, self.line, self.rule)
+
     def feed(self, jsondata):
         self.json = jsondata
         self.id = jsondata['key']
@@ -141,7 +146,7 @@ class Issue(sq.SqObject):
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
             self.changelog = IssueChangeLog(self.id, self.env)
-            env.debug('---In get_changelog----\n%s' % self.changelog.to_string())
+            util.logger.debug('---In get_changelog----\n%s', self.changelog.to_string())
         return self.changelog
 
     def has_changelog(self):
@@ -202,10 +207,6 @@ class Issue(sq.SqObject):
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 
-    def print_issue(self):
-        """Prints the issue"""
-        print(self.to_string())
-
     def has_been_marked_as_wont_fix(self):
         changelog = self.get_changelog()
         for log in changelog:
@@ -236,26 +237,25 @@ class Issue(sq.SqObject):
         for date in comments_by_date:
             events_by_date[date] = comments_by_date[date]
         for date in sorted(events_by_date):
-            print(date, ':')
-            # print_object(events_by_date[date])
+            util.logger.info('%s:%s', date, str(events_by_date[date]))
 
     def get_key(self):
         return self.id
 
     def identical_to(self, another_issue):
-        env.debug("=" * 20)
-        env.debug("Comparing 2 issues: %s and %s" % (self.to_string, another_issue.to_string()))
-        env.debug("=" * 20)
+        util.logger.debug("=" * 20)
+        util.logger.debug("Comparing 2 issues: %s and %s", str(self), str(another_issue))
+        util.logger.debug("=" * 20)
         identical = (self.rule == another_issue.rule and self.hash == another_issue.hash and
                      self.component == another_issue.component and
                      self.message == another_issue.message and self.debt == another_issue.debt)
-        env.debug(identical)
-        env.debug("=" * 20)
+        util.logger.debug(identical)
+        util.logger.debug("=" * 20)
         return identical
 
     def match(self, another_issue):
-        env.debug("=" * 20)
-        env.debug("Comparing 2 issues: %s and %s" % (self.to_string, another_issue.to_string()))
+        util.logger.debug("=" * 20)
+        util.logger.debug("Comparing 2 issues: %s and %s", str(self), str(another_issue))
         if self.rule != another_issue.rule or self.hash != another_issue.hash:
             match_level = 0
         else:
@@ -266,15 +266,15 @@ class Issue(sq.SqObject):
                 match_level -= 0.1
             if self.debt != another_issue.debt:
                 match_level -= 0.1
-        env.debug("Match level %3.0f%%\n" % (match_level * 100))
-        env.debug("=" * 20)
+        util.logger.debug("Match level %3.0f%%\n" % (match_level * 100))
+        util.logger.debug("=" * 20)
         return match_level
 
     def was_fp_or_wf(self):
         changelog = self.get_changelog()
-        env.debug('------- ISS ChangeLog--------')
-        env.debug(changelog)
-        env.debug(changelog.to_string())
+        util.logger.debug('------- ISS ChangeLog--------')
+        util.logger.debug(changelog)
+        util.logger.debug(changelog.to_string())
         for log in changelog.get_json():
             if is_log_a_closed_fp(log) or is_log_a_closed_wf(log) or \
             is_log_a_severity_change(log) or is_log_a_type_change(log):
@@ -298,10 +298,12 @@ class Issue(sq.SqObject):
             debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         cdate = re.sub(r"T.*", "", self.creation_date)
         ctime = re.sub(r".*T", "", self.creation_date)
-        ctime = re.sub(r"\+.*", "", ctime) # Strip timezone
+        # Strip timezone
+        ctime = re.sub(r"\+.*", "", ctime)
         mdate = re.sub(r"T.*", "", self.modification_date)
         mtime = re.sub(r".*T", "", self.modification_date)
-        mtime = re.sub(r"\+.*", "", mtime) # Strip timezone
+        # Strip timezone
+        mtime = re.sub(r"\+.*", "", mtime)
         msg = re.sub('"','""', self.message)
         line = '-' if self.line is None else self.line
         import sonarqube.projects as projects
@@ -313,12 +315,9 @@ class Issue(sq.SqObject):
 
 #------------------------------- Static methods --------------------------------------
 def check_fp_transition(diffs):
-    env.debug("----------------- DIFFS     -----------------")
-    #print_object(diffs)
-    if diffs[0]['key'] == "resolution" and diffs[0]["newValue"] == "FIXED" and (
-        diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX"):
-        return True
-    return False
+    util.logger.debug("----------------- DIFFS     -----------------")
+    return diffs[0]['key'] == "resolution" and diffs[0]["newValue"] == "FIXED" and \
+           (diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX")
 
 def sort_comments(comments):
     sorted_comments = dict()
@@ -337,18 +336,18 @@ def search(sqenv = None, **kwargs):
     data = json.loads(resp.text)
     #env.json_dump_debug(data)
     nbr_issues = data['paging']['total']
-    env.debug("Number of issues: ", nbr_issues)
+    util.logger.debug("Number of issues: %d", nbr_issues)
     page = data['paging']['pageIndex']
     nbr_pages = ((data['paging']['total']-1) // data['paging']['pageSize'])+1
-    env.debug("Page: ", data['paging']['pageIndex'], '/', nbr_pages)
+    util.logger.debug("Page: %d/%d", data['paging']['pageIndex'], nbr_pages)
     all_issues = []
     for json_issue in data['issues']:
         issue = Issue(key = json_issue['key'], sqenv = sqenv)
         issue.feed(json_issue)
         all_issues = all_issues + [issue]
-        #print('----issues.ISSUE%s' % ('-'*30)) # NOSONAR
-        #json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')) # NOSONAR
-        #print(issue.toString) # NOSONAR
+        util.logger.debug('----issues.ISSUE%s', ('-'*30))
+        util.logger.debug(json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')))
+        util.logger.debug(str(issue))
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
 def search_all_issues(sqenv = None, **kwargs):
@@ -366,7 +365,7 @@ def search_all_issues(sqenv = None, **kwargs):
         nbr_pages = returned_data['pages']
         page = page + 1
         kwargs['p'] = page
-    env.debug ("Total number of issues: ", len(issues))
+    util.logger.debug ("Total number of issues: %d", len(issues))
     return issues
 
 def get_one_issue_date(sqenv=None, asc_sort='true', **kwargs):
@@ -398,7 +397,7 @@ def get_number_of_issues(sqenv=None, **kwargs):
     kwtemp = kwargs.copy()
     kwtemp['ps'] = 1
     returned_data = search(sqenv=sqenv, **kwtemp)
-    env.debug("Project %s has %d issues" % (kwargs['componentKeys'], returned_data['total']))
+    util.logger.debug("Project %s has %d issues", kwargs['componentKeys'], returned_data['total'])
     return returned_data['total']
 
 def search_project_daily_issues(key, day, sqenv=None, **kwargs):
@@ -420,7 +419,7 @@ def search_project_daily_issues(key, day, sqenv=None, **kwargs):
         for issue_type in types:
             kw['types'] = issue_type
             issues = issues + search_all_issues(sqenv=sqenv, **kw)
-    env.log("INFO: %d daily issues for project key %s on %s" % (len(issues), key, day))
+    util.logger.info("%d daily issues for project key %s on %s", len(issues), key, day)
     return issues
 
 def search_project_issues(key, sqenv=None, **kwargs):
@@ -435,7 +434,7 @@ def search_project_issues(key, sqenv=None, **kwargs):
     days_slice = abs((enddate - startdate).days)+1
     if nbr_issues > 10000:
         days_slice = (10000 * days_slice) // (nbr_issues * 4)
-    env.debug("For project %s, slicing by %d days, between %s and %s" % (key, days_slice, startdate, enddate))
+    util.logger.debug("For project %s, slicing by %d days, between %s and %s", key, days_slice, startdate, enddate)
 
     issues = []
     window_start = startdate
@@ -450,22 +449,22 @@ def search_project_issues(key, sqenv=None, **kwargs):
             found_issues = search_all_issues(sqenv=sqenv, **kwargs)
             if len(found_issues) < 10000:
                 issues = issues + found_issues
-                env.debug("Got %d issue, OK, go to next window" % len(found_issues))
+                util.logger.debug("Got %d issue, OK, go to next window", len(found_issues))
                 sliced_enough = True
                 window_start = window_stop + datetime.timedelta(days=1)
             elif current_slice == 0:
                 found_issues = search_project_daily_issues(key, kwargs['createdAfter'], sqenv, **kwargs)
                 issues = issues + found_issues
                 sliced_enough = True
-                env.log("ERROR: Project key %s has many issues on %s, showing only the first %d" %
-                        (key, window_start, len(found_issues)))
+                util.logger.error("Project key %s has many issues on %s, showing only the first %d",
+                                  key, window_start, len(found_issues))
                 window_start = window_stop + datetime.timedelta(days=1)
             else:
                 sliced_enough = False
                 current_slice = current_slice // 2
-                env.debug("Reslicing with a thinner slice of %d days" % current_slice)
+                util.logger.debug("Reslicing with a thinner slice of %d days", current_slice)
 
-    env.debug("For project %s, %d issues found" % (key, len(issues)))
+    util.logger.debug("For project %s, %d issues found", key, len(issues))
     return issues
 
 def search_all_issues_unlimited(sqenv=None, **kwargs):
@@ -488,11 +487,12 @@ def apply_changelog(target_issue, source_issue, do_it_really=True):
             events_by_date[date] = comments_by_date[date]
 
     if not events_by_date:
-        print("Sibling has no changelog, no action taken")
+        util.logger.debug("Sibling has no changelog, no action taken")
         return
 
     if do_it_really:
-        print('   Not joking I am doing it')
+        util.logger.debug('   Not joking I am doing it')
+
     key = target_issue.id
     for date in sorted(events_by_date):
 
@@ -536,7 +536,7 @@ def apply_changelog(target_issue, source_issue, do_it_really=True):
             continue
         resp = target_issue.post('/api/' + api, params)
         if resp.status_code != 200:
-            print('HTTP Error %d from SonarQube API query' % resp.status_code)
+            util.logger.error('HTTP Error %d from SonarQube API query',resp.status_code)
 
 def get_log_date(log):
     return log['creationDate']
@@ -656,29 +656,22 @@ def identical_attributes(o1, o2, key_list):
 def search_siblings(an_issue, issue_list, only_new_issues=True):
     siblings = []
     for issue in issue_list:
-        #if identical_attributes(closed_issue, iss, ['rule', 'component', 'message', 'debt']):
-        #print("Looking at CLOSED " + closed_issue.to_string())
-        #print("Looking at ISSUE " + issue.to_string())
-        if issue.identical_to(an_issue):
-            if only_new_issues:
-                if issue.get_changelog.size() == 0:
-                    # Add issue only if it has no change log, meaning it's brand new
-                    siblings.append(issue)
-            else:
+        if not issue.identical_to(an_issue):
+            continue
+        if only_new_issues:
+            if issue.get_changelog.size() == 0:
+                # Add issue only if it has no change log, meaning it's brand new
                 siblings.append(issue)
+        else:
+            siblings.append(issue)
     return siblings
-
-def print_issue(issue):
-    for attr in ['rule', 'component', 'message', 'debt', 'author', 'key', 'status']:
-        print (issue[attr], ',')
-    print()
 
 def to_csv_header():
     return "# id;rule;type;severity;status;creation date;creation time;modification date;" + \
     "modification time;project key;project name;file;line;debt(min);message"
 
 def get_issues_search_parms(parms):
-    outparms= dict()
+    outparms = {}
     for key in parms:
         if parms[key] is not None and key in OPTIONS_ISSUES_SEARCH:
             outparms[key] = parms[key]
