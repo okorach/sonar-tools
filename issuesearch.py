@@ -6,19 +6,13 @@ import json
 import requests
 import sonarqube.env as env
 import sonarqube.issues as issues
+import sonarqube.utilities as util
 
 # Mandatory script input parameters
-global project_key
-
-global dry_run_mode
 dry_run_mode = False
 
-def print_object(o):
-    print(json.dumps(o, indent=3, sort_keys=True))
-
 def parse_args():
-    parser = argparse.ArgumentParser(
-            description='SonarQube issues extractor')
+    parser = argparse.ArgumentParser(description='SonarQube issues extractor')
     env.add_standard_arguments(parser)
     parser.add_argument('-s', '--statuses', help='comma separated issue status', required=False)
     parser.add_argument('-a', '--createdAfter', help='issues created after a given date', required=False)
@@ -29,21 +23,16 @@ def parse_args():
     parser.add_argument('--types', help='Comma separated issue types', required=False)
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    return args
 # ------------------------------------------------------------------------------
 
 try:
     import argparse
 except ImportError:
     if sys.version_info < (2, 7, 0):
-        print("Error:")
-        print("You are running an old version of python. Two options to fix the problem")
-        print("  Option 1: Upgrade to python version >= 2.7")
-        print("  Option 2: Install argparse library for the current python version")
-        print("            See: https://pypi.python.org/pypi/argparse")
-
+        util.logger.critical("Python < 2.7, can't import argparse, aborting...")
+        exit(1)
 args = parse_args()
 sqenv = env.Environment(url=args.url, token=args.token)
 sqenv.set_env(args.url, args.token)
