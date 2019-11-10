@@ -64,4 +64,3 @@ for issue in all_target_issues:
         issues.apply_changelog(issue, siblings[0], True)
     else:
         util.logger.debug('No changelog to apply')
-
