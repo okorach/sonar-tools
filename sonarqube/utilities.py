@@ -1,4 +1,16 @@
 import sys
+import logging
+
+DEBUG_LEVEL = 0
+DRY_RUN = False
+logger = logging.getLogger('mediatools')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh = logging.FileHandler('mediatools.log')
+ch = logging.StreamHandler()
+logger.addHandler(fh)
+logger.addHandler(ch)
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
 
 def set_common_args(desc):
     """Parses options common to all sonarqube-tools scripts"""
