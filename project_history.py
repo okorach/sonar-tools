@@ -11,7 +11,7 @@ csv_sep = ";"
 
 metrics = 'ncloc,new_violations,new_bugs,complexity,coverage,sqale_index'
 key = 'org.sonarsource.java:java'
-print("date" + csv_sep + string.replace(metrics, ",", csv_sep))
+print("date" + csv_sep + metrics.replace(",", csv_sep))
 
 metrics_list = metrics.split(",")
 
