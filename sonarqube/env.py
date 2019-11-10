@@ -3,6 +3,7 @@
 import sys
 import json
 import requests
+import sonarqube.utilities as util
 
 
 # this is a pointer to the module object instance itself.
@@ -23,9 +24,7 @@ class Environment:
     def set_env(self, url, token):
         self.root_url = url
         self.token = token
-        global my_debug
-        if my_debug:
-            print ('Setting environment: '+ self.token + '@' + self.root_url)
+        util.logger.debug('Setting environment: %s@%s', self.token, self.root_url)
 
     def set_token(self, token):
         self.token = token
@@ -58,16 +57,12 @@ class Environment:
         return "URL = " + self.root_url + "\n" + "TOKEN = " + self.token
 
     def urlstring(self, api, parms):
-        pstr = None
+        first = True
+        url = "{0}@{1}{2}".format(self.token, self.root_url, api)
         for p in parms:
-            #print(p, '->', parms[p])
-            if pstr is None:
-                pstr = p + '=' + str(parms[p])
-            else:
-                pstr = pstr + '&' + p + '=' + str(parms[p])
-        url = self.token + '@' + self.root_url + api
-        if pstr is not None:
-            url = url + '?' + pstr
+            sep = '?' if first else '&'
+            first = False
+            url += '{0}{1}={2}'.format(sep, p, parms[p])
         return url
 
 #--------------------- Static methods, not recommended -----------------
@@ -92,17 +87,14 @@ def get_url():
     return this.root_url
 
 def debug(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
-    global my_debug
-    if my_debug is True:
-        print( 'DEBUG: %s' % ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
+    util.logger.debug("%s", ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
 
 def log(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
-    print( 'LOG: %s' % ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
+    util.logger.info("%s", ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
 
 def json_dump_debug(json_data):
     global my_debug
-    if my_debug is True:
-        json.dump(json_data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
+    util.logger.debug(json.dump(json_data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')))
 
 def urlstring(api, parms):
     pstr = None
