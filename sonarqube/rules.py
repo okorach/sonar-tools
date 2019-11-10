@@ -1,9 +1,10 @@
 #!python3
 
+import sys
 import json
 import requests
 from sonarqube.env import get_url, get_credentials, json_dump_debug
-import sys
+
 
 class Rule:
 
@@ -30,21 +31,21 @@ class Rule:
         self.tags = None
         self.template_key = None
 
-    def get_rule(self, key):
+    def get_rule(self):
         params = dict(projets=self.key)
         resp = requests.get(url=get_url() + '/api/projects/search', auth=get_credentials(), params=params)
         data = json.loads(resp.text)
-        return(data['components']['name'])
+        return data['components']['name']
 
 def count(include_applications):
     qualifiers = "TRK,APP" if include_applications else "TRK"
     params = dict(ps=3, qualifiers=qualifiers)
     resp = requests.get(url=get_url() + '/api/projects/search', auth=get_credentials(), params=params)
     data = json.loads(resp.text)
-    return(data['paging']['total'])
+    return data['paging']['total']
 
 def get_rules(page_nbr=1, page_size=500):
-    params = dict(ps=page_size, p=page_nbr, qualifiers=qualifiers)
+    params = dict(ps=page_size, p=page_nbr)
     resp = requests.get(url=get_url() + '/api/rules/search', auth=get_credentials(), params=params)
     data = json.loads(resp.text)
     return data['rules']
@@ -55,7 +56,7 @@ def get_all_rules():
     rules_list = []
     done = False
     while not done:
-        params = dict(ps=page_size, p=page_nbr, qualifiers=qualifiers)
+        params = dict(ps=page_size, p=page_nbr)
         resp = requests.get(url=get_url() + '/api/rules/search', auth=get_credentials(), params=params)
         data = json.loads(resp.text)
         for rule in data['rules']:
