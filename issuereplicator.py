@@ -7,21 +7,16 @@ import argparse
 import requests
 import sonarqube.env as env
 import sonarqube.issues as issues
-import sonarqube.utilities as utils
+import sonarqube.utilities as util
 
 # Mandatory script input parameters
-global project_key
-global dry_run_mode
 dry_run_mode = False
-
-def print_object(o):
-    print(json.dumps(o, indent=3, sort_keys=True))
 
 # ------------------------------------------------------------------------------
 
 
 def parse_args(desc):
-    parser = utils.set_common_args(desc)
+    parser = util.set_common_args(desc)
     parser.add_argument('-r', '--recover', required=False,
                         help='''What information to replicate. Default is FP and WF, but issue assignment,
                         tags, severity and type change can be recovered too''')
@@ -43,26 +38,30 @@ parms['componentKeys'] = parms['projectKey']
 
 parms.update(dict(env=source_env))
 all_source_issues = issues.search_all_issues(**parms)
-print("Found %d issues with manual changes on source project\n" % len(all_source_issues))
+util.logger.info("Found %d issues with manual changes on source project", len(all_source_issues))
 
 parms.update(dict(env=target_env))
 all_target_issues = issues.search_all_issues(**parms)
-print("Found %d target issues on target project\n" % len(all_target_issues))
+util.logger.info("Found %d target issues on target project", len(all_target_issues))
 
 for issue in all_target_issues:
-    print('Searching sibling for issue key %s\n' % issue.id)
+    util.logger.info('Searching sibling for issue key %s', issue.id)
     siblings = issues.search_siblings(issue, all_source_issues, False)
     nb_siblings = len(siblings)
-    if nb_siblings >= 0:
-        print('   Found %d sibling(s)\n' % nb_siblings)
-        if nb_siblings == 1:
-            print('Found a match issue id %s' % siblings[0].id)
-            if siblings[0].has_changelog_or_comments():
-                print('   Automatically applying changelog')
-                issues.apply_changelog(issue, siblings[0], True)
-            else:
-                print('   No changelog to apply')
-        else:
-            print('   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below')
-            for sibling in siblings:
-                print(sibling.id + ', ')
+    util.logger.debug('Found %d sibling(s) for issue %s', nb_siblings, issue.id)
+    if nb_siblings == 0:
+        continue
+    if nb_siblings >= 1:
+        util.logger.info('Ambiguity for issue key %s, cannot automatically apply changelog', issue.id)
+        util.logger.info('Candidate issue keys below')
+        for sibling in siblings:
+            util.logger.debug(sibling.id)
+        continue
+    # Exactly 1 match
+    util.logger.debug('Found a match issue id %s', siblings[0].id)
+    if siblings[0].has_changelog_or_comments():
+        util.logger.debug('Automatically applying changelog')
+        issues.apply_changelog(issue, siblings[0], True)
+    else:
+        util.logger.debug('No changelog to apply')
+
