@@ -3,9 +3,9 @@ import logging
 
 DEBUG_LEVEL = 0
 DRY_RUN = False
-logger = logging.getLogger('mediatools')
+logger = logging.getLogger('sonarqube-tools')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh = logging.FileHandler('mediatools.log')
+fh = logging.FileHandler('sonarqube-tools.log')
 ch = logging.StreamHandler()
 logger.addHandler(fh)
 logger.addHandler(ch)
