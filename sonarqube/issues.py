@@ -72,6 +72,7 @@ class Issue(sq.SqObject):
     def __init__(self, key, sqenv):
         self.env = sqenv
         self.id = key
+        self.url = None
         self.json = None
         self.severity = None
         self.type = None
@@ -96,6 +97,11 @@ class Issue(sq.SqObject):
     def __str__(self):
         return "Key:{0} - Type:{1} - Severity:{2} - File/Line:{3}/{4} - Rule:{5}".format( \
             self.id, self.type, self.severity, self.component, self.line, self.rule)
+
+    def get_url(self):
+        if self.url is None:
+            self.url = '{0}/issues?open={1}'.format(self.env.get_url(), self.id)
+        return self.url
 
     def feed(self, jsondata):
         self.json = jsondata
@@ -243,14 +249,16 @@ class Issue(sq.SqObject):
         return self.id
 
     def identical_to(self, another_issue):
-        util.logger.debug("=" * 20)
-        util.logger.debug("Comparing 2 issues: %s and %s", str(self), str(another_issue))
-        util.logger.debug("=" * 20)
         identical = (self.rule == another_issue.rule and self.hash == another_issue.hash and
                      self.component == another_issue.component and
                      self.message == another_issue.message and self.debt == another_issue.debt)
-        util.logger.debug(identical)
-        util.logger.debug("=" * 20)
+        util.logger.debug("Issue %s and %s are identical = %s", self.id, another_issue.id, str(identical))
+        return identical
+
+    def identical_to_except_comp(self, another_issue):
+        identical = (self.rule == another_issue.rule and self.hash == another_issue.hash and
+                     self.message == another_issue.message and self.debt == another_issue.debt)
+        util.logger.debug("Issue %s and %s are identical = %s", self.id, another_issue.id, str(identical))
         return identical
 
     def match(self, another_issue):
@@ -345,12 +353,12 @@ def search(sqenv = None, **kwargs):
         issue = Issue(key = json_issue['key'], sqenv = sqenv)
         issue.feed(json_issue)
         all_issues = all_issues + [issue]
-        util.logger.debug('----issues.ISSUE%s', ('-'*30))
-        util.logger.debug(json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')))
-        util.logger.debug(str(issue))
+        #util.logger.debug(json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')))
+        #util.logger.debug(str(issue))
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
 def search_all_issues(sqenv = None, **kwargs):
+    util.logger.info('searching issues for %s', str(kwargs))
     kwargs['ps'] = 500
     page = 1
     nbr_pages = 1
@@ -653,10 +661,12 @@ def identical_attributes(o1, o2, key_list):
             return False
     return True
 
-def search_siblings(an_issue, issue_list, only_new_issues=True):
+def search_siblings(an_issue, issue_list, only_new_issues=True, check_component = False):
     siblings = []
     for issue in issue_list:
-        if not issue.identical_to(an_issue):
+        if check_component and not issue.identical_to(an_issue):
+            continue
+        if not issue.identical_to_except_comp(an_issue):
             continue
         if only_new_issues:
             if issue.get_changelog.size() == 0:
