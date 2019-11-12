@@ -47,10 +47,10 @@ for parm in noneparms:
 parms.update(dict(env=sqenv))
 
 for parm in parms:
-    env.debug(parm, '->', parms[parm])
+    util.logger.debug("%s --> %s", parm, parms[parm])
 
 all_issues = issues.search_all_issues_unlimited(sqenv=sqenv, **parms)
 print(issues.to_csv_header())
 for issue in all_issues:
     print(issue.to_csv())
-env.debug ("Returned issues: ", len(all_issues))
+util.logger.info("Returned issues: %d", len(all_issues))
