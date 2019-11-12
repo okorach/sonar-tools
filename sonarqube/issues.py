@@ -43,7 +43,7 @@ class IssueComments:
 class IssueChangeLog(sq.SqObject):
     def __init__(self, issue_key, sqenv):
         self.env = sqenv
-        self.env.debug('Getting changelog for issue key ' + issue_key)
+        util.logger.debug('Getting changelog for issue key %s', issue_key)
         parms = dict(format='json', issue=issue_key)
         resp = self.get('/api/issues/changelog', parms)
         data = json.loads(resp.text)

@@ -6,6 +6,7 @@ import json
 import requests
 import sonarqube.env as env
 import sonarqube.issues as issues
+import sonarqube.utilities as util
 
 class Component:
 
@@ -52,8 +53,8 @@ class Component:
 
     def get_issues(self, **kwargs):
         kwargs['componentKeys'] = self.key
-        env.debug('=' * 40)
-        env.debug(kwargs)
+        util.logger.debug('=' * 40)
+        util.logger.debug(str(kwargs))
         oldest = self.get_oldest_issue_date()
         if oldest is None:
             return []
@@ -63,7 +64,7 @@ class Component:
         if nbr_issues <= 10000:
             issue_list = issues.search_all_issues(sqenv=self.sqenv, **kwargs)
             for i in issue_list:
-                env.debug(i.to_csv())
+                util.logger.debug(i.to_csv())
         elif 'createdAfter' not in kwargs or 'createdBefore' not in kwargs:
             startdate = datetime.datetime.strptime(oldest, '%Y-%m-%dT%H:%M:%S%z')
             enddate = datetime.datetime.strptime(self.get_newest_issue_date(), '%Y-%m-%dT%H:%M:%S%z')
@@ -74,7 +75,7 @@ class Component:
             startdate = datetime.datetime.strptime(kwargs['createdAfter'], '%Y-%m-%d')
             enddate = datetime.datetime.strptime(kwargs['createdBefore'], '%Y-%m-%d')
             diffdays = abs((enddate - startdate).days)
-            env.debug("diffdays = %d" % diffdays)
+            util.logger.debug("diffdays = %d", diffdays)
             mid_date = startdate + datetime.timedelta(days=diffdays//2)
             kwargs['createdAfter']  = "%04d-%02d-%02d" % (startdate.year, startdate.month, startdate.day)
             kwargs['createdBefore'] = "%04d-%02d-%02d" % (mid_date.year, mid_date.month, mid_date.day)
@@ -91,7 +92,7 @@ class Component:
             for comp in self.get_subcomponents():
                 issue_list = issue_list + comp.get_all_issues(**kwargs)
 
-        env.debug("For component %s, %d issues found after filter" % (self.key, len(issue_list)))
+        util.logger.info("For component %s, %d issues found after filter", self.key, len(issue_list))
         return issue_list
 
 
