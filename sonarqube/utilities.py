@@ -35,3 +35,30 @@ def set_common_args(desc):
 
     parser.add_argument('-g', '--debug', required=False, help='Debug level')
     return parser
+
+def get_logging_level(intlevel):
+    if intlevel >= 2:
+        lvl = logging.DEBUG
+    elif intlevel >= 1:
+        lvl = logging.INFO
+    elif intlevel >= 0:
+        lvl = logging.ERROR
+    else:
+        lvl = logging.CRITICAL
+    return lvl
+
+def set_debug_level(level):
+    global DEBUG_LEVEL
+    DEBUG_LEVEL = 0 if level is None else int(level)
+    global logger
+    logger.setLevel(get_logging_level(DEBUG_LEVEL))
+    logger.info("Set debug level to %d", DEBUG_LEVEL)
+
+def set_dry_run(dry_run):
+    global DRY_RUN
+    DRY_RUN = dry_run
+    logger.info("Set dry run to %s", str(dry_run))
+
+def check_environment(kwargs):
+    set_debug_level(kwargs.pop('debug', 0))
+    set_dry_run(kwargs.pop('dry_run', 'false'))
