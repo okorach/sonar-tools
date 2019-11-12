@@ -57,7 +57,7 @@ class Environment:
 
     def urlstring(self, api, parms):
         first = True
-        url = "{1}{2}".format(str(self), api)
+        url = "{0}{1}".format(str(self), api)
         for p in parms:
             sep = '?' if first else '&'
             first = False
