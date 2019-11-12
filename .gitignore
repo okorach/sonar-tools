@@ -7,3 +7,4 @@ sonarqube/*.pyc
 .vscode/
 **/*.csv
 **/*.gz
+**/*.log
