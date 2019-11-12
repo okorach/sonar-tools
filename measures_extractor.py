@@ -1,11 +1,12 @@
 #!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 import re
 import json
-import requests
 import argparse
+import requests
 import sonarqube.measures as measures
 import sonarqube.metrics as metrics
 import sonarqube.projects as projects
+import sonarqube.utilities as util
 import sonarqube.env as env
 
 
@@ -60,7 +61,7 @@ for project in project_list:
     p_name = project['name']
     last_analysis = project['lastAnalysisDate'] if 'lastAnalysisDate' in project else 'Not analyzed yet'
     all_measures = measures.load_measures(key, metrics, myenv)
-    #env.json_dump_debug(all_measures)
+    util.logger.debug(env.json_dump_debug(all_measures))
     p_meas = {}
     for measure in all_measures:
         name = measure['metric'] if 'metric' in measure else ''
@@ -80,4 +81,4 @@ for project in project_list:
         line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep + "None"
     print(line)
 
-print("%d PROJECTS" % projects.count(True, myenv))
+util.logger.info("%d PROJECTS", projects.count(True, myenv))

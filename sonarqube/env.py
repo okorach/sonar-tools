@@ -3,14 +3,13 @@
 import sys
 import json
 import requests
-
+import sonarqube.utilities as util
 
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
 this.token = ''
 this.root_url= "http://localhost:9000"
 
-global my_debug
 my_debug = False
 
 class Environment:
@@ -21,12 +20,13 @@ class Environment:
         if 'token ' in kwargs:
             self.token = kwargs['token']
 
+    def __str__(self):
+        return "{1}@{0}".format(self.root_url, self.token)
+
     def set_env(self, url, token):
         self.root_url = url
         self.token = token
-        global my_debug
-        if my_debug:
-            print ('Setting environment: '+ self.token + '@' + self.root_url)
+        util.logger.debug('Setting environment: %s', str(self))
 
     def set_token(self, token):
         self.token = token
@@ -44,38 +44,31 @@ class Environment:
         return self.root_url
 
     def get(self, api, parms):
-        debug('GET: '+ self.urlstring(api, parms))
+        util.logger.debug('GET: %s', self.urlstring(api, parms))
         return requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def post(self, api, parms):
-        debug('POST: '+ self.urlstring(api, parms))
+        util.logger.debug('POST: %s', self.urlstring(api, parms))
         return requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def delete(self, api, parms):
-        debug('DELETE: '+ self.urlstring(api, parms))
+        util.logger.debug('DELETE: %s', self.urlstring(api, parms))
         return requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
-    def to_string(self):
-        return "URL = " + self.root_url + "\n" + "TOKEN = " + self.token
-
     def urlstring(self, api, parms):
-        pstr = None
+        first = True
+        url = "{1}{2}".format(str(self), api)
         for p in parms:
-            #print(p, '->', parms[p])
-            if pstr is None:
-                pstr = p + '=' + str(parms[p])
-            else:
-                pstr = pstr + '&' + p + '=' + str(parms[p])
-        urlstring = self.token + '@' + self.root_url + api
-        if pstr is not None:
-            urlstring = urlstring + '?' + pstr
-        return urlstring
+            sep = '?' if first else '&'
+            first = False
+            url += '{0}{1}={2}'.format(sep, p, parms[p])
+        return url
 
 #--------------------- Static methods, not recommended -----------------
 def set_env(url, tok):
     this.root_url = url
     this.token = tok
-    debug('Setting GLOBAL environment: '+ this.token + '@' + this.root_url)
+    util.logger.debug('Setting GLOBAL environment: %s@%s', this.token, this.root_url)
 
 def set_token(tok):
     this.token = tok
@@ -92,41 +85,28 @@ def set_url(url):
 def get_url():
     return this.root_url
 
-def debug(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
-    global my_debug
-    if my_debug is True:
-        print( 'DEBUG: %s' % ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
-
-def log(arg1, arg2 = '', arg3 = '', arg4 = '', arg5 = '', arg6 = ''):
-    print( 'LOG: %s' % ' '.join([str(x) for x in [arg1, arg2, arg3, arg4, arg4, arg5, arg6]]))
-
 def json_dump_debug(json_data):
-    global my_debug
-    if my_debug is True:
-        json.dump(json_data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': '))
+    util.logger.debug(json.dump(json_data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')))
 
 def urlstring(api, parms):
-    pstr = None
+    first = True
+    url = "{1}@{2}{3}".format(this.token, this.root_url, api)
     for p in parms:
-        if pstr is None:
-            pstr = p + '=' + str(parms[p])
-        else:
-            pstr = pstr + '&' + p + '=' + str(parms[p])
-    urlstring = this.token + '@' + this.root_url + api
-    if pstr is not None:
-        urlstring = urlstring + '?' + pstr
-    return urlstring
+        sep = '?' if first else '&'
+        first = False
+        url += '{0}{1}={2}'.format(sep, p, parms[p])
+    return url
 
 def get(api, parms):
-    debug('GLOBAL GET: ' + urlstring(api, parms))
+    util.logger.debug('GLOBAL GET: %s', urlstring(api, parms))
     return requests.get(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def post(api, parms):
-    debug('GLOBAL POST: ' + urlstring(api, parms))
+    util.logger.debug('GLOBAL POST: %s', urlstring(api, parms))
     return requests.post(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def delete(api, parms):
-    debug('GLOBAL DELETE: '+ urlstring(api, parms))
+    util.logger.debug('GLOBAL DELETE: %s', urlstring(api, parms))
     return requests.delete(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def add_standard_arguments(parser):
@@ -135,5 +115,5 @@ def add_standard_arguments(parser):
                         required=True)
     parser.add_argument('-u', '--url', help='Root URL of the SonarQube server, default is http://localhost:9000',
                         required=False, default='http://localhost:9000')
-    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', help='Commas separated key of the components', required=False)
-
+    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', \
+        help='Commas separated key of the components', required=False)
