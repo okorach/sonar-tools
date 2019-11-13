@@ -274,7 +274,7 @@ class Issue(sq.SqObject):
                 match_level -= 0.1
             if self.debt != another_issue.debt:
                 match_level -= 0.1
-        util.logger.debug("Match level %3.0f%%\n" % (match_level * 100))
+        util.logger.debug("Match level %3.0f%%\n", (match_level * 100))
         util.logger.debug("=" * 20)
         return match_level
 
