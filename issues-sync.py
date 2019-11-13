@@ -1,5 +1,15 @@
 #!/usr/local/bin/python
 #!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+#------------------------------------------------------------------------------
+#
+#   This script propagates the manual issue changes (FP, WF, Change
+#   of severity, of issue type, comments) from:
+#   - One project to another (normally on different platforms but not necessarily)
+#   - One branch of a project to another branch of the same project (normally LLBs)
+#
+#   Only issues with a 100% match are propagates. When there's a doubt, nothing is done
+#
+#------------------------------------------------------------------------------
 
 import sys
 import json
