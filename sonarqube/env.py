@@ -1,6 +1,7 @@
 #!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
 import sys
+import re
 import json
 import requests
 import sonarqube.utilities as util
@@ -14,14 +15,13 @@ my_debug = False
 
 class Environment:
 
-    def __init__(self, **kwargs):
-        if 'url' in kwargs:
-            self.root_url = kwargs['url']
-        if 'token ' in kwargs:
-            self.token = kwargs['token']
+    def __init__(self, url, token):
+        self.root_url = url
+        self.token = token
 
     def __str__(self):
-        return "{1}@{0}".format(self.root_url, self.token)
+        redacted_token = re.sub(r'(....).*(....)', '\1***\2', self.token)
+        return "{0}@{1}".format(redacted_token, self.root_url)
 
     def set_env(self, url, token):
         self.root_url = url
@@ -44,15 +44,15 @@ class Environment:
         return self.root_url
 
     def get(self, api, parms):
-        util.logger.debug('GET: %s', self.urlstring(api, parms))
+        util.logger.info('GET: %s', self.urlstring(api, parms))
         return requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def post(self, api, parms):
-        util.logger.debug('POST: %s', self.urlstring(api, parms))
+        util.logger.info('POST: %s', self.urlstring(api, parms))
         return requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def delete(self, api, parms):
-        util.logger.debug('DELETE: %s', self.urlstring(api, parms))
+        util.logger.info('DELETE: %s', self.urlstring(api, parms))
         return requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def urlstring(self, api, parms):
@@ -90,7 +90,8 @@ def json_dump_debug(json_data):
 
 def urlstring(api, parms):
     first = True
-    url = "{1}@{2}{3}".format(this.token, this.root_url, api)
+    redacted_token = re.sub(r'(....).*(....)', '\1***\2', this.token)
+    url = "{0}@{1}{2}".format(redacted_token, this.root_url, api)
     for p in parms:
         sep = '?' if first else '&'
         first = False
@@ -98,15 +99,15 @@ def urlstring(api, parms):
     return url
 
 def get(api, parms):
-    util.logger.debug('GLOBAL GET: %s', urlstring(api, parms))
+    util.logger.info('GLOBAL GET: %s', urlstring(api, parms))
     return requests.get(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def post(api, parms):
-    util.logger.debug('GLOBAL POST: %s', urlstring(api, parms))
+    util.logger.info('GLOBAL POST: %s', urlstring(api, parms))
     return requests.post(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def delete(api, parms):
-    util.logger.debug('GLOBAL DELETE: %s', urlstring(api, parms))
+    util.logger.info('GLOBAL DELETE: %s', urlstring(api, parms))
     return requests.delete(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def add_standard_arguments(parser):
