@@ -85,6 +85,6 @@ for issue in all_target_issues:
     util.logger.info('Found a match, issue %s', siblings[0].get_url())
     if siblings[0].has_changelog_or_comments():
         util.logger.info('Automatically applying changelog')
-        issues.apply_changelog(issue, siblings[0], True)
+        issues.apply_changelog(issue, siblings[0])
     else:
         util.logger.info('No changelog to apply')
