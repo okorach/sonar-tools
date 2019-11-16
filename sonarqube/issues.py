@@ -40,6 +40,9 @@ class IssueComments:
     def size(self):
         return len(self.json)
 
+    def to_string(self):
+        """Dumps the object in a string"""
+        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 class IssueChangeLog(sq.SqObject):
     def __init__(self, issue_key, sqenv):
         self.env = sqenv
@@ -62,11 +65,8 @@ class IssueChangeLog(sq.SqObject):
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 
-
-
     def get_json(self):
         return self.json
-
 
 class Issue(sq.SqObject):
     def __init__(self, key, sqenv):
@@ -98,9 +98,13 @@ class Issue(sq.SqObject):
         return "Key:{0} - Type:{1} - Severity:{2} - File/Line:{3}/{4} - Rule:{5}".format( \
             self.id, self.type, self.severity, self.component, self.line, self.rule)
 
+    def to_string(self):
+        """Dumps the object in a string"""
+        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
+
     def get_url(self):
         if self.url is None:
-            self.url = '{0}/issues?open={1}'.format(self.env.get_url(), self.id)
+            self.url = '{0}/project/issues?id={1}&issues={2}'.format(self.env.get_url(), self.component, self.id)
         return self.url
 
     def feed(self, jsondata):
@@ -162,19 +166,29 @@ class Issue(sq.SqObject):
         try:
             self.comments = IssueComments(self.json['comments'])
         except KeyError:
-            self.comments = None
+            self.comments = []
         return self.comments
+
+    def get_all_events(self, is_sorted = True):
+        events = self.get_changelog()
+        comments = self.get_comments()
+        for date in comments:
+            events[date] = comments[date]
+        if is_sorted:
+            events = events.sort()
+        return events
 
     def has_comments(self):
         comments = self.get_comments()
-        return False if comments is None else comments.size() > 0
+        return len(comments) > 0
 
     def has_changelog_or_comments(self):
         return self.has_changelog() or self.has_comments()
 
-    def add_comment(self, comment_text):
-        parms = dict(issue=self.id, text=comment_text)
-        self.post('/api/issues/add_comment', parms)
+    def add_comment(self, comment):
+        util.logger.debug("Adding comment %s to issue %s", comment, self.id)
+        params = {'issue':self.id, 'text':comment}
+        return self.do_post('issues/add_comment', **params)
 
     # def delete_comment(self, comment_id):
 
@@ -187,21 +201,33 @@ class Issue(sq.SqObject):
 
     def set_severity(self, severity):
         """Sets severity"""
+        util.logger.debug("Changing severity of issue %s from %s to %s", self.id, self.severity, severity)
+        params = {'issue':self.id, 'severity':severity}
+        return self.do_post('issues/set_severity', **params)
 
     def assign(self, assignee):
         """Sets assignee"""
+        util.logger.debug("Assigning issue %s to %s", self.id, assignee)
+        params = {'issue':self.id, 'assignee':assignee}
+        return self.do_post('issues/assign', **params)
 
     def get_authors(self):
         """Gets authors from SCM"""
 
     def set_tags(self, tags):
         """Sets tags"""
+        util.logger.debug("Setting tags %s to issue %s", tags, self.id)
+        params = {'issue':self.id, 'tags':tags}
+        return self.do_post('issues/set_tags', **params)
 
     def get_tags(self):
         """Gets tags"""
 
-    def set_type(self, issue_type):
+    def set_type(self, new_type):
         """Sets type"""
+        util.logger.debug("Changing type of issue %s from %s to %s", self.id, self.type, new_type)
+        params = {'issue':self.id, 'type':new_type}
+        return self.do_post('issues/set_type', **params)
 
     def get_type(self):
         """Gets type"""
@@ -209,9 +235,6 @@ class Issue(sq.SqObject):
     def get_status(self):
         return self.status
 
-    def to_string(self):
-        """Dumps the object in a string"""
-        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 
     def has_been_marked_as_wont_fix(self):
         changelog = self.get_changelog()
@@ -248,21 +271,57 @@ class Issue(sq.SqObject):
     def get_key(self):
         return self.id
 
-    def identical_to(self, another_issue):
-        identical = (self.rule == another_issue.rule and self.hash == another_issue.hash and
-                     self.component == another_issue.component and
-                     self.message == another_issue.message and self.debt == another_issue.debt)
-        util.logger.debug("Issue %s and %s are identical = %s", self.id, another_issue.id, str(identical))
-        return identical
+    def __same_rule(self, another_issue):
+        return self.rule == another_issue.rule
+
+    def __same_hash(self, another_issue):
+        return self.hash == another_issue.hash
+
+    def __same_message(self, another_issue):
+        return self.message == another_issue.message
+
+    def __same_debt(self, another_issue):
+        return self.debt == another_issue.debt
+
+    def same_general_attributes(self, another_issue):
+        return self.__same_rule(another_issue) and self.__same_hash(another_issue) and \
+               self.__same_message(another_issue)
+
+    def is_vulnerability(self):
+        return self.type == 'VULNERABILITY'
+
+    def is_hotspot(self):
+        return self.type == 'SECURITY_HOTSPOT'
+
+    def is_bug(self):
+        return self.type == 'BUG'
+
+    def is_code_smell(self):
+        return self.type == 'CODE_SMELL'
+
+    def is_security_issue(self):
+        return self.is_vulnerability() or self.is_hotspot()
+
+    def __identical_security_issues(self, another_issue):
+        return self.is_security_issue() and another_issue.is_security_issue()
+
+    def identical_to(self, another_issue, ignore_component = False):
+        if not self.same_general_attributes(another_issue) or \
+            (self.component != another_issue.component and not ignore_component):
+            util.logger.info("Issue %s and %s are different on general attributes", self.id, another_issue.id)
+            return False
+        # Hotspots carry no debt,so you can only check debt equality if issues
+        # are not hotspots
+        if not self.is_hotspot() and not another_issue.is_hotspot() and self.debt != another_issue.debt:
+            util.logger.info("Issue %s and %s are different on debt", self.id, another_issue.id)
+            return False
+        util.logger.info("Issue %s and %s are identical", self.get_url(), another_issue.get_url())
+        return True
 
     def identical_to_except_comp(self, another_issue):
-        identical = (self.rule == another_issue.rule and self.hash == another_issue.hash and
-                     self.message == another_issue.message and self.debt == another_issue.debt)
-        util.logger.debug("Issue %s and %s are identical = %s", self.id, another_issue.id, str(identical))
-        return identical
+        return self.identical_to(another_issue, True)
 
     def match(self, another_issue):
-        util.logger.debug("=" * 20)
         util.logger.debug("Comparing 2 issues: %s and %s", str(self), str(another_issue))
         if self.rule != another_issue.rule or self.hash != another_issue.hash:
             match_level = 0
@@ -275,19 +334,55 @@ class Issue(sq.SqObject):
             if self.debt != another_issue.debt:
                 match_level -= 0.1
         util.logger.debug("Match level %3.0f%%\n", (match_level * 100))
-        util.logger.debug("=" * 20)
         return match_level
 
     def was_fp_or_wf(self):
         changelog = self.get_changelog()
-        util.logger.debug('------- ISS ChangeLog--------')
         util.logger.debug(changelog)
         util.logger.debug(changelog.to_string())
         for log in changelog.get_json():
             if is_log_a_closed_fp(log) or is_log_a_closed_wf(log) or \
-            is_log_a_severity_change(log) or is_log_a_type_change(log):
+            is_event_a_severity_change(['log',log]) or is_event_a_type_change(['log',log]):
                 return True
         return False
+
+    def do_transition(self, transition):
+        params = {'issue':self.id, 'transition':transition}
+        return self.do_post('issues/do_transition', **params)
+
+    def reopen(self):
+        util.logger.debug("Reopening issue %s", self.id)
+        return self.do_transition('reopen')
+
+    def mark_as_false_positive(self):
+        util.logger.debug("Marking issue %s as false positive", self.id)
+        return self.do_transition('falsepositive')
+
+    def mark_as_wont_fix(self):
+        util.logger.debug("Marking issue %s as won't fix", self.id)
+        return self.do_transition('wontfix')
+
+    def mark_as_reviewed(self):
+        if self.is_hotspot():
+            util.logger.debug("Marking hotspot %s as reviewed", self.id)
+            return self.do_transition('resolveasreviewed')
+        elif self.is_vulnerability():
+            util.logger.debug("Marking vulnerability %s as won't fix in replacement of 'reviewed'", self.id)
+            ret = self.do_transition('wontfix')
+            self.add_comment("Vulnerability marked as won't fix to replace hotspot 'reviewed' status")
+            return ret
+        else:
+            util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.id)
+
+    def do_post(self, api, **params):
+        do_it_really = True
+        if not do_it_really:
+            util.logger.info('DRY RUN for %s', '/api/' + api + str(params))
+            return 0
+        resp = self.post('/api/' + api, params)
+        if resp.status_code != 200:
+            util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
+        return resp.status_code
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
@@ -342,7 +437,6 @@ def search(sqenv = None, **kwargs):
     else:
         resp = sqenv.get('/api/issues/search', parms)
     data = json.loads(resp.text)
-    #env.json_dump_debug(data)
     nbr_issues = data['paging']['total']
     util.logger.debug("Number of issues: %d", nbr_issues)
     page = data['paging']['pageIndex']
@@ -353,8 +447,6 @@ def search(sqenv = None, **kwargs):
         issue = Issue(key = json_issue['key'], sqenv = sqenv)
         issue.feed(json_issue)
         all_issues = all_issues + [issue]
-        #util.logger.debug(json.dump(json_issue, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')))
-        #util.logger.debug(str(issue))
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
 def search_all_issues(sqenv = None, **kwargs):
@@ -368,7 +460,9 @@ def search_all_issues(sqenv = None, **kwargs):
         returned_data = search(sqenv = sqenv, **kwargs)
         issues = issues + returned_data['issues']
         #if returned_data['total'] > 10000 and page == 20: NOSONAR
-        #    raise TooManyIssuesError(returned_data['total'], 'Request found %d issues which is more than the maximum allowed 10000' % returned_data['total']) NOSONAR
+        #    raise TooManyIssuesError(returned_data['total'], \
+        #          'Request found %d issues which is more than the maximum allowed 10000' % \
+        #          returned_data['total']) NOSONAR
         page = returned_data['page']
         nbr_pages = returned_data['pages']
         page = page + 1
@@ -486,69 +580,40 @@ def search_all_issues_unlimited(sqenv=None, **kwargs):
         issues = issues + projects.Project(key=project, sqenv=sqenv).get_all_issues()
     return issues
 
-def apply_changelog(target_issue, source_issue, do_it_really=True):
-    if source_issue.has_changelog():
-        events_by_date = source_issue.get_changelog().sort()
-    if source_issue.has_comments():
-        comments_by_date = source_issue.get_comments().sort()
-        for date in comments_by_date:
-            events_by_date[date] = comments_by_date[date]
+def apply_changelog(target_issue, source_issue):
+    events = source_issue.get_all_events(True)
 
-    if not events_by_date:
+    if not events:
         util.logger.debug("Sibling has no changelog, no action taken")
         return
 
-    if do_it_really:
-        util.logger.debug('   Not joking I am doing it')
-
-    key = target_issue.id
-    for date in sorted(events_by_date):
-
-        if events_by_date[date][0] == 'log' and is_log_a_severity_change(events_by_date[date][1]):
-            params = dict(issue=key, severity=get_log_new_severity(events_by_date[date][1]))
-            operation = 'Changing severity to: ' + params['severity']
-            api = 'issues/set_severity'
-        elif events_by_date[date][0] == 'log' and is_log_a_type_change(events_by_date[date][1]):
-            params = dict(issue=key, type=get_log_new_type(events_by_date[date][1]))
-            operation = 'Changing type to: ' + params['type']
-            api = 'issues/set_type'
-        elif events_by_date[date][0] == 'log' and is_log_a_reopen(events_by_date[date][1]):
-            params = dict(issue=key, type='reopen')
-            operation = 'Reopening issue'
-            api = 'issues/do_transition'
-        elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_fp(events_by_date[date][1]):
-            params = dict(issue=key, transition='falsepositive')
-            operation = 'Setting as False Positive'
-            api = 'issues/do_transition'
-        elif events_by_date[date][0] == 'log' and is_log_a_resolve_as_wf(events_by_date[date][1]):
-            params = dict(issue=key, transition='wontfix')
-            operation = 'Setting as wontfix'
-            api = 'issues/do_transition'
-        elif events_by_date[date][0] == 'log' and is_log_an_assignee(events_by_date[date][1]):
-            params = dict(issue=key, assignee=get_log_assignee(events_by_date[date][1]))
-            operation = 'Assigning issue to: ' + params['assignee']
-            api = 'issues/assign'
-        elif events_by_date[date][0] == 'log' and is_log_a_tag_change(events_by_date[date][1]):
-            params = dict(key=key, tags=get_log_new_tag(events_by_date[date][1]).replace(' ', ','))
-            operation = 'Setting new tags to: ' + params['tags']
-            api = 'issues/set_tags'
-        elif events_by_date[date][0] == 'comment' and is_log_a_comment(events_by_date[date][1]):
-            params = dict(issue=key, text=events_by_date[date][1]['markdown'])
-            operation = 'Adding comment: ' + params['text']
-            api = 'issues/add_comment'
+    util.logger.info("Applying changelog of issue %s to issue %s", source_issue.id, target_issue.id)
+    for date in sorted(events):
+        event = events[date]
+        if is_event_a_severity_change(event):
+            target_issue.set_severity(get_log_new_severity(event[1]))
+        elif is_event_a_type_change(event):
+            target_issue.set_type(get_log_new_type(event[1]))
+        elif events[date][0] == 'log' and is_log_a_reopen(event[1]):
+            target_issue.reopen()
+        elif is_event_a_resolve_as_fp(event):
+            target_issue.mark_as_false_positive()
+        elif is_event_a_resolve_as_wf(event):
+            target_issue.mark_as_wont_fix()
+        elif is_event_a_resolve_as_reviewed(event):
+            target_issue.mark_as_reviewed()
+        elif is_event_an_assignment(event):
+            target_issue.assign(get_log_assignee(event[1]))
+        elif is_event_a_tag_change(event):
+            target_issue.set_tags(get_log_new_tag(event[1]).replace(' ', ','))
+        elif is_event_a_comment(event):
+            target_issue.add_comment(event[1]['markdown'])
         else:
-            continue
+            util.logger.error("Event %s can't be applied", str(event))
 
-        if not do_it_really:
-            print('   DRY RUN for %s' % operation)
-            continue
-        resp = target_issue.post('/api/' + api, params)
-        if resp.status_code != 200:
-            util.logger.error('HTTP Error %d from SonarQube API query',resp.status_code)
 
 def get_log_date(log):
     return log['creationDate']
-
 
 def is_log_a_closed_resolved_as(log, old_value):
     cond1 = False
@@ -563,10 +628,8 @@ def is_log_a_closed_resolved_as(log, old_value):
             cond2 = True
     return cond1 and cond2
 
-
 def is_log_a_closed_wf(log):
     return is_log_a_closed_resolved_as(log, 'WONTFIX')
-
 
 def is_log_a_comment(log):
     return True
@@ -590,10 +653,11 @@ def is_log_a_resolve_as(log, resolve_reason):
             cond2 = True
     return cond1 and cond2
 
-def is_log_an_assignee(log):
+def is_log_an_assignment(log):
     for diff in log['diffs']:
         if diff['key'] == 'assignee':
             return True
+    return False
 
 def is_log_a_reopen(log):
     cond1 = False
@@ -605,31 +669,45 @@ def is_log_a_reopen(log):
             cond2 = True
     return cond1 and cond2
 
-def is_log_a_resolve_as_fp(log):
-    return is_log_a_resolve_as(log, 'FALSE-POSITIVE')
+def is_log_a_reviewed(log):
+    cond1 = False
+    cond2 = False
+    for diff in log['diffs']:
+        if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == 'FIXED':
+            cond1 = True
+        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'REVIEWED':
+            cond2 = True
+    return cond1 and cond2
 
-def is_log_a_resolve_as_wf(log):
-    return is_log_a_resolve_as(log, 'WONTFIX')
+def is_event_a_comment(event):
+    return event[0] == 'comment'
 
+def is_event_an_assignment(event):
+    return event[0] == 'log' and is_log_an_assignment(event[1])
+
+def is_event_a_resolve_as_fp(event):
+    return event[0] == 'log' and is_log_a_resolve_as(event[1], 'FALSE-POSITIVE')
+
+def is_event_a_resolve_as_wf(event):
+    return event[0] == 'log' and is_log_a_resolve_as(event[1], 'WONTFIX')
+
+def is_event_a_resolve_as_reviewed(event):
+    return event[0] == 'log' and is_log_a_reviewed(event[1])
 
 def log_change_type(log):
     return log['diffs'][0]['key']
 
+def is_event_a_severity_change(event):
+    return event[0] == 'log' and log_change_type(event[1]) == 'severity'
 
-def is_log_a_severity_change(log):
-    return log_change_type(log) == 'severity'
+def is_event_a_type_change(event):
+    return event[0] == 'log' and log_change_type(event[1]) == 'type'
 
+def is_event_an_assignee_change(event):
+    return event[0] == 'log' and log_change_type(event[1]) == 'assignee'
 
-def is_log_a_type_change(log):
-    return log_change_type(log) == 'type'
-
-
-def is_log_an_assignee_change(log):
-    return log_change_type(log) == 'assignee'
-
-
-def is_log_a_tag_change(log):
-    return log_change_type(log) == 'tags'
+def is_event_a_tag_change(event):
+    return event[0] == 'log' and log_change_type(event[1]) == 'tags'
 
 
 def get_log_new_value(log, key_type):
@@ -638,22 +716,17 @@ def get_log_new_value(log, key_type):
             return diff['newValue']
     return 'undefined'
 
-
 def get_log_assignee(log):
     return get_log_new_value(log, 'assignee')
-
 
 def get_log_new_severity(log):
     return get_log_new_value(log, 'severity')
 
-
 def get_log_new_type(log):
     return get_log_new_value(log, 'type')
 
-
 def get_log_new_tag(log):
     return get_log_new_value(log, 'tags')
-
 
 def identical_attributes(o1, o2, key_list):
     for key in key_list:
@@ -664,15 +737,11 @@ def identical_attributes(o1, o2, key_list):
 def search_siblings(an_issue, issue_list, only_new_issues=True, check_component = False):
     siblings = []
     for issue in issue_list:
-        if check_component and not issue.identical_to(an_issue):
+        if not issue.identical_to(an_issue, not check_component):
             continue
-        if not issue.identical_to_except_comp(an_issue):
-            continue
-        if only_new_issues:
-            if issue.get_changelog.size() == 0:
-                # Add issue only if it has no change log, meaning it's brand new
-                siblings.append(issue)
-        else:
+        if not only_new_issues or (only_new_issues and not issue.has_changelog()):
+            # Add issue only if it has no change log, meaning it's brand new
+            util.logger.debug("Adding issue %s to list", issue.get_url())
             siblings.append(issue)
     return siblings
 
