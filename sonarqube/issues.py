@@ -381,7 +381,7 @@ class Issue(sq.SqObject):
             return 0
         resp = self.post('/api/' + api, params)
         if resp.status_code != 200:
-            util.logger.error('HTTP Error %d from SonarQube API query',resp.status_code)
+            util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
         return resp.status_code
 
     def to_csv(self):
