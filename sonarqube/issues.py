@@ -43,6 +43,34 @@ class IssueComments:
     def to_string(self):
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
+
+class IssueChangeLogNew(sq.SqObject):
+    def __init__(self, issue_key, sqenv):
+        self.env = sqenv
+        util.logger.debug('Getting newchangelog for issue key %s', issue_key)
+        resp = self.get('/api/issues/changelog', {'format':'json', 'issue':issue_key})
+        data = json.loads(resp.text)
+        env.json_dump_debug(data)
+        self.json = data['changelog']
+        self.changelogs = {}
+        for log in self.json:
+            self.changelogs[log['creationDate']]= diff_to_changelog(log['diffs'])
+
+    def sort(self):
+        sorted_log = dict()
+        for log in self.json:
+            sorted_log[log['creationDate']] = ('log', log)
+        return sorted_log
+
+    def size(self):
+        return len(self.json)
+
+    def to_string(self):
+        """Dumps the object in a string"""
+        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
+
+    def get_json(self):
+        return self.json
 class IssueChangeLog(sq.SqObject):
     def __init__(self, issue_key, sqenv):
         self.env = sqenv
@@ -50,6 +78,7 @@ class IssueChangeLog(sq.SqObject):
         parms = dict(format='json', issue=issue_key)
         resp = self.get('/api/issues/changelog', parms)
         data = json.loads(resp.text)
+        env.json_dump_debug(data)
         self.json = data['changelog']
 
     def sort(self):
@@ -755,3 +784,31 @@ def get_issues_search_parms(parms):
         if parms[key] is not None and key in OPTIONS_ISSUES_SEARCH:
             outparms[key] = parms[key]
     return outparms
+
+def diff_to_changelog(diffs):
+    for d in diffs:
+        if d['key'] == 'severity' or d['key'] == 'type' or d['key'] == 'tags':
+            return {'type':d['key'], 'value':d['newValue']}
+        elif d['key'] == 'resolution' and 'newValue' in d:
+            if d['newValue'] == 'FALSE-POSITIVE':
+                return {'type':'transition', 'value':'falsepositive'}
+            if d['newValue'] == 'WONTFIX':
+                return {'type':'transition', 'value':'wontfix'}
+            if d['newValue'] == 'FIXED':
+                # TODO - Handle hotspots
+                return {'type':'fixed'}
+        elif d['key'] == 'status' and 'newValue' in d and d['newValue'] == 'CONFIRMED':
+            return {'type':'transition', 'value':'confirm'}
+        elif d['key'] == 'status' and 'newValue' in d and d['newValue'] == 'REOPENED':
+            if d['oldValue'] == 'CONFIRMED':
+                return {'type':'transition', 'value':'unconfirm'}
+            else:
+                return {'type':'transition', 'value':'reopen'}
+        elif d['key'] == 'assignee':
+            if 'newValue' in d:
+                return {'type':'assign', 'value':d['newValue']}
+            else:
+                return {'type':'unassign'}
+        else:
+            continue
+
