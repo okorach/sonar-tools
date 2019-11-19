@@ -19,24 +19,36 @@ def diff(first, second):
     second = set(second)
     return [item for item in first if item not in second]
 
+def get_rating_letter(n):
+    if n == '1.0':
+        return 'A'
+    elif n == '2.0':
+        return 'B'
+    elif n == '3.0':
+        return 'C'
+    elif n == '4.0':
+        return 'D'
+    elif n == '5.0':
+        return 'E'
+    else:
+        util.logger.error("Wrong numeric rating provided %s", n)
+        return None
 
-parser = argparse.ArgumentParser(description='Extract measures of projects')
-parser.add_argument('-t', '--token', required=True,
-                    help='Token to authenticate to SonarQube - Unauthenticated usage is not possible')
-parser.add_argument('-u', '--url', required=False, default='http://localhost:9000',
-                    help='Root URL of the SonarQube server, default is http://localhost:9000')
+parser = util.set_common_args('Extract measures of projects')
 parser.add_argument('-m', '--metricKeys', required=False, help='Comma separated list of metrics or _all or _main')
+parser.add_argument('-r', '--ratingsAsLetters', action='store_true', required=False, \
+                    help='Reports ratings as ABCDE letters instead of 12345 numbers')
 
 args = parser.parse_args()
-myenv = env.Environment()
+myenv = env.Environment(url=args.url, token=args.token)
+kwargs = vars(args)
+util.check_environment(kwargs)
 
-myenv.set_token(args.token)
-myenv.set_url(args.url)
 # Mandatory script input parameters
 csv_sep = ";"
 
 if args.metricKeys == '_all':
-    metrics = metrics.get_all_metrics_csv()
+    metrics = metrics.get_all_metrics_csv(myenv)
 elif args.metricKeys == '_main':
     metrics = MAIN_METRICS
 elif args.metricKeys is not None:
@@ -57,11 +69,8 @@ for m in metrics_list:
 print('')
 project_list = projects.get_projects(True, myenv)
 for project in project_list:
-    key = project['key']
-    p_name = project['name']
     last_analysis = project['lastAnalysisDate'] if 'lastAnalysisDate' in project else 'Not analyzed yet'
-    all_measures = measures.load_measures(key, metrics, myenv)
-    util.logger.debug(env.json_dump_debug(all_measures))
+    all_measures = measures.load_measures(project['key'], metrics, myenv)
     p_meas = {}
     for measure in all_measures:
         name = measure['metric'] if 'metric' in measure else ''
@@ -71,9 +80,12 @@ for project in project_list:
             value = measure['periods'][0]['value']
         else:
             value = ''
-        p_meas[name] = value
+        if args.ratingsAsLetters and re.match(r"^(new_)?(security|security_review|reliability|maintainability)_rating$", name):
+            p_meas[name] = get_rating_letter(value)
+        else:
+            p_meas[name] = value
     line = ''
-    print("%s%s%s%s%s" % (key, csv_sep, p_name, csv_sep, last_analysis), end='')
+    print("%s%s%s%s%s" % (project['key'], csv_sep, project['name'], csv_sep, last_analysis), end='')
     if args.metricKeys == '_all':
         for metric in main_metrics_list:
             line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep

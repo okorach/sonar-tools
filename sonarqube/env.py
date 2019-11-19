@@ -85,8 +85,6 @@ def set_url(url):
 def get_url():
     return this.root_url
 
-def json_dump_debug(json_data):
-    util.logger.debug(json.dump(json_data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')))
 
 def urlstring(api, parms):
     first = True

@@ -32,4 +32,3 @@ class SqObject:
             return self.env.delete(api, parms)
 
 #--------------------- Static methods, not recommended -----------------
-
