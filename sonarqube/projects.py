@@ -6,8 +6,6 @@ import requests
 import sonarqube.env as env
 import sonarqube.components as comp
 
-global PROJECTS
-
 PROJECTS = {}
 class Project(comp.Component):
 
@@ -30,7 +28,7 @@ def count(include_applications, myenv = None):
     else:
         resp = myenv.get('/api/projects/search', params)
     data = json.loads(resp.text)
-    return(data['paging']['total'])
+    return data['paging']['total']
 
 def get_projects(include_applications,  myenv = None, page_size=500, page_nbr=1):
     qualifiers = "TRK,APP" if include_applications else "TRK"
