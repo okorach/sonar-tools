@@ -61,6 +61,6 @@ def get_project_name(key, sqenv = None):
     else:
         resp = sqenv.get('/api/projects/search', params)
     data = json.loads(resp.text)
-    #env.json_dump_debug(data)
+    #util.json_dump_debug(data)
     PROJECTS[key] = data['components'][0]['name']
     return PROJECTS[key]
