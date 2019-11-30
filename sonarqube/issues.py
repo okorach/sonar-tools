@@ -44,59 +44,6 @@ class IssueComments:
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 
-class IssueChangeLogNew(sq.SqObject):
-    def __init__(self, issue_key, sqenv):
-        self.env = sqenv
-        util.logger.debug('Getting newchangelog for issue key %s', issue_key)
-        resp = self.get('/api/issues/changelog', {'format':'json', 'issue':issue_key})
-        data = json.loads(resp.text)
-        env.json_dump_debug(data)
-        self.json = data['changelog']
-        self.changelogs = {}
-        for log in self.json:
-            self.changelogs[log['creationDate']]= diff_to_changelog(log['diffs'])
-
-    def sort(self):
-        sorted_log = dict()
-        for log in self.json:
-            sorted_log[log['creationDate']] = ('log', log)
-        return sorted_log
-
-    def size(self):
-        return len(self.json)
-
-    def to_string(self):
-        """Dumps the object in a string"""
-        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
-
-    def get_json(self):
-        return self.json
-class IssueChangeLog(sq.SqObject):
-    def __init__(self, issue_key, sqenv):
-        self.env = sqenv
-        util.logger.debug('Getting changelog for issue key %s', issue_key)
-        parms = dict(format='json', issue=issue_key)
-        resp = self.get('/api/issues/changelog', parms)
-        data = json.loads(resp.text)
-        env.json_dump_debug(data)
-        self.json = data['changelog']
-
-    def sort(self):
-        sorted_log = dict()
-        for log in self.json:
-            sorted_log[log['creationDate']] = ('log', log)
-        return sorted_log
-
-    def size(self):
-        return len(self.json)
-
-    def to_string(self):
-        """Dumps the object in a string"""
-        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
-
-    def get_json(self):
-        return self.json
-
 class Issue(sq.SqObject):
     def __init__(self, key, sqenv):
         self.env = sqenv
@@ -138,6 +85,7 @@ class Issue(sq.SqObject):
 
     def feed(self, jsondata):
         self.json = jsondata
+        util.json_dump_debug(jsondata, "ISSUE = ")
         self.id = jsondata['key']
         self.type = jsondata['type']
         if self.type != 'SECURITY_HOTSPOT':
@@ -184,28 +132,43 @@ class Issue(sq.SqObject):
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
-            self.changelog = IssueChangeLog(self.id, self.env)
-            util.logger.debug('---In get_changelog----\n%s', self.changelog.to_string())
+            resp = self.env.get('/api/issues/changelog', {'issue':self.id, 'format':'json'})
+            data = json.loads(resp.text)
+            self.json = data['changelog']
+            util.json_dump_debug(self.json, "Issue Changelog = ")
+            self.changelog = []
+            for l in self.json:
+                d = diff_to_changelog(l['diffs'])
+                self.changelog.append({'date':l['creationDate'], 'event':d['event'], 'value':d['value']})
         return self.changelog
 
     def has_changelog(self):
-        return self.get_changelog().size() > 0
+        util.logger.debug('Issue %s had %d changelog', self.id, len(self.get_changelog()))
+        return len(self.get_changelog()) > 0
 
     def get_comments(self):
         try:
+            util.json_dump_debug(self.json['comments'], 'Comments =')
             self.comments = IssueComments(self.json['comments'])
         except KeyError:
+            self.comments = []
+        except TypeError:
             self.comments = []
         return self.comments
 
     def get_all_events(self, is_sorted = True):
         events = self.get_changelog()
-        comments = self.get_comments()
-        for date in comments:
-            events[date] = comments[date]
+        util.logger.debug('Get all events: Issue %s had %d changelog', self.id, len(events))
+        #comments = self.get_comments()
+        #for date in comments:
+        #    events.append({'date':date, 'type':'comment', 'value':'COMMENT'})
         if is_sorted:
-            events = events.sort()
-        return events
+            bydate = {}
+            for e in events:
+                bydate[e['date']] = e
+            return bydate
+        else:
+            return events
 
     def has_comments(self):
         comments = self.get_comments()
@@ -337,7 +300,7 @@ class Issue(sq.SqObject):
     def identical_to(self, another_issue, ignore_component = False):
         if not self.same_general_attributes(another_issue) or \
             (self.component != another_issue.component and not ignore_component):
-            util.logger.info("Issue %s and %s are different on general attributes", self.id, another_issue.id)
+            util.logger.debug("Issue %s and %s are different on general attributes", self.id, another_issue.id)
             return False
         # Hotspots carry no debt,so you can only check debt equality if issues
         # are not hotspots
@@ -364,16 +327,6 @@ class Issue(sq.SqObject):
                 match_level -= 0.1
         util.logger.debug("Match level %3.0f%%\n", (match_level * 100))
         return match_level
-
-    def was_fp_or_wf(self):
-        changelog = self.get_changelog()
-        util.logger.debug(changelog)
-        util.logger.debug(changelog.to_string())
-        for log in changelog.get_json():
-            if is_log_a_closed_fp(log) or is_log_a_closed_wf(log) or \
-            is_event_a_severity_change(['log',log]) or is_event_a_type_change(['log',log]):
-                return True
-        return False
 
     def do_transition(self, transition):
         params = {'issue':self.id, 'transition':transition}
@@ -612,18 +565,19 @@ def search_all_issues_unlimited(sqenv=None, **kwargs):
 def apply_changelog(target_issue, source_issue):
     events = source_issue.get_all_events(True)
 
-    if not events:
-        util.logger.debug("Sibling has no changelog, no action taken")
+    if events is None or not events:
+        util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.id)
         return
 
     util.logger.info("Applying changelog of issue %s to issue %s", source_issue.id, target_issue.id)
-    for date in sorted(events):
-        event = events[date]
+    for d in sorted(events.iterkeys()):
+        event = events[d]
+        util.logger.debug("Verifying event %s", str(event))
         if is_event_a_severity_change(event):
-            target_issue.set_severity(get_log_new_severity(event[1]))
+            target_issue.set_severity(get_log_new_severity(event))
         elif is_event_a_type_change(event):
-            target_issue.set_type(get_log_new_type(event[1]))
-        elif events[date][0] == 'log' and is_log_a_reopen(event[1]):
+            target_issue.set_type(get_log_new_type(event))
+        elif is_event_a_reopen(event):
             target_issue.reopen()
         elif is_event_a_resolve_as_fp(event):
             target_issue.mark_as_false_positive()
@@ -632,11 +586,11 @@ def apply_changelog(target_issue, source_issue):
         elif is_event_a_resolve_as_reviewed(event):
             target_issue.mark_as_reviewed()
         elif is_event_an_assignment(event):
-            target_issue.assign(get_log_assignee(event[1]))
+            target_issue.assign(event['value'])
         elif is_event_a_tag_change(event):
-            target_issue.set_tags(get_log_new_tag(event[1]).replace(' ', ','))
+            target_issue.set_tags(event['value'].replace(' ', ','))
         elif is_event_a_comment(event):
-            target_issue.add_comment(event[1]['markdown'])
+            target_issue.add_comment(event['value'])
         else:
             util.logger.error("Event %s can't be applied", str(event))
 
@@ -682,12 +636,6 @@ def is_log_a_resolve_as(log, resolve_reason):
             cond2 = True
     return cond1 and cond2
 
-def is_log_an_assignment(log):
-    for diff in log['diffs']:
-        if diff['key'] == 'assignee':
-            return True
-    return False
-
 def is_log_a_reopen(log):
     cond1 = False
     cond2 = False
@@ -709,53 +657,46 @@ def is_log_a_reviewed(log):
     return cond1 and cond2
 
 def is_event_a_comment(event):
-    return event[0] == 'comment'
+    return event['event'] == 'comment'
 
 def is_event_an_assignment(event):
-    return event[0] == 'log' and is_log_an_assignment(event[1])
+    return event['event'] == 'assign'
 
 def is_event_a_resolve_as_fp(event):
-    return event[0] == 'log' and is_log_a_resolve_as(event[1], 'FALSE-POSITIVE')
+    return event['event'] == 'transition' and event['value'] == 'falsepositive'
 
 def is_event_a_resolve_as_wf(event):
-    return event[0] == 'log' and is_log_a_resolve_as(event[1], 'WONTFIX')
+    return event['event'] == 'transition' and event['value'] == 'wontfix'
 
 def is_event_a_resolve_as_reviewed(event):
-    return event[0] == 'log' and is_log_a_reviewed(event[1])
-
-def log_change_type(log):
-    return log['diffs'][0]['key']
+    return False
 
 def is_event_a_severity_change(event):
-    return event[0] == 'log' and log_change_type(event[1]) == 'severity'
+    return event['event'] == 'severity'
+
+def is_event_a_reopen(event):
+    return event['event'] == 'transition' and event['value'] == 'reopen'
 
 def is_event_a_type_change(event):
-    return event[0] == 'log' and log_change_type(event[1]) == 'type'
+    return event['event'] == 'type'
 
 def is_event_an_assignee_change(event):
-    return event[0] == 'log' and log_change_type(event[1]) == 'assignee'
+    return event['event'] == 'assign'
 
 def is_event_a_tag_change(event):
-    return event[0] == 'log' and log_change_type(event[1]) == 'tags'
+    return event['event'] == 'tags'
 
+def get_log_assignee(event):
+    return event['value']
 
-def get_log_new_value(log, key_type):
-    for diff in log['diffs']:
-        if diff['key'] == key_type:
-            return diff['newValue']
-    return 'undefined'
+def get_log_new_severity(event):
+    return event['value']
 
-def get_log_assignee(log):
-    return get_log_new_value(log, 'assignee')
+def get_log_new_type(event):
+    return event['value']
 
-def get_log_new_severity(log):
-    return get_log_new_value(log, 'severity')
-
-def get_log_new_type(log):
-    return get_log_new_value(log, 'type')
-
-def get_log_new_tag(log):
-    return get_log_new_value(log, 'tags')
+def get_log_new_tag(event):
+    return event['value']
 
 def identical_attributes(o1, o2, key_list):
     for key in key_list:
@@ -788,27 +729,33 @@ def get_issues_search_parms(parms):
 def diff_to_changelog(diffs):
     for d in diffs:
         if d['key'] == 'severity' or d['key'] == 'type' or d['key'] == 'tags':
-            return {'type':d['key'], 'value':d['newValue']}
+            return {'event':d['key'], 'value':d['newValue']}
         elif d['key'] == 'resolution' and 'newValue' in d:
             if d['newValue'] == 'FALSE-POSITIVE':
-                return {'type':'transition', 'value':'falsepositive'}
+                return {'event':'transition', 'value':'falsepositive'}
             if d['newValue'] == 'WONTFIX':
-                return {'type':'transition', 'value':'wontfix'}
+                return {'event':'transition', 'value':'wontfix'}
             if d['newValue'] == 'FIXED':
                 # TODO - Handle hotspots
-                return {'type':'fixed'}
+                return {'event':'fixed', 'value': None}
         elif d['key'] == 'status' and 'newValue' in d and d['newValue'] == 'CONFIRMED':
-            return {'type':'transition', 'value':'confirm'}
+            return {'event':'transition', 'value':'confirm'}
         elif d['key'] == 'status' and 'newValue' in d and d['newValue'] == 'REOPENED':
             if d['oldValue'] == 'CONFIRMED':
-                return {'type':'transition', 'value':'unconfirm'}
+                return {'event':'transition', 'value':'unconfirm'}
             else:
-                return {'type':'transition', 'value':'reopen'}
+                return {'event':'transition', 'value':'reopen'}
+        elif d['key'] == 'status' and 'newValue' in d and d['newValue'] == 'OPEN' and d['oldValue'] == 'CLOSED':
+            return {'event':'transition', 'value':'reopen'}
         elif d['key'] == 'assignee':
             if 'newValue' in d:
-                return {'type':'assign', 'value':d['newValue']}
+                return {'event':'assign', 'value':d['newValue']}
             else:
-                return {'type':'unassign'}
+                return {'event':'unassign', 'value':None}
+        elif d['key'] == 'from_short_branch':
+            return {'event':'merge', 'value':'{0} -> {1}'.format(d['oldValue'],d['newValue'])}
+        elif d['key'] == 'effort':
+            return {'event':'effort', 'value':'{0} -> {1}'.format(d['oldValue'],d['newValue'])}
         else:
             continue
-
+    return {'event':'unknown', 'value':None}
