@@ -54,7 +54,7 @@ for key in kwargs:
         del parms[key]
 parms['projectKey'] = parms['componentKeys']
 targetParms = parms.copy()
-if targetParms['targetComponentKeys'] is not None:
+if 'targetComponentKeys' in targetParms and targetParms['targetComponentKeys'] is not None:
     targetParms['projectKey'] = targetParms['targetComponentKeys']
     targetParms['componentKeys'] = targetParms['targetComponentKeys']
 # Add SQ environment
@@ -77,14 +77,14 @@ for issue in all_target_issues:
         continue
     if nb_siblings > 1:
         util.logger.info('Ambiguity for issue key %s, cannot automatically apply changelog', str(issue))
-        util.logger.info('Candidate issue keys below')
+        util.logger.info('Candidate issue keys below:')
         for sibling in siblings:
             util.logger.debug(sibling.id)
         continue
     # Exactly 1 match
     util.logger.info('Found a match, issue %s', siblings[0].get_url())
     if siblings[0].has_changelog_or_comments():
-        util.logger.info('Automatically applying changelog')
+        util.logger.info('Automatically applying changelog to issue %s', issue)
         issues.apply_changelog(issue, siblings[0])
     else:
         util.logger.info('No changelog to apply')
