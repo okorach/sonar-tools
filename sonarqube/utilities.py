@@ -1,5 +1,6 @@
 import sys
 import logging
+import json
 
 DEBUG_LEVEL = 0
 DRY_RUN = False
@@ -62,3 +63,6 @@ def set_dry_run(dry_run):
 def check_environment(kwargs):
     set_debug_level(kwargs.pop('debug', 0))
     set_dry_run(kwargs.pop('dry_run', 'false'))
+
+def json_dump_debug(json_data, pre_string = ''):
+    logger.debug("%s%s", pre_string, json.dumps(json_data, sys.stdout, sort_keys=True, indent=3, separators=(',', ': ')))
