@@ -107,10 +107,6 @@ class Issue(sq.SqObject):
         self.modification_date = jsondata['updateDate']
 
         self.changelog = None
-        try:
-            self.comments = jsondata['comments']
-        except KeyError:
-            self.comments = None
         self.component = jsondata['component']
         try:
             self.hash = jsondata['hash']
@@ -134,10 +130,9 @@ class Issue(sq.SqObject):
         if (force_api or self.changelog is None):
             resp = self.env.get('/api/issues/changelog', {'issue':self.id, 'format':'json'})
             data = json.loads(resp.text)
-            self.json = data['changelog']
-            util.json_dump_debug(self.json, "Issue Changelog = ")
+            # util.json_dump_debug(data['changelog'], "Issue Changelog = ")
             self.changelog = []
-            for l in self.json:
+            for l in data['changelog']:
                 d = diff_to_changelog(l['diffs'])
                 self.changelog.append({'date':l['creationDate'], 'event':d['event'], 'value':d['value']})
         return self.changelog
@@ -147,21 +142,21 @@ class Issue(sq.SqObject):
         return len(self.get_changelog()) > 0
 
     def get_comments(self):
-        try:
-            util.json_dump_debug(self.json['comments'], 'Comments =')
-            self.comments = IssueComments(self.json['comments'])
-        except KeyError:
+        if 'comments' not in self.json:
             self.comments = []
-        except TypeError:
+        elif self.comments is None:
             self.comments = []
+            for c in self.json['comments']:
+                self.comments.append({'date':c['createdAt'], 'event':'comment', 'value':c['markdown']})
         return self.comments
 
     def get_all_events(self, is_sorted = True):
         events = self.get_changelog()
-        util.logger.debug('Get all events: Issue %s had %d changelog', self.id, len(events))
-        #comments = self.get_comments()
-        #for date in comments:
-        #    events.append({'date':date, 'type':'comment', 'value':'COMMENT'})
+        util.logger.debug('Get all events: Issue %s has %d changelog', self.id, len(events))
+        comments = self.get_comments()
+        util.logger.debug('Get all events: Issue %s has %d comments', self.id, len(comments))
+        for c in comments:
+            events.append(c)
         if is_sorted:
             bydate = {}
             for e in events:
@@ -300,7 +295,7 @@ class Issue(sq.SqObject):
     def identical_to(self, another_issue, ignore_component = False):
         if not self.same_general_attributes(another_issue) or \
             (self.component != another_issue.component and not ignore_component):
-            util.logger.debug("Issue %s and %s are different on general attributes", self.id, another_issue.id)
+            # util.logger.debug("Issue %s and %s are different on general attributes", self.id, another_issue.id)
             return False
         # Hotspots carry no debt,so you can only check debt equality if issues
         # are not hotspots
@@ -563,6 +558,10 @@ def search_all_issues_unlimited(sqenv=None, **kwargs):
     return issues
 
 def apply_changelog(target_issue, source_issue):
+    if target_issue.has_changelog():
+        util.logger.error("Can't apply changelog to an issue that already has a changelog")
+        return
+
     events = source_issue.get_all_events(True)
 
     if events is None or not events:
@@ -570,6 +569,7 @@ def apply_changelog(target_issue, source_issue):
         return
 
     util.logger.info("Applying changelog of issue %s to issue %s", source_issue.id, target_issue.id)
+    target_issue.add_comment("Synchronized from [this original issue]({0})".format(source_issue.get_url()))
     for d in sorted(events.iterkeys()):
         event = events[d]
         util.logger.debug("Verifying event %s", str(event))
@@ -720,7 +720,7 @@ def to_csv_header():
     "modification time;project key;project name;file;line;debt(min);message"
 
 def get_issues_search_parms(parms):
-    outparms = {}
+    outparms = {'additionalFields':'comments'}
     for key in parms:
         if parms[key] is not None and key in OPTIONS_ISSUES_SEARCH:
             outparms[key] = parms[key]
