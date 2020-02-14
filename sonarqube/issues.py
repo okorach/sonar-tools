@@ -734,41 +734,39 @@ def resolution_diff_to_changelog(newval):
     elif newval == 'FIXED':
         # TODO - Handle hotspots
         return {'event':'fixed', 'value': None}
-    else:
-        return {'event':'unknown', 'value': None}
+    return {'event':'unknown', 'value': None}
 
 def reopen_diff_to_changelog(oldval):
     if oldval == 'CONFIRMED':
         return {'event':'transition', 'value':'unconfirm'}
-    else:
-        return {'event':'transition', 'value':'reopen'}
+    return {'event':'transition', 'value':'reopen'}
 
 def assignee_diff_to_changelog(d):
     if d['newValue'] in d:
         return {'event':'assign', 'value': d['newValue']}
-    else:
-        return {'event':'unassign', 'value':None}
+    return {'event':'unassign', 'value':None}
 
 def get_event_from_diff(diff):
     dkey = diff['key']
     dnewval = diff['newValue']
+    event = None
     if dkey == 'severity' or dkey == 'type' or dkey == 'tags':
-        return {'event':dkey, 'value':dnewval}
+        event = {'event':dkey, 'value':dnewval}
     if dkey == 'resolution' and 'newValue' in diff:
-        return resolution_diff_to_changelog(dnewval)
+        event =  resolution_diff_to_changelog(dnewval)
     if dkey == 'status' and 'newValue' in diff and dnewval == 'CONFIRMED':
-        return {'event':'transition', 'value':'confirm'}
+        event =  {'event':'transition', 'value':'confirm'}
     if dkey == 'status' and 'newValue' in diff and dnewval == 'REOPENED':
-        return reopen_diff_to_changelog(diff['oldValue'])
+        event =  reopen_diff_to_changelog(diff['oldValue'])
     if dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
-        return {'event':'transition', 'value':'reopen'}
+        event =  {'event':'transition', 'value':'reopen'}
     if dkey == 'assignee':
-        return assignee_diff_to_changelog(diff)
+        event =  assignee_diff_to_changelog(diff)
     if dkey == 'from_short_branch':
-        return {'event':'merge', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
+        event =  {'event':'merge', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
     if dkey == 'effort':
-        return {'event':'effort', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
-    return None
+        event = {'event':'effort', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
+    return event
 
 
 def diff_to_changelog(diffs):
