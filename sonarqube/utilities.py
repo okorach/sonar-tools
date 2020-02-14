@@ -65,5 +65,5 @@ def check_environment(kwargs):
     set_dry_run(kwargs.pop('dry_run', 'false'))
 
 def json_dump_debug(json_data, pre_string = ''):
-    logger.debug("%s%s", pre_string, json.dumps(json_data, sys.stdout, \
+    logger.debug("%s%s", pre_string, json.dumps(json_data, \
                  sort_keys=True, indent=3, separators=(',', ': ')))
