@@ -8,3 +8,4 @@ sonarqube/*.pyc
 **/*.csv
 **/*.gz
 **/*.log
+pylint-report.out

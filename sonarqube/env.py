@@ -85,7 +85,6 @@ def set_url(url):
 def get_url():
     return this.root_url
 
-
 def urlstring(api, parms):
     first = True
     redacted_token = re.sub(r'(....).*(....)', '\1***\2', this.token)
