@@ -3,6 +3,7 @@
 import json
 import requests
 import sonarqube.env as env
+import sonarqube.utilities as util
 import sonarqube.sqobject
 
 class Measure (sonarqube.sqobject.SqObject):
@@ -31,5 +32,8 @@ def load_measures(project_key, metrics_list, myenv = None):
         resp = env.get('/api/measures/component',  parms)
     else:
         resp = myenv.get('/api/measures/component', parms)
+    if resp.status_code != 200:
+        util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
+
     data = json.loads(resp.text)
     return data['component']['measures']
