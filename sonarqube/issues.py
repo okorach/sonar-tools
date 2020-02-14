@@ -726,36 +726,56 @@ def get_issues_search_parms(parms):
             outparms[key] = parms[key]
     return outparms
 
+def resolution_diff_to_changelog(newval):
+    if newval == 'FALSE-POSITIVE':
+        return {'event':'transition', 'value':'falsepositive'}
+    elif newval == 'WONTFIX':
+        return {'event':'transition', 'value':'wontfix'}
+    elif newval == 'FIXED':
+        # TODO - Handle hotspots
+        return {'event':'fixed', 'value': None}
+    else:
+        return {'event':'unknown', 'value': None}
+
+def reopen_diff_to_changelog(oldval):
+    if oldval == 'CONFIRMED':
+        return {'event':'transition', 'value':'unconfirm'}
+    else:
+        return {'event':'transition', 'value':'reopen'}
+
+def assignee_diff_to_changelog(d):
+    if d['newValue'] in d:
+        return {'event':'assign', 'value': d['newValue']}
+    else:
+        return {'event':'unassign', 'value':None}
+
+def get_event_from_diff(diff):
+    dkey = diff['key']
+    dnewval = diff['newValue']
+    if dkey == 'severity' or dkey == 'type' or dkey == 'tags':
+        return {'event':dkey, 'value':dnewval}
+    if dkey == 'resolution' and 'newValue' in diff:
+        return resolution_diff_to_changelog(dnewval)
+    if dkey == 'status' and 'newValue' in diff and dnewval == 'CONFIRMED':
+        return {'event':'transition', 'value':'confirm'}
+    if dkey == 'status' and 'newValue' in diff and dnewval == 'REOPENED':
+        return reopen_diff_to_changelog(diff['oldValue'])
+    if dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
+        return {'event':'transition', 'value':'reopen'}
+    if dkey == 'assignee':
+        return assignee_diff_to_changelog(diff)
+    if dkey == 'from_short_branch':
+        return {'event':'merge', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
+    if dkey == 'effort':
+        return {'event':'effort', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
+    return None
+
+
 def diff_to_changelog(diffs):
     for d in diffs:
-        if d['key'] == 'severity' or d['key'] == 'type' or d['key'] == 'tags':
-            return {'event':d['key'], 'value':d['newValue']}
-        elif d['key'] == 'resolution' and 'newValue' in d:
-            if d['newValue'] == 'FALSE-POSITIVE':
-                return {'event':'transition', 'value':'falsepositive'}
-            if d['newValue'] == 'WONTFIX':
-                return {'event':'transition', 'value':'wontfix'}
-            if d['newValue'] == 'FIXED':
-                # TODO - Handle hotspots
-                return {'event':'fixed', 'value': None}
-        elif d['key'] == 'status' and 'newValue' in d and d['newValue'] == 'CONFIRMED':
-            return {'event':'transition', 'value':'confirm'}
-        elif d['key'] == 'status' and 'newValue' in d and d['newValue'] == 'REOPENED':
-            if d['oldValue'] == 'CONFIRMED':
-                return {'event':'transition', 'value':'unconfirm'}
-            else:
-                return {'event':'transition', 'value':'reopen'}
-        elif d['key'] == 'status' and 'newValue' in d and d['newValue'] == 'OPEN' and d['oldValue'] == 'CLOSED':
-            return {'event':'transition', 'value':'reopen'}
-        elif d['key'] == 'assignee':
-            if 'newValue' in d:
-                return {'event':'assign', 'value':d['newValue']}
-            else:
-                return {'event':'unassign', 'value':None}
-        elif d['key'] == 'from_short_branch':
-            return {'event':'merge', 'value':'{0} -> {1}'.format(d['oldValue'],d['newValue'])}
-        elif d['key'] == 'effort':
-            return {'event':'effort', 'value':'{0} -> {1}'.format(d['oldValue'],d['newValue'])}
-        else:
-            continue
+        event = get_event_from_diff(d)
+        if event is not None:
+            return event
+
+    # Not found anything
     return {'event':'unknown', 'value':None}
