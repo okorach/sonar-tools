@@ -1,4 +1,3 @@
-#!/usr/local/bin/python
 #!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
 
 import sys
@@ -12,8 +11,7 @@ import sonarqube.utilities as util
 dry_run_mode = False
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='SonarQube issues extractor')
-    env.add_standard_arguments(parser)
+    parser = util.set_common_args('SonarQube issues extractor')
     parser.add_argument('-s', '--statuses', help='comma separated issue status', required=False)
     parser.add_argument('-a', '--createdAfter', help='issues created after a given date', required=False)
     parser.add_argument('-b', '--createdBefore', help='issues created before a given date', required=False)
@@ -36,6 +34,8 @@ except ImportError:
 args = parse_args()
 sqenv = env.Environment(url=args.url, token=args.token)
 sqenv.set_env(args.url, args.token)
+kwargs = vars(args)
+util.check_environment(kwargs)
 
 # Remove unset params from the dict
 noneparms = vars(args)
