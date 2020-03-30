@@ -10,7 +10,8 @@ import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 
 OPTIONS_ISSUES_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'authors', 'componentKeys',
-                         'createdAfter', 'createdAt', 'createdBefore', 'createdInLast', 'facetMode', 'facets',
+                         'createdAfter', 'createdAt', 'createdBefore', 'createdInLast', 'directories',
+                         'facetMode', 'facets', 'fileUuids',
                          'issues', 'languages', 'onComponentOnly', 'p', 'ps', 'resolutions', 'resolved',
                          'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
@@ -447,6 +448,31 @@ def search_all_issues(sqenv = None, **kwargs):
     util.logger.debug ("Total number of issues: %d", len(issues))
     return issues
 
+def get_facets(sqenv = None, facet = 'directories', **kwargs):
+    kwargs['facets'] = facet
+    if 'ps' in kwargs:
+        ps = kwargs['ps']
+    else:
+        ps = None
+    kwargs['ps'] = 100
+    parms = get_issues_search_parms(kwargs)
+    if sqenv is None:
+        resp = env.get('/api/issues/search', parms)
+    else:
+        resp = sqenv.get('/api/issues/search', parms)
+    data = json.loads(resp.text)
+    if ps is None:
+        del kwargs['ps']
+    else:
+        kwargs['ps'] = ps
+    util.json_dump_debug(data, 'FACET')
+    for f in data['facets']:
+        if f['property'] == facet:
+            return f['values']
+    return []
+
+
+
 def get_one_issue_date(sqenv=None, asc_sort='true', **kwargs):
     ''' Returns the date of one issue found '''
     kwtemp = kwargs.copy()
@@ -480,16 +506,19 @@ def get_number_of_issues(sqenv=None, **kwargs):
     return returned_data['total']
 
 def search_project_daily_issues(key, day, sqenv=None, **kwargs):
+    util.logger.debug("Searching daily issues for project %s on day %s", key, day)
     kw = kwargs.copy()
     kw['componentKeys'] = key
     if kwargs is None or 'severities' not in kwargs:
         severities = {'INFO','MINOR','MAJOR','CRITICAL','BLOCKER'}
     else:
         severities = re.split(',', kwargs['severities'])
+    util.logger.debug("Severities = %s", str(severities))
     if kwargs is None or 'types' not in kwargs:
         types = {'CODE_SMELL','VULNERABILITY','BUG','SECURITY_HOTSPOT'}
     else:
         types = re.split(',', kwargs['types'])
+    util.logger.debug("Types = %s", str(types))
     kw['createdAfter'] = day
     kw['createdBefore'] = day
     issues = []
