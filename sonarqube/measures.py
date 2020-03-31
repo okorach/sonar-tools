@@ -24,7 +24,7 @@ class Measure (sonarqube.sqobject.SqObject):
 
     def get_history(self, project_key):
         parms = dict(component=project_key, metrics=self.name, ps=1000)
-        resp = self.get(API_HISTORY,  parms)
+        resp = self.get(Measure.API_HISTORY,  parms)
         data = json.loads(resp.text)
         return data['component']['measures']
 
