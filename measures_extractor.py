@@ -76,12 +76,14 @@ for project in project_list:
             else:
                 p_meas[name] = value
         line = ''
-        print("%s%s%s%s%s%s%s" % (project['key'], csv_sep, project['name'], csv_sep, b['name'], csv_sep, last_analysis), end='')
+        print("%s%s%s%s%s%s%s" % (project['key'], csv_sep, project['name'], csv_sep, b['name'], \
+            csv_sep, last_analysis), end='')
         if args.metricKeys == '_all':
             for metric in main_metrics_list:
                 line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep
         for metric in metrics_list:
-            line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep + "None"
+            line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas \
+                else line + csv_sep + "None"
         print(line)
 
 util.logger.info("%d PROJECTS", projects.count(True, myenv))
