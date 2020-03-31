@@ -9,8 +9,8 @@ import sonarqube.components as comp
 PROJECTS = {}
 class Project(comp.Component):
 
-    #def __init__(self, key, name=None, sqenv=None):
-    #    super(Project, self).__init__(key, name, sqenv)
+    def __init__(self, key, name=None, sqenv=None):
+        super(Project, self).__init__(key, name, sqenv)
 
     def get_name(self):
         if self.name is None:
@@ -19,6 +19,12 @@ class Project(comp.Component):
             data = json.loads(resp.text)
             self.name = data['components']['name']
         return self.name
+
+    def get_branches(self):
+        resp = self.sqenv.get('/api/project_branches/list', parms=dict(project=self.key))
+        data = json.loads(resp.text)
+        return data['branches']
+
 
 def count(include_applications, myenv = None):
     qualifiers = "TRK,APP" if include_applications else "TRK"
