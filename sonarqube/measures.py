@@ -7,33 +7,53 @@ import sonarqube.utilities as util
 import sonarqube.sqobject
 
 class Measure (sonarqube.sqobject.SqObject):
-
+    API_ROOT = '/api/measures'
+    API_COMPONENT = API_ROOT + '/component'
+    API_HISTORY = API_ROOT + '/search_history'
     def __init__(self, name = None, value = None, **kwargs):
+        super(Measure, self).__init__(kwargs['env'])
         self.name = name
         self.value = value
         self.history = None
-        self.env = kwargs['env']
 
     def read(self, project_key, metric_key):
         parms = dict(component=project_key, metricKeys=metric_key)
-        resp = self.get('/api/measures/component',  parms)
+        resp = self.get(Measure.API_COMPONENT,  parms)
         data = json.loads(resp.text)
         return data['component']['measures']
 
     def get_history(self, project_key):
         parms = dict(component=project_key, metrics=self.name, ps=1000)
-        resp = self.get('/api/measures/search_history',  parms)
+        resp = self.get(Measure.API_HISTORY,  parms)
         data = json.loads(resp.text)
         return data['component']['measures']
 
-def load_measures(project_key, metrics_list, myenv = None):
+def load_measures(project_key, metrics_list, branch_name = None, sqenv = None):
     parms = dict(component=project_key, metricKeys=metrics_list)
-    if myenv is None:
-        resp = env.get('/api/measures/component',  parms)
+    if branch_name is not None:
+        parms['branch'] = branch_name
+    if sqenv is None:
+        resp = env.get(Measure.API_COMPONENT,  parms)
     else:
-        resp = myenv.get('/api/measures/component', parms)
+        resp = sqenv.get(Measure.API_COMPONENT, parms)
     if resp.status_code != 200:
         util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
 
     data = json.loads(resp.text)
     return data['component']['measures']
+
+def get_rating_letter(n):
+    if n == '1.0':
+        return 'A'
+    elif n == '2.0':
+        return 'B'
+    elif n == '3.0':
+        return 'C'
+    elif n == '4.0':
+        return 'D'
+    elif n == '5.0':
+        return 'E'
+    else:
+        util.logger.error("Wrong numeric rating provided %s", n)
+
+    return None

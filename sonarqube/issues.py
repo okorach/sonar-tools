@@ -47,7 +47,7 @@ class IssueComments:
 
 class Issue(sq.SqObject):
     def __init__(self, key, sqenv):
-        self.env = sqenv
+        super(Issue, self).__init__(key, sqenv)
         self.id = key
         self.url = None
         self.json = None
