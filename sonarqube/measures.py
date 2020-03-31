@@ -7,7 +7,9 @@ import sonarqube.utilities as util
 import sonarqube.sqobject
 
 class Measure (sonarqube.sqobject.SqObject):
-    API_COMPONENT = '/api/measures/component'
+    API_ROOT = '/api/measures'
+    API_COMPONENT = API_ROOT + '/component'
+    API_HISTORY = API_ROOT + '/search_history'
     def __init__(self, name = None, value = None, **kwargs):
         super(Measure, self).__init__(kwargs['env'])
         self.name = name
@@ -16,13 +18,13 @@ class Measure (sonarqube.sqobject.SqObject):
 
     def read(self, project_key, metric_key):
         parms = dict(component=project_key, metricKeys=metric_key)
-        resp = self.get(API_COMPONENT,  parms)
+        resp = self.get(Measure.API_COMPONENT,  parms)
         data = json.loads(resp.text)
         return data['component']['measures']
 
     def get_history(self, project_key):
         parms = dict(component=project_key, metrics=self.name, ps=1000)
-        resp = self.get('/api/measures/search_history',  parms)
+        resp = self.get(API_HISTORY,  parms)
         data = json.loads(resp.text)
         return data['component']['measures']
 
