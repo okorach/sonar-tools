@@ -9,9 +9,6 @@ import sonarqube.components as comp
 PROJECTS = {}
 class Project(comp.Component):
 
-    def __init__(self, key, name=None, sqenv=None):
-        super(Project, self).__init__(key, name, sqenv)
-
     def get_name(self):
         if self.name is None:
             params = dict(projects=self.key)
