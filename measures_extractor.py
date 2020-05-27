@@ -16,9 +16,11 @@ def diff(first, second):
 parser = util.set_common_args('Extract measures of projects')
 parser.add_argument('-m', '--metricKeys', required=False, help='Comma separated list of metrics or _all or _main')
 parser.add_argument('-b', '--withBranches', required=False, action='store_true', help='Also extract branches metrics')
+parser.set_defaults(withBranches=False)
+parser.add_argument('--withTags', required=False, action='store_true', help='Also extract project tags')
+parser.set_defaults(withTags=False)
 parser.add_argument('-r', '--ratingsAsLetters', action='store_true', required=False, \
                     help='Reports ratings as ABCDE letters instead of 12345 numbers')
-parser.set_defaults(withBranches=False)
 
 args = parser.parse_args()
 myenv = env.Environment(url=args.url, token=args.token)
