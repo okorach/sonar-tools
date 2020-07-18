@@ -7,7 +7,7 @@ import sonarqube.env as env
 import sonarqube.sqobject
 import sonarqube.utilities as util
 
-MAIN_METRICS = 'bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
+MAIN_METRICS = 'ncloc,bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
     'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
     'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
     'new_coverage,new_duplicated_lines_density'
