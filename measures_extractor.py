@@ -16,9 +16,11 @@ def diff(first, second):
 parser = util.set_common_args('Extract measures of projects')
 parser.add_argument('-m', '--metricKeys', required=False, help='Comma separated list of metrics or _all or _main')
 parser.add_argument('-b', '--withBranches', required=False, action='store_true', help='Also extract branches metrics')
+parser.set_defaults(withBranches=False)
+parser.add_argument('--withTags', required=False, action='store_true', help='Also extract project tags')
+parser.set_defaults(withTags=False)
 parser.add_argument('-r', '--ratingsAsLetters', action='store_true', required=False, \
                     help='Reports ratings as ABCDE letters instead of 12345 numbers')
-parser.set_defaults(withBranches=False)
 
 args = parser.parse_args()
 myenv = env.Environment(url=args.url, token=args.token)
@@ -50,16 +52,20 @@ for m in metrics_list:
 print('')
 
 project_list = projects.get_projects(True, myenv)
+nb_branches = 0
 for project in project_list:
     last_analysis = project['lastAnalysisDate'] if 'lastAnalysisDate' in project else 'Not analyzed yet'
     p_obj = projects.Project(project['key'], sqenv = myenv)
     branch_data = p_obj.get_branches()
     branch_list = []
     for b in branch_data:
-        if args.withBranches or b['isMain'] == 'True':
+        util.logger.debug("Checking branch %s", b['name'])
+        if args.withBranches or b['isMain']:
             branch_list.append(b)
+            util.logger.debug("Branch %s appended", b['name'])
 
     for b in branch_list:
+        nb_branches += 1
         all_measures = measures.load_measures(project['key'], wanted_metrics, branch_name=b['name'], sqenv=myenv)
         p_meas = {}
         last_analysis = b.get('analysisDate', '')
@@ -86,4 +92,4 @@ for project in project_list:
                 else line + csv_sep + "None"
         print(line)
 
-util.logger.info("%d PROJECTS", projects.count(True, myenv))
+util.logger.info("%d PROJECTS %d branches", projects.count(True, myenv), nb_branches)
