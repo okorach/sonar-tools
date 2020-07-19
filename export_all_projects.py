@@ -25,11 +25,20 @@ project_list = projects.get_projects(False, myenv)
 nb_projects = len(project_list)
 util.logger.info("%d projects to export", nb_projects)
 i = 0
+statuses = {}
 for p in project_list:
     key = p['key']
-    dump_file = projects.Project(key, sqenv = myenv).export(poll_interval)
-    if dump_file is not False:
-        print("{0},{1}".format(key, os.path.basename(dump_file)))
+    dump = projects.Project(key, sqenv = myenv).export(poll_interval)
+    status = dump['status']
+    if status in statuses:
+        statuses[status] += 1
+    else:
+        statuses[status] = 1
+    if status == 'SUCCESS':
+        print("{0},{1}".format(key, os.path.basename(dump['file'])))
     i += 1
-    if (i % 5) == 0:
-        util.logger.info("%d/%d projects exported: %d%%", i, nb_projects, int(i * 100/nb_projects))
+    util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100/nb_projects), key, status)
+    summary = ''
+    for s in statuses:
+        summary += "{0}:{1}, ".format(s, statuses[s])
+    util.logger.info("%s", summary)
