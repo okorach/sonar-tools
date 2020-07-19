@@ -27,11 +27,18 @@ class Project(comp.Component):
     def export(self, poll_interval = 1):
         util.logger.info('Exporting project key = %s', self.key)
         resp = self.sqenv.post('/api/project_dump/export', parms={'key':self.key})
-        util.logger.debug('Export response = %s', str(resp))
+        if resp.status_code != 200:
+            util.logger.error("/api/project_dump/export returned HTTP status code %d", int(resp.code))
+            return {'status' : 'HTTP_ERROR {0}'.format(resp.status_code)}
         data = json.loads(resp.text)
         task_id = data['taskId']
         finished = False
-        parms = {'type':'PROJECT_EXPORT', 'component':self.key, 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
+        parms = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
+        if self.sqenv.version_higher_or_equal_than("8.0.0"):
+            parms['component'] = self.key
+        else:
+            parms['q'] = self.key
+        loop_count = 0
         while not finished:
             time.sleep(poll_interval)
             resp = self.sqenv.get('/api/ce/activity', parms=parms)
@@ -40,17 +47,22 @@ class Project(comp.Component):
                 if t['id'] != task_id:
                     continue
                 status = t['status']
-                if status == 'SUCCESS' or status == 'FAILED' or status == 'CANCELLED':
+                if status == 'SUCCESS' or status == 'FAILED' or status == 'CANCELED':
                     finished = True
                     break
+            util.logger.debug("Task id %s is %s", task_id, status)
+            loop_count += 1
+            if loop_count >= 20:
+                status = 'TIMEOUT'
+                finished = True
         if status != 'SUCCESS':
             util.logger.error("Project key %s export %s", self.key, status)
-            return False
+            return {'status': status}
         resp = self.sqenv.get('/api/project_dump/status', parms={'key':self.key})
         data = json.loads(resp.text)
         dump_file = data['exportedDump']
-        util.logger.info("Project key %s export %s, dump file %s", self.key, status, dump_file)
-        return dump_file
+        util.logger.debug("Project key %s export %s, dump file %s", self.key, status, dump_file)
+        return {'status': status, 'file': dump_file}
 
     def export_async(self):
         util.logger.info('Exporting project key = %s', self.key)
