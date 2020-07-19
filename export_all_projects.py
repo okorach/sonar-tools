@@ -12,6 +12,7 @@ import sonarqube.env as env
 
 parser = util.set_common_args('Extract measures of projects')
 parser.add_argument('-p', '--pollInterval', required=False, help='Interval to check exports status')
+parser.add_argument('--exportTimeout', required=False, help='Maximum wait time for export')
 
 args = parser.parse_args()
 myenv = env.Environment(url=args.url, token=args.token)
@@ -20,6 +21,8 @@ util.check_environment(kwargs)
 poll_interval = 1
 if args.pollInterval is not None:
     poll_interval = int(args.pollInterval)
+if args.exportTimeout is not None:
+    export_timeout = int(args.exportTimeout)
 
 project_list = projects.get_projects(False, myenv)
 nb_projects = len(project_list)
@@ -28,7 +31,7 @@ i = 0
 statuses = {}
 for p in project_list:
     key = p['key']
-    dump = projects.Project(key, sqenv = myenv).export(poll_interval)
+    dump = projects.Project(key, sqenv = myenv).export(timeout = export_timeout)
     status = dump['status']
     if status in statuses:
         statuses[status] += 1
