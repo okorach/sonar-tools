@@ -72,26 +72,45 @@ class Environment:
         #for k in parms:
         #    parms[k] = urllib.parse.quote(str(parms[k]), safe=':')
         util.logger.debug('GET: %s', self.urlstring(api, parms))
-        if parms is None:
-            r = requests.get(url=self.root_url + api, auth=self.get_credentials())
-        else:
-            r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
-        r.raise_for_status()
+        try:
+            if parms is None:
+                r = requests.get(url=self.root_url + api, auth=self.get_credentials())
+            else:
+                r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+        except requests.RequestException as e:
+            util.logger.error(str(e))
+            raise
+        if r.status_code != 200:
+            util.logger.error(r.text)
         return r
 
     def post(self, api, parms = None):
         util.logger.debug('POST: %s', self.urlstring(api, parms))
-        if parms is None:
-            return requests.post(url=self.root_url + api, auth=self.get_credentials())
-        else:
-            return requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+        try:
+            if parms is None:
+                r = requests.post(url=self.root_url + api, auth=self.get_credentials())
+            else:
+                r = requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+        except requests.RequestException as e:
+            util.logger.error(str(e))
+            raise
+        if r.status_code != 200:
+            util.logger.error(r.text)
+        return r
 
     def delete(self, api, parms = None):
         util.logger.debug('DELETE: %s', self.urlstring(api, parms))
-        if parms is None:
-            return requests.delete(url=self.root_url + api, auth=self.get_credentials())
-        else:
-            return requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+        try:
+            if parms is None:
+                r = requests.delete(url=self.root_url + api, auth=self.get_credentials())
+            else:
+                r = requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+        except requests.RequestException as e:
+            util.logger.error(str(e))
+            raise
+        if r.status_code != 200:
+            util.logger.error(r.text)
+        return r
 
     def urlstring(self, api, parms):
         first = True
