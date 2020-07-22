@@ -24,20 +24,9 @@ class Project(comp.Component):
         data = json.loads(resp.text)
         return data['branches']
 
-    def export(self, timeout = 180):
-        util.logger.info('Exporting project key = %s (synchronously)', self.key)
-        resp = self.sqenv.post('/api/project_dump/export', parms={'key':self.key})
-        if resp.status_code != 200:
-            util.logger.error("/api/project_dump/export returned HTTP status code %d", int(resp.code))
-            return {'status' : 'HTTP_ERROR {0}'.format(resp.status_code)}
-        data = json.loads(resp.text)
-        task_id = data['taskId']
+    def __wait_for_task_completion__(self, task_id, parms, timeout = 180):
+
         finished = False
-        parms = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
-        if self.sqenv.version_higher_or_equal_than("8.0.0"):
-            parms['component'] = self.key
-        else:
-            parms['q'] = self.key
         wait_time = 0
         sleep_time = 0.5
         while not finished:
@@ -57,6 +46,20 @@ class Project(comp.Component):
             if wait_time >= timeout:
                 status = 'TIMEOUT'
                 finished = True
+        return status
+
+    def export(self, timeout = 180):
+        util.logger.info('Exporting project key = %s (synchronously)', self.key)
+        resp = self.sqenv.post('/api/project_dump/export', parms={'key':self.key})
+        if resp.status_code != 200:
+            return {'status' : 'HTTP_ERROR {0}'.format(resp.status_code)}
+        data = json.loads(resp.text)
+        parms = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
+        if self.sqenv.version_higher_or_equal_than("8.0.0"):
+            parms['component'] = self.key
+        else:
+            parms['q'] = self.key
+        status = self.__wait_for_task_completion__(data['taskId'], parms=parms, timeout=timeout)
         if status != 'SUCCESS':
             util.logger.error("Project key %s export %s", self.key, status)
             return {'status': status}
