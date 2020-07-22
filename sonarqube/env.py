@@ -156,24 +156,45 @@ def urlstring(api, parms = None):
 
 def get(api, parms = None):
     util.logger.debug('GLOBAL GET: %s', urlstring(api, parms))
-    if parms is None:
-        return requests.get(url=this.root_url + api, auth=get_credentials())
-    else:
-        return requests.get(url=this.root_url + api, auth=get_credentials(), params=parms)
+    try:
+        if parms is None:
+            r = requests.get(url=this.root_url + api, auth=get_credentials())
+        else:
+            r = requests.get(url=this.root_url + api, auth=get_credentials(), params=parms)
+    except requests.RequestException as e:
+        util.logger.error(str(e))
+        raise
+    if r.status_code != 200:
+        util.logger.error(r.text)
+    return r
 
 def post(api, parms):
     util.logger.debug('GLOBAL POST: %s', urlstring(api, parms))
-    if parms is None:
-        return requests.post(url=this.root_url + api, auth=get_credentials())
-    else:
-        return requests.post(url=this.root_url + api, auth=get_credentials(), params=parms)
+    try:
+        if parms is None:
+            r = requests.post(url=this.root_url + api, auth=get_credentials())
+        else:
+            r = requests.post(url=this.root_url + api, auth=get_credentials(), params=parms)
+    except requests.RequestException as e:
+        util.logger.error(str(e))
+        raise
+    if r.status_code != 200:
+        util.logger.error(r.text)
+    return r
 
 def delete(api, parms = None):
     util.logger.debug('GLOBAL DELETE: %s', urlstring(api, parms))
-    if parms is None:
-        return requests.delete(url=this.root_url + api, auth=get_credentials())
-    else:
-        return requests.delete(url=this.root_url + api, auth=get_credentials(), params=parms)
+    try:
+        if parms is None:
+            r = requests.delete(url=this.root_url + api, auth=get_credentials())
+        else:
+            r = requests.delete(url=this.root_url + api, auth=get_credentials(), params=parms)
+    except requests.RequestException as e:
+        util.logger.error(str(e))
+        raise
+    if r.status_code != 200:
+        util.logger.error(r.text)
+    return r
 
 def add_standard_arguments(parser):
     parser.add_argument('-t', '--token',
