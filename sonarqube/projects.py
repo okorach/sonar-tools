@@ -76,6 +76,14 @@ class Project(comp.Component):
         data = json.loads(resp.text)
         return data['taskId']
 
+    def importproject(self):
+        util.logger.info('Importing project key = %s (asynchronously)', self.key)
+        resp = self.sqenv.post('/api/project_dump/import', parms={'key':self.key})
+        if resp.status_code != 200:
+            util.logger.error("/api/project_dump/import returned HTTP status code %d", int(resp.code))
+            # TODO handle HTTP error exceptions
+            return None
+        return resp.status_code
 
 def count(include_applications, myenv = None):
     qualifiers = "TRK,APP" if include_applications else "TRK"
@@ -119,3 +127,12 @@ def get_project_name(key, sqenv = None):
     #util.json_dump_debug(data)
     PROJECTS[key] = data['components'][0]['name']
     return PROJECTS[key]
+
+def create_project(key, name = None, visibility = 'private', sqenv = None):
+    if name is None:
+        name = key
+    if sqenv is None:
+        resp = env.post('/api/projects/create', parms={'project':key, 'name':name, 'visibility':'private'})
+    else:
+        resp = sqenv.post('/api/projects/create', parms={'project':key, 'name':name, 'visibility':'private'})
+    return resp.status_code
