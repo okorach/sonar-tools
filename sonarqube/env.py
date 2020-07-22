@@ -81,7 +81,7 @@ class Environment:
             util.logger.error(str(e))
             raise
         if r.status_code != 200:
-            util.logger.error(r.text)
+            util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
         return r
 
     def post(self, api, parms = None):
@@ -95,7 +95,7 @@ class Environment:
             util.logger.error(str(e))
             raise
         if r.status_code != 200:
-            util.logger.error(r.text)
+            util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
         return r
 
     def delete(self, api, parms = None):
@@ -109,7 +109,7 @@ class Environment:
             util.logger.error(str(e))
             raise
         if r.status_code != 200:
-            util.logger.error(r.text)
+            util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
         return r
 
     def urlstring(self, api, parms):
@@ -165,7 +165,7 @@ def get(api, parms = None):
         util.logger.error(str(e))
         raise
     if r.status_code != 200:
-        util.logger.error(r.text)
+        util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
     return r
 
 def post(api, parms):
@@ -179,7 +179,7 @@ def post(api, parms):
         util.logger.error(str(e))
         raise
     if r.status_code != 200:
-        util.logger.error(r.text)
+        util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
     return r
 
 def delete(api, parms = None):
@@ -193,7 +193,7 @@ def delete(api, parms = None):
         util.logger.error(str(e))
         raise
     if r.status_code != 200:
-        util.logger.error(r.text)
+        util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
     return r
 
 def add_standard_arguments(parser):
