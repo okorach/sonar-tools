@@ -73,8 +73,6 @@ class Project(comp.Component):
         util.logger.info('Exporting project key = %s (asynchronously)', self.key)
         resp = self.sqenv.post('/api/project_dump/export', parms={'key':self.key})
         if resp.status_code != 200:
-            util.logger.error("/api/project_dump/export returned HTTP status code %d", int(resp.code))
-            # TODO handle HTTP error exceptions
             return None
         data = json.loads(resp.text)
         return data['taskId']
@@ -82,10 +80,6 @@ class Project(comp.Component):
     def importproject(self):
         util.logger.info('Importing project key = %s (asynchronously)', self.key)
         resp = self.sqenv.post('/api/project_dump/import', parms={'key':self.key})
-        if resp.status_code != 200:
-            util.logger.error("/api/project_dump/import returned HTTP status code %d", int(resp.code))
-            # TODO handle HTTP error exceptions
-            return None
         return resp.status_code
 
 def count(include_applications, myenv = None):
