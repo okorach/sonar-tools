@@ -350,10 +350,8 @@ class Issue(sq.SqObject):
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
-        minutes = 0
-        if self.debt is None:
-            debt = 0
-        else:
+        debt = 0
+        if self.debt is not None:
             m = re.search(r'(\d+)kd', self.debt)
             kdays = int(m.group(1)) if m else 0
             m = re.search(r'(\d+)d', self.debt)
@@ -374,11 +372,11 @@ class Issue(sq.SqObject):
         msg = re.sub('"','""', self.message)
         line = '-' if self.line is None else self.line
         import sonarqube.projects as projects
-        csv = ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status,
+        return ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status,
                                          cdate, ctime, mdate, mtime, self.project,
                                          projects.get_project_name(self.project, self.env), self.component, line,
                                          debt, '"'+msg+'"']])
-        return csv
+
 
 #------------------------------- Static methods --------------------------------------
 def check_fp_transition(diffs):
