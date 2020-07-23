@@ -15,6 +15,8 @@ OPTIONS_ISSUES_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'au
                          'issues', 'languages', 'onComponentOnly', 'p', 'ps', 'resolutions', 'resolved',
                          'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
+MAX_ISSUE_SEARCH = 10000
+
 class ApiError(Exception):
     pass
 
@@ -84,7 +86,7 @@ class Issue(sq.SqObject):
             self.url = '{0}/project/issues?id={1}&issues={2}'.format(self.env.get_url(), self.component, self.id)
         return self.url
 
-    def feed(self, jsondata):
+    def __feed__(self, jsondata):
         self.json = jsondata
         util.json_dump_debug(jsondata, "ISSUE = ")
         self.id = jsondata['key']
@@ -125,7 +127,7 @@ class Issue(sq.SqObject):
     def read(self):
         parms = dict(issues=self.id, additionalFields='_all')
         resp = self.get('/api/issues/search', parms)
-        self.feed(resp.issues[0])
+        self.__feed__(resp.issues[0])
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
@@ -158,13 +160,12 @@ class Issue(sq.SqObject):
         util.logger.debug('Get all events: Issue %s has %d comments', self.id, len(comments))
         for c in comments:
             events.append(c)
-        if is_sorted:
-            bydate = {}
-            for e in events:
-                bydate[e['date']] = e
-            return bydate
-        else:
+        if not is_sorted:
             return events
+        bydate = {}
+        for e in events:
+            bydate[e['date']] = e
+        return bydate
 
     def has_comments(self):
         comments = self.get_comments()
@@ -176,7 +177,7 @@ class Issue(sq.SqObject):
     def add_comment(self, comment):
         util.logger.debug("Adding comment %s to issue %s", comment, self.id)
         params = {'issue':self.id, 'text':comment}
-        return self.do_post('issues/add_comment', **params)
+        return self.__do_post__('issues/add_comment', **params)
 
     # def delete_comment(self, comment_id):
 
@@ -191,13 +192,13 @@ class Issue(sq.SqObject):
         """Sets severity"""
         util.logger.debug("Changing severity of issue %s from %s to %s", self.id, self.severity, severity)
         params = {'issue':self.id, 'severity':severity}
-        return self.do_post('issues/set_severity', **params)
+        return self.__do_post__('issues/set_severity', **params)
 
     def assign(self, assignee):
         """Sets assignee"""
         util.logger.debug("Assigning issue %s to %s", self.id, assignee)
         params = {'issue':self.id, 'assignee':assignee}
-        return self.do_post('issues/assign', **params)
+        return self.__do_post__('issues/assign', **params)
 
     def get_authors(self):
         """Gets authors from SCM"""
@@ -206,7 +207,7 @@ class Issue(sq.SqObject):
         """Sets tags"""
         util.logger.debug("Setting tags %s to issue %s", tags, self.id)
         params = {'issue':self.id, 'tags':tags}
-        return self.do_post('issues/set_tags', **params)
+        return self.__do_post__('issues/set_tags', **params)
 
     def get_tags(self):
         """Gets tags"""
@@ -215,7 +216,7 @@ class Issue(sq.SqObject):
         """Sets type"""
         util.logger.debug("Changing type of issue %s from %s to %s", self.id, self.type, new_type)
         params = {'issue':self.id, 'type':new_type}
-        return self.do_post('issues/set_type', **params)
+        return self.__do_post__('issues/set_type', **params)
 
     def get_type(self):
         """Gets type"""
@@ -223,38 +224,23 @@ class Issue(sq.SqObject):
     def get_status(self):
         return self.status
 
-
     def has_been_marked_as_wont_fix(self):
-        changelog = self.get_changelog()
-        for log in changelog:
-            for diff in log['diffs']:
-                if diff["key"] == "resolution" and diff["newValue"] == "WONTFIX":
-                    return True
-        return False
+        return self.__has_been_marked_as_statuses__(["WONTFIX"])
+
 
     def has_been_marked_as_false_positive(self):
-        changelog = self.get_changelog()
-        for log in changelog:
-            for diff in log['diffs']:
-                if diff["key"] == "resolution" and diff["newValue"] == "FALSE-POSITIVE":
-                    return True
-        return False
+        return self.__has_been_marked_as_statuses__(["FALSE-POSITIVE"])
 
-    def has_been_marked_as_statuses(self, diffs, statuses):
-        for diff in diffs:
-            if diff["key"] == "resolution":
+
+    def __has_been_marked_as_statuses__(self, statuses):
+        for log in self.get_changelog():
+            for diff in log['diffs']:
+                if diff["key"] != "resolution":
+                    continue
                 for status in statuses:
                     if diff["newValue"] == status:
                         return True
         return False
-
-    def print_change_log(self):
-        events_by_date = self.get_changelog().sort()
-        comments_by_date = self.get_comments().sort()
-        for date in comments_by_date:
-            events_by_date[date] = comments_by_date[date]
-        for date in sorted(events_by_date):
-            util.logger.info('%s:%s', date, str(events_by_date[date]))
 
     def get_key(self):
         return self.id
@@ -307,7 +293,7 @@ class Issue(sq.SqObject):
         return True
 
     def identical_to_except_comp(self, another_issue):
-        return self.identical_to(another_issue, True)
+        return self.identical_to(another_issue, ignore_component = True)
 
     def match(self, another_issue):
         util.logger.debug("Comparing 2 issues: %s and %s", str(self), str(another_issue))
@@ -326,7 +312,7 @@ class Issue(sq.SqObject):
 
     def do_transition(self, transition):
         params = {'issue':self.id, 'transition':transition}
-        return self.do_post('issues/do_transition', **params)
+        return self.__do_post__('issues/do_transition', **params)
 
     def reopen(self):
         util.logger.debug("Reopening issue %s", self.id)
@@ -352,7 +338,7 @@ class Issue(sq.SqObject):
         else:
             util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.id)
 
-    def do_post(self, api, **params):
+    def __do_post__(self, api, **params):
         do_it_really = True
         if not do_it_really:
             util.logger.info('DRY RUN for %s', '/api/' + api + str(params))
@@ -423,7 +409,7 @@ def search(sqenv = None, **kwargs):
     all_issues = []
     for json_issue in data['issues']:
         issue = Issue(key = json_issue['key'], sqenv = sqenv)
-        issue.feed(json_issue)
+        issue.__feed__(json_issue)
         all_issues = all_issues + [issue]
     return dict(page=page, pages=nbr_pages, total=nbr_issues, issues=all_issues)
 
@@ -437,10 +423,10 @@ def search_all_issues(sqenv = None, **kwargs):
         kwargs['p'] = page
         returned_data = search(sqenv = sqenv, **kwargs)
         issues = issues + returned_data['issues']
-        #if returned_data['total'] > 10000 and page == 20: NOSONAR
+        #if returned_data['total'] > MAX_ISSUE_SEARCH and page == 20: NOSONAR
         #    raise TooManyIssuesError(returned_data['total'], \
-        #          'Request found %d issues which is more than the maximum allowed 10000' % \
-        #          returned_data['total']) NOSONAR
+        #          'Request found %d issues which is more than the maximum allowed %d' % \
+        #          (returned_data['total'], MAX_ISSUE_SEARCH) NOSONAR
         page = returned_data['page']
         nbr_pages = returned_data['pages']
         page = page + 1
@@ -470,8 +456,6 @@ def get_facets(sqenv = None, facet = 'directories', **kwargs):
         if f['property'] == facet:
             return f['values']
     return []
-
-
 
 def get_one_issue_date(sqenv=None, asc_sort='true', **kwargs):
     ''' Returns the date of one issue found '''
@@ -540,8 +524,8 @@ def search_project_issues(key, sqenv=None, **kwargs):
 
     nbr_issues = get_number_of_issues(sqenv=sqenv, **kwargs)
     days_slice = abs((enddate - startdate).days)+1
-    if nbr_issues > 10000:
-        days_slice = (10000 * days_slice) // (nbr_issues * 4)
+    if nbr_issues > MAX_ISSUE_SEARCH:
+        days_slice = (MAX_ISSUE_SEARCH * days_slice) // (nbr_issues * 4)
     util.logger.debug("For project %s, slicing by %d days, between %s and %s", key, days_slice, startdate, enddate)
 
     issues = []
@@ -551,11 +535,11 @@ def search_project_issues(key, sqenv=None, **kwargs):
         sliced_enough = False
         while not sliced_enough:
             window_size = datetime.timedelta(days=current_slice)
-            kwargs['createdAfter']  = "%04d-%02d-%02d" % (window_start.year, window_start.month, window_start.day)
+            kwargs['createdAfter']  = util.format_date(window_start)
             window_stop = window_start + window_size
-            kwargs['createdBefore'] = "%04d-%02d-%02d" % (window_stop.year, window_stop.month, window_stop.day)
+            kwargs['createdBefore'] = util.format_date(window_stop)
             found_issues = search_all_issues(sqenv=sqenv, **kwargs)
-            if len(found_issues) < 10000:
+            if len(found_issues) < MAX_ISSUE_SEARCH:
                 issues = issues + found_issues
                 util.logger.debug("Got %d issue, OK, go to next window", len(found_issues))
                 sliced_enough = True
