@@ -7,12 +7,6 @@ import sonarqube.env
 import sonarqube.issues
 import sonarqube.utilities as utils
 
-# Mandatory script input parameters
-global project_key
-
-global dry_run_mode
-dry_run_mode = False
-
 def print_object(o):
     print(json.dumps(o, indent=3, sort_keys=True))
 
@@ -62,7 +56,7 @@ print ("Number of open issues: ", len(non_closed_issues))
 # Search for mistakenly closed issues
 mistakenly_closed_issues = []
 for issue in closed_issues:
-    if issue.was_fp_or_wf():
+    if issue.has_been_marked_as_wont_fix() or issue.has_been_marked_as_false_positive():
         print("Mistakenly closed: " + issue.to_string())
         mistakenly_closed_issues.append(issue)
 
@@ -75,7 +69,7 @@ for issue in mistakenly_closed_issues:
     print ("Number of siblings: ", nb_siblings)
     if nb_siblings == 1:
         print('   Automatically applying changelog')
-        sonarqube.issues.apply_changelog(siblings[0], issue, True)
+        sonarqube.issues.apply_changelog(siblings[0], issue)
     elif nb_siblings > 1:
         print('   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below')
         for sibling in siblings:
