@@ -1,5 +1,12 @@
 #!/usr/local/bin/python
 
+'''
+    This script restores issues that may have been closed mistakenly after,
+    for instance, a scan with improper settings
+
+    Usage: issuerecoverer.py -r -t <SQ_TOKEN> -u <SQ_URL>
+'''
+
 import sys
 import json
 import requests
