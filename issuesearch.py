@@ -7,9 +7,6 @@ import sonarqube.env as env
 import sonarqube.issues as issues
 import sonarqube.utilities as util
 
-# Mandatory script input parameters
-dry_run_mode = False
-
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
     parser.add_argument('-s', '--statuses', help='comma separated issue status', required=False)
