@@ -69,9 +69,9 @@ class Environment:
         return url
 
 #--------------------- Static methods, not recommended -----------------
-def set_env(url, tok):
+def set_env(url, token):
     this.root_url = url
-    this.token = tok
+    this.token = token
     util.logger.debug('Setting GLOBAL environment: %s@%s', this.token, this.root_url)
 
 def set_token(tok):
@@ -91,7 +91,7 @@ def get_url():
 
 def urlstring(api, parms):
     first = True
-    redacted_token = re.sub(r'(....).*(....)', '\1***\2', this.token)
+    redacted_token = re.sub(r'(....).*(....)', "\1***\2", this.token)
     url = "{0}@{1}{2}".format(redacted_token, this.root_url, api)
     for p in parms:
         sep = '?' if first else '&'
@@ -110,12 +110,3 @@ def post(api, parms):
 def delete(api, parms):
     util.logger.info('GLOBAL DELETE: %s', urlstring(api, parms))
     return requests.delete(url=this.root_url + api, auth=get_credentials(), params=parms)
-
-def add_standard_arguments(parser):
-    parser.add_argument('-t', '--token',
-                        help='Token to authenticate to SonarQube - Unauthenticated usage is not possible',
-                        required=True)
-    parser.add_argument('-u', '--url', help='Root URL of the SonarQube server, default is http://localhost:9000',
-                        required=False, default='http://localhost:9000')
-    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', \
-        help='Commas separated key of the components', required=False)
