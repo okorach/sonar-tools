@@ -391,8 +391,6 @@ def sort_comments(comments):
     return sorted_comments
 
 def search(sqenv = None, **kwargs):
-    parms = dict()
-    # for key, value in kwargs.items():
     parms = get_issues_search_parms(kwargs)
     if sqenv is None:
         resp = env.get('/api/issues/search', parms)
@@ -614,11 +612,11 @@ def is_log_a_closed_resolved_as(log, old_value):
     cond2 = False
 
     for diff in log['diffs']:
-        if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == 'FIXED' and 'oldValue' in diff and \
-                        diff['oldValue'] == old_value:
+        if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == 'FIXED' and \
+            'oldValue' in diff and diff['oldValue'] == old_value:
             cond1 = True
-        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'CLOSED' and 'oldValue' in diff and \
-                        diff['oldValue'] == 'RESOLVED':
+        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'CLOSED' and \
+            'oldValue' in diff and diff['oldValue'] == 'RESOLVED':
             cond2 = True
     return cond1 and cond2
 
