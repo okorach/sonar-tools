@@ -373,9 +373,9 @@ class Issue(sq.SqObject):
         line = '-' if self.line is None else self.line
         import sonarqube.projects as projects
         return ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status,
-                                         cdate, ctime, mdate, mtime, self.project,
-                                         projects.get_project_name(self.project, self.env), self.component, line,
-                                         debt, '"'+msg+'"']])
+                                          cdate, ctime, mdate, mtime, self.project,
+                                          projects.get_project_name(self.project, self.env), self.component, line,
+                                          debt, '"'+msg+'"']])
 
 
 #------------------------------- Static methods --------------------------------------
