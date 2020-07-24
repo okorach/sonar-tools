@@ -17,6 +17,7 @@ def diff(first, second):
 
 parser = util.set_common_args('Extract measures of projects')
 parser.add_argument('-o', '--olderThan', required=True, help='Days since last analysis')
+parser.add_argument('-m', '--mode', required=True, help='Mode of execution (dryrun, batch, confirm)')
 args = parser.parse_args()
 myenv = env.Environment(url=args.url, token=args.token)
 kwargs = vars(args)
@@ -33,6 +34,8 @@ mindate = today - datetime.timedelta(days=olderThan)
 project_list = projects.get_projects(include_applications = False, sqenv = myenv)
 proj_to_delete = 0
 loc_to_delete = 0
+deleted_projects = 0
+deleted_locs = 0
 for project in project_list:
     last_analysis = today
     if 'lastAnalysisDate' in project:
@@ -46,9 +49,24 @@ for project in project_list:
     if last_analysis < mindate:
         loc = int(p_obj.get_measure('ncloc'))
 
-        print("Project key %s (%d LoC) has not been analyzed for %d days, it should be deleted" %
-              (p_obj.key, loc, (today - last_analysis).days))
-        proj_to_delete += 1
-        loc_to_delete += loc
 
-print("%d PROJECTS for a total of %d LoCs to delete" % (proj_to_delete, loc_to_delete))
+        confirmed = False
+        if args.mode == 'confirm':
+            print('Please confirm deletion y/n [n]')
+            confirmed = False
+        if args.mode == 'batch' or (args.mode == 'confirm' and confirmed):
+            print("Project key %s has not been analyzed for %d days and will be deleted" %
+                  (p_obj.key, (today - last_analysis).days))
+            if p_obj.delete():
+                deleted_projects += 1
+                deleted_locs += loc
+                print("Project key %s (%d LoC) deleted" % (p_obj.key, loc))
+        else:
+            print("Project key %s (%d LoC) has not been analyzed for %d days, it should be deleted" %
+                  (p_obj.key, loc, (today - last_analysis).days))
+            proj_to_delete += 1
+            loc_to_delete += loc
+if args.mode == 'dryrun':
+    print("%d PROJECTS for a total of %d LoCs to delete" % (proj_to_delete, loc_to_delete))
+else:
+    print("%d PROJECTS deleted for a total of %d LoCs" % (deleted_projects, deleted_locs))
