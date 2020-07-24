@@ -46,17 +46,17 @@ class Environment:
     def get(self, api, parms):
         #for k in parms:
         #    parms[k] = urllib.parse.quote(str(parms[k]), safe=':')
-        util.logger.info('GET: %s', self.urlstring(api, parms))
+        util.logger.debug('GET: %s', self.urlstring(api, parms))
         r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
         r.raise_for_status()
         return r
 
     def post(self, api, parms):
-        util.logger.info('POST: %s', self.urlstring(api, parms))
+        util.logger.debug('POST: %s', self.urlstring(api, parms))
         return requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def delete(self, api, parms):
-        util.logger.info('DELETE: %s', self.urlstring(api, parms))
+        util.logger.debug('DELETE: %s', self.urlstring(api, parms))
         return requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
 
     def urlstring(self, api, parms):
@@ -100,13 +100,13 @@ def urlstring(api, parms):
     return url
 
 def get(api, parms):
-    util.logger.info('GLOBAL GET: %s', urlstring(api, parms))
+    util.logger.debug('GLOBAL GET: %s', urlstring(api, parms))
     return requests.get(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def post(api, parms):
-    util.logger.info('GLOBAL POST: %s', urlstring(api, parms))
+    util.logger.debug('GLOBAL POST: %s', urlstring(api, parms))
     return requests.post(url=this.root_url + api, auth=get_credentials(), params=parms)
 
 def delete(api, parms):
-    util.logger.info('GLOBAL DELETE: %s', urlstring(api, parms))
+    util.logger.debug('GLOBAL DELETE: %s', urlstring(api, parms))
     return requests.delete(url=this.root_url + api, auth=get_credentials(), params=parms)
