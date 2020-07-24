@@ -6,6 +6,7 @@ import json
 import requests
 import sonarqube.env as env
 import sonarqube.issues as issues
+import sonarqube.measures as measures
 import sonarqube.utilities as util
 
 class Component:
@@ -114,6 +115,12 @@ class Component:
 
         util.logger.info("For component %s, %d issues found after filter", self.key, len(issue_list))
         return issue_list
+
+    def get_measure(self, metric_key):
+        for measure in measures.load_measures(self.key, metric_key, sqenv = self.sqenv):
+            if 'metric' in measure and metric_key == measure['metric'] and 'value' in measure:
+                return measure['value']
+        return None
 
 
 def get_components(component_types):

@@ -3,7 +3,7 @@
 import sys
 import json
 import requests
-from sonarqube.env import get_url, get_credentials, json_dump_debug
+from sonarqube.env import get_url, get_credentials
 
 
 class Rule:
@@ -69,9 +69,3 @@ def get_rules_list():
         rules_list.append(rule['key'])
     return rules_list
 
-def get_project_name(key):
-    params = dict(projects=key)
-    resp = requests.get(url=get_url() + '/api/projects/search', auth=get_credentials(), params=params)
-    data = json.loads(resp.text)
-    json_dump_debug(data)
-    return data['components'][0]['name']

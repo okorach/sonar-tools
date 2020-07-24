@@ -16,6 +16,7 @@ OPTIONS_ISSUES_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'au
                          'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
 MAX_ISSUE_SEARCH = 10000
+ISSUE_SEARCH_API = '/api/issues/search'
 
 class ApiError(Exception):
     pass
@@ -126,7 +127,7 @@ class Issue(sq.SqObject):
 
     def read(self):
         parms = dict(issues=self.id, additionalFields='_all')
-        resp = self.get('/api/issues/search', parms)
+        resp = self.get(ISSUE_SEARCH_API, parms)
         self.__feed__(resp.issues[0])
 
     def get_changelog(self, force_api = False):
@@ -335,8 +336,9 @@ class Issue(sq.SqObject):
             ret = self.do_transition('wontfix')
             self.add_comment("Vulnerability marked as won't fix to replace hotspot 'reviewed' status")
             return ret
-        else:
-            util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.id)
+
+        util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.id)
+        return False
 
     def __do_post__(self, api, **params):
         do_it_really = True
@@ -393,9 +395,9 @@ def sort_comments(comments):
 def search(sqenv = None, **kwargs):
     parms = get_issues_search_parms(kwargs)
     if sqenv is None:
-        resp = env.get('/api/issues/search', parms)
+        resp = env.get(ISSUE_SEARCH_API, parms)
     else:
-        resp = sqenv.get('/api/issues/search', parms)
+        resp = sqenv.get(ISSUE_SEARCH_API, parms)
     data = json.loads(resp.text)
     nbr_issues = data['paging']['total']
     util.logger.debug("Number of issues: %d", nbr_issues)
@@ -439,9 +441,9 @@ def get_facets(sqenv = None, facet = 'directories', **kwargs):
     kwargs['ps'] = 100
     parms = get_issues_search_parms(kwargs)
     if sqenv is None:
-        resp = env.get('/api/issues/search', parms)
+        resp = env.get(ISSUE_SEARCH_API, parms)
     else:
-        resp = sqenv.get('/api/issues/search', parms)
+        resp = sqenv.get(ISSUE_SEARCH_API, parms)
     data = json.loads(resp.text)
     if ps is None:
         del kwargs['ps']
