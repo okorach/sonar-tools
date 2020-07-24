@@ -34,18 +34,18 @@ def count(include_applications, myenv = None):
     data = json.loads(resp.text)
     return data['paging']['total']
 
-def get_projects(include_applications,  myenv = None, page_size=500, page_nbr=1):
+def get_projects(include_applications,  sqenv = None, page_size=500, page_nbr=1):
     qualifiers = "TRK,APP" if include_applications else "TRK"
     params = dict(ps=page_size, p=page_nbr, qualifiers=qualifiers)
-    if myenv is None:
+    if sqenv is None:
         resp = env.get(PROJECT_SEARCH_API,  params)
     else:
-        resp = myenv.get(PROJECT_SEARCH_API, params)
+        resp = sqenv.get(PROJECT_SEARCH_API, params)
     data = json.loads(resp.text)
     return data['components']
 
 def get_projects_list(sqenv):
-    projects = get_projects(include_applications=False, myenv=sqenv)
+    projects = get_projects(include_applications = False, sqenv = sqenv)
     prjlist = []
     for prj in projects:
         prjlist.append(prj['key'])
