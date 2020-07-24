@@ -6,6 +6,8 @@ import json
 import requests
 import sonarqube.utilities as util
 
+HTTP_ERROR_MSG = "%s%s raised error %s"
+
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
 this.token = ''
@@ -81,7 +83,7 @@ class Environment:
             util.logger.error(str(e))
             raise
         if r.status_code != 200:
-            util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
+            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
         return r
 
     def post(self, api, parms = None):
@@ -95,7 +97,7 @@ class Environment:
             util.logger.error(str(e))
             raise
         if r.status_code != 200:
-            util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
+            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
         return r
 
     def delete(self, api, parms = None):
@@ -109,7 +111,7 @@ class Environment:
             util.logger.error(str(e))
             raise
         if r.status_code != 200:
-            util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
+            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
         return r
 
     def urlstring(self, api, parms):
@@ -123,9 +125,9 @@ class Environment:
         return url
 
 #--------------------- Static methods, not recommended -----------------
-def set_env(url, tok):
+def set_env(url, token):
     this.root_url = url
-    this.token = tok
+    this.token = token
     util.logger.debug('Setting GLOBAL environment: %s@%s', this.token, this.root_url)
 
 def set_token(tok):
@@ -145,7 +147,7 @@ def get_url():
 
 def urlstring(api, parms = None):
     first = True
-    redacted_token = re.sub(r'(....).*(....)', '\1***\2', this.token)
+    redacted_token = re.sub(r'(....).*(....)', "\1***\2", this.token)
     url = "{0}@{1}{2}".format(redacted_token, this.root_url, api)
     if parms is not None:
         for p in parms:
@@ -165,7 +167,7 @@ def get(api, parms = None):
         util.logger.error(str(e))
         raise
     if r.status_code != 200:
-        util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
+        util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
     return r
 
 def post(api, parms):
@@ -179,7 +181,7 @@ def post(api, parms):
         util.logger.error(str(e))
         raise
     if r.status_code != 200:
-        util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
+        util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
     return r
 
 def delete(api, parms = None):
@@ -193,7 +195,7 @@ def delete(api, parms = None):
         util.logger.error(str(e))
         raise
     if r.status_code != 200:
-        util.logger.error("%s%s raised error %s", this.root_url, api, r.text)
+        util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
     return r
 
 def add_standard_arguments(parser):

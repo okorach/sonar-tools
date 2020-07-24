@@ -4,6 +4,8 @@ import json
 
 DEBUG_LEVEL = 0
 DRY_RUN = False
+ISO_DATE_FORMAT = "%04d-%02d-%02d"
+
 logger = logging.getLogger('sonarqube-tools')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh = logging.FileHandler('sonarqube-tools.log')
@@ -67,3 +69,9 @@ def check_environment(kwargs):
 def json_dump_debug(json_data, pre_string = ''):
     logger.debug("%s%s", pre_string, json.dumps(json_data, \
                  sort_keys=True, indent=3, separators=(',', ': ')))
+
+def format_date_ymd(year, month, day):
+    return ISO_DATE_FORMAT % (year, month, day)
+
+def format_date(somedate):
+    return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)

@@ -1,5 +1,9 @@
 #!/usr/local/bin/python3
 
+'''
+        Abstraction of the SonarQube metric concept
+'''
+
 import re
 import json
 import requests

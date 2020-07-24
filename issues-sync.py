@@ -19,9 +19,6 @@ import sonarqube.env as env
 import sonarqube.issues as issues
 import sonarqube.utilities as util
 
-# Mandatory script input parameters
-dry_run_mode = False
-
 # ------------------------------------------------------------------------------
 
 

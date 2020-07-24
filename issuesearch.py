@@ -1,5 +1,19 @@
 #!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+'''
+    This script exports issues as CSV
 
+    Usage: issuesearch.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
+
+    Filters can be:
+    [-k <projectKey>]
+    [-s <statuses>] (FIXED, CLOSED, REOPENED, REVIEWED)
+    [-r <resolutions>] (UNRESOLVED, FALSE-POSITIVE, WONTFIX)
+    [-a <createdAfter>] issues created on or after a given date (YYYY-MM-DD)
+    [-b <createdBefore>] issues created before or on a given date (YYYY-MM-DD)
+    [--severities <severities>] Comma separated desired severities: BLOCKER, CRITICAL, MAJOR, MINOR, INFO
+    [--types <types>] Comma separated issue types (VULNERABILITY,BUG,CODE_SMELL)
+    [--tags]
+'''
 import sys
 import json
 import requests
@@ -7,17 +21,19 @@ import sonarqube.env as env
 import sonarqube.issues as issues
 import sonarqube.utilities as util
 
-# Mandatory script input parameters
-dry_run_mode = False
-
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
-    parser.add_argument('-s', '--statuses', help='comma separated issue status', required=False)
-    parser.add_argument('-a', '--createdAfter', help='issues created after a given date', required=False)
-    parser.add_argument('-b', '--createdBefore', help='issues created before a given date', required=False)
-    #parser.add_argument('-p', '--projectKey', help='projectKey', required=False)
-    parser.add_argument('-r', '--resolutions', help='Comma separated resolution state of the issues', required=False)
-    parser.add_argument('--severities', help='Comma separated severities', required=False)
+    parser.add_argument('-s', '--statuses', required = False, help = 'comma separated issue status, \
+        OPEN, WONTFIX, FALSE-POSITIVE, FIXED, CLOSED, REOPENED, REVIEWED')
+    parser.add_argument('-a', '--createdAfter', required = False,
+                        help = 'issues created on or after a given date (YYYY-MM-DD)')
+    parser.add_argument('-b', '--createdBefore', required = False,
+                        help = 'issues created on or before a given date (YYYY-MM-DD)')
+    parser.add_argument('-r', '--resolutions', required = False,
+                        help = '''Comma separated resolution states of the issues,
+                                  UNRESOLVED, FALSE-POSITIVE, WONTFIX''')
+    parser.add_argument('--severities', required = False,
+                        help = '''Comma separated severities, BLOCKER, CRITICAL, MAJOR, MINOR, INFO''')
     parser.add_argument('--types', help='Comma separated issue types', required=False)
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
 
