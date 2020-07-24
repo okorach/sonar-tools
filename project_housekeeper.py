@@ -46,26 +46,29 @@ for project in project_list:
         if branch_analysis_date > last_analysis:
             last_analysis = branch_analysis_date
     last_analysis = last_analysis.replace(tzinfo=pytz.UTC)
-    if last_analysis < mindate:
-        loc = int(p_obj.get_measure('ncloc'))
-
-
-        confirmed = False
-        if args.mode == 'confirm':
-            print('Please confirm deletion y/n [n]')
-            confirmed = False
-        if args.mode == 'batch' or (args.mode == 'confirm' and confirmed):
-            print("Project key %s has not been analyzed for %d days and will be deleted" %
-                  (p_obj.key, (today - last_analysis).days))
-            if p_obj.delete():
-                deleted_projects += 1
-                deleted_locs += loc
-                print("Project key %s (%d LoC) deleted" % (p_obj.key, loc))
-        else:
-            print("Project key %s (%d LoC) has not been analyzed for %d days, it should be deleted" %
-                  (p_obj.key, loc, (today - last_analysis).days))
-            proj_to_delete += 1
-            loc_to_delete += loc
+    loc = int(p_obj.get_measure('ncloc'))
+    print("Project key %s - %d LoCs - Not analysed for %d days" %
+          (p_obj.key, loc, (today - last_analysis).days))
+    util.logger.info("Project key %s - %d LoCs - Not analysed for %d days",
+                     p_obj.key, loc, (today - last_analysis).days)
+    if last_analysis > mindate:
+        continue
+    confirmed = False
+    if args.mode == 'confirm':
+        text = input('Please confirm deletion y/n [n]')
+        confirmed = (text == 'y')
+    if args.mode == 'batch' or (args.mode == 'confirm' and confirmed):
+        util.logger.info("Deleting project key %s", p_obj.key)
+        if p_obj.delete():
+            deleted_projects += 1
+            deleted_locs += loc
+            util.logger.info("Successfully deleted project key %s - %d LoCs", p_obj.key, loc)
+            print("Successfully deleted project key %s - %d LoCs" % (p_obj.key, loc))
+    else:
+        print("Project key %s (%d LoC) has not been analyzed for %d days, it should be deleted" %
+              (p_obj.key, loc, (today - last_analysis).days))
+        proj_to_delete += 1
+        loc_to_delete += loc
 if args.mode == 'dryrun':
     print("%d PROJECTS for a total of %d LoCs to delete" % (proj_to_delete, loc_to_delete))
 else:
