@@ -44,10 +44,11 @@ for project in project_list:
             last_analysis = branch_analysis_date
     last_analysis = last_analysis.replace(tzinfo=pytz.UTC)
     if last_analysis < mindate:
-        util.logger.info("Project key %s has not been analyzed for %d days, it should be deleted",
-                         p_obj.key, (today - last_analysis).days)
+        loc = int(p_obj.get_measure('ncloc'))
+
+        print("Project key %s (%d LoC) has not been analyzed for %d days, it should be deleted" %
+              (p_obj.key, loc, (today - last_analysis).days))
         proj_to_delete += 1
-        loc_to_delete += int(p_obj.get_measure('ncloc'))
+        loc_to_delete += loc
 
-
-util.logger.info("%d PROJECTS %d LoCs to delete", proj_to_delete, loc_to_delete)
+print("%d PROJECTS for a total of %d LoCs to delete" % (proj_to_delete, loc_to_delete))
