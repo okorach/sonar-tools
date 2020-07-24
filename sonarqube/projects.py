@@ -14,7 +14,7 @@ class Project(comp.Component):
 
     def get_name(self):
         if self.name is None:
-            resp = self.sqenv.get( PROJECT_SEARCH_API, params={'projects':self.key})
+            resp = self.sqenv.get( PROJECT_SEARCH_API, parms={'projects':self.key})
             data = json.loads(resp.text)
             self.name = data['components']['name']
         return self.name
@@ -23,6 +23,10 @@ class Project(comp.Component):
         resp = self.sqenv.get('/api/project_branches/list', parms={'project':self.key})
         data = json.loads(resp.text)
         return data['branches']
+
+    def delete(self):
+        resp = self.sqenv.post('/api/projects/delete', parms={'project':self.key})
+        return (resp.status_code // 100) == 2
 
 def count(include_applications, myenv = None):
     qualifiers = "TRK,APP" if include_applications else "TRK"
