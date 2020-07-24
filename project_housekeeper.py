@@ -4,6 +4,7 @@ import json
 import datetime
 import argparse
 import requests
+import pytz
 import sonarqube.measures as measures
 import sonarqube.metrics as metrics
 import sonarqube.projects as projects
@@ -27,10 +28,11 @@ if olderThan < 90:
     util.logger.error("Can't delete projects more recent than 90 days")
     exit(1)
 
-today = datetime.datetime.today()
+today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
 mindate = today - datetime.timedelta(days=olderThan)
 project_list = projects.get_projects(include_applications = False, sqenv = myenv)
 proj_to_delete = 0
+loc_to_delete = 0
 for project in project_list:
     last_analysis = today
     if 'lastAnalysisDate' in project:
@@ -40,11 +42,12 @@ for project in project_list:
         branch_analysis_date = datetime.datetime.strptime(b.get('analysisDate', ''), '%Y-%m-%dT%H:%M:%S%z')
         if branch_analysis_date > last_analysis:
             last_analysis = branch_analysis_date
+    last_analysis = last_analysis.replace(tzinfo=pytz.UTC)
     if last_analysis < mindate:
         util.logger.info("Project key %s has not been analyzed for %d days, it should be deleted",
-                         p_obj.key, int(today - last_analysis))
-        proj_to_delete =+ 1
-        loc_to_delete =+ p_obj.get_measure('ncloc')
+                         p_obj.key, (today - last_analysis).days)
+        proj_to_delete += 1
+        loc_to_delete += int(p_obj.get_measure('ncloc'))
 
 
 util.logger.info("%d PROJECTS %d LoCs to delete", proj_to_delete, loc_to_delete)
