@@ -38,7 +38,9 @@ for p in project_list:
     else:
         statuses[status] = 1
     if status == 'SUCCESS':
-        print("{0},{1}".format(key, os.path.basename(dump['file'])))
+        print("{0},SUCCESS,{1}".format(key, os.path.basename(dump['file'])))
+    else:
+        print("{0},FAIL,{1}".format(key, status))
     i += 1
     util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100/nb_projects), key, status)
     summary = ''
