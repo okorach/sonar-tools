@@ -8,7 +8,7 @@ import sonarqube.env as env
 
 class Rule(sq.SqObject):
     def __init__(self, key, sqenv):
-        super(Rule, self).__init__(key, sqenv)
+        super().__init__(key, sqenv)
         self.headline = None
         self.repo = None
         self.severity = None

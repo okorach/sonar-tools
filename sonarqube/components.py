@@ -13,7 +13,7 @@ import sonarqube.utilities as util
 class Component(sq.SqObject):
 
     def __init__(self, key, name=None, sqenv=None):
-        super(Component, self).__init__(key, sqenv)
+        super().__init__(key, sqenv)
         self.name = name
         self.nbr_issues = None
 

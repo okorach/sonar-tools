@@ -11,7 +11,7 @@ class Measure (sq.SqObject):
     API_COMPONENT = API_ROOT + '/component'
     API_HISTORY = API_ROOT + '/search_history'
     def __init__(self, key = None, value = None, **kwargs):
-        super(Measure, self).__init__(key=key,env=kwargs['env'])
+        super().__init__(key=key,env=kwargs['env'])
         self.value = value
         self.history = None
 

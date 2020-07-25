@@ -27,7 +27,7 @@ class UnknownIssueError(ApiError):
 
 class TooManyIssuesError(Exception):
     def __init__(self, nbr_issues, message):
-        super(TooManyIssuesError, self).__init__()
+        super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
 
@@ -50,7 +50,7 @@ class IssueComments:
 
 class Issue(sq.SqObject):
     def __init__(self, key, sqenv):
-        super(Issue, self).__init__(key, sqenv)
+        super().__init__(key, sqenv)
         self.url = None
         self.json = None
         self.severity = None
