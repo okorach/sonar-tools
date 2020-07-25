@@ -10,9 +10,8 @@ class Measure (sq.SqObject):
     API_ROOT = '/api/measures'
     API_COMPONENT = API_ROOT + '/component'
     API_HISTORY = API_ROOT + '/search_history'
-    def __init__(self, name = None, value = None, **kwargs):
-        super(Measure, self).__init__(kwargs['env'])
-        self.name = name
+    def __init__(self, key = None, value = None, **kwargs):
+        super(Measure, self).__init__(key=key,env=kwargs['env'])
         self.value = value
         self.history = None
 
@@ -22,7 +21,7 @@ class Measure (sq.SqObject):
         return data['component']['measures']
 
     def get_history(self, project_key):
-        resp = self.get(Measure.API_HISTORY,  {'component':project_key, 'metrics':self.name, 'ps':1000})
+        resp = self.get(Measure.API_HISTORY,  {'component':project_key, 'metrics':self.key, 'ps':1000})
         data = json.loads(resp.text)
         return data['component']['measures']
 
