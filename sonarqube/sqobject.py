@@ -21,4 +21,5 @@ class SqObject:
         return sonarqube.env.post(api, params, self.env)
 
     def delete(self, api, params = None):
-        return sonarqube.env.delete(api, params, self.env)
+        resp = sonarqube.env.delete(api, params, self.env)
+        return (resp.status_code // 100) == 2
