@@ -14,20 +14,28 @@ PROJECT_SEARCH_API = 'projects/search'
 
 class Project(comp.Component):
 
+    def __init__(self, key, sqenv):
+        super(Project, self).__init__(key, sqenv)
+        PROJECTS[key] = self
+
+    def __del__(self):
+        del PROJECTS[self.key]
+        util.logger.debug("Object project key %s destroyed", self.key)
+
     def get_name(self):
         if self.name is None:
-            resp = env.get( PROJECT_SEARCH_API, params={'projects':self.key}, ctxt = self.sqenv)
+            resp = env.get(PROJECT_SEARCH_API, params={'projects':self.key}, ctxt = self.env)
             data = json.loads(resp.text)
             self.name = data['components']['name']
         return self.name
 
     def get_branches(self):
-        resp = env.get('project_branches/list', params = {'project':self.key}, ctxt = self.sqenv)
+        resp = env.get('project_branches/list', params = {'project':self.key}, ctxt = self.env)
         data = json.loads(resp.text)
         return data['branches']
 
     def delete(self):
-        resp = env.post('projects/delete', params={'project':self.key}, ctxt = self.sqenv)
+        resp = env.post('projects/delete', params={'project':self.key}, ctxt = self.env)
         return (resp.status_code // 100) == 2
 
     def __wait_for_task_completion__(self, task_id, params, timeout = 180):
@@ -39,7 +47,7 @@ class Project(comp.Component):
             time.sleep(sleep_time)
             wait_time += sleep_time
             sleep_time *= 2
-            resp = env.get('ce/activity', params=params, ctxt = self.sqenv)
+            resp = env.get('ce/activity', params=params, ctxt = self.env)
             data = json.loads(resp.text)
             for t in data['tasks']:
                 if t['id'] != task_id:
@@ -56,12 +64,12 @@ class Project(comp.Component):
 
     def export(self, timeout = 180):
         util.logger.info('Exporting project key = %s (synchronously)', self.key)
-        resp = env.post('project_dump/export', params={'key':self.key}, ctxt=self.sqenv)
+        resp = env.post('project_dump/export', params={'key':self.key}, ctxt=self.env)
         if resp.status_code != 200:
             return {'status' : 'HTTP_ERROR {0}'.format(resp.status_code)}
         data = json.loads(resp.text)
         params = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
-        if self.sqenv.version_higher_or_equal_than("8.0.0"):
+        if self.env.version_higher_or_equal_than("8.0.0"):
             params['component'] = self.key
         else:
             params['q'] = self.key
@@ -69,7 +77,7 @@ class Project(comp.Component):
         if status != 'SUCCESS':
             util.logger.error("Project key %s export %s", self.key, status)
             return {'status': status}
-        resp = env.get('project_dump/status', params={'key':self.key}, ctxt = self.sqenv)
+        resp = env.get('project_dump/status', params={'key':self.key}, ctxt = self.env)
         data = json.loads(resp.text)
         dump_file = data['exportedDump']
         util.logger.debug("Project key %s export %s, dump file %s", self.key, status, dump_file)
@@ -77,7 +85,7 @@ class Project(comp.Component):
 
     def export_async(self):
         util.logger.info('Exporting project key = %s (asynchronously)', self.key)
-        resp = env.post('project_dump/export', params={'key':self.key}, ctxt = self.sqenv)
+        resp = env.post('project_dump/export', params={'key':self.key}, ctxt = self.env)
         if resp.status_code != 200:
             return None
         data = json.loads(resp.text)
@@ -85,7 +93,7 @@ class Project(comp.Component):
 
     def importproject(self):
         util.logger.info('Importing project key = %s (asynchronously)', self.key)
-        resp = env.post('project_dump/import', params={'key':self.key}, ctxt = self.sqenv)
+        resp = env.post('project_dump/import', params={'key':self.key}, ctxt = self.env)
         return resp.status_code
 
 def count(include_applications, myenv = None):
@@ -125,4 +133,4 @@ def create_project(key, name = None, visibility = 'private', sqenv = None):
         name = key
     resp = env.post('projects/create', ctxt = sqenv,
                     params={'project':key, 'name':name, 'visibility':'private'})
-    return resp.status_codeparamsparams
+    return resp.status_code
