@@ -3,9 +3,9 @@ Additional command line based tools to help in SonarQube administration tasks
 
 All script accept the following common parameters:
 - `-h` : Displays a help and exits
-- `-u` : URL of the SonarQube server
-- `-t` : token of the user to invoke the SonarQube APIs
-- `-g` : Debug level (from 1 to 5)
+- `-u` : URL of the SonarQube server, for instance `http://localhost:9000`
+- `-t` : token of the user to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06`
+- `-g` : Debug level (from `1` to `5`)
 - `-m` : Mode when performing API calls:
   - `batch`: All API calls are performed without any confirmation
   - `confirm`: All API calls that change the SonarQube internal state (POST and DELETE) are asking for a confirmation before execution
