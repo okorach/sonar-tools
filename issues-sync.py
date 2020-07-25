@@ -24,14 +24,14 @@ import sonarqube.utilities as util
 
 def parse_args(desc):
     parser = util.set_common_args(desc)
+    parser = util.set_component_args(parser)
+    parser = util.set_target_args(parser)
     parser.add_argument('-r', '--recover', required=False,
                         help='''What information to replicate. Default is FP and WF, but issue assignment,
                         tags, severity and type change can be recovered too''')
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
-    parser.add_argument('-d', '--dryrun', required=False,
-                        help='If True, show changes but don\'t apply, if False, apply changes - Default is true')
     return parser.parse_args()
 
 
