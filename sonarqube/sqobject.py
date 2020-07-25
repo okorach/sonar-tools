@@ -13,22 +13,11 @@ class SqObject:
     def get_env(self):
         return self.env
 
-    def get(self, api, parms):
-        if self.env is None:
-            return sonarqube.env.get(api, parms)
-        else:
-            return self.env.get(api, parms)
+    def get(self, api, params = None):
+        return sonarqube.env.get(api, params, self.env)
 
-    def post(self, api, parms):
-        if self.env is None:
-            return sonarqube.env.post(api, parms)
-        else:
-            return self.env.post(api, parms)
+    def post(self, api, params = None):
+        return sonarqube.env.post(api, params, self.env)
 
-    def delete(self, api, parms):
-        if self.env is None:
-            return sonarqube.env.delete(api, parms)
-        else:
-            return self.env.delete(api, parms)
-
-#--------------------- Static methods, not recommended -----------------
+    def delete(self, api, params = None):
+        return sonarqube.env.delete(api, params, self.env)

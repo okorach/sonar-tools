@@ -16,12 +16,9 @@ MAIN_METRICS = 'ncloc,bugs,reliability_rating,vulnerabilities,security_rating,co
     'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
     'new_coverage,new_duplicated_lines_density'
 
-def get_all_metrics(myenv):
+def get_all_metrics(myenv = None):
     # TODO paginated API if more than 500 metrics
-    if myenv is None:
-        resp = env.get('/api/metrics/search',  {'ps':500})
-    else:
-        resp = myenv.get('/api/metrics/search', {'ps':500})
+    resp = env.get('metrics/search',  params={'ps':500}, ctxt=myenv)
     if resp.status_code != 200:
         util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
     data = json.loads(resp.text)

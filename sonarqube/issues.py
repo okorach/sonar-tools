@@ -16,7 +16,7 @@ OPTIONS_ISSUES_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'au
                          'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
 MAX_ISSUE_SEARCH = 10000
-ISSUE_SEARCH_API = '/api/issues/search'
+ISSUE_SEARCH_API = 'issues/search'
 
 class ApiError(Exception):
     pass
@@ -126,13 +126,13 @@ class Issue(sq.SqObject):
             self.debt = None
 
     def read(self):
-        parms = dict(issues=self.id, additionalFields='_all')
-        resp = self.get(ISSUE_SEARCH_API, parms)
+        params = dict(issues=self.id, additionalFields='_all')
+        resp = self.get(ISSUE_SEARCH_API, params)
         self.__feed__(resp.issues[0])
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
-            resp = self.env.get('/api/issues/changelog', {'issue':self.id, 'format':'json'})
+            resp = self.get('issues/changelog', {'issue':self.id, 'format':'json'})
             data = json.loads(resp.text)
             # util.json_dump_debug(data['changelog'], "Issue Changelog = ")
             self.changelog = []
@@ -177,8 +177,7 @@ class Issue(sq.SqObject):
 
     def add_comment(self, comment):
         util.logger.debug("Adding comment %s to issue %s", comment, self.id)
-        params = {'issue':self.id, 'text':comment}
-        return self.__do_post__('issues/add_comment', **params)
+        return self.post('issues/add_comment', {'issue':self.id, 'text':comment})
 
     # def delete_comment(self, comment_id):
 
@@ -192,14 +191,12 @@ class Issue(sq.SqObject):
     def set_severity(self, severity):
         """Sets severity"""
         util.logger.debug("Changing severity of issue %s from %s to %s", self.id, self.severity, severity)
-        params = {'issue':self.id, 'severity':severity}
-        return self.__do_post__('issues/set_severity', **params)
+        return self.post('issues/set_severity', {'issue':self.id, 'severity':severity})
 
     def assign(self, assignee):
         """Sets assignee"""
         util.logger.debug("Assigning issue %s to %s", self.id, assignee)
-        params = {'issue':self.id, 'assignee':assignee}
-        return self.__do_post__('issues/assign', **params)
+        return self.post('issues/assign', {'issue':self.id, 'assignee':assignee})
 
     def get_authors(self):
         """Gets authors from SCM"""
@@ -207,8 +204,7 @@ class Issue(sq.SqObject):
     def set_tags(self, tags):
         """Sets tags"""
         util.logger.debug("Setting tags %s to issue %s", tags, self.id)
-        params = {'issue':self.id, 'tags':tags}
-        return self.__do_post__('issues/set_tags', **params)
+        return self.post('issues/set_tags', {'issue':self.id, 'tags':tags})
 
     def get_tags(self):
         """Gets tags"""
@@ -216,8 +212,7 @@ class Issue(sq.SqObject):
     def set_type(self, new_type):
         """Sets type"""
         util.logger.debug("Changing type of issue %s from %s to %s", self.id, self.type, new_type)
-        params = {'issue':self.id, 'type':new_type}
-        return self.__do_post__('issues/set_type', **params)
+        return self.post('issues/set_type', {'issue':self.id, 'type':new_type})
 
     def get_type(self):
         """Gets type"""
@@ -312,8 +307,7 @@ class Issue(sq.SqObject):
         return match_level
 
     def do_transition(self, transition):
-        params = {'issue':self.id, 'transition':transition}
-        return self.__do_post__('issues/do_transition', **params)
+        return self.post('issues/do_transition', {'issue':self.id, 'transition':transition})
 
     def reopen(self):
         util.logger.debug("Reopening issue %s", self.id)
@@ -339,16 +333,6 @@ class Issue(sq.SqObject):
 
         util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.id)
         return False
-
-    def __do_post__(self, api, **params):
-        do_it_really = True
-        if not do_it_really:
-            util.logger.info('DRY RUN for %s', '/api/' + api + str(params))
-            return 0
-        resp = self.post('/api/' + api, params)
-        if resp.status_code != 200:
-            util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
-        return resp.status_code
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
@@ -393,11 +377,8 @@ def sort_comments(comments):
     return sorted_comments
 
 def search(sqenv = None, **kwargs):
-    parms = get_issues_search_parms(kwargs)
-    if sqenv is None:
-        resp = env.get(ISSUE_SEARCH_API, parms)
-    else:
-        resp = sqenv.get(ISSUE_SEARCH_API, parms)
+    params = get_issues_search_params(kwargs)
+    resp = env.get(ISSUE_SEARCH_API, params=params, ctxt=sqenv)
     data = json.loads(resp.text)
     nbr_issues = data['paging']['total']
     util.logger.debug("Number of issues: %d", nbr_issues)
@@ -434,21 +415,10 @@ def search_all_issues(sqenv = None, **kwargs):
 
 def get_facets(sqenv = None, facet = 'directories', **kwargs):
     kwargs['facets'] = facet
-    if 'ps' in kwargs:
-        ps = kwargs['ps']
-    else:
-        ps = None
     kwargs['ps'] = 100
-    parms = get_issues_search_parms(kwargs)
-    if sqenv is None:
-        resp = env.get(ISSUE_SEARCH_API, parms)
-    else:
-        resp = sqenv.get(ISSUE_SEARCH_API, parms)
+    params = get_issues_search_params(kwargs)
+    resp = env.get(ISSUE_SEARCH_API, params=params, ctxt=sqenv)
     data = json.loads(resp.text)
-    if ps is None:
-        del kwargs['ps']
-    else:
-        kwargs['ps'] = ps
     util.json_dump_debug(data, 'FACET')
     for f in data['facets']:
         if f['property'] == facet:
@@ -730,12 +700,12 @@ def to_csv_header():
     return "# id;rule;type;severity;status;creation date;creation time;modification date;" + \
     "modification time;project key;project name;file;line;debt(min);message"
 
-def get_issues_search_parms(parms):
-    outparms = {'additionalFields':'comments'}
-    for key in parms:
-        if parms[key] is not None and key in OPTIONS_ISSUES_SEARCH:
-            outparms[key] = parms[key]
-    return outparms
+def get_issues_search_params(params):
+    outparams = {'additionalFields':'comments'}
+    for key in params:
+        if params[key] is not None and key in OPTIONS_ISSUES_SEARCH:
+            outparams[key] = params[key]
+    return outparams
 
 def resolution_diff_to_changelog(newval):
     if newval == 'FALSE-POSITIVE':
