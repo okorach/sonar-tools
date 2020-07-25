@@ -64,16 +64,16 @@ class Environment:
             return True
         return False
 
-    def get(self, api, parms = None):
-        #for k in parms:
-        #    parms[k] = urllib.parse.quote(str(parms[k]), safe=':')
+    def get(self, api, params = None):
+        #for k in params:
+        #    params[k] = urllib.parse.quote(str(params[k]), safe=':')
         api = normalize_api(api)
-        util.logger.debug('GET: %s', self.urlstring(api, parms))
+        util.logger.debug('GET: %s', self.urlstring(api, params))
         try:
-            if parms is None:
+            if params is None:
                 r = requests.get(url=self.root_url + api, auth=self.get_credentials())
             else:
-                r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+                r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=params)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
@@ -81,14 +81,14 @@ class Environment:
             util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
         return r
 
-    def post(self, api, parms = None):
+    def post(self, api, params = None):
         api = normalize_api(api)
-        util.logger.debug('POST: %s', self.urlstring(api, parms))
+        util.logger.debug('POST: %s', self.urlstring(api, params))
         try:
-            if parms is None:
+            if params is None:
                 r = requests.post(url=self.root_url + api, auth=self.get_credentials())
             else:
-                r = requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+                r = requests.post(url=self.root_url + api, auth=self.get_credentials(), params=params)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
@@ -96,14 +96,14 @@ class Environment:
             util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
         return r
 
-    def delete(self, api, parms = None):
+    def delete(self, api, params = None):
         api = normalize_api(api)
-        util.logger.debug('DELETE: %s', self.urlstring(api, parms))
+        util.logger.debug('DELETE: %s', self.urlstring(api, params))
         try:
-            if parms is None:
+            if params is None:
                 r = requests.delete(url=self.root_url + api, auth=self.get_credentials())
             else:
-                r = requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+                r = requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=params)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
@@ -111,14 +111,14 @@ class Environment:
             util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
         return r
 
-    def urlstring(self, api, parms):
+    def urlstring(self, api, params):
         first = True
         url = "{0}{1}".format(str(self), api)
-        if parms is not None:
-            for p in parms:
+        if params is not None:
+            for p in params:
                 sep = '?' if first else '&'
                 first = False
-                url += '{0}{1}={2}'.format(sep, p, parms[p])
+                url += '{0}{1}={2}'.format(sep, p, params[p])
         return url
 
 #--------------------- Static methods, not recommended -----------------
@@ -157,20 +157,20 @@ def normalize_api(api):
         api = '/api/' + api
     return api
 
-def get(api, parms = None, ctxt = None):
+def get(api, params = None, ctxt = None):
     if ctxt is None:
         ctxt = this.context
-    return ctxt.get(api, parms)
+    return ctxt.get(api, params)
 
-def post(api, parms = None, ctxt = None):
+def post(api, params = None, ctxt = None):
     if ctxt is None:
         ctxt = this.context
-    return ctxt.post(api, parms)
+    return ctxt.post(api, params)
 
-def delete(api, parms = None, ctxt = None):
+def delete(api, params = None, ctxt = None):
     if ctxt is None:
         ctxt = this.context
-    return ctxt.delete(api, parms)
+    return ctxt.delete(api, params)
 
 def add_standard_arguments(parser):
     parser.add_argument('-t', '--token', required=True,
