@@ -51,7 +51,6 @@ class IssueComments:
 class Issue(sq.SqObject):
     def __init__(self, key, sqenv):
         super(Issue, self).__init__(key, sqenv)
-        self.id = key
         self.url = None
         self.json = None
         self.severity = None
@@ -76,7 +75,7 @@ class Issue(sq.SqObject):
 
     def __str__(self):
         return "Key:{0} - Type:{1} - Severity:{2} - File/Line:{3}/{4} - Rule:{5}".format( \
-            self.id, self.type, self.severity, self.component, self.line, self.rule)
+            self.key, self.type, self.severity, self.component, self.line, self.rule)
 
     def to_string(self):
         """Dumps the object in a string"""
@@ -84,7 +83,7 @@ class Issue(sq.SqObject):
 
     def get_url(self):
         if self.url is None:
-            self.url = '{0}/project/issues?id={1}&issues={2}'.format(self.env.get_url(), self.component, self.id)
+            self.url = '{0}/project/issues?id={1}&issues={2}'.format(self.env.get_url(), self.component, self.key)
         return self.url
 
     def __feed__(self, jsondata):
@@ -126,13 +125,13 @@ class Issue(sq.SqObject):
             self.debt = None
 
     def read(self):
-        params = dict(issues=self.id, additionalFields='_all')
+        params = dict(issues=self.key, additionalFields='_all')
         resp = self.get(ISSUE_SEARCH_API, params)
         self.__feed__(resp.issues[0])
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
-            resp = self.get('issues/changelog', {'issue':self.id, 'format':'json'})
+            resp = self.get('issues/changelog', {'issue':self.key, 'format':'json'})
             data = json.loads(resp.text)
             # util.json_dump_debug(data['changelog'], "Issue Changelog = ")
             self.changelog = []
@@ -142,7 +141,7 @@ class Issue(sq.SqObject):
         return self.changelog
 
     def has_changelog(self):
-        util.logger.debug('Issue %s had %d changelog', self.id, len(self.get_changelog()))
+        util.logger.debug('Issue %s had %d changelog', self.key, len(self.get_changelog()))
         return len(self.get_changelog()) > 0
 
     def get_comments(self):
@@ -156,9 +155,9 @@ class Issue(sq.SqObject):
 
     def get_all_events(self, is_sorted = True):
         events = self.get_changelog()
-        util.logger.debug('Get all events: Issue %s has %d changelog', self.id, len(events))
+        util.logger.debug('Get all events: Issue %s has %d changelog', self.key, len(events))
         comments = self.get_comments()
-        util.logger.debug('Get all events: Issue %s has %d comments', self.id, len(comments))
+        util.logger.debug('Get all events: Issue %s has %d comments', self.key, len(comments))
         for c in comments:
             events.append(c)
         if not is_sorted:
@@ -176,8 +175,8 @@ class Issue(sq.SqObject):
         return self.has_changelog() or self.has_comments()
 
     def add_comment(self, comment):
-        util.logger.debug("Adding comment %s to issue %s", comment, self.id)
-        return self.post('issues/add_comment', {'issue':self.id, 'text':comment})
+        util.logger.debug("Adding comment %s to issue %s", comment, self.key)
+        return self.post('issues/add_comment', {'issue':self.key, 'text':comment})
 
     # def delete_comment(self, comment_id):
 
@@ -190,29 +189,29 @@ class Issue(sq.SqObject):
 
     def set_severity(self, severity):
         """Sets severity"""
-        util.logger.debug("Changing severity of issue %s from %s to %s", self.id, self.severity, severity)
-        return self.post('issues/set_severity', {'issue':self.id, 'severity':severity})
+        util.logger.debug("Changing severity of issue %s from %s to %s", self.key, self.severity, severity)
+        return self.post('issues/set_severity', {'issue':self.key, 'severity':severity})
 
     def assign(self, assignee):
         """Sets assignee"""
-        util.logger.debug("Assigning issue %s to %s", self.id, assignee)
-        return self.post('issues/assign', {'issue':self.id, 'assignee':assignee})
+        util.logger.debug("Assigning issue %s to %s", self.key, assignee)
+        return self.post('issues/assign', {'issue':self.key, 'assignee':assignee})
 
     def get_authors(self):
         """Gets authors from SCM"""
 
     def set_tags(self, tags):
         """Sets tags"""
-        util.logger.debug("Setting tags %s to issue %s", tags, self.id)
-        return self.post('issues/set_tags', {'issue':self.id, 'tags':tags})
+        util.logger.debug("Setting tags %s to issue %s", tags, self.key)
+        return self.post('issues/set_tags', {'issue':self.key, 'tags':tags})
 
     def get_tags(self):
         """Gets tags"""
 
     def set_type(self, new_type):
         """Sets type"""
-        util.logger.debug("Changing type of issue %s from %s to %s", self.id, self.type, new_type)
-        return self.post('issues/set_type', {'issue':self.id, 'type':new_type})
+        util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
+        return self.post('issues/set_type', {'issue':self.key, 'type':new_type})
 
     def get_type(self):
         """Gets type"""
@@ -239,7 +238,7 @@ class Issue(sq.SqObject):
         return False
 
     def get_key(self):
-        return self.id
+        return self.key
 
     def __same_rule(self, another_issue):
         return self.rule == another_issue.rule
@@ -278,12 +277,12 @@ class Issue(sq.SqObject):
     def identical_to(self, another_issue, ignore_component = False):
         if not self.same_general_attributes(another_issue) or \
             (self.component != another_issue.component and not ignore_component):
-            # util.logger.debug("Issue %s and %s are different on general attributes", self.id, another_issue.id)
+            # util.logger.debug("Issue %s and %s are different on general attributes", self.key, another_issue.key)
             return False
         # Hotspots carry no debt,so you can only check debt equality if issues
         # are not hotspots
         if not self.is_hotspot() and not another_issue.is_hotspot() and self.debt != another_issue.debt:
-            util.logger.info("Issue %s and %s are different on debt", self.id, another_issue.id)
+            util.logger.info("Issue %s and %s are different on debt", self.key, another_issue.key)
             return False
         util.logger.info("Issue %s and %s are identical", self.get_url(), another_issue.get_url())
         return True
@@ -307,31 +306,31 @@ class Issue(sq.SqObject):
         return match_level
 
     def do_transition(self, transition):
-        return self.post('issues/do_transition', {'issue':self.id, 'transition':transition})
+        return self.post('issues/do_transition', {'issue':self.key, 'transition':transition})
 
     def reopen(self):
         util.logger.debug("Reopening issue %s", self.id)
         return self.do_transition('reopen')
 
     def mark_as_false_positive(self):
-        util.logger.debug("Marking issue %s as false positive", self.id)
+        util.logger.debug("Marking issue %s as false positive", self.key)
         return self.do_transition('falsepositive')
 
     def mark_as_wont_fix(self):
-        util.logger.debug("Marking issue %s as won't fix", self.id)
+        util.logger.debug("Marking issue %s as won't fix", self.key)
         return self.do_transition('wontfix')
 
     def mark_as_reviewed(self):
         if self.is_hotspot():
-            util.logger.debug("Marking hotspot %s as reviewed", self.id)
+            util.logger.debug("Marking hotspot %s as reviewed", self.key)
             return self.do_transition('resolveasreviewed')
         elif self.is_vulnerability():
-            util.logger.debug("Marking vulnerability %s as won't fix in replacement of 'reviewed'", self.id)
+            util.logger.debug("Marking vulnerability %s as won't fix in replacement of 'reviewed'", self.key)
             ret = self.do_transition('wontfix')
             self.add_comment("Vulnerability marked as won't fix to replace hotspot 'reviewed' status")
             return ret
 
-        util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.id)
+        util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.key)
         return False
 
     def to_csv(self):
@@ -358,7 +357,7 @@ class Issue(sq.SqObject):
         msg = re.sub('"','""', self.message)
         line = '-' if self.line is None else self.line
         import sonarqube.projects as projects
-        return ';'.join([str(x) for x in [self.id, self.rule, self.type, self.severity, self.status,
+        return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.project,
                                           projects.get_project_name(self.project, self.env), self.component, line,
                                           debt, '"'+msg+'"']])
@@ -546,10 +545,10 @@ def apply_changelog(target_issue, source_issue):
     events = source_issue.get_all_events(True)
 
     if events is None or not events:
-        util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.id)
+        util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.key)
         return
 
-    util.logger.info("Applying changelog of issue %s to issue %s", source_issue.id, target_issue.id)
+    util.logger.info("Applying changelog of issue %s to issue %s", source_issue.key, target_issue.key)
     target_issue.add_comment("Synchronized from [this original issue]({0})".format(source_issue.get_url()))
     for d in sorted(events.iterkeys()):
         event = events[d]
