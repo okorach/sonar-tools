@@ -54,18 +54,18 @@ kwargs = vars(args)
 util.check_environment(kwargs)
 
 # Remove unset params from the dict
-noneparms = vars(args)
-parms = dict()
-for parm in noneparms:
-    if noneparms[parm] is not None:
-        parms[parm] = noneparms[parm]
+params = vars(args)
+for p in params.copy():
+    if params[p] is None:
+        del params[p]
+
 # Add SQ environment
-parms.update(dict(env=sqenv))
+params.update({'env':sqenv})
 
-for parm in parms:
-    util.logger.debug("%s --> %s", parm, parms[parm])
+for p in params:
+    util.logger.debug("%s --> %s", p, params[p])
 
-all_issues = issues.search_all_issues_unlimited(sqenv=sqenv, **parms)
+all_issues = issues.search_all_issues_unlimited(sqenv=sqenv, **params)
 print(issues.to_csv_header())
 for issue in all_issues:
     print(issue.to_csv())
