@@ -20,6 +20,9 @@ Plenty of issue filters can be specified from the command line, type `issues_exp
 ```
 issues_export.py -u <url> -t <token> >all_issues.csv
 issues_export.py -u <url> -t <token> -k <projectKey> >project_issues.csv
+issues_export.py -u <url> -t <token> -r FALSE-POSITIVE,WONTFIX >fp_wf.csv
+issues_export.py -u <url> -t <token> -a 2020-01-01 >issues_created_in_2020.csv
+issues_export.py -u <url> -t <token> -types VULNERABILITY,BUG >bugs_and_vulnerabilities.csv
 ```
 
 # issues_recover.py
