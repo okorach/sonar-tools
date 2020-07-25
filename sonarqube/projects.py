@@ -15,7 +15,7 @@ PROJECT_SEARCH_API = 'projects/search'
 class Project(comp.Component):
 
     def __init__(self, key, sqenv):
-        super(Project, self).__init__(key, sqenv)
+        super().__init__(key, sqenv)
         PROJECTS[key] = self
 
     def __del__(self):
@@ -34,9 +34,8 @@ class Project(comp.Component):
         data = json.loads(resp.text)
         return data['branches']
 
-    def delete(self):
-        resp = env.post('projects/delete', params={'project':self.key}, ctxt = self.env)
-        return (resp.status_code // 100) == 2
+    def delete(self, api = 'projects/delete', params = None):
+        return super().delete('projects/delete', params={'project':self.key})
 
     def __wait_for_task_completion__(self, task_id, params, timeout = 180):
 
