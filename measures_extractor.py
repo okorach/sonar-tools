@@ -14,11 +14,11 @@ def diff(first, second):
     return [item for item in first if item not in second]
 
 parser = util.set_common_args('Extract measures of projects')
+parser = util.set_component_args(parser)
 parser.add_argument('-m', '--metricKeys', required=False, help='Comma separated list of metrics or _all or _main')
 parser.add_argument('-b', '--withBranches', required=False, action='store_true', help='Also extract branches metrics')
-parser.set_defaults(withBranches=False)
 parser.add_argument('--withTags', required=False, action='store_true', help='Also extract project tags')
-parser.set_defaults(withTags=False)
+parser.set_defaults(withBranches=False, withTags=False)
 parser.add_argument('-r', '--ratingsAsLetters', action='store_true', required=False, \
                     help='Reports ratings as ABCDE letters instead of 12345 numbers')
 
