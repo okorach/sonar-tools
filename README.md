@@ -25,13 +25,13 @@ Plenty of issue filters can be specified from the command line, type `issues_exp
 This script tries to recover issues that were mistakenly closed following a scan with incorrect parameters
 
 Issue recovery means:
-- Reapplying all transitions to the issue to reach its final state before close (Usually False positive or Won't Fix)
+- Reapplying all transitions to the issue to reach its final state before close (Usually *False positive* or *Won't Fix*)
 - Reapplying all manual comments
 - Reapplying all severity or issue type change
 
 ## :information_source: Limitations
 - The script has to be run before the closed issue purge period (SonarQube parameter `sonar.dbcleaner.daysBeforeDeletingClosedIssues` whose default value is **30 days**)
-- The recovery is not 100% fail proof. In some rare corner cases it is not possible to determine that an issue was closed unexpectedly,in which case the issue is not restored. The script will log those cases
+- The recovery is not 100% deterministic. In some rare corner cases (typically less than 5%) it is not possible to determine that an issue was closed unexpectedly, in which case the issue is not recovered. The script will log those cases
 - When recovering an issue all state change of the issue are applied with the user whose token is provided to the script (it cannot be applied with the original user). Some comments are added to mention who was the original user that made the change
 
 ## Examples
@@ -52,7 +52,7 @@ Issue sync means:
 `issues_sync.py -u <src_url> -t <src_token> -k <projectKey> -U <target_url> -T <target_token>`
 
 ## :information_source: Limitations
-- The sync is not 100% fail proof. In some rare corner cases it is not possible to determine that an issue is the same between 2 branches or 2 platforms,in which case the issue is not sync'ed. The script will log those cases
+- The sync is not 100% deterministic. In some rare corner cases (typically less than 5%) it is not possible to determine that an issue is the same between 2 branches or 2 platforms,in which case the issue is not sync'ed. The script will log those cases
 - When sync'ing an issue, all changes of the target issue are applied with the user whose token is provided to the script (it cannot be applied with the user of the original issue). Some comments are added to mention who was the original user that made the change
 - To be modified (sync'ed from a source issue), the target issue must has zero manual changes ie it must be has created originally by SonarQube
 
@@ -69,11 +69,11 @@ Plenty of issue filters can be specified from the command line, type `measures_e
 # projects_export.py
 
 This script exports all projects of a given SonarQube instance.
-It sends to the output a CSV with the list of project keys, the export result (SUCCESS or FAIL), and:
+It sends to the output a CSV with the list of project keys, the export result (`SUCCESS` or `FAIL`), and:
 - If the export was successful, the generated zip file
 - If the export was failed, the failure reason
 
-:information_source: All zip files are generated on the standard location on the SonarQube server (under `data/governance/project_dumps/export`)
+:information_source: All zip files are generated in the platform standard location(under `data/governance/project_dumps/export`)
 
 ## Examples
 `projects_export.py -u <url> -t <token> >exported_projects.csv`
@@ -83,7 +83,7 @@ It sends to the output a CSV with the list of project keys, the export result (S
 This script imports all previously exported projects.
 It takes as input a CSV file produced by `export_all_projects.py`
 
-:information_source: All exported zip files must be transferred on the right location on the target platform for the export to be successful (In `data/governance/project_dumps/import`)
+:information_source: All exported zip files must be copied to the right location on the target platform for the import to be successful (In `data/governance/project_dumps/import`)
 
 ## Examples
 `projects_import.py -u <url> -t <token> -f <export_csv_file>`
