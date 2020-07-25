@@ -96,7 +96,7 @@ class Environment:
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
-        if r.status_code != 200:
+        if (r.status_code // 100) != 2:
             util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
         return r
 
@@ -110,7 +110,7 @@ class Environment:
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
-        if r.status_code != 200:
+        if (r.status_code // 100) != 2:
             util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
         return r
 
@@ -166,7 +166,7 @@ def get(api, parms = None):
     except requests.RequestException as e:
         util.logger.error(str(e))
         raise
-    if r.status_code != 200:
+    if (r.status_code // 100) != 2:
         util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
     return r
 
@@ -180,7 +180,7 @@ def post(api, parms):
     except requests.RequestException as e:
         util.logger.error(str(e))
         raise
-    if r.status_code != 200:
+    if (r.status_code // 100) != 2:
         util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
     return r
 
@@ -194,7 +194,7 @@ def delete(api, parms = None):
     except requests.RequestException as e:
         util.logger.error(str(e))
         raise
-    if r.status_code != 200:
+    if (r.status_code // 100) != 2:
         util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
     return r
 
