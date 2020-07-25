@@ -62,10 +62,11 @@ This script exports a projects will all (or some selected) measures.
 Plenty of issue filters can be specified from the command line, type `measures_export.py -h` for details
 
 ## Examples
-`measures_export.py -u <url> -t <token> -m ncloc,bugs,vulnerabilities >measures.csv`
-`measures_export.py -u <url> -t <token> -m _main >main_measures.csv`
-`measures_export.py -u <url> -t <token> -m _all >all_measures.csv`
-
+```
+measures_export.py -u <url> -t <token> -m ncloc,bugs,vulnerabilities >measures.csv
+measures_export.py -u <url> -t <token> -m _main >main_measures.csv
+measures_export.py -u <url> -t <token> -m _all >all_measures.csv
+```
 # projects_export.py
 
 This script exports all projects of a given SonarQube instance.
