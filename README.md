@@ -16,13 +16,14 @@ All script accept the following common parameters:
 This script exports a list of issues as CSV.
 Plenty of issue filters can be specified from the command line, type `issues_export.py -h` for details
 
-Examples:
+## Examples
 `issues_export.py -u <url> -t <token> >all_issues.csv`
 `issues_export.py -u <url> -t <token> -k <projectKey> >project_issues.csv`
 
 # issues_recover.py
 
 This script tries to recover issues that were mistakenly closed following a scan with incorrect parameters
+
 Issue recovery means:
 - Reapplying all transitions to the issue to reach its final state before close (Usually False positive or Won't Fix)
 - Reapplying all manual comments
@@ -33,13 +34,15 @@ Issue recovery means:
 - The recovery is not 100% fail proof. In some rare corner cases it is not possible to determine that an issue was closed unexpectedly,in which case the issue is not restored. The script will log those cases
 - When recovering an issue all state change of the issue are applied with the user whose token is provided to the script (it cannot be applied with the original user). Some comments are added to mention who was the original user that made the change
 
-Example: `issues_recover.py -u <url> -t <token> -k <projectKey>`
+## Examples
+`issues_recover.py -u <url> -t <token> -k <projectKey>`
 
-# issue_sync.py
+# issues_sync.py
 
 This script tries to sync issues manual changes (FP, WF, Comments, Change of Severity or of issue type) between:
 - 2 different branches of a same project
 - A same project on 2 different SonarQube platforms
+
 Issue sync means:
 - Applying all transitions of the source issue to the target issue
 - Applying all manual comments
@@ -69,7 +72,8 @@ This script exports all projects of a given SonarQube instance.
 It sends to the output a CSV with the list of project keys, the export result (SUCCESS or FAIL), and:
 - If the export was successful, the generated zip file
 - If the export was failed, the failure reason
-All zip files are generated on the standard location on the SonarQube server (under data/governance/project_dumps/export)
+
+:information_source: All zip files are generated on the standard location on the SonarQube server (under `data/governance/project_dumps/export`)
 
 ## Examples
 `projects_export.py -u <url> -t <token> >exported_projects.csv`
@@ -77,8 +81,9 @@ All zip files are generated on the standard location on the SonarQube server (un
 # projects_import.py
 
 This script imports all previously exported projects.
-All exported zip files must be transferred on the right location on the target platform for the export to be successful (data/governance/project_dumps/import)
 It takes as input a CSV file produced by `export_all_projects.py`
+
+:information_source: All exported zip files must be transferred on the right location on the target platform for the export to be successful (In `data/governance/project_dumps/import`)
 
 ## Examples
 `projects_import.py -u <url> -t <token> -f <export_csv_file>`
