@@ -19,6 +19,7 @@ def print_object(o):
 
 def parse_args(desc):
     parser = utils.set_common_args(desc)
+    parser = utils.set_component_args(parser)
     parser.add_argument('-r', '--recover', required=False,
                         help='''What information to recover. Default is FP and WF, but issue assignment,
                         tags, severity and type change can be recovered too''')
@@ -33,31 +34,23 @@ sqenv = sonarqube.env.Environment(url=args.url, token=args.token)
 sonarqube.env.set_env(args.url, args.token)
 
 # Remove unset params from the dict
-tmpparms = vars(args)
-parms = tmpparms.copy()
-for key in tmpparms:
-    if parms[key] is None:
-        del parms[key]
+params = vars(args)
+for key in params.copy():
+    if params[key] is None:
+        del params[key]
 # Add SQ environment
-parms.update(dict(env=sqenv))
-
-for parm in parms:
-    print(parm, '->', parms[parm])
-
-returned_data = dict()
-
-search_parms = parms
-search_parms['ps'] = 500
+params.update({'env':sqenv})
 
 # Fetch all closed issues
-search_parms = parms
-search_parms['statuses'] = 'CLOSED'
-closed_issues = sonarqube.issues.search_all_issues(**search_parms)
+search_params = params
+search_params['ps'] = 500
+search_params['statuses'] = 'CLOSED'
+closed_issues = sonarqube.issues.search_all_issues(**search_params)
 print ("Total number of closed issues: ", len(closed_issues))
 
 # Fetch all open issues
-search_parms['statuses'] = 'OPEN,CONFIRMED,REOPENED,RESOLVED'
-non_closed_issues = sonarqube.issues.search(**search_parms)
+search_params['statuses'] = 'OPEN,CONFIRMED,REOPENED,RESOLVED'
+non_closed_issues = sonarqube.issues.search(**search_params)
 print ("Number of open issues: ", len(non_closed_issues))
 
 # Search for mistakenly closed issues

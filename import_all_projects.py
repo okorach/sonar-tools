@@ -22,8 +22,9 @@ poll_interval = 1
 f = open(args.projectsFile, "r")
 project_list = []
 for line in f:
-    (key, zipfile) = line.split(',', 1)
-    project_list.append(key)
+    (key, status, zipfile) = line.split(',', 2)
+    if status is None or status != 'FAIL':
+        project_list.append(key)
 
 f.close()
 

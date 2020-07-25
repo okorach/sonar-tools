@@ -15,9 +15,8 @@ def diff(first, second):
     second = set(second)
     return [item for item in first if item not in second]
 
-parser = util.set_common_args('Extract measures of projects')
+parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
 parser.add_argument('-o', '--olderThan', required=True, help='Days since last analysis')
-parser.add_argument('-m', '--mode', required=True, help='Mode of execution (dryrun, batch, confirm)')
 args = parser.parse_args()
 myenv = env.Environment(url=args.url, token=args.token)
 kwargs = vars(args)

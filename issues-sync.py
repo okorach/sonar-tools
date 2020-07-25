@@ -24,14 +24,14 @@ import sonarqube.utilities as util
 
 def parse_args(desc):
     parser = util.set_common_args(desc)
+    parser = util.set_component_args(parser)
+    parser = util.set_target_args(parser)
     parser.add_argument('-r', '--recover', required=False,
                         help='''What information to replicate. Default is FP and WF, but issue assignment,
                         tags, severity and type change can be recovered too''')
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
-    parser.add_argument('-d', '--dryrun', required=False,
-                        help='If True, show changes but don\'t apply, if False, apply changes - Default is true')
     return parser.parse_args()
 
 
@@ -43,31 +43,30 @@ if args.tokenTarget is None:
     args.tokenTarget = args.token
 target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
 
-kwargs = vars(args)
-util.check_environment(kwargs)
-parms = kwargs.copy()
-for key in kwargs:
-    if kwargs[key] is None:
-        del parms[key]
-parms['projectKey'] = parms['componentKeys']
-targetParms = parms.copy()
-if 'targetComponentKeys' in targetParms and targetParms['targetComponentKeys'] is not None:
-    targetParms['projectKey'] = targetParms['targetComponentKeys']
-    targetParms['componentKeys'] = targetParms['targetComponentKeys']
+params = vars(args)
+util.check_environment(params)
+for key in params.copy():
+    if params[key] is None:
+        del params[key]
+params['projectKey'] = params['componentKeys']
+targetParams = params.copy()
+if 'targetComponentKeys' in targetParams and targetParams['targetComponentKeys'] is not None:
+    targetParams['projectKey'] = targetParams['targetComponentKeys']
+    targetParams['componentKeys'] = targetParams['targetComponentKeys']
 # Add SQ environment
 
-parms.update(dict(env=source_env))
-all_source_issues = issues.search_all_issues(source_env, **parms)
+params.update({'env':source_env})
+all_source_issues = issues.search_all_issues(source_env, **params)
 util.logger.info("Found %d issues with manual changes on source project", len(all_source_issues))
 
-targetParms.update(dict(env=target_env))
-all_target_issues = issues.search_all_issues(target_env, **targetParms)
+targetParams.update({'env':target_env})
+all_target_issues = issues.search_all_issues(target_env, **targetParams)
 util.logger.info("Found %d target issues on target project", len(all_target_issues))
 
 for issue in all_target_issues:
     util.logger.info('Searching sibling for issue %s', issue.get_url())
     siblings = issues.search_siblings(issue, all_source_issues, False,
-                                      parms['componentKeys'] == targetParms['componentKeys'])
+                                      params['componentKeys'] == targetParams['componentKeys'])
     nb_siblings = len(siblings)
     util.logger.info('Found %d sibling(s) for issue %s', nb_siblings, str(issue))
     if nb_siblings == 0:

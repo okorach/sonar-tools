@@ -10,27 +10,34 @@ import sonarqube.utilities as util
 
 PROJECTS = {}
 
-PROJECT_SEARCH_API = '/api/projects/search'
+PROJECT_SEARCH_API = 'projects/search'
 
 class Project(comp.Component):
 
+    def __init__(self, key, sqenv):
+        super().__init__(key, sqenv)
+        PROJECTS[key] = self
+
+    def __del__(self):
+        del PROJECTS[self.key]
+        util.logger.debug("Object project key %s destroyed", self.key)
+
     def get_name(self):
         if self.name is None:
-            resp = self.sqenv.get( PROJECT_SEARCH_API, parms={'projects':self.key})
+            resp = env.get(PROJECT_SEARCH_API, params={'projects':self.key}, ctxt = self.env)
             data = json.loads(resp.text)
             self.name = data['components']['name']
         return self.name
 
     def get_branches(self):
-        resp = self.sqenv.get('/api/project_branches/list', parms={'project':self.key})
+        resp = env.get('project_branches/list', params = {'project':self.key}, ctxt = self.env)
         data = json.loads(resp.text)
         return data['branches']
 
-    def delete(self):
-        resp = self.sqenv.post('/api/projects/delete', parms={'project':self.key})
-        return (resp.status_code // 100) == 2
+    def delete(self, api = 'projects/delete', params = None):
+        return super().delete('projects/delete', params={'project':self.key})
 
-    def __wait_for_task_completion__(self, task_id, parms, timeout = 180):
+    def __wait_for_task_completion__(self, task_id, params, timeout = 180):
 
         finished = False
         wait_time = 0
@@ -39,7 +46,7 @@ class Project(comp.Component):
             time.sleep(sleep_time)
             wait_time += sleep_time
             sleep_time *= 2
-            resp = self.sqenv.get('/api/ce/activity', parms=parms)
+            resp = env.get('ce/activity', params=params, ctxt = self.env)
             data = json.loads(resp.text)
             for t in data['tasks']:
                 if t['id'] != task_id:
@@ -56,20 +63,20 @@ class Project(comp.Component):
 
     def export(self, timeout = 180):
         util.logger.info('Exporting project key = %s (synchronously)', self.key)
-        resp = self.sqenv.post('/api/project_dump/export', parms={'key':self.key})
+        resp = env.post('project_dump/export', params={'key':self.key}, ctxt=self.env)
         if resp.status_code != 200:
             return {'status' : 'HTTP_ERROR {0}'.format(resp.status_code)}
         data = json.loads(resp.text)
-        parms = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
-        if self.sqenv.version_higher_or_equal_than("8.0.0"):
-            parms['component'] = self.key
+        params = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
+        if self.env.version_higher_or_equal_than("8.0.0"):
+            params['component'] = self.key
         else:
-            parms['q'] = self.key
-        status = self.__wait_for_task_completion__(data['taskId'], parms=parms, timeout=timeout)
+            params['q'] = self.key
+        status = self.__wait_for_task_completion__(data['taskId'], params=params, timeout=timeout)
         if status != 'SUCCESS':
             util.logger.error("Project key %s export %s", self.key, status)
             return {'status': status}
-        resp = self.sqenv.get('/api/project_dump/status', parms={'key':self.key})
+        resp = env.get('project_dump/status', params={'key':self.key}, ctxt = self.env)
         data = json.loads(resp.text)
         dump_file = data['exportedDump']
         util.logger.debug("Project key %s export %s, dump file %s", self.key, status, dump_file)
@@ -77,7 +84,7 @@ class Project(comp.Component):
 
     def export_async(self):
         util.logger.info('Exporting project key = %s (asynchronously)', self.key)
-        resp = self.sqenv.post('/api/project_dump/export', parms={'key':self.key})
+        resp = env.post('project_dump/export', params={'key':self.key}, ctxt = self.env)
         if resp.status_code != 200:
             return None
         data = json.loads(resp.text)
@@ -85,26 +92,19 @@ class Project(comp.Component):
 
     def importproject(self):
         util.logger.info('Importing project key = %s (asynchronously)', self.key)
-        resp = self.sqenv.post('/api/project_dump/import', parms={'key':self.key})
+        resp = env.post('project_dump/import', params={'key':self.key}, ctxt = self.env)
         return resp.status_code
 
 def count(include_applications, myenv = None):
     qualifiers = "TRK,APP" if include_applications else "TRK"
-    params = dict(ps=3, qualifiers=qualifiers)
-    if myenv is None:
-        resp = env.get(PROJECT_SEARCH_API, params)
-    else:
-        resp = myenv.get(PROJECT_SEARCH_API, params)
+    resp = env.get(PROJECT_SEARCH_API, params={'ps':3, 'qualifiers':qualifiers}, ctxt = myenv)
     data = json.loads(resp.text)
     return data['paging']['total']
 
-def get_projects(include_applications,  sqenv = None, page_size=500, page_nbr=1):
+def get_projects(include_applications, sqenv = None, page_size=500, page_nbr=1):
     qualifiers = "TRK,APP" if include_applications else "TRK"
-    params = dict(ps=page_size, p=page_nbr, qualifiers=qualifiers)
-    if sqenv is None:
-        resp = env.get(PROJECT_SEARCH_API,  params)
-    else:
-        resp = sqenv.get(PROJECT_SEARCH_API, params)
+    resp = env.get(PROJECT_SEARCH_API, ctxt = sqenv,
+                   params={'ps':page_size, 'p':page_nbr, 'qualifiers':qualifiers})
     data = json.loads(resp.text)
     return data['components']
 
@@ -121,11 +121,7 @@ def get_project_name(key, sqenv = None):
     if key in PROJECTS:
         return PROJECTS[key]
 
-    params = dict(projects=key)
-    if sqenv is None:
-        resp = env.get(PROJECT_SEARCH_API, params)
-    else:
-        resp = sqenv.get(PROJECT_SEARCH_API, params)
+    resp = env.get(PROJECT_SEARCH_API, params={'projects':key}, ctxt = sqenv)
     data = json.loads(resp.text)
     #util.json_dump_debug(data)
     PROJECTS[key] = data['components'][0]['name']
@@ -134,8 +130,6 @@ def get_project_name(key, sqenv = None):
 def create_project(key, name = None, visibility = 'private', sqenv = None):
     if name is None:
         name = key
-    if sqenv is None:
-        resp = env.post('/api/projects/create', parms={'project':key, 'name':name, 'visibility':'private'})
-    else:
-        resp = sqenv.post('/api/projects/create', parms={'project':key, 'name':name, 'visibility':'private'})
+    resp = env.post('projects/create', ctxt = sqenv,
+                    params={'project':key, 'name':name, 'visibility':'private'})
     return resp.status_code

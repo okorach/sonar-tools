@@ -3,13 +3,12 @@
 import sys
 import json
 import requests
-from sonarqube.env import get_url, get_credentials
+import sonarqube.sqobject as sq
+import sonarqube.env as env
 
-
-class Rule:
-
-    def __init__(self):
-        self.key = None
+class Rule(sq.SqObject):
+    def __init__(self, key, sqenv):
+        super().__init__(key, sqenv)
         self.headline = None
         self.repo = None
         self.severity = None
@@ -31,22 +30,13 @@ class Rule:
         self.tags = None
         self.template_key = None
 
-    def get_rule(self):
-        params = dict(projets=self.key)
-        resp = requests.get(url=get_url() + '/api/projects/search', auth=get_credentials(), params=params)
-        data = json.loads(resp.text)
-        return data['components']['name']
-
-def count(include_applications):
-    qualifiers = "TRK,APP" if include_applications else "TRK"
-    params = dict(ps=3, qualifiers=qualifiers)
-    resp = requests.get(url=get_url() + '/api/projects/search', auth=get_credentials(), params=params)
+def count():
+    resp = env.get('rules/search', params={'ps':3, 'p':1})
     data = json.loads(resp.text)
     return data['paging']['total']
 
 def get_rules(page_nbr=1, page_size=500):
-    params = dict(ps=page_size, p=page_nbr)
-    resp = requests.get(url=get_url() + '/api/rules/search', auth=get_credentials(), params=params)
+    resp = env.get('rules/search', params={'ps':page_size, 'p':page_nbr})
     data = json.loads(resp.text)
     return data['rules']
 
@@ -56,8 +46,7 @@ def get_all_rules():
     rules_list = []
     done = False
     while not done:
-        params = dict(ps=page_size, p=page_nbr)
-        resp = requests.get(url=get_url() + '/api/rules/search', auth=get_credentials(), params=params)
+        resp = env.get('rules/search', params={'ps':page_size, 'p':page_nbr})
         data = json.loads(resp.text)
         for rule in data['rules']:
             rules_list.append(rule['key'])
@@ -68,4 +57,3 @@ def get_rules_list():
     for rule in rules:
         rules_list.append(rule['key'])
     return rules_list
-

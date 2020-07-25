@@ -7,13 +7,7 @@ import requests
 import sonarqube.utilities as util
 
 HTTP_ERROR_MSG = "%s%s raised error %s"
-
-# this is a pointer to the module object instance itself.
-this = sys.modules[__name__]
-this.token = ''
-this.root_url= "http://localhost:9000"
-
-my_debug = False
+DEFAULT_URL = 'http://localhost:9000'
 
 class Environment:
 
@@ -27,7 +21,7 @@ class Environment:
         self.build = None
 
     def __str__(self):
-        redacted_token = re.sub(r'(....).*(....)', '\1***\2', self.token)
+        redacted_token = re.sub(r'(...).*(...)', '\1***\2', self.token)
         return "{0}@{1}".format(redacted_token, self.root_url)
 
     def set_env(self, url, token):
@@ -70,139 +64,110 @@ class Environment:
             return True
         return False
 
-    def get(self, api, parms = None):
-        #for k in parms:
-        #    parms[k] = urllib.parse.quote(str(parms[k]), safe=':')
-        util.logger.debug('GET: %s', self.urlstring(api, parms))
+    def get(self, api, params = None):
+        #for k in params:
+        #    params[k] = urllib.parse.quote(str(params[k]), safe=':')
+        api = normalize_api(api)
+        util.logger.debug('GET: %s', self.urlstring(api, params))
         try:
-            if parms is None:
+            if params is None:
                 r = requests.get(url=self.root_url + api, auth=self.get_credentials())
             else:
-                r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+                r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=params)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
-        if r.status_code != 200:
-            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
+        if (r.status_code // 100) != 2:
+            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.text)
         return r
 
-    def post(self, api, parms = None):
-        util.logger.debug('POST: %s', self.urlstring(api, parms))
+    def post(self, api, params = None):
+        api = normalize_api(api)
+        util.logger.debug('POST: %s', self.urlstring(api, params))
         try:
-            if parms is None:
+            if params is None:
                 r = requests.post(url=self.root_url + api, auth=self.get_credentials())
             else:
-                r = requests.post(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+                r = requests.post(url=self.root_url + api, auth=self.get_credentials(), params=params)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
         if (r.status_code // 100) != 2:
-            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
+            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.text)
         return r
 
-    def delete(self, api, parms = None):
-        util.logger.debug('DELETE: %s', self.urlstring(api, parms))
+    def delete(self, api, params = None):
+        api = normalize_api(api)
+        util.logger.debug('DELETE: %s', self.urlstring(api, params))
         try:
-            if parms is None:
+            if params is None:
                 r = requests.delete(url=self.root_url + api, auth=self.get_credentials())
             else:
-                r = requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=parms)
+                r = requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=params)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
         if (r.status_code // 100) != 2:
-            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
+            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.text)
         return r
 
-    def urlstring(self, api, parms):
+    def urlstring(self, api, params):
         first = True
         url = "{0}{1}".format(str(self), api)
-        if parms is not None:
-            for p in parms:
+        if params is not None:
+            for p in params:
                 sep = '?' if first else '&'
                 first = False
-                url += '{0}{1}={2}'.format(sep, p, parms[p])
+                url += '{0}{1}={2}'.format(sep, p, params[p])
         return url
 
 #--------------------- Static methods, not recommended -----------------
-def set_env(url, token):
-    this.root_url = url
-    this.token = token
-    util.logger.debug('Setting GLOBAL environment: %s@%s', this.token, this.root_url)
+# this is a pointer to the module object instance itself.
+this = sys.modules[__name__]
+this.context = Environment("http://localhost:9000", '')
 
-def set_token(tok):
-    this.token = tok
+def set_env(url, token):
+    this.context = Environment(url, token)
+    util.logger.debug('Setting GLOBAL environment: %s@%s', token, url)
+
+def set_token(token):
+    this.context.set_token(token)
 
 def get_token():
-    return this.token
+    return this.context.token
 
 def get_credentials():
-    return (this.token, '')
+    return (this.context.token, '')
 
 def set_url(url):
-    this.root_url = url
+    this.context.set_url(url)
 
 def get_url():
-    return this.root_url
+    return this.context.root_url
 
-def urlstring(api, parms = None):
-    first = True
-    redacted_token = re.sub(r'(....).*(....)', "\1***\2", this.token)
-    url = "{0}@{1}{2}".format(redacted_token, this.root_url, api)
-    if parms is not None:
-        for p in parms:
-            sep = '?' if first else '&'
-            first = False
-            url += '{0}{1}={2}'.format(sep, p, parms[p])
-    return url
+def normalize_api(api):
+    api = api.lower()
+    if re.match(r'/api', api):
+        pass
+    elif re.match(r'api', api):
+        api = '/' + api
+    elif re.match(r'/', api):
+        api = '/api' + api
+    else:
+        api = '/api/' + api
+    return api
 
-def get(api, parms = None):
-    util.logger.debug('GLOBAL GET: %s', urlstring(api, parms))
-    try:
-        if parms is None:
-            r = requests.get(url=this.root_url + api, auth=get_credentials())
-        else:
-            r = requests.get(url=this.root_url + api, auth=get_credentials(), params=parms)
-    except requests.RequestException as e:
-        util.logger.error(str(e))
-        raise
-    if (r.status_code // 100) != 2:
-        util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
-    return r
+def get(api, params = None, ctxt = None):
+    if ctxt is None:
+        ctxt = this.context
+    return ctxt.get(api, params)
 
-def post(api, parms):
-    util.logger.debug('GLOBAL POST: %s', urlstring(api, parms))
-    try:
-        if parms is None:
-            r = requests.post(url=this.root_url + api, auth=get_credentials())
-        else:
-            r = requests.post(url=this.root_url + api, auth=get_credentials(), params=parms)
-    except requests.RequestException as e:
-        util.logger.error(str(e))
-        raise
-    if (r.status_code // 100) != 2:
-        util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
-    return r
+def post(api, params = None, ctxt = None):
+    if ctxt is None:
+        ctxt = this.context
+    return ctxt.post(api, params)
 
-def delete(api, parms = None):
-    util.logger.debug('GLOBAL DELETE: %s', urlstring(api, parms))
-    try:
-        if parms is None:
-            r = requests.delete(url=this.root_url + api, auth=get_credentials())
-        else:
-            r = requests.delete(url=this.root_url + api, auth=get_credentials(), params=parms)
-    except requests.RequestException as e:
-        util.logger.error(str(e))
-        raise
-    if (r.status_code // 100) != 2:
-        util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
-    return r
-
-def add_standard_arguments(parser):
-    parser.add_argument('-t', '--token',
-                        help='Token to authenticate to SonarQube - Unauthenticated usage is not possible',
-                        required=True)
-    parser.add_argument('-u', '--url', help='Root URL of the SonarQube server, default is http://localhost:9000',
-                        required=False, default='http://localhost:9000')
-    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', \
-        help='Commas separated key of the components', required=False)
+def delete(api, params = None, ctxt = None):
+    if ctxt is None:
+        ctxt = this.context
+    return ctxt.delete(api, params)

@@ -3,7 +3,7 @@ import logging
 import json
 
 DEBUG_LEVEL = 0
-DRY_RUN = False
+RUN_MODE = 'dryrun'
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
 
 logger = logging.getLogger('sonarqube-tools')
@@ -27,16 +27,23 @@ def set_common_args(desc):
                 See: https://pypi.python.org/pypi/argparse""")
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-t', '--token', required=True,
-                        help='Token to authenticate to SonarQube - Unauthenticated usage is not possible')
+                        help='Token to authenticate to the source SonarQube - Unauthenticated usage is not possible')
     parser.add_argument('-u', '--url', required=False, default='http://localhost:9000',
-                        help='Root URL of the SonarQube server, default is http://localhost:9000')
+                        help='Root URL of the source SonarQube server, default is http://localhost:9000')
+
+    parser.add_argument('-m', '--mode', required=True, help='Mode of execution (dryrun, batch, confirm)')
+    parser.add_argument('-g', '--debug', required=False, help='Debug level')
+    return parser
+
+def set_component_args(parser):
     parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', required=False,
                         help='Commas separated key of the components')
+    return parser
+
+def set_target_args(parser):
     parser.add_argument('-U', '--urlTarget', required=False, help='Root URL of the target SonarQube server')
     parser.add_argument('-T', '--tokenTarget', required=False,
                         help='Token to authenticate to target SonarQube - Unauthenticated usage is not possible')
-
-    parser.add_argument('-g', '--debug', required=False, help='Debug level')
     return parser
 
 def get_logging_level(intlevel):
@@ -57,14 +64,18 @@ def set_debug_level(level):
     logger.setLevel(get_logging_level(DEBUG_LEVEL))
     logger.info("Set debug level to %d", DEBUG_LEVEL)
 
-def set_dry_run(dry_run):
-    global DRY_RUN
-    DRY_RUN = dry_run
-    logger.info("Set dry run to %s", str(dry_run))
+def set_run_mode(run_mode):
+    global RUN_MODE
+    RUN_MODE = run_mode
+    logger.info("Set run mode to %s", run_mode)
+
+def get_run_mode():
+    global RUN_MODE
+    return RUN_MODE
 
 def check_environment(kwargs):
     set_debug_level(kwargs.pop('debug', 0))
-    set_dry_run(kwargs.pop('dry_run', 'false'))
+    set_run_mode(kwargs.pop('mode', 'dryrun'))
 
 def json_dump_debug(json_data, pre_string = ''):
     logger.debug("%s%s", pre_string, json.dumps(json_data, \
