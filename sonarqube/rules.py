@@ -8,8 +8,7 @@ import sonarqube.env as env
 
 class Rule(sq.SqObject):
     def __init__(self, key, sqenv):
-        super(Rule, self).__init__(sqenv)
-        self.key = key
+        super(Rule, self).__init__(key, sqenv)
         self.headline = None
         self.repo = None
         self.severity = None
@@ -31,9 +30,8 @@ class Rule(sq.SqObject):
         self.tags = None
         self.template_key = None
 
-def count(include_applications):
-    qualifiers = "TRK,APP" if include_applications else "TRK"
-    resp = env.get('projects/search', params={'ps':3, 'qualifiers':qualifiers})
+def count():
+    resp = env.get('rules/search', params={'ps':3, 'p':1})
     data = json.loads(resp.text)
     return data['paging']['total']
 
