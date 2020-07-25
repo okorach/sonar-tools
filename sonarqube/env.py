@@ -77,8 +77,8 @@ class Environment:
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise
-        if r.status_code != 200:
-            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
+        if (r.status_code // 100) != 2:
+            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.text)
         return r
 
     def post(self, api, params = None):
@@ -93,7 +93,7 @@ class Environment:
             util.logger.error(str(e))
             raise
         if (r.status_code // 100) != 2:
-            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
+            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.text)
         return r
 
     def delete(self, api, params = None):
@@ -108,7 +108,7 @@ class Environment:
             util.logger.error(str(e))
             raise
         if (r.status_code // 100) != 2:
-            util.logger.error(HTTP_ERROR_MSG, this.root_url, api, r.text)
+            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.text)
         return r
 
     def urlstring(self, api, params):
@@ -171,11 +171,3 @@ def delete(api, params = None, ctxt = None):
     if ctxt is None:
         ctxt = this.context
     return ctxt.delete(api, params)
-
-def add_standard_arguments(parser):
-    parser.add_argument('-t', '--token', required=True,
-                        help='Token to authenticate to SonarQube - Unauthenticated usage is not possible')
-    parser.add_argument('-u', '--url', required=False, default=DEFAULT_URL,
-                        help='Root URL of the SonarQube server, default is {0}'.format(DEFAULT_URL))
-    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', \
-                        help='Commas separated key of the components', required=False)
