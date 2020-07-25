@@ -19,6 +19,7 @@ def print_object(o):
 
 def parse_args(desc):
     parser = utils.set_common_args(desc)
+    parser = utils.set_component_args(parser)
     parser.add_argument('-r', '--recover', required=False,
                         help='''What information to recover. Default is FP and WF, but issue assignment,
                         tags, severity and type change can be recovered too''')
