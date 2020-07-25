@@ -6,7 +6,7 @@
 	],
 	"settings": {
 		"sonarlint.connectedMode.project": {
-			"serverId": "SQ LTS",
+			"connectionId": "SQ LATEST",
 			"projectKey": "sonarqube-tools"
 		},
 		"python.pythonPath": "/Library/Frameworks/Python.framework/Versions/3.6/bin/python3",
