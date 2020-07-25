@@ -17,8 +17,10 @@ This script exports a list of issues as CSV.
 Plenty of issue filters can be specified from the command line, type `issues_export.py -h` for details
 
 ## Examples
-`issues_export.py -u <url> -t <token> >all_issues.csv`
-`issues_export.py -u <url> -t <token> -k <projectKey> >project_issues.csv`
+```
+issues_export.py -u <url> -t <token> >all_issues.csv
+issues_export.py -u <url> -t <token> -k <projectKey> >project_issues.csv
+```
 
 # issues_recover.py
 
@@ -35,7 +37,9 @@ Issue recovery means:
 - When recovering an issue all state change of the issue are applied with the user whose token is provided to the script (it cannot be applied with the original user). Some comments are added to mention who was the original user that made the change
 
 ## Examples
-`issues_recover.py -u <url> -t <token> -k <projectKey>`
+```
+issues_recover.py -u <url> -t <token> -k <projectKey>
+```
 
 # issues_sync.py
 
@@ -49,7 +53,9 @@ Issue sync means:
 - Applying all severity or issue type change
 
 ## Examples
-`issues_sync.py -u <src_url> -t <src_token> -k <projectKey> -U <target_url> -T <target_token>`
+```
+issues_sync.py -u <src_url> -t <src_token> -k <projectKey> -U <target_url> -T <target_token>
+```
 
 ## :information_source: Limitations
 - The sync is not 100% deterministic. In some rare corner cases (typically less than 5%) it is not possible to determine that an issue is the same between 2 branches or 2 platforms,in which case the issue is not sync'ed. The script will log those cases
@@ -77,7 +83,9 @@ It sends to the output a CSV with the list of project keys, the export result (`
 :information_source: All zip files are generated in the platform standard location(under `data/governance/project_dumps/export`)
 
 ## Examples
-`projects_export.py -u <url> -t <token> >exported_projects.csv`
+```
+projects_export.py -u <url> -t <token> >exported_projects.csv
+```
 
 # projects_import.py
 
@@ -87,7 +95,9 @@ It takes as input a CSV file produced by `export_all_projects.py`
 :information_source: All exported zip files must be copied to the right location on the target platform for the import to be successful (In `data/governance/project_dumps/import`)
 
 ## Examples
-`projects_import.py -u <url> -t <token> -f <export_csv_file>`
+```
+projects_import.py -u <url> -t <token> -f <export_csv_file>
+```
 
 # project_history.py
 TBD
@@ -102,4 +112,6 @@ To avoid bad mistakes (mistakenly deleting too many projects), the tools will re
 **A database backup should always be taken before executing this script. There is no recovery.**
 
 ## Example
-`project_housekeeper.py -u <url> -t <token> -o <days>`
+```
+project_housekeeper.py -u <url> -t <token> -o <days>
+```
