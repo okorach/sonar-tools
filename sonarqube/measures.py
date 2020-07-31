@@ -25,11 +25,10 @@ class Measure (sq.SqObject):
         data = json.loads(resp.text)
         return data['component']['measures']
 
-def load_measures(project_key, metrics_list, branch_name = None, sqenv = None):
-    params = {'component':project_key, 'metricKeys':metrics_list}
-    if branch_name is not None:
-        params['branch'] = branch_name
-    resp = env.get(Measure.API_COMPONENT,  params, sqenv)
+def component(component, metricKeys, endpoint=None, **kwargs):
+    kwargs['component'] = component
+    kwargs['metricKeys'] = metricKeys
+    resp = env.get(Measure.API_COMPONENT, params=kwargs, ctxt=endpoint)
     if resp.status_code != 200:
         util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
 
