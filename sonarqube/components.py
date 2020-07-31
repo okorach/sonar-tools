@@ -16,6 +16,7 @@ class Component(sq.SqObject):
         super().__init__(key, sqenv)
         self.name = name
         self.nbr_issues = None
+        self.env = sqenv
 
     def get_subcomponents(self):
         params = {'component':self.key, 'strategy':'children', 'ps':500, 'p':1}
@@ -113,12 +114,15 @@ class Component(sq.SqObject):
         util.logger.info("For component %s, %d issues found after filter", self.key, len(issue_list))
         return issue_list
 
-    def get_measure(self, metric_key):
-        for measure in measures.load_measures(self.key, metric_key, sqenv = self.env):
-            if 'metric' in measure and metric_key == measure['metric'] and 'value' in measure:
-                return measure['value']
-        return None
+    def get_measures(self, metric_list):
+        return measures.component(component=self.key, metricKeys=','.join(metric_list), endpoint=self.env)
 
+    def get_measure(self, metric):
+        res = self.get_measures(metric_list = [metric])
+        for m in res:
+            if m['metric'] == metric:
+                return m['value']
+        return None
 
 def get_components(component_types):
     params = dict(ps=500, qualifiers=component_types)
