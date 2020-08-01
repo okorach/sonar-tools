@@ -40,6 +40,21 @@ class Project(comp.Component):
         data = json.loads(resp.text)
         return data['branches']
 
+    def get_permissions(self, perm_type):
+        resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
+                       params={'projectKey':self.key, 'ps':1})
+        data = json.loads(resp.text)
+        nb_perms = int(data['paging']['total'])
+        nb_pages = (nb_perms+99) // 100
+        perms = []
+        for page in range(nb_pages):
+            resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
+                           params={'projectKey':self.key, 'ps':100, 'p':page+1})
+            data = json.loads(resp.text)
+            for p in data[perm_type]:
+                perms.append(p)
+        return perms
+
     def delete(self, api='projects/delete', params=None):
         confirmed = False
         loc = int(self.get_measure('ncloc'))
@@ -78,33 +93,91 @@ class Project(comp.Component):
             return None
         return abs(today - last_analysis).days
 
+    def __audit_user_permissions__(self):
+        perms = self.get_permissions('users')
+        nb_perms = 0
+        issues = 0
+        admins = []
+        for p in perms:
+            if len(p['permissions']) > 0:
+                nb_perms += 1
+            if 'admin' in p:
+                admins.append(p['login'])
+        if nb_perms > 5:
+            util.logger.warning("Project %s has too many permissions granted through users, \
+                                groups should be favored", self.key)
+            issues += 1
+        if len(admins) > 3:
+            util.logger.warning("Project %s has too many users with Administration permissions \
+                                (%d users)", self.key, len(admins))
+            issues += 1
+        return issues
+
+    def __audit_group_permissions__(self):
+        perms = self.get_permissions('groups')
+        nb_perms = 0
+        issues = 0
+        admins = []
+        util.logger.debug("PERMS = %s", str(perms))
+        for p in perms:
+            if len(p['permissions']) > 0:
+                nb_perms += 1
+            if (p['name'] == 'Anyone' or p['id'] == 2) and len(p['permissions']) > 0:
+                if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
+                    util.logger.warning("Group %s has elevated (non read-only) permissions on project %s",
+                                        p['name'], self.key)
+                    issues += 1
+                else:
+                    util.logger.warning("Group %s has browse permissions on project %s. \
+                                        Is this normal ?", p['name'], self.key)
+                    issues += 1
+            if 'admin' in p:
+                admins.append(p['login'])
+        if nb_perms > 5:
+            util.logger.warning("Project %s has too many permissions granted through users, \
+                                groups should be favored", self.key)
+            issues += 1
+        if len(admins) > 2:
+            util.logger.warning("Project %s has too many groups with Administration permissions \
+                                (%d groups)", self.key, len(admins))
+            issues += 1
+        return issues
+
+    def __audit_permissions__(self):
+        return self.__audit_user_permissions__() + self.__audit_group_permissions__()
+
     def __audit_last_analysis__(self):
         age = self.age_of_last_analysis()
+        issues = 0
         if age is None:
             util.logger.warning("Project %s has been created but never been analyzed", self.key)
+            issues += 1
         elif age > 180:
             util.logger.warning("Project %s last analysis is %d days old, it may be deletable", self.key, age)
+            issues += 1
         else:
             util.logger.info("Project %s last analysis is %d days old", self.key, age)
+        return issues
 
     def __audit_visibility__(self):
-        resp = env.get('navigation/organization', ctxt=self.env,
-                params={'organization':'default-organization', 'component':self.key})
+        resp = env.get('navigation/component', ctxt=self.env, params={'component':self.key})
         data = json.loads(resp.text)
-        visi = data['organization']['projectVisibility']
+        util.logger.debug("Visi data = %s", data)
+        visi = data['visibility']
         if visi == 'private':
             util.logger.info('Project %s visibility is private', self.key)
         else:
             util.logger.warning('Project %s visibility is %s, which can be a security risk', self.key, visi)
-            return False
-        return True
+            return 1
+        return 0
 
     def __audit_languages__(self):
         total_locs = 0
         languages = {}
+        issues = 0
         resp = self.get_measure('ncloc_language_distribution')
         if resp is None:
-            return
+            return 0
         for lang in self.get_measure('ncloc_language_distribution').split(';'):
             (lang, ncloc) = lang.split('=')
             languages[lang] = int(ncloc)
@@ -112,13 +185,16 @@ class Project(comp.Component):
         if total_locs > 100000 and 'xml' in languages and (languages['xml'] / total_locs) > 0.5:
             util.logger.warning("Project %s has %d XML LoCs, this is suspiciously high, verify scanning settings",
                                 self.key, languages['xml'])
+            issues += 1
+        return issues
 
     def audit(self):
         util.logger.info("Auditing project %s", self.key)
-        self.__audit_last_analysis__()
-        self.__audit_visibility__()
-        self.__audit_languages__()
-
+        issues = self.__audit_last_analysis__()
+        issues += self.__audit_visibility__()
+        issues += self.__audit_languages__()
+        issues += self.__audit_permissions__()
+        return issues
 
     def delete_if_obsolete(self, days=180):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
