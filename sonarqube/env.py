@@ -121,14 +121,21 @@ class Environment:
                 url += '{0}{1}={2}'.format(sep, p, params[p])
         return url
 
-    def __verify_setting__(self, setting, key, value):
-        if setting['key'] == key:
-            if setting['value'] == value:
-                util.logger.info("Setting %s has correct value %s", key, setting['value'])
-                return 0
-            else:
-                util.logger.warning("Setting %s has potentially incorrect/unsafe value %s", key, setting['value'])
-                return 1
+    def __verify_setting__(self, settings, key, value):
+        if settings[key] == value:
+            util.logger.info("Setting %s has common/standard value %s", key, settings[key])
+        else:
+            util.logger.warning("Setting %s has potentially incorrect/unsafe value %s", key, settings[key])
+            return 1
+        return 0
+
+    def __verify_setting_range__(self, settings, key, min, max):
+        value = int(settings[key])
+        if value >= min and value <= max:
+            util.logger.info("Setting %s value %d is within common range [%d-%d]", key, value, min, max)
+        else:
+            util.logger.warning("Setting %s value %d is outisde common range [%d-%d]", key, value, min, max)
+            return 1
         return 0
 
     def __verify_project_default_visibility__(self):
@@ -145,16 +152,37 @@ class Environment:
     def audit(self):
         util.logger.info('Auditing global settings')
         resp = self.get('settings/values')
-        settings = json.loads(resp.text)
-        for s in settings['settings']:
-            self.__verify_setting__(s, 'sonar.forceAuthentication', 'true')
-            self.__verify_setting__(s, 'sonar.cpd.cross_project', 'false')
-            self.__verify_setting__(s, 'sonar.scm.disabled', 'false')
-            # TODO: Check dbCleaner settings
-            # TODO: Check TD rating grip
-            # TODO: Check cost for writing line
-            # TODO: Verify sonar.core.serverBaseURL is set
-        self.__verify_project_default_visibility__()
+        json_s = json.loads(resp.text)
+        settings = {}
+        for s in json_s['settings']:
+            if 'value' in s:
+                settings[s['key']] = s['value']
+            else:
+                settings[s['key']] = ','.join(s['values'])
+        issues = self.__verify_setting__(settings, 'sonar.forceAuthentication', 'true')
+        issues += self.__verify_setting__(settings, 'sonar.cpd.cross_project', 'false')
+        issues += self.__verify_setting__(settings, 'sonar.global.exclusions', '')
+        issues += self.__verify_setting_range__(settings, \
+            'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches', 10, 60)
+        issues += self.__verify_setting_range__(settings, \
+            'sonar.dbcleaner.daysBeforeDeletingClosedIssues', 10, 60)
+        issues += self.__verify_setting_range__(settings, \
+            'sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay', 12, 240)
+        issues += self.__verify_setting_range__(settings, \
+            'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek', 2, 12)
+        issues += self.__verify_setting_range__(settings, \
+            'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth', 26, 104)
+        issues += self.__verify_setting_range__(settings, \
+            'sonar.dbcleaner.weeksBeforeDeletingAllSnapshots', 104, 260)
+
+
+        # TODO: Check dbCleaner settings
+        # TODO: Check TD rating grid
+        # TODO: Check cost for writing line
+        # TODO: Verify sonar.core.serverBaseURL is set
+
+        issues += self.__verify_project_default_visibility__()
+        return issues
 
 
 
