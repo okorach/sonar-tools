@@ -129,12 +129,20 @@ class Environment:
             return 1
         return 0
 
-    def __verify_setting_range__(self, settings, key, min, max):
-        value = int(settings[key])
-        if value >= min and value <= max:
-            util.logger.info("Setting %s value %d is within common range [%d-%d]", key, value, min, max)
+    def __verify_setting_defined__(self, settings, key):
+        if key in settings and settings[key] != '':
+            util.logger.info("Setting %s is set with value %s", key, settings[key])
         else:
-            util.logger.warning("Setting %s value %d is outisde common range [%d-%d]", key, value, min, max)
+            util.logger.warning("Setting %s is not set, although it should", key)
+            return 1
+        return 0
+
+    def __verify_setting_range__(self, settings, key, min_val, max_val):
+        value = int(settings[key])
+        if value >= min_val and value <= max_val:
+            util.logger.info("Setting %s value %d is within common range [%d-%d]", key, value, min_val, max_val)
+        else:
+            util.logger.warning("Setting %s value %d is outisde common range [%d-%d]", key, value, min_val, max_val)
             return 1
         return 0
 
@@ -148,6 +156,25 @@ class Environment:
             util.logger.warning('Project default visibility is %s, which can be a security risk', visi)
             return False
         return True
+
+    def __check_rating_range__(self, value, min_val, max_val, rating_letter):
+        value = float(value)
+        if value < min_val or value > max_val:
+            util.logger.warning('Maintainability rating threshold %3.0f%% for %s is NOT within standard range [%3.0f%%-%3.0f%%]',
+                                value*100, rating_letter, min_val*100, max_val*100)
+            return 1
+        else:
+            util.logger.info('Maintainability rating threshold %3.0f%% for %s is within standard range [%3.0f%%-%3.0f%%]',
+                             value*100, rating_letter, min_val*100, max_val*100)
+        return 0
+
+    def __verify_rating_grid__(self, grid):
+        (a, b, c, d) = grid.split(',')
+        issues = self.__check_rating_range__(a, 0.03, 0.05, 'A')
+        issues += self.__check_rating_range__(b, 0.07, 0.10, 'B')
+        issues += self.__check_rating_range__(c, 0.15, 0.20, 'C')
+        issues += self.__check_rating_range__(d, 0.40, 0.50, 'D')
+        return issues
 
     def audit(self):
         util.logger.info('Auditing global settings')
@@ -174,12 +201,10 @@ class Environment:
             'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth', 26, 104)
         issues += self.__verify_setting_range__(settings, \
             'sonar.dbcleaner.weeksBeforeDeletingAllSnapshots', 104, 260)
+        issues += self.__verify_setting_defined__(settings, 'sonar.core.serverBaseURL')
 
-
-        # TODO: Check dbCleaner settings
-        # TODO: Check TD rating grid
-        # TODO: Check cost for writing line
-        # TODO: Verify sonar.core.serverBaseURL is set
+        issues += self.__verify_rating_grid__(settings['sonar.technicalDebt.ratingGrid'])
+        issues += self.__verify_setting_range__(settings, 'sonar.technicalDebt.developmentCost', 20, 30)
 
         issues += self.__verify_project_default_visibility__()
         return issues
