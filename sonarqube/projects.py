@@ -116,33 +116,57 @@ class Project(comp.Component):
         return issues
 
     def __audit_group_permissions__(self):
-        perms = self.get_permissions('groups')
+        groups = self.get_permissions('groups')
         nb_perms = 0
         issues = 0
-        admins = []
-        for p in perms:
-            if p['permissions']:
-                nb_perms += 1
-            if (p['name'] == 'Anyone' or p['id'] == 2) and p['permissions']:
-                if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
-                    util.logger.warning("Group %s has elevated (non read-only) permissions on project %s",
-                                        p['name'], self.key)
-                    issues += 1
-                else:
-                    util.logger.warning("Group %s has browse permissions on project %s. \
-                                        Is this normal ?", p['name'], self.key)
-                    issues += 1
-            if 'admin' in p['permissions']:
-                if 'id' not in p:
-                    p['id'] = p['name']
-                admins.append(p['id'])
+        nb_admins = 0
+        nb_scan = 0
+        nb_issue_admin = 0
+        nb_hotspot_admin = 0
+        for gr in groups:
+            p = gr['permissions']
+            if not p:
+                continue
+            nb_perms += 1
+            if 'admin' in p:
+                nb_admins += 1
+            if 'scan' in p:
+                nb_scan += 1
+            if 'issueadmin' in p:
+                nb_issue_admin += 1
+            if 'securityhotspotadmin' in p:
+                nb_hotspot_admin += 1
+            # -- Checks for Anyone, sonar-user
+            if (gr['name'] != 'Anyone' and gr['id'] != 2):
+                continue
+            if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
+                util.logger.warning("Group %s has elevated (non read-only) permissions on project %s",
+                                    gr['name'], self.key)
+                issues += 1
+            else:
+                util.logger.info("Group %s has browse permissions on project %s. \
+Is this normal ?", gr['name'], self.key)
+                issues += 1
+
         if nb_perms > 5:
             util.logger.warning("Project %s has too many group permissions defined \
-                                (%d groups)", self.key, nb_perms)
+(%d groups)", self.key, nb_perms)
             issues += 1
-        if len(admins) > 2:
-            util.logger.warning("Project %s has too many groups with Administration permissions \
-                                (%d groups)", self.key, len(admins))
+        if nb_scan > 1:
+            util.logger.warning("Project %s has too many groups with 'Execute Analysis' permission \
+(%d groups)", self.key, nb_scan)
+            issues += 1
+        if nb_issue_admin > 2:
+            util.logger.warning("Project %s has too many groups with 'Issue Admin' permission \
+(%d groups)", self.key, nb_issue_admin)
+            issues += 1
+        if nb_hotspot_admin > 2:
+            util.logger.warning("Project %s has too many groups with 'Hotspot Admin' permission \
+(%d groups)", self.key, nb_hotspot_admin)
+            issues += 1
+        if nb_admins > 2:
+            util.logger.warning("Project %s has too many groups with 'Project Admin' permissions \
+(%d groups)", self.key, nb_admins)
             issues += 1
         return issues
 
@@ -245,7 +269,7 @@ class Project(comp.Component):
             return {'status' : 'HTTP_ERROR {0}'.format(resp.status_code)}
         data = json.loads(resp.text)
         params = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
-        if self.env.version_higher_or_equal_than("8.0.0"):
+        if self.env.getVersion >= (8, 0, 0):
             params['component'] = self.key
         else:
             params['q'] = self.key
