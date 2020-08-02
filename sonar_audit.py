@@ -26,6 +26,10 @@ olderThan = int(args.olderThan)
 if olderThan < 90:
     util.logger.error("Can't delete projects more recent than 90 days")
     exit(1)
-
-projects.audit(endpoint=sq)
-sq.audit()
+issues = projects.audit(endpoint=sq)
+issues += sq.audit()
+if issues > 0:
+    util.logger.warning("%d issues found during audit", issues)
+else:
+    util.logger.info("%d issues found during audit", issues)
+exit(1)
