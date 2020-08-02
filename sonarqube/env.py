@@ -48,21 +48,7 @@ class Environment:
         if self.version is None:
             resp = self.get('/api/server/version')
             (self.major, self.minor, self.patch, self.build) = resp.text.split('.')
-            version = "{0}.{1}.{2}".format(self.major, self.minor, self.patch)
-        return version
-
-    def version_higher_or_equal_than(self, version):
-        (major, minor, patch) = version.split('.')
-        self.get_version()
-        if patch is None:
-            patch = 0
-        if major > self.major:
-            return True
-        if major == self.major and minor > self.minor:
-            return True
-        if major == self.major and minor == self.minor and patch >= self.patch:
-            return True
-        return False
+        return (int(self.major), int(self.minor), int(self.patch))
 
     def get(self, api, params = None):
         #for k in params:
@@ -122,10 +108,11 @@ class Environment:
         return url
 
     def __verify_setting__(self, settings, key, value):
-        if settings[key] == value:
-            util.logger.info("Setting %s has common/standard value %s", key, settings[key])
+        s = settings.get(key, '')
+        if s == value:
+            util.logger.info("Setting %s has common/standard value '%s'", key, s)
         else:
-            util.logger.warning("Setting %s has potentially incorrect/unsafe value %s", key, settings[key])
+            util.logger.warning("Setting %s has potentially incorrect/unsafe value '%s'", key, s)
             return 1
         return 0
 
@@ -189,8 +176,10 @@ class Environment:
         issues = self.__verify_setting__(settings, 'sonar.forceAuthentication', 'true')
         issues += self.__verify_setting__(settings, 'sonar.cpd.cross_project', 'false')
         issues += self.__verify_setting__(settings, 'sonar.global.exclusions', '')
-        issues += self.__verify_setting_range__(settings, \
-            'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches', 10, 60)
+
+        if self.get_version() < (8,0,0):
+            issues += self.__verify_setting_range__(settings, \
+                'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches', 10, 60)
         issues += self.__verify_setting_range__(settings, \
             'sonar.dbcleaner.daysBeforeDeletingClosedIssues', 10, 60)
         issues += self.__verify_setting_range__(settings, \
