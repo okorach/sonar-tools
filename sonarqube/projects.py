@@ -99,17 +99,19 @@ class Project(comp.Component):
         issues = 0
         admins = []
         for p in perms:
-            if len(p['permissions']) > 0:
+            if p['permissions']:
                 nb_perms += 1
-            if 'admin' in p:
+            if 'admin' in p['permissions']:
+                if 'login' not in p:
+                    p['login'] = p['name']
                 admins.append(p['login'])
         if nb_perms > 5:
             util.logger.warning("Project %s has too many permissions granted through users, \
                                 groups should be favored", self.key)
             issues += 1
         if len(admins) > 3:
-            util.logger.warning("Project %s has too many users with Administration permissions \
-                                (%d users)", self.key, len(admins))
+            util.logger.warning("Project %s has too many users with Administration permission \
+(%d users)", self.key, len(admins))
             issues += 1
         return issues
 
@@ -118,11 +120,10 @@ class Project(comp.Component):
         nb_perms = 0
         issues = 0
         admins = []
-        util.logger.debug("PERMS = %s", str(perms))
         for p in perms:
-            if len(p['permissions']) > 0:
+            if p['permissions']:
                 nb_perms += 1
-            if (p['name'] == 'Anyone' or p['id'] == 2) and len(p['permissions']) > 0:
+            if (p['name'] == 'Anyone' or p['id'] == 2) and p['permissions']:
                 if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
                     util.logger.warning("Group %s has elevated (non read-only) permissions on project %s",
                                         p['name'], self.key)
@@ -131,11 +132,13 @@ class Project(comp.Component):
                     util.logger.warning("Group %s has browse permissions on project %s. \
                                         Is this normal ?", p['name'], self.key)
                     issues += 1
-            if 'admin' in p:
-                admins.append(p['login'])
+            if 'admin' in p['permissions']:
+                if 'id' not in p:
+                    p['id'] = p['name']
+                admins.append(p['id'])
         if nb_perms > 5:
-            util.logger.warning("Project %s has too many permissions granted through users, \
-                                groups should be favored", self.key)
+            util.logger.warning("Project %s has too many group permissions defined \
+                                (%d groups)", self.key, nb_perms)
             issues += 1
         if len(admins) > 2:
             util.logger.warning("Project %s has too many groups with Administration permissions \
@@ -144,7 +147,11 @@ class Project(comp.Component):
         return issues
 
     def __audit_permissions__(self):
-        return self.__audit_user_permissions__() + self.__audit_group_permissions__()
+        util.logger.info("Checking permissions for project %s", self.key)
+        issues = self.__audit_user_permissions__() + self.__audit_group_permissions__()
+        if issues == 0:
+            util.logger.info('No issue found in project %s permissions', self.key)
+        return issues
 
     def __audit_last_analysis__(self):
         age = self.age_of_last_analysis()
@@ -162,7 +169,6 @@ class Project(comp.Component):
     def __audit_visibility__(self):
         resp = env.get('navigation/component', ctxt=self.env, params={'component':self.key})
         data = json.loads(resp.text)
-        util.logger.debug("Visi data = %s", data)
         visi = data['visibility']
         if visi == 'private':
             util.logger.info('Project %s visibility is private', self.key)
@@ -327,10 +333,13 @@ def delete_old_projects(days=180, endpoint=None):
 
 def audit(endpoint=None):
     plist = search_all(endpoint)
+    issues = 0
     for key in plist:
-        util.logger.debug('Creating project for endpoint %s', str(endpoint))
         p = Project(key=key, sqenv=endpoint)
-        p.audit()
+        issues += p.audit()
+        util.logger.info("Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key, key2):
                 util.logger.warning("Project %s is likely to be a branch of %s, and if so should be deleted", key2, key)
+                issues += 1
+    return issues
