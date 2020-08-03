@@ -11,6 +11,7 @@ import json
 import pytz
 import sonarqube.sqobject as sq
 import sonarqube.env as env
+import sonarqube.rules as rules
 import sonarqube.utilities as util
 
 class QualityProfile(sq.SqObject):
@@ -82,15 +83,16 @@ class QualityProfile(sq.SqObject):
             util.logger.warning('Quality profile %s has not been updated since %d days (more than %d days)',
                                 self.long_name, age, 180)
             issues += 1
-        if self.nb_rules < 100:
-            util.logger.warning('Quality profile %s has %d rules, this is too few, less than 100',
-                                self.long_name, self.nb_rules)
+        if self.is_built_in:
+            return issues
+        rules_per_lang = rules.get_facet(facet='languages', endpoint=self.env)
+        if self.nb_rules < int(rules_per_lang[self.language]*0.5):
+            util.logger.warning('Quality profile %s has %d rules, this is too few, less than 50%% of all %d rules for language %s',
+                                self.long_name, self.nb_rules, rules_per_lang[self.language], self.language)
             issues += 1
         age = self.age_of_last_use()
-        if not self.is_default and self.project_count == 0:
+        if age is None or not self.is_default and self.project_count == 0:
             util.logger.warning('Quality profile %s is not used, it should be removed', self.long_name)
-        if age is None:
-            util.logger.warning('Quality profile %s has never been used, it should be deleted', self.long_name)
             issues += 1
         elif age > 180:
             util.logger.warning('Quality profile %s has not been used since %d days, it should be deleted',
@@ -101,7 +103,7 @@ class QualityProfile(sq.SqObject):
                                 self.long_name, self.deprecated_rules)
             issues += 1
 
-            issues += 1
+
         return issues
 
 def search(endpoint=None, params=None):
