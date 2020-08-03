@@ -25,7 +25,7 @@ class Environment:
         self.build = None
 
     def __str__(self):
-        redacted_token = re.sub(r'(...).*(...)', '\1***\2', self.token)
+        redacted_token = re.sub(r'(...).*(...)', r'\1***\2', self.token)
         return "{0}@{1}".format(redacted_token, self.root_url)
 
     def set_env(self, url, token):
