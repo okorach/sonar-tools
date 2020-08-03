@@ -1,5 +1,9 @@
-#!python3
+#!/usr/local/bin/python3
+'''
 
+    Abstraction of the SonarQube "project" concept
+
+'''
 import sys
 import time
 import datetime

@@ -1,5 +1,9 @@
-#!python3
+#!/usr/local/bin/python3
+'''
 
+    Abstraction of the SonarQube general object concept
+
+'''
 import sonarqube.env
 
 class SqObject:

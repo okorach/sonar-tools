@@ -1,5 +1,9 @@
-#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+#!/usr/local/bin/python3
+'''
 
+    Abstraction of the SonarQube "measure" concept
+
+'''
 import json
 import requests
 import sonarqube.env as env

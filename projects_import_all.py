@@ -1,4 +1,9 @@
-#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+#!/usr/local/bin/python3
+'''
+
+    Imports a list of projects to a SonarQube platform
+
+'''
 import os
 import re
 import json

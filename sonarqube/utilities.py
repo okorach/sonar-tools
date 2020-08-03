@@ -1,3 +1,9 @@
+#!/usr/local/bin/python3
+'''
+
+    Utilities for SonarQube API
+
+'''
 import sys
 import logging
 import json
