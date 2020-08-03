@@ -67,4 +67,3 @@ def search_all(endpoint=None, params=None):
         for r in search(endpoint=endpoint, params=params):
             rule_list[r['key']] = r
     return rule_list
-
