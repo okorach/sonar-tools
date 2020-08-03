@@ -1,5 +1,4 @@
-#!/usr/local/bin/python
-
+#!/usr/local/bin/python3
 '''
     This script restores issues that may have been closed mistakenly after,
     for instance, a scan with improper settings

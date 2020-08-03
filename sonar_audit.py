@@ -1,4 +1,9 @@
 #!/usr/local/bin/python3
+'''
+
+    Audits a SonarQube platform
+
+'''
 import re
 import json
 import datetime

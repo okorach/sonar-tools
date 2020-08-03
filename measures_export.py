@@ -1,4 +1,10 @@
-#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+#!/usr/local/bin/bin/python3
+'''
+    Exports some measures of all projects
+    - Either all measures (-m _all)
+    - Or the main measures (-m _main)
+    - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
+'''
 import re
 import json
 import argparse
@@ -51,7 +57,7 @@ for m in metrics_list:
     print ("%s" % m, end=csv_sep)
 print('')
 
-project_list = projects.get_projects(True, myenv)
+project_list = projects.search_all(True, myenv)
 nb_branches = 0
 for project in project_list:
     last_analysis = project['lastAnalysisDate'] if 'lastAnalysisDate' in project else 'Not analyzed yet'

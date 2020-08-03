@@ -1,4 +1,9 @@
-#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+#!/usr/local/bin/python3
+'''
+
+    Exports all projects of a SonarQube platform
+
+'''
 import os
 import re
 import json
@@ -24,7 +29,7 @@ if args.pollInterval is not None:
 if args.exportTimeout is not None:
     export_timeout = int(args.exportTimeout)
 
-project_list = projects.get_projects(False, myenv)
+project_list = projects.search_all(endpoint=myenv)
 nb_projects = len(project_list)
 util.logger.info("%d projects to export", nb_projects)
 i = 0

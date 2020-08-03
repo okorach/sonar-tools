@@ -1,5 +1,9 @@
-#!python3
+#!/usr/local/bin/python3
+'''
 
+    Abstraction of the SonarQube "issue" concept
+
+'''
 import sys
 import re
 import datetime
@@ -359,7 +363,7 @@ class Issue(sq.SqObject):
         import sonarqube.projects as projects
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.project,
-                                          projects.get_project_name(self.project, self.env), self.component, line,
+                                          projects.get_name(self.project, self.env), self.component, line,
                                           debt, '"'+msg+'"']])
 
 
@@ -529,7 +533,7 @@ def search_project_issues(key, sqenv=None, **kwargs):
 def search_all_issues_unlimited(sqenv=None, **kwargs):
     import sonarqube.projects as projects
     if kwargs is None or 'componentKeys' not in kwargs:
-        project_list = projects.get_projects_list(sqenv=sqenv)
+        project_list = projects.search_all(endpoint=sqenv).keys()
     else:
         project_list= re.split(',', kwargs['componentKeys'])
     issues = []
