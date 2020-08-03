@@ -13,7 +13,7 @@
 		"sonarlint.analyzerProperties": null,
 		"git.confirmSync": false,
 		"git.autofetch": true,
-		"window.zoomLevel": 1,
+		"window.zoomLevel": 0,
 		"files.autoSave": "afterDelay"
 	}
 }
