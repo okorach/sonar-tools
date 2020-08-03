@@ -114,6 +114,12 @@ def search(endpoint=None, params=None):
 
 def audit(endpoint=None):
     issues = 0
+    langs = {}
     for qp in search(endpoint):
         issues += qp.audit()
+        langs[qp.language] = langs.get(qp.language, 0) + 1
+    for lang in langs:
+        if langs[lang] > 5:
+            util.logger.warning("Language %s has %d quality profiles. This is more than the recommended 5 max",
+                                lang, langs[lang])
     return issues
