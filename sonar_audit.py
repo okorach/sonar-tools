@@ -13,6 +13,7 @@ import pytz
 import sonarqube.measures as measures
 import sonarqube.metrics as metrics
 import sonarqube.projects as projects
+import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.utilities as util
 import sonarqube.env as env
 
@@ -32,6 +33,7 @@ if olderThan < 90:
     util.logger.error("Can't delete projects more recent than 90 days")
     exit(1)
 issues = projects.audit(endpoint=sq)
+issues += qualityprofiles.audit(endpoint=sq)
 issues += sq.audit()
 if issues > 0:
     util.logger.warning("%d issues found during audit", issues)
