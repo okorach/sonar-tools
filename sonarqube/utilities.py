@@ -3,7 +3,10 @@ import logging
 import json
 
 DEBUG_LEVEL = 0
-RUN_MODE = 'dryrun'
+DRY_RUN = 'dryrun'
+CONFIRM = 'confirm'
+BATCH = 'batch'
+RUN_MODE = DRY_RUN
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
 
 logger = logging.getLogger('sonarqube-tools')

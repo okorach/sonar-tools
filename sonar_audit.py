@@ -1,9 +1,10 @@
-#!/Library/Frameworks/Python.framework/Versions/3.6/bin/python3
+#!/usr/local/bin/python3
 import re
 import json
-
+import datetime
 import argparse
 import requests
+import pytz
 import sonarqube.measures as measures
 import sonarqube.metrics as metrics
 import sonarqube.projects as projects
@@ -17,6 +18,7 @@ def diff(first, second):
 parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
 parser.add_argument('-o', '--olderThan', required=True, help='Days since last analysis')
 args = parser.parse_args()
+sq = env.Environment(url=args.url, token=args.token)
 kwargs = vars(args)
 util.check_environment(kwargs)
 
@@ -24,5 +26,10 @@ olderThan = int(args.olderThan)
 if olderThan < 90:
     util.logger.error("Can't delete projects more recent than 90 days")
     exit(1)
-
-projects.delete_old_projects(days=olderThan, endpoint=env.Environment(url=args.url, token=args.token))
+issues = projects.audit(endpoint=sq)
+issues += sq.audit()
+if issues > 0:
+    util.logger.warning("%d issues found during audit", issues)
+else:
+    util.logger.info("%d issues found during audit", issues)
+exit(1)

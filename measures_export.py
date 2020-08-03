@@ -66,7 +66,7 @@ for project in project_list:
 
     for b in branch_list:
         nb_branches += 1
-        all_measures = measures.load_measures(project['key'], wanted_metrics, branch_name=b['name'], sqenv=myenv)
+        all_measures = measures.component(project['key'], wanted_metrics, branch_name=b['name'], sqenv=myenv)
         p_meas = {}
         last_analysis = b.get('analysisDate', '')
         for measure in all_measures:
