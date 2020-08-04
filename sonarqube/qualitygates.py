@@ -96,10 +96,10 @@ class QualityGate(sq.SqObject):
         nb_proj = self.count(params=params)
         nb_pages = (nb_proj+499)//500
         prj_list = {}
-        for page in range(nb_pages):
-            params['p'] = page+1
-            for p in self.search(page=page+1, params=params):
-                prj_list[p['key']] = p
+        for p in range(nb_pages):
+            params['p'] = p+1
+            for prj in self.search(page=p+1, params=params):
+                prj_list[prj['key']] = prj
         return prj_list
 
 def list_qg(endpoint=None):
