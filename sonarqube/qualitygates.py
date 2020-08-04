@@ -18,10 +18,16 @@ class QualityGate(sq.SqObject):
 
     def __init__(self, key, endpoint, data=None):
         super().__init__(key=key, env=endpoint)
-        if data is not None:
-            self.name = data['name']
-            self.is_default = data['setAsDefault']
-            self.is_built_in = data['isBuiltIn']
+        if data is None:
+            return
+        self.name = data['name']
+        self.is_default = data['isDefault']
+        self.is_built_in = data['isBuiltIn']
+        resp = env.get('qualitygates/show', ctxt=self.env, params={'id': self.key})
+        data = json.loads(resp.text)
+        self.conditions = []
+        for c in data.get('conditions', []):
+            self.conditions.append(c)
 
     def last_used_date(self):
         last_use = None
@@ -34,54 +40,82 @@ class QualityGate(sq.SqObject):
     def number_associated_projects(self):
         return 0
 
+    def __audit_conditions__(self):
+        issues = 0
+        for c in self.conditions:
+            m = c['metric']
+            if re.match('new_', c['metric']):
+                continue
+            if (m == 'reliability_rating' or m == 'security_rating') and int(c['error']) >= 4:
+                continue
+            issues += 1
+        if issues > 0:
+            util.logger.warning("Quality gate %s has problematic conditions on overall code", self.name)
+        return issues
+
     def audit(self):
         issues = 0
         if self.is_built_in:
             return 0
+        nb_conditions = len(self.conditions)
+        if nb_conditions == 0:
+            util.logger.warning("Quality gate %s has no conditions defined, this is useless", self.name)
+            issues += 1
+        elif nb_conditions > 7:
+            util.logger.warning("Quality gate %s has %d conditions defined, this is more than the 7 max recommended",
+                                self.name, len(self.conditions))
+            issues += 1
+        issues += self.__audit_conditions__()
+        if self.is_default:
+            return issues
+        projects = self.search()
+        if not projects:
+            util.logger.warning("Quality gate %s is not used by any project, it should be deleted", self.name)
+            issues += 1
         return issues
 
-def count(endpoint=None, params=None):
-    if params is None:
-        params = {}
-    params['gateId'] = self.key
-    params['ps'] = 1
-    resp = env.get('qualitygates/search', ctxt=endpoint, params=params)
-    data = json.loads(resp.text)
-    return data['paging']['total']
-
-def search(endpoint=None, page=0, params=None):
-    params['ps'] = 500
-    if page != 0:
-        params['p'] = page
-        resp = env.get('qualitygates/search', ctxt=endpoint, params=params)
+    def count(self, params=None):
+        if params is None:
+            params = {}
+        params['gateId'] = self.key
+        params['ps'] = 1
+        resp = env.get('qualitygates/search', ctxt=self.env, params=params)
         data = json.loads(resp.text)
-        return data['results']
+        return data['paging']['total']
 
-    nb_proj = count(endpoint=endpoint, params=params)
-    nb_pages = (nb_proj+499)//500
-    prj_list = {}
-    for page in range(nb_pages):
-        params['p'] = page+1
-        for p in search(endpoint=endpoint, page=page+1, params=params):
-            prj_list[p['key']] = p
-    return prj_list
+    def search(self, page=0, params=None):
+        if params is None:
+            params = {}
+        params['ps'] = 500
+        if page != 0:
+            params['p'] = page
+            resp = env.get('qualitygates/search', ctxt=self.env, params=params)
+            data = json.loads(resp.text)
+            return data['results']
+
+        nb_proj = self.count(params=params)
+        nb_pages = (nb_proj+499)//500
+        prj_list = {}
+        for page in range(nb_pages):
+            params['p'] = page+1
+            for p in self.search(page=page+1, params=params):
+                prj_list[p['key']] = p
+        return prj_list
 
 def list_qg(endpoint=None):
-    resp = env.get('qualitygates/search', ctxt=endpoint)
+    resp = env.get('qualitygates/list', ctxt=endpoint)
     data = json.loads(resp.text)
-    qg_list = {}
+    qg_list = []
     for qg in data['qualitygates']:
-        qg_list[qg['id']] = QualityGate(key=qg['id'], endpoint=endpoint, data=qg)
+        qg_list.append(QualityGate(key=qg['id'], endpoint=endpoint, data=qg))
     return qg_list
 
 def audit(endpoint=None):
     issues = 0
-    langs = {}
-    for qp in search(endpoint):
+    quality_gates_list = list_qg(endpoint)
+    nb_qg = len(quality_gates_list)
+    if nb_qg > 5:
+        util.logger.warning("There are %d quality gates, this is more than the max 5 recommended", nb_qg)
+    for qp in list_qg(endpoint):
         issues += qp.audit()
-        langs[qp.language] = langs.get(qp.language, 0) + 1
-    for lang in langs:
-        if langs[lang] > 5:
-            util.logger.warning("Language %s has %d quality profiles. This is more than the recommended 5 max",
-                                lang, langs[lang])
     return issues
