@@ -53,6 +53,7 @@ class QualityGate(sq.SqObject):
         return issues
 
     def audit(self):
+        util.logger.info("Auditing quality gate %s", self.name)
         issues = 0
         if self.is_built_in:
             return 0
@@ -110,11 +111,12 @@ def list_qg(endpoint=None):
     return qg_list
 
 def audit(endpoint=None):
+    util.logger.info("Auditing quality gates")
     issues = 0
     quality_gates_list = list_qg(endpoint)
     nb_qg = len(quality_gates_list)
     if nb_qg > 5:
         util.logger.warning("There are %d quality gates, this is more than the max 5 recommended", nb_qg)
-    for qp in list_qg(endpoint):
+    for qp in quality_gates_list:
         issues += qp.audit()
     return issues
