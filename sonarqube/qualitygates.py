@@ -26,19 +26,18 @@ class QualityGate(sq.SqObject):
         resp = env.get('qualitygates/show', ctxt=self.env, params={'id': self.key})
         data = json.loads(resp.text)
         self.conditions = []
+        self.projects = None
         for c in data.get('conditions', []):
             self.conditions.append(c)
 
-    def last_used_date(self):
-        last_use = None
-        return last_use
+    def get_projects(self):
+        if self.projects is None:
+            self.projects = self.search()
+        return self.projects
 
-    def last_updated_date(self):
-        last_use = None
-        return last_use
-
-    def number_associated_projects(self):
-        return 0
+    def count_projects(self):
+        _ = self.get_projects()
+        return len(self.projects)
 
     def __audit_conditions__(self):
         issues = 0
@@ -68,7 +67,7 @@ class QualityGate(sq.SqObject):
         issues += self.__audit_conditions__()
         if self.is_default:
             return issues
-        projects = self.search()
+        projects = self.get_projects()
         if not projects:
             util.logger.warning("Quality gate %s is not used by any project, it should be deleted", self.name)
             issues += 1
