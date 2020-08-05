@@ -119,7 +119,7 @@ class Component(sq.SqObject):
         return issue_list
 
     def get_measures(self, metric_list):
-        return measures.component(component=self.key, metricKeys=','.join(metric_list), endpoint=self.env)
+        return measures.component(component_key=self.key, metric_keys=','.join(metric_list), endpoint=self.env)
 
     def get_measure(self, metric):
         res = self.get_measures(metric_list = [metric])

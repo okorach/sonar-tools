@@ -47,7 +47,7 @@ for key in project_list:
         else:
             statuses[s] = 1
     else:
-        status = projects.Project(key, sqenv = myenv).importproject()
+        status = projects.Project(key, endpoint=myenv).importproject()
         s = "IMPORT {0}".format(status)
         if s in statuses:
             statuses[s] += 1

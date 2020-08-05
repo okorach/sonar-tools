@@ -363,7 +363,7 @@ class Issue(sq.SqObject):
         import sonarqube.projects as projects
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.project,
-                                          projects.get_name(self.project, self.env), self.component, line,
+                                          projects.get(self.project, self.env).name, self.component, line,
                                           debt, '"'+msg+'"']])
 
 
@@ -538,7 +538,7 @@ def search_all_issues_unlimited(sqenv=None, **kwargs):
         project_list= re.split(',', kwargs['componentKeys'])
     issues = []
     for project in project_list:
-        issues = issues + projects.Project(key=project, sqenv=sqenv).get_all_issues()
+        issues = issues + projects.Project(key=project, endpoint=sqenv).get_all_issues()
     return issues
 
 def apply_changelog(target_issue, source_issue):
