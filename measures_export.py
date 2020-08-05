@@ -61,7 +61,7 @@ project_list = projects.search(endpoint=myenv)
 nb_branches = 0
 for project in project_list:
     last_analysis = project['lastAnalysisDate'] if 'lastAnalysisDate' in project else 'Not analyzed yet'
-    p_obj = projects.Project(project['key'], endpoint=myenv, data=None)
+    p_obj = projects.Project(project['key'], endpoint=myenv)
     branch_data = p_obj.get_branches()
     branch_list = []
     for b in branch_data:
