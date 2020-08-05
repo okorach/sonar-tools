@@ -40,7 +40,7 @@ def set_common_args(desc):
     parser.add_argument('-u', '--url', required=False, default='http://localhost:9000',
                         help='Root URL of the source SonarQube server, default is http://localhost:9000')
 
-    parser.add_argument('-m', '--mode', required=True, help='Mode of execution (dryrun, batch, confirm)')
+    parser.add_argument('--mode', required=True, help='Mode of execution (dryrun, batch, confirm)')
     parser.add_argument('-g', '--debug', required=False, help='Debug level')
     return parser
 
