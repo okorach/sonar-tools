@@ -387,7 +387,7 @@ def search(endpoint=None, page=0, params=None):
 def get(key, sqenv = None):
     global PROJECTS
     if key not in PROJECTS:
-        p = Project(key=key, endpoint=sqenv)
+        _ = Project(key=key, endpoint=sqenv)
     return PROJECTS[key]
 
 def create_project(key, name = None, visibility = 'private', sqenv = None):
