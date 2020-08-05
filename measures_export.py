@@ -1,4 +1,4 @@
-#!/usr/local/bin/bin/python3
+#!/usr/local/bin/python3
 '''
     Exports some measures of all projects
     - Either all measures (-m _all)
@@ -59,10 +59,10 @@ print('')
 
 project_list = projects.search(endpoint=myenv)
 nb_branches = 0
-for project in project_list:
-    last_analysis = project['lastAnalysisDate'] if 'lastAnalysisDate' in project else 'Not analyzed yet'
-    p_obj = projects.Project(project['key'], endpoint=myenv)
-    branch_data = p_obj.get_branches()
+for _, project in project_list.items():
+    util.logger.debug("Checking project %s - %s", project, str(project))
+    last_analysis = project.get_last_analysis_date(False)
+    branch_data = project.get_branches()
     branch_list = []
     for b in branch_data:
         util.logger.debug("Checking branch %s", b['name'])
@@ -72,23 +72,10 @@ for project in project_list:
 
     for b in branch_list:
         nb_branches += 1
-        all_measures = measures.component(project['key'], wanted_metrics, branch_name=b['name'], sqenv=myenv)
-        p_meas = {}
+        p_meas = measures.component(project.key, wanted_metrics, branch_name=b['name'], endpoint=myenv)
         last_analysis = b.get('analysisDate', '')
-        for measure in all_measures:
-            name = measure['metric'] if 'metric' in measure else ''
-            if 'value' in measure:
-                value = measure['value']
-            elif 'periods' in measure:
-                value = measure['periods'][0]['value']
-            else:
-                value = ''
-            if args.ratingsAsLetters and metrics.is_a_rating(name):
-                p_meas[name] = measures.get_rating_letter(value)
-            else:
-                p_meas[name] = value
         line = ''
-        print("%s%s%s%s%s%s%s" % (project['key'], csv_sep, project['name'], csv_sep, b['name'], \
+        print("%s%s%s%s%s%s%s" % (project.key, csv_sep, project.name, csv_sep, b['name'], \
             csv_sep, last_analysis), end='')
         if args.metricKeys == '_all':
             for metric in main_metrics_list:
@@ -98,4 +85,4 @@ for project in project_list:
                 else line + csv_sep + "None"
         print(line)
 
-util.logger.info("%d PROJECTS %d branches", projects.count(True, myenv), nb_branches)
+util.logger.info("%d PROJECTS %d branches", len(project_list), nb_branches)
