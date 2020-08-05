@@ -29,14 +29,14 @@ if args.pollInterval is not None:
 if args.exportTimeout is not None:
     export_timeout = int(args.exportTimeout)
 
-project_list = projects.search_all(endpoint=myenv)
+project_list = projects.search(endpoint=myenv)
 nb_projects = len(project_list)
 util.logger.info("%d projects to export", nb_projects)
 i = 0
 statuses = {}
 for p in project_list:
     key = p['key']
-    dump = projects.Project(key, sqenv = myenv).export(timeout = export_timeout)
+    dump = projects.Project(key, endpoint=myenv).export(timeout = export_timeout)
     status = dump['status']
     if status in statuses:
         statuses[status] += 1
