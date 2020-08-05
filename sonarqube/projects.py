@@ -24,9 +24,35 @@ APP_QUALIFIER = 'APP'
 
 class Project(comp.Component):
 
-    def __init__(self, key, sqenv):
-        super().__init__(key=key, sqenv=sqenv)
+    def __init__(self, key, endpoint, data=None):
+        super().__init__(key=key, sqenv=endpoint)
+        self.id = None
+        self.name = None
+        self.visibility = None
+        self.main_branch_last_analysis_date = 'undefined'
+        self.permissions = None
+        self.all_branches_last_analysis_date = 'undefined'
+        self.user_permissions = None
+        self.group_permissions = None
+        self.branches = None
+        self.__load__(data)
         PROJECTS[key] = self
+
+    def __load__(self, data=None):
+        ''' Loads a project object with contents of an api/projects/search call '''
+        if data is None:
+            resp = env.get(PROJECT_SEARCH_API, ctxt=self.env, params={'projects':self.key})
+            data = json.loads(resp.text)
+            data = data['components'][0]
+        self.id = data['id']
+        self.name = data['name']
+        self.visibility = data['visibility']
+        if 'lastAnalysisDate' in data:
+            self.main_branch_last_analysis_date = datetime.datetime.strptime(
+                data['lastAnalysisDate'], '%Y-%m-%dT%H:%M:%S%z')
+        else:
+            self.main_branch_last_analysis_date = None
+        self.revision = data.get('revision', None)
 
     def __del__(self):
         del PROJECTS[self.key]
@@ -34,29 +60,64 @@ class Project(comp.Component):
 
     def get_name(self):
         if self.name is None:
-            resp = env.get(PROJECT_SEARCH_API, params={'projects':self.key}, ctxt = self.env)
-            data = json.loads(resp.text)
-            self.name = data['components']['name']
+            self.__load__()
         return self.name
 
+    def get_visibility(self):
+        if self.visibility is None:
+            self.__load__()
+        return self.visibility
+
+    def get_last_analysis_date(self, include_branches=False):
+        if self.main_branch_last_analysis_date == 'undefined':
+            self.__load__()
+        if not include_branches:
+            return self.main_branch_last_analysis_date
+        if self.all_branches_last_analysis_date != 'undefined':
+            return self.all_branches_last_analysis_date
+
+        last_analysis = self.main_branch_last_analysis_date
+        for b in self.get_branches():
+            if 'analysisDate' not in b:
+                continue
+            branch_analysis_date = datetime.datetime.strptime(b['analysisDate'], '%Y-%m-%dT%H:%M:%S%z')
+            if last_analysis is None or branch_analysis_date > last_analysis:
+                last_analysis = branch_analysis_date
+            self.all_branches_last_analysis_date = last_analysis
+        return self.all_branches_last_analysis_date
+
     def get_branches(self):
+        if self.branches is not None:
+            return self.branches
+
         resp = env.get('project_branches/list', params={'project':self.key}, ctxt=self.env)
         data = json.loads(resp.text)
-        return data['branches']
+        self.branches = data['branches']
+        return self.branches
 
     def get_permissions(self, perm_type):
+        MAX_PERMISSION_PAGE_SIZE = 100
+        if perm_type == 'user' and self.user_permissions is not None:
+            return self.user_permissions
+        if perm_type == 'group' and self.group_permissions is not None:
+            return self.group_permissions
+
         resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
                        params={'projectKey':self.key, 'ps':1})
         data = json.loads(resp.text)
         nb_perms = int(data['paging']['total'])
-        nb_pages = (nb_perms+99) // 100
+        nb_pages = (nb_perms+MAX_PERMISSION_PAGE_SIZE-1) // MAX_PERMISSION_PAGE_SIZE
         perms = []
         for page in range(nb_pages):
             resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
-                           params={'projectKey':self.key, 'ps':100, 'p':page+1})
+                           params={'projectKey':self.key, 'ps':MAX_PERMISSION_PAGE_SIZE, 'p':page+1})
             data = json.loads(resp.text)
             for p in data[perm_type]:
                 perms.append(p)
+        if perm_type == 'group':
+            self.group_permissions = perms
+        else:
+            self.user_permissions = perms
         return perms
 
     def delete(self, api='projects/delete', params=None):
@@ -80,19 +141,9 @@ class Project(comp.Component):
         print("Successfully deleted project key %s - %d LoCs" % (self.key, loc))
         return True
 
-    def last_analysis_date(self):
-        last_analysis = None
-        for b in self.get_branches():
-            if 'analysisDate' not in b:
-                continue
-            branch_analysis_date = datetime.datetime.strptime(b['analysisDate'], '%Y-%m-%dT%H:%M:%S%z')
-            if last_analysis is None or branch_analysis_date > last_analysis:
-                last_analysis = branch_analysis_date
-        return last_analysis
-
     def age_of_last_analysis(self):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        last_analysis = self.last_analysis_date()
+        last_analysis = self.get_last_analysis_date(include_branches=True)
         if last_analysis is None:
             return None
         return abs(today - last_analysis).days
@@ -233,7 +284,7 @@ Is this normal ?", gr['name'], self.key)
     def delete_if_obsolete(self, days=180):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         mindate = today - datetime.timedelta(days=days)
-        last_analysis = self.last_analysis_date()
+        last_analysis = self.get_last_analysis_date(include_branches=True)
         loc = int(self.get_measure('ncloc'))
         print("Project key %s - %d LoCs - Not analysed for %d days" %
               (self.key, loc, (today - last_analysis).days))
@@ -309,47 +360,49 @@ def count(endpoint=None, params=None):
     data = json.loads(resp.text)
     return data['paging']['total']
 
-def search(endpoint=None, params=None):
-    if 'ps' in params and params['ps'] == 0:
-        params['ps'] = MAX_PAGE_SIZE
-    resp = env.get(PROJECT_SEARCH_API, ctxt=endpoint, params=params)
-    data = json.loads(resp.text)
-    return data['components']
-
-def search_all(endpoint=None, params=None):
+def search(endpoint=None, page=0, params=None):
     if params is None:
         params = {}
         params['qualifiers'] = 'TRK'
+    if page != 0:
+        params['p'] = page
+        if 'ps' in params and params['ps'] == 0:
+            params['ps'] = MAX_PAGE_SIZE
+        resp = env.get(PROJECT_SEARCH_API, ctxt=endpoint, params=params)
+        data = json.loads(resp.text)
+        plist = {}
+        for prj in data['components']:
+            plist[prj['key']] = Project(prj['key'], endpoint=endpoint, data=prj)
+        return plist
+
     nb_projects = count(endpoint=endpoint, params=params)
     nb_pages = ((nb_projects-1)//MAX_PAGE_SIZE) + 1
     params['ps'] = MAX_PAGE_SIZE
     project_list = {}
     for page in range(nb_pages):
         params['p'] = page+1
-        for p in search(endpoint=endpoint, params=params):
-            project_list[p['key']] = p
+        project_list.update(search(endpoint=endpoint, page=page+1, params=params))
     return project_list
 
-def get_name(key, sqenv = None):
+def get(key, sqenv = None):
     global PROJECTS
     if key not in PROJECTS:
-        data = search(endpoint=sqenv, params={'projects':key})
-        PROJECTS[key] = data['components'][0]['name']
+        p = Project(key=key, endpoint=sqenv)
     return PROJECTS[key]
 
 def create_project(key, name = None, visibility = 'private', sqenv = None):
     if name is None:
         name = key
     resp = env.post('projects/create', ctxt = sqenv,
-                    params={'project':key, 'name':name, 'visibility':'private'})
+                    params={'project':key, 'name':name, 'visibility':visibility})
     return resp.status_code
 
 def delete_old_projects(days=180, endpoint=None):
-    '''Deletes all projects whose last analysis date one any branch is older than x days'''
+    '''Deletes all projects whose last analysis date on any branch is older than x days'''
     deleted_projects = 0
     deleted_locs = 0
-    for key in search_all():
-        p_obj = Project(key, sqenv = endpoint)
+    for key in search():
+        p_obj = Project(key, endpoint=endpoint, data=None)
         loc = int(p_obj.get_measures(['ncloc']))
         if p_obj.delete_if_obsolete(days=days):
             deleted_projects += 1
@@ -360,10 +413,10 @@ def delete_old_projects(days=180, endpoint=None):
         print("%d PROJECTS deleted for a total of %d LoCs" % (deleted_projects, deleted_locs))
 
 def audit(endpoint=None):
-    plist = search_all(endpoint)
+    plist = search(endpoint)
     issues = 0
     for key in plist:
-        p = Project(key=key, sqenv=endpoint)
+        p = Project(key=key, endpoint=endpoint, data=None)
         issues += p.audit()
         util.logger.info("Auditing for potential duplicate projects")
         for key2 in plist:
