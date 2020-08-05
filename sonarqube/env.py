@@ -133,7 +133,7 @@ class Environment:
         if value >= min_val and value <= max_val:
             util.logger.info("Setting %s value %d is within common range [%d-%d]", key, value, min_val, max_val)
         else:
-            util.logger.warning("Setting %s value %d is outisde common range [%d-%d]", key, value, min_val, max_val)
+            util.logger.warning("Setting %s value %d is outside common range [%d-%d]", key, value, min_val, max_val)
             return 1
         return 0
 
@@ -145,8 +145,8 @@ class Environment:
             util.logger.info('Project default visibility is private')
         else:
             util.logger.warning('Project default visibility is %s, which can be a security risk', visi)
-            return False
-        return True
+            return 1
+        return 0
 
     def __check_rating_range__(self, value, min_val, max_val, rating_letter):
         value = float(value)
