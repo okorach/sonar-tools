@@ -8,30 +8,71 @@ import re
 import json
 import requests
 import sonarqube.env as env
-import sonarqube.sqobject
+import sonarqube.sqobject as sq
 import sonarqube.utilities as util
+
+METRICS = {}
 
 MAIN_METRICS = 'ncloc,bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
     'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
     'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
     'new_coverage,new_duplicated_lines_density'
 
-def get_all_metrics(myenv = None):
+class Metric(sq.SqObject):
+    def __init__(self, key=None, endpoint=None, data=None):
+        super().__init__(key=key, env=endpoint)
+        self.id = None
+        self.type = None
+        self.name = None
+        self.description = None
+        self.domain = None
+        self.direction = None
+        self.qualitative = None
+        self.hidden = None
+        self.custom = None
+        self.__load__(data)
+        METRICS[key] = self
+
+    def __load__(self, data):
+        if data is None:
+            resp = env.get('metrics/search',  params={'ps':500}, ctxt=self.env)
+            data_json = json.loads(resp.text)
+            for m in data_json['metrics']:
+                if self.key == m['key']:
+                    data = m
+                    break
+        if data is None:
+            return False
+        self.id = data.get('id', None)
+        self.type = data['type']
+        self.name = data['name']
+        self.description = data['description']
+        self.domain = data['domain']
+        self.qualitative = data['qualitative']
+        self.hidden = data['hidden']
+        self.custom = data['custom']
+        return True
+
+    def is_a_rating(self):
+        return re.match(r"^(new_)?(security|security_review|reliability|maintainability)_rating$", self.key)
+
+def search(endpoint=None):
     # TODO paginated API if more than 500 metrics
-    resp = env.get('metrics/search',  params={'ps':500}, ctxt=myenv)
-    if resp.status_code != 200:
-        util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
+    resp = env.get('metrics/search',  params={'ps':500}, ctxt=endpoint)
     data = json.loads(resp.text)
-    return data['metrics']
+    m_list = {}
+    for m in data['metrics']:
+        m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
+    return m_list
 
 def get_all_metrics_csv(myenv = None):
-    metrics = get_all_metrics(myenv)
+    metrics = search(myenv)
     csv = ''
     for metric in metrics:
-        if metric['key'] == 'new_development_cost':
+        if metric.key == 'new_development_cost':
             # Skip new_development_cost metric to work around a SonarQube 7.9 bug
             continue
-        csv = csv + "{0},".format(metric['key'])
+        csv = csv + "{0},".format(metric.key)
     return csv[:-1]
 
 def is_a_rating(metric):
