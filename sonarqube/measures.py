@@ -11,11 +11,11 @@ import sonarqube.utilities as util
 import sonarqube.sqobject as sq
 import sonarqube.metrics as metrics
 
-class Measure (sq.SqObject):
+class Measure(sq.SqObject):
     API_ROOT = 'measures'
     API_COMPONENT = API_ROOT + '/component'
     API_HISTORY = API_ROOT + '/search_history'
-    def __init__(self, key=None, value=None, endpoint=None, data=None):
+    def __init__(self, key=None, value=None, endpoint=None):
         super().__init__(key=key, env=endpoint)
         if metrics.is_a_rating(self.key):
             self.value = get_rating_letter(value)
