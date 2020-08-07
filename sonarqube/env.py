@@ -6,6 +6,7 @@
 '''
 import sys
 import re
+import datetime
 import json
 import requests
 import sonarqube.utilities as util
@@ -108,6 +109,8 @@ class Environment:
             for p in params:
                 sep = '?' if first else '&'
                 first = False
+                if isinstance(params[p], datetime.date):
+                    params[p] = util.format_date(params[p])
                 url += '{0}{1}={2}'.format(sep, p, params[p])
         return url
 
