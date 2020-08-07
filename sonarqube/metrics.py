@@ -19,6 +19,7 @@ class Metric(sq.SqObject):
     Count = None
     Inventory = {}
     MAX_PAGE_SIZE = 500
+    SEARCH_API = 'metrics/search'
     MAIN_METRICS = 'ncloc,bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
         'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
         'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
@@ -39,7 +40,7 @@ class Metric(sq.SqObject):
     def __load__(self, data):
         if data is None:
             # TODO handle pagination
-            resp = env.get('metrics/search',  params={'ps':500}, ctxt=self.env)
+            resp = env.get(Metric.SEARCH_API, params={'ps':500}, ctxt=self.env)
             data_json = json.loads(resp.text)
             for m in data_json['metrics']:
                 if self.key == m['key']:
@@ -63,7 +64,7 @@ class Metric(sq.SqObject):
 
 def count(endpoint):
     if Metric.Count is None:
-        resp = env.get('metrics/search',  params={'ps':1}, ctxt=endpoint)
+        resp = env.get(Metric.SEARCH_API, params={'ps':1}, ctxt=endpoint)
         data = json.loads(resp.text)
         Metric.Count = data['total']
     return Metric.Count
@@ -73,7 +74,7 @@ def search(endpoint=None, page=None):
         return Metric.Inventory
     m_list = {}
     if page is not None:
-        resp = env.get('metrics/search',  params={'ps':500, 'p':page}, ctxt=endpoint)
+        resp = env.get(Metric.SEARCH_API, params={'ps':500, 'p':page}, ctxt=endpoint)
         data = json.loads(resp.text)
         for m in data['metrics']:
             m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
