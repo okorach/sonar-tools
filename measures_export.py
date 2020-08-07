@@ -29,50 +29,52 @@ parser.add_argument('-r', '--ratingsAsLetters', action='store_true', required=Fa
                     help='Reports ratings as ABCDE letters instead of 12345 numbers')
 
 args = parser.parse_args()
-myenv = env.Environment(url=args.url, token=args.token)
+endpoint = env.Environment(url=args.url, token=args.token)
 kwargs = vars(args)
 util.check_environment(kwargs)
 
 # Mandatory script input parameters
-csv_sep = ";"
+csv_sep = ","
 
+main_metrics = metrics.Metric.MAIN_METRICS
+main_metrics_list = re.split(',', main_metrics)
 if args.metricKeys == '_all':
-    wanted_metrics = metrics.get_all_metrics_csv(myenv)
+    l = metrics.search(endpoint=endpoint).values()
+    wanted_metrics = metrics.as_csv(l)
 elif args.metricKeys == '_main':
-    wanted_metrics = metrics.MAIN_METRICS
+    wanted_metrics = main_metrics
 elif args.metricKeys is not None:
     wanted_metrics = args.metricKeys
 else:
-    wanted_metrics = metrics.MAIN_METRICS
+    wanted_metrics = main_metrics
+metrics_list = re.split(',', wanted_metrics)
+
 
 print ("Project Key%sProject Name%sBranch%sLast Analysis" % (csv_sep, csv_sep, csv_sep), end=csv_sep)
-metrics_list = re.split(',', wanted_metrics)
-main_metrics_list = re.split(',', metrics.MAIN_METRICS)
+
 if args.metricKeys == '_all':
-    for m in re.split(',', metrics.MAIN_METRICS):
-        print ("%s" % m, end=csv_sep)
+    # Display main metrics first
+    print(main_metrics)
     metrics_list = diff(metrics_list, main_metrics_list)
 
 for m in metrics_list:
-    print ("%s" % m, end=csv_sep)
+    print("{0}".format(m), end=csv_sep)
 print('')
 
-project_list = projects.search(endpoint=myenv)
+project_list = projects.search(endpoint=endpoint)
 nb_branches = 0
 for _, project in project_list.items():
-    util.logger.debug("Checking project %s - %s", project, str(project))
     last_analysis = project.get_last_analysis_date(False)
     branch_data = project.get_branches()
     branch_list = []
     for b in branch_data:
-        util.logger.debug("Checking branch %s", b['name'])
         if args.withBranches or b['isMain']:
             branch_list.append(b)
             util.logger.debug("Branch %s appended", b['name'])
 
     for b in branch_list:
         nb_branches += 1
-        p_meas = measures.component(project.key, wanted_metrics, branch_name=b['name'], endpoint=myenv)
+        p_meas = measures.component(project.key, wanted_metrics, branch_name=b['name'], endpoint=endpoint)
         last_analysis = b.get('analysisDate', '')
         line = ''
         print("%s%s%s%s%s%s%s" % (project.key, csv_sep, project.name, csv_sep, b['name'], \

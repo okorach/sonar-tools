@@ -11,14 +11,18 @@ import sonarqube.env as env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 
-METRICS = {}
 
-MAIN_METRICS = 'ncloc,bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
-    'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
-    'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
-    'new_coverage,new_duplicated_lines_density'
+
+
 
 class Metric(sq.SqObject):
+    Count = None
+    Inventory = {}
+    MAX_PAGE_SIZE = 500
+    MAIN_METRICS = 'ncloc,bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
+        'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
+        'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
+        'new_coverage,new_duplicated_lines_density'
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key=key, env=endpoint)
         self.id = None
@@ -31,10 +35,10 @@ class Metric(sq.SqObject):
         self.hidden = None
         self.custom = None
         self.__load__(data)
-        METRICS[key] = self
 
     def __load__(self, data):
         if data is None:
+            # TODO handle pagination
             resp = env.get('metrics/search',  params={'ps':500}, ctxt=self.env)
             data_json = json.loads(resp.text)
             for m in data_json['metrics']:
@@ -43,11 +47,12 @@ class Metric(sq.SqObject):
                     break
         if data is None:
             return False
+        util.logger.debug('Lading metric %s', str(data))
         self.id = data.get('id', None)
         self.type = data['type']
         self.name = data['name']
-        self.description = data['description']
-        self.domain = data['domain']
+        self.description = data.get('description', '')
+        self.domain = data.get('domain', '')
         self.qualitative = data['qualitative']
         self.hidden = data['hidden']
         self.custom = data['custom']
@@ -56,23 +61,37 @@ class Metric(sq.SqObject):
     def is_a_rating(self):
         return re.match(r"^(new_)?(security|security_review|reliability|maintainability)_rating$", self.key)
 
-def search(endpoint=None):
-    # TODO paginated API if more than 500 metrics
-    resp = env.get('metrics/search',  params={'ps':500}, ctxt=endpoint)
-    data = json.loads(resp.text)
+def count(endpoint):
+    if Metric.Count is None:
+        resp = env.get('metrics/search',  params={'ps':1}, ctxt=endpoint)
+        data = json.loads(resp.text)
+        Metric.Count = data['total']
+    return Metric.Count
+
+def search(endpoint=None, page=None):
+    if Metric.Inventory:
+        return Metric.Inventory
     m_list = {}
-    for m in data['metrics']:
-        m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
+    if page is not None:
+        resp = env.get('metrics/search',  params={'ps':500, 'p':page}, ctxt=endpoint)
+        data = json.loads(resp.text)
+        for m in data['metrics']:
+            m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
+    else:
+        nb_metrics = count(endpoint)
+        nb_pages = (nb_metrics+Metric.MAX_PAGE_SIZE-1)//Metric.MAX_PAGE_SIZE
+        for p in range(nb_pages):
+            m_list.update(search(endpoint=endpoint, page=p+1))
+        Metric.Inventory = m_list
     return m_list
 
-def get_all_metrics_csv(myenv = None):
-    metrics = search(myenv)
+def as_csv(metric_list, separator=','):
     csv = ''
-    for metric in metrics:
+    for metric in metric_list:
         if metric.key == 'new_development_cost':
             # Skip new_development_cost metric to work around a SonarQube 7.9 bug
             continue
-        csv = csv + "{0},".format(metric.key)
+        csv = csv + "{0}{1}".format(metric.key, separator)
     return csv[:-1]
 
 def is_a_rating(metric):
