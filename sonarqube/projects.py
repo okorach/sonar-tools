@@ -44,7 +44,7 @@ class Project(comp.Component):
             resp = env.get(PROJECT_SEARCH_API, ctxt=self.env, params={'projects':self.key})
             data = json.loads(resp.text)
             data = data['components'][0]
-        self.id = data['id']
+        self.id = data.get('id', None)
         self.name = data['name']
         self.visibility = data['visibility']
         if 'lastAnalysisDate' in data:
@@ -54,9 +54,8 @@ class Project(comp.Component):
             self.main_branch_last_analysis_date = None
         self.revision = data.get('revision', None)
 
-    def __del__(self):
-        del PROJECTS[self.key]
-        # util.logger.debug("Object project key %s destroyed", self.key)
+#    def __del__(self):
+#        # del PROJECTS[self.key]
 
     def get_name(self):
         if self.name is None:
@@ -76,14 +75,13 @@ class Project(comp.Component):
         if self.all_branches_last_analysis_date != 'undefined':
             return self.all_branches_last_analysis_date
 
-        last_analysis = self.main_branch_last_analysis_date
+        self.all_branches_last_analysis_date = self.main_branch_last_analysis_date
         for b in self.get_branches():
             if 'analysisDate' not in b:
                 continue
-            branch_analysis_date = datetime.datetime.strptime(b['analysisDate'], '%Y-%m-%dT%H:%M:%S%z')
-            if last_analysis is None or branch_analysis_date > last_analysis:
-                last_analysis = branch_analysis_date
-            self.all_branches_last_analysis_date = last_analysis
+            b_ana_date = datetime.datetime.strptime(b['analysisDate'], '%Y-%m-%dT%H:%M:%S%z')
+            if self.all_branches_last_analysis_date is None or b_ana_date > self.all_branches_last_analysis_date:
+                self.all_branches_last_analysis_date = b_ana_date
         return self.all_branches_last_analysis_date
 
     def get_branches(self):
@@ -415,8 +413,7 @@ def delete_old_projects(days=180, endpoint=None):
 def audit(endpoint=None):
     plist = search(endpoint)
     issues = 0
-    for key in plist:
-        p = Project(key=key, endpoint=endpoint, data=None)
+    for key, p in plist.items():
         issues += p.audit()
         util.logger.info("Auditing for potential duplicate projects")
         for key2 in plist:

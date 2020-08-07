@@ -9,14 +9,18 @@ import requests
 import sonarqube.env as env
 import sonarqube.utilities as util
 import sonarqube.sqobject as sq
+import sonarqube.metrics as metrics
 
-class Measure (sq.SqObject):
+class Measure(sq.SqObject):
     API_ROOT = 'measures'
     API_COMPONENT = API_ROOT + '/component'
     API_HISTORY = API_ROOT + '/search_history'
-    def __init__(self, key = None, value = None, **kwargs):
-        super().__init__(key=key,env=kwargs['env'])
-        self.value = value
+    def __init__(self, key=None, value=None, endpoint=None):
+        super().__init__(key=key, env=endpoint)
+        if metrics.is_a_rating(self.key):
+            self.value = get_rating_letter(value)
+        else:
+            self.value = value
         self.history = None
 
     def read(self, project_key, metric_key):
@@ -53,24 +57,28 @@ def component(component_key, metric_keys, endpoint=None, **kwargs):
     kwargs['component'] = component_key
     kwargs['metricKeys'] = metric_keys
     resp = env.get(Measure.API_COMPONENT, params=kwargs, ctxt=endpoint)
-    if resp.status_code != 200:
-        util.logger.error('HTTP Error %d from SonarQube API query: %s', resp.status_code, resp.content)
-
     data = json.loads(resp.text)
-    return data['component']['measures']
+    m_list = {}
+    for m in data['component']['measures']:
+        value = m.get('value', '')
+        if value == '' and 'periods' in m:
+            value = m['periods'][0]['value']
+        if metrics.is_a_rating(m['metric']):
+            m_list[m['metric']] = get_rating_letter(value)
+        else:
+            m_list[m['metric']] = value
+    return m_list
 
-def get_rating_letter(n):
-    if n == '1.0':
-        return 'A'
-    elif n == '2.0':
-        return 'B'
-    elif n == '3.0':
-        return 'C'
-    elif n == '4.0':
-        return 'D'
-    elif n == '5.0':
-        return 'E'
-    else:
-        util.logger.error("Wrong numeric rating provided %s", n)
+def get_rating_letter(rating_number_str):
+    try:
+        n_int = int(float(rating_number_str))
+        return chr(n_int + 64)
+    except ValueError:
+        util.logger.error("Wrong numeric rating provided %s", rating_number_str)
+        return rating_number_str
 
-    return None
+def get_rating_number(rating_letter):
+    l = rating_letter.upper()
+    if l in ['A','B','C','D','E']:
+        return ord(l) - 64
+    return rating_letter

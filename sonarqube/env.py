@@ -114,7 +114,7 @@ class Environment:
     def __verify_setting__(self, settings, key, value):
         s = settings.get(key, '')
         if s == value:
-            util.logger.info("Setting %s has common/standard value '%s'", key, s)
+            util.logger.info("Setting %s has common/recommended value '%s'", key, s)
         else:
             util.logger.warning("Setting %s has potentially incorrect/unsafe value '%s'", key, s)
             return 1
@@ -131,9 +131,9 @@ class Environment:
     def __verify_setting_range__(self, settings, key, min_val, max_val):
         value = int(settings[key])
         if value >= min_val and value <= max_val:
-            util.logger.info("Setting %s value %d is within common range [%d-%d]", key, value, min_val, max_val)
+            util.logger.info("Setting %s value %d is within recommended range [%d-%d]", key, value, min_val, max_val)
         else:
-            util.logger.warning("Setting %s value %d is outside common range [%d-%d]", key, value, min_val, max_val)
+            util.logger.warning("Setting %s value %d is outside recommended range [%d-%d]", key, value, min_val, max_val)
             return 1
         return 0
 
@@ -151,11 +151,11 @@ class Environment:
     def __check_rating_range__(self, value, min_val, max_val, rating_letter):
         value = float(value)
         if value < min_val or value > max_val:
-            util.logger.warning('Maintainability rating threshold %3.0f%% for %s is NOT within standard range [%3.0f%%-%3.0f%%]',
+            util.logger.warning('Maintainability rating threshold %3.0f%% for %s is NOT within recommended range [%3.0f%%-%3.0f%%]',
                                 value*100, rating_letter, min_val*100, max_val*100)
             return 1
         else:
-            util.logger.info('Maintainability rating threshold %3.0f%% for %s is within standard range [%3.0f%%-%3.0f%%]',
+            util.logger.info('Maintainability rating threshold %3.0f%% for %s is within recommended range [%3.0f%%-%3.0f%%]',
                              value*100, rating_letter, min_val*100, max_val*100)
         return 0
 
