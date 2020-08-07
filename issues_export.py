@@ -65,7 +65,7 @@ params.update({'env':sqenv})
 for p in params:
     util.logger.debug("%s --> %s", p, params[p])
 
-all_issues = issues.search_all_issues_unlimited(sqenv=sqenv, **params)
+all_issues = issues.search(endpoint=sqenv, params=params)
 print(issues.to_csv_header())
 for issue in all_issues:
     print(issue.to_csv())
