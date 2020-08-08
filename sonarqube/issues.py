@@ -11,6 +11,7 @@ import json
 import requests
 import sonarqube.env as env
 import sonarqube.sqobject as sq
+import sonarqube.components as components
 import sonarqube.utilities as util
 import sonarqube.projects as projects
 
@@ -31,7 +32,7 @@ class IssueComments:
         self.json = json_data
 
     def sort(self):
-        sorted_comment = dict()
+        sorted_comment = {}
         for comment in self.json:
             sorted_comment[comment['createdAt']] = ('comment', comment)
         return sorted_comment
@@ -39,7 +40,7 @@ class IssueComments:
     def size(self):
         return len(self.json)
 
-    def to_string(self):
+    def __str__(self):
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
 
@@ -111,8 +112,8 @@ class Issue(sq.SqObject):
         self.project = jsondata['project']
         self.language = None
         self.changelog = None
-        self.creation_date = jsondata['creationDate']
-        self.modification_date = jsondata['updateDate']
+        self.creation_date = datetime.datetime.strptime(jsondata['creationDate'], '%Y-%m-%dT%H:%M:%S%z')
+        self.modification_date = datetime.datetime.strptime(jsondata['updateDate'], '%Y-%m-%dT%H:%M:%S%z')
 
         self.changelog = None
         self.component = jsondata['component']
@@ -350,12 +351,10 @@ class Issue(sq.SqObject):
             m = re.search(r'(\d+)min', self.debt)
             minutes = int(m.group(1)) if m else 0
             debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
-        cdate = re.sub(r"T.*", "", self.creation_date)
-        ctime = re.sub(r".*T", "", self.creation_date)
-        # Strip timezone
-        ctime = re.sub(r"\+.*", "", ctime)
-        mdate = re.sub(r"T.*", "", self.modification_date)
-        mtime = re.sub(r".*T", "", self.modification_date)
+        cdate = self.creation_date.strftime("%Y-%m-%d")
+        ctime = self.creation_date.strftime("%H:%M:%S")
+        mdate = self.modification_date.strftime("%Y-%m-%d")
+        mtime = self.modification_date.strftime("%H:%M:%S")
         # Strip timezone
         mtime = re.sub(r"\+.*", "", mtime)
         msg = re.sub('"','""', self.message)
@@ -373,122 +372,167 @@ def check_fp_transition(diffs):
            (diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX")
 
 def sort_comments(comments):
-    sorted_comments = dict()
+    sorted_comments = {}
     for comment in comments:
         sorted_comments[comment['createdAt']] = ('comment', comment)
     return sorted_comments
 
-def search_by_file(project_key, endpoint=None, fileUuid=None, params=None):
+def search_by_file(project_key, file_uuid, params=None, endpoint=None):
     if params is None:
-        params = {}
-    del params['directories']
-    if fileUuid is not None:
-        params['fileUuids'] = fileUuid
-        return search(endpoint=endpoint, params=params)
-
-    issue_list = {}
-    f_list = get_facets(endpoint=endpoint, facet='fileUuids', params=params)
-    for f in f_list:
-        params['fileUuids'] = f['val']
-        issue_list.update(search_by_file(endpoint=endpoint, project_key=project_key, fileUuid=f['val'], params=params))
-    return issue_list
-
-def search_by_directory(project_key, directory=None, endpoint=None, params=None):
-    if params is None:
-        params = {}
-    if directory is None:
-        dir_list = get_facets(endpoint=endpoint, facet='directories', params=params)
+        parms = {}
     else:
-        dir_list = [directory]
-    util.logger.debug("Found %d subdirectories", len(dir_list))
-    params['componentKeys'] = project_key
-    issue_list = {}
-    for d in dir_list:
-        params['directories'] = d['val']
-        util.logger.debug("Searching issues in sub-component %s / directory %s", project_key, d['val'])
-        try:
-            issue_list.update(search(endpoint=endpoint, params=params))
-        except TooManyIssuesError:
-            issue_list.update(search_by_file(project_key=project_key, params=params))
+        parms = params.copy()
+    parms.pop('directories', None)
+    parms['componentKeys'] = project_key
+    util.logger.debug("Searching issues in file %s", file_uuid)
+    parms['fileUuids'] = file_uuid
+    issue_list = search(endpoint=endpoint, params=parms)
+    util.logger.debug("File %s has %d issues", file_uuid, len(issue_list))
     return issue_list
 
-def search_by_date(endpoint=None, date_start=None, date_stop=None, params=None):
+def search_by_component(root_key, component=None, endpoint=None, params=None):
     if params is None:
-        params = {}
+        parms = {}
+    else:
+        parms = params.copy()
+    dir_list = {}
+    if component is None:
+        dir_list = components.get_subcomponents(root_key, endpoint=endpoint)
+    else:
+        dir_list[component.key] = component
+    util.logger.debug("Found %d subcomponents", len(dir_list))
+    issue_list = {}
+
+    for key, comp in dir_list.items():
+        util.logger.debug("Searching issues in sub-component %s", key)
+        parms['componentKeys'] = key
+        try:
+            comp_issues = {}
+            if comp.qualifier == 'DIR':
+                comp_issues = search(endpoint=endpoint, params=parms)
+            elif comp.qualifier == 'FIL':
+                comp_issues = search_by_file(project_key=root_key, file_uuid=comp.id, endpoint=endpoint, params=parms)
+            else:
+                util.logger.error("Unexpected component qualifier %s in project %s", comp.qualifier, root_key)
+        except TooManyIssuesError:
+            if comp.qualifier == 'DIR':
+                comp_issues = search_by_component(root_key=root_key, params=parms, endpoint=endpoint)
+            else:
+                util.logger.error("Project %s has more than 10K issues in a single file %s", root_key, comp.path)
+        issue_list.update(comp_issues)
+        util.logger.debug("Component %s has %d issues", key, len(comp_issues))
+
+    return issue_list
+
+
+def search_by_rule(root_key, rule, endpoint=None, params=None):
+    if params is None:
+        parms = {}
+    else:
+        parms = params.copy()
+    parms['rules'] = rule
+    util.logger.debug("Searching issues for rule %s", rule)
+    issue_list = {}
+    try:
+        issue_list = search(endpoint=endpoint, params=parms)
+    except TooManyIssuesError:
+        facets = get_facets(facet='rules', endpoint=endpoint, params=parms)
+        for f in facets:
+            comp = components.Component(key=f['val'], sqenv=endpoint)
+            issue_list.update(search_by_component(root_key=root_key, component=comp, endpoint=endpoint, params=parms))
+    util.logger.debug("Rule %s has %d issues", rule, len(issue_list))
+    return issue_list
+
+def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
+    if params is None:
+        parms = {}
+    else:
+        parms = params.copy()
     if date_start is None:
-        date_start = get_oldest_issue(endpoint=None, params=params)
+        date_start = get_oldest_issue(endpoint=endpoint, params=parms).replace(hour=0, minute=0, second=0, microsecond=0)
     if date_stop is None:
-        date_stop = get_newest_issue(endpoint=None, params=params)
+        date_stop = get_newest_issue(endpoint=endpoint, params=parms).replace(hour=0, minute=0, second=0, microsecond=0)
 
     issue_list = {}
-    params.update({'createdAfter':date_start, 'createdBefore': date_stop})
+    parms.update({'createdAfter':date_start, 'createdBefore': date_stop})
     try:
         issue_list = search(endpoint=endpoint, params=params)
     except TooManyIssuesError:
         diff = (date_stop - date_start).days
         if diff == 0:
-            return search_by_directory(project_key=params['componentKeys'], endpoint=endpoint, params=params)
+            facets = get_facets(facet='rules', endpoint=endpoint, params=parms)
+            for f in facets:
+                issue_list.update(search_by_rule(root_key=parms['componentKeys'], rule=f['val'], endpoint=endpoint, params=parms))
         elif diff == 1:
             issue_list.update(
-                search_by_date(endpoint=endpoint, date_start=date_start, date_stop=date_start, params=params))
+                search_by_date(endpoint=endpoint, date_start=date_start, date_stop=date_start, params=parms))
             issue_list.update(
-                search_by_date(endpoint=endpoint, date_start=date_stop, date_stop=date_stop, params=params))
+                search_by_date(endpoint=endpoint, date_start=date_stop, date_stop=date_stop, params=parms))
         else:
             date_middle = date_start + datetime.timedelta(days=diff//2)
             issue_list.update(
-                search_by_date(endpoint=endpoint, date_start=date_start, date_stop=date_middle, params=params))
+                search_by_date(endpoint=endpoint, date_start=date_start, date_stop=date_middle, params=parms))
             date_middle = date_middle + datetime.timedelta(days=1)
             issue_list.update(
-                search_by_date(endpoint=endpoint, date_start=date_middle, date_stop=date_stop, params=params))
+                search_by_date(endpoint=endpoint, date_start=date_middle, date_stop=date_stop, params=parms))
+    if date_start is not None and date_stop is not None:
+        util.logger.debug("Project %s has %d issues between %s and %s", parms.get('componentKeys', 'None'),
+            len(issue_list), date_start.strftime("%Y-%m-%d"), date_stop.strftime("%Y-%m-%d"))
     return issue_list
 
-
-        # split dates and retry
-
-def search_by_project(project_key=None, endpoint=None, params=None):
+def search_by_project(project_key, endpoint=None, params=None):
     if params is None:
-        params = {}
+        parms = {}
+    else:
+        parms = params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
+        util.logger.info("Searching issues for project %s", project_key)
         key_list = [project_key]
     issue_list = {}
     for k in key_list:
-        params['componentKeys'] = k
+        parms['componentKeys'] = k
         try:
-            issue_list.update(search(endpoint=endpoint, params=params))
+            project_issue_list = search(endpoint=endpoint, params=parms)
         except TooManyIssuesError:
-            issue_list.update(search_by_directory(project_key=k, endpoint=endpoint, params=params))
+            project_issue_list = search_by_date(endpoint=endpoint, params=parms)
+        util.logger.info("Project %s has %d issues", k, len(project_issue_list))
+        issue_list.update(project_issue_list)
     return issue_list
 
-def search(endpoint=None, params=None):
+def search(endpoint=None, page=None, params=None):
     if params is None:
-        params = {}
-    params = __get_issues_search_params__(params)
-    params['ps'] = Issue.MAX_PAGE_SIZE
-    page = 1
+        parms = {}
+    else:
+        parms = params.copy()
+    parms = __get_issues_search_params__(parms)
+    parms['ps'] = Issue.MAX_PAGE_SIZE
+    p = 1
     issue_list = {}
     while True:
-        params['p'] = page
-        resp = env.get(Issue.SEARCH_API, params=params, ctxt=endpoint)
+        if page is None:
+            parms['p'] = p
+        else:
+            parms['p'] = page
+        resp = env.get(Issue.SEARCH_API, params=parms, ctxt=endpoint)
         data = json.loads(resp.text)
         nbr_issues = data['total']
-        if nbr_issues > Issue.MAX_SEARCH:
+        nbr_pages = (nbr_issues + Issue.MAX_PAGE_SIZE-1) // Issue.MAX_PAGE_SIZE
+        util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, parms['p'], nbr_pages)
+        if page is None and nbr_issues > Issue.MAX_SEARCH:
             raise TooManyIssuesError(nbr_issues,
                 '{} issues returned by api/{}, this is more than the max {} possible'.format(nbr_issues,
                 Issue.SEARCH_API, Issue.MAX_SEARCH))
 
-        util.logger.debug("Number of issues: %d", nbr_issues)
-        nbr_pages = (nbr_issues + Issue.MAX_PAGE_SIZE-1) // Issue.MAX_PAGE_SIZE
-        util.logger.debug("Page: %d/%d", page, nbr_pages)
         for i in data['issues']:
-            issue_list.update({i['key']:Issue(key=i['key'], endpoint=endpoint, data=i)} )
-        if page >= nbr_pages:
+            issue_list[i['key']] = Issue(key=i['key'], endpoint=endpoint, data=i)
+        if page is not None or p >= nbr_pages:
             break
-        page += 1
+        p += 1
     return issue_list
 
-def search_all_issues(endpoint=None, params=None):
+def search_all_issues(params=None, endpoint=None):
     util.logger.info('searching issues for %s', str(params))
     if params is None:
         params = {}
@@ -514,11 +558,11 @@ def get_facets(endpoint=None, facet='directories', params=None):
     if params is None:
         params = {}
     params['facets'] = facet
-    params['ps'] = 100
+    params['ps'] = 500
     params = __get_issues_search_params__(params)
     resp = env.get(Issue.SEARCH_API, params=params, ctxt=endpoint)
     data = json.loads(resp.text)
-    util.json_dump_debug(data, 'FACET')
+    util.json_dump_debug(data['facets'], 'FACETS = ')
     for f in data['facets']:
         if f['property'] == facet:
             return f['values']
@@ -527,14 +571,20 @@ def get_facets(endpoint=None, facet='directories', params=None):
 def __get_one_issue_date__(endpoint=None, asc_sort='false', params=None):
     ''' Returns the date of one issue found '''
     if params is None:
-        params = {}
-    params['s'] = 'CREATION_DATE'
-    params['asc'] = asc_sort
-    params['ps'] = 1
-    returned_data = search(endpoint=endpoint, params=params)
-    if returned_data['total'] == 0:
+        parms = {}
+    else:
+        parms = params.copy()
+    parms['s'] = 'CREATION_DATE'
+    parms['asc'] = asc_sort
+    parms['ps'] = 1
+    issue_list = search(endpoint=endpoint, page=1, params=parms)
+    if not issue_list:
         return None
-    return returned_data['issues'][0].creation_date
+    for _, i in issue_list.items():
+        date = i.creation_date
+        util.logger.debug('Date: %s Issue %s', str(date), str(i))
+        break
+    return date
 
 def get_oldest_issue(endpoint=None, params=None):
     ''' Returns the oldest date of all issues found '''
@@ -625,16 +675,6 @@ def search_project_issues(key, sqenv=None, **kwargs):
                 util.logger.debug("Reslicing with a thinner slice of %d days", current_slice)
 
     util.logger.debug("For project %s, %d issues found", key, len(issues))
-    return issues
-
-def search_all_issues_unlimited(sqenv=None, params=None):
-    if params is None or 'componentKeys' not in params:
-        project_list = projects.search(endpoint=sqenv).keys()
-    else:
-        project_list = re.split(',', params['componentKeys'])
-    issues = []
-    for project in project_list:
-        issues = issues + projects.Project(key=project, endpoint=sqenv).get_all_issues()
     return issues
 
 def apply_changelog(target_issue, source_issue):
