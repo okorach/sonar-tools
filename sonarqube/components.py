@@ -17,20 +17,46 @@ import sonarqube.measures as measures
 
 class Component(sq.SqObject):
 
-    def __init__(self, key, name=None, sqenv=None):
+    def __init__(self, key, sqenv=None, data=None):
         super().__init__(key, sqenv)
-        self.name = name
+        self.name = None
+        self.id = None
+        self.qualifier = None
+        self.path = None
+        self.language = None
         self.nbr_issues = None
-        self.env = sqenv
+        if data is not None:
+            self.__load__(data)
+
+    def __load__(self, data):
+        self.id = data.get('id', None)
+        self.name = data.get('name', None)
+        self.qualifier = data.get('qualifier', None)
+        self.path = data.get('path', None)
+        self.language = data.get('language', None)
 
     def get_subcomponents(self):
-        params = {'component':self.key, 'strategy':'children', 'ps':500, 'p':1}
-        resp = env.get('components/tree', params, self.env)
+        parms = {'component':self.key, 'strategy':'children', 'ps':1,
+            'metricKeys':'bugs,vulnerabilities,code_smells,security_hotspots'}
+        resp = env.get('measures/component_tree', params=parms, ctxt=self.env)
         data = json.loads(resp.text)
-        comps = []
-        for comp in data['components']:
-            comps.append(Component(key=comp['key'], name=comp['name'], sqenv=self.env))
-        return comps
+        nb_comp = data['paging']['total']
+        util.logger.debug("Found %d subcomponents to %s", nb_comp, self.key)
+        nb_pages = (nb_comp+500-1)//500
+        l = {}
+        parms['ps'] = 500
+        for page in range(nb_pages):
+            parms['p'] = page+1
+            resp = env.get('measures/component_tree', params=parms, ctxt=self.env)
+            data = json.loads(resp.text)
+            for d in data['components']:
+                l[d['key']] = Component(key=d['key'], sqenv=self.env, data=d)
+                issues = 0
+                for m in d['measures']:
+                    issues += int(m['value'])
+                l[d['key']].nbr_issues = issues
+                util.logger.debug("Component %s has %d issues", d['key'], issues)
+        return l
 
     def get_number_of_filtered_issues(self, params):
         import sonarqube.issues as issues
@@ -71,8 +97,10 @@ class Component(sq.SqObject):
                 return m['value']
         return None
 
-def get_components(component_types):
-    params = dict(ps=500, qualifiers=component_types)
-    resp = env.get('projects/search', params=params)
+def get_components(component_types, endpoint=None):
+    resp = env.get('projects/search', params={'ps':500, 'qualifiers':component_types}, ctxt=endpoint)
     data = json.loads(resp.text)
     return data['components']
+
+def get_subcomponents(component_key, endpoint=None):
+    return Component(key=component_key, sqenv=endpoint).get_subcomponents()
