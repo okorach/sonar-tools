@@ -377,13 +377,13 @@ def sort_comments(comments):
         sorted_comments[comment['createdAt']] = ('comment', comment)
     return sorted_comments
 
-def search_by_file(project_key, file_uuid, params=None, endpoint=None):
+def search_by_file(root_key, file_uuid, params=None, endpoint=None):
     if params is None:
         parms = {}
     else:
         parms = params.copy()
     parms.pop('directories', None)
-    parms['componentKeys'] = project_key
+    parms['componentKeys'] = root_key
     util.logger.debug("Searching issues in file %s", file_uuid)
     parms['fileUuids'] = file_uuid
     issue_list = search(endpoint=endpoint, params=parms)
@@ -436,10 +436,9 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
     try:
         issue_list = search(endpoint=endpoint, params=parms)
     except TooManyIssuesError:
-        facets = get_facets(facet='rules', endpoint=endpoint, params=parms)
+        facets = get_facets(facet='fileUuids', endpoint=endpoint, params=parms)
         for f in facets:
-            comp = components.Component(key=f['val'], sqenv=endpoint)
-            issue_list.update(search_by_component(root_key=root_key, component=comp, endpoint=endpoint, params=parms))
+            issue_list.update(search_by_file(root_key=root_key, file_uuid=f['val'], endpoint=endpoint, params=parms))
     util.logger.debug("Rule %s has %d issues", rule, len(issue_list))
     return issue_list
 
