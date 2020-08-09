@@ -397,7 +397,7 @@ def search_by_component(root_key, component=None, endpoint=None, params=None):
         parms = params.copy()
     dir_list = {}
     if component is None:
-        dir_list = components.get_subcomponents(root_key, endpoint=endpoint)
+        dir_list = components.get_subcomponents(root_key, strategy='leaves', with_issues=True, endpoint=endpoint)
     else:
         dir_list[component.key] = component
     util.logger.debug("Found %d subcomponents", len(dir_list))
@@ -406,12 +406,12 @@ def search_by_component(root_key, component=None, endpoint=None, params=None):
     for key, comp in dir_list.items():
         util.logger.debug("Searching issues in sub-component %s", key)
         parms['componentKeys'] = key
+        comp_issues = {}
         try:
-            comp_issues = {}
             if comp.qualifier == 'DIR':
                 comp_issues = search(endpoint=endpoint, params=parms)
             elif comp.qualifier == 'FIL':
-                comp_issues = search_by_file(project_key=root_key, file_uuid=comp.id, endpoint=endpoint, params=parms)
+                comp_issues = search_by_file(root_key=root_key, file_uuid=comp.id, endpoint=endpoint, params=parms)
             else:
                 util.logger.error("Unexpected component qualifier %s in project %s", comp.qualifier, root_key)
         except TooManyIssuesError:
@@ -436,10 +436,35 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
     try:
         issue_list = search(endpoint=endpoint, params=parms)
     except TooManyIssuesError:
-        facets = get_facets(facet='fileUuids', endpoint=endpoint, params=parms)
-        for f in facets:
-            issue_list.update(search_by_file(root_key=root_key, file_uuid=f['val'], endpoint=endpoint, params=parms))
+        facets = get_facets(facets='fileUuids', project_key=parms['componentKeys'], endpoint=endpoint, params=parms)
+        if len(facets) < 100:
+            for f in facets:
+                issue_list.update(search_by_file(root_key=root_key, file_uuid=f['val'], endpoint=endpoint, params=parms))
     util.logger.debug("Rule %s has %d issues", rule, len(issue_list))
+    return issue_list
+
+def search_by_facet(project_key, facets='rules,fileUuids,severities,types', endpoint=None, params=None):
+    issue_list = {}
+    selected_facet = None
+    largest_facet = 0
+    facets = get_facets(facets=facets, project_key=project_key, endpoint=endpoint, params=params)
+    for key, facet in facets.items():
+        if len(facet) > largest_facet and len(facet) < 100:
+            selected_facet = key
+            largest_facet = len(facet)
+    if selected_facet is None:
+        return None
+    try:
+        for f in facets[selected_facet]:
+            if selected_facet == 'rules':
+                issue_list.update(search_by_rule(root_key=project_key, rule=f['val'], endpoint=endpoint, params=params))
+            elif selected_facet == 'fileUuids':
+                issue_list.update(search_by_file(root_key=project_key, file_uuid=f['val'], endpoint=endpoint, params=params))
+            else:
+                # TODO search by severities/types
+                return None
+    except TooManyIssuesError:
+        return None
     return issue_list
 
 def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
@@ -459,9 +484,10 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
     except TooManyIssuesError:
         diff = (date_stop - date_start).days
         if diff == 0:
-            facets = get_facets(facet='rules', endpoint=endpoint, params=parms)
-            for f in facets:
-                issue_list.update(search_by_rule(root_key=parms['componentKeys'], rule=f['val'], endpoint=endpoint, params=parms))
+            l = search_by_facet(endpoint=endpoint, project_key=parms['componentKeys'], params=None)
+            if l is None:
+                l = search_by_component(root_key=parms['componentKeys'], endpoint=endpoint, params=parms)
+            issue_list.update(l)
         elif diff == 1:
             issue_list.update(
                 search_by_date(endpoint=endpoint, date_start=date_start, date_stop=date_start, params=parms))
@@ -553,19 +579,24 @@ def search_all_issues(params=None, endpoint=None):
     util.logger.debug ("Total number of issues: %d", len(issues))
     return issues
 
-def get_facets(endpoint=None, facet='directories', params=None):
+def get_facets(project_key, facets='directories', endpoint=None, params=None):
     if params is None:
-        params = {}
-    params['facets'] = facet
-    params['ps'] = 500
-    params = __get_issues_search_params__(params)
-    resp = env.get(Issue.SEARCH_API, params=params, ctxt=endpoint)
+        parms = {}
+    else:
+        parms = params.copy()
+    parms['componentKeys'] = project_key
+    parms['facets'] = facets
+    parms['ps'] = 500
+    parms = __get_issues_search_params__(parms)
+    resp = env.get(Issue.SEARCH_API, params=parms, ctxt=endpoint)
     data = json.loads(resp.text)
     util.json_dump_debug(data['facets'], 'FACETS = ')
+    l = {}
+    facets_list = facets.split(',')
     for f in data['facets']:
-        if f['property'] == facet:
-            return f['values']
-    return []
+        if f['property'] in facets_list:
+            l[f['property']] = f['values']
+    return l
 
 def __get_one_issue_date__(endpoint=None, asc_sort='false', params=None):
     ''' Returns the date of one issue found '''
