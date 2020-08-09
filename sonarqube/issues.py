@@ -15,6 +15,8 @@ import sonarqube.components as components
 import sonarqube.utilities as util
 import sonarqube.projects as projects
 
+SQ_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
+
 class ApiError(Exception):
     pass
 
@@ -112,8 +114,8 @@ class Issue(sq.SqObject):
         self.project = jsondata['project']
         self.language = None
         self.changelog = None
-        self.creation_date = datetime.datetime.strptime(jsondata['creationDate'], '%Y-%m-%dT%H:%M:%S%z')
-        self.modification_date = datetime.datetime.strptime(jsondata['updateDate'], '%Y-%m-%dT%H:%M:%S%z')
+        self.creation_date = datetime.datetime.strptime(jsondata['creationDate'], SQ_DATE_FORMAT)
+        self.modification_date = datetime.datetime.strptime(jsondata['updateDate'], SQ_DATE_FORMAT)
 
         self.changelog = None
         self.component = jsondata['component']
@@ -671,8 +673,8 @@ def search_project_issues(key, sqenv=None, **kwargs):
     oldest = get_oldest_issue(endpoint=sqenv, **kwargs)
     if oldest is None:
         return []
-    startdate = datetime.datetime.strptime(oldest, '%Y-%m-%dT%H:%M:%S%z')
-    enddate = datetime.datetime.strptime(get_newest_issue(endpoint=sqenv, **kwargs), '%Y-%m-%dT%H:%M:%S%z')
+    startdate = oldest
+    enddate = get_newest_issue(endpoint=sqenv, **kwargs)
 
     nbr_issues = get_number_of_issues(sqenv=sqenv, **kwargs)
     days_slice = abs((enddate - startdate).days)+1
