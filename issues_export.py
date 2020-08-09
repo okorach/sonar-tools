@@ -23,6 +23,7 @@ import sonarqube.utilities as util
 
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
+    parser = util.set_component_args(parser)
     parser.add_argument('-s', '--statuses', required = False, help = 'comma separated issue status, \
         OPEN, WONTFIX, FALSE-POSITIVE, FIXED, CLOSED, REOPENED, REVIEWED')
     parser.add_argument('-a', '--createdAfter', required = False,
@@ -65,8 +66,9 @@ params.update({'env':sqenv})
 for p in params:
     util.logger.debug("%s --> %s", p, params[p])
 
-all_issues = issues.search_all_issues_unlimited(sqenv=sqenv, **params)
+all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys',None))
 print(issues.to_csv_header())
-for issue in all_issues:
+for _, issue in all_issues.items():
+    # util.logger.debug("ISSUE = %s", str(issue))
     print(issue.to_csv())
 util.logger.info("Returned issues: %d", len(all_issues))
