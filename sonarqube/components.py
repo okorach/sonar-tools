@@ -35,8 +35,8 @@ class Component(sq.SqObject):
         self.path = data.get('path', None)
         self.language = data.get('language', None)
 
-    def get_subcomponents(self):
-        parms = {'component':self.key, 'strategy':'children', 'ps':1,
+    def get_subcomponents(self, strategy='children', with_issues=False):
+        parms = {'component':self.key, 'strategy':strategy, 'ps':1,
             'metricKeys':'bugs,vulnerabilities,code_smells,security_hotspots'}
         resp = env.get('measures/component_tree', params=parms, ctxt=self.env)
         data = json.loads(resp.text)
@@ -50,10 +50,13 @@ class Component(sq.SqObject):
             resp = env.get('measures/component_tree', params=parms, ctxt=self.env)
             data = json.loads(resp.text)
             for d in data['components']:
-                l[d['key']] = Component(key=d['key'], sqenv=self.env, data=d)
                 issues = 0
                 for m in d['measures']:
                     issues += int(m['value'])
+                if with_issues and issues == 0:
+                    util.logger.debug("Subcomponent %s has 0 issues, skipping", d['key'])
+                    continue
+                l[d['key']] = Component(key=d['key'], sqenv=self.env, data=d)
                 l[d['key']].nbr_issues = issues
                 util.logger.debug("Component %s has %d issues", d['key'], issues)
         return l
@@ -102,5 +105,5 @@ def get_components(component_types, endpoint=None):
     data = json.loads(resp.text)
     return data['components']
 
-def get_subcomponents(component_key, endpoint=None):
-    return Component(key=component_key, sqenv=endpoint).get_subcomponents()
+def get_subcomponents(component_key, strategy='children', with_issues=False, endpoint=None):
+    return Component(key=component_key, sqenv=endpoint).get_subcomponents(strategy=strategy, with_issues=with_issues)
