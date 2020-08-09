@@ -439,7 +439,8 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
         facets = get_facets(facets='fileUuids', project_key=parms['componentKeys'], endpoint=endpoint, params=parms)
         if len(facets) < 100:
             for f in facets:
-                issue_list.update(search_by_file(root_key=root_key, file_uuid=f['val'], endpoint=endpoint, params=parms))
+                issue_list.update(search_by_file(root_key=root_key, file_uuid=f['val'],
+                                                 endpoint=endpoint, params=parms))
     util.logger.debug("Rule %s has %d issues", rule, len(issue_list))
     return issue_list
 
@@ -459,7 +460,8 @@ def search_by_facet(project_key, facets='rules,fileUuids,severities,types', endp
             if selected_facet == 'rules':
                 issue_list.update(search_by_rule(root_key=project_key, rule=f['val'], endpoint=endpoint, params=params))
             elif selected_facet == 'fileUuids':
-                issue_list.update(search_by_file(root_key=project_key, file_uuid=f['val'], endpoint=endpoint, params=params))
+                issue_list.update(search_by_file(root_key=project_key, file_uuid=f['val'],
+                                                 endpoint=endpoint, params=params))
             else:
                 # TODO search by severities/types
                 return None
@@ -473,9 +475,11 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
     else:
         parms = params.copy()
     if date_start is None:
-        date_start = get_oldest_issue(endpoint=endpoint, params=parms).replace(hour=0, minute=0, second=0, microsecond=0)
+        date_start = get_oldest_issue(endpoint=endpoint,
+                                      params=parms).replace(hour=0, minute=0, second=0, microsecond=0)
     if date_stop is None:
-        date_stop = get_newest_issue(endpoint=endpoint, params=parms).replace(hour=0, minute=0, second=0, microsecond=0)
+        date_stop = get_newest_issue(endpoint=endpoint,
+                                     params=parms).replace(hour=0, minute=0, second=0, microsecond=0)
 
     issue_list = {}
     parms.update({'createdAfter':date_start, 'createdBefore': date_stop})
@@ -502,7 +506,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
                 search_by_date(endpoint=endpoint, date_start=date_middle, date_stop=date_stop, params=parms))
     if date_start is not None and date_stop is not None:
         util.logger.debug("Project %s has %d issues between %s and %s", parms.get('componentKeys', 'None'),
-            len(issue_list), date_start.strftime("%Y-%m-%d"), date_stop.strftime("%Y-%m-%d"))
+                          len(issue_list), date_start.strftime("%Y-%m-%d"), date_stop.strftime("%Y-%m-%d"))
     return issue_list
 
 def search_by_project(project_key, endpoint=None, params=None):
@@ -547,8 +551,8 @@ def search(endpoint=None, page=None, params=None):
         util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, parms['p'], nbr_pages)
         if page is None and nbr_issues > Issue.MAX_SEARCH:
             raise TooManyIssuesError(nbr_issues,
-                '{} issues returned by api/{}, this is more than the max {} possible'.format(nbr_issues,
-                Issue.SEARCH_API, Issue.MAX_SEARCH))
+                                     '{} issues returned by api/{}, this is more than the max {} possible'.format(
+                                         nbr_issues, Issue.SEARCH_API, Issue.MAX_SEARCH))
 
         for i in data['issues']:
             issue_list[i['key']] = Issue(key=i['key'], endpoint=endpoint, data=i)

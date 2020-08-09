@@ -37,7 +37,7 @@ class Component(sq.SqObject):
 
     def get_subcomponents(self, strategy='children', with_issues=False):
         parms = {'component':self.key, 'strategy':strategy, 'ps':1,
-            'metricKeys':'bugs,vulnerabilities,code_smells,security_hotspots'}
+                 'metricKeys':'bugs,vulnerabilities,code_smells,security_hotspots'}
         resp = env.get('measures/component_tree', params=parms, ctxt=self.env)
         data = json.loads(resp.text)
         nb_comp = data['paging']['total']
