@@ -56,9 +56,7 @@ class Environment:
         return (int(self.major), int(self.minor), int(self.patch))
 
     def get(self, api, params = None):
-        #for k in params:
-        #    params[k] = urllib.parse.quote(str(params[k]), safe=':')
-        api = normalize_api(api)
+        api = __normalize_api__(api)
         util.logger.debug('GET: %s', self.urlstring(api, params))
         try:
             if params is None:
@@ -73,7 +71,7 @@ class Environment:
         return r
 
     def post(self, api, params = None):
-        api = normalize_api(api)
+        api = __normalize_api__(api)
         util.logger.debug('POST: %s', self.urlstring(api, params))
         try:
             if params is None:
@@ -88,7 +86,7 @@ class Environment:
         return r
 
     def delete(self, api, params = None):
-        api = normalize_api(api)
+        api = __normalize_api__(api)
         util.logger.debug('DELETE: %s', self.urlstring(api, params))
         try:
             if params is None:
@@ -134,9 +132,11 @@ class Environment:
     def __verify_setting_range__(self, settings, key, min_val, max_val):
         value = int(settings[key])
         if value >= min_val and value <= max_val:
-            util.logger.info("Setting %s value %d is within recommended range [%d-%d]", key, value, min_val, max_val)
+            util.logger.info("Setting %s value %d is within recommended range [%d-%d]",
+                             key, value, min_val, max_val)
         else:
-            util.logger.warning("Setting %s value %d is outside recommended range [%d-%d]", key, value, min_val, max_val)
+            util.logger.warning("Setting %s value %d is outside recommended range [%d-%d]",
+                                key, value, min_val, max_val)
             return 1
         return 0
 
@@ -154,13 +154,103 @@ class Environment:
     def __check_rating_range__(self, value, min_val, max_val, rating_letter):
         value = float(value)
         if value < min_val or value > max_val:
-            util.logger.warning('Maintainability rating threshold %3.0f%% for %s is NOT within recommended range [%3.0f%%-%3.0f%%]',
-                                value*100, rating_letter, min_val*100, max_val*100)
+            util.logger.warning('Maintainability rating threshold %3.0f%% for %s is \
+NOT within recommended range [%3.0f%%-%3.0f%%]', value*100, rating_letter, min_val*100, max_val*100)
             return 1
         else:
-            util.logger.info('Maintainability rating threshold %3.0f%% for %s is within recommended range [%3.0f%%-%3.0f%%]',
-                             value*100, rating_letter, min_val*100, max_val*100)
+            util.logger.info('Maintainability rating threshold %3.0f%% for %s is \
+within recommended range [%3.0f%%-%3.0f%%]', value*100, rating_letter, min_val*100, max_val*100)
         return 0
+
+    def __get_memory__(self, setting):
+        for s in setting.split(' '):
+            if re.match('-Xmx', s):
+                val = int(s[4:-1])
+                unit = s[-1].upper()
+                if unit == 'M':
+                    return val
+                elif unit == 'G':
+                    return val * 1024
+                elif unit == 'K':
+                    return val // 1024
+        return None
+    def __get_store_size__(self, setting):
+        (val, unit) = setting.split(' ')
+        if unit == 'MB':
+            return int(val)
+        elif unit == 'GB':
+            return int(val) * 1024
+        else:
+            return None
+
+    def __check_memory_settings__(self):
+        issues = 0
+        resp = self.get('system/info')
+        data = json.loads(resp.text)
+
+        log_level = data["Web Logging"]["Logs Level"]
+        if log_level == "DEBUG":
+            util.logger.warning("Log level is set to DEBUG, this may affect platform performance, \
+reverting to INFO is recommended")
+            issues += 1
+        elif log_level == "TRACE":
+            util.logger.warning("Log level set to TRACE, this does very negatively affect platform performance, \
+reverting to INFO is required")
+            issues += 1
+
+        util.logger.info('Auditing Web memory settings')
+        web_ram = self.__get_memory__(data['Settings']['sonar.web.javaOpts'])
+        if web_ram < 1024 or web_ram > 2048:
+            util.logger.warning("sonar.web.javaOpts -Xmx memory setting value is %dM, \
+not in recommended range [1024-2048]", web_ram)
+            issues += 1
+
+        util.logger.info('Auditing CE memory and workers settings')
+        ce_ram = self.__get_memory__(data['Settings']['sonar.ce.javaOpts'])
+
+        ce_tasks = data['Compute Engine Tasks']
+        ce_workers = ce_tasks['Worker Count']
+        if ce_workers > 4:
+            util.logger.warning("%d CE workers configured, more than the max 4 recommended", ce_workers)
+        if ce_ram < 512 * ce_workers or ce_ram > 2048 * ce_workers:
+            util.logger.warning("sonar.ce.javaOpts -Xmx memory setting value is %dM, \
+not in recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
+            issues += 1
+
+        util.logger.info('Auditing CE background tasks')
+        ce_success = ce_tasks["Processed With Success"]
+        ce_error = ce_tasks["Processed With Error"]
+        ce_pending = ce_tasks["Pending"]
+        failure_rate = ce_error / (ce_success+ce_error)
+        if ce_error > 10 and failure_rate > 0.01:
+            util.logger.warning('Background task failure rate (%d%%) is high, \
+verify failed background tasks', int(failure_rate*100))
+            issues += 1
+        else:
+            util.logger.info('Number of failed background tasks (%d), and failure rate %d%% is OK',
+                             ce_error, failure_rate)
+
+        if ce_pending > 100:
+            util.logger.warning('Number of pending background tasks (%d) is very high, verify CE dimensioning',
+                                ce_pending)
+            issues += 1
+        elif ce_pending > 20 and ce_pending > (10*ce_workers):
+            util.logger.warning('Number of pending background tasks (%d) is high, verify CE dimensioning', ce_pending)
+            issues += 1
+        else:
+            util.logger.info('Number of pending background tasks (%d) is OK', ce_pending)
+
+        util.logger.info('Auditing Search Server settings')
+        es_ram = self.__get_memory__(data['Settings']['sonar.search.javaOpts'])
+        index_size = self.__get_store_size__(data['Search State']['Store Size'])
+        if es_ram < 2 * index_size and es_ram < index_size + 1000:
+            util.logger.warning("sonar.search.javaOpts -Xmx memory setting value is %dM,\
+too low for index size of %d MB", es_ram, index_size)
+            issues += 1
+        else:
+            util.logger.info("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
+
+        return issues
 
     def __verify_rating_grid__(self, grid):
         (a, b, c, d) = grid.split(',')
@@ -183,7 +273,7 @@ class Environment:
         issues = self.__verify_setting__(settings, 'sonar.forceAuthentication', 'true')
         issues += self.__verify_setting__(settings, 'sonar.cpd.cross_project', 'false')
         issues += self.__verify_setting__(settings, 'sonar.global.exclusions', '')
-
+        issues += self.__check_memory_settings__()
         if self.get_version() < (8,0,0):
             issues += self.__verify_setting_range__(settings, \
                 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches', 10, 60)
@@ -232,7 +322,7 @@ def set_url(url):
 def get_url():
     return this.context.root_url
 
-def normalize_api(api):
+def __normalize_api__(api):
     api = api.lower()
     if re.match(r'/api', api):
         pass
