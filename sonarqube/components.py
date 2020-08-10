@@ -95,9 +95,9 @@ class Component(sq.SqObject):
 
     def get_measure(self, metric):
         res = self.get_measures(metric_list = [metric])
-        for m in res:
-            if m['metric'] == metric:
-                return m['value']
+        for key in res:
+            if key == metric:
+                return res[key]
         return None
 
 def get_components(component_types, endpoint=None):
