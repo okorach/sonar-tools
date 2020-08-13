@@ -233,8 +233,7 @@ def __get_store_size__(setting):
         return int(val)
     elif unit == 'GB':
         return int(val) * 1024
-    else:
-        return None
+    return None
 
 def __check_setting_range__(settings, key, min_val, max_val):
     value = int(settings[key])
