@@ -1,17 +1,13 @@
 #!/usr/local/bin/python3
 '''
 
-    Abstraction of the SonarQube "quality profile" concept
+    Abstraction of the SonarQube "quality gate" concept
 
 '''
-import sys
-import datetime
-import re
+
 import json
-import pytz
 import sonarqube.sqobject as sq
 import sonarqube.env as env
-import sonarqube.rules as rules
 import sonarqube.utilities as util
 
 GOOD_QG_CONDITIONS = { \
