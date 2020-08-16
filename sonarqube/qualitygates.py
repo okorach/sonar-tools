@@ -1,18 +1,47 @@
 #!/usr/local/bin/python3
 '''
 
-    Abstraction of the SonarQube "quality profile" concept
+    Abstraction of the SonarQube "quality gate" concept
 
 '''
-import sys
-import datetime
-import re
+
 import json
-import pytz
 import sonarqube.sqobject as sq
 import sonarqube.env as env
-import sonarqube.rules as rules
 import sonarqube.utilities as util
+
+NEW_ISSUES_SHOULD_BE_ZERO = 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'
+
+GOOD_QG_CONDITIONS = { \
+    'new_reliability_rating':
+        (1, 1, 'Any rating other than A would let bugs slip through in new code'), \
+    'new_security_rating':
+        (1, 1, 'Any rating other than A would let vulnerabilities slip through in new code'), \
+    'new_maintainability_rating':
+        (1, 1, 'Expectation is that code smells density on new code is low enough to get A rating'), \
+    'new_coverage':
+        (20, 90, 'Coverage below 20% is a too low bar, above 90% is overkill'), \
+    'new_bugs':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_vulnerabilities':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_security_hotspots':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_blocker_violations':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_critical_violations':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_major_violations':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_duplicated_lines_density':
+        (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"), \
+    'new_security_hotspots_reviewed':
+        (100, 100, 'All hotspots on new code must be reviewed, any other condition than 100% make little sense'), \
+    'reliability_rating':
+        (4, 4, 'Threshold on overall code should not be too strict or passing the QG will be often impossible'), \
+    'security_rating':
+        (4, 4, 'Threshold on overall code should not be too strict or passing the QG will be often impossible') \
+}
 
 class QualityGate(sq.SqObject):
 
@@ -43,13 +72,17 @@ class QualityGate(sq.SqObject):
         issues = 0
         for c in self.conditions:
             m = c['metric']
-            if re.match('new_', c['metric']):
+            if not m in GOOD_QG_CONDITIONS:
+                util.logger.warning('Quality Gate "%s": It is not recommended to use metric "%s" in quality gates',
+                                    self.name, m)
+                issues += 1
                 continue
-            if (m == 'reliability_rating' or m == 'security_rating') and int(c['error']) >= 4:
-                continue
-            issues += 1
-        if issues > 0:
-            util.logger.warning("Quality gate %s has problematic conditions on overall code", self.name)
+            val = int(c['error'])
+            (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
+            util.logger.debug('Condition on metric "%s": Check that %d in range [%d - %d]', m, val, mini, maxi)
+            if val < mini or val > maxi:
+                util.logger.warning('Quality Gate "%s" condition on metric "%s": %s', self.name, m, msg)
+                issues += 1
         return issues
 
     def audit(self):
@@ -59,18 +92,15 @@ class QualityGate(sq.SqObject):
             return 0
         nb_conditions = len(self.conditions)
         if nb_conditions == 0:
-            util.logger.warning("Quality gate %s has no conditions defined, this is useless", self.name)
+            util.logger.warning('Quality gate "%s" has no conditions defined, this is useless', self.name)
             issues += 1
         elif nb_conditions > 7:
-            util.logger.warning("Quality gate %s has %d conditions defined, this is more than the 7 max recommended",
+            util.logger.warning('Quality gate "%s" has %d conditions defined, this is more than the 7 max recommended',
                                 self.name, len(self.conditions))
             issues += 1
         issues += self.__audit_conditions__()
-        if self.is_default:
-            return issues
-        projects = self.get_projects()
-        if not projects:
-            util.logger.warning("Quality gate %s is not used by any project, it should be deleted", self.name)
+        if not self.is_default and not self.get_projects():
+            util.logger.warning('Quality gate "%s" is not used by any project, it should be deleted', self.name)
             issues += 1
         return issues
 
