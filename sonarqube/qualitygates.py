@@ -15,18 +15,30 @@ import sonarqube.rules as rules
 import sonarqube.utilities as util
 
 GOOD_QG_CONDITIONS = { \
-    'new_reliability_rating': (1, 1, 'Any rating other than A would let bugs slip through in new code'), \
-    'new_security_rating': (1, 1, 'Any rating other than A would let vulnerabilities slip through in new code'), \
-    'new_maintainability_rating': (1, 1, 'Expectation is that code smells density on new codeis low enough to get A rating'), \
-    'new_coverage': (20, 90, 'Coverage below 20% is a too low bar, above 90% is overkill'), \
-    'new_bugs': (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
-    'new_duplicated_lines_density': (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"), \
-    'new_blocker_violations': (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
-    'new_critical_violations': (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
-    'new_major_violations': (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
-    'new_security_hotspots_reviewed': (0, 0), \
-    'reliability_rating': (4, 4, 'Threshold on overall code should not be too high or passing the QG will be sometimes impossible'), \
-    'security_rating': (4, 4, 'Threshold on overall code should not be too high or passing the QG will be sometimes impossible') \
+    'new_reliability_rating':
+        (1, 1, 'Any rating other than A would let bugs slip through in new code'), \
+    'new_security_rating':
+        (1, 1, 'Any rating other than A would let vulnerabilities slip through in new code'), \
+    'new_maintainability_rating':
+        (1, 1, 'Expectation is that code smells density on new code is low enough to get A rating'), \
+    'new_coverage':
+        (20, 90, 'Coverage below 20% is a too low bar, above 90% is overkill'), \
+    'new_bugs':
+        (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
+    'new_duplicated_lines_density':
+        (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"), \
+    'new_blocker_violations':
+        (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
+    'new_critical_violations':
+        (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
+    'new_major_violations':
+        (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
+    'new_security_hotspots_reviewed':
+        (100, 100, 'All hotspots on new code must be reviewed, any other condition than 100% make little sense'), \
+    'reliability_rating':
+        (4, 4, 'Threshold on overall code should not be too strict or passing the QG will be often impossible'), \
+    'security_rating':
+        (4, 4, 'Threshold on overall code should not be too strict or passing the QG will be often impossible') \
 }
 
 class QualityGate(sq.SqObject):
