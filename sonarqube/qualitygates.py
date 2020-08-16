@@ -65,7 +65,7 @@ class QualityGate(sq.SqObject):
                 continue
             val = int(c['error'])
             (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
-            util.logger.debug('Condition on metric "%s": Check that %d in range [%d - %d]', m, val, mini, val, maxi)
+            util.logger.debug('Condition on metric "%s": Check that %d in range [%d - %d]', m, val, mini, maxi)
             if val < mini or val > maxi:
                 util.logger.warning('Quality Gate "%s" conditions: %s', self.name, msg)
                 issues += 1
