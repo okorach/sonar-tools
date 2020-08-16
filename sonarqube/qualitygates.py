@@ -93,10 +93,7 @@ class QualityGate(sq.SqObject):
                                 self.name, len(self.conditions))
             issues += 1
         issues += self.__audit_conditions__()
-        if self.is_default:
-            return issues
-        projects = self.get_projects()
-        if not projects:
+        if not self.is_default and not self.get_projects():
             util.logger.warning('Quality gate "%s" is not used by any project, it should be deleted', self.name)
             issues += 1
         return issues
