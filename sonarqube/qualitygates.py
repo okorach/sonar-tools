@@ -10,6 +10,8 @@ import sonarqube.sqobject as sq
 import sonarqube.env as env
 import sonarqube.utilities as util
 
+NEW_ISSUES_SHOULD_BE_ZERO = 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'
+
 GOOD_QG_CONDITIONS = { \
     'new_reliability_rating':
         (1, 1, 'Any rating other than A would let bugs slip through in new code'), \
@@ -20,15 +22,19 @@ GOOD_QG_CONDITIONS = { \
     'new_coverage':
         (20, 90, 'Coverage below 20% is a too low bar, above 90% is overkill'), \
     'new_bugs':
-        (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_vulnerabilities':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_security_hotspots':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_blocker_violations':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_critical_violations':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+    'new_major_violations':
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
     'new_duplicated_lines_density':
         (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"), \
-    'new_blocker_violations':
-        (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
-    'new_critical_violations':
-        (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
-    'new_major_violations':
-        (0, 0, 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'), \
     'new_security_hotspots_reviewed':
         (100, 100, 'All hotspots on new code must be reviewed, any other condition than 100% make little sense'), \
     'reliability_rating':
@@ -75,7 +81,7 @@ class QualityGate(sq.SqObject):
             (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
             util.logger.debug('Condition on metric "%s": Check that %d in range [%d - %d]', m, val, mini, maxi)
             if val < mini or val > maxi:
-                util.logger.warning('Quality Gate "%s" conditions: %s', self.name, msg)
+                util.logger.warning('Quality Gate "%s" condition on metric "%s": %s', self.name, m, msg)
                 issues += 1
         return issues
 
