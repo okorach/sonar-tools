@@ -370,10 +370,49 @@ too low for index size of %d MB", es_ram, index_size)
         util.logger.info("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
     return issues
 
+def __check_dce_settings__(sysinfo):
+    stats = sysinfo.get('Statistics')
+    issues = 0
+    if stats is None:
+        util.logger.warning("Can't verify edition in System Info File, was it corrupted or redacted ?")
+        return 0
+    edition = stats.get('edition', None)
+    if stats is None:
+        util.logger.warning("Can't verify edition in System Info File, was it corrupted or redacted ?")
+        return 0
+    if edition != "datacenter":
+        util.logger.info('Not a Data Center Edition, skipping DCE checks')
+        return 0
+    # Verify that app nodes have the same plugins installed
+    appnodes = sysinfo['Application Nodes']
+    ref_plugins = json.dumps(appnodes[0]['Plugins'], sort_keys=True, indent=3, separators=(',', ': '))
+    ref_name = appnodes[0]['Name']
+    ref_version = appnodes[0]['System']['Version']
+    for node in appnodes:
+        node_version = node['System']['Version']
+        if node_version != ref_version:
+            util.logger.error('App nodes %s and %s do not run the same SonarQube versions, this must be corrected ASAP',
+                              ref_name, node['Name'])
+            issues += 1
+        node_plugins = json.dumps(node['Plugins'], sort_keys=True, indent=3, separators=(',', ': '))
+        if node_plugins != ref_plugins:
+            util.logger.error('Some plugins on app nodes %s and %s are different, this must be corrected ASAP',
+                              ref_name, node['Name'])
+            issues += 1
+        if not node['System']['Official Distribution']:
+            util.logger.error('Node %s does not run an official distribution of SonarQube',
+                              node['Name'])
+            issues += 1
+        if node['Health'] != "GREEN":
+            util.logger.warning('Node %s health is %s', node['Name'], node['Health'])
+            issues += 1
+    return issues
+
 def audit_sysinfo(sysinfo):
     issues = 0
     issues += __check_web_settings__(sysinfo)
     issues += __check_ce_settings__(sysinfo)
     issues += __check_ce_background_tasks__(sysinfo)
     issues += __check_es_settings__(sysinfo)
+    issues += __check_dce_settings__(sysinfo)
     return issues
