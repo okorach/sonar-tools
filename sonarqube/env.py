@@ -389,6 +389,11 @@ def __check_dce_settings__(sysinfo):
     ref_name = appnodes[0]['Name']
     ref_version = appnodes[0]['System']['Version']
     for node in appnodes:
+        node_version = node['System']['Version']
+        if node_version != ref_version:
+            util.logger.error('App nodes %s and %s do not run the same SonarQube versions, this must be corrected ASAP',
+                              ref_name, node['Name'])
+            issues += 1
         node_plugins = json.dumps(node['Plugins'], sort_keys=True, indent=3, separators=(',', ': '))
         if node_plugins != ref_plugins:
             util.logger.error('Some plugins on app nodes %s and %s are different, this must be corrected ASAP',
