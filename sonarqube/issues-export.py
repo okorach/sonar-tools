@@ -21,6 +21,7 @@ import sonarqube.env as env
 import sonarqube.issues as issues
 import sonarqube.utilities as util
 
+
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
     parser = util.set_component_args(parser)
@@ -40,35 +41,34 @@ def parse_args():
 
     return parser.parse_args()
 
-# ------------------------------------------------------------------------------
 
-try:
-    import argparse
-except ImportError:
-    if sys.version_info < (2, 7, 0):
-        util.logger.critical("Python < 2.7, can't import argparse, aborting...")
-        exit(1)
-args = parse_args()
-sqenv = env.Environment(url=args.url, token=args.token)
-sqenv.set_env(args.url, args.token)
-kwargs = vars(args)
-util.check_environment(kwargs)
+def main():
+    args = parse_args()
+    sqenv = env.Environment(url=args.url, token=args.token)
+    sqenv.set_env(args.url, args.token)
+    kwargs = vars(args)
+    util.check_environment(kwargs)
 
-# Remove unset params from the dict
-params = vars(args)
-for p in params.copy():
-    if params[p] is None:
-        del params[p]
+    # Remove unset params from the dict
+    params = vars(args)
+    for p in params.copy():
+        if params[p] is None:
+            del params[p]
 
-# Add SQ environment
-params.update({'env':sqenv})
+    # Add SQ environment
+    params.update({'env':sqenv})
 
-for p in params:
-    util.logger.debug("%s --> %s", p, params[p])
+    for p in params:
+        util.logger.debug("%s --> %s", p, params[p])
 
-all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys',None))
-print(issues.to_csv_header())
-for _, issue in all_issues.items():
-    # util.logger.debug("ISSUE = %s", str(issue))
-    print(issue.to_csv())
-util.logger.info("Returned issues: %d", len(all_issues))
+    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys',None))
+    print(issues.to_csv_header())
+    for _, issue in all_issues.items():
+        # util.logger.debug("ISSUE = %s", str(issue))
+        print(issue.to_csv())
+    util.logger.info("Returned issues: %d", len(all_issues))
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
