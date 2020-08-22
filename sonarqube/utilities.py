@@ -72,7 +72,7 @@ def get_logging_level(level):
 def set_debug_level(level):
     global logger
     logger.setLevel(get_logging_level(level))
-    logger.info("Set debug level to %d", level)
+    logger.info("Set debug level to %s", level)
 
 def set_run_mode(run_mode):
     global RUN_MODE
