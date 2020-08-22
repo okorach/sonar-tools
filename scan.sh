@@ -30,7 +30,6 @@ fi
 sonar-scanner \
   -Dsonar.projectKey=$key \
   -Dsonar.host.url=$SQ_URL \
-  -Dsonar.login=$token \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPath=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
