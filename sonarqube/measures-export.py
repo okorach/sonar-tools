@@ -40,8 +40,7 @@ def main():
     main_metrics = metrics.Metric.MAIN_METRICS
     main_metrics_list = re.split(',', main_metrics)
     if args.metricKeys == '_all':
-        l = metrics.search(endpoint=endpoint).values()
-        wanted_metrics = metrics.as_csv(l)
+        wanted_metrics = metrics.as_csv(metrics.search(endpoint=endpoint).values())
     elif args.metricKeys == '_main':
         wanted_metrics = main_metrics
     elif args.metricKeys is not None:
@@ -50,7 +49,7 @@ def main():
         wanted_metrics = main_metrics
     metrics_list = re.split(',', wanted_metrics)
 
-    print ("Project Key%sProject Name%sBranch%sLast Analysis" % (csv_sep, csv_sep, csv_sep), end=csv_sep)
+    print("Project Key%sProject Name%sBranch%sLast Analysis" % (csv_sep, csv_sep, csv_sep), end=csv_sep)
 
     if args.metricKeys == '_all':
         # Display main metrics first
@@ -64,7 +63,6 @@ def main():
     project_list = projects.search(endpoint=endpoint)
     nb_branches = 0
     for _, project in project_list.items():
-        last_analysis = project.get_last_analysis_date(False)
         branch_data = project.get_branches()
         branch_list = []
         for b in branch_data:
@@ -77,8 +75,8 @@ def main():
             p_meas = measures.component(project.key, wanted_metrics, branch_name=b['name'], endpoint=endpoint)
             last_analysis = b.get('analysisDate', '')
             line = ''
-            print("%s%s%s%s%s%s%s" % (project.key, csv_sep, project.name, csv_sep, b['name'], \
-                csv_sep, last_analysis), end='')
+            print("%s%s%s%s%s%s%s" % (project.key, csv_sep, project.name, csv_sep, b['name'],
+                                      csv_sep, last_analysis), end='')
             if args.metricKeys == '_all':
                 for metric in main_metrics_list:
                     line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep

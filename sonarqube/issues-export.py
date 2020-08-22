@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('-a', '--createdAfter', required=False,
                         help='issues created on or after a given date (YYYY-MM-DD)')
     parser.add_argument('-b', '--createdBefore', required=False,
-                        help = 'issues created on or before a given date (YYYY-MM-DD)')
+                        help='issues created on or before a given date (YYYY-MM-DD)')
     parser.add_argument('-r', '--resolutions', required=False,
                         help='''Comma separated resolution states of the issues,
                                   UNRESOLVED, FALSE-POSITIVE, WONTFIX''')
