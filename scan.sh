@@ -27,15 +27,12 @@ else
   shift
 fi
 
+version=`cat setup.py | grep version | cut -d "=" -f 2 | cut -d "'" -f 2`
+
 sonar-scanner \
-  -Dsonar.projectKey=$key \
+  -Dsonar.projectVersion=$version \
   -Dsonar.host.url=$SQ_URL \
-  -Dsonar.login=$token \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPath=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
-  $orgOpt $*
-
-version=`cat setup.py | grep version | cut -d "=" -f 2 | cut -d "'" -f 2`
-
-sonar-scanner -Dsonar.projectVersion=$version -Dsonar.python.pylint.reportPath=$pylintReport $*
+  $*

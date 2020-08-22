@@ -322,7 +322,7 @@ Is this normal ?", gr['name'], self.key)
             return {'status' : 'HTTP_ERROR {0}'.format(resp.status_code)}
         data = json.loads(resp.text)
         params = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
-        if self.env.getVersion >= (8, 0, 0):
+        if self.env.get_version() >= (8, 0, 0):
             params['component'] = self.key
         else:
             params['q'] = self.key
