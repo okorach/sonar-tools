@@ -128,6 +128,20 @@ class Environment:
             return 1
         return 0
 
+    def __check_admin_password__(self):
+        try:
+            r = requests.get(url=self.root_url + '/api/authentication/validate', auth=('admin','admin'))
+            data = json.loads(r.text)
+            if data.get('valid', False):
+                util.logger.error("User 'admin' still using the default password, this must be changed ASAP")
+                return 1
+            else:
+                util.logger.info("User 'admin' default password has been changed")
+        except requests.RequestException as e:
+            util.logger.info(HTTP_ERROR_MSG, self.root_url, 'api/authentication/validate', r.status_code, r.text)
+            raise
+        return 0
+
     def audit(self):
         util.logger.info('Auditing global settings')
         resp = self.get('settings/values')
@@ -161,6 +175,7 @@ class Environment:
 
         issues += self.__verify_project_default_visibility__()
         issues += audit_sysinfo(self.get_sysinfo())
+        issues += self.__check_admin_password__()
         return issues
 
 #--------------------- Static methods, not recommended -----------------
@@ -407,6 +422,7 @@ def __check_dce_settings__(sysinfo):
             util.logger.warning('Node %s health is %s', node['Name'], node['Health'])
             issues += 1
     return issues
+
 
 def audit_sysinfo(sysinfo):
     issues = 0
