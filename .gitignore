@@ -9,3 +9,5 @@ sonarqube/*.pyc
 **/*.gz
 **/*.log
 pylint-report.out
+build/
+*.txt
