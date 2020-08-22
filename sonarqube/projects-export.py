@@ -5,12 +5,9 @@
 
 '''
 import os
-import argparse
 import sonarqube.projects as projects
 import sonarqube.utilities as util
 import sonarqube.env as env
-
-
 
 def main():
     parser = util.set_common_args('Exports all projects of a SonarQube platform')
@@ -25,7 +22,7 @@ def main():
     i = 0
     statuses = {}
     for key, p in project_list.items():
-        dump = p.export(timeout = args.exportTimeout)
+        dump = p.export(timeout=args.exportTimeout)
         status = dump['status']
         if status in statuses:
             statuses[status] += 1
@@ -37,12 +34,13 @@ def main():
             print("{0},FAIL,{1}".format(key, status))
         i += 1
         util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects,
-                         int(i * 100/nb_projects), key, status)
+                         int(i * 100 / nb_projects), key, status)
         summary = ''
         for s in statuses:
             summary += "{0}:{1}, ".format(s, statuses[s])
         util.logger.info("%s", summary)
     exit(0)
+
 
 if __name__ == "__main__":
     main()
