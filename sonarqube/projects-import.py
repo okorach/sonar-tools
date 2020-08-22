@@ -4,6 +4,7 @@
     Imports a list of projects to a SonarQube platform
 
 '''
+import sys
 import sonarqube.projects as projects
 import sonarqube.utilities as util
 import sonarqube.env as env
@@ -51,7 +52,7 @@ def main():
         for s in statuses:
             summary += "{0}:{1}, ".format(s, statuses[s])
         util.logger.info("%s", summary)
-    exit(0)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

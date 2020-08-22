@@ -4,6 +4,7 @@
     Exports all projects of a SonarQube platform
 
 '''
+import sys
 import os
 import sonarqube.projects as projects
 import sonarqube.utilities as util
@@ -40,7 +41,7 @@ def main():
         for s in statuses:
             summary += "{0}:{1}, ".format(s, statuses[s])
         util.logger.info("%s", summary)
-    exit(0)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

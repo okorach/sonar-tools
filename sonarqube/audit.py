@@ -5,16 +5,12 @@
 
 '''
 import sys
-import re
-import argparse
 import sonarqube.projects as projects
 import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.qualitygates as qualitygates
 import sonarqube.utilities as util
 import sonarqube.env as env
 
-if __name__ == "__main__":
-    main()
 
 def main():
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
@@ -38,3 +34,7 @@ def main():
     else:
         util.logger.info("%d issues found during audit", issues)
     sys.exit(issues)
+
+
+if __name__ == "__main__":
+    main()
