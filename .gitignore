@@ -9,3 +9,7 @@ sonarqube/*.pyc
 **/*.gz
 **/*.log
 pylint-report.out
+build/
+dist/
+*.egg-info/
+*.txt
