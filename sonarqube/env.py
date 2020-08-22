@@ -138,7 +138,8 @@ class Environment:
             else:
                 util.logger.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
-            util.logger.info(HTTP_ERROR_MSG, self.root_url, 'api/authentication/validate', r.status_code, r.text)
+            util.logger.error("HTTP request exception for %s/%s: %s", self.root_url,
+                              'api/authentication/validate', str(e))
             raise
         return 0
 
