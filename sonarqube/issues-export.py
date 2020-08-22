@@ -15,8 +15,6 @@
     [--tags]
 '''
 import sys
-import json
-import requests
 import sonarqube.env as env
 import sonarqube.issues as issues
 import sonarqube.utilities as util
@@ -25,17 +23,17 @@ import sonarqube.utilities as util
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
     parser = util.set_component_args(parser)
-    parser.add_argument('-s', '--statuses', required = False, help = 'comma separated issue status, \
+    parser.add_argument('-s', '--statuses', required=False, help='comma separated issue status, \
         OPEN, WONTFIX, FALSE-POSITIVE, FIXED, CLOSED, REOPENED, REVIEWED')
-    parser.add_argument('-a', '--createdAfter', required = False,
-                        help = 'issues created on or after a given date (YYYY-MM-DD)')
-    parser.add_argument('-b', '--createdBefore', required = False,
+    parser.add_argument('-a', '--createdAfter', required=False,
+                        help='issues created on or after a given date (YYYY-MM-DD)')
+    parser.add_argument('-b', '--createdBefore', required=False,
                         help = 'issues created on or before a given date (YYYY-MM-DD)')
-    parser.add_argument('-r', '--resolutions', required = False,
-                        help = '''Comma separated resolution states of the issues,
+    parser.add_argument('-r', '--resolutions', required=False,
+                        help='''Comma separated resolution states of the issues,
                                   UNRESOLVED, FALSE-POSITIVE, WONTFIX''')
-    parser.add_argument('--severities', required = False,
-                        help = '''Comma separated severities, BLOCKER, CRITICAL, MAJOR, MINOR, INFO''')
+    parser.add_argument('--severities', required=False,
+                        help='Comma separated severities, BLOCKER, CRITICAL, MAJOR, MINOR, INFO')
     parser.add_argument('--types', help='Comma separated issue types', required=False)
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
 
@@ -56,12 +54,9 @@ def main():
             del params[p]
 
     # Add SQ environment
-    params.update({'env':sqenv})
+    params.update({'env': sqenv})
 
-    for p in params:
-        util.logger.debug("%s --> %s", p, params[p])
-
-    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys',None))
+    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys', None))
     print(issues.to_csv_header())
     for _, issue in all_issues.items():
         # util.logger.debug("ISSUE = %s", str(issue))
