@@ -8,7 +8,6 @@ import sys
 import logging
 import json
 
-DEBUG_LEVEL = 0
 DRY_RUN = 'dryrun'
 CONFIRM = 'confirm'
 BATCH = 'batch'
@@ -40,8 +39,10 @@ def set_common_args(desc):
     parser.add_argument('-u', '--url', required=False, default='http://localhost:9000',
                         help='Root URL of the source SonarQube server, default is http://localhost:9000')
 
-    parser.add_argument('--mode', required=True, help='Mode of execution (dryrun, batch, confirm)')
-    parser.add_argument('-g', '--debug', required=False, help='Debug level')
+    parser.add_argument('--mode', required=False, choices=['dry-run', 'batch', 'confirm'],
+                        default='dry-run', help='Mode of execution (dry-run, batch, confirm)')
+    parser.add_argument('-g', '--debug', required=False, choices=['WARN', 'INFO', 'DEBUG'],
+                        default='INFO', help='Debug level')
     return parser
 
 def set_component_args(parser):
@@ -55,23 +56,23 @@ def set_target_args(parser):
                         help='Token to authenticate to target SonarQube - Unauthenticated usage is not possible')
     return parser
 
-def get_logging_level(intlevel):
-    if intlevel >= 2:
+def get_logging_level(level):
+    if level == 'DEBUG':
         lvl = logging.DEBUG
-    elif intlevel >= 1:
-        lvl = logging.INFO
-    elif intlevel >= 0:
+    elif level == 'WARN' or level == 'WARNING':
+        lvl = logging.WARNING
+    elif level == 'ERROR':
         lvl = logging.ERROR
-    else:
+    elif level == 'CRITICAL':
         lvl = logging.CRITICAL
+    else:
+        lvl = logging.INFO
     return lvl
 
 def set_debug_level(level):
-    global DEBUG_LEVEL
-    DEBUG_LEVEL = 0 if level is None else int(level)
     global logger
-    logger.setLevel(get_logging_level(DEBUG_LEVEL))
-    logger.info("Set debug level to %d", DEBUG_LEVEL)
+    logger.setLevel(get_logging_level(level))
+    logger.info("Set debug level to %d", level)
 
 def set_run_mode(run_mode):
     global RUN_MODE
@@ -83,8 +84,8 @@ def get_run_mode():
     return RUN_MODE
 
 def check_environment(kwargs):
-    set_debug_level(kwargs.pop('debug', 0))
-    set_run_mode(kwargs.pop('mode', 'dryrun'))
+    set_debug_level(kwargs.pop('debug', 'INFO'))
+    set_run_mode(kwargs.pop('mode', 'dry-run'))
 
 def json_dump_debug(json_data, pre_string = ''):
     logger.debug("%s%s", pre_string, json.dumps(json_data, \
