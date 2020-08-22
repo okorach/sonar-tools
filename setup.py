@@ -32,10 +32,10 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'sonar-audit = sonarqube.audit:main',
-            'sonar-projects-export = sonarqube.projects-export:main',
-            'sonar-projects-import = sonarqube.projects-import:main',
-            'sonar-measures-export = sonarqube.measures-export:main',
-            'sonar-issues-export = sonarqube.issues-export:main',
+            'sonar-projects-export = sonarqube.projects_export:main',
+            'sonar-projects-import = sonarqube.projects_import:main',
+            'sonar-measures-export = sonarqube.measures_export:main',
+            'sonar-issues-export = sonarqube.issues_export:main'
         ]
     },
     python_requires='>=3.6',
