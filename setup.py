@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name='sonar-tools',
-    version='0.1.3',
+    version='0.2',
     scripts=['sonar-tools'] ,
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",
@@ -32,8 +32,10 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'sonar-audit = sonarqube.audit:main',
-            'sonar-projects-export = sonarqube.projects-export:main'
-            'sonar-projects-import = sonarqube.projects-import:main'
+            'sonar-projects-export = sonarqube.projects-export:main',
+            'sonar-projects-import = sonarqube.projects-import:main',
+            'sonar-measures-export = sonarqube.measures-export:main',
+            'sonar-issues-export = sonarqube.issues-export:main',
         ]
     },
     python_requires='>=3.6',
