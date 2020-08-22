@@ -9,6 +9,7 @@ import sonarqube.projects as projects
 import sonarqube.utilities as util
 import sonarqube.env as env
 
+
 def main():
     parser = util.set_common_args('Exports all projects of a SonarQube platform')
     parser.add_argument('--exportTimeout', required=False, type=int, default=180, help='Maximum wait time for export')
