@@ -4,12 +4,10 @@
     Imports a list of projects to a SonarQube platform
 
 '''
-import os
-import argparse
-
 import sonarqube.projects as projects
 import sonarqube.utilities as util
 import sonarqube.env as env
+
 
 def main():
     parser = util.set_common_args('Imports a list of projects in a SonarQube platform')
@@ -32,7 +30,7 @@ def main():
     i = 0
     statuses = {}
     for key in project_list:
-        status = projects.create_project(key = key, sqenv = myenv)
+        status = projects.create_project(key=key, sqenv=myenv)
         if status != 200:
             s = "CREATE {0}".format(status)
             if s in statuses:
@@ -48,7 +46,7 @@ def main():
                 statuses[s] = 1
         i += 1
         util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects,
-                         int(i * 100/nb_projects), key, status)
+                         int(i * 100 / nb_projects), key, status)
         summary = ''
         for s in statuses:
             summary += "{0}:{1}, ".format(s, statuses[s])
