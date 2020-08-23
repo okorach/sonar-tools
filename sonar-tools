@@ -1,3 +1,10 @@
 #!/usr/bin/env python3
 
-print("Collections of utilities for SonarQube")
+print('''Collections of utilities for SonarQube:
+- sonar-audit: Audits a SonarQube platform
+- sonar-measures-export: Exports measures/metrics of one, several or all projects of the platform i CSV
+- sonar-issues-export: Exports issues (potentially filtered) from the platform in CSV
+- sonar-projects-export: Exports all projects from a platform (EE and higher)
+- sonar-projects-import: Imports a list of projects into a platform (EE and higher)
+See tools bult-in -h help and https://github.com/okorach/sonarqube-tools for more documentation
+''')
