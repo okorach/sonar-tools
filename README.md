@@ -173,7 +173,13 @@ What is audited:
   - sonar.global.exclusions is empty
   - Project default visbility is Private
 - Global permissions:
-  - TODO
+  - Max 3 users with global admin, admin quality gates, admin quality profiles or create project permission
+  - Max 10 users with global permissions
+  - Group 'Anyone' should have no global permissions
+  - Group 'sonar-users' should not have Admin, Admin QG, Admin QP or Create Projects permissions
+  - Max 2 groups with global admin, admin quality gates, admin quality profiles permissions
+  - Max 3 groups with create project permission
+  - Max 10 groups with global permissions
 - DB Cleaner:
   - Delay to delete inactive SLB (7.9) or branches (8.x) between 10 and 60 days
   - Delay to delete closed issues between 10 and 60 days
