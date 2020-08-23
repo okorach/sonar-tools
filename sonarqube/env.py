@@ -173,8 +173,8 @@ class Environment:
                 util.logger.warning("Group 'Anyone' should not have any global permission")
                 issues += 1
             if gr['name'] == 'sonar-users' and (
-                    'admin' in gr['permissions'] or 'gateadmin' in gr['permissions']
-                    or 'profileadmin' in gr['permissions'] or 'provisioning' in gr['permissions']):
+                    'admin' in gr['permissions'] or 'gateadmin' in gr['permissions'] or
+                    'profileadmin' in gr['permissions'] or 'provisioning' in gr['permissions']):
                 util.logger.warning("Group 'sonar-users' should not have admin, admin QG, admin QP or create project permissions")
                 issues += 1
 
