@@ -14,6 +14,16 @@ import sonarqube.utilities as util
 HTTP_ERROR_MSG = "%s%s raised error %d: %s"
 DEFAULT_URL = 'http://localhost:9000'
 
+GLOBAL_PERMISSIONS = {
+    "admin": "Global Administration",
+    "gateadmin": "Administer Quality Gates",
+    "profileadmin": "Administer Quality Profiles",
+    "provisioning": "Create Projects",
+    "portfoliocreator": "Create Portfolios",
+    "applicationcreator": "Create Applications",
+    "scan": "Run Analysis"
+}
+
 class Environment:
 
     def __init__(self, url, token):
@@ -143,87 +153,55 @@ class Environment:
             raise
         return 0
 
+    def __get_permissions__(self, perm_type):
+        resp = self.get('permissions/{0}'.format(perm_type), params={'ps': 100})
+        data = json.loads(resp.text)
+        active_perms = []
+        for item in data.get(perm_type, []):
+            if item['permissions']:
+                active_perms.append(item)
+        return active_perms
+
     def __audit_group_permissions__(self):
         issues = 0
-        resp = self.get('permissions/groups', params={'ps': 100})
-        data = json.loads(resp.text)
-        groups = data.get('groups', [])
-        if len(groups) > 15:
-            util.logger.warning('Too many (%d) groups with global permissions',
-                                len(groups))
+        groups = self.__get_permissions__('groups')
+        if len(groups) > 10:
+            util.logger.warning('Too many (%d) groups with global permissions', len(groups))
             issues += 1
-        nb_scan = 0
-        nb_admin = 0
-        nb_gate_admin = 0
-        nb_profile_admin = 0
+        for gr in groups:
+            if gr['name'] == 'Anyone':
+                util.logger.warning("Group 'Anyone' should not have any global permission")
+                issues += 1
+            if gr['name'] == 'sonar-users' and (
+                    'admin' in gr['permissions'] or 'gateadmin' in gr['permissions'] or
+                    'profileadmin' in gr['permissions'] or 'provisioning' in gr['permissions']):
+                util.logger.warning("Group 'sonar-users' should not have admin, admin QG, admin QP or create project permissions")
+                issues += 1
 
-        for group in groups:
-            if 'scan' in group['permissions']:
-                nb_scan += 1
-            if 'profileadmin'in group['permissions']:
-                nb_profile_admin += 1
-            if 'admin'in group['permissions']:
-                nb_admin += 1
-            if 'gateadmin'in group['permissions']:
-                nb_gate_admin += 1
-        if nb_admin > 1:
-            util.logger.warning('Too many (%d) groups with global admin permission, there should be only 1',
-                                nb_admin)
-            issues += 1
-        if nb_gate_admin > 2:
-            util.logger.warning('Too many (%d) groups with quality gates admin permission, 2 max is recommended',
-                                nb_gate_admin)
-            issues += 1
-        if nb_profile_admin > 2:
-            util.logger.warning('Too many (%d) groups with quality profiles admin permission, 2 max is recommended',
-                                nb_profile_admin)
-            issues += 1
-        if nb_scan > 2:
-            util.logger.warning('Too many (%d) users global execute analysis permissions, 2 max is recommended',
-                                nb_profile_admin)
-            issues += 1
+        perm_counts = __get_permissions_count__(groups)
+        maxis = { 'admin': 2, 'gateadmin': 2, 'profileadmin': 2, 'scan': 2, 'provisioning': 3}
+        for perm in GLOBAL_PERMISSIONS:
+            if perm in maxis and perm_counts[perm] > maxis[perm]:
+                util.logger.warning('Too many (%d) groups with permission %s, %d max recommended',
+                                    perm_counts[perm], GLOBAL_PERMISSIONS[perm], maxis[perm])
+                issues += 1
         return issues
 
     def __audit_user_permissions__(self):
-        util.logger.info('Auditing global permissions')
         issues = 0
-        resp = self.get('permissions/users', params={'ps': 100})
-        data = json.loads(resp.text)
-        users = data.get('users', [])
+        users = self.__get_permissions__('users')
         if len(users) > 10:
             util.logger.warning('Too many (%d) users with direct global permissions, use groups instead',
                                 len(users))
             issues += 1
-        nb_scan = 0
-        nb_admin = 0
-        nb_gate_admin = 0
-        nb_profile_admin = 0
 
-        for u in users:
-            if 'scan' in u['permissions']:
-                nb_scan += 1
-            if 'profileadmin'in u['permissions']:
-                nb_profile_admin += 1
-            if 'admin'in u['permissions']:
-                nb_admin += 1
-            if 'gateadmin'in u['permissions']:
-                nb_gate_admin += 1
-        if nb_admin > 3:
-            util.logger.warning('Too many (%d) users with global admin permissions, use groups instead',
-                                nb_admin)
-            issues += 1
-        if nb_gate_admin > 3:
-            util.logger.warning('Too many (%d) users with quality gates admin permissions, use groups instead',
-                                nb_gate_admin)
-            issues += 1
-        if nb_profile_admin > 3:
-            util.logger.warning('Too many (%d) users with quality profiles admin permissions, use groups instead',
-                                nb_profile_admin)
-            issues += 1
-        if nb_scan > 3:
-            util.logger.warning('Too many (%d) users global execute analysis permissions, use groups instead',
-                                nb_profile_admin)
-            issues += 1
+        perm_counts = __get_permissions_count__(users)
+        maxis = { 'admin': 3, 'gateadmin': 3, 'profileadmin': 3, 'scan': 3, 'provisioning': 3}
+        for perm in GLOBAL_PERMISSIONS:
+            if perm in maxis and perm_counts[perm] > maxis[perm]:
+                util.logger.warning('Too many (%d) users with permission %s, use groups instead',
+                                    perm_counts[perm], GLOBAL_PERMISSIONS[perm])
+                issues += 1
         return issues
 
     def __audit_global_permissions__(self):
@@ -520,3 +498,12 @@ def audit_sysinfo(sysinfo):
     issues += __check_es_settings__(sysinfo)
     issues += __check_dce_settings__(sysinfo)
     return issues
+
+
+def __get_permissions_count__(users_or_groups):
+    perm_counts = dict(zip(GLOBAL_PERMISSIONS.keys(), [0, 0, 0, 0, 0, 0, 0]))
+    for user_or_group in users_or_groups:
+        for perm in GLOBAL_PERMISSIONS:
+            if perm in user_or_group['permissions']:
+                perm_counts[perm] += 1
+    return perm_counts
