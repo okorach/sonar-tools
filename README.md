@@ -1,52 +1,125 @@
-# sonarqube-tools
-Additional command line based tools to help in SonarQube administration tasks
+# sonar-tools
+Additional command line based tools to help in SonarQube administration tasks. There are currently 5 utilities:
+- **sonar-audit**: Audits a SonarQube platform
+- **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the platform i CSV
+- **sonar-issues-export**: Exports issues (potentially filtered) from the platform in CSV
+- **sonar-projects-export**: Exports all projects from a platform (EE and higher)
+- **sonar-projects-import**: Imports a list of projects into a platform (EE and higher)
 
-All script accept the following common parameters:
+
+# Requirements and Installation
+- `sonar-tools` requires python 3.6 or higher
+- Install is based on [pip](/https://pypi.org/project/pip/). To install run: `python3 -m pip install sonar-tools`
+
+All tools accept the following common parameters:
 - `-h` : Displays a help and exits
-- `-u` : URL of the SonarQube server, for instance `http://localhost:9000`
-- `-t` : token of the user to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06`
-- `-g` : Debug level (from `1` to `5`)
-- `-m` : Mode when performing API calls:
+- `-u` : URL of the SonarQube server, default is `http://localhost:9000`
+- `-t` : token of the user to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06` (using login/password is not possible)
+- `-g` : Debug level (`WARN`, `ÌNFO` or `DEBUG`). `ERROR` and above is always active. Default is `INFO`
+- `-m` : Mode when performing API calls, `dry-run` is the default
   - `batch`: All API calls are performed without any confirmation
   - `confirm`: All API calls that change the SonarQube internal state (POST and DELETE) are asking for a confirmation before execution
-  - `dryrun`: All API calls are just output in logging but not actually performed
+  - `dry-run`: All API calls taht would change SonarQube internal state are just output in logging but not actually performed.
 
-# issues_export.py
 
-This script exports a list of issues as CSV.
-Plenty of issue filters can be specified from the command line, type `issues_export.py -h` for details
+# sonar-audit
+
+Audits the SonarQube platform and output warning logs whenever a suspicious or incorrect setting/situation is found.
+What is audited is listed at the bottom of this page
+
+Usage: `sonar-audit -u <url> -t <token> [--what [settings|projects|qg|qp]]`
+When `--what` is not specified, everything audited
+- `--what settings`: Audits global settings and general system data (system info in particular)
+- `--what qp`: Audits quality profiles
+- `--what qg`: Audits quality gates
+- `--what projects`: Audits all projects. This can be a fairly long operation
+
+
+# sonar-measures-export
+
+Exports one or all projects with all (or some selected) measures in a CSV file.
+The CSV is sent to standard output.
+Plenty of issue filters can be specified from the command line, type `sonar-measures-export -h` for details
+
+Basic Usage: `sonar-measures-export -u <url> -t <token> --metricKeys _main -b -r >measures.csv`
 
 ## Examples
 ```
-issues_export.py -u <url> -t <token> >all_issues.csv
-issues_export.py -u <url> -t <token> -k <projectKey> >project_issues.csv
-issues_export.py -u <url> -t <token> -r FALSE-POSITIVE,WONTFIX >fp_wf.csv
-issues_export.py -u <url> -t <token> -a 2020-01-01 >issues_created_in_2020.csv
-issues_export.py -u <url> -t <token> -types VULNERABILITY,BUG >bugs_and_vulnerabilities.csv
+sonar-measures-export -u <url> -t <token> -m ncloc,bugs,vulnerabilities >measures.csv
+sonar-measures-export -u <url> -t <token> -m _main >main_measures.csv
+sonar-measures-export -u <url> -t <token> -k <projectKey1>,<projectKey2> -m _all >all_measures.csv
 ```
 
-# issues_recover.py
+# sonar-issues-export
 
-This script tries to recover issues that were mistakenly closed following a scan with incorrect parameters
+Exports a list of issues as CSV (sent to standard output)
+Plenty of issue filters can be specified from the command line, type `sonar-issues-export -h` for details
+:warning: On large platforms with a lot of issues, it can be stressful for the platform (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
+
+## Examples
+```
+sonar-issues-export -u <url> -t <token> >all_issues.csv
+sonar-issues-export -u <url> -t <token> -k <projectKey> >project_issues.csv
+sonar-issues-export -u <url> -t <token> -r FALSE-POSITIVE,WONTFIX >fp_wf.csv
+sonar-issues-export -u <url> -t <token> -a 2020-01-01 >issues_created_in_2020.csv
+sonar-issues-export -u <url> -t <token> -types VULNERABILITY,BUG >bugs_and_vulnerabilities.csv
+```
+
+
+# sonar-projects-export
+
+Exports all projects of a given SonarQube platform.
+:warning: This requires a SonarQube Enterprise or Data Center Edition.
+It sends to the output a CSV with the list of project keys, the export result (`SUCCESS` or `FAIL`), and:
+- If the export was successful, the generated zip file
+- If the export was failed, the failure reason
+
+:information_source: All zip files are generated in the platform standard location(under `data/governance/project_dumps/export`)
+
+The CSV file generated is to be used by the `sonar-projects-import` tool
+
+## Examples
+```
+sonar-projects-export -u <url> -t <token> >exported_projects.csv
+```
+
+# sonar-projects-import
+
+Imports a list of projects previously exported with `sonar-projects-export`.
+:warning: This requires a SonarQube Enterprise or Data Center Edition.
+It takes as input a CSV file produced by `sonar-projects-export`
+
+:information_source: All exported zip files must be first copied to the right location on the target platform for the import to be successful (In `data/governance/project_dumps/import`)
+
+## Examples
+```
+sonar-projects-import -u <url> -t <token> -f <export_csv_file>
+```
+
+# Tools coming soon
+
+## sonar-issues-recover
+
+Tries to recover issues that were mistakenly closed following a scan with incorrect parameters. This tool is only useful for platforms in version 7.9.x and lower since this feature is built-in with SonarQube 8.x
 
 Issue recovery means:
 - Reapplying all transitions to the issue to reach its final state before close (Usually *False positive* or *Won't Fix*)
 - Reapplying all manual comments
 - Reapplying all severity or issue type change
 
-## :information_source: Limitations
+### :information_source: Limitations
 - The script has to be run before the closed issue purge period (SonarQube parameter `sonar.dbcleaner.daysBeforeDeletingClosedIssues` whose default value is **30 days**)
 - The recovery is not 100% deterministic. In some rare corner cases (typically less than 5%) it is not possible to determine that an issue was closed unexpectedly, in which case the issue is not recovered. The script will log those cases
 - When recovering an issue all state change of the issue are applied with the user whose token is provided to the script (it cannot be applied with the original user). Some comments are added to mention who was the original user that made the change
 
-## Examples
+### Examples
 ```
 issues_recover.py -u <url> -t <token> -k <projectKey>
 ```
 
-# issues_sync.py
+## sonar-issues-sync
 
-This script tries to sync issues manual changes (FP, WF, Comments, Change of Severity or of issue type) between:
+This tool tries to sync issues manual changes (FP, WF, Comments, Change of Severity or of issue type) between:
 - 2 different branches of a same project
 - A same project on 2 different SonarQube platforms
 
@@ -55,73 +128,44 @@ Issue sync means:
 - Applying all manual comments
 - Applying all severity or issue type change
 
-## Examples
+### Examples
 ```
-issues_sync.py -u <src_url> -t <src_token> -k <projectKey> -U <target_url> -T <target_token>
+# Syncs issues for project <projectKey> from platform <src_url> to platform <target_url>
+sonar-issues-sync -u <src_url> -t <src_token> -k <projectKey> -U <target_url> -T <target_token>
 ```
 
-## :information_source: Limitations
+### :information_source: Limitations
 - The sync is not 100% deterministic. In some rare corner cases (typically less than 5%) it is not possible to determine that an issue is the same between 2 branches or 2 platforms,in which case the issue is not sync'ed. The script will log those cases
 - When sync'ing an issue, all changes of the target issue are applied with the user whose token is provided to the script (it cannot be applied with the user of the original issue). Some comments are added to mention who was the original user that made the change
 - To be modified (sync'ed from a source issue), the target issue must has zero manual changes ie it must be has created originally by SonarQube
 
-# measures_export.py
 
-This script exports a projects will all (or some selected) measures.
-Plenty of issue filters can be specified from the command line, type `measures_export.py -h` for details
+## sonar-project-history
+Extracts the history of some given metrics for a given project
 
-## Examples
-```
-measures_export.py -u <url> -t <token> -m ncloc,bugs,vulnerabilities >measures.csv
-measures_export.py -u <url> -t <token> -m _main >main_measures.csv
-measures_export.py -u <url> -t <token> -m _all >all_measures.csv
-```
-# projects_export.py
+## sonar-project-housekeeper
+Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
 
-This script exports all projects of a given SonarQube instance.
-It sends to the output a CSV with the list of project keys, the export result (`SUCCESS` or `FAIL`), and:
-- If the export was successful, the generated zip file
-- If the export was failed, the failure reason
-
-:information_source: All zip files are generated in the platform standard location(under `data/governance/project_dumps/export`)
-
-## Examples
-```
-projects_export.py -u <url> -t <token> >exported_projects.csv
-```
-
-# projects_import.py
-
-This script imports all previously exported projects.
-It takes as input a CSV file produced by `export_all_projects.py`
-
-:information_source: All exported zip files must be copied to the right location on the target platform for the import to be successful (In `data/governance/project_dumps/import`)
-
-## Examples
-```
-projects_import.py -u <url> -t <token> -f <export_csv_file>
-```
-
-# project_history.py
-TBD
-
-# project_housekeeper.py
-This script deletes all projects whose last analysis date (on any branch) is older than a given number of days.
-
-## :information_source: Limitations
+### :information_source: Limitations
 To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.
 
-## :warning: Database backup
+### :warning: Database backup
 **A database backup should always be taken before executing this script. There is no recovery.**
 
-## Example
+### Example
 ```
-project_housekeeper.py -u <url> -t <token> -o <days>
+sonar-project-housekeeper -u <url> -t <token> -o <days>
 ```
 
-# sonar_audit.py
-Audits the SonarQube platform and output warning logs whenever a suspicious or incorrect setting/situation is found.
+# List of checks performed by `sonar-audit`
+
 What is audited:
+- General checks:
+  - Verifies this is an official distribution
+  - Verifies that the admin default password has been changed
+  - DCE: Verifies that same plugins are install on all app nodes
+  - DCE: Verifies that all app nodes run the same version of SonarQube
+  - DCE: Verifies that all nodes are in GREEN status
 - General global settings:
   - sonar.forceAuthentication is true
   - sonar.cpd.cross_project is false
@@ -143,12 +187,12 @@ What is audited:
   - C maintainability rating threshold between 15% and 20%
   - D maintainability rating threshold between 40% and 50%
 - Environment
-  - Web heap (-Xmx) between 1 GB and 2 GB
-  - CE heap (-Xmx) between 512 MB per worker and 2 GB per worker
+  - Web heap (`-Xmx`) between 1 GB and 2 GB
+  - CE heap (`-Xmx`) between 512 MB per worker and 2 GB per worker
   - Maximum CE 4 workers
   - CE background tasks failure rate of more than 1%
   - Excessive nbr of background tasks: More than 100 pending CE background tasks or more than 20 or 10 x Nbr workers
-  - ES heap (-Xmx) is less than half the ES index (small indexes) or less than ES index + 1 GB (large indexes)
+  - ES heap (`-Xmx`) is less than half the ES index (small indexes) or less than ES index + 1 GB (large indexes)
 - Quality Gates:
   - Unused QG
   - QG with 0 conditions or more than 7 conditions
@@ -164,6 +208,7 @@ What is audited:
   - QP not used by any projects
   - QP not used since more than 6 months
   - QP using deprecated rules
+  - More than 5 QP for a given language
 - Projects:
   - Projects provisioned but never analyzed
   - Projects not analyzed since 6 months (on any branch)
