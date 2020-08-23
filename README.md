@@ -1,5 +1,5 @@
 # sonar-tools
-Additional command line based tools to help in SonarQube administration tasks. There are currently 5 utilities:
+Command line tools to help in SonarQube administration tasks. The following utilities are available:
 - **sonar-audit**: Audits a SonarQube platform
 - **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the platform i CSV
 - **sonar-issues-export**: Exports issues (potentially filtered) from the platform in CSV
