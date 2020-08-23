@@ -173,13 +173,13 @@ class Environment:
                 util.logger.warning("Group 'Anyone' should not have any global permission")
                 issues += 1
             if gr['name'] == 'sonar-users' and (
-                    'admin' in gr['permissions'] or 'gateadmin' in gr['permissions'] or
-                    'profileadmin' in gr['permissions'] or 'provisioning' in gr['permissions']):
+                    'admin' in gr['permissions'] or 'gateadmin' in gr['permissions']
+                    or 'profileadmin' in gr['permissions'] or 'provisioning' in gr['permissions']):
                 util.logger.warning("Group 'sonar-users' should not have admin, admin QG, admin QP or create project permissions")
                 issues += 1
 
         perm_counts = __get_permissions_count__(groups)
-        maxis = { 'admin': 2, 'gateadmin': 2, 'profileadmin': 2, 'scan': 2, 'provisioning': 3}
+        maxis = {'admin': 2, 'gateadmin': 2, 'profileadmin': 2, 'scan': 2, 'provisioning': 3}
         for perm in GLOBAL_PERMISSIONS:
             if perm in maxis and perm_counts[perm] > maxis[perm]:
                 util.logger.warning('Too many (%d) groups with permission %s, %d max recommended',
@@ -196,7 +196,7 @@ class Environment:
             issues += 1
 
         perm_counts = __get_permissions_count__(users)
-        maxis = { 'admin': 3, 'gateadmin': 3, 'profileadmin': 3, 'scan': 3, 'provisioning': 3}
+        maxis = {'admin': 3, 'gateadmin': 3, 'profileadmin': 3, 'scan': 3, 'provisioning': 3}
         for perm in GLOBAL_PERMISSIONS:
             if perm in maxis and perm_counts[perm] > maxis[perm]:
                 util.logger.warning('Too many (%d) users with permission %s, use groups instead',
