@@ -143,6 +143,93 @@ class Environment:
             raise
         return 0
 
+    def __audit_group_permissions__(self):
+        issues = 0
+        resp = self.get('permissions/groups', params={'ps': 100})
+        data = json.loads(resp.text)
+        groups = data.get('groups', [])
+        if len(groups) > 15:
+            util.logger.warning('Too many (%d) groups with global permissions',
+                                len(groups))
+            issues += 1
+        nb_scan = 0
+        nb_admin = 0
+        nb_gate_admin = 0
+        nb_profile_admin = 0
+
+        for group in groups:
+            if 'scan' in group['permissions']:
+                nb_scan += 1
+            if 'profileadmin'in group['permissions']:
+                nb_profile_admin += 1
+            if 'admin'in group['permissions']:
+                nb_admin += 1
+            if 'gateadmin'in group['permissions']:
+                nb_gate_admin += 1
+        if nb_admin > 1:
+            util.logger.warning('Too many (%d) groups with global admin permission, there should be only 1',
+                                nb_admin)
+            issues += 1
+        if nb_gate_admin > 2:
+            util.logger.warning('Too many (%d) groups with quality gates admin permission, 2 max is recommended',
+                                nb_gate_admin)
+            issues += 1
+        if nb_profile_admin > 2:
+            util.logger.warning('Too many (%d) groups with quality profiles admin permission, 2 max is recommended',
+                                nb_profile_admin)
+            issues += 1
+        if nb_scan > 2:
+            util.logger.warning('Too many (%d) users global execute analysis permissions, 2 max is recommended',
+                                nb_profile_admin)
+            issues += 1
+        return issues
+
+    def __audit_user_permissions__(self):
+        util.logger.info('Auditing global permissions')
+        issues = 0
+        resp = self.get('permissions/users', params={'ps': 100})
+        data = json.loads(resp.text)
+        users = data.get('users', [])
+        if len(users) > 10:
+            util.logger.warning('Too many (%d) users with direct global permissions, use groups instead',
+                                len(users))
+            issues += 1
+        nb_scan = 0
+        nb_admin = 0
+        nb_gate_admin = 0
+        nb_profile_admin = 0
+
+        for u in users:
+            if 'scan' in u['permissions']:
+                nb_scan += 1
+            if 'profileadmin'in u['permissions']:
+                nb_profile_admin += 1
+            if 'admin'in u['permissions']:
+                nb_admin += 1
+            if 'gateadmin'in u['permissions']:
+                nb_gate_admin += 1
+        if nb_admin > 3:
+            util.logger.warning('Too many (%d) users with global admin permissions, use groups instead',
+                                nb_admin)
+            issues += 1
+        if nb_gate_admin > 3:
+            util.logger.warning('Too many (%d) users with quality gates admin permissions, use groups instead',
+                                nb_gate_admin)
+            issues += 1
+        if nb_profile_admin > 3:
+            util.logger.warning('Too many (%d) users with quality profiles admin permissions, use groups instead',
+                                nb_profile_admin)
+            issues += 1
+        if nb_scan > 3:
+            util.logger.warning('Too many (%d) users global execute analysis permissions, use groups instead',
+                                nb_profile_admin)
+            issues += 1
+        return issues
+
+    def __audit_global_permissions__(self):
+        util.logger.info('Auditing global permissions')
+        return self.__audit_user_permissions__() + self.__audit_group_permissions__()
+
     def audit(self):
         util.logger.info('Auditing global settings')
         resp = self.get('settings/values')
@@ -177,6 +264,7 @@ class Environment:
         issues += self.__verify_project_default_visibility__()
         issues += audit_sysinfo(self.get_sysinfo())
         issues += self.__check_admin_password__()
+        issues += self.__audit_global_permissions__()
         return issues
 
 #--------------------- Static methods, not recommended -----------------
@@ -423,7 +511,6 @@ def __check_dce_settings__(sysinfo):
             util.logger.warning('Node %s health is %s', node['Name'], node['Health'])
             issues += 1
     return issues
-
 
 def audit_sysinfo(sysinfo):
     issues = 0
