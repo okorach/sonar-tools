@@ -93,17 +93,16 @@ class QualityGate(sq.SqObject):
             return 0
         nb_conditions = len(self.conditions)
         if nb_conditions == 0:
-            problems.append(pb.Problem(pb))
-            util.logger.warning('Quality gate "%s" has no conditions defined, this is useless', self.name)
-            problems += 1
-        elif nb_conditions > 7:
-            util.logger.warning('Quality gate "%s" has %d conditions defined, this is more than the 7 max recommended',
-                                self.name, len(self.conditions))
-            problems += 1
+            problems.append(pb.Problem(pb.Type.CONFIGURATION, pb.Severity.LOW,
+                "Quality gate '{}' has no conditions defined, this is useless".format(self.name)))
+        elif nb_conditions > 8:
+            problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.MEDIUM,
+                "Quality gate '{}' has {} conditions defined, this is more than the 8 max recommended".format(
+                                self.name, len(self.conditions))))
         problems += self.__audit_conditions__()
         if not self.is_default and not self.get_projects():
-            util.logger.warning('Quality gate "%s" is not used by any project, it should be deleted', self.name)
-            problems += 1
+            problems.append(pb.Problem(pb.Type.CONFIGURATION, pb.Severity.LOW,
+                "Quality gate '{}' is not used by any project, it should be deleted".format(self.name)))
         return problems
 
     def count(self, params=None):
