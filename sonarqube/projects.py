@@ -161,13 +161,13 @@ class Project(comp.Component):
                     p['login'] = p['name']
                 admins.append(p['login'])
         if nb_perms > 5:
-            problems.append(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
                 "Project '{}' has too many permissions granted through users, \
-groups should be favored".format(self.key))
+groups should be favored".format(self.key)))
         if len(admins) > 3:
-            problems.append(pb.Type.GOVERNANCE, pb.Severity.HIGH,
+            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.HIGH,
                 "Project '{}' has too many users with Administration permission \
-({} users)".format(self.key, len(admins)))
+({} users)".format(self.key, len(admins))))
         return problems
 
     def __audit_group_permissions__(self):
