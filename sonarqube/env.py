@@ -231,31 +231,27 @@ class Environment:
                 settings[s['key']] = s['value']
             else:
                 settings[s['key']] = ','.join(s['values'])
-        problems = __check_setting_value__(settings, 'sonar.forceAuthentication', 'true')
-        problems += __check_setting_value__(settings, 'sonar.cpd.cross_project', 'false')
-        problems += __check_setting_value__(settings, 'sonar.global.exclusions', '')
+
         if self.get_version() < (8,0,0):
-            problems += __audit_setting_range__(settings, \
+            problems += __audit_setting_range__(settings,
                 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches', 10, 60, pb.Severity.MEDIUM)
-        problems += __audit_setting_range__(settings, \
-            'sonar.dbcleaner.daysBeforeDeletingClosedIssues', 10, 60, pb.Severity.MEDIUM)
-        problems += __audit_setting_range__(settings, \
-            'sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay', 12, 240, pb.Severity.MEDIUM)
-        problems += __audit_setting_range__(settings, \
-            'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek', 2, 12,pb.Severity.MEDIUM)
-        problems += __audit_setting_range__(settings, \
-            'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth', 26, 104, pb.Severity.MEDIUM)
-        problems += __audit_setting_range__(settings, \
-            'sonar.dbcleaner.weeksBeforeDeletingAllSnapshots', 104, 260, pb.Severity.MEDIUM)
-        problems += __audit_setting_defined__(settings, 'sonar.core.serverBaseURL', pb.Severity.HIGH)
-
-        problems += __audit_maintainability_rating_grid__(settings['sonar.technicalDebt.ratingGrid'], pb.Severity.MEDIUM)
-        problems += __audit_setting_range__(settings, 'sonar.technicalDebt.developmentCost', 20, 30, pb.Severity.MEDIUM)
-
-        problems += self.__audit_project_default_visibility__()
-        problems += audit_sysinfo(self.get_sysinfo())
-        problems += self.__audit_admin_password__()
-        problems += self.__audit_global_permissions__()
+        problems += (
+            __audit_setting_value__(settings, 'sonar.forceAuthentication', 'true') +
+            __audit_setting_value__(settings, 'sonar.cpd.cross_project', 'false') +
+            __audit_setting_value__(settings, 'sonar.global.exclusions', '') +
+            __audit_setting_range__(settings, 'sonar.dbcleaner.daysBeforeDeletingClosedIssues', 10, 60) +
+            __audit_setting_range__(settings, 'sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay', 12, 240) +
+            __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek', 2, 12) +
+            __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth', 26, 104) +
+            __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeDeletingAllSnapshots', 104, 260) +
+            __audit_setting_defined__(settings, 'sonar.core.serverBaseURL', pb.Severity.HIGH) +
+            __audit_maintainability_rating_grid__(settings['sonar.technicalDebt.ratingGrid']) +
+            __audit_setting_range__(settings, 'sonar.technicalDebt.developmentCost', 20, 30, pb.Severity.MEDIUM) +
+            self.__audit_project_default_visibility__() +
+            audit_sysinfo(self.get_sysinfo()) +
+            self.__audit_admin_password__() +
+            self.__audit_global_permissions__()
+        )
         return problems
 
 #--------------------- Static methods, not recommended -----------------
@@ -330,43 +326,42 @@ def __get_store_size__(setting):
         return int(val) * 1024
     return None
 
-def __audit_setting_range__(settings, key, min_val, max_val, severity):
+def __audit_setting_range__(settings, key, min_val, max_val, category=pb.Type.CONFIGURATION, severity=pb.Severity.MEDIUM):
+    util.logger.info("Auditing that setting %s is within recommended range [%d-%d]", key, min_val, max_val)
     value = int(settings[key])
     problems = []
-    if value >= min_val and value <= max_val:
-        util.logger.info("Setting %s value %d is within recommended range [%d-%d]",
-                         key, value, min_val, max_val)
-    else:
+    if value < min_val or value > max_val:
         problems.append(
-            pb.Problem(pb.Type.CONFIGURATION, severity,
+            pb.Problem(category, severity,
                 "Setting {} value {} is outside recommended range [{}-{}]".format(
                     key, value, min_val, max_val)))
     return problems
 
-def __check_setting_value__(settings, key, value):
+def __audit_setting_value__(settings, key, value, category=pb.Type.CONFIGURATION, severity=pb.Severity.MEDIUM):
+    util.logger.info("Auditing that setting %s has common/recommended value '%s'", key, value)
     s = settings.get(key, '')
-    if s == value:
-        util.logger.info("Setting %s has common/recommended value '%s'", key, s)
-    else:
-        util.logger.warning("Setting %s has potentially incorrect/unsafe value '%s'", key, s)
-        return 1
-    return 0
+    problems = []
+    if s != value:
+        problems.append(pb.Problem(category, severity,
+            "Setting {} has potentially incorrect/unsafe value '{}'".format(key, s)))
+    return problems
 
-def __audit_setting_defined__(settings, key, severity):
+def __audit_setting_defined__(settings, key, category=pb.Type.CONFIGURATION, severity=pb.Severity.MEDIUM):
+    util.logger.info("Auditing that setting %s is set", key)
     problems = []
     if key in settings and settings[key] != '':
         util.logger.info("Setting %s is set with value %s", key, settings[key])
     else:
         problems.append(
-            pb.Problem(pb.Type.CONFIGURATION, severity,
+            pb.Problem(category, severity,
                        "Setting {} is not set, although it should".format(key)))
     return problems
 
 def __audit_maintainability_rating_range__(value, min_val, max_val, rating_letter):
-    value = float(value)
-    problems = []
     util.logger.info('Checking that maintainability rating threshold %3.0f%% for %s is \
 within recommended range [%3.0f%%-%3.0f%%]', value*100, rating_letter, min_val*100, max_val*100)
+    value = float(value)
+    problems = []
     if value < min_val or value > max_val:
         problems.append(pb.Problem(pb.Type.CONFIGURATION, pb.Severity.MEDIUM,
             'Maintainability rating threshold {}% for {} is \
@@ -375,11 +370,12 @@ NOT within recommended range [{}%-{}%]'.format(value*100, rating_letter, min_val
 
 def __audit_maintainability_rating_grid__(grid):
     (a, b, c, d) = grid.split(',')
-    issues = __audit_maintainability_rating_range__(a, 0.03, 0.05, 'A')
-    issues += __audit_maintainability_rating_range__(b, 0.07, 0.10, 'B')
-    issues += __audit_maintainability_rating_range__(c, 0.15, 0.20, 'C')
-    issues += __audit_maintainability_rating_range__(d, 0.40, 0.50, 'D')
-    return issues
+    return (
+        __audit_maintainability_rating_range__(float(a), 0.03, 0.05, 'A') +
+        __audit_maintainability_rating_range__(float(b), 0.07, 0.10, 'B') +
+        __audit_maintainability_rating_range__(float(c), 0.15, 0.20, 'C') +
+        __audit_maintainability_rating_range__(float(d), 0.40, 0.50, 'D')
+    )
 
 def __check_log_level__(sysinfo):
     util.logger.info('Auditing log levels')
@@ -399,7 +395,7 @@ reverting to INFO is required")
         )
     return problems
 
-def __check_web_settings__(sysinfo):
+def __audit_web_settings__(sysinfo):
     util.logger.info('Auditing Web settings')
     problems = []
     web_ram = __get_memory__(sysinfo['Settings']['sonar.web.javaOpts'])
@@ -439,9 +435,9 @@ not in recommended range ([512-2048] x {} workers)".format(ce_ram, ce_workers))
 within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
     return problems
 
-def __check_ce_background_tasks__(sysinfo):
+def __audit_ce_background_tasks__(sysinfo):
     util.logger.info('Auditing CE background tasks')
-    problems =[]
+    problems = []
     ce_tasks = sysinfo['Compute Engine Tasks']
     ce_workers = ce_tasks['Worker Count']
     ce_success = ce_tasks["Processed With Success"]
@@ -466,9 +462,11 @@ verify failed background tasks'.format(int(failure_rate*100)))
                     ce_pending))
         )
     elif ce_pending > 20 and ce_pending > (10*ce_workers):
-        pb.Problem(pb.Type.PERFORMANCE, pb.Severity.HIGH,
+        problems.append(
+            pb.Problem(pb.Type.PERFORMANCE, pb.Severity.HIGH,
                 'Number of pending background tasks ({}) is  high, verify CE dimensioning'.format(
                     ce_pending))
+        )
     else:
         util.logger.info('Number of pending background tasks (%d) is OK', ce_pending)
     return problems
@@ -489,14 +487,14 @@ too low for index size of {} MB".format(es_ram, index_size))
     return problems
 
 def __audit_dce_settings__(sysinfo):
-    util.logger.util('Auditing DCE settings')
+    util.logger.info('Auditing DCE settings')
     problems = []
     stats = sysinfo.get('Statistics')
     if stats is None:
         util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
         return problems
     edition = stats.get('edition', None)
-    if stats is None:
+    if edition is None:
         util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
         return problems
     if edition != "datacenter":
@@ -535,14 +533,13 @@ def __audit_dce_settings__(sysinfo):
     return problems
 
 def audit_sysinfo(sysinfo):
-    issues = 0
-    issues += __check_web_settings__(sysinfo)
-    issues += __audit_ce_settings__(sysinfo)
-    issues += __check_ce_background_tasks__(sysinfo)
-    issues += __audit_es_settings__(sysinfo)
-    issues += __audit_dce_settings__(sysinfo)
-    return issues
-
+    return (
+        __audit_web_settings__(sysinfo) +
+        __audit_ce_settings__(sysinfo) +
+        __audit_ce_background_tasks__(sysinfo) +
+        __audit_es_settings__(sysinfo) +
+        __audit_dce_settings__(sysinfo)
+    )
 
 def __get_permissions_count__(users_or_groups):
     perm_counts = dict(zip(GLOBAL_PERMISSIONS.keys(), [0, 0, 0, 0, 0, 0, 0]))
