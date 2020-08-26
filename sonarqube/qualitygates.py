@@ -9,6 +9,7 @@ import json
 import sonarqube.sqobject as sq
 import sonarqube.env as env
 import sonarqube.utilities as util
+import sonarqube.audit_problem as pb
 
 NEW_ISSUES_SHOULD_BE_ZERO = 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'
 
@@ -69,40 +70,41 @@ class QualityGate(sq.SqObject):
         return len(self.projects)
 
     def __audit_conditions__(self):
-        issues = 0
+        problems = []
         for c in self.conditions:
             m = c['metric']
             if not m in GOOD_QG_CONDITIONS:
-                util.logger.warning('Quality Gate "%s": It is not recommended to use metric "%s" in quality gates',
-                                    self.name, m)
-                issues += 1
+                problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.HIGH,
+                    "Quality Gate '{}': It is not recommended to use metric '{}' in quality gates".format(
+                    self.name, m)))
                 continue
             val = int(c['error'])
             (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
             util.logger.debug('Condition on metric "%s": Check that %d in range [%d - %d]', m, val, mini, maxi)
             if val < mini or val > maxi:
-                util.logger.warning('Quality Gate "%s" condition on metric "%s": %s', self.name, m, msg)
-                issues += 1
-        return issues
+                problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.HIGH,
+                    "Quality Gate '{}' condition on metric '{}': {}".format(self.name, m, msg)))
+        return problems
 
     def audit(self):
         util.logger.info("Auditing quality gate %s", self.name)
-        issues = 0
+        problems = []
         if self.is_built_in:
             return 0
         nb_conditions = len(self.conditions)
         if nb_conditions == 0:
+            problems.append(pb.Problem(pb))
             util.logger.warning('Quality gate "%s" has no conditions defined, this is useless', self.name)
-            issues += 1
+            problems += 1
         elif nb_conditions > 7:
             util.logger.warning('Quality gate "%s" has %d conditions defined, this is more than the 7 max recommended',
                                 self.name, len(self.conditions))
-            issues += 1
-        issues += self.__audit_conditions__()
+            problems += 1
+        problems += self.__audit_conditions__()
         if not self.is_default and not self.get_projects():
             util.logger.warning('Quality gate "%s" is not used by any project, it should be deleted', self.name)
-            issues += 1
-        return issues
+            problems += 1
+        return problems
 
     def count(self, params=None):
         if params is None:
@@ -142,11 +144,12 @@ def list_qg(endpoint=None):
 
 def audit(endpoint=None):
     util.logger.info("Auditing quality gates")
-    issues = 0
+    problems = []
     quality_gates_list = list_qg(endpoint)
     nb_qg = len(quality_gates_list)
     if nb_qg > 5:
-        util.logger.warning("There are %d quality gates, this is more than the max 5 recommended", nb_qg)
+        problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+            "There are {} quality gates, this is more than the max 5 recommended".format(nb_qg)))
     for qp in quality_gates_list:
-        issues += qp.audit()
-    return issues
+        problems += qp.audit()
+    return problems

@@ -14,6 +14,7 @@ import pytz
 import sonarqube.env as env
 import sonarqube.components as comp
 import sonarqube.utilities as util
+import sonarqube.audit_problem as pb
 
 PROJECTS = {}
 
@@ -35,6 +36,7 @@ class Project(comp.Component):
         self.user_permissions = None
         self.group_permissions = None
         self.branches = None
+        self.ncloc = None
         self.__load__(data)
         PROJECTS[key] = self
 
@@ -149,7 +151,7 @@ class Project(comp.Component):
     def __audit_user_permissions__(self):
         perms = self.get_permissions('users')
         nb_perms = 0
-        issues = 0
+        problems = []
         admins = []
         for p in perms:
             if p['permissions']:
@@ -159,19 +161,19 @@ class Project(comp.Component):
                     p['login'] = p['name']
                 admins.append(p['login'])
         if nb_perms > 5:
-            util.logger.warning("Project %s has too many permissions granted through users, \
-                                groups should be favored", self.key)
-            issues += 1
+            problems.append(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Project %s has too many permissions granted through users, \
+groups should be favored".format(self.key))
         if len(admins) > 3:
-            util.logger.warning("Project %s has too many users with Administration permission \
-(%d users)", self.key, len(admins))
-            issues += 1
-        return issues
+            problems.append(pb.Type.GOVERNANCE, pb.Severity.HIGH,
+                "Project %s has too many users with Administration permission \
+(%d users)".format(self.key, len(admins)))
+        return problems
 
     def __audit_group_permissions__(self):
         groups = self.get_permissions('groups')
         nb_perms = 0
-        issues = 0
+        problems = []
         nb_admins = 0
         nb_scan = 0
         nb_issue_admin = 0
@@ -193,91 +195,91 @@ class Project(comp.Component):
             if (gr['name'] != 'Anyone' and gr['id'] != 2):
                 continue
             if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
-                util.logger.warning("Group %s has elevated (non read-only) permissions on project %s",
-                                    gr['name'], self.key)
-                issues += 1
+                sev = pb.Severity.HIGH if gr['name'] == 'Anyone' else pb.Severity.MEDIUM
+                problems.append(pb.Type.SECURITY, sev,
+                    "Group '{}' has elevated (non read-only) permissions on project '{}'".format(gr['name'], self.key))
             else:
-                util.logger.info("Group %s has browse permissions on project %s. \
+                util.logger.info("Group '%s' has browse permissions on project '%s'. \
 Is this normal ?", gr['name'], self.key)
-                issues += 1
 
         if nb_perms > 5:
-            util.logger.warning("Project %s has too many group permissions defined \
-(%d groups)", self.key, nb_perms)
-            issues += 1
+            problems.append(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
+                "Project '{}' has too many group permissions defined ({} groups)".format(self.key, nb_perms))
         if nb_scan > 1:
-            util.logger.warning("Project %s has too many groups with 'Execute Analysis' permission \
-(%d groups)", self.key, nb_scan)
-            issues += 1
+            problems.append(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Project '{}' has too many groups with 'Execute Analysis' permission ({} groups)".format(self.key, nb_scan))
         if nb_issue_admin > 2:
-            util.logger.warning("Project %s has too many groups with 'Issue Admin' permission \
-(%d groups)", self.key, nb_issue_admin)
-            issues += 1
+            problems.append(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Project '{}' has too many groups with 'Issue Admin' permission ({} groups)".format(self.key, nb_issue_admin))
         if nb_hotspot_admin > 2:
-            util.logger.warning("Project %s has too many groups with 'Hotspot Admin' permission \
-(%d groups)", self.key, nb_hotspot_admin)
-            issues += 1
+            problems.append(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Project '{}' has too many groups with 'Hotspot Admin' permission ({} groups)".format(self.key, nb_hotspot_admin))
         if nb_admins > 2:
-            util.logger.warning("Project %s has too many groups with 'Project Admin' permissions \
-(%d groups)", self.key, nb_admins)
-            issues += 1
-        return issues
+            problems.append(pb.Type.GOVERNANCE, pb.Severity.HIGH,
+                "Project '{}' has too many groups with 'Project Admin' permissions ({} groups)".format(self.key, nb_admins))
+        return problems
 
     def __audit_permissions__(self):
-        util.logger.info("Checking permissions for project %s", self.key)
-        issues = self.__audit_user_permissions__() + self.__audit_group_permissions__()
-        if issues == 0:
-            util.logger.info('No issue found in project %s permissions', self.key)
-        return issues
+        util.logger.info("   Auditing permissions for project '%s'", self.key)
+        problems = self.__audit_user_permissions__() + self.__audit_group_permissions__()
+        if not problems:
+            util.logger.info("   No issue found in project '%s' permissions", self.key)
+        return problems
 
     def __audit_last_analysis__(self):
+        util.logger.info("   Auditing project '%s' last analysis date", self.key)
         age = self.age_of_last_analysis()
-        issues = 0
+        problems = []
         if age is None:
-            util.logger.warning("Project %s has been created but never been analyzed", self.key)
-            issues += 1
+            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
+                "Project '{}' has been created but never been analyzed".format(self.key)))
         elif age > 180:
-            util.logger.warning("Project %s last analysis is %d days old, it may be deletable", self.key, age)
-            issues += 1
+            # TODO make the 180 days configurable
+            sev = pb.Severity.HIGH if age > 365 else pb.Severity.MEDIUM
+            problems.append(pb.Problem(pb.Type.OPERATIONS, sev,
+                "Project '{}' last analysis is {} days old, it may be deleted".format(self.key, age)))
         else:
-            util.logger.info("Project %s last analysis is %d days old", self.key, age)
-        return issues
+            util.logger.info("   Project %s last analysis is %d days old", self.key, age)
+        return problems
 
     def __audit_visibility__(self):
+        util.logger.info("   Auditing Project '%s' visibility", self.key)
+        problems = []
         resp = env.get('navigation/component', ctxt=self.env, params={'component':self.key})
         data = json.loads(resp.text)
         visi = data['visibility']
         if visi == 'private':
-            util.logger.info('Project %s visibility is private', self.key)
+            util.logger.info("   Project '%s' visibility is private", self.key)
         else:
-            util.logger.warning('Project %s visibility is %s, which can be a security risk', self.key, visi)
-            return 1
-        return 0
+            problems.append(pb.Problem(pb.Type.SECURITY, pb.Severity.LOW,
+                "Project '{}' visibility is {}, which can be a security risk".format(self.key, visi)))
+        return problems
 
     def __audit_languages__(self):
         total_locs = 0
         languages = {}
-        issues = 0
+        problems = []
         resp = self.get_measure('ncloc_language_distribution')
         if resp is None:
-            return 0
+            return problems
         for lang in self.get_measure('ncloc_language_distribution').split(';'):
             (lang, ncloc) = lang.split('=')
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
         if total_locs > 100000 and 'xml' in languages and (languages['xml'] / total_locs) > 0.5:
-            util.logger.warning("Project %s has %d XML LoCs, this is suspiciously high, verify scanning settings",
-                                self.key, languages['xml'])
-            issues += 1
-        return issues
+            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
+                "Project '{}' has {} XML LoCs, this is suspiciously high, verify scanning settings".format(
+                    self.key, languages['xml'])))
+        return problems
 
     def audit(self):
         util.logger.info("Auditing project %s", self.key)
-        issues = self.__audit_last_analysis__()
-        issues += self.__audit_visibility__()
-        issues += self.__audit_languages__()
-        issues += self.__audit_permissions__()
-        return issues
+        return (
+            self.__audit_last_analysis__() +
+            self.__audit_visibility__() +
+            self.__audit_languages__() +
+            self.__audit_permissions__()
+        )
 
     def delete_if_obsolete(self, days=180):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
@@ -412,12 +414,12 @@ def delete_old_projects(days=180, endpoint=None):
 
 def audit(endpoint=None):
     plist = search(endpoint)
-    issues = 0
+    problems = []
     for key, p in plist.items():
-        issues += p.audit()
+        problems += p.audit()
         util.logger.info("Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key, key2):
-                util.logger.warning("Project %s is likely to be a branch of %s, and if so should be deleted", key2, key)
-                issues += 1
-    return issues
+                problems.append(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
+                    "Project {} is likely to be a branch of {}, and if so should be deleted".format(key2, key))
+    return problems
