@@ -20,20 +20,23 @@ def main():
     kwargs = vars(args)
     util.check_environment(kwargs)
 
-    issues = 0
+    problems = []
     if args.what is None or 'projects' in args.what.split(','):
-        issues += projects.audit(endpoint=sq)
+        problems += projects.audit(endpoint=sq)
     if args.what is None or 'qp' in args.what.split(','):
-        issues += qualityprofiles.audit(endpoint=sq)
+        problems += qualityprofiles.audit(endpoint=sq)
     if args.what is None or 'qg' in args.what.split(','):
-        issues += qualitygates.audit(endpoint=sq)
+        problems += qualitygates.audit(endpoint=sq)
     if args.what is None or 'settings' in args.what.split(','):
-        issues += sq.audit()
-    if issues > 0:
-        util.logger.warning("%d issues found during audit", issues)
+        problems += sq.audit()
+
+    for p in problems:
+        print("{}".format(str(p)))
+    if problems:
+        util.logger.warning("%d issues found during audit", len(problems))
     else:
-        util.logger.info("%d issues found during audit", issues)
-    sys.exit(issues)
+        util.logger.info("%d issues found during audit", len(problems))
+    sys.exit(len(problems))
 
 
 if __name__ == "__main__":
