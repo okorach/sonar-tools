@@ -90,7 +90,7 @@ class QualityGate(sq.SqObject):
         util.logger.info("Auditing quality gate %s", self.name)
         problems = []
         if self.is_built_in:
-            return 0
+            return problems
         nb_conditions = len(self.conditions)
         if nb_conditions == 0:
             problems.append(pb.Problem(pb.Type.CONFIGURATION, pb.Severity.LOW,
@@ -149,6 +149,6 @@ def audit(endpoint=None):
     if nb_qg > 5:
         problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
             "There are {} quality gates, this is more than the max 5 recommended".format(nb_qg)))
-    for qp in quality_gates_list:
-        problems += qp.audit()
+    for qg in quality_gates_list:
+        problems += qg.audit()
     return problems

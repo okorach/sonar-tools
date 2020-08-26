@@ -196,27 +196,27 @@ groups should be favored".format(self.key))
                 continue
             if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
                 sev = pb.Severity.HIGH if gr['name'] == 'Anyone' else pb.Severity.MEDIUM
-                problems.append(pb.Type.SECURITY, sev,
-                    "Group '{}' has elevated (non read-only) permissions on project '{}'".format(gr['name'], self.key))
+                problems.append(pb.Problem(pb.Type.SECURITY, sev,
+                    "Group '{}' has elevated (non read-only) permissions on project '{}'".format(gr['name'], self.key)))
             else:
                 util.logger.info("Group '%s' has browse permissions on project '%s'. \
 Is this normal ?", gr['name'], self.key)
 
         if nb_perms > 5:
-            problems.append(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
-                "Project '{}' has too many group permissions defined ({} groups)".format(self.key, nb_perms))
+            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
+                "Project '{}' has too many group permissions defined ({} groups)".format(self.key, nb_perms)))
         if nb_scan > 1:
-            problems.append(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Execute Analysis' permission ({} groups)".format(self.key, nb_scan))
+            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Project '{}' has too many groups with 'Execute Analysis' permission ({} groups)".format(self.key, nb_scan)))
         if nb_issue_admin > 2:
-            problems.append(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Issue Admin' permission ({} groups)".format(self.key, nb_issue_admin))
+            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Project '{}' has too many groups with 'Issue Admin' permission ({} groups)".format(self.key, nb_issue_admin)))
         if nb_hotspot_admin > 2:
-            problems.append(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Hotspot Admin' permission ({} groups)".format(self.key, nb_hotspot_admin))
+            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Project '{}' has too many groups with 'Hotspot Admin' permission ({} groups)".format(self.key, nb_hotspot_admin)))
         if nb_admins > 2:
-            problems.append(pb.Type.GOVERNANCE, pb.Severity.HIGH,
-                "Project '{}' has too many groups with 'Project Admin' permissions ({} groups)".format(self.key, nb_admins))
+            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.HIGH,
+                "Project '{}' has too many groups with 'Project Admin' permissions ({} groups)".format(self.key, nb_admins)))
         return problems
 
     def __audit_permissions__(self):
@@ -417,9 +417,9 @@ def audit(endpoint=None):
     problems = []
     for key, p in plist.items():
         problems += p.audit()
-        util.logger.info("Auditing for potential duplicate projects")
+        util.logger.info("   Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key, key2):
-                problems.append(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
-                    "Project {} is likely to be a branch of {}, and if so should be deleted".format(key2, key))
+                problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
+                    "Project {} is likely to be a branch of {}, and if so should be deleted".format(key2, key)))
     return problems
