@@ -23,4 +23,4 @@ class Problem:
 
     def __str__(self):
         return "Type: {0} - Severity: {1} - Description: {2}".format(
-            repr(self.problem_type), repr(self.severity), self.message)
+            repr(self.problem_type.name), repr(self.severity.name), self.message)
