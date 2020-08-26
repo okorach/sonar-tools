@@ -13,6 +13,7 @@ import sonarqube.sqobject as sq
 import sonarqube.env as env
 import sonarqube.rules as rules
 import sonarqube.utilities as util
+import sonarqube.audit_problem as pb
 
 class QualityProfile(sq.SqObject):
 
@@ -74,37 +75,36 @@ class QualityProfile(sq.SqObject):
 
     def audit(self):
         if self.is_built_in:
-            return 0
+            return []
 
         util.logger.info("Auditing quality profile %s (key %s)", self.long_name, self.key)
-        issues = 0
+        problems = []
         age = self.age_of_last_update()
         if age > 180:
-            util.logger.warning('Quality profile %s has not been updated since %d days (more than %d days)',
-                                self.long_name, age, 180)
-            issues += 1
+            problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.LOW,
+                "Quality profile '{}' has not been updated since {} days (more than {} days)".format(
+                    self.long_name, age, 180)))
         if self.is_built_in:
-            return issues
+            return problems
         rules_per_lang = rules.get_facet(facet='languages', endpoint=self.env)
         if self.nb_rules < int(rules_per_lang[self.language]*0.5):
-            util.logger.warning('Quality profile %s has %d rules, this is too few, less than 50%% of all %d rules for language %s',
-                                self.long_name, self.nb_rules, rules_per_lang[self.language], self.language)
-            issues += 1
+            problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.HIGH,
+                "Quality profile '{}' has {} rules, this is too few, less than 50% of all {} rules for language '{}'".format(
+                    self.long_name, self.nb_rules, rules_per_lang[self.language], self.language)))
         age = self.age_of_last_use()
         if age is None or not self.is_default and self.project_count == 0:
-            util.logger.warning('Quality profile %s is not used, it should be removed', self.long_name)
-            issues += 1
+            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
+                "Quality profile '{}' is not used, it should be removed".format(self.long_name)))
         elif age > 180:
-            util.logger.warning('Quality profile %s has not been used since %d days, it should be deleted',
-                                self.long_name, age)
-            issues += 1
+            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
+                "Quality profile '{}' has not been used since {} days, it should be deleted".format(
+                    self.long_name, age)))
         if self.deprecated_rules > 0:
-            util.logger.warning('Quality profile %s has %d deprecated rules, they should be removed',
-                                self.long_name, self.deprecated_rules)
-            issues += 1
+            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Quality profile '{}' has {} deprecated rules, they should be removed".format(
+                    self.long_name, self.deprecated_rules)))
 
-
-        return issues
+        return problems
 
 def search(endpoint=None, params=None):
     resp = env.get('qualityprofiles/search', ctxt=endpoint, params=params)
@@ -115,13 +115,14 @@ def search(endpoint=None, params=None):
     return qp_list
 
 def audit(endpoint=None):
-    issues = 0
+    problems = []
     langs = {}
     for qp in search(endpoint):
-        issues += qp.audit()
+        problems += qp.audit()
         langs[qp.language] = langs.get(qp.language, 0) + 1
     for lang in langs:
         if langs[lang] > 5:
-            util.logger.warning("Language %s has %d quality profiles. This is more than the recommended 5 max",
-                                lang, langs[lang])
-    return issues
+            problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.MEDIUM,
+                "Language {} has {} quality profiles. This is more than the recommended 5 max".format(
+                    lang, langs[lang])))
+    return problems
