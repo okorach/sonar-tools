@@ -51,9 +51,10 @@ def main():
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
     parser.add_argument('-w', '--what', required=False,
                         help='What to audit (qp,qg,settings,projects) comma separated, everything by default')
-    parser.add_argument('-f', '--format', choices=['csv', 'json'], required=False,
-                        help='Output format for audit report, csv by default')
-    parser.add_argument('-r', '--reportFile', required=False, help='Output file for the report, stdout by default')
+    parser.add_argument('--format', choices=['csv', 'json'], required=False,
+                        help='''Output format for audit report
+If not specified, it is the output file extension if json or csv, then csv by default''')
+    parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
     args = parser.parse_args()
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
