@@ -4,20 +4,9 @@
     Deletes projects that has not been analyzed for a given amount of time
 
 '''
-import re
-import json
-
-import argparse
-import requests
-import sonarqube.measures as measures
-import sonarqube.metrics as metrics
 import sonarqube.projects as projects
 import sonarqube.utilities as util
 import sonarqube.env as env
-
-def diff(first, second):
-    second = set(second)
-    return [item for item in first if item not in second]
 
 parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
 parser.add_argument('-o', '--olderThan', required=True, help='Days since last analysis')

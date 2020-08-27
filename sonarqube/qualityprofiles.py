@@ -4,9 +4,7 @@
     Abstraction of the SonarQube "quality profile" concept
 
 '''
-import sys
 import datetime
-import re
 import json
 import pytz
 import sonarqube.sqobject as sq
@@ -14,6 +12,7 @@ import sonarqube.env as env
 import sonarqube.rules as rules
 import sonarqube.utilities as util
 import sonarqube.audit_problem as pb
+
 
 class QualityProfile(sq.SqObject):
 
@@ -39,14 +38,14 @@ class QualityProfile(sq.SqObject):
 
     def get_permissions(self, perm_type):
         resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
-                       params={'projectKey':self.key, 'ps':1})
+                       params={'projectKey': self.key, 'ps': 1})
         data = json.loads(resp.text)
         nb_perms = int(data['paging']['total'])
-        nb_pages = (nb_perms+99) // 100
+        nb_pages = (nb_perms + 99) // 100
         perms = []
         for page in range(nb_pages):
             resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
-                           params={'projectKey':self.key, 'ps':100, 'p':page+1})
+                           params={'projectKey': self.key, 'ps': 100, 'p': page + 1})
             data = json.loads(resp.text)
             for p in data[perm_type]:
                 perms.append(p)
@@ -87,7 +86,7 @@ class QualityProfile(sq.SqObject):
         if self.is_built_in:
             return problems
         rules_per_lang = rules.get_facet(facet='languages', endpoint=self.env)
-        if self.nb_rules < int(rules_per_lang[self.language]*0.5):
+        if self.nb_rules < int(rules_per_lang[self.language] * 0.5):
             problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.HIGH,
                 "Quality profile '{}' has {} rules, this is too few, less than 50% of all {} rules for language '{}'".format(
                     self.long_name, self.nb_rules, rules_per_lang[self.language], self.language)))
@@ -106,13 +105,15 @@ class QualityProfile(sq.SqObject):
 
         return problems
 
+
 def search(endpoint=None, params=None):
     resp = env.get('qualityprofiles/search', ctxt=endpoint, params=params)
     data = json.loads(resp.text)
     qp_list = []
     for qp in data['profiles']:
-        qp_list.append(QualityProfile(qp['key'], endpoint=endpoint,data=qp))
+        qp_list.append(QualityProfile(qp['key'], endpoint=endpoint, data=qp))
     return qp_list
+
 
 def audit(endpoint=None):
     problems = []

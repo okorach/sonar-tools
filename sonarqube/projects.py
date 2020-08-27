@@ -4,12 +4,10 @@
     Abstraction of the SonarQube "project" concept
 
 '''
-import sys
 import time
 import datetime
 import re
 import json
-import requests
 import pytz
 import sonarqube.env as env
 import sonarqube.components as comp
@@ -22,6 +20,7 @@ PROJECT_SEARCH_API = 'projects/search'
 MAX_PAGE_SIZE = 500
 PRJ_QUALIFIER = 'TRK'
 APP_QUALIFIER = 'APP'
+
 
 class Project(comp.Component):
 
@@ -43,7 +42,7 @@ class Project(comp.Component):
     def __load__(self, data=None):
         ''' Loads a project object with contents of an api/projects/search call '''
         if data is None:
-            resp = env.get(PROJECT_SEARCH_API, ctxt=self.env, params={'projects':self.key})
+            resp = env.get(PROJECT_SEARCH_API, ctxt=self.env, params={'projects': self.key})
             data = json.loads(resp.text)
             data = data['components'][0]
         self.id = data.get('id', None)
@@ -90,7 +89,7 @@ class Project(comp.Component):
         if self.branches is not None:
             return self.branches
 
-        resp = env.get('project_branches/list', params={'project':self.key}, ctxt=self.env)
+        resp = env.get('project_branches/list', params={'project': self.key}, ctxt=self.env)
         data = json.loads(resp.text)
         self.branches = data['branches']
         return self.branches
@@ -103,14 +102,14 @@ class Project(comp.Component):
             return self.group_permissions
 
         resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
-                       params={'projectKey':self.key, 'ps':1})
+                       params={'projectKey': self.key, 'ps': 1})
         data = json.loads(resp.text)
         nb_perms = int(data['paging']['total'])
-        nb_pages = (nb_perms+MAX_PERMISSION_PAGE_SIZE-1) // MAX_PERMISSION_PAGE_SIZE
+        nb_pages = (nb_perms + MAX_PERMISSION_PAGE_SIZE - 1) // MAX_PERMISSION_PAGE_SIZE
         perms = []
         for page in range(nb_pages):
             resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
-                           params={'projectKey':self.key, 'ps':MAX_PERMISSION_PAGE_SIZE, 'p':page+1})
+                           params={'projectKey': self.key, 'ps': MAX_PERMISSION_PAGE_SIZE, 'p': page + 1})
             data = json.loads(resp.text)
             for p in data[perm_type]:
                 perms.append(p)
@@ -134,7 +133,7 @@ class Project(comp.Component):
         if not confirmed:
             return False
         util.logger.debug("Deleting project key %s", self.key)
-        if not super().delete('projects/delete', params={'project':self.key}):
+        if not super().delete('projects/delete', params={'project': self.key}):
             util.logger.error("Project key %s deletion failed", self.key)
             return False
         util.logger.info("Successfully deleted project key %s - %d LoCs", self.key, loc)
@@ -245,7 +244,7 @@ Is this normal ?", gr['name'], self.key)
     def __audit_visibility__(self):
         util.logger.info("   Auditing Project '%s' visibility", self.key)
         problems = []
-        resp = env.get('navigation/component', ctxt=self.env, params={'component':self.key})
+        resp = env.get('navigation/component', ctxt=self.env, params={'component': self.key})
         data = json.loads(resp.text)
         visi = data['visibility']
         if visi == 'private':
@@ -275,10 +274,10 @@ Is this normal ?", gr['name'], self.key)
     def audit(self):
         util.logger.info("Auditing project %s", self.key)
         return (
-            self.__audit_last_analysis__() +
-            self.__audit_visibility__() +
-            self.__audit_languages__() +
-            self.__audit_permissions__()
+            self.__audit_last_analysis__()
+            + self.__audit_visibility__()
+            + self.__audit_languages__()
+            + self.__audit_permissions__()
         )
 
     def delete_if_obsolete(self, days=180):
@@ -294,7 +293,7 @@ Is this normal ?", gr['name'], self.key)
             return self.delete()
         return False
 
-    def __wait_for_task_completion__(self, task_id, params, timeout = 180):
+    def __wait_for_task_completion__(self, task_id, params, timeout=180):
         finished = False
         wait_time = 0
         sleep_time = 0.5
@@ -302,7 +301,7 @@ Is this normal ?", gr['name'], self.key)
             time.sleep(sleep_time)
             wait_time += sleep_time
             sleep_time *= 2
-            resp = env.get('ce/activity', params=params, ctxt = self.env)
+            resp = env.get('ce/activity', params=params, ctxt=self.env)
             data = json.loads(resp.text)
             for t in data['tasks']:
                 if t['id'] != task_id:
@@ -317,13 +316,13 @@ Is this normal ?", gr['name'], self.key)
                 finished = True
         return status
 
-    def export(self, timeout = 180):
+    def export(self, timeout=180):
         util.logger.info('Exporting project key = %s (synchronously)', self.key)
-        resp = env.post('project_dump/export', params={'key':self.key}, ctxt=self.env)
+        resp = env.post('project_dump/export', params={'key': self.key}, ctxt=self.env)
         if resp.status_code != 200:
-            return {'status' : 'HTTP_ERROR {0}'.format(resp.status_code)}
+            return {'status': 'HTTP_ERROR {0}'.format(resp.status_code)}
         data = json.loads(resp.text)
-        params = {'type':'PROJECT_EXPORT', 'status':'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
+        params = {'type': 'PROJECT_EXPORT', 'status': 'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
         if self.env.get_version() >= (8, 0, 0):
             params['component'] = self.key
         else:
@@ -332,7 +331,7 @@ Is this normal ?", gr['name'], self.key)
         if status != 'SUCCESS':
             util.logger.error("Project key %s export %s", self.key, status)
             return {'status': status}
-        resp = env.get('project_dump/status', params={'key':self.key}, ctxt = self.env)
+        resp = env.get('project_dump/status', params={'key': self.key}, ctxt=self.env)
         data = json.loads(resp.text)
         dump_file = data['exportedDump']
         util.logger.debug("Project key %s export %s, dump file %s", self.key, status, dump_file)
@@ -340,7 +339,7 @@ Is this normal ?", gr['name'], self.key)
 
     def export_async(self):
         util.logger.info('Exporting project key = %s (asynchronously)', self.key)
-        resp = env.post('project_dump/export', params={'key':self.key}, ctxt = self.env)
+        resp = env.post('project_dump/export', params={'key': self.key}, ctxt=self.env)
         if resp.status_code != 200:
             return None
         data = json.loads(resp.text)
@@ -348,8 +347,9 @@ Is this normal ?", gr['name'], self.key)
 
     def importproject(self):
         util.logger.info('Importing project key = %s (asynchronously)', self.key)
-        resp = env.post('project_dump/import', params={'key':self.key}, ctxt = self.env)
+        resp = env.post('project_dump/import', params={'key': self.key}, ctxt=self.env)
         return resp.status_code
+
 
 def count(endpoint=None, params=None):
     if params is None:
@@ -359,6 +359,7 @@ def count(endpoint=None, params=None):
     resp = env.get(PROJECT_SEARCH_API, ctxt=endpoint, params=params)
     data = json.loads(resp.text)
     return data['paging']['total']
+
 
 def search(endpoint=None, page=0, params=None):
     if params is None:
@@ -376,26 +377,29 @@ def search(endpoint=None, page=0, params=None):
         return plist
 
     nb_projects = count(endpoint=endpoint, params=params)
-    nb_pages = ((nb_projects-1)//MAX_PAGE_SIZE) + 1
+    nb_pages = ((nb_projects - 1) // MAX_PAGE_SIZE) + 1
     params['ps'] = MAX_PAGE_SIZE
     project_list = {}
-    for page in range(nb_pages):
-        params['p'] = page+1
-        project_list.update(search(endpoint=endpoint, page=page+1, params=params))
+    for p in range(nb_pages):
+        params['p'] = p + 1
+        project_list.update(search(endpoint=endpoint, page=p + 1, params=params))
     return project_list
 
-def get(key, sqenv = None):
+
+def get(key, sqenv=None):
     global PROJECTS
     if key not in PROJECTS:
         _ = Project(key=key, endpoint=sqenv)
     return PROJECTS[key]
 
-def create_project(key, name = None, visibility = 'private', sqenv = None):
+
+def create_project(key, name=None, visibility='private', sqenv=None):
     if name is None:
         name = key
-    resp = env.post('projects/create', ctxt = sqenv,
-                    params={'project':key, 'name':name, 'visibility':visibility})
+    resp = env.post('projects/create', ctxt=sqenv,
+                    params={'project': key, 'name': name, 'visibility': visibility})
     return resp.status_code
+
 
 def delete_old_projects(days=180, endpoint=None):
     '''Deletes all projects whose last analysis date on any branch is older than x days'''
@@ -411,6 +415,7 @@ def delete_old_projects(days=180, endpoint=None):
         print("%d PROJECTS for a total of %d LoCs to delete" % (deleted_projects, deleted_locs))
     else:
         print("%d PROJECTS deleted for a total of %d LoCs" % (deleted_projects, deleted_locs))
+
 
 def audit(endpoint=None):
     plist = search(endpoint)

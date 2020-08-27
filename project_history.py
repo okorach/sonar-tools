@@ -1,4 +1,10 @@
 #!/usr/local/bin/python3
+'''
+
+Collects the history of metrics of a project
+
+'''
+
 import json
 import requests
 

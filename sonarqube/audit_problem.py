@@ -2,6 +2,7 @@ import enum
 import json
 # Using enum class create enumerations
 
+
 class Type(enum.Enum):
     SECURITY = 1
     GOVERNANCE = 2
@@ -9,6 +10,7 @@ class Type(enum.Enum):
     PERFORMANCE = 4
     BAD_PRACTICE = 5
     OPERATIONS = 6
+
 
 class Severity(enum.Enum):
     CRITICAL = 1

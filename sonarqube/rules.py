@@ -4,12 +4,10 @@
     Abstraction of the SonarQube "rule" concept
 
 '''
-import sys
 import json
-import requests
 import sonarqube.sqobject as sq
 import sonarqube.env as env
-import sonarqube.utilities as util
+
 
 class Rule(sq.SqObject):
     def __init__(self, key, endpoint, data):
@@ -30,13 +28,15 @@ class Rule(sq.SqObject):
         self.is_template = data['isTemplate']
         self.template_key = data.get('templateKey', None)
 
+
 def get_facet(facet, endpoint=None):
-    resp = env.get('rules/search', ctxt=endpoint, params={'ps':1, 'facets':facet})
+    resp = env.get('rules/search', ctxt=endpoint, params={'ps': 1, 'facets': facet})
     data = json.loads(resp.text)
     facet_dict = {}
     for f in data['facets'][0]['values']:
         facet_dict[f['val']] = f['count']
     return facet_dict
+
 
 def count(endpoint=None, params=None):
     if params is None:
@@ -47,6 +47,7 @@ def count(endpoint=None, params=None):
     data = json.loads(resp.text)
     return data['total']
 
+
 def search(endpoint=None, params=None):
     resp = env.get('rules/search', ctxt=endpoint, params=params)
     data = json.loads(resp.text)
@@ -55,15 +56,16 @@ def search(endpoint=None, params=None):
         rule_list.append(Rule(rule['key'], endpoint=endpoint, data=rule))
     return rule_list
 
+
 def search_all(endpoint=None, params=None):
     params['is_template'] = 'false'
     params['include_external'] = 'true'
     nb_rules = count(endpoint=endpoint, params=params)
-    nb_pages = ((nb_rules-1)//500) + 1
+    nb_pages = ((nb_rules - 1) // 500) + 1
     params['ps'] = 500
     rule_list = {}
     for page in range(nb_pages):
-        params['p'] = page+1
+        params['p'] = page + 1
         for r in search(endpoint=endpoint, params=params):
             rule_list[r['key']] = r
     return rule_list
