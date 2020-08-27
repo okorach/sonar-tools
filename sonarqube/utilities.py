@@ -15,13 +15,24 @@ RUN_MODE = DRY_RUN
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
 
 logger = logging.getLogger('sonarqube-tools')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)-7s | %(message)s')
 fh = logging.FileHandler('sonarqube-tools.log')
 ch = logging.StreamHandler()
 logger.addHandler(fh)
 logger.addHandler(ch)
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
+
+
+def set_logger(name):
+    global logger
+    logger = logging.getLogger(name)
+    new_fh = logging.FileHandler(name + '.log')
+    new_ch = logging.StreamHandler()
+    logger.addHandler(new_fh)
+    logger.addHandler(new_ch)
+    new_fh.setFormatter(formatter)
+    new_ch.setFormatter(formatter)
 
 def set_common_args(desc):
     """Parses options common to all sonarqube-tools scripts"""
