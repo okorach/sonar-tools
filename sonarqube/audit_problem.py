@@ -16,9 +16,10 @@ class Severity(enum.Enum):
     MEDIUM = 3
     LOW = 4
 
+
 class Problem():
     def __init__(self, problem_type, severity, msg):
-        #dict.__init__(type=problem_type, severity=severity, message=msg)
+        # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.type = problem_type
         self.severity = severity
         self.message = msg

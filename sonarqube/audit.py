@@ -37,6 +37,7 @@ def __dump_report__(problems, file, file_format):
     if file is not None:
         f.close()
 
+
 def __deduct_format__(fmt, file):
     if fmt is not None:
         return fmt
@@ -45,6 +46,7 @@ def __deduct_format__(fmt, file):
         if ext == 'csv' or ext == 'json':
             return ext
     return 'csv'
+
 
 def main():
     util.set_logger('sonar-audit')
