@@ -1,4 +1,5 @@
 import enum
+import json
 # Using enum class create enumerations
 
 class Type(enum.Enum):
@@ -15,12 +16,23 @@ class Severity(enum.Enum):
     MEDIUM = 3
     LOW = 4
 
-class Problem:
+class Problem():
     def __init__(self, problem_type, severity, msg):
-        self.problem_type = problem_type
+        #dict.__init__(type=problem_type, severity=severity, message=msg)
+        self.type = problem_type
         self.severity = severity
         self.message = msg
 
     def __str__(self):
         return "Type: {0} - Severity: {1} - Description: {2}".format(
-            repr(self.problem_type.name), repr(self.severity.name), self.message)
+            repr(self.type.name)[1:-1], repr(self.severity.name)[1:-1], self.message)
+
+    def to_json(self):
+        d = vars(self)
+        d['type'] = repr(self.type.name)[1:-1]
+        d['severity'] = repr(self.severity.name)[1:-1]
+        return json.dumps(d, indent=4, sort_keys=False, separators=(',', ': '))
+
+    def to_csv(self):
+        return '{0},{1},"{2}"'.format(
+            repr(self.type.name)[1:-1], repr(self.severity.name)[1:-1], self.message)
