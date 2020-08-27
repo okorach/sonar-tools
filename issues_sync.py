@@ -7,15 +7,12 @@
 
     Only issues with a 100% match are propagates. When there's a doubt, nothing is done
 '''
-import sys
-import json
-import argparse
-import requests
+
+
 import sonarqube.env as env
 import sonarqube.issues as issues
 import sonarqube.utilities as util
 
-# ------------------------------------------------------------------------------
 
 def parse_args(desc):
     parser = util.set_common_args(desc)
@@ -50,11 +47,11 @@ if 'targetComponentKeys' in targetParams and targetParams['targetComponentKeys']
     targetParams['componentKeys'] = targetParams['targetComponentKeys']
 # Add SQ environment
 
-params.update({'env':source_env})
+params.update({'env': source_env})
 all_source_issues = issues.search_all_issues(source_env, **params)
 util.logger.info("Found %d issues with manual changes on source project", len(all_source_issues))
 
-targetParams.update({'env':target_env})
+targetParams.update({'env': target_env})
 all_target_issues = issues.search_all_issues(target_env, **targetParams)
 util.logger.info("Found %d target issues on target project", len(all_target_issues))
 

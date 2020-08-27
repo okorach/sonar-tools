@@ -5,10 +5,7 @@
 
 '''
 
-import sys
-import datetime
 import json
-import requests
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.env as env
@@ -36,17 +33,17 @@ class Component(sq.SqObject):
         self.language = data.get('language', None)
 
     def get_subcomponents(self, strategy='children', with_issues=False):
-        parms = {'component':self.key, 'strategy':strategy, 'ps':1,
-                 'metricKeys':'bugs,vulnerabilities,code_smells,security_hotspots'}
+        parms = {'component': self.key, 'strategy': strategy, 'ps': 1,
+                 'metricKeys': 'bugs,vulnerabilities,code_smells,security_hotspots'}
         resp = env.get('measures/component_tree', params=parms, ctxt=self.env)
         data = json.loads(resp.text)
         nb_comp = data['paging']['total']
         util.logger.debug("Found %d subcomponents to %s", nb_comp, self.key)
-        nb_pages = (nb_comp+500-1)//500
-        l = {}
+        nb_pages = (nb_comp + 500 - 1)//500
+        comp_list = {}
         parms['ps'] = 500
         for page in range(nb_pages):
-            parms['p'] = page+1
+            parms['p'] = page + 1
             resp = env.get('measures/component_tree', params=parms, ctxt=self.env)
             data = json.loads(resp.text)
             for d in data['components']:
@@ -56,10 +53,10 @@ class Component(sq.SqObject):
                 if with_issues and issues == 0:
                     util.logger.debug("Subcomponent %s has 0 issues, skipping", d['key'])
                     continue
-                l[d['key']] = Component(key=d['key'], sqenv=self.env, data=d)
-                l[d['key']].nbr_issues = issues
+                comp_list[d['key']] = Component(key=d['key'], sqenv=self.env, data=d)
+                comp_list[d['key']].nbr_issues = issues
                 util.logger.debug("Component %s has %d issues", d['key'], issues)
-        return l
+        return comp_list
 
     def get_number_of_filtered_issues(self, params):
         import sonarqube.issues as issues
@@ -86,7 +83,7 @@ class Component(sq.SqObject):
 
     def get_issues(self):
         import sonarqube.issues as issues
-        issue_list = issues.search(endpoint=self.env, params={'componentKeys':self.key})
+        issue_list = issues.search(endpoint=self.env, params={'componentKeys': self.key})
         self.nbr_issues = len(issue_list)
         return issue_list
 
@@ -94,16 +91,18 @@ class Component(sq.SqObject):
         return measures.component(component_key=self.key, metric_keys=','.join(metric_list), endpoint=self.env)
 
     def get_measure(self, metric):
-        res = self.get_measures(metric_list = [metric])
+        res = self.get_measures(metric_list=[metric])
         for key in res:
             if key == metric:
                 return res[key]
         return None
 
+
 def get_components(component_types, endpoint=None):
-    resp = env.get('projects/search', params={'ps':500, 'qualifiers':component_types}, ctxt=endpoint)
+    resp = env.get('projects/search', params={'ps': 500, 'qualifiers': component_types}, ctxt=endpoint)
     data = json.loads(resp.text)
     return data['components']
+
 
 def get_subcomponents(component_key, strategy='children', with_issues=False, endpoint=None):
     return Component(key=component_key, sqenv=endpoint).get_subcomponents(strategy=strategy, with_issues=with_issues)

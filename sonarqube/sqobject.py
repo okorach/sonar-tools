@@ -6,6 +6,7 @@
 '''
 import sonarqube.env
 
+
 class SqObject:
 
     def __init__(self, key, env):
@@ -18,12 +19,12 @@ class SqObject:
     def get_env(self):
         return self.env
 
-    def get(self, api, params = None):
+    def get(self, api, params=None):
         return sonarqube.env.get(api, params, self.env)
 
-    def post(self, api, params = None):
+    def post(self, api, params=None):
         return sonarqube.env.post(api, params, self.env)
 
-    def delete(self, api, params = None):
+    def delete(self, api, params=None):
         resp = sonarqube.env.delete(api, params, self.env)
         return (resp.status_code // 100) == 2

@@ -5,16 +5,17 @@
 
 '''
 import json
-import requests
 import sonarqube.env as env
 import sonarqube.utilities as util
 import sonarqube.sqobject as sq
 import sonarqube.metrics as metrics
 
+
 class Measure(sq.SqObject):
     API_ROOT = 'measures'
     API_COMPONENT = API_ROOT + '/component'
     API_HISTORY = API_ROOT + '/search_history'
+
     def __init__(self, key=None, value=None, endpoint=None):
         super().__init__(key=key, env=endpoint)
         if metrics.is_a_rating(self.key):
@@ -24,16 +25,15 @@ class Measure(sq.SqObject):
         self.history = None
 
     def read(self, project_key, metric_key):
-        resp = self.get(Measure.API_COMPONENT,  {'component':project_key, 'metricKeys':metric_key})
+        resp = self.get(Measure.API_COMPONENT, {'component': project_key, 'metricKeys': metric_key})
         data = json.loads(resp.text)
         return data['component']['measures']
-
 
     def count_history(self, project_key, params=None):
         if params is None:
             params = {}
-        params.update({'component':project_key, 'metrics':self.key, 'ps':1})
-        resp = self.get(Measure.API_HISTORY,  params=params)
+        params.update({'component': project_key, 'metrics': self.key, 'ps': 1})
+        resp = self.get(Measure.API_HISTORY, params=params)
         data = json.loads(resp.text)
         return data['paging']['total']
 
@@ -43,15 +43,16 @@ class Measure(sq.SqObject):
         if page != 0:
             if params is None:
                 params = {}
-            resp = self.get(Measure.API_HISTORY, {'component':project_key, 'metrics':self.key, 'ps':1000})
+            resp = self.get(Measure.API_HISTORY, {'component': project_key, 'metrics': self.key, 'ps': 1000})
             data = json.loads(resp.text)
             for m in data['measures'][0]['history']:
-                measures[m['date']]= m['value']
+                measures[m['date']] = m['value']
             return measures
-        nb_pages = (self.count_history(project_key, params=params)+MAX_PAGE_SIZE-1)//MAX_PAGE_SIZE
-        for page in range(nb_pages):
-            measures.update(self.search_history(project_key=project_key, params=params, page=page+1))
+        nb_pages = (self.count_history(project_key, params=params) + MAX_PAGE_SIZE - 1) // MAX_PAGE_SIZE
+        for p in range(nb_pages):
+            measures.update(self.search_history(project_key=project_key, params=params, page=p + 1))
         return measures
+
 
 def component(component_key, metric_keys, endpoint=None, **kwargs):
     kwargs['component'] = component_key
@@ -69,6 +70,7 @@ def component(component_key, metric_keys, endpoint=None, **kwargs):
             m_list[m['metric']] = value
     return m_list
 
+
 def get_rating_letter(rating_number_str):
     try:
         n_int = int(float(rating_number_str))
@@ -77,8 +79,9 @@ def get_rating_letter(rating_number_str):
         util.logger.error("Wrong numeric rating provided %s", rating_number_str)
         return rating_number_str
 
+
 def get_rating_number(rating_letter):
     l = rating_letter.upper()
-    if l in ['A','B','C','D','E']:
+    if l in ['A', 'B', 'C', 'D', 'E']:
         return ord(l) - 64
     return rating_letter

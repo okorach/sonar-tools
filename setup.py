@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name='sonar-tools',
     version='0.3.1',
-    scripts=['sonar-tools'] ,
+    scripts=['sonar-tools'],
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",
     description="A collection of utility scripts for SonarQube",

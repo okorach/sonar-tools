@@ -25,6 +25,7 @@ GLOBAL_PERMISSIONS = {
     "scan": "Run Analysis"
 }
 
+
 class Environment:
 
     def __init__(self, url, token):
@@ -71,7 +72,7 @@ class Environment:
         sysinfo = json.loads(resp.text)
         return sysinfo
 
-    def get(self, api, params = None):
+    def get(self, api, params=None):
         api = __normalize_api__(api)
         util.logger.debug('GET: %s', self.urlstring(api, params))
         try:
@@ -86,7 +87,7 @@ class Environment:
             util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.status_code, r.text)
         return r
 
-    def post(self, api, params = None):
+    def post(self, api, params=None):
         api = __normalize_api__(api)
         util.logger.debug('POST: %s', self.urlstring(api, params))
         try:
@@ -101,7 +102,7 @@ class Environment:
             util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.status_code, r.text)
         return r
 
-    def delete(self, api, params = None):
+    def delete(self, api, params=None):
         api = __normalize_api__(api)
         util.logger.debug('DELETE: %s', self.urlstring(api, params))
         try:
@@ -131,26 +132,26 @@ class Environment:
     def __audit_project_default_visibility__(self):
         util.logger.info('Auditing project default visibility')
         problems = []
-        resp = self.get('navigation/organization', params={'organization':'default-organization'})
+        resp = self.get('navigation/organization', params={'organization': 'default-organization'})
         data = json.loads(resp.text)
         visi = data['organization']['projectVisibility']
         util.logger.info('Project default visibility is %s', visi)
         if visi != 'private':
             problems.append(
                 pb.Problem(pb.Type.SECURITY, pb.Severity.HIGH,
-                    'Project default visibility is {}, which can be a security risk'.format(visi)))
+                           'Project default visibility is {}, which can be a security risk'.format(visi)))
         return problems
 
     def __audit_admin_password__(self):
         util.logger.info('Auditing admin password')
         problems = []
         try:
-            r = requests.get(url=self.root_url + '/api/authentication/validate', auth=('admin','admin'))
+            r = requests.get(url=self.root_url + '/api/authentication/validate', auth=('admin', 'admin'))
             data = json.loads(r.text)
             if data.get('valid', False):
                 problems.append(
                     pb.Problem(pb.Type.SECURITY, pb.Severity.CRITICAL,
-                        "User 'admin' still using the default password, this must be changed ASAP"))
+                               "User 'admin' still using the default password, this must be changed ASAP"))
             else:
                 util.logger.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
@@ -179,7 +180,7 @@ class Environment:
         for gr in groups:
             if gr['name'] == 'Anyone':
                 problems.append(pb.Problem(pb.Type.SECURITY, pb.Severity.HIGH,
-                                         "Group 'Anyone' should not have any global permission"))
+                                           "Group 'Anyone' should not have any global permission"))
             if gr['name'] == 'sonar-users' and (
                     'admin' in gr['permissions'] or 'gateadmin' in gr['permissions'] or
                     'profileadmin' in gr['permissions'] or 'provisioning' in gr['permissions']):
@@ -232,51 +233,59 @@ class Environment:
             else:
                 settings[s['key']] = ','.join(s['values'])
 
-        if self.get_version() < (8,0,0):
+        if self.get_version() < (8, 0, 0):
             problems += __audit_setting_range__(settings,
                 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches', 10, 60, pb.Severity.MEDIUM)
         problems += (
-            __audit_setting_value__(settings, 'sonar.forceAuthentication', 'true') +
-            __audit_setting_value__(settings, 'sonar.cpd.cross_project', 'false') +
-            __audit_setting_value__(settings, 'sonar.global.exclusions', '') +
-            __audit_setting_range__(settings, 'sonar.dbcleaner.daysBeforeDeletingClosedIssues', 10, 60) +
-            __audit_setting_range__(settings, 'sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay', 12, 240) +
-            __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek', 2, 12) +
-            __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth', 26, 104) +
-            __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeDeletingAllSnapshots', 104, 260) +
-            __audit_setting_defined__(settings, 'sonar.core.serverBaseURL', pb.Severity.HIGH) +
-            __audit_maintainability_rating_grid__(settings['sonar.technicalDebt.ratingGrid']) +
-            __audit_setting_range__(settings, 'sonar.technicalDebt.developmentCost', 20, 30, pb.Severity.MEDIUM) +
-            self.__audit_project_default_visibility__() +
-            audit_sysinfo(self.get_sysinfo()) +
-            self.__audit_admin_password__() +
-            self.__audit_global_permissions__()
+            __audit_setting_value__(settings, 'sonar.forceAuthentication', 'true')
+            + __audit_setting_value__(settings, 'sonar.cpd.cross_project', 'false')
+            + __audit_setting_value__(settings, 'sonar.global.exclusions', '')
+            + __audit_setting_range__(settings, 'sonar.dbcleaner.daysBeforeDeletingClosedIssues', 10, 60)
+            + __audit_setting_range__(settings, 'sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay', 12, 240)
+            + __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek', 2, 12)
+            + __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth', 26, 104)
+            + __audit_setting_range__(settings, 'sonar.dbcleaner.weeksBeforeDeletingAllSnapshots', 104, 260)
+            + __audit_setting_defined__(settings, 'sonar.core.serverBaseURL', pb.Severity.HIGH)
+            + __audit_maintainability_rating_grid__(settings['sonar.technicalDebt.ratingGrid'])
+            + __audit_setting_range__(settings, 'sonar.technicalDebt.developmentCost', 20, 30, pb.Severity.MEDIUM)
+            + self.__audit_project_default_visibility__()
+            + audit_sysinfo(self.get_sysinfo())
+            + self.__audit_admin_password__()
+            + self.__audit_global_permissions__()
         )
         return problems
 
-#--------------------- Static methods, not recommended -----------------
+
+# --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
 this.context = Environment("http://localhost:9000", '')
+
 
 def set_env(url, token):
     this.context = Environment(url, token)
     util.logger.debug('Setting GLOBAL environment: %s@%s', token, url)
 
+
 def set_token(token):
     this.context.set_token(token)
+
 
 def get_token():
     return this.context.token
 
+
 def get_credentials():
     return (this.context.token, '')
+
 
 def set_url(url):
     this.context.set_url(url)
 
+
 def get_url():
     return this.context.root_url
+
 
 def __normalize_api__(api):
     api = api.lower()
@@ -290,20 +299,24 @@ def __normalize_api__(api):
         api = '/api/' + api
     return api
 
-def get(api, params = None, ctxt = None):
+
+def get(api, params=None, ctxt=None):
     if ctxt is None:
         ctxt = this.context
     return ctxt.get(api, params)
 
-def post(api, params = None, ctxt = None):
+
+def post(api, params=None, ctxt=None):
     if ctxt is None:
         ctxt = this.context
     return ctxt.post(api, params)
 
-def delete(api, params = None, ctxt = None):
+
+def delete(api, params=None, ctxt=None):
     if ctxt is None:
         ctxt = this.context
     return ctxt.delete(api, params)
+
 
 def __get_memory__(setting):
     for s in setting.split(' '):
@@ -318,6 +331,7 @@ def __get_memory__(setting):
                 return val // 1024
     return None
 
+
 def __get_store_size__(setting):
     (val, unit) = setting.split(' ')
     if unit == 'MB':
@@ -325,6 +339,7 @@ def __get_store_size__(setting):
     elif unit == 'GB':
         return int(val) * 1024
     return None
+
 
 def __audit_setting_range__(settings, key, min_val, max_val, category=pb.Type.CONFIGURATION, severity=pb.Severity.MEDIUM):
     util.logger.info("Auditing that setting %s is within recommended range [%d-%d]", key, min_val, max_val)
@@ -337,6 +352,7 @@ def __audit_setting_range__(settings, key, min_val, max_val, category=pb.Type.CO
                     key, value, min_val, max_val)))
     return problems
 
+
 def __audit_setting_value__(settings, key, value, category=pb.Type.CONFIGURATION, severity=pb.Severity.MEDIUM):
     util.logger.info("Auditing that setting %s has common/recommended value '%s'", key, value)
     s = settings.get(key, '')
@@ -345,6 +361,7 @@ def __audit_setting_value__(settings, key, value, category=pb.Type.CONFIGURATION
         problems.append(pb.Problem(category, severity,
             "Setting {} has potentially incorrect/unsafe value '{}'".format(key, s)))
     return problems
+
 
 def __audit_setting_defined__(settings, key, category=pb.Type.CONFIGURATION, severity=pb.Severity.MEDIUM):
     util.logger.info("Auditing that setting %s is set", key)
@@ -357,6 +374,7 @@ def __audit_setting_defined__(settings, key, category=pb.Type.CONFIGURATION, sev
                        "Setting {} is not set, although it should".format(key)))
     return problems
 
+
 def __audit_maintainability_rating_range__(value, min_val, max_val, rating_letter):
     util.logger.info('Checking that maintainability rating threshold %3.0f%% for %s is \
 within recommended range [%3.0f%%-%3.0f%%]', value*100, rating_letter, min_val*100, max_val*100)
@@ -368,14 +386,16 @@ within recommended range [%3.0f%%-%3.0f%%]', value*100, rating_letter, min_val*1
 NOT within recommended range [{}%-{}%]'.format(value*100, rating_letter, min_val*100, max_val*100)))
     return problems
 
+
 def __audit_maintainability_rating_grid__(grid):
     (a, b, c, d) = grid.split(',')
     return (
-        __audit_maintainability_rating_range__(float(a), 0.03, 0.05, 'A') +
-        __audit_maintainability_rating_range__(float(b), 0.07, 0.10, 'B') +
-        __audit_maintainability_rating_range__(float(c), 0.15, 0.20, 'C') +
-        __audit_maintainability_rating_range__(float(d), 0.40, 0.50, 'D')
+        __audit_maintainability_rating_range__(float(a), 0.03, 0.05, 'A')
+        + __audit_maintainability_rating_range__(float(b), 0.07, 0.10, 'B')
+        + __audit_maintainability_rating_range__(float(c), 0.15, 0.20, 'C')
+        + __audit_maintainability_rating_range__(float(d), 0.40, 0.50, 'D')
     )
+
 
 def __check_log_level__(sysinfo):
     util.logger.info('Auditing log levels')
@@ -395,6 +415,7 @@ reverting to INFO is required")
         )
     return problems
 
+
 def __audit_web_settings__(sysinfo):
     util.logger.info('Auditing Web settings')
     problems = []
@@ -409,6 +430,7 @@ not in recommended range [1024-2048]".format(web_ram))
         util.logger.info("sonar.web.javaOpts -Xmx memory setting value is %d MB, \
 within the recommended range [1024-2048]", web_ram)
     return problems
+
 
 def __audit_ce_settings__(sysinfo):
     util.logger.info('Auditing CE settings')
@@ -434,6 +456,7 @@ not in recommended range ([512-2048] x {} workers)".format(ce_ram, ce_workers))
         util.logger.info("sonar.ce.javaOpts -Xmx memory setting value is %d MB, \
 within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
     return problems
+
 
 def __audit_ce_background_tasks__(sysinfo):
     util.logger.info('Auditing CE background tasks')
@@ -471,6 +494,7 @@ verify failed background tasks'.format(int(failure_rate*100)))
         util.logger.info('Number of pending background tasks (%d) is OK', ce_pending)
     return problems
 
+
 def __audit_es_settings__(sysinfo):
     util.logger.info('Auditing Search Server settings')
     problems = []
@@ -485,6 +509,7 @@ too low for index size of {} MB".format(es_ram, index_size))
     else:
         util.logger.info("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
     return problems
+
 
 def __audit_dce_settings__(sysinfo):
     util.logger.info('Auditing DCE settings')
@@ -532,6 +557,7 @@ def __audit_dce_settings__(sysinfo):
             )
     return problems
 
+
 def audit_sysinfo(sysinfo):
     return (
         __audit_web_settings__(sysinfo) +
@@ -540,6 +566,7 @@ def audit_sysinfo(sysinfo):
         __audit_es_settings__(sysinfo) +
         __audit_dce_settings__(sysinfo)
     )
+
 
 def __get_permissions_count__(users_or_groups):
     perm_counts = dict(zip(GLOBAL_PERMISSIONS.keys(), [0, 0, 0, 0, 0, 0, 0]))

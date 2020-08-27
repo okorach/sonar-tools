@@ -4,11 +4,9 @@
     Abstraction of the SonarQube "issue" concept
 
 '''
-import sys
 import re
 import datetime
 import json
-import requests
 import sonarqube.env as env
 import sonarqube.sqobject as sq
 import sonarqube.components as components
@@ -17,17 +15,21 @@ import sonarqube.projects as projects
 
 SQ_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
+
 class ApiError(Exception):
     pass
 
+
 class UnknownIssueError(ApiError):
     pass
+
 
 class TooManyIssuesError(Exception):
     def __init__(self, nbr_issues, message):
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
+
 
 class IssueComments:
     def __init__(self, json_data):
@@ -45,6 +47,7 @@ class IssueComments:
     def __str__(self):
         """Dumps the object in a string"""
         return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
+
 
 class Issue(sq.SqObject):
     SEARCH_API = 'issues/search'
@@ -83,7 +86,7 @@ class Issue(sq.SqObject):
             self.__load__(data)
 
     def __str__(self):
-        return "Key:{0} - Type:{1} - Severity:{2} - File/Line:{3}/{4} - Rule:{5}".format( \
+        return "Key: {0} - Type: {1} - Severity: {2} - File/Line: {3}/{4} - Rule: {5}".format(
             self.key, self.type, self.severity, self.component, self.line, self.rule)
 
     def to_string(self):
@@ -102,14 +105,14 @@ class Issue(sq.SqObject):
         if self.type != 'SECURITY_HOTSPOT':
             self.severity = jsondata['severity']
         self.author = jsondata['author']
-        self.assignee = None # json['assignee']
+        self.assignee = None  # json['assignee']
         self.status = jsondata['status']
         try:
             self.line = jsondata['line']
         except KeyError:
             self.line = None
 
-        self.resolution = None # json['resolution']
+        self.resolution = None  # json['resolution']
         self.rule = jsondata['rule']
         self.project = jsondata['project']
         self.language = None
@@ -133,18 +136,18 @@ class Issue(sq.SqObject):
             self.debt = None
 
     def read(self):
-        resp = self.get(Issue.SEARCH_API, params={'issues':self.key, 'additionalFields':'_all'})
+        resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
         self.__load__(resp.issues[0])
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
-            resp = self.get('issues/changelog', {'issue':self.key, 'format':'json'})
+            resp = self.get('issues/changelog', {'issue': self.key, 'format': 'json'})
             data = json.loads(resp.text)
             # util.json_dump_debug(data['changelog'], "Issue Changelog = ")
             self.changelog = []
             for l in data['changelog']:
                 d = diff_to_changelog(l['diffs'])
-                self.changelog.append({'date':l['creationDate'], 'event':d['event'], 'value':d['value']})
+                self.changelog.append({'date': l['creationDate'], 'event': d['event'], 'value': d['value']})
         return self.changelog
 
     def has_changelog(self):
@@ -157,10 +160,10 @@ class Issue(sq.SqObject):
         elif self.comments is None:
             self.comments = []
             for c in self.json['comments']:
-                self.comments.append({'date':c['createdAt'], 'event':'comment', 'value':c['markdown']})
+                self.comments.append({'date': c['createdAt'], 'event': 'comment', 'value': c['markdown']})
         return self.comments
 
-    def get_all_events(self, is_sorted = True):
+    def get_all_events(self, is_sorted=True):
         events = self.get_changelog()
         util.logger.debug('Get all events: Issue %s has %d changelog', self.key, len(events))
         comments = self.get_comments()
@@ -183,13 +186,13 @@ class Issue(sq.SqObject):
 
     def add_comment(self, comment):
         util.logger.debug("Adding comment %s to issue %s", comment, self.key)
-        return self.post('issues/add_comment', {'issue':self.key, 'text':comment})
+        return self.post('issues/add_comment', {'issue': self.key, 'text': comment})
 
     # def delete_comment(self, comment_id):
 
     # def edit_comment(self, comment_id, comment_str)
 
-    def get_severity(self, force_api = False):
+    def get_severity(self, force_api=False):
         if force_api or self.severity is None:
             self.read()
         return self.severity
@@ -197,12 +200,12 @@ class Issue(sq.SqObject):
     def set_severity(self, severity):
         """Sets severity"""
         util.logger.debug("Changing severity of issue %s from %s to %s", self.key, self.severity, severity)
-        return self.post('issues/set_severity', {'issue':self.key, 'severity':severity})
+        return self.post('issues/set_severity', {'issue': self.key, 'severity': severity})
 
     def assign(self, assignee):
         """Sets assignee"""
         util.logger.debug("Assigning issue %s to %s", self.key, assignee)
-        return self.post('issues/assign', {'issue':self.key, 'assignee':assignee})
+        return self.post('issues/assign', {'issue': self.key, 'assignee': assignee})
 
     def get_authors(self):
         """Gets authors from SCM"""
@@ -210,7 +213,7 @@ class Issue(sq.SqObject):
     def set_tags(self, tags):
         """Sets tags"""
         util.logger.debug("Setting tags %s to issue %s", tags, self.key)
-        return self.post('issues/set_tags', {'issue':self.key, 'tags':tags})
+        return self.post('issues/set_tags', {'issue': self.key, 'tags': tags})
 
     def get_tags(self):
         """Gets tags"""
@@ -218,7 +221,7 @@ class Issue(sq.SqObject):
     def set_type(self, new_type):
         """Sets type"""
         util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
-        return self.post('issues/set_type', {'issue':self.key, 'type':new_type})
+        return self.post('issues/set_type', {'issue': self.key, 'type': new_type})
 
     def get_type(self):
         """Gets type"""
@@ -229,10 +232,8 @@ class Issue(sq.SqObject):
     def has_been_marked_as_wont_fix(self):
         return self.__has_been_marked_as_statuses__(["WONTFIX"])
 
-
     def has_been_marked_as_false_positive(self):
         return self.__has_been_marked_as_statuses__(["FALSE-POSITIVE"])
-
 
     def __has_been_marked_as_statuses__(self, statuses):
         for log in self.get_changelog():
@@ -281,7 +282,7 @@ class Issue(sq.SqObject):
     def __identical_security_issues(self, another_issue):
         return self.is_security_issue() and another_issue.is_security_issue()
 
-    def identical_to(self, another_issue, ignore_component = False):
+    def identical_to(self, another_issue, ignore_component=False):
         if not self.same_general_attributes(another_issue) or \
             (self.component != another_issue.component and not ignore_component):
             # util.logger.debug("Issue %s and %s are different on general attributes", self.key, another_issue.key)
@@ -295,7 +296,7 @@ class Issue(sq.SqObject):
         return True
 
     def identical_to_except_comp(self, another_issue):
-        return self.identical_to(another_issue, ignore_component = True)
+        return self.identical_to(another_issue, ignore_component=True)
 
     def match(self, another_issue):
         util.logger.debug("Comparing 2 issues: %s and %s", str(self), str(another_issue))
@@ -313,7 +314,7 @@ class Issue(sq.SqObject):
         return match_level
 
     def do_transition(self, transition):
-        return self.post('issues/do_transition', {'issue':self.key, 'transition':transition})
+        return self.post('issues/do_transition', {'issue': self.key, 'transition': transition})
 
     def reopen(self):
         util.logger.debug("Reopening issue %s", self.id)
@@ -359,25 +360,27 @@ class Issue(sq.SqObject):
         mtime = self.modification_date.strftime("%H:%M:%S")
         # Strip timezone
         mtime = re.sub(r"\+.*", "", mtime)
-        msg = re.sub('"','""', self.message)
+        msg = re.sub('"', '""', self.message)
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.project,
                                           projects.get(self.project, self.env).name, self.component, line,
-                                          debt, '"'+msg+'"']])
+                                          debt, '"' + msg + '"']])
 
 
-#------------------------------- Static methods --------------------------------------
+# ------------------------------- Static methods --------------------------------------
 def check_fp_transition(diffs):
     util.logger.debug("----------------- DIFFS     -----------------")
     return diffs[0]['key'] == "resolution" and diffs[0]["newValue"] == "FIXED" and \
            (diffs[1]["oldValue"] == "FALSE-POSITIVE" or diffs[1]["oldValue"] == "WONTFIX")
+
 
 def sort_comments(comments):
     sorted_comments = {}
     for comment in comments:
         sorted_comments[comment['createdAt']] = ('comment', comment)
     return sorted_comments
+
 
 def search_by_file(root_key, file_uuid, params=None, endpoint=None):
     if params is None:
@@ -391,6 +394,7 @@ def search_by_file(root_key, file_uuid, params=None, endpoint=None):
     issue_list = search(endpoint=endpoint, params=parms)
     util.logger.debug("File %s has %d issues", file_uuid, len(issue_list))
     return issue_list
+
 
 def search_by_component(root_key, component=None, endpoint=None, params=None):
     if params is None:
@@ -446,6 +450,7 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
     util.logger.debug("Rule %s has %d issues", rule, len(issue_list))
     return issue_list
 
+
 def search_by_facet(project_key, facets='rules,fileUuids,severities,types', endpoint=None, params=None):
     issue_list = {}
     selected_facet = None
@@ -470,6 +475,7 @@ def search_by_facet(project_key, facets='rules,fileUuids,severities,types', endp
     except TooManyIssuesError:
         return None
     return issue_list
+
 
 def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
     if params is None:
@@ -511,6 +517,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
                           len(issue_list), date_start.strftime("%Y-%m-%d"), date_stop.strftime("%Y-%m-%d"))
     return issue_list
 
+
 def search_by_project(project_key, endpoint=None, params=None):
     if params is None:
         parms = {}
@@ -531,6 +538,7 @@ def search_by_project(project_key, endpoint=None, params=None):
         util.logger.info("Project %s has %d issues", k, len(project_issue_list))
         issue_list.update(project_issue_list)
     return issue_list
+
 
 def search(endpoint=None, page=None, params=None):
     if params is None:
@@ -563,6 +571,7 @@ def search(endpoint=None, page=None, params=None):
         p += 1
     return issue_list
 
+
 def search_all_issues(params=None, endpoint=None):
     util.logger.info('searching issues for %s', str(params))
     if params is None:
@@ -585,6 +594,7 @@ def search_all_issues(params=None, endpoint=None):
     util.logger.debug ("Total number of issues: %d", len(issues))
     return issues
 
+
 def get_facets(project_key, facets='directories', endpoint=None, params=None):
     if params is None:
         parms = {}
@@ -604,6 +614,7 @@ def get_facets(project_key, facets='directories', endpoint=None, params=None):
             l[f['property']] = f['values']
     return l
 
+
 def __get_one_issue_date__(endpoint=None, asc_sort='false', params=None):
     ''' Returns the date of one issue found '''
     if params is None:
@@ -622,13 +633,16 @@ def __get_one_issue_date__(endpoint=None, asc_sort='false', params=None):
         break
     return date
 
+
 def get_oldest_issue(endpoint=None, params=None):
     ''' Returns the oldest date of all issues found '''
     return __get_one_issue_date__(endpoint=endpoint, asc_sort='true', params=params)
 
+
 def get_newest_issue(endpoint=None, params=None):
     ''' Returns the newest date of all issues found '''
     return __get_one_issue_date__(endpoint=endpoint, asc_sort='false', params=params)
+
 
 def get_number_of_issues(endpoint=None, **kwargs):
     ''' Returns number of issues of a search '''
@@ -637,6 +651,7 @@ def get_number_of_issues(endpoint=None, **kwargs):
     returned_data = search(endpoint=endpoint, params=kwtemp)
     util.logger.debug("Project %s has %d issues", kwargs['componentKeys'], returned_data['total'])
     return returned_data['total']
+
 
 def search_project_daily_issues(key, day, sqenv=None, **kwargs):
     util.logger.debug("Searching daily issues for project %s on day %s", key, day)
@@ -663,10 +678,12 @@ def search_project_daily_issues(key, day, sqenv=None, **kwargs):
     util.logger.info("%d daily issues for project key %s on %s", len(issues), key, day)
     return issues
 
+
 def count(endpoint=None, params=None):
     resp = env.get(Issue.SEARCH_API, params=params, ctxt=endpoint)
     data = resp.json_load(resp.text)
     return data['total']
+
 
 def search_project_issues(key, sqenv=None, **kwargs):
     kwargs['componentKeys'] = key
@@ -713,6 +730,7 @@ def search_project_issues(key, sqenv=None, **kwargs):
     util.logger.debug("For project %s, %d issues found", key, len(issues))
     return issues
 
+
 def apply_changelog(target_issue, source_issue):
     if target_issue.has_changelog():
         util.logger.error("Can't apply changelog to an issue that already has a changelog")
@@ -754,6 +772,7 @@ def apply_changelog(target_issue, source_issue):
 def get_log_date(log):
     return log['creationDate']
 
+
 def is_log_a_closed_resolved_as(log, old_value):
     cond1 = False
     cond2 = False
@@ -767,20 +786,26 @@ def is_log_a_closed_resolved_as(log, old_value):
             cond2 = True
     return cond1 and cond2
 
+
 def is_log_a_closed_wf(log):
     return is_log_a_closed_resolved_as(log, 'WONTFIX')
+
 
 def is_log_a_comment(log):
     return True
 
+
 def is_log_an_assign(log):
     return False
+
 
 def is_log_a_tag(log):
     return False
 
+
 def is_log_a_closed_fp(log):
     return is_log_a_closed_resolved_as(log, 'FALSE-POSITIVE')
+
 
 def is_log_a_resolve_as(log, resolve_reason):
     cond1 = False
@@ -792,6 +817,7 @@ def is_log_a_resolve_as(log, resolve_reason):
             cond2 = True
     return cond1 and cond2
 
+
 def is_log_a_reopen(log):
     cond1 = False
     cond2 = False
@@ -801,6 +827,7 @@ def is_log_a_reopen(log):
         if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'REOPENED':
             cond2 = True
     return cond1 and cond2
+
 
 def is_log_a_reviewed(log):
     cond1 = False
@@ -812,53 +839,69 @@ def is_log_a_reviewed(log):
             cond2 = True
     return cond1 and cond2
 
+
 def is_event_a_comment(event):
     return event['event'] == 'comment'
+
 
 def is_event_an_assignment(event):
     return event['event'] == 'assign'
 
+
 def is_event_a_resolve_as_fp(event):
     return event['event'] == 'transition' and event['value'] == 'falsepositive'
+
 
 def is_event_a_resolve_as_wf(event):
     return event['event'] == 'transition' and event['value'] == 'wontfix'
 
+
 def is_event_a_resolve_as_reviewed(event):
     return False
+
 
 def is_event_a_severity_change(event):
     return event['event'] == 'severity'
 
+
 def is_event_a_reopen(event):
     return event['event'] == 'transition' and event['value'] == 'reopen'
+
 
 def is_event_a_type_change(event):
     return event['event'] == 'type'
 
+
 def is_event_an_assignee_change(event):
     return event['event'] == 'assign'
+
 
 def is_event_a_tag_change(event):
     return event['event'] == 'tags'
 
+
 def get_log_assignee(event):
     return event['value']
+
 
 def get_log_new_severity(event):
     return event['value']
 
+
 def get_log_new_type(event):
     return event['value']
 
+
 def get_log_new_tag(event):
     return event['value']
+
 
 def identical_attributes(o1, o2, key_list):
     for key in key_list:
         if o1[key] != o2[key]:
             return False
     return True
+
 
 def search_siblings(an_issue, issue_list, only_new_issues=True, check_component = False):
     siblings = []
@@ -871,9 +914,11 @@ def search_siblings(an_issue, issue_list, only_new_issues=True, check_component 
             siblings.append(issue)
     return siblings
 
+
 def to_csv_header():
     return "# id;rule;type;severity;status;creation date;creation time;modification date;" + \
     "modification time;project key;project name;file;line;debt(min);message"
+
 
 def __get_issues_search_params__(params):
     outparams = {'additionalFields':'comments'}
@@ -881,6 +926,7 @@ def __get_issues_search_params__(params):
         if params[key] is not None and key in Issue.OPTIONS_SEARCH:
             outparams[key] = params[key]
     return outparams
+
 
 def resolution_diff_to_changelog(newval):
     if newval == 'FALSE-POSITIVE':
@@ -892,15 +938,18 @@ def resolution_diff_to_changelog(newval):
         return {'event':'fixed', 'value': None}
     return {'event':'unknown', 'value': None}
 
+
 def reopen_diff_to_changelog(oldval):
     if oldval == 'CONFIRMED':
         return {'event':'transition', 'value':'unconfirm'}
     return {'event':'transition', 'value':'reopen'}
 
+
 def assignee_diff_to_changelog(d):
     if d['newValue'] in d:
         return {'event':'assign', 'value': d['newValue']}
     return {'event':'unassign', 'value':None}
+
 
 def get_event_from_diff(diff):
     dkey = diff['key']

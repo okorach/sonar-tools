@@ -13,36 +13,37 @@ import sonarqube.audit_problem as pb
 
 NEW_ISSUES_SHOULD_BE_ZERO = 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'
 
-GOOD_QG_CONDITIONS = { \
+GOOD_QG_CONDITIONS = {
     'new_reliability_rating':
-        (1, 1, 'Any rating other than A would let bugs slip through in new code'), \
+        (1, 1, 'Any rating other than A would let bugs slip through in new code'),
     'new_security_rating':
-        (1, 1, 'Any rating other than A would let vulnerabilities slip through in new code'), \
+        (1, 1, 'Any rating other than A would let vulnerabilities slip through in new code'),
     'new_maintainability_rating':
-        (1, 1, 'Expectation is that code smells density on new code is low enough to get A rating'), \
+        (1, 1, 'Expectation is that code smells density on new code is low enough to get A rating'),
     'new_coverage':
-        (20, 90, 'Coverage below 20% is a too low bar, above 90% is overkill'), \
+        (20, 90, 'Coverage below 20% is a too low bar, above 90% is overkill'),
     'new_bugs':
-        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     'new_vulnerabilities':
-        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     'new_security_hotspots':
-        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     'new_blocker_violations':
-        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     'new_critical_violations':
-        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     'new_major_violations':
-        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO), \
+        (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     'new_duplicated_lines_density':
-        (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"), \
+        (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"),
     'new_security_hotspots_reviewed':
-        (100, 100, 'All hotspots on new code must be reviewed, any other condition than 100% make little sense'), \
+        (100, 100, 'All hotspots on new code must be reviewed, any other condition than 100% make little sense'),
     'reliability_rating':
-        (4, 4, 'Threshold on overall code should not be too strict or passing the QG will be often impossible'), \
+        (4, 4, 'Threshold on overall code should not be too strict or passing the QG will be often impossible'),
     'security_rating':
-        (4, 4, 'Threshold on overall code should not be too strict or passing the QG will be often impossible') \
+        (4, 4, 'Threshold on overall code should not be too strict or passing the QG will be often impossible')
 }
+
 
 class QualityGate(sq.SqObject):
 
@@ -73,7 +74,7 @@ class QualityGate(sq.SqObject):
         problems = []
         for c in self.conditions:
             m = c['metric']
-            if not m in GOOD_QG_CONDITIONS:
+            if m not in GOOD_QG_CONDITIONS:
                 problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.HIGH,
                     "Quality Gate '{}': It is not recommended to use metric '{}' in quality gates".format(
                     self.name, m)))
@@ -98,7 +99,7 @@ class QualityGate(sq.SqObject):
         elif nb_conditions > 8:
             problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.MEDIUM,
                 "Quality gate '{}' has {} conditions defined, this is more than the 8 max recommended".format(
-                                self.name, len(self.conditions))))
+                self.name, len(self.conditions))))
         problems += self.__audit_conditions__()
         if not self.is_default and not self.get_projects():
             problems.append(pb.Problem(pb.Type.CONFIGURATION, pb.Severity.LOW,
@@ -125,13 +126,14 @@ class QualityGate(sq.SqObject):
             return data['results']
 
         nb_proj = self.count(params=params)
-        nb_pages = (nb_proj+499)//500
+        nb_pages = (nb_proj + 499) // 500
         prj_list = {}
         for p in range(nb_pages):
-            params['p'] = p+1
-            for prj in self.search(page=p+1, params=params):
+            params['p'] = p + 1
+            for prj in self.search(page=p + 1, params=params):
                 prj_list[prj['key']] = prj
         return prj_list
+
 
 def list_qg(endpoint=None):
     resp = env.get('qualitygates/list', ctxt=endpoint)
@@ -140,6 +142,7 @@ def list_qg(endpoint=None):
     for qg in data['qualitygates']:
         qg_list.append(QualityGate(key=qg['id'], endpoint=endpoint, data=qg))
     return qg_list
+
 
 def audit(endpoint=None):
     util.logger.info("Auditing quality gates")

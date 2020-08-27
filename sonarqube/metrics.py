@@ -6,13 +6,9 @@
 '''
 import re
 import json
-import requests
 import sonarqube.env as env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
-
-
-
 
 
 class Metric(sq.SqObject):
@@ -24,6 +20,7 @@ class Metric(sq.SqObject):
         'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
         'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
         'new_coverage,new_duplicated_lines_density'
+
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key=key, env=endpoint)
         self.id = None
@@ -40,7 +37,7 @@ class Metric(sq.SqObject):
     def __load__(self, data):
         if data is None:
             # TODO handle pagination
-            resp = env.get(Metric.SEARCH_API, params={'ps':500}, ctxt=self.env)
+            resp = env.get(Metric.SEARCH_API, params={'ps': 500}, ctxt=self.env)
             data_json = json.loads(resp.text)
             for m in data_json['metrics']:
                 if self.key == m['key']:
@@ -62,6 +59,7 @@ class Metric(sq.SqObject):
     def is_a_rating(self):
         return re.match(r"^(new_)?(security|security_review|reliability|maintainability)_rating$", self.key)
 
+
 def count(endpoint):
     if Metric.Count is None:
         resp = env.get(Metric.SEARCH_API, params={'ps':1}, ctxt=endpoint)
@@ -69,22 +67,24 @@ def count(endpoint):
         Metric.Count = data['total']
     return Metric.Count
 
+
 def search(endpoint=None, page=None):
     if Metric.Inventory:
         return Metric.Inventory
     m_list = {}
     if page is not None:
-        resp = env.get(Metric.SEARCH_API, params={'ps':500, 'p':page}, ctxt=endpoint)
+        resp = env.get(Metric.SEARCH_API, params={'ps': 500, 'p': page}, ctxt=endpoint)
         data = json.loads(resp.text)
         for m in data['metrics']:
             m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
     else:
         nb_metrics = count(endpoint)
-        nb_pages = (nb_metrics+Metric.MAX_PAGE_SIZE-1)//Metric.MAX_PAGE_SIZE
+        nb_pages = (nb_metrics + Metric.MAX_PAGE_SIZE - 1) // Metric.MAX_PAGE_SIZE
         for p in range(nb_pages):
-            m_list.update(search(endpoint=endpoint, page=p+1))
+            m_list.update(search(endpoint=endpoint, page=p + 1))
         Metric.Inventory = m_list
     return m_list
+
 
 def as_csv(metric_list, separator=','):
     csv = ''
@@ -94,6 +94,7 @@ def as_csv(metric_list, separator=','):
             continue
         csv = csv + "{0}{1}".format(metric.key, separator)
     return csv[:-1]
+
 
 def is_a_rating(metric):
     return re.match(r"^(new_)?(security|security_review|reliability|maintainability)_rating$", metric)
