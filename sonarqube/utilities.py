@@ -53,8 +53,8 @@ def set_common_args(desc):
 
     parser.add_argument('--mode', required=False, choices=['dry-run', 'batch', 'confirm'],
                         default='dry-run', help='Mode of execution (dry-run, batch, confirm)')
-    parser.add_argument('-g', '--debug', required=False, choices=['WARN', 'INFO', 'DEBUG'],
-                        default='INFO', help='Debug level')
+    parser.add_argument('-v', '--verbosity', required=False, choices=['WARN', 'INFO', 'DEBUG'],
+                        default='INFO', help='Logging verbosity level')
     return parser
 
 

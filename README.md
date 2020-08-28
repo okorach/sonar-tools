@@ -15,17 +15,17 @@ All tools accept the following common parameters:
 - `-h` : Displays a help and exits
 - `-u` : URL of the SonarQube server, default is `http://localhost:9000`
 - `-t` : token of the user to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06` (using login/password is not possible)
-- `-g` : Debug level (`WARN`, `ÌNFO` or `DEBUG`). `ERROR` and above is always active. Default is `INFO`
+- `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). `ERROR` and above is always active. Default is `INFO`
 - `-m` : Mode when performing API calls, `dry-run` is the default
   - `batch`: All API calls are performed without any confirmation
   - `confirm`: All API calls that change the SonarQube internal state (POST and DELETE) are asking for a confirmation before execution
-  - `dry-run`: All API calls taht would change SonarQube internal state are just output in logging but not actually performed.
+  - `dry-run`: All API calls that would change SonarQube internal state are just output in logging but not actually performed.
 
 
 # sonar-audit
 
 Audits the SonarQube platform and output warning logs whenever a suspicious or incorrect setting/situation is found.
-What is audited is listed at the bottom of this page
+The detail of what is audited is listed at the bottom of this (long) page
 
 Usage: `sonar-audit -u <url> -t <token> [--what [settings|projects|qg|qp]]`
 When `--what` is not specified, everything audited
