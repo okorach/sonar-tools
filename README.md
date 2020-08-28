@@ -34,6 +34,78 @@ When `--what` is not specified, everything audited
 - `--what qg`: Audits quality gates
 - `--what projects`: Audits all projects. This can be a fairly long operation
 
+<details>
+  <summary>Click to see details of what is audited</summary>
+
+- General checks:
+  - Verifies this is an official distribution
+  - Verifies that the admin default password has been changed
+  - DCE: Verifies that same plugins are install on all app nodes
+  - DCE: Verifies that all app nodes run the same version of SonarQube
+  - DCE: Verifies that all nodes are in GREEN status
+- General global settings:
+  - sonar.forceAuthentication is true
+  - sonar.cpd.cross_project is false
+  - sonar.core.serverBaseURL is set
+  - sonar.global.exclusions is empty
+  - Project default visbility is Private
+- Global permissions:
+  - Max 3 users with global admin, admin quality gates, admin quality profiles or create project permission
+  - Max 10 users with global permissions
+  - Group 'Anyone' should have no global permissions
+  - Group 'sonar-users' should not have Admin, Admin QG, Admin QP or Create Projects permissions
+  - Max 2 groups with global admin, admin quality gates, admin quality profiles permissions
+  - Max 3 groups with create project permission
+  - Max 10 groups with global permissions
+- DB Cleaner:
+  - Delay to delete inactive SLB (7.9) or branches (8.x) between 10 and 60 days
+  - Delay to delete closed issues between 10 and 60 days
+  - sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay between 12 and 240 hours (0.5 to 10 days)
+  - sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek between 2 and 12 weeks (0.5 to 3 months)
+  - sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth between 26 and 104 weeks (0.5 year to 2 years)
+  - sonar.dbcleaner.weeksBeforeDeletingAllSnapshots between 104 and 260 weeks (2 to 5 years)
+- Maintainability rating grid:
+  - A maintainability rating threshold between 3% and 5%
+  - B maintainability rating threshold between 7% and 10%
+  - C maintainability rating threshold between 15% and 20%
+  - D maintainability rating threshold between 40% and 50%
+- Environment
+  - Web heap (`-Xmx`) between 1 GB and 2 GB
+  - CE heap (`-Xmx`) between 512 MB per worker and 2 GB per worker
+  - Maximum CE 4 workers
+  - CE background tasks failure rate of more than 1%
+  - Excessive nbr of background tasks: More than 100 pending CE background tasks or more than 20 or 10 x Nbr workers
+  - ES heap (`-Xmx`) is less than half the ES index (small indexes) or less than ES index + 1 GB (large indexes)
+- Quality Gates:
+  - Unused QG
+  - QG with 0 conditions or more than 7 conditions
+  - QG not using the recommended metrics: reliability, security, maintainibility, coverage, duplication,
+    security review rating on new code, new bugs, new vulnerabilities, new hotspots, new blocker, new critical, new major
+    and reliability rating and security rating on overall code
+  - Thresholds for the above metrics not consistent (non A for ratings on new code, non 0 for numeric count of issues,
+    coverage not between 20% and 90%, duplication not between 1% and 3%, secuirty and relibility on overall code lower than D)
+  - More than 5 quality gates
+- Quality Profiles:
+  - QP not modified in 6 months
+  - QP with less than 50% of all the available rules activated
+  - QP not used by any projects
+  - QP not used since more than 6 months
+  - QP using deprecated rules
+  - More than 5 QP for a given language
+- Projects:
+  - Projects provisioned but never analyzed
+  - Projects not analyzed since 6 months (on any branch)
+  - Projects with Public visbility
+  - Large projects with too much XML: Projects with more than 200K LoC and XML representing more than 50% of it
+  - Permissions:
+    - More than 5 different users with direct permissions (use groups)
+    - More than 3 users with Project admin permission
+    - More than 5 different groups with permissions on project
+    - More than 1 group with execute analysis permission
+    - More than 2 groups with issue admin permission
+    - More than 2 groups with hotspot admin permission
+    - More than 2 groups with project admin permission
+</details>
 
 # sonar-measures-export
 
@@ -157,74 +229,3 @@ To avoid bad mistakes (mistakenly deleting too many projects), the tools will re
 sonar-project-housekeeper -u <url> -t <token> -o <days>
 ```
 
-# List of checks performed by `sonar-audit`
-
-What is audited:
-- General checks:
-  - Verifies this is an official distribution
-  - Verifies that the admin default password has been changed
-  - DCE: Verifies that same plugins are install on all app nodes
-  - DCE: Verifies that all app nodes run the same version of SonarQube
-  - DCE: Verifies that all nodes are in GREEN status
-- General global settings:
-  - sonar.forceAuthentication is true
-  - sonar.cpd.cross_project is false
-  - sonar.core.serverBaseURL is set
-  - sonar.global.exclusions is empty
-  - Project default visbility is Private
-- Global permissions:
-  - Max 3 users with global admin, admin quality gates, admin quality profiles or create project permission
-  - Max 10 users with global permissions
-  - Group 'Anyone' should have no global permissions
-  - Group 'sonar-users' should not have Admin, Admin QG, Admin QP or Create Projects permissions
-  - Max 2 groups with global admin, admin quality gates, admin quality profiles permissions
-  - Max 3 groups with create project permission
-  - Max 10 groups with global permissions
-- DB Cleaner:
-  - Delay to delete inactive SLB (7.9) or branches (8.x) between 10 and 60 days
-  - Delay to delete closed issues between 10 and 60 days
-  - sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay between 12 and 240 hours (0.5 to 10 days)
-  - sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek between 2 and 12 weeks (0.5 to 3 months)
-  - sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth between 26 and 104 weeks (0.5 year to 2 years)
-  - sonar.dbcleaner.weeksBeforeDeletingAllSnapshots between 104 and 260 weeks (2 to 5 years)
-- Maintainability rating grid:
-  - A maintainability rating threshold between 3% and 5%
-  - B maintainability rating threshold between 7% and 10%
-  - C maintainability rating threshold between 15% and 20%
-  - D maintainability rating threshold between 40% and 50%
-- Environment
-  - Web heap (`-Xmx`) between 1 GB and 2 GB
-  - CE heap (`-Xmx`) between 512 MB per worker and 2 GB per worker
-  - Maximum CE 4 workers
-  - CE background tasks failure rate of more than 1%
-  - Excessive nbr of background tasks: More than 100 pending CE background tasks or more than 20 or 10 x Nbr workers
-  - ES heap (`-Xmx`) is less than half the ES index (small indexes) or less than ES index + 1 GB (large indexes)
-- Quality Gates:
-  - Unused QG
-  - QG with 0 conditions or more than 7 conditions
-  - QG not using the recommended metrics: reliability, security, maintainibility, coverage, duplication,
-    security review rating on new code, new bugs, new vulnerabilities, new hotspots, new blocker, new critical, new major
-    and reliability rating and security rating on overall code
-  - Thresholds for the above metrics not consistent (non A for ratings on new code, non 0 for numeric count of issues,
-    coverage not between 20% and 90%, duplication not between 1% and 3%, secuirty and relibility on overall code lower than D)
-  - More than 5 quality gates
-- Quality Profiles:
-  - QP not modified in 6 months
-  - QP with less than 50% of all the available rules activated
-  - QP not used by any projects
-  - QP not used since more than 6 months
-  - QP using deprecated rules
-  - More than 5 QP for a given language
-- Projects:
-  - Projects provisioned but never analyzed
-  - Projects not analyzed since 6 months (on any branch)
-  - Projects with Public visbility
-  - Large projects with too much XML: Projects with more than 200K LoC and XML representing more than 50% of it
-  - Permissions:
-    - More than 5 different users with direct permissions (use groups)
-    - More than 3 users with Project admin permission
-    - More than 5 different groups with permissions on project
-    - More than 1 group with execute analysis permission
-    - More than 2 groups with issue admin permission
-    - More than 2 groups with hotspot admin permission
-    - More than 2 groups with project admin permission
