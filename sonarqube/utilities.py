@@ -8,6 +8,8 @@ import sys
 import logging
 import json
 
+OPT_VERBOSE = 'verbosity'
+OPT_MODE = 'mode'
 DRY_RUN = 'dryrun'
 CONFIRM = 'confirm'
 BATCH = 'batch'
@@ -51,10 +53,10 @@ def set_common_args(desc):
     parser.add_argument('-u', '--url', required=False, default='http://localhost:9000',
                         help='Root URL of the source SonarQube server, default is http://localhost:9000')
 
-    parser.add_argument('--mode', required=False, choices=['dry-run', 'batch', 'confirm'],
+    parser.add_argument('--' + OPT_MODE, required=False, choices=['dry-run', 'batch', 'confirm'],
                         default='dry-run', help='Mode of execution (dry-run, batch, confirm)')
-    parser.add_argument('-g', '--debug', required=False, choices=['WARN', 'INFO', 'DEBUG'],
-                        default='INFO', help='Debug level')
+    parser.add_argument('-v', '--' + OPT_VERBOSE, required=False, choices=['WARN', 'INFO', 'DEBUG'],
+                        default='INFO', help='Logging verbosity level')
     return parser
 
 
@@ -103,8 +105,8 @@ def get_run_mode():
 
 
 def check_environment(kwargs):
-    set_debug_level(kwargs.pop('debug', 'INFO'))
-    set_run_mode(kwargs.pop('mode', 'dry-run'))
+    set_debug_level(kwargs.pop(OPT_VERBOSE))
+    set_run_mode(kwargs.pop(OPT_MODE))
 
 
 def json_dump_debug(json_data, pre_string=''):
