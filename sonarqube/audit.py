@@ -25,15 +25,16 @@ def __dump_report__(problems, file, file_format):
     is_first = True
     for p in problems:
         if file_format is not None and file_format == 'json':
-            pfx = '' if is_first else ','
+            pfx = "" if is_first else ",\n"
             p_dump = pfx + p.to_json()
+            print(p_dump, file=f, end='')
             is_first = False
         else:
             p_dump = p.to_csv()
-        print(p_dump, file=f)
+            print(p_dump, file=f)
 
     if file_format == 'json':
-        print("]", file=f)
+        print("\n]", file=f)
     if file is not None:
         f.close()
 
@@ -76,8 +77,8 @@ If not specified, it is the output file extension if json or csv, then csv by de
     if 'settings' in what_to_audit:
         problems += sq.audit()
 
-    args.format = __deduct_format__(args.format, args.reportFile)
-    __dump_report__(problems, args.reportFile, args.format)
+    args.format = __deduct_format__(args.format, args.file)
+    __dump_report__(problems, args.file, args.format)
 
     if problems:
         util.logger.warning("%d issues found during audit", len(problems))
