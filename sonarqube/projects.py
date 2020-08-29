@@ -160,11 +160,13 @@ class Project(comp.Component):
                     p['login'] = p['name']
                 admins.append(p['login'])
         if nb_perms > int(audit_settings.get('audit.projects.permissions.maxUsers', '5')):
-            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+            problems.append(pb.Problem(
+                pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
                 "Project '{}' has too many permissions granted through users, \
 groups should be favored".format(self.key)))
         if len(admins) > int(audit_settings.get('audit.projects.permissions.maxAdminUsers', '2')):
-            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.HIGH,
+            problems.append(pb.Problem(
+                pb.Type.GOVERNANCE, pb.Severity.HIGH,
                 "Project '{}' has too many users with Administration permission \
 ({} users)".format(self.key, len(admins))))
         return problems
@@ -195,30 +197,36 @@ groups should be favored".format(self.key)))
                 continue
             if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
                 sev = pb.Severity.HIGH if gr['name'] == 'Anyone' else pb.Severity.MEDIUM
-                problems.append(pb.Problem(pb.Type.SECURITY, sev,
+                problems.append(pb.Problem(
+                    pb.Type.SECURITY, sev,
                     "Group '{}' has elevated (non read-only) permissions on project '{}'".format(gr['name'], self.key)))
             else:
                 util.logger.info("Group '%s' has browse permissions on project '%s'. \
 Is this normal ?", gr['name'], self.key)
 
         if nb_perms > int(audit_settings.get('audit.projects.permissions.maxGroups', '5')):
-            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
+            problems.append(pb.Problem(
+                pb.Type.OPERATIONS, pb.Severity.MEDIUM,
                 "Project '{}' has too many group permissions defined ({} groups)".format(self.key, nb_perms)))
         if nb_scan > int(audit_settings.get('audit.projects.permissions.maxScanGroups', '1')):
             problems.append(
-                pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Execute Analysis' permission ({} groups)".format(
-                    self.key, nb_scan)))
+                pb.Problem(
+                    pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                    "Project '{}' has too many groups with 'Execute Analysis' permission ({} groups)".format(
+                        self.key, nb_scan)))
         if nb_issue_admin > int(audit_settings.get('audit.projects.permissions.maxIssueAdminGroups', '2')):
-            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+            problems.append(pb.Problem(
+                pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
                 "Project '{}' has too many groups with 'Issue Admin' permission ({} groups)".format(
                     self.key, nb_issue_admin)))
         if nb_hotspot_admin > int(audit_settings.get('audit.projects.permissions.maxHotspotAdminGroups', '2')):
-            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+            problems.append(pb.Problem(
+                pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
                 "Project '{}' has too many groups with 'Hotspot Admin' permission ({} groups)".format(
                     self.key, nb_hotspot_admin)))
         if nb_admins > int(audit_settings.get('audit.projects.permissions.maxAdminGroups', '2')):
-            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.HIGH,
+            problems.append(pb.Problem(
+                pb.Type.GOVERNANCE, pb.Severity.HIGH,
                 "Project '{}' has too many groups with 'Project Admin' permissions ({} groups)".format(
                     self.key, nb_admins)))
         return problems
@@ -239,12 +247,14 @@ Is this normal ?", gr['name'], self.key)
         age = self.age_of_last_analysis()
         problems = []
         if age is None:
-            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
+            problems.append(pb.Problem(
+                pb.Type.OPERATIONS, pb.Severity.LOW,
                 "Project '{}' has been created but never been analyzed".format(self.key)))
         elif age > int(audit_settings.get('audit.projects.lastAnalysisAge', '180')):
             # TODO make the 180 days configurable
             sev = pb.Severity.HIGH if age > 365 else pb.Severity.MEDIUM
-            problems.append(pb.Problem(pb.Type.OPERATIONS, sev,
+            problems.append(pb.Problem(
+                pb.Type.OPERATIONS, sev,
                 "Project '{}' last analysis is {} days old, it may be deleted".format(self.key, age)))
         else:
             util.logger.info("   Project %s last analysis is %d days old", self.key, age)
@@ -259,7 +269,8 @@ Is this normal ?", gr['name'], self.key)
         if visi == 'private':
             util.logger.info("   Project '%s' visibility is private", self.key)
         else:
-            problems.append(pb.Problem(pb.Type.SECURITY, pb.Severity.LOW,
+            problems.append(pb.Problem(
+                pb.Type.SECURITY, pb.Severity.LOW,
                 "Project '{}' visibility is {}, which can be a security risk".format(self.key, visi)))
         return problems
 

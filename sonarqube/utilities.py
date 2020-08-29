@@ -133,8 +133,9 @@ def read_config(config_file='sonar-tools.properties'):
     fp.close()
     return CONFIG_SETTINGS
 
+
 def get_property(name, settings=None):
     if settings is None:
         global CONFIG_SETTINGS
         settings = CONFIG_SETTINGS
-    return settings.get(name,'').lower()
+    return settings.get(name, '').lower()
