@@ -147,7 +147,7 @@ class Project(comp.Component):
             return None
         return abs(today - last_analysis).days
 
-    def __audit_user_permissions__(self):
+    def __audit_user_permissions__(self, audit_settings):
         perms = self.get_permissions('users')
         nb_perms = 0
         problems = []
@@ -159,17 +159,17 @@ class Project(comp.Component):
                 if 'login' not in p:
                     p['login'] = p['name']
                 admins.append(p['login'])
-        if nb_perms > 5:
+        if nb_perms > int(audit_settings.get('audit.projects.permissions.maxUsers', '5')):
             problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
                 "Project '{}' has too many permissions granted through users, \
 groups should be favored".format(self.key)))
-        if len(admins) > 3:
+        if len(admins) > int(audit_settings.get('audit.projects.permissions.maxAdminUsers', '2')):
             problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.HIGH,
                 "Project '{}' has too many users with Administration permission \
 ({} users)".format(self.key, len(admins))))
         return problems
 
-    def __audit_group_permissions__(self):
+    def __audit_group_permissions__(self, audit_settings):
         groups = self.get_permissions('groups')
         nb_perms = 0
         problems = []
@@ -201,38 +201,47 @@ groups should be favored".format(self.key)))
                 util.logger.info("Group '%s' has browse permissions on project '%s'. \
 Is this normal ?", gr['name'], self.key)
 
-        if nb_perms > 5:
+        if nb_perms > int(audit_settings.get('audit.projects.permissions.maxGroups', '5')):
             problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
                 "Project '{}' has too many group permissions defined ({} groups)".format(self.key, nb_perms)))
-        if nb_scan > 1:
+        if nb_scan > int(audit_settings.get('audit.projects.permissions.maxScanGroups', '1')):
+            problems.append(
+                pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                "Project '{}' has too many groups with 'Execute Analysis' permission ({} groups)".format(
+                    self.key, nb_scan)))
+        if nb_issue_admin > int(audit_settings.get('audit.projects.permissions.maxIssueAdminGroups', '2')):
             problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Execute Analysis' permission ({} groups)".format(self.key, nb_scan)))
-        if nb_issue_admin > 2:
+                "Project '{}' has too many groups with 'Issue Admin' permission ({} groups)".format(
+                    self.key, nb_issue_admin)))
+        if nb_hotspot_admin > int(audit_settings.get('audit.projects.permissions.maxHotspotAdminGroups', '2')):
             problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Issue Admin' permission ({} groups)".format(self.key, nb_issue_admin)))
-        if nb_hotspot_admin > 2:
-            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Hotspot Admin' permission ({} groups)".format(self.key, nb_hotspot_admin)))
-        if nb_admins > 2:
+                "Project '{}' has too many groups with 'Hotspot Admin' permission ({} groups)".format(
+                    self.key, nb_hotspot_admin)))
+        if nb_admins > int(audit_settings.get('audit.projects.permissions.maxAdminGroups', '2')):
             problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.HIGH,
-                "Project '{}' has too many groups with 'Project Admin' permissions ({} groups)".format(self.key, nb_admins)))
+                "Project '{}' has too many groups with 'Project Admin' permissions ({} groups)".format(
+                    self.key, nb_admins)))
         return problems
 
-    def __audit_permissions__(self):
+    def __audit_permissions__(self, audit_settings):
         util.logger.info("   Auditing permissions for project '%s'", self.key)
-        problems = self.__audit_user_permissions__() + self.__audit_group_permissions__()
+        if audit_settings.get('audit.projects.permissions', '') != 'yes':
+            util.logger.info('Auditing project permissions is disabled by configuration, skipping')
+            return []
+        problems = (self.__audit_user_permissions__(audit_settings)
+                    + self.__audit_group_permissions__(audit_settings))
         if not problems:
             util.logger.info("   No issue found in project '%s' permissions", self.key)
         return problems
 
-    def __audit_last_analysis__(self):
+    def __audit_last_analysis__(self, audit_settings):
         util.logger.info("   Auditing project '%s' last analysis date", self.key)
         age = self.age_of_last_analysis()
         problems = []
         if age is None:
             problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
                 "Project '{}' has been created but never been analyzed".format(self.key)))
-        elif age > 180:
+        elif age > int(audit_settings.get('audit.projects.lastAnalysisAge', '180')):
             # TODO make the 180 days configurable
             sev = pb.Severity.HIGH if age > 365 else pb.Severity.MEDIUM
             problems.append(pb.Problem(pb.Type.OPERATIONS, sev,
@@ -241,7 +250,7 @@ Is this normal ?", gr['name'], self.key)
             util.logger.info("   Project %s last analysis is %d days old", self.key, age)
         return problems
 
-    def __audit_visibility__(self):
+    def __audit_visibility__(self, audit_settings):
         util.logger.info("   Auditing Project '%s' visibility", self.key)
         problems = []
         resp = env.get('navigation/component', ctxt=self.env, params={'component': self.key})
@@ -254,10 +263,14 @@ Is this normal ?", gr['name'], self.key)
                 "Project '{}' visibility is {}, which can be a security risk".format(self.key, visi)))
         return problems
 
-    def __audit_languages__(self):
+    def __audit_languages__(self, audit_settings):
+        util.logger.info('Auditing suspicious XML LoC count')
+        problems = []
+        if audit_settings.get('audit.xmlLoc.suspicious', '') != 'yes':
+            util.logger.info('XML LoCs count audit disabled by configuration, skipped')
+            return problems
         total_locs = 0
         languages = {}
-        problems = []
         resp = self.get_measure('ncloc_language_distribution')
         if resp is None:
             return problems
@@ -266,18 +279,19 @@ Is this normal ?", gr['name'], self.key)
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
         if total_locs > 100000 and 'xml' in languages and (languages['xml'] / total_locs) > 0.5:
-            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
+            problems.append(pb.Problem(
+                pb.Type.OPERATIONS, pb.Severity.LOW,
                 "Project '{}' has {} XML LoCs, this is suspiciously high, verify scanning settings".format(
                     self.key, languages['xml'])))
         return problems
 
-    def audit(self):
+    def audit(self, audit_settings):
         util.logger.info("Auditing project %s", self.key)
         return (
-            self.__audit_last_analysis__()
-            + self.__audit_visibility__()
-            + self.__audit_languages__()
-            + self.__audit_permissions__()
+            self.__audit_last_analysis__(audit_settings)
+            + self.__audit_visibility__(audit_settings)
+            + self.__audit_languages__(audit_settings)
+            + self.__audit_permissions__(audit_settings)
         )
 
     def delete_if_obsolete(self, days=180):
@@ -417,14 +431,19 @@ def delete_old_projects(days=180, endpoint=None):
         print("%d PROJECTS deleted for a total of %d LoCs" % (deleted_projects, deleted_locs))
 
 
-def audit(endpoint=None):
+def audit(audit_settings, endpoint=None):
     plist = search(endpoint)
     problems = []
     for key, p in plist.items():
-        problems += p.audit()
-        util.logger.info("   Auditing for potential duplicate projects")
+        problems += p.audit(audit_settings)
+        if audit_settings.get('audit.projects.duplicates', 'yes') != 'yes':
+            continue
+        util.logger.info("Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key, key2):
-                problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.MEDIUM,
-                    "Project {} is likely to be a branch of {}, and if so should be deleted".format(key2, key)))
+                problems.append(pb.Problem(
+                    pb.Type.OPERATIONS, pb.Severity.MEDIUM,
+                    "Project '{}' is likely to be a branch of '{}', and if so should be deleted".format(key2, key)))
+    if audit_settings.get('audit.projects.duplicates', 'yes') != 'yes':
+        util.logger.info("Project duplicates auditing was disabled by configuration")
     return problems
