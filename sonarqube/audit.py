@@ -62,6 +62,8 @@ If not specified, it is the output file extension if json or csv, then csv by de
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)
+    util.logger.info('sonar-tools version %s', util.SONAR_TOOLS_VERSION)
+    settings = util.read_config('sonar-audit.properties')
 
     if args.what is None:
         args.what = 'qp,qg,settings,projects'
@@ -75,7 +77,7 @@ If not specified, it is the output file extension if json or csv, then csv by de
     if 'qg' in what_to_audit:
         problems += qualitygates.audit(endpoint=sq)
     if 'settings' in what_to_audit:
-        problems += sq.audit()
+        problems += sq.audit(audit_settings=settings)
 
     args.format = __deduct_format__(args.format, args.file)
     __dump_report__(problems, args.file, args.format)
