@@ -55,4 +55,4 @@ class Problem():
 
     def to_csv(self):
         return '{0},{1},"{2}"'.format(
-            repr(self.type.name)[1:-1], repr(self.severity.name)[1:-1], self.message)
+            repr(self.severity.name)[1:-1], repr(self.type.name)[1:-1], self.message)
