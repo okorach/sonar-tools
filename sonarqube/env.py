@@ -13,6 +13,7 @@ import sonarqube.utilities as util
 import sonarqube.audit_problem as pb
 
 HTTP_ERROR_MSG = "%s%s raised error %d: %s"
+WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 DEFAULT_URL = 'http://localhost:9000'
 
 GLOBAL_PERMISSIONS = {
@@ -146,8 +147,7 @@ class Environment:
             if re.match(r'audit.globalSetting.range', key):
                 v = __get_multiple_values__(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
-                    util.logger.error("Audit config property %s has wrong value %s, skipping audit",
-                                      key, audit_settings[key])
+                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
                     self.get_version() >= (8, 0, 0):
@@ -158,22 +158,19 @@ class Environment:
             elif re.match(r'audit.globalSetting.value', key):
                 v = __get_multiple_values__(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
-                    util.logger.error("Audit config property %s has wrong value %s, skipping audit",
-                                      key, audit_settings[key])
+                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += __audit_setting_value__(platform_settings, v[0], v[1], v[2], v[3])
             elif re.match(r'audit.globalSetting.isSet', key):
                 v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
-                    util.logger.error("Audit config property %s has wrong value %s, skipping audit",
-                                      key, audit_settings[key])
+                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += __audit_setting_is_set__(platform_settings, v[0], v[1], v[2])
             elif re.match(r'audit.globalSetting.isNotSet', key):
                 v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
-                    util.logger.error("Audit config property %s has wrong value %s, skipping audit",
-                                      key, audit_settings[key])
+                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += __audit_setting_is_not_set__(platform_settings, v[0], v[1], v[2])
 
