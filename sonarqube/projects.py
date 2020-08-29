@@ -39,6 +39,9 @@ class Project(comp.Component):
         self.__load__(data)
         PROJECTS[key] = self
 
+    def __str__(self):
+        return "Project key '{}'".format(self.key)
+
     def __load__(self, data=None):
         ''' Loads a project object with contents of an api/projects/search call '''
         if data is None:
