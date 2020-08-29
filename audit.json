@@ -1,0 +1,12 @@
+[
+{
+    "type": "CONFIGURATION",
+    "severity": "MEDIUM",
+    "message": "Setting sonar.dbcleaner.weeksBeforeDeletingAllSnapshots value 1000.0 is outside recommended range [104-260]"
+},
+{
+    "type": "PERFORMANCE",
+    "severity": "HIGH",
+    "message": "sonar.web.javaOpts -Xmx memory setting value is 512 MB, not in recommended range [1024-2048]"
+}
+]
