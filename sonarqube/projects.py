@@ -261,7 +261,10 @@ Is this normal ?", gr['name'], self.key)
         return problems
 
     def __audit_visibility__(self, audit_settings):
-        util.logger.info("   Auditing Project '%s' visibility", self.key)
+        util.logger.info("Auditing Project '%s' visibility", self.key)
+        if audit_settings.get('audit.projects.visibility', 'yes') != 'yes':
+            util.logger.info("Project visibility audit is disabled by configuration, skipping...")
+            return []
         problems = []
         resp = env.get('navigation/component', ctxt=self.env, params={'component': self.key})
         data = json.loads(resp.text)
