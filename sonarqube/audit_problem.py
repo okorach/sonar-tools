@@ -37,8 +37,9 @@ def to_severity(val):
     return None
 
 class Problem():
-    def __init__(self, problem_type, severity, msg):
+    def __init__(self, problem_type, severity, msg, concerned_object=None):
         # dict.__init__(type=problem_type, severity=severity, message=msg)
+        self.concerned_object = concerned_object
         self.type = problem_type
         self.severity = severity
         self.message = msg
