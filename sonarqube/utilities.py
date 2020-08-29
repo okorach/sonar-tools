@@ -114,8 +114,8 @@ def check_environment(kwargs):
 
 
 def json_dump_debug(json_data, pre_string=''):
-    logger.debug("%s%s", pre_string, json.dumps(json_data,
-                 sort_keys=True, indent=3, separators=(',', ': ')))
+    logger.debug("%s%s", pre_string, json.dumps(
+        json_data, sort_keys=True, indent=3, separators=(',', ': ')))
 
 
 def format_date_ymd(year, month, day):
