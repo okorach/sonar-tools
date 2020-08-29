@@ -53,6 +53,7 @@ class Problem():
         d = vars(self)
         d['type'] = repr(self.type.name)[1:-1]
         d['severity'] = repr(self.severity.name)[1:-1]
+        d['concerned_object'] = str(d['concerned_object'])
         return json.dumps(d, indent=4, sort_keys=False, separators=(',', ': '))
 
     def to_csv(self):
