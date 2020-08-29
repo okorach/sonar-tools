@@ -27,7 +27,7 @@ else
   shift
 fi
 
-version=`cat setup.py | grep version | cut -d "=" -f 2 | cut -d "'" -f 2`
+version=`cat sonarqube/utilities.py | grep SONAR_TOOLS_VERSION | cut -d "=" -f 2 | cut -d "'" -f 2`
 
 sonar-scanner \
   -Dsonar.projectVersion=$version \
