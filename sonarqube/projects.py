@@ -123,7 +123,7 @@ class Project(comp.Component):
         confirmed = False
         loc = int(self.get_measure('ncloc'))
         if util.get_run_mode() == util.DRY_RUN:
-            print("DRY-RUN: Project key %s (%d LoC) deleted")
+            util.logger.info("DRY-RUN: Project key %s (%d LoC) deleted")
             return True
         elif util.get_run_mode() == util.CONFIRM:
             text = input('Please confirm deletion y/n [n]')
@@ -133,7 +133,7 @@ class Project(comp.Component):
         if not confirmed:
             return False
         util.logger.debug("Deleting project key %s", self.key)
-        if not super().delete('projects/delete', params={'project': self.key}):
+        if not super().post('projects/delete', params={'project': self.key}):
             util.logger.error("Project key %s deletion failed", self.key)
             return False
         util.logger.info("Successfully deleted project key %s - %d LoCs", self.key, loc)
@@ -252,13 +252,15 @@ Is this normal ?", gr['name'], self.key)
     def __audit_last_analysis__(self, audit_settings):
         util.logger.info("   Auditing project '%s' last analysis date", self.key)
         age = self.age_of_last_analysis()
+
         problems = []
         if age is None:
-            problems.append(pb.Problem(
-                pb.Type.OPERATIONS, pb.Severity.LOW,
-                "Project '{}' has been created but never been analyzed".format(self.key),
-                concerned_object=self))
-        elif age > int(audit_settings.get('audit.projects.lastAnalysisAge', '180')):
+            if audit_settings.get('audit.projects.neverAnalyzed', 'yes') == 'yes':
+                problems.append(pb.Problem(
+                    pb.Type.OPERATIONS, pb.Severity.LOW,
+                    "Project '{}' has been created but never been analyzed".format(self.key),
+                    concerned_object=self))
+        elif age > int(audit_settings.get('audit.projects.maxLastAnalysisAge', '180')):
             # TODO make the 180 days configurable
             sev = pb.Severity.HIGH if age > 365 else pb.Severity.MEDIUM
             problems.append(pb.Problem(
@@ -266,7 +268,7 @@ Is this normal ?", gr['name'], self.key)
                 "Project '{}' last analysis is {} days old, it may be deleted".format(self.key, age),
                 concerned_object=self))
         else:
-            util.logger.info("   Project %s last analysis is %d days old", self.key, age)
+            util.logger.info("Project %s last analysis is %d days old", self.key, age)
         return problems
 
     def __audit_visibility__(self, audit_settings):
