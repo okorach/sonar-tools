@@ -1,5 +1,6 @@
 import enum
 import json
+import sonarqube.utilities as util
 # Using enum class create enumerations
 
 
@@ -12,12 +13,28 @@ class Type(enum.Enum):
     OPERATIONS = 6
 
 
+def to_domain(val):
+    for dom in Type:
+        util.logger.debug("Comparing %s and %s", repr(dom.name)[1:-1], val)
+        if repr(dom.name)[1:-1] == val:
+            return dom
+    return None
+
+
 class Severity(enum.Enum):
     CRITICAL = 1
     HIGH = 2
     MEDIUM = 3
     LOW = 4
 
+
+def to_severity(val):
+    for sev in Severity:
+        util.logger.debug("Comparing %s and %s", repr(sev.name)[1:-1], val)
+        if repr(sev.name)[1:-1] == val:
+            return sev
+    util.logger.debug("Return none")
+    return None
 
 class Problem():
     def __init__(self, problem_type, severity, msg):
@@ -38,4 +55,4 @@ class Problem():
 
     def to_csv(self):
         return '{0},{1},"{2}"'.format(
-            repr(self.type.name)[1:-1], repr(self.severity.name)[1:-1], self.message)
+            repr(self.severity.name)[1:-1], repr(self.type.name)[1:-1], self.message)
