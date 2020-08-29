@@ -406,6 +406,7 @@ def __audit_setting_is_set__(settings, key, severity=pb.Severity.MEDIUM, domain=
                        "Setting {} is not set, although it should".format(key)))
     return problems
 
+
 def __audit_setting_is_not_set__(settings, key, severity=pb.Severity.MEDIUM, domain=pb.Type.CONFIGURATION):
     util.logger.info("Auditing that setting %s is not set", key)
     problems = []
@@ -417,6 +418,7 @@ def __audit_setting_is_not_set__(settings, key, severity=pb.Severity.MEDIUM, dom
         util.logger.info("Setting %s is not set", key)
     return problems
 
+
 def __audit_maintainability_rating_range__(value, min_val, max_val, rating_letter,
                                            severity=pb.Severity.MEDIUM, domain=pb.Type.CONFIGURATION):
     util.logger.info('Checking that maintainability rating threshold %3.0f%% for %s is \
@@ -427,7 +429,7 @@ within recommended range [%3.0f%%-%3.0f%%]', value*100, rating_letter, min_val*1
         problems.append(pb.Problem(
             domain, severity,
             'Maintainability rating threshold {}% for {} is NOT within recommended range [{}%-{}%]'.format(
-                value*100, rating_letter, min_val*100, max_val*100)))
+                value * 100, rating_letter, min_val * 100, max_val * 100)))
     return problems
 
 
@@ -520,7 +522,7 @@ def __audit_ce_background_tasks__(sysinfo):
         problems.append(pb.Problem(
             pb.Type.OPERATIONS, pb.Severity.HIGH,
             'Background task failure rate ({}%) is high, verify failed background tasks'.format(
-                int(failure_rate*100))))
+                int(failure_rate * 100))))
     else:
         util.logger.info('Number of failed background tasks (%d), and failure rate %d%% is OK',
                          ce_error, failure_rate)
@@ -616,6 +618,7 @@ def __get_permissions_count__(users_or_groups):
                 perm_counts[perm] += 1
     return perm_counts
 
+
 def __get_multiple_values__(n, setting, severity, domain):
     values = [x.strip() for x in setting.split(',')]
     if len(values) < (n - 2):
@@ -624,8 +627,7 @@ def __get_multiple_values__(n, setting, severity, domain):
         values.append(severity)
     if len(values) == (n - 1):
         values.append(domain)
-    util.logger.debug('Value = *%s* *%s*', values[n-2], values[n-1])
-    values[n-2] = pb.to_severity(values[n-2])
-    values[n-1] = pb.to_domain(values[n-1])
+    values[n - 2] = pb.to_severity(values[n - 2])
+    values[n - 1] = pb.to_domain(values[n - 1])
     # TODO Handle case of too many values
     return values
