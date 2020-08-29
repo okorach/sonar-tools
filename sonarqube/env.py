@@ -244,7 +244,8 @@ class Environment:
                     'admin' in gr['permissions'] or 'gateadmin' in gr['permissions'] or
                     'profileadmin' in gr['permissions'] or 'provisioning' in gr['permissions']):
                 problems.append(
-                    pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+                    pb.Problem(
+                        pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
                         "Group 'sonar-users' should not have admin, admin QG, admin QP or create project permissions"))
 
         perm_counts = __get_permissions_count__(groups)
@@ -263,7 +264,8 @@ class Environment:
         users = self.__get_permissions__('users')
         if len(users) > 10:
             problems.append(
-                pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.MEDIUM,
+                pb.Problem(
+                    pb.Type.BAD_PRACTICE, pb.Severity.MEDIUM,
                     'Too many ({}) users with direct global permissions, use groups instead'.format(len(users))))
 
         perm_counts = __get_permissions_count__(users)
@@ -271,7 +273,8 @@ class Environment:
         for perm in GLOBAL_PERMISSIONS:
             if perm in maxis and perm_counts[perm] > maxis[perm]:
                 problems.append(
-                    pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.MEDIUM,
+                    pb.Problem(
+                        pb.Type.BAD_PRACTICE, pb.Severity.MEDIUM,
                         'Too many ({}) users with permission {}, use groups instead'.format(
                             perm_counts[perm], GLOBAL_PERMISSIONS[perm])))
         return problems
@@ -374,10 +377,10 @@ def __audit_setting_range__(settings, key, min_val, max_val, severity=pb.Severit
     util.logger.info("Auditing that setting %s is within recommended range [%f-%f]", key, min_v, max_v)
     problems = []
     if value < min_v or value > max_v:
-        problems.append(
-            pb.Problem(domain, severity,
-                "Setting {} value {} is outside recommended range [{}-{}]".format(
-                    key, value, min_val, max_val)))
+        problems.append(pb.Problem(
+            domain, severity,
+            "Setting {} value {} is outside recommended range [{}-{}]".format(
+                key, value, min_val, max_val)))
     return problems
 
 
@@ -386,9 +389,9 @@ def __audit_setting_value__(settings, key, value, severity=pb.Severity.MEDIUM, d
     s = settings.get(key, '')
     problems = []
     if s != value:
-        problems.append(
-            pb.Problem(domain, severity,
-                "Setting {} has potentially incorrect or unsafe value '{}'".format(key, s)))
+        problems.append(pb.Problem(
+            domain, severity,
+            "Setting {} has potentially incorrect or unsafe value '{}'".format(key, s)))
     return problems
 
 
@@ -453,17 +456,15 @@ def __check_log_level__(sysinfo):
     problems = []
     log_level = sysinfo["Web Logging"]["Logs Level"]
     if log_level == "DEBUG":
-        problems.append(
-            pb.Problem(pb.Type.PERFORMANCE, pb.Severity.HIGH,
-                "Log level is set to DEBUG, this may affect platform performance, \
-reverting to INFO is recommended")
-        )
+        problems.append(pb.Problem(
+            pb.Type.PERFORMANCE, pb.Severity.HIGH,
+            "Log level is set to DEBUG, this may affect platform performance, \
+reverting to INFO is recommended"))
     elif log_level == "TRACE":
-        problems.append(
-            pb.Problem(pb.Type.PERFORMANCE, pb.Severity.CRITICAL,
-                "Log level set to TRACE, this does very negatively affect platform performance, \
-reverting to INFO is required")
-        )
+        problems.append(pb.Problem(
+            pb.Type.PERFORMANCE, pb.Severity.CRITICAL,
+            "Log level set to TRACE, this does very negatively affect platform performance, \
+reverting to INFO is required"))
     return problems
 
 
@@ -472,11 +473,10 @@ def __audit_web_settings__(sysinfo):
     problems = []
     web_ram = __get_memory__(sysinfo['Settings']['sonar.web.javaOpts'])
     if web_ram < 1024 or web_ram > 2048:
-        problems.append(
-            pb.Problem(pb.Type.PERFORMANCE, pb.Severity.HIGH,
-                "sonar.web.javaOpts -Xmx memory setting value is {} MB, \
-not in recommended range [1024-2048]".format(web_ram))
-        )
+        problems.append(pb.Problem(
+            pb.Type.PERFORMANCE, pb.Severity.HIGH,
+            "sonar.web.javaOpts -Xmx memory setting value is {} MB, \
+not in recommended range [1024-2048]".format(web_ram)))
     else:
         util.logger.info("sonar.web.javaOpts -Xmx memory setting value is %d MB, \
 within the recommended range [1024-2048]", web_ram)
@@ -490,19 +490,17 @@ def __audit_ce_settings__(sysinfo):
     ce_tasks = sysinfo['Compute Engine Tasks']
     ce_workers = ce_tasks['Worker Count']
     if ce_workers > 4:
-        problems.append(
-            pb.Problem(pb.Type.PERFORMANCE, pb.Type.HIGH,
-                "{} CE workers configured, more than the max 4 recommended".format(ce_workers))
-        )
+        problems.append(pb.Problem(
+            pb.Type.PERFORMANCE, pb.Type.HIGH,
+            "{} CE workers configured, more than the max 4 recommended".format(ce_workers)))
     else:
         util.logger.info("%d CE workers configured, correct compared to the max 4 recommended", ce_workers)
 
     if ce_ram < 512 * ce_workers or ce_ram > 2048 * ce_workers:
-        problems.append(
-            pb.Problem(pb.Type.PERFORMANCE, pb.Severity.HIGH,
-                "sonar.ce.javaOpts -Xmx memory setting value is {} MB, \
-not in recommended range ([512-2048] x {} workers)".format(ce_ram, ce_workers))
-        )
+        problems.append(pb.Problem(
+            pb.Type.PERFORMANCE, pb.Severity.HIGH,
+            "sonar.ce.javaOpts -Xmx memory setting value is {} MB, \
+not in recommended range ([512-2048] x {} workers)".format(ce_ram, ce_workers)))
     else:
         util.logger.info("sonar.ce.javaOpts -Xmx memory setting value is %d MB, \
 within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
@@ -519,28 +517,24 @@ def __audit_ce_background_tasks__(sysinfo):
     ce_pending = ce_tasks["Pending"]
     failure_rate = ce_error / (ce_success+ce_error)
     if ce_error > 10 and failure_rate > 0.01:
-        problems.append(
-            pb.Problem(pb.Type.OPERATIONS, pb.Severity.HIGH,
-                'Background task failure rate ({}%) is high, \
-verify failed background tasks'.format(int(failure_rate*100)))
-
-        )
+        problems.append(pb.Problem(
+            pb.Type.OPERATIONS, pb.Severity.HIGH,
+            'Background task failure rate ({}%) is high, verify failed background tasks'.format(
+                int(failure_rate*100))))
     else:
         util.logger.info('Number of failed background tasks (%d), and failure rate %d%% is OK',
                          ce_error, failure_rate)
 
     if ce_pending > 100:
-        problems.append(
-            pb.Problem(pb.Type.PERFORMANCE, pb.Severity.CRITICAL,
-                'Number of pending background tasks ({}) is very high, verify CE dimensioning'.format(
-                    ce_pending))
-        )
+        problems.append(pb.Problem(
+            pb.Type.PERFORMANCE, pb.Severity.CRITICAL,
+            'Number of pending background tasks ({}) is very high, verify CE dimensioning'.format(
+                ce_pending)))
     elif ce_pending > 20 and ce_pending > (10*ce_workers):
-        problems.append(
-            pb.Problem(pb.Type.PERFORMANCE, pb.Severity.HIGH,
-                'Number of pending background tasks ({}) is  high, verify CE dimensioning'.format(
-                    ce_pending))
-        )
+        problems.append(pb.Problem(
+            pb.Type.PERFORMANCE, pb.Severity.HIGH,
+            'Number of pending background tasks ({}) is  high, verify CE dimensioning'.format(
+                ce_pending)))
     else:
         util.logger.info('Number of pending background tasks (%d) is OK', ce_pending)
     return problems
@@ -552,11 +546,10 @@ def __audit_es_settings__(sysinfo):
     es_ram = __get_memory__(sysinfo['Settings']['sonar.search.javaOpts'])
     index_size = __get_store_size__(sysinfo['Search State']['Store Size'])
     if es_ram < 2 * index_size and es_ram < index_size + 1000:
-        problems.append(
-            pb.Problem(pb.Type.PERFORMANCE, pb.Severity.CRITICAL,
-                "sonar.search.javaOpts -Xmx memory setting value is {} MB,\
-too low for index size of {} MB".format(es_ram, index_size))
-        )
+        problems.append(pb.Problem(
+            pb.Type.PERFORMANCE, pb.Severity.CRITICAL,
+            "sonar.search.javaOpts -Xmx memory setting value is {} MB,\
+too low for index size of {} MB".format(es_ram, index_size)))
     else:
         util.logger.info("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
     return problems
@@ -584,28 +577,24 @@ def __audit_dce_settings__(sysinfo):
     for node in appnodes:
         node_version = node['System']['Version']
         if node_version != ref_version:
-            problems.append(
-                pb.Problem(pb.Type.OPERATIONS, pb.Severity.CRITICAL,
-                    'App nodes {} and {} do not run the same SonarQube versions, this must be corrected ASAP'.format(
-                        ref_name, node['Name']))
-            )
+            problems.append(pb.Problem(
+                pb.Type.OPERATIONS, pb.Severity.CRITICAL,
+                'App nodes {} and {} do not run the same SonarQube versions, this must be corrected ASAP'.format(
+                    ref_name, node['Name'])))
         node_plugins = json.dumps(node['Plugins'], sort_keys=True, indent=3, separators=(',', ': '))
         if node_plugins != ref_plugins:
-            problems.append(
-                pb.Problem(pb.Type.OPERATIONS, pb.Severity.CRITICAL,
-                    'Some plugins on app nodes {} and {} are different, this must be corrected ASAP'.format(
-                        ref_name, node['Name']))
-            )
+            problems.append(pb.Problem(
+                pb.Type.OPERATIONS, pb.Severity.CRITICAL,
+                'Some plugins on app nodes {} and {} are different, this must be corrected ASAP'.format(
+                    ref_name, node['Name'])))
         if not node['System']['Official Distribution']:
-            problems.append(
-                pb.Problem(pb.Type.OPERATIONS, pb.Severity.CRITICAL,
-                    'Node {} does not run an official distribution of SonarQube'.format(node['Name']))
-            )
+            problems.append(pb.Problem(
+                pb.Type.OPERATIONS, pb.Severity.CRITICAL,
+                'Node {} does not run an official distribution of SonarQube'.format(node['Name'])))
         if node['Health'] != "GREEN":
-            problems.append(
-                pb.Problem(pb.Type.OPERATIONS, pb.Severity.HIGH,
-                    'Node {} health is {}, it should be GREEN'.format(node['Name'], node['Health']))
-            )
+            problems.append(pb.Problem(
+                pb.Type.OPERATIONS, pb.Severity.HIGH,
+                'Node {} health is {}, it should be GREEN'.format(node['Name'], node['Health'])))
     return problems
 
 
