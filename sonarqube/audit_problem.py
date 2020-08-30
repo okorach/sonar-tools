@@ -1,41 +1,13 @@
 import sys
 import enum
 import json
+import sonarqube.audit_severities as sev
+import sonarqube.audit_types as typ
+
+import sonarqube.audit_rules as rules
 import sonarqube.utilities as util
 # Using enum class create enumerations
 
-
-class Type(enum.Enum):
-    SECURITY = 1
-    GOVERNANCE = 2
-    CONFIGURATION = 3
-    PERFORMANCE = 4
-    BAD_PRACTICE = 5
-    OPERATIONS = 6
-
-
-def to_domain(val):
-    for dom in Type:
-        util.logger.debug("Comparing %s and %s", repr(dom.name)[1:-1], val)
-        if repr(dom.name)[1:-1] == val:
-            return dom
-    return None
-
-
-class Severity(enum.Enum):
-    CRITICAL = 1
-    HIGH = 2
-    MEDIUM = 3
-    LOW = 4
-
-
-def to_severity(val):
-    for sev in Severity:
-        util.logger.debug("Comparing %s and %s", repr(sev.name)[1:-1], val)
-        if repr(sev.name)[1:-1] == val:
-            return sev
-    util.logger.debug("Return none")
-    return None
 
 class Problem():
     def __init__(self, problem_type, severity, msg, concerned_object=None):
@@ -47,18 +19,18 @@ class Problem():
 
     def __str__(self):
         return "Type: {0} - Severity: {1} - Description: {2}".format(
-            repr(self.type.name)[1:-1], repr(self.severity.name)[1:-1], self.message)
+            str(self.type), str(self.severity), self.message)
 
     def to_json(self):
         d = vars(self)
-        d['type'] = repr(self.type.name)[1:-1]
-        d['severity'] = repr(self.severity.name)[1:-1]
+        d['type'] = str(self.type)
+        d['severity'] = str(self.severity)
         d['concerned_object'] = str(d['concerned_object'])
         return json.dumps(d, indent=4, sort_keys=False, separators=(',', ': '))
 
     def to_csv(self):
         return '{0},{1},"{2}"'.format(
-            repr(self.severity.name)[1:-1], repr(self.type.name)[1:-1], self.message)
+            str(self.severity), str(self.type), self.message)
 
 
 def dump_report(problems, file, file_format):
