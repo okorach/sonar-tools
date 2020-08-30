@@ -10,33 +10,7 @@ import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.qualitygates as qualitygates
 import sonarqube.utilities as util
 import sonarqube.env as env
-
-
-def __dump_report__(problems, file, file_format):
-
-    if file is None:
-        f = sys.stdout
-        util.logger.info("Dumping report to stdout")
-    else:
-        f = open(file, "w")
-        util.logger.info("Dumping report to file '%s'", file)
-    if file_format == 'json':
-        print("[", file=f)
-    is_first = True
-    for p in problems:
-        if file_format is not None and file_format == 'json':
-            pfx = "" if is_first else ",\n"
-            p_dump = pfx + p.to_json()
-            print(p_dump, file=f, end='')
-            is_first = False
-        else:
-            p_dump = p.to_csv()
-            print(p_dump, file=f)
-
-    if file_format == 'json':
-        print("\n]", file=f)
-    if file is not None:
-        f.close()
+import sonarqube.audit_problem as pb
 
 
 def __deduct_format__(fmt, file):
@@ -80,7 +54,7 @@ If not specified, it is the output file extension if json or csv, then csv by de
         problems += sq.audit(audit_settings=settings)
 
     args.format = __deduct_format__(args.format, args.file)
-    __dump_report__(problems, args.file, args.format)
+    pb.dump_report(problems, args.file, args.format)
 
     if problems:
         util.logger.warning("%d issues found during audit", len(problems))

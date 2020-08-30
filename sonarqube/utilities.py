@@ -9,7 +9,7 @@ import logging
 import json
 import jprops
 
-SONAR_TOOLS_VERSION = '0.4'
+SONAR_TOOLS_VERSION = '0.5'
 
 OPT_VERBOSE = 'verbosity'
 OPT_MODE = 'mode'
