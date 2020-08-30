@@ -11,6 +11,10 @@ import sonarqube.sqobject as sq
 import sonarqube.env as env
 import sonarqube.rules as rules
 import sonarqube.utilities as util
+
+import sonarqube.audit_severities as sev
+import sonarqube.audit_types as typ
+import sonarqube.audit_rules as arules
 import sonarqube.audit_problem as pb
 
 
@@ -80,26 +84,26 @@ class QualityProfile(sq.SqObject):
         problems = []
         age = self.age_of_last_update()
         if age > 180:
-            problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.LOW,
+            problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.LOW,
                 "Quality profile '{}' has not been updated since {} days (more than {} days)".format(
                     self.long_name, age, 180)))
         if self.is_built_in:
             return problems
         rules_per_lang = rules.get_facet(facet='languages', endpoint=self.env)
         if self.nb_rules < int(rules_per_lang[self.language] * 0.5):
-            problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.HIGH,
+            problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.HIGH,
                 "Quality profile '{}' has {} rules, this is too few, less than 50% of all {} rules for language '{}'".format(
                     self.long_name, self.nb_rules, rules_per_lang[self.language], self.language)))
         age = self.age_of_last_use()
         if age is None or not self.is_default and self.project_count == 0:
-            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
+            problems.append(pb.Problem(typ.Type.OPERATIONS, sev.Severity.LOW,
                 "Quality profile '{}' is not used, it should be removed".format(self.long_name)))
         elif age > 180:
-            problems.append(pb.Problem(pb.Type.OPERATIONS, pb.Severity.LOW,
+            problems.append(pb.Problem(typ.Type.OPERATIONS, sev.Severity.LOW,
                 "Quality profile '{}' has not been used since {} days, it should be deleted".format(
                     self.long_name, age)))
         if self.deprecated_rules > 0:
-            problems.append(pb.Problem(pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
+            problems.append(pb.Problem(typ.Type.GOVERNANCE, sev.Severity.MEDIUM,
                 "Quality profile '{}' has {} deprecated rules, they should be removed".format(
                     self.long_name, self.deprecated_rules)))
 
@@ -123,7 +127,7 @@ def audit(endpoint=None):
         langs[qp.language] = langs.get(qp.language, 0) + 1
     for lang in langs:
         if langs[lang] > 5:
-            problems.append(pb.Problem(pb.Type.BAD_PRACTICE, pb.Severity.MEDIUM,
+            problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
                 "Language {} has {} quality profiles. This is more than the recommended 5 max".format(
                     lang, langs[lang])))
     return problems
