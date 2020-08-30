@@ -20,6 +20,9 @@ setuptools.setup(
         "Source Code": "https://github.com/okorach/sonarqube-tools",
     },
     packages=setuptools.find_packages(),
+    package_data={
+        "sonarqube": ["rules.json", "sonar-audit.properties"]
+    },
     install_requires=[
         'pytz',
         'argparse',
