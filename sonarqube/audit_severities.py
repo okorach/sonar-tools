@@ -1,5 +1,6 @@
 import enum
 
+
 class Severity(enum.Enum):
     CRITICAL = 1
     HIGH = 2
@@ -8,6 +9,7 @@ class Severity(enum.Enum):
 
     def __str__(self):
         return repr(self.name)[1:-1]
+
 
 def to_severity(val):
     for enum_val in Severity:

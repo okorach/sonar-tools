@@ -7,6 +7,7 @@ import sonarqube.utilities as util
 
 __RULES__ = {}
 
+
 class RuleId(enum.Enum):
     DEFAULT_ADMIN_PASSWORD = 1
 
@@ -116,9 +117,3 @@ def load():
 def get_rule(rule_id):
     global __RULES__
     return __RULES__[rule_id]
-
-
-def show():
-    global __RULES__
-    for rule_id, rule in __RULES__.items():
-        util.logger.info("Rule {}: {}, {}, {}".format(str(rule_id), str(rule.severity), str(rule.type), str(rule.msg)))

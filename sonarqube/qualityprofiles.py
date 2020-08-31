@@ -11,9 +11,6 @@ import sonarqube.sqobject as sq
 import sonarqube.env as env
 import sonarqube.rules as rules
 import sonarqube.utilities as util
-
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
 import sonarqube.audit_rules as arules
 import sonarqube.audit_problem as pb
 

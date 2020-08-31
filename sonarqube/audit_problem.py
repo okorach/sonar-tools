@@ -1,10 +1,6 @@
 import sys
 import enum
 import json
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
-
-import sonarqube.audit_rules as rules
 import sonarqube.utilities as util
 # Using enum class create enumerations
 

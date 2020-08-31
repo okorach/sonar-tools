@@ -1,5 +1,6 @@
 import enum
 
+
 class Type(enum.Enum):
     SECURITY = 1
     GOVERNANCE = 2

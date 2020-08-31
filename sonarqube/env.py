@@ -390,7 +390,7 @@ def __audit_setting_value__(settings, key, value, severity=sev.Severity.MEDIUM, 
     return problems
 
 
-def __audit_setting_is_set__(settings, key, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+def __audit_setting_is_set__(settings, key):
     util.logger.info("Auditing that setting %s is set", key)
     problems = []
     if key in settings and settings[key] != '':
