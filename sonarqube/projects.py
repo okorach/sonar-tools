@@ -12,8 +12,12 @@ import pytz
 import sonarqube.env as env
 import sonarqube.components as comp
 import sonarqube.utilities as util
-import sonarqube.audit_problem as pb
 
+import sonarqube.audit_severities as sev
+import sonarqube.audit_types as typ
+import sonarqube.audit_rules as rules
+import sonarqube.audit_problem as pb
+import sonarqube.permissions as perms
 PROJECTS = {}
 
 PROJECT_SEARCH_API = 'projects/search'
@@ -109,18 +113,18 @@ class Project(comp.Component):
         data = json.loads(resp.text)
         nb_perms = int(data['paging']['total'])
         nb_pages = (nb_perms + MAX_PERMISSION_PAGE_SIZE - 1) // MAX_PERMISSION_PAGE_SIZE
-        perms = []
+        permissions = []
         for page in range(nb_pages):
             resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
                            params={'projectKey': self.key, 'ps': MAX_PERMISSION_PAGE_SIZE, 'p': page + 1})
             data = json.loads(resp.text)
             for p in data[perm_type]:
-                perms.append(p)
+                permissions.append(p)
         if perm_type == 'group':
-            self.group_permissions = perms
+            self.group_permissions = permissions
         else:
-            self.user_permissions = perms
-        return perms
+            self.user_permissions = permissions
+        return permissions
 
     def delete(self, api='projects/delete', params=None):
         confirmed = False
@@ -151,124 +155,113 @@ class Project(comp.Component):
         return abs(today - last_analysis).days
 
     def __audit_user_permissions__(self, audit_settings):
-        perms = self.get_permissions('users')
-        nb_perms = 0
         problems = []
-        admins = []
-        for p in perms:
-            if p['permissions']:
-                nb_perms += 1
-            if 'admin' in p['permissions']:
-                if 'login' not in p:
-                    p['login'] = p['name']
-                admins.append(p['login'])
-        if nb_perms > int(audit_settings.get('audit.projects.permissions.maxUsers', '5')):
+        counts = __get_permissions_counts__(self.get_permissions('users'))
+
+        max_users = int(audit_settings.get('audit.projects.permissions.maxUsers', '5'))
+        if counts['overall'] > max_users:
+            rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
             problems.append(pb.Problem(
-                pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many permissions granted through users, \
-groups should be favored".format(self.key),
+                rule.type, rule.severity,
+                rule.msg.format(self.key, counts['overall']),
                 concerned_object=self))
-        if len(admins) > int(audit_settings.get('audit.projects.permissions.maxAdminUsers', '2')):
+
+        max_admins = int(audit_settings.get('audit.projects.permissions.maxAdminUsers', '2'))
+        if counts['admin'] > max_admins:
+            rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_USERS)
             problems.append(pb.Problem(
-                pb.Type.GOVERNANCE, pb.Severity.HIGH,
-                "Project '{}' has too many users with Administration permission \
-({} users)".format(self.key, len(admins)),
+                rule.type, rule.severity, rule.msg.format(self.key, counts['admin'], max_admins),
                 concerned_object=self))
+
         return problems
 
     def __audit_group_permissions__(self, audit_settings):
-        groups = self.get_permissions('groups')
-        nb_perms = 0
         problems = []
-        nb_admins = 0
-        nb_scan = 0
-        nb_issue_admin = 0
-        nb_hotspot_admin = 0
+        groups = self.get_permissions('groups')
+        counts = __get_permissions_counts__(groups)
         for gr in groups:
             p = gr['permissions']
             if not p:
                 continue
-            nb_perms += 1
-            if 'admin' in p:
-                nb_admins += 1
-            if 'scan' in p:
-                nb_scan += 1
-            if 'issueadmin' in p:
-                nb_issue_admin += 1
-            if 'securityhotspotadmin' in p:
-                nb_hotspot_admin += 1
             # -- Checks for Anyone, sonar-user
             if (gr['name'] != 'Anyone' and gr['id'] != 2):
                 continue
             if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
-                sev = pb.Severity.HIGH if gr['name'] == 'Anyone' else pb.Severity.MEDIUM
+                if gr['name'] == 'Anyone':
+                    rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
+                else:
+                    rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(pb.Problem(
-                    pb.Type.SECURITY, sev,
-                    "Group '{}' has elevated (non read-only) permissions on project '{}'".format(gr['name'], self.key),
+                    rule.type, rule.severity, rule.msg.format(gr['name'], self.key),
                     concerned_object=self))
             else:
                 util.logger.info("Group '%s' has browse permissions on project '%s'. \
 Is this normal ?", gr['name'], self.key)
 
-        if nb_perms > int(audit_settings.get('audit.projects.permissions.maxGroups', '5')):
+        max_perms = int(audit_settings.get('audit.projects.permissions.maxGroups', '5'))
+        if counts['overall'] > max_perms:
+            rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
             problems.append(pb.Problem(
-                pb.Type.OPERATIONS, pb.Severity.MEDIUM,
-                "Project '{}' has too many group permissions defined ({} groups)".format(self.key, nb_perms),
+                rule.type, rule.severity,
+                rule.msg.format(self.key, counts['overall'], max_perms),
                 concerned_object=self))
-        if nb_scan > int(audit_settings.get('audit.projects.permissions.maxScanGroups', '1')):
+        max_scan = int(audit_settings.get('audit.projects.permissions.maxScanGroups', '1'))
+        if counts['scan'] > max_scan:
+            rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_SCAN_GROUPS)
             problems.append(pb.Problem(
-                pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Execute Analysis' permission ({} groups)".format(
-                    self.key, nb_scan),
+                rule.type, rule.severity,
+                rule.msg.format(self.key, counts['scan'], max_scan),
                 concerned_object=self))
-        if nb_issue_admin > int(audit_settings.get('audit.projects.permissions.maxIssueAdminGroups', '2')):
+        max_issue_adm = int(audit_settings.get('audit.projects.permissions.maxIssueAdminGroups', '2'))
+        if counts['issueadmin'] > max_issue_adm:
+            rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
             problems.append(pb.Problem(
-                pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Issue Admin' permission ({} groups)".format(
-                    self.key, nb_issue_admin),
+                rule.type, rule.severity,
+                rule.msg.format(self.key, counts['issueadmin'], max_issue_adm),
                 concerned_object=self))
-        if nb_hotspot_admin > int(audit_settings.get('audit.projects.permissions.maxHotspotAdminGroups', '2')):
+        max_spots_adm = int(audit_settings.get('audit.projects.permissions.maxHotspotAdminGroups', '2'))
+        if counts['securityhotspotadmin'] > max_spots_adm:
+            rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_HOTSPOT_ADM_GROUPS)
             problems.append(pb.Problem(
-                pb.Type.GOVERNANCE, pb.Severity.MEDIUM,
-                "Project '{}' has too many groups with 'Hotspot Admin' permission ({} groups)".format(
-                    self.key, nb_hotspot_admin),
+                rule.type, rule.severity,
+                rule.msg.format(self.key, counts['securityhotspotadmin'], max_spots_adm),
                 concerned_object=self))
-        if nb_admins > int(audit_settings.get('audit.projects.permissions.maxAdminGroups', '2')):
+        max_admins = int(audit_settings.get('audit.projects.permissions.maxAdminGroups', '2'))
+        if counts['admin'] > max_admins:
+            rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_GROUPS)
             problems.append(pb.Problem(
-                pb.Type.GOVERNANCE, pb.Severity.HIGH,
-                "Project '{}' has too many groups with 'Project Admin' permissions ({} groups)".format(
-                    self.key, nb_admins),
+                rule.type, rule.severity,
+                rule.msg.format(self.key, counts['admin'], max_admins),
                 concerned_object=self))
         return problems
 
     def __audit_permissions__(self, audit_settings):
-        util.logger.info("   Auditing permissions for project '%s'", self.key)
+        util.logger.info("Auditing permissions for project '%s'", self.key)
         if audit_settings.get('audit.projects.permissions', '') != 'yes':
             util.logger.info('Auditing project permissions is disabled by configuration, skipping')
             return []
         problems = (self.__audit_user_permissions__(audit_settings)
                     + self.__audit_group_permissions__(audit_settings))
         if not problems:
-            util.logger.info("   No issue found in project '%s' permissions", self.key)
+            util.logger.info("No issue found in project '%s' permissions", self.key)
         return problems
 
     def __audit_last_analysis__(self, audit_settings):
-        util.logger.info("   Auditing project '%s' last analysis date", self.key)
+        util.logger.info("Auditing project '%s' last analysis date", self.key)
         age = self.age_of_last_analysis()
 
         problems = []
         if age is None:
             if audit_settings.get('audit.projects.neverAnalyzed', 'yes') == 'yes':
+                rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
                 problems.append(pb.Problem(
-                    pb.Type.OPERATIONS, pb.Severity.LOW,
-                    "Project '{}' has been created but never been analyzed".format(self.key),
+                    rule.type, rule.severity, rule.msg.format(self.key),
                     concerned_object=self))
         elif age > int(audit_settings.get('audit.projects.maxLastAnalysisAge', '180')):
-            # TODO make the 180 days configurable
-            sev = pb.Severity.HIGH if age > 365 else pb.Severity.MEDIUM
+            rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
+            severity = sev.Severity.HIGH if age > 365 else rule.severity
             problems.append(pb.Problem(
-                pb.Type.OPERATIONS, sev,
-                "Project '{}' last analysis is {} days old, it may be deleted".format(self.key, age),
+                rule.type, severity, rule.msg.format(self.key, age),
                 concerned_object=self))
         else:
             util.logger.info("Project %s last analysis is %d days old", self.key, age)
@@ -286,9 +279,9 @@ Is this normal ?", gr['name'], self.key)
         if visi == 'private':
             util.logger.info("   Project '%s' visibility is private", self.key)
         else:
+            rule = rules.get_rule(rules.RuleId.PROJ_VISIBILITY)
             problems.append(pb.Problem(
-                pb.Type.SECURITY, pb.Severity.LOW,
-                "Project '{}' visibility is {}, which can be a security risk".format(self.key, visi),
+                rule.type, rule.severity, rule.msg.format(self.key, visi),
                 concerned_object=self))
         return problems
 
@@ -308,10 +301,9 @@ Is this normal ?", gr['name'], self.key)
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
         if total_locs > 100000 and 'xml' in languages and (languages['xml'] / total_locs) > 0.5:
+            rule = rules.get_rule(rules.RuleId.PROJ_XML_LOCS)
             problems.append(pb.Problem(
-                pb.Type.OPERATIONS, pb.Severity.LOW,
-                "Project '{}' has {} XML LoCs, this is suspiciously high, verify scanning settings".format(
-                    self.key, languages['xml']),
+                rule.type, rule.severity, rule.format(self.key, languages['xml']),
                 concerned_object=self))
         return problems
 
@@ -395,6 +387,23 @@ Is this normal ?", gr['name'], self.key)
         return resp.status_code
 
 
+def __get_permissions_counts__(entities):
+    counts = {}
+    counts['overall'] = 0
+    for permission in perms.PROJECT_PERMISSIONS:
+        counts[permission] = 0
+    util.logger.debug("PERMS for %s", str(entities))
+    for gr in entities:
+        p = gr['permissions']
+        if not p:
+            continue
+        counts['overall'] += 1
+        for perm in perms.PROJECT_PERMISSIONS:
+            if perm in p:
+                counts[perm] += 1
+    return counts
+
+
 def count(endpoint=None, params=None):
     if params is None:
         params = {}
@@ -472,7 +481,7 @@ def audit(audit_settings, endpoint=None):
         for key2 in plist:
             if key2 != key and re.match(key2, key):
                 problems.append(pb.Problem(
-                    pb.Type.OPERATIONS, pb.Severity.MEDIUM,
+                    typ.Type.OPERATIONS, sev.Severity.MEDIUM,
                     "Project '{}' is likely to be a branch of '{}', and if so should be deleted".format(key, key2),
                     concerned_object=p))
     if audit_settings.get('audit.projects.duplicates', 'yes') != 'yes':

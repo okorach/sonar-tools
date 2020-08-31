@@ -1,0 +1,283 @@
+{
+    "DEFAULT_ADMIN_PASSWORD":
+        {
+            "severity": "CRITICAL",
+            "type": "SECURITY",
+            "message": "Default admin password has not been changed, this is a critical security risk"
+        },
+    "SETTING_FORCE_AUTH":
+        {
+            "severity": "HIGH",
+            "type": "SECURITY",
+            "message": "'sonar.forceAuthentation' is set to 'false', this is a security risk"
+        },
+    "SETTING_PROJ_DEFAULT_VISIBILITY":
+        {
+            "severity": "HIGH",
+            "type": "SECURITY",
+            "message": "Projects default visibility is 'Public', this is a security risk"
+        },
+    "SETTING_CPD_CROSS_PROJECT":
+        {
+            "severity": "MEDIUM",
+            "type": "PERFORMANCE",
+            "message": "Cross project duplication is set to 'true', this can have a negative performance impact"
+        },
+    "SETTING_BASE_URL":
+        {
+            "severity": "HIGH",
+            "type": "OPERATIONS",
+            "message": "'sonar.core.serverBaseURL' is not set, this may break some features"
+        },
+    "SETTING_NOT_SET":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "'{}' is not set, this may break some features"
+        },
+    "SETTING_SET":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "'{}' is set to value '{}', it is recommended to leave it unset"
+        },
+    "SETTING_VALUE_INCORRECT":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "'{}' is set to value '{}', which is probably incorrect"
+        },
+    "SETTING_VALUE_OUT_OF_RANGE":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "Setting '{}', is set to value '{}' which is outside of recommended range [{}-{}]"
+        },
+    "SETTING_DB_CLEANER":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "DB Cleaner setting '{}' is outside of recommended range [{}-{}]"
+        },
+    "SETTING_MAINT_GRID":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "message": "Maintainability rating threshold for '{}' is outside of recommended range [{}-{}]"
+        },
+    "SETTING_SLB_RETENTION":
+        {
+            "severity": "MEDIUM",
+            "type": "PERFORMANCE",
+            "message": "Short Lived Branches retention duration '{}' is outside of recommended range [{}-{}]"
+        },
+    "SETTING_TD_LOC_COST":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "message": "Time to develop 1 line of code '{} min' is outside of recommended range [{}-{}]"
+        },
+    "PROJ_LAST_ANALYSIS":
+        {
+            "severity": "MEDIUM",
+            "type": "PERFORMANCE",
+            "object": "Project",
+            "message": "Project '{}' has not been analyzed since {} days, it could be deleted"
+        },
+    "PROJ_NOT_ANALYZED":
+        {
+            "severity": "LOW",
+            "type": "PERFORMANCE",
+            "object": "Project",
+            "message": "Project '{}' has been created but never analyzed, it could be deleted"
+        },
+    "PROJ_VISIBILITY":
+        {
+            "severity": "HIGH",
+            "type": "SECURITY",
+            "object": "Project",
+            "message": "Project '{}' visibility is 'Public', this is a security risk"
+        },
+    "PROJ_DUPLICATE":
+        {
+            "severity": "MEDIUM",
+            "type": "PERFORMANCE",
+            "object": "Project",
+            "message": "Project '{}' is likely to be a duplicate of project '{}', it could be deleted"
+        },
+    "PROJ_PERM_MAX_USERS":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "object": "Project",
+            "message": "Project '{}' has {} users with permissions, this is too much, use groups instead"
+        },
+    "PROJ_PERM_MAX_ADM_USERS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} users with admin permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_MAX_ISSUE_ADM_USERS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} users with issue admin permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_MAX_HOTSPOT_ADM_USERS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} users with hotspot admin permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_MAX_SCAN_USERS":
+        {
+            "severity": "HIGH",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} users with analysis permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_MAX_GROUPS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} groups with permissions, this is more than the {} recommended"
+        },
+    "PROJ_PERM_MAX_ADM_GROUPS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} groups with admin permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_MAX_ISSUE_ADM_GROUPS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} groups with issue admin permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_MAX_HOTSPOT_ADM_GROUPS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} groups with hotspot admin permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_MAX_SCAN_GROUPS":
+        {
+            "severity": "HIGH",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} groups with analysis permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_SONAR_USERS_ELEVATED_PERMS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Group 'sonar-users' should not have admin, admin QG, admin QP or create project permissions"
+        },
+    "PROJ_PERM_ANYONE":
+        {
+            "severity": "HIGH",
+            "type": "SECURITY",
+            "object": "Project",
+            "message": "Group 'Anyone' has permissions on Project '{}', this is a security risk"
+        },
+    "PROJ_XML_LOCS":
+        {
+            "severity": "LOW",
+            "type": "PERFORMANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} XML LoCs, this is suspiciously high, verify scanning settings"
+        },
+    "QG_NO_COND":
+    {
+        "severity": "HIGH",
+        "type": "GOVERNANCE",
+        "object": "QualityGate",
+        "message": "Quality Gate '{}' has no conditions defined, this is meaningless"
+    },
+    "QG_TOO_MANY_COND":
+    {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "QualityGate",
+        "message": "Quality Gate '{}' has {} conditions defined, more than the max {} recommended"
+    },
+    "QG_NOT_USED":
+    {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "object": "QualityGate",
+        "message": "Quality Gate '{}' is not used, it should be deleted"
+    },
+    "QG_TOO_MANY_GATES":
+    {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "QualityGate",
+        "message": "There are {} Quality Gates defined, this is more than the max {} recommended"
+    },
+    "QG_WRONG_METRIC":
+    {
+        "severity": "HIGH",
+        "type": "GOVERNANCE",
+        "object": "QualityGate",
+        "message": "Quality Gate '{}' has a condition on metric '{}', this is not recommended"
+    },
+    "QG_WRONG_THRESHOLD":
+    {
+        "severity": "HIGH",
+        "type": "GOVERNANCE",
+        "object": "QualityGate",
+        "message": "Quality Gate '{}' threshold {} on metric '{}', is outside of the recommended range [{}-{}]"
+    },
+    "QP_TOO_MANY_QP":
+    {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "QualityProfile",
+        "message": "There are {} Quality Profiles defined for language '{}', this is more than the max {} recommended"
+    },
+    "QP_LAST_USED_DATE":
+    {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "object": "QualityProfile",
+        "message": "Quality Profile '{}' has not been used since {} days, it should be deleted"
+    },
+    "QP_LAST_CHANGE_DATE":
+    {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "QualityProfile",
+        "message": "Quality Profile '{}' has not been updated since {} days, it should be updated"
+    },
+    "QP_TOO_FEW_RULES":
+    {
+        "severity": "HIGH",
+        "type": "GOVERNANCE",
+        "object": "QualityProfile",
+        "message": "Quality profile '{}' has {} rules, this is too few, less than 50% of all {} language rules"
+    },
+    "QP_NOT_USED":
+    {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "object": "QualityProfile",
+        "message": "Quality Profile '{}' is not used, it should be deleted"
+    },
+    "QP_USE_DEPRECATED_RULES":
+    {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "QualityProfile",
+        "message": "Quality Profile '{}' uses deprecated rules, it should be updated"
+    }
+}

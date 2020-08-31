@@ -1,12 +1,12 @@
 import setuptools
-import sonarqube.utilities as util
+import sonarqube.version as version
 
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name='sonar-tools',
-    version=util.SONAR_TOOLS_VERSION,
+    version=version.SONAR_TOOLS_VERSION,
     scripts=['sonar-tools'],
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",
@@ -20,6 +20,9 @@ setuptools.setup(
         "Source Code": "https://github.com/okorach/sonarqube-tools",
     },
     packages=setuptools.find_packages(),
+    package_data={
+        "sonarqube": ["rules.json", "sonar-audit.properties"]
+    },
     install_requires=[
         'pytz',
         'argparse',

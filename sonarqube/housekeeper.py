@@ -9,6 +9,7 @@ import sys
 import sonarqube.env as env
 import sonarqube.projects as projects
 import sonarqube.utilities as util
+import sonarqube.version as version
 import sonarqube.audit_problem as pb
 
 
@@ -21,7 +22,7 @@ def main():
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)
-    util.logger.info('sonar-tools version %s', util.SONAR_TOOLS_VERSION)
+    util.logger.info('sonar-tools version %s', version.SONAR_TOOLS_VERSION)
 
     if args.olderThan < 90:
         util.logger.error("Can't delete projects more recent than 90 days")
