@@ -168,7 +168,7 @@ class Environment:
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
-                problems += __audit_setting_is_set__(platform_settings, v[0], v[1], v[2])
+                problems += __audit_setting_is_set__(platform_settings, v[0])
             elif re.match(r'audit.globalSetting.isNotSet', key):
                 v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
