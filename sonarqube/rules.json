@@ -29,6 +29,30 @@
             "type": "OPERATIONS",
             "message": "'sonar.core.serverBaseURL' is not set, this may break some features"
         },
+    "SETTING_NOT_SET":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "'{}' is not set, this may break some features"
+        },
+    "SETTING_SET":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "'{}' is set to value '{}', it is recommended to leave it unset"
+        },
+    "SETTING_VALUE_INCORRECT":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "'{}' is set to value '{}', which is probably incorrect"
+        },
+    "SETTING_VALUE_OUT_OF_RANGE":
+        {
+            "severity": "MEDIUM",
+            "type": "OPERATIONS",
+            "message": "Setting '{}', is set to value '{}' which is outside of recommended range [{}-{}]"
+        },
     "SETTING_DB_CLEANER":
         {
             "severity": "MEDIUM",
@@ -150,6 +174,13 @@
             "type": "GOVERNANCE",
             "object": "Project",
             "message": "Project '{}' has {} groups with analysis permission, this is more than the max {} recommended"
+        },
+    "PROJ_PERM_SONAR_USERS_ELEVATED_PERMS":
+        {
+            "severity": "MEDIUM",
+            "type": "GOVERNANCE",
+            "object": "Project",
+            "message": "Group 'sonar-users' should not have admin, admin QG, admin QP or create project permissions"
         },
     "PROJ_PERM_ANYONE":
         {
