@@ -189,6 +189,13 @@
             "object": "Project",
             "message": "Group 'Anyone' has permissions on Project '{}', this is a security risk"
         },
+    "PROJ_XML_LOCS":
+        {
+            "severity": "LOW",
+            "type": "PERFORMANCE",
+            "object": "Project",
+            "message": "Project '{}' has {} XML LoCs, this is suspiciously high, verify scanning settings"
+        },
     "QG_NO_COND":
     {
         "severity": "HIGH",
@@ -243,34 +250,34 @@
         "severity": "MEDIUM",
         "type": "OPERATIONS",
         "object": "QualityProfile",
-        "message": "Quality Profiles '{}' of language '{}' has not been used since {} days, it should be deleted"
+        "message": "Quality Profile '{}' has not been used since {} days, it should be deleted"
     },
     "QP_LAST_CHANGE_DATE":
     {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "QualityProfile",
-        "message": "Quality Profiles '{}' of language '{}' has not been updated since {} days, it should be updated"
+        "message": "Quality Profile '{}' has not been updated since {} days, it should be updated"
     },
     "QP_TOO_FEW_RULES":
     {
         "severity": "HIGH",
         "type": "GOVERNANCE",
         "object": "QualityProfile",
-        "message": "Quality Profiles '{}' of language '{}' has {} rules, this is too few"
+        "message": "Quality profile '{}' has {} rules, this is too few, less than 50% of all {} language rules"
     },
     "QP_NOT_USED":
     {
         "severity": "MEDIUM",
         "type": "OPERATIONS",
         "object": "QualityProfile",
-        "message": "Quality Profiles '{}' of language '{}' is not used, it should be deleted"
+        "message": "Quality Profile '{}' is not used, it should be deleted"
     },
     "QP_USE_DEPRECATED_RULES":
     {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "QualityProfile",
-        "message": "Quality Profiles '{}' of language '{}' uses deprecated rules, it should be updated"
+        "message": "Quality Profile '{}' uses deprecated rules, it should be updated"
     }
 }
