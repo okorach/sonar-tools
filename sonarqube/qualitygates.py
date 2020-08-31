@@ -80,15 +80,16 @@ class QualityGate(sq.SqObject):
         for c in self.conditions:
             m = c['metric']
             if m not in GOOD_QG_CONDITIONS:
-                problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.HIGH,
-                    "Quality Gate '{}': It is not recommended to use metric '{}' in quality gates".format(
-                    self.name, m)))
+                rule = rules.get_rule(rules.RuleId.QG_WRONG_METRIC)
+                problems.append(pb.Problem(
+                    rule.type, rule.severity, rule.msg.format(self.name, m)))
                 continue
             val = int(c['error'])
             (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
             util.logger.debug('Condition on metric "%s": Check that %d in range [%d - %d]', m, val, mini, maxi)
             if val < mini or val > maxi:
-                problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.HIGH,
+                problems.append(pb.Problem(
+                    typ.Type.BAD_PRACTICE, sev.Severity.HIGH,
                     "Quality Gate '{}' condition on metric '{}': {}".format(self.name, m, msg)))
         return problems
 
@@ -99,16 +100,18 @@ class QualityGate(sq.SqObject):
             return problems
         nb_conditions = len(self.conditions)
         if nb_conditions == 0:
-            problems.append(pb.Problem(typ.Type.CONFIGURATION, sev.Severity.LOW,
-                "Quality gate '{}' has no conditions defined, this is useless".format(self.name)))
+            rule = rules.get_rule(rules.RuleId.QG_NO_COND)
+            problems.append(pb.Problem(
+                rule.type, rule.severity, rule.msg.format(self.name)))
         elif nb_conditions > 8:
-            problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
-                "Quality gate '{}' has {} conditions defined, this is more than the 8 max recommended".format(
-                self.name, len(self.conditions))))
+            rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_COND)
+            problems.append(pb.Problem(
+                rule.type, rule.severity, rule.msg.format(self.name, len(self.conditions))))
         problems += self.__audit_conditions__()
         if not self.is_default and not self.get_projects():
-            problems.append(pb.Problem(typ.Type.CONFIGURATION, sev.Severity.LOW,
-                "Quality gate '{}' is not used by any project, it should be deleted".format(self.name)))
+            rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
+            problems.append(pb.Problem(
+                rule.type, rule.severity, rule.msg.format(self.name)))
         return problems
 
     def count(self, params=None):
@@ -155,8 +158,8 @@ def audit(endpoint=None):
     quality_gates_list = list_qg(endpoint)
     nb_qg = len(quality_gates_list)
     if nb_qg > 5:
-        problems.append(pb.Problem(typ.Type.GOVERNANCE, sev.Severity.MEDIUM,
-            "There are {} quality gates, this is more than the max 5 recommended".format(nb_qg)))
+        rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_GATES)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qg, 5)))
     for qg in quality_gates_list:
         problems += qg.audit()
     return problems
