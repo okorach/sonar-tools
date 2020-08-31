@@ -195,9 +195,8 @@ class Environment:
         visi = data['organization']['projectVisibility']
         util.logger.info('Project default visibility is %s', visi)
         if util.get_property('checkDefaultProjectVisibility') == 'yes' and visi != 'private':
-            problems.append(
-                pb.Problem(typ.Type.SECURITY, sev.Severity.HIGH,
-                           'Project default visibility is {}, which can be a security risk'.format(visi)))
+            rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
+            problems.append(pb.Problem(rule.type, rule.severity, rule.ms.format(visi)))
         return problems
 
     def __audit_admin_password__(self):
@@ -207,9 +206,8 @@ class Environment:
             r = requests.get(url=self.root_url + '/api/authentication/validate', auth=('admin', 'admin'))
             data = json.loads(r.text)
             if data.get('valid', False):
-                problems.append(
-                    pb.Problem(typ.Type.SECURITY, sev.Severity.CRITICAL,
-                               "User 'admin' still using the default password, this must be changed ASAP"))
+                rule = rules.get_rule(rules.RuleId.DEFAULT_ADMIN_PASSWORD)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
             else:
                 util.logger.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
@@ -242,10 +240,8 @@ class Environment:
             if gr['name'] == 'sonar-users' and (
                     'admin' in gr['permissions'] or 'gateadmin' in gr['permissions'] or
                     'profileadmin' in gr['permissions'] or 'provisioning' in gr['permissions']):
-                problems.append(
-                    pb.Problem(
-                        typ.Type.GOVERNANCE, sev.Severity.MEDIUM,
-                        "Group 'sonar-users' should not have admin, admin QG, admin QP or create project permissions"))
+                rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
 
         perm_counts = __get_permissions_count__(groups)
         maxis = {'admin': 2, 'gateadmin': 2, 'profileadmin': 2, 'scan': 2, 'provisioning': 3}
@@ -400,9 +396,8 @@ def __audit_setting_is_set__(settings, key, severity=sev.Severity.MEDIUM, domain
     if key in settings and settings[key] != '':
         util.logger.info("Setting %s is set with value %s", key, settings[key])
     else:
-        problems.append(
-            pb.Problem(domain, severity,
-                       "Setting {} is not set, although it should".format(key)))
+        rule = rules.get_rule(rules.RuleId.SETTING_NOT_SET)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(key)))
     return problems
 
 
