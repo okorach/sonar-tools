@@ -9,6 +9,7 @@ import sonarqube.projects as projects
 import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.qualitygates as qualitygates
 import sonarqube.utilities as util
+import sonarqube.version as version
 import sonarqube.env as env
 import sonarqube.audit_problem as pb
 
@@ -36,7 +37,7 @@ If not specified, it is the output file extension if json or csv, then csv by de
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)
-    util.logger.info('sonar-tools version %s', util.SONAR_TOOLS_VERSION)
+    util.logger.info('sonar-tools version %s', version.SONAR_TOOLS_VERSION)
     settings = util.read_config('sonar-audit.properties')
 
     if args.what is None:
