@@ -1,12 +1,12 @@
 import setuptools
-import sonarqube.utilities as util
+import sonarqube.version as version
 
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name='sonar-tools',
-    version=util.SONAR_TOOLS_VERSION,
+    version=version.SONAR_TOOLS_VERSION,
     scripts=['sonar-tools'],
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",
