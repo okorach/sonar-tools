@@ -13,13 +13,19 @@ def load(config_file=None):
     with open(config_file) as fp:
         CONFIG_SETTINGS = jprops.load_properties(fp)
     fp.close()
-    for conf in CONFIG_SETTINGS:
-        if (CONFIG_SETTINGS[conf].lower() == 'yes' or CONFIG_SETTINGS[conf].lower() == 'true' or
-                CONFIG_SETTINGS[conf].lower() == 'on'):
+    for key, value in CONFIG_SETTINGS.items():
+        value = value.lower()
+        if value == 'yes' or value == 'true' or value == 'on':
             CONFIG_SETTINGS[conf] = True
-        if (CONFIG_SETTINGS[conf].lower() == 'no' or CONFIG_SETTINGS[conf].lower() == 'false' or
-                CONFIG_SETTINGS[conf].lower() == 'off'):
+            continue
+        if value == 'no' or value == 'false' or value == 'off':
             CONFIG_SETTINGS[conf] = False
+            continue
+        try:
+            intval = int(value)
+            CONFIG_SETTINGS[conf] = intval
+        except ValueError:
+            pass
 
     return CONFIG_SETTINGS
 
