@@ -236,10 +236,10 @@ Is this normal ?", gr['name'], self.key)
         return problems
 
     def __audit_permissions__(self, audit_settings):
-        util.logger.info("Auditing permissions for project '%s'", self.key)
-        if audit_settings.get('audit.projects.permissions', '') != 'yes':
+        if not audit_settings.get('audit.projects.permissions', ''):
             util.logger.info('Auditing project permissions is disabled by configuration, skipping')
             return []
+        util.logger.info("Auditing permissions for project '%s'", self.key)
         problems = (self.__audit_user_permissions__(audit_settings)
                     + self.__audit_group_permissions__(audit_settings))
         if not problems:
@@ -249,63 +249,60 @@ Is this normal ?", gr['name'], self.key)
     def __audit_last_analysis__(self, audit_settings):
         util.logger.info("Auditing project '%s' last analysis date", self.key)
         age = self.age_of_last_analysis()
-
-        problems = []
         if age is None:
-            if audit_settings.get('audit.projects.neverAnalyzed', 'yes') == 'yes':
-                rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
-                problems.append(pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(self.key),
-                    concerned_object=self))
-        elif age > int(audit_settings.get('audit.projects.maxLastAnalysisAge', '180')):
+            if not audit_settings.get('audit.projects.neverAnalyzed', True):
+                util.logger.info("Auditing of never analyzed projects is disabled, skipping")
+                return []
+            rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(self.key), concerned_object=self)]
+        if age > audit_settings.get('audit.projects.maxLastAnalysisAge', 180):
+            if not audit_settings.get('audit.projects.lastAnalysisDate', True):
+                util.logger.info("Auditing of projects with old analysis date is disabled, skipping")
+                return []
             rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
             severity = sev.Severity.HIGH if age > 365 else rule.severity
-            problems.append(pb.Problem(
-                rule.type, severity, rule.msg.format(self.key, age),
-                concerned_object=self))
-        else:
-            util.logger.info("Project %s last analysis is %d days old", self.key, age)
-        return problems
+            return [pb.Problem(rule.type, severity, rule.msg.format(self.key, age), concerned_object=self)]
+
+        util.logger.info("Project %s last analysis is %d days old", self.key, age)
+        return []
 
     def __audit_visibility__(self, audit_settings):
-        util.logger.info("Auditing Project '%s' visibility", self.key)
-        if audit_settings.get('audit.projects.visibility', 'yes') != 'yes':
+        if not audit_settings.get('audit.projects.visibility', True):
             util.logger.info("Project visibility audit is disabled by configuration, skipping...")
             return []
-        problems = []
+        util.logger.info("Auditing Project '%s' visibility", self.key)
         resp = env.get('navigation/component', ctxt=self.env, params={'component': self.key})
         data = json.loads(resp.text)
         visi = data['visibility']
-        if visi == 'private':
-            util.logger.info("   Project '%s' visibility is private", self.key)
-        else:
+        if visi != 'private':
             rule = rules.get_rule(rules.RuleId.PROJ_VISIBILITY)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.msg.format(self.key, visi),
-                concerned_object=self))
-        return problems
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(self.key, visi),
+                               concerned_object=self)]
+
+        util.logger.info("Project '%s' visibility is private", self.key)
+        return []
 
     def __audit_languages__(self, audit_settings):
+        if not audit_settings.get('audit.xmlLoc.suspicious', False):
+            util.logger.info('XML LoCs count audit disabled by configuration, skipping')
+            return []
         util.logger.info('Auditing suspicious XML LoC count')
-        problems = []
-        if audit_settings.get('audit.xmlLoc.suspicious', '') != 'yes':
-            util.logger.info('XML LoCs count audit disabled by configuration, skipped')
-            return problems
+
         total_locs = 0
         languages = {}
         resp = self.get_measure('ncloc_language_distribution')
         if resp is None:
-            return problems
+            return []
         for lang in self.get_measure('ncloc_language_distribution').split(';'):
             (lang, ncloc) = lang.split('=')
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
         if total_locs > 100000 and 'xml' in languages and (languages['xml'] / total_locs) > 0.5:
             rule = rules.get_rule(rules.RuleId.PROJ_XML_LOCS)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.format(self.key, languages['xml']),
-                concerned_object=self))
-        return problems
+            return [pb.Problem(rule.type, rule.severity, rule.format(self.key, languages['xml']),
+                               concerned_object=self)]
+        util.logger.info('XML LoCs count seems reasonable')
+        return []
 
     def audit(self, audit_settings):
         util.logger.info("Auditing project %s", self.key)
@@ -477,6 +474,8 @@ def audit(audit_settings, endpoint=None):
         problems += p.audit(audit_settings)
         if audit_settings.get('audit.projects.duplicates', 'yes') != 'yes':
             continue
+        if not audit_settings.get('audit.projects.duplicates', True):
+            util.logger.info("Auditing for potential duplicate projects is disabled, skipping")
         util.logger.info("Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key2, key):
