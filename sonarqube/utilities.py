@@ -7,7 +7,6 @@
 import sys
 import logging
 import json
-import jprops
 
 
 OPT_VERBOSE = 'verbosity'
@@ -17,7 +16,7 @@ CONFIRM = 'confirm'
 BATCH = 'batch'
 RUN_MODE = DRY_RUN
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
-CONFIG_SETTINGS = None
+
 
 logger = logging.getLogger('sonarqube-tools')
 formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)-7s | %(message)s')
@@ -125,16 +124,3 @@ def format_date(somedate):
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
-def read_config(config_file='sonar-tools.properties'):
-    global CONFIG_SETTINGS
-    with open(config_file) as fp:
-        CONFIG_SETTINGS = jprops.load_properties(fp)
-    fp.close()
-    return CONFIG_SETTINGS
-
-
-def get_property(name, settings=None):
-    if settings is None:
-        global CONFIG_SETTINGS
-        settings = CONFIG_SETTINGS
-    return settings.get(name, '').lower()
