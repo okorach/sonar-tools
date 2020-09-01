@@ -1,6 +1,11 @@
 # sonar-tools
-Command line tools to help in SonarQube administration tasks. The following utilities are available:
+Command line tools to help in SonarQube administration tasks.
+
+**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource SA, the company behind SonarQube
+
+The following utilities are available:
 - **sonar-audit**: Audits a SonarQube platform
+- **sonar-housekeeper**: Deletes projects that have not been analyzed since a certain number of days
 - **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the platform i CSV
 - **sonar-issues-export**: Exports issues (potentially filtered) from the platform in CSV
 - **sonar-projects-export**: Exports all projects from a platform (EE and higher)
@@ -106,6 +111,15 @@ When `--what` is not specified, everything audited
     - More than 2 groups with hotspot admin permission
     - More than 2 groups with project admin permission
 </details>
+
+## sonar-housekeeper
+
+Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
+
+Usage: `sonar-housekeeper -u <url> -t <token> -o days [--mode batch]`
+When `--what` is not specified, everything audited
+- `-o <days>`: Minimum number of days since project last analysis. To avoid deleting too recent projects it is denied to specify less than 90 days
+- `--mode batch`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects that would be deleted. If specified projects are actually deleted
 
 # sonar-measures-export
 
@@ -214,9 +228,6 @@ sonar-issues-sync -u <src_url> -t <src_token> -k <projectKey> -U <target_url> -T
 
 ## sonar-project-history
 Extracts the history of some given metrics for a given project
-
-## sonar-project-housekeeper
-Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
 
 ### :information_source: Limitations
 To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.
