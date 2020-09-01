@@ -16,14 +16,14 @@ def load(config_file=None):
     for key, value in CONFIG_SETTINGS.items():
         value = value.lower()
         if value == 'yes' or value == 'true' or value == 'on':
-            CONFIG_SETTINGS[conf] = True
+            CONFIG_SETTINGS[key] = True
             continue
         if value == 'no' or value == 'false' or value == 'off':
-            CONFIG_SETTINGS[conf] = False
+            CONFIG_SETTINGS[key] = False
             continue
         try:
             intval = int(value)
-            CONFIG_SETTINGS[conf] = intval
+            CONFIG_SETTINGS[key] = intval
         except ValueError:
             pass
 
