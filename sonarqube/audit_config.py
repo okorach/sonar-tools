@@ -3,6 +3,7 @@ import sonarqube.utilities as util
 
 CONFIG_SETTINGS = None
 
+
 def load(config_file=None):
     global CONFIG_SETTINGS
     if config_file is None:
