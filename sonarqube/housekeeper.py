@@ -29,11 +29,12 @@ def main():
         sys.exit(1)
 
     settings = {
-        'audit.projects.maxLastAnalysisAge': str(args.olderThan),
-        'audit.projects.neverAnalyzed': 'no',
-        'audit.projects.duplicates': 'no',
-        'audit.projects.visibility': 'no',
-        'audit.projects.permissions': 'no'
+        'audit.projects.maxLastAnalysisAge': args.olderThan,
+        'audit.projects.neverAnalyzed': False,
+        'audit.projects.duplicates': False,
+        'audit.projects.visibility': False,
+        'audit.projects.permissions': False,
+        'audit.projects.lastAnalysisDate': True
     }
     problems = projects.audit(endpoint=sq, audit_settings=settings)
 

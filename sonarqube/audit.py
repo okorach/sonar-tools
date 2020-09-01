@@ -12,6 +12,7 @@ import sonarqube.utilities as util
 import sonarqube.version as version
 import sonarqube.env as env
 import sonarqube.audit_problem as pb
+import sonarqube.audit_config as conf
 
 
 def __deduct_format__(fmt, file):
@@ -38,7 +39,7 @@ If not specified, it is the output file extension if json or csv, then csv by de
     kwargs = vars(args)
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.SONAR_TOOLS_VERSION)
-    settings = util.read_config('sonar-audit.properties')
+    settings = conf.load('sonar-audit.properties')
 
     if args.what is None:
         args.what = 'qp,qg,settings,projects'
