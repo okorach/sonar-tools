@@ -11,6 +11,7 @@ The following utilities are available:
 - **sonar-projects-export**: Exports all projects from a platform (EE and higher)
 - **sonar-projects-import**: Imports a list of projects into a platform (EE and higher)
 
+:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support) and LATEST versions**
 
 # Requirements and Installation
 - `sonar-tools` requires python 3.6 or higher
@@ -156,7 +157,7 @@ sonar-measures-export -u <url> -t <token> -k <projectKey1>,<projectKey2> -m _all
 
 # sonar-issues-export
 
-Exports a list of issues as CSV (sent to standard output)  
+Exports a list of issues as CSV (sent to standard output)
 Plenty of issue filters can be specified from the command line, type `sonar-issues-export -h` for details.
 :warning: On large platforms with a lot of issues, it can be stressful for the platform (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
