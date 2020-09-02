@@ -18,9 +18,12 @@ The following utilities are available:
 
 All tools accept the following common parameters:
 - `-h` : Displays a help and exits
-- `-u` : URL of the SonarQube server, default is `http://localhost:9000`
-- `-t` : token of the user to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06` (using login/password is not possible)
-- `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). `ERROR` and above is always active. Default is `INFO`
+- `-u` : URL of the SonarQube server. The default is `http://localhost:9000`
+- `-t` : token of the user to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06`.
+Using login/password is not possible.
+The user corresponding to the token must have enough permissions to achieve the tool job
+- `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
+`ERROR` and above is always active.
 - `-m` : Mode when performing API calls, `dry-run` is the default
   - `batch`: All API calls are performed without any confirmation
   - `confirm`: All API calls that change the SonarQube internal state (POST and DELETE) are asking for a confirmation before execution
@@ -33,7 +36,8 @@ Audits the SonarQube platform and output warning logs whenever a suspicious or i
 The detail of what is audited is listed at the bottom of this (long) page
 
 Usage: `sonar-audit -u <url> -t <token> [--what [settings|projects|qg|qp]]`
-When `--what` is not specified, everything audited
+When `--what` is not specified, everything is audited
+
 - `--what settings`: Audits global settings and general system data (system info in particular)
 - `--what qp`: Audits quality profiles
 - `--what qg`: Audits quality gates
@@ -112,14 +116,28 @@ When `--what` is not specified, everything audited
     - More than 2 groups with project admin permission
 </details>
 
-## sonar-housekeeper
+# sonar-housekeeper
 
 Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
 
 Usage: `sonar-housekeeper -u <url> -t <token> -o days [--mode batch]`
-When `--what` is not specified, everything audited
+
+
 - `-o <days>`: Minimum number of days since project last analysis. To avoid deleting too recent projects it is denied to specify less than 90 days
-- `--mode batch`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects that would be deleted. If specified projects are actually deleted
+- `--mode batch`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects that would be deleted.
+If specified projects are actually deleted
+
+
+### :information_source: Limitations
+To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.
+
+### :warning: Database backup
+**A database backup should always be taken before executing this script. There is no recovery.**
+
+### Example
+```
+sonar-project-housekeeper -u <url> -t <token> -o <days>
+```
 
 # sonar-measures-export
 
@@ -138,8 +156,8 @@ sonar-measures-export -u <url> -t <token> -k <projectKey1>,<projectKey2> -m _all
 
 # sonar-issues-export
 
-Exports a list of issues as CSV (sent to standard output)
-Plenty of issue filters can be specified from the command line, type `sonar-issues-export -h` for details
+Exports a list of issues as CSV (sent to standard output)  
+Plenty of issue filters can be specified from the command line, type `sonar-issues-export -h` for details.
 :warning: On large platforms with a lot of issues, it can be stressful for the platform (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
 ## Examples
@@ -228,15 +246,4 @@ sonar-issues-sync -u <src_url> -t <src_token> -k <projectKey> -U <target_url> -T
 
 ## sonar-project-history
 Extracts the history of some given metrics for a given project
-
-### :information_source: Limitations
-To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.
-
-### :warning: Database backup
-**A database backup should always be taken before executing this script. There is no recovery.**
-
-### Example
-```
-sonar-project-housekeeper -u <url> -t <token> -o <days>
-```
 
