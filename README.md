@@ -20,9 +20,9 @@ The following utilities are available:
 All tools accept the following common parameters:
 - `-h` : Displays a help and exits
 - `-u` : URL of the SonarQube server. The default is `http://localhost:9000`
-- `-t` : token of the user to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06`.
+- `-t` : User token to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06`.
 Using login/password is not possible.
-The user corresponding to the token must have enough permissions to achieve the tool job
+The user corresponding to the token must have enough permissions to achieve the tool tasks
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
 - `-m` : Mode when performing API calls, `dry-run` is the default
@@ -37,6 +37,8 @@ Audits the SonarQube platform and output warning logs whenever a suspicious or i
 The detail of what is audited is listed at the bottom of this (long) page
 
 Usage: `sonar-audit -u <url> -t <token> [--what [settings|projects|qg|qp]]`
+
+`--what` can be followed by a list of comma separated items
 When `--what` is not specified, everything is audited
 
 - `--what settings`: Audits global settings and general system data (system info in particular)
@@ -142,11 +144,13 @@ sonar-project-housekeeper -u <url> -t <token> -o <days>
 
 # sonar-measures-export
 
-Exports one or all projects with all (or some selected) measures in a CSV file.
-The CSV is sent to standard output.
+Exports one or all projects with all (or some selected) measures in a CSV file.  
+The CSV is sent to standard output.  
 Plenty of issue filters can be specified from the command line, type `sonar-measures-export -h` for details
 
-Basic Usage: `sonar-measures-export -u <url> -t <token> --metricKeys _main -b -r >measures.csv`
+Basic Usage: `sonar-measures-export -u <url> -t <token> -m _main -b -r >measures.csv`  
+`-m _main` is a shortcut to list all main metrics. It's the recommended option  
+`-m _all` is a shortcut to list all metrics, including the most obscure ones
 
 ## Examples
 ```
@@ -157,8 +161,8 @@ sonar-measures-export -u <url> -t <token> -k <projectKey1>,<projectKey2> -m _all
 
 # sonar-issues-export
 
-Exports a list of issues as CSV (sent to standard output)
-Plenty of issue filters can be specified from the command line, type `sonar-issues-export -h` for details.
+Exports a list of issues as CSV (sent to standard output)  
+Plenty of issue filters can be specified from the command line, type `sonar-issues-export -h` for details.  
 :warning: On large platforms with a lot of issues, it can be stressful for the platform (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
 ## Examples
@@ -173,8 +177,8 @@ sonar-issues-export -u <url> -t <token> -types VULNERABILITY,BUG >bugs_and_vulne
 
 # sonar-projects-export
 
-Exports all projects of a given SonarQube platform.
-:warning: This requires a SonarQube Enterprise or Data Center Edition.
+Exports all projects of a given SonarQube platform.  
+:warning: This requires a SonarQube Enterprise or Data Center Edition.  
 It sends to the output a CSV with the list of project keys, the export result (`SUCCESS` or `FAIL`), and:
 - If the export was successful, the generated zip file
 - If the export was failed, the failure reason
@@ -190,8 +194,8 @@ sonar-projects-export -u <url> -t <token> >exported_projects.csv
 
 # sonar-projects-import
 
-Imports a list of projects previously exported with `sonar-projects-export`.
-:warning: This requires a SonarQube Enterprise or Data Center Edition.
+Imports a list of projects previously exported with `sonar-projects-export`.  
+:warning: This requires a SonarQube Enterprise or Data Center Edition.  
 It takes as input a CSV file produced by `sonar-projects-export`
 
 :information_source: All exported zip files must be first copied to the right location on the target platform for the import to be successful (In `data/governance/project_dumps/import`)
