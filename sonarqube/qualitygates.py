@@ -57,8 +57,8 @@ class QualityGate(sq.SqObject):
         if data is None:
             return
         self.name = data['name']
-        self.is_default = data['isDefault']
-        self.is_built_in = data['isBuiltIn']
+        self.is_default = data.get('isDefault', False)
+        self.is_built_in = data.get('isBuiltIn', False)
         resp = env.get('qualitygates/show', ctxt=self.env, params={'id': self.key})
         data = json.loads(resp.text)
         self.conditions = []
@@ -118,10 +118,24 @@ class QualityGate(sq.SqObject):
         if params is None:
             params = {}
         params['gateId'] = self.key
-        params['ps'] = 1
-        resp = env.get('qualitygates/search', ctxt=self.env, params=params)
-        data = json.loads(resp.text)
-        return data['paging']['total']
+        page = 1
+        if self.env.get_version() < (7, 9, 0):
+            params['ps'] = 100
+            params['p'] = page
+        else:
+            params['ps'] = 1
+        more = True
+        count = 0
+        while more:
+            resp = env.get('qualitygates/search', ctxt=self.env, params=params)
+            data = json.loads(resp.text)
+            if self.env.get_version() >= (7, 9, 0):
+                count = data['paging']['total']
+                more = False
+            else:
+                count += len(data['results'])
+                more = data['more']
+        return count
 
     def search(self, page=0, params=None):
         if params is None:
@@ -139,7 +153,10 @@ class QualityGate(sq.SqObject):
         for p in range(nb_pages):
             params['p'] = p + 1
             for prj in self.search(page=p + 1, params=params):
-                prj_list[prj['key']] = prj
+                if 'key' in prj:
+                    prj_list[prj['key']] = prj
+                else:
+                    prj_list[prj['id']] = prj
         return prj_list
 
 
@@ -147,8 +164,12 @@ def list_qg(endpoint=None):
     resp = env.get('qualitygates/list', ctxt=endpoint)
     data = json.loads(resp.text)
     qg_list = []
+
     for qg in data['qualitygates']:
-        qg_list.append(QualityGate(key=qg['id'], endpoint=endpoint, data=qg))
+        qg_obj = QualityGate(key=qg['id'], endpoint=endpoint, data=qg)
+        if endpoint.get_version() < (7, 9, 0) and 'default' in data and data['default'] == qg['id']:
+            qg_obj.is_default = True
+        qg_list.append(qg_obj)
     return qg_list
 
 
