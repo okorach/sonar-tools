@@ -14,6 +14,7 @@ import sonarqube.audit_severities as sev
 import sonarqube.audit_types as typ
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
+import sonarqube.audit_config as conf
 
 HTTP_ERROR_MSG = "%s%s raised error %d: %s"
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
@@ -194,7 +195,7 @@ class Environment:
         data = json.loads(resp.text)
         visi = data['organization']['projectVisibility']
         util.logger.info('Project default visibility is %s', visi)
-        if util.get_property('checkDefaultProjectVisibility') == 'yes' and visi != 'private':
+        if conf.get_property('checkDefaultProjectVisibility') and visi != 'private':
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
             problems.append(pb.Problem(rule.type, rule.severity, rule.ms.format(visi)))
         return problems
