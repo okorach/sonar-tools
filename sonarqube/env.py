@@ -141,10 +141,13 @@ class Environment:
         json_s = json.loads(resp.text)
         platform_settings = {}
         for s in json_s['settings']:
+            util.logger.debug("setting = %s", str(s))
             if 'value' in s:
                 platform_settings[s['key']] = s['value']
-            else:
+            elif 'values' in s:
                 platform_settings[s['key']] = ','.join(s['values'])
+            elif 'fieldValues' in s:
+                platform_settings[s['key']] = s['fieldValues']
 
         for key in audit_settings:
             if re.match(r'audit.globalSetting.range', key):
@@ -508,11 +511,15 @@ def __audit_ce_background_tasks__(sysinfo):
     util.logger.info('Auditing CE background tasks')
     problems = []
     ce_tasks = sysinfo['Compute Engine Tasks']
+    util.logger.debug("CE Tasks = %s", str(ce_tasks))
     ce_workers = ce_tasks['Worker Count']
     ce_success = ce_tasks["Processed With Success"]
     ce_error = ce_tasks["Processed With Error"]
     ce_pending = ce_tasks["Pending"]
-    failure_rate = ce_error / (ce_success+ce_error)
+    if ce_success == 0 and ce_error == 0:
+        failure_rate = 0
+    else:
+        failure_rate = ce_error / (ce_success+ce_error)
     if ce_error > 10 and failure_rate > 0.01:
         problems.append(pb.Problem(
             typ.Type.OPERATIONS, sev.Severity.HIGH,
