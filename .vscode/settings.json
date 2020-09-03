@@ -1,7 +1,7 @@
 {
     "python.linting.pylintEnabled": true
     "sonarlint.connectedMode.project": {
-        "serverId": "SQ LTS",
+        "connectionId": "SQ LATEST",
         "projectKey": "sonarqube-tools"
     }
 }
