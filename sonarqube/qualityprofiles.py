@@ -87,12 +87,12 @@ class QualityProfile(sq.SqObject):
                 rule.msg.format(self.long_name, age, 180)))
         if self.is_built_in:
             return problems
-        rules_per_lang = rules.get_facet(facet='languages', endpoint=self.env)
-        if self.nb_rules < int(rules_per_lang[self.language] * 0.5):
+        total_rules = rules.count(endpoint=self.env, params={'languages': self.language})
+        if self.nb_rules < int(total_rules * 0.5):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
             problems.append(pb.Problem(
                 rule.type, rule.severity,
-                rule.msg.format(self.long_name, self.nb_rules, rules_per_lang[self.language])))
+                rule.msg.format(self.long_name, self.nb_rules, total_rules)))
         age = self.age_of_last_use()
         if age is None or not self.is_default and self.project_count == 0:
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
