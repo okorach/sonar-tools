@@ -141,7 +141,6 @@ class Environment:
         json_s = json.loads(resp.text)
         platform_settings = {}
         for s in json_s['settings']:
-            util.logger.debug("setting = %s", str(s))
             if 'value' in s:
                 platform_settings[s['key']] = s['value']
             elif 'values' in s:
@@ -511,7 +510,6 @@ def __audit_ce_background_tasks__(sysinfo):
     util.logger.info('Auditing CE background tasks')
     problems = []
     ce_tasks = sysinfo['Compute Engine Tasks']
-    util.logger.debug("CE Tasks = %s", str(ce_tasks))
     ce_workers = ce_tasks['Worker Count']
     ce_success = ce_tasks["Processed With Success"]
     ce_error = ce_tasks["Processed With Error"]

@@ -389,7 +389,6 @@ def __get_permissions_counts__(entities):
     counts['overall'] = 0
     for permission in perms.PROJECT_PERMISSIONS:
         counts[permission] = 0
-    util.logger.debug("PERMS for %s", str(entities))
     for gr in entities:
         p = gr['permissions']
         if not p:
