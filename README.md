@@ -16,6 +16,10 @@ The following utilities are available:
 # Requirements and Installation
 - `sonar-tools` requires python 3.6 or higher
 - Install is based on [pip](/https://pypi.org/project/pip/). To install run: `python3 -m pip install sonar-tools`
+- Offline installation: If you have no access to the internet on the install machine, you can:
+  - Download the `.whl` file attached to the release. Something like **sonar_tools-0.6.3-py3-none-any.whl**
+  - Run `python3 -m pip install sonar_tools-0.6.3-py3-none-any.whl`
+  - The install may fail because of missing dependency packages. In that case you'll have to install them beforehand
 
 All tools accept the following common parameters:
 - `-h` : Displays a help and exits
