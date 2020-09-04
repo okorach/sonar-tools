@@ -21,9 +21,9 @@ def main():
     args = parser.parse_args()
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
+    mode = args.mode
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.SONAR_TOOLS_VERSION)
-
     if args.olderThan < 90:
         util.logger.error("Can't delete projects more recent than 90 days")
         sys.exit(1)
@@ -43,20 +43,26 @@ def main():
         sys.exit(0)
 
     pb.dump_report(problems, file=None, file_format='csv')
-    util.logger.warning("%d projects older than %d days found during audit", len(problems), args.olderThan)
-    text = input('Please confirm deletion y/n [n] ')
-    if text != 'y':
-        sys.exit(1)
     total_loc = 0
     nb_proj = 0
     for p in problems:
         if p.concerned_object is not None and isinstance(p.concerned_object, projects.Project):
-            loc = int(p.concerned_object.get_measure('ncloc'))
-
-            util.logger.info("Deleting project '%s', %d LoC", p.concerned_object.key, loc)
-            p.concerned_object.delete()
+            loc = int(p.concerned_object.get_measure('ncloc', fallback='0'))
             total_loc += loc
             nb_proj += 1
+    util.logger.warning("%d projects older than %d days for a total of %d LoC found during audit",
+                        nb_proj, args.olderThan, total_loc)
+    if mode == 'dry-run':
+        sys.exit(0)
+
+    text = input('Please confirm deletion y/n [n] ')
+    if text != 'y':
+        sys.exit(1)
+
+    for p in problems:
+        if p.concerned_object is not None and isinstance(p.concerned_object, projects.Project):
+            util.logger.info("Deleting project '%s', %d LoC", p.concerned_object.key, loc)
+            p.concerned_object.delete()
     util.logger.info("%d projects and %d LoCs deleted", nb_proj, total_loc)
     sys.exit(len(problems))
 
