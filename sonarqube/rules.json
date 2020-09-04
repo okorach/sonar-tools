@@ -82,7 +82,7 @@
             "severity": "MEDIUM",
             "type": "PERFORMANCE",
             "object": "Project",
-            "message": "Project '{}' has not been analyzed since {} days, it could be deleted"
+            "message": "Project '{}' with {} LoCs has not been analyzed since {} days, it could be deleted"
         },
     "PROJ_NOT_ANALYZED":
         {
