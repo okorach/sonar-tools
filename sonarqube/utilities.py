@@ -122,5 +122,3 @@ def format_date_ymd(year, month, day):
 
 def format_date(somedate):
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
-
-

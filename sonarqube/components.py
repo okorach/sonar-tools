@@ -90,12 +90,12 @@ class Component(sq.SqObject):
     def get_measures(self, metric_list):
         return measures.component(component_key=self.key, metric_keys=','.join(metric_list), endpoint=self.env)
 
-    def get_measure(self, metric):
+    def get_measure(self, metric, fallback=None):
         res = self.get_measures(metric_list=[metric])
         for key in res:
             if key == metric:
                 return res[key]
-        return None
+        return fallback
 
 
 def get_components(component_types, endpoint=None):
