@@ -261,7 +261,8 @@ Is this normal ?", gr['name'], self.key)
                 return []
             rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
             severity = sev.Severity.HIGH if age > 365 else rule.severity
-            return [pb.Problem(rule.type, severity, rule.msg.format(self.key, age), concerned_object=self)]
+            loc = self.get_measure('ncloc', fallback='0')
+            return [pb.Problem(rule.type, severity, rule.msg.format(self.key, loc, age), concerned_object=self)]
 
         util.logger.info("Project %s last analysis is %d days old", self.key, age)
         return []
