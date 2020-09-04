@@ -27,7 +27,8 @@ setuptools.setup(
         'pytz',
         'argparse',
         'datetime',
-        'requests'
+        'requests',
+        'jprops'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
