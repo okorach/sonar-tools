@@ -40,7 +40,7 @@ setuptools.setup(
     },
     packages=setuptools.find_packages(),
     package_data={
-        "sonarqube": ["rules.json", "sonar-audit.properties"]
+        "sonarqube": ["LICENSE", "rules.json", "sonar-audit.properties"]
     },
     install_requires=[
         'pytz',
@@ -51,7 +51,7 @@ setuptools.setup(
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
         "Operating System :: OS Independent",
     ],
     entry_points={
