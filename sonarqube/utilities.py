@@ -72,9 +72,6 @@ def set_common_args(desc):
                         help='Token to authenticate to the source SonarQube - Unauthenticated usage is not possible')
     parser.add_argument('-u', '--url', required=False, default='http://localhost:9000',
                         help='Root URL of the source SonarQube server, default is http://localhost:9000')
-
-    parser.add_argument('--' + OPT_MODE, required=False, choices=['dry-run', 'batch', 'confirm'],
-                        default='dry-run', help='Mode of execution (dry-run, batch, confirm)')
     parser.add_argument('-v', '--' + OPT_VERBOSE, required=False, choices=['WARN', 'INFO', 'DEBUG'],
                         default='INFO', help='Logging verbosity level')
     return parser
@@ -113,20 +110,8 @@ def set_debug_level(level):
     logger.info("Set debug level to %s", level)
 
 
-def set_run_mode(run_mode):
-    global RUN_MODE
-    RUN_MODE = run_mode
-    logger.info("Set run mode to %s", run_mode)
-
-
-def get_run_mode():
-    global RUN_MODE
-    return RUN_MODE
-
-
 def check_environment(kwargs):
     set_debug_level(kwargs.pop(OPT_VERBOSE))
-    set_run_mode(kwargs.pop(OPT_MODE))
 
 
 def json_dump_debug(json_data, pre_string=''):

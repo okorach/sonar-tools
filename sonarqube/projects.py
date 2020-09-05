@@ -145,24 +145,12 @@ class Project(comp.Component):
         return permissions
 
     def delete(self, api='projects/delete', params=None):
-        confirmed = False
-        loc = int(self.get_measure('ncloc'))
-        if util.get_run_mode() == util.DRY_RUN:
-            util.logger.info("DRY-RUN: Project key %s (%d LoC) deleted")
-            return True
-        elif util.get_run_mode() == util.CONFIRM:
-            text = input('Please confirm deletion y/n [n]')
-            confirmed = (text == 'y')
-        elif util.get_run_mode() == util.BATCH:
-            confirmed = True
-        if not confirmed:
-            return False
+        loc = int(self.get_measure('ncloc', fallback='0'))
         util.logger.debug("Deleting project key %s", self.key)
         if not super().post('projects/delete', params={'project': self.key}):
             util.logger.error("Project key %s deletion failed", self.key)
             return False
         util.logger.info("Successfully deleted project key %s - %d LoCs", self.key, loc)
-        print("Successfully deleted project key %s - %d LoCs" % (self.key, loc))
         return True
 
     def age_of_last_analysis(self):
@@ -467,22 +455,6 @@ def create_project(key, name=None, visibility='private', sqenv=None):
     resp = env.post('projects/create', ctxt=sqenv,
                     params={'project': key, 'name': name, 'visibility': visibility})
     return resp.status_code
-
-
-def delete_old_projects(days=180, endpoint=None):
-    '''Deletes all projects whose last analysis date on any branch is older than x days'''
-    deleted_projects = 0
-    deleted_locs = 0
-    for key in search():
-        p_obj = Project(key, endpoint=endpoint, data=None)
-        loc = int(p_obj.get_measures(['ncloc']))
-        if p_obj.delete_if_obsolete(days=days):
-            deleted_projects += 1
-            deleted_locs += loc
-    if util.get_run_mode == util.DRY_RUN:
-        print("%d PROJECTS for a total of %d LoCs to delete" % (deleted_projects, deleted_locs))
-    else:
-        print("%d PROJECTS deleted for a total of %d LoCs" % (deleted_projects, deleted_locs))
 
 
 def audit(audit_settings, endpoint=None):
