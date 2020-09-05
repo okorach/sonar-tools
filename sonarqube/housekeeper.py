@@ -35,6 +35,9 @@ import sonarqube.audit_problem as pb
 def main():
     util.set_logger('sonar-housekeeper')
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
+    parser.add_argument('--mode', required=False, choices=['dry-run', 'delete'],
+                        default='dry-run',
+                        help="If 'dry-run', script only lists projects to delete, if 'delete' it deletes projects")
     parser.add_argument('-o', '--olderThan', required=True, type=int,
                         help='Number of days since last analysis to delete file')
     args = parser.parse_args()
@@ -73,10 +76,6 @@ def main():
                         nb_proj, args.olderThan, total_loc)
     if mode == 'dry-run':
         sys.exit(0)
-
-    text = input('Please confirm deletion y/n [n] ')
-    if text != 'y':
-        sys.exit(1)
 
     for p in problems:
         if p.concerned_object is not None and isinstance(p.concerned_object, projects.Project):
