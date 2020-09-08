@@ -30,9 +30,11 @@ import sonarqube.sqobject as sq
 import sonarqube.components as components
 import sonarqube.utilities as util
 import sonarqube.projects as projects
+import sonarqube.issue_changelog as changelog
 
-SQ_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
-
+SQ_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
+SQ_DATE_FORMAT = "%Y-%m-%d"
+SQ_TIME_FORMAT = "%H:%M:%S"
 
 class ApiError(Exception):
     pass
@@ -122,36 +124,24 @@ class Issue(sq.SqObject):
         self.type = jsondata['type']
         if self.type != 'SECURITY_HOTSPOT':
             self.severity = jsondata['severity']
-        self.author = jsondata['author']
-        self.assignee = None  # json['assignee']
-        self.status = jsondata['status']
-        try:
-            self.line = jsondata['line']
-        except KeyError:
-            self.line = None
 
-        self.resolution = None  # json['resolution']
+        self.author = jsondata['author']
+        self.assignee = jsondata.get('assignee', None)
+        self.status = jsondata['status']
+        self.line = jsondata.get('line', None)
+
+        self.resolution = jsondata.get('resolution', None)
         self.rule = jsondata['rule']
         self.project = jsondata['project']
         self.language = None
         self.changelog = None
-        self.creation_date = datetime.datetime.strptime(jsondata['creationDate'], SQ_DATE_FORMAT)
-        self.modification_date = datetime.datetime.strptime(jsondata['updateDate'], SQ_DATE_FORMAT)
+        self.creation_date = datetime.datetime.strptime(jsondata['creationDate'], SQ_DATETIME_FORMAT)
+        self.modification_date = datetime.datetime.strptime(jsondata['updateDate'], SQ_DATETIME_FORMAT)
 
-        self.changelog = None
         self.component = jsondata['component']
-        try:
-            self.hash = jsondata['hash']
-        except KeyError:
-            self.hash = None
-        try:
-            self.message = jsondata['message']
-        except KeyError:
-            self.message = None
-        try:
-            self.debt = jsondata['debt']
-        except KeyError:
-            self.debt = None
+        self.hash = jsondata.get('hash', None)
+        self.message = jsondata.get('message', None)
+        self.debt = jsondata.get('debt', None)
 
     def read(self):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
@@ -247,10 +237,27 @@ class Issue(sq.SqObject):
     def get_status(self):
         return self.status
 
-    def has_been_marked_as_wont_fix(self):
+    def search_siblings(self, issue_list, **kwargs):
+        exact_matches = []
+        approx_matches = []
+        match_but_modified = []
+        for issue in issue_list:
+            if issue.strictly_identical_to(self, **kwargs):
+                if issue.has_changelog():
+                    match_but_modified.append(issue)
+                else:
+                    exact_matches.append(issue)
+            elif issue.almost_identical_to(self, **kwargs):
+                if issue.has_changelog():
+                    match_but_modified.append(issue)
+                else:
+                    approx_matches.append(issue)
+        return (exact_matches, approx_matches, match_but_modified)
+
+    def is_wont_fix(self):
         return self.__has_been_marked_as_statuses__(["WONTFIX"])
 
-    def has_been_marked_as_false_positive(self):
+    def is_false_positive(self):
         return self.__has_been_marked_as_statuses__(["FALSE-POSITIVE"])
 
     def __has_been_marked_as_statuses__(self, statuses):
@@ -266,21 +273,47 @@ class Issue(sq.SqObject):
     def get_key(self):
         return self.key
 
-    def __same_rule(self, another_issue):
-        return self.rule == another_issue.rule
-
-    def __same_hash(self, another_issue):
-        return self.hash == another_issue.hash
-
-    def __same_message(self, another_issue):
-        return self.message == another_issue.message
-
     def __same_debt(self, another_issue):
         return self.debt == another_issue.debt
 
     def same_general_attributes(self, another_issue):
-        return self.__same_rule(another_issue) and self.__same_hash(another_issue) and \
-               self.__same_message(another_issue)
+        return (
+            self.rule == another_issue.rule and
+            self.hash == another_issue.hash and
+            self.message == another_issue.message and
+            self.debt == another_issue.debt
+        )
+
+    def strictly_identical_to(self, another_issue, **kwargs):
+        return (
+            self.rule == another_issue.rule and
+            self.hash == another_issue.hash and
+            self.message == another_issue.message and
+            self.debt == another_issue.debt and
+            (self.component == another_issue.component or kwargs.get('ignore_component', False))
+        )
+
+    def almost_identical_to(self, another_issue, **kwargs):
+
+        if self.rule != another_issue.rule or self.hash != another_issue.hash:
+            return False
+        score = 0
+        if self.message == another_issue.message or kwargs.get('ignore_message', False):
+            score += 2
+        if self.debt == another_issue.debt or kwargs.get('ignore_debt', False):
+            score += 1
+        if self.line == another_issue.line or kwargs.get('ignore_line', False):
+            score += 1
+        if self.component == another_issue.component or kwargs.get('ignore_component', False):
+            score += 1
+        if self.author == another_issue.author or kwargs.get('ignore_author', False):
+            score += 1
+        if self.type == another_issue.type or kwargs.get('ignore_type', False):
+            score += 1
+        if self.severity == another_issue.severity or kwargs.get('ignore_severity', False):
+            score += 1
+        # Need at least 6 / 8 to match
+        return score >= 6
 
     def is_vulnerability(self):
         return self.type == 'VULNERABILITY'
@@ -296,9 +329,6 @@ class Issue(sq.SqObject):
 
     def is_security_issue(self):
         return self.is_vulnerability() or self.is_hotspot()
-
-    def __identical_security_issues(self, another_issue):
-        return self.is_security_issue() and another_issue.is_security_issue()
 
     def identical_to(self, another_issue, ignore_component=False):
         if not self.same_general_attributes(another_issue) or \
@@ -372,10 +402,10 @@ class Issue(sq.SqObject):
             m = re.search(r'(\d+)min', self.debt)
             minutes = int(m.group(1)) if m else 0
             debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
-        cdate = self.creation_date.strftime("%Y-%m-%d")
-        ctime = self.creation_date.strftime("%H:%M:%S")
-        mdate = self.modification_date.strftime("%Y-%m-%d")
-        mtime = self.modification_date.strftime("%H:%M:%S")
+        cdate = self.creation_date.strftime(SQ_DATE_FORMAT)
+        ctime = self.creation_date.strftime(SQ_TIME_FORMAT)
+        mdate = self.modification_date.strftime(SQ_DATE_FORMAT)
+        mtime = self.modification_date.strftime(SQ_TIME_FORMAT)
         # Strip timezone
         mtime = re.sub(r"\+.*", "", mtime)
         msg = re.sub('"', '""', self.message)
@@ -532,7 +562,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
                 search_by_date(endpoint=endpoint, date_start=date_middle, date_stop=date_stop, params=parms))
     if date_start is not None and date_stop is not None:
         util.logger.debug("Project %s has %d issues between %s and %s", parms.get('componentKeys', 'None'),
-                          len(issue_list), date_start.strftime("%Y-%m-%d"), date_stop.strftime("%Y-%m-%d"))
+                          len(issue_list), date_start.strftime(SQ_DATE_FORMAT), date_stop.strftime(SQ_DATE_FORMAT))
     return issue_list
 
 
@@ -765,153 +795,28 @@ def apply_changelog(target_issue, source_issue):
     for d in sorted(events.iterkeys()):
         event = events[d]
         util.logger.debug("Verifying event %s", str(event))
-        if is_event_a_severity_change(event):
-            target_issue.set_severity(get_log_new_severity(event))
-        elif is_event_a_type_change(event):
-            target_issue.set_type(get_log_new_type(event))
-        elif is_event_a_reopen(event):
+        if changelog.is_event_a_severity_change(event):
+            target_issue.set_severity(changelog.get_log_new_severity(event))
+        elif changelog.is_event_a_type_change(event):
+            target_issue.set_type(changelog.get_log_new_type(event))
+        elif changelog.is_event_a_reopen(event):
             target_issue.reopen()
-        elif is_event_a_resolve_as_fp(event):
+        elif changelog.is_event_a_resolve_as_fp(event):
             target_issue.mark_as_false_positive()
-        elif is_event_a_resolve_as_wf(event):
+        elif changelog.is_event_a_resolve_as_wf(event):
             target_issue.mark_as_wont_fix()
-        elif is_event_a_resolve_as_reviewed(event):
+        elif changelog.is_event_a_resolve_as_reviewed(event):
             target_issue.mark_as_reviewed()
-        elif is_event_an_assignment(event):
+        elif changelog.is_event_an_assignment(event):
             target_issue.assign(event['value'])
-        elif is_event_a_tag_change(event):
+        elif changelog.is_event_a_tag_change(event):
             target_issue.set_tags(event['value'].replace(' ', ','))
-        elif is_event_a_comment(event):
+        elif changelog.is_event_a_comment(event):
             target_issue.add_comment(event['value'])
         else:
             util.logger.error("Event %s can't be applied", str(event))
 
 
-def get_log_date(log):
-    return log['creationDate']
-
-
-def is_log_a_closed_resolved_as(log, old_value):
-    cond1 = False
-    cond2 = False
-
-    for diff in log['diffs']:
-        if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == 'FIXED' and \
-            'oldValue' in diff and diff['oldValue'] == old_value:
-            cond1 = True
-        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'CLOSED' and \
-            'oldValue' in diff and diff['oldValue'] == 'RESOLVED':
-            cond2 = True
-    return cond1 and cond2
-
-
-def is_log_a_closed_wf(log):
-    return is_log_a_closed_resolved_as(log, 'WONTFIX')
-
-
-def is_log_a_comment(log):
-    return True
-
-
-def is_log_an_assign(log):
-    return False
-
-
-def is_log_a_tag(log):
-    return False
-
-
-def is_log_a_closed_fp(log):
-    return is_log_a_closed_resolved_as(log, 'FALSE-POSITIVE')
-
-
-def is_log_a_resolve_as(log, resolve_reason):
-    cond1 = False
-    cond2 = False
-    for diff in log['diffs']:
-        if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == resolve_reason:
-            cond1 = True
-        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'RESOLVED':
-            cond2 = True
-    return cond1 and cond2
-
-
-def is_log_a_reopen(log):
-    cond1 = False
-    cond2 = False
-    for diff in log['diffs']:
-        if diff['key'] == 'resolution':
-            cond1 = True
-        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'REOPENED':
-            cond2 = True
-    return cond1 and cond2
-
-
-def is_log_a_reviewed(log):
-    cond1 = False
-    cond2 = False
-    for diff in log['diffs']:
-        if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == 'FIXED':
-            cond1 = True
-        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'REVIEWED':
-            cond2 = True
-    return cond1 and cond2
-
-
-def is_event_a_comment(event):
-    return event['event'] == 'comment'
-
-
-def is_event_an_assignment(event):
-    return event['event'] == 'assign'
-
-
-def is_event_a_resolve_as_fp(event):
-    return event['event'] == 'transition' and event['value'] == 'falsepositive'
-
-
-def is_event_a_resolve_as_wf(event):
-    return event['event'] == 'transition' and event['value'] == 'wontfix'
-
-
-def is_event_a_resolve_as_reviewed(event):
-    return False
-
-
-def is_event_a_severity_change(event):
-    return event['event'] == 'severity'
-
-
-def is_event_a_reopen(event):
-    return event['event'] == 'transition' and event['value'] == 'reopen'
-
-
-def is_event_a_type_change(event):
-    return event['event'] == 'type'
-
-
-def is_event_an_assignee_change(event):
-    return event['event'] == 'assign'
-
-
-def is_event_a_tag_change(event):
-    return event['event'] == 'tags'
-
-
-def get_log_assignee(event):
-    return event['value']
-
-
-def get_log_new_severity(event):
-    return event['value']
-
-
-def get_log_new_type(event):
-    return event['value']
-
-
-def get_log_new_tag(event):
-    return event['value']
 
 
 def identical_attributes(o1, o2, key_list):
@@ -919,18 +824,6 @@ def identical_attributes(o1, o2, key_list):
         if o1[key] != o2[key]:
             return False
     return True
-
-
-def search_siblings(an_issue, issue_list, only_new_issues=True, check_component = False):
-    siblings = []
-    for issue in issue_list:
-        if not issue.identical_to(an_issue, not check_component):
-            continue
-        if not only_new_issues or (only_new_issues and not issue.has_changelog()):
-            # Add issue only if it has no change log, meaning it's brand new
-            util.logger.debug("Adding issue %s to list", issue.get_url())
-            siblings.append(issue)
-    return siblings
 
 
 def to_csv_header():
