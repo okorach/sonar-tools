@@ -154,7 +154,7 @@ class Issue(sq.SqObject):
             # util.json_dump_debug(data['changelog'], "Issue Changelog = ")
             self.changelog = []
             for l in data['changelog']:
-                d = diff_to_changelog(l['diffs'])
+                d = changelog.diff_to_changelog(l['diffs'])
                 self.changelog.append({'date': l['creationDate'], 'event': d['event'], 'value': d['value']})
         return self.changelog
 
@@ -834,7 +834,7 @@ def assignee_diff_to_changelog(d):
 def get_event_from_diff(diff):
     dkey = diff['key']
     dnewval = diff['newValue']
-    event = None
+    event = {'event':'unknown', 'value':None}
     if dkey == 'severity' or dkey == 'type' or dkey == 'tags':
         event = {'event':dkey, 'value':dnewval}
     if dkey == 'resolution' and 'newValue' in diff:
@@ -851,14 +851,6 @@ def get_event_from_diff(diff):
         event =  {'event':'merge', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
     if dkey == 'effort':
         event = {'event':'effort', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
+
     return event
 
-
-def diff_to_changelog(diffs):
-    for d in diffs:
-        event = get_event_from_diff(d)
-        if event is not None:
-            return event
-
-    # Not found anything
-    return {'event':'unknown', 'value':None}

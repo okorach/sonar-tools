@@ -143,3 +143,10 @@ def get_log_new_type(event):
 
 def get_log_new_tag(event):
     return event['value']
+
+
+def diff_to_changelog(diffs):
+    for d in diffs:
+        event = get_event_from_diff(d)
+        if event is not None:
+            return event
