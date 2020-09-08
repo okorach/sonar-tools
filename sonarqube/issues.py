@@ -330,37 +330,6 @@ class Issue(sq.SqObject):
     def is_security_issue(self):
         return self.is_vulnerability() or self.is_hotspot()
 
-    def identical_to(self, another_issue, ignore_component=False):
-        if not self.same_general_attributes(another_issue) or \
-            (self.component != another_issue.component and not ignore_component):
-            # util.logger.debug("Issue %s and %s are different on general attributes", self.key, another_issue.key)
-            return False
-        # Hotspots carry no debt,so you can only check debt equality if issues
-        # are not hotspots
-        if not self.is_hotspot() and not another_issue.is_hotspot() and self.debt != another_issue.debt:
-            util.logger.info("Issue %s and %s are different on debt", self.key, another_issue.key)
-            return False
-        util.logger.info("Issue %s and %s are identical", self.get_url(), another_issue.get_url())
-        return True
-
-    def identical_to_except_comp(self, another_issue):
-        return self.identical_to(another_issue, ignore_component=True)
-
-    def match(self, another_issue):
-        util.logger.debug("Comparing 2 issues: %s and %s", str(self), str(another_issue))
-        if self.rule != another_issue.rule or self.hash != another_issue.hash:
-            match_level = 0
-        else:
-            match_level = 1
-            if self.component != another_issue.component:
-                match_level -= 0.1
-            if self.message != another_issue.message:
-                match_level -= 0.1
-            if self.debt != another_issue.debt:
-                match_level -= 0.1
-        util.logger.debug("Match level %3.0f%%\n", (match_level * 100))
-        return match_level
-
     def do_transition(self, transition):
         return self.post('issues/do_transition', {'issue': self.key, 'transition': transition})
 
