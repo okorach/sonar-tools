@@ -81,26 +81,44 @@ util.logger.info("Found %d issues with manual changes on source project", len(al
 
 targetParams.update({'env': target_env})
 all_target_issues = issues.search_all_issues(target_env, **targetParams)
-util.logger.info("Found %d target issues on target project", len(all_target_issues))
+util.logger.info("Found %d target issues on target project & branch", len(all_target_issues))
+
+ignore_component = targetParams['projectKey'] != params['projectKey']
+nb_applies = 0
+nb_approx_match = 0
 
 for issue in all_target_issues:
     util.logger.info('Searching sibling for issue %s', issue.get_url())
-    siblings = issues.search_siblings(issue, all_source_issues, False,
-                                      params['componentKeys'] == targetParams['componentKeys'])
-    nb_siblings = len(siblings)
-    util.logger.info('Found %d sibling(s) for issue %s', nb_siblings, str(issue))
-    if nb_siblings == 0:
+    (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
+        all_source_issues, ignore_component=ignore_component)
+    nb_exact_siblings = len(exact_siblings)
+    nb_approx_siblings = len(approx_siblings)
+    nb_modified_siblings = len(modified_siblings)
+    util.logger.info('Found %d exact sibling(s) for issue %s', nb_exact_siblings, str(issue))
+    if nb_exact_siblings == 1:
+        issues.apply_changelog(issue, exact_siblings[0])
+        nb_applies += 1
         continue
-    if nb_siblings > 1:
+    if nb_exact_siblings > 1:
         util.logger.info('Ambiguity for issue key %s, cannot automatically apply changelog', str(issue))
         util.logger.info('Candidate issue keys below:')
-        for sibling in siblings:
+        for sibling in exact_siblings:
             util.logger.debug(sibling.id)
         continue
-    # Exactly 1 match
-    util.logger.info('Found a match, issue %s', siblings[0].get_url())
-    if siblings[0].has_changelog_or_comments():
-        util.logger.info('Automatically applying changelog to issue %s', issue)
-        issues.apply_changelog(issue, siblings[0])
-    else:
-        util.logger.info('No changelog to apply')
+    if nb_approx_siblings > 0:
+        util.logger.info('Found %d approximate siblings for issue %s, cannot automatically apply changelog',
+                         nb_approx_siblings, str(issue))
+        util.logger.info('Candidate issue keys below:')
+        for sibling in approx_siblings:
+            util.logger.debug(sibling.id)
+        if nb_approx_siblings == 1:
+            nb_approx_match += 1
+    if nb_modified_siblings > 0:
+        util.logger.info('Found %d modified siblings for issue %s, cannot automatically apply changelog',
+                         nb_approx_siblings, str(issue))
+        util.logger.info('Candidate issue keys below:')
+        for sibling in modified_siblings:
+            util.logger.debug(sibling.id)
+
+util.logger.info("Synchronized %d issues", nb_applies)
+util.logger.info("%d issues that were only approximately matching were left unchange", nb_applies)
