@@ -28,6 +28,7 @@
 '''
 
 
+import sys
 import sonarqube.env as env
 import sonarqube.issues as issues
 import sonarqube.utilities as util
@@ -40,6 +41,8 @@ def parse_args(desc):
     parser.add_argument('-r', '--recover', required=False,
                         help='''What information to replicate. Default is FP and WF, but issue assignment,
                         tags, severity and type change can be recovered too''')
+    parser.add_argument('-b', '--sourceBranch', required=False, help='Name of the source branch')
+    parser.add_argument('-B', '--targetBranch', required=False, help='Name of the target branch')
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
@@ -52,6 +55,12 @@ if args.urlTarget is None:
     args.urlTarget = args.url
 if args.tokenTarget is None:
     args.tokenTarget = args.token
+
+if (args.sourceBranch is None and args.targetBranch is not None or
+        args.sourceBranch is not None and args.targetBranch is None):
+    util.logger.error("Both source and target branches should be specified, aborting")
+    sys.exit(2)
+
 target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
 
 params = vars(args)
