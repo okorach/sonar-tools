@@ -49,127 +49,137 @@ def parse_args(desc):
                         or 2 branches on a same platform''')
     return parser.parse_args()
 
-def main():
-    args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
-    source_env = env.Environment(url=args.url, token=args.token)
-    if args.urlTarget is None:
-        args.urlTarget = args.url
-    if args.tokenTarget is None:
-        args.tokenTarget = args.token
-
-    if (args.sourceBranch is None and args.targetBranch is not None or
-            args.sourceBranch is not None and args.targetBranch is None):
-        util.logger.error("Both source and target branches should be specified, aborting")
-        sys.exit(2)
-
-    target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
-
-    params = vars(args)
-    util.check_environment(params)
+def __process_arguments__(params):
     for key in params.copy():
         if params[key] is None:
             del params[key]
     params['projectKey'] = params['componentKeys']
-    targetParams = params.copy()
-    if 'targetComponentKeys' in targetParams and targetParams['targetComponentKeys'] is not None:
-        targetParams['projectKey'] = targetParams['targetComponentKeys']
-        targetParams['componentKeys'] = targetParams['targetComponentKeys']
+    tgt_params = params.copy()
+    if 'targetComponentKeys' in tgt_params and tgt_params['targetComponentKeys'] is not None:
+        tgt_params['projectKey'] = tgt_params['targetComponentKeys']
+        tgt_params['componentKeys'] = tgt_params['targetComponentKeys']
     # Add SQ environment
 
     if 'sourceBranch' in params and params['sourceBranch'] is not None:
         params['branch'] = params['sourceBranch']
     params.pop('sourceBranch', 0)
     if 'targetBranch' in params and params['targetBranch'] is not None:
-        targetParams['branch'] = params['targetBranch']
+        tgt_params['branch'] = params['targetBranch']
     params.pop('targetBranch', 0)
+    return (params, tgt_params)
+
+def __process_exact_sibling__(issue, sibling):
+    if sibling.has_changelog():
+        issues.apply_changelog(issue, sibling)
+        msg = 'Source issue changelog applied successfully'
+    else:
+        msg = 'Source issue has no changelog'
+    return {
+        'target_issue_key': issue.key,
+        'target_issue_url': issue.get_url(),
+        'target_issue_status': 'synchronized',
+        'message': msg,
+        'source_issue_key': sibling.key,
+        'source_issue_url': sibling.get_url()
+        }
+
+def __get_issues__(issue_list):
+    iss_list = []
+    for issue in issue_list:
+        iss_list.append({
+            'source_issue_key': issue.key,
+            'source_issue_url': issue.get_url()})
+    return iss_list
+
+def __process_multiple_exact_siblings__(issue, siblings):
+    util.logger.info('Ambiguity for issue key %s, cannot automatically apply changelog', str(issue))
+    return {
+        'target_issue_key': issue.id,
+        'target_issue_url': issue.get_url(),
+        'target_issue_status': 'unsynchronized',
+        'message': 'Multiple matches',
+        'matches': __get_issues__(siblings)
+    }
+
+def __process_approx_siblings__(issue, siblings):
+    util.logger.info('Found %d approximate siblings for issue %s, cannot automatically apply changelog',
+                     len(siblings), str(issue))
+    return {
+        'target_issue_key': issue.key,
+        'target_issue_url': issue.get_url(),
+        'target_issue_status': 'unsynchronized',
+        'message': 'Approximate matches only',
+        'matches': __get_issues__(siblings)
+    }
+
+def __process_modified_siblings__(issue, siblings):
+    util.logger.info(
+        'Found %d siblings for issue %s, but they already have a changelog, cannot automatically apply changelog',
+        len(siblings), str(issue))
+    return {
+        'target_issue_key': issue.key,
+        'target_issue_url': issue.get_url(),
+        'target_issue_status': 'unsynchronized',
+        'message': 'Target issue already has a changelog',
+        'matches': __get_issues__(siblings)
+    }
+
+def main():
+    args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
+    source_env = env.Environment(url=args.url, token=args.token)
+
+    params = vars(args)
+    util.check_environment(params)
+
+    if (args.sourceBranch is None and args.targetBranch is not None or
+            args.sourceBranch is not None and args.targetBranch is None):
+        util.logger.error("Both source and target branches should be specified, aborting")
+        sys.exit(2)
+
+    if args.urlTarget is None:
+        args.urlTarget = args.url
+    if args.tokenTarget is None:
+        args.tokenTarget = args.token
+    target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
+
+    (params, tgt_params) = __process_arguments__(params)
 
     all_source_issues = issues.search(endpoint=source_env, params=params)
-    util.logger.info("Found %d issues with manual changes on source project", len(all_source_issues))
+    util.logger.info("Found %d issues with manual changes on source project/branch", len(all_source_issues))
 
-    all_target_issues = issues.search(endpoint=target_env, params=targetParams)
-    util.logger.info("Found %d target issues on target project & branch", len(all_target_issues))
+    all_target_issues = issues.search(endpoint=target_env, params=tgt_params)
+    util.logger.info("Found %d target issues on target project/branch", len(all_target_issues))
 
-    ignore_component = targetParams['projectKey'] != params['projectKey']
+    ignore_component = tgt_params['projectKey'] != params['projectKey']
     nb_applies = 0
     nb_approx_match = 0
     report = []
 
-    for issue_key, issue in all_target_issues.items():
+    for _, issue in all_target_issues.items():
         util.logger.debug('Searching sibling for issue %s', str(issue))
-        util.logger.info('Searching sibling for issue %s', issue.get_url())
         (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
             all_source_issues, ignore_component=ignore_component)
-        nb_exact_siblings = len(exact_siblings)
-        nb_approx_siblings = len(approx_siblings)
         nb_modified_siblings = len(modified_siblings)
-        util.logger.info('Found %d exact sibling(s) for issue %s', nb_exact_siblings, str(issue))
-        if nb_exact_siblings == 1:
-            if exact_siblings[0].has_changelog():
-                issues.apply_changelog(issue, exact_siblings[0])
-                msg = 'Source issue changelog applied successfully'
-            else:
-                msg = 'Source issue has no changelog'
-            report.append({
-                'target_issue_key': issue.id,
-                'target_issue_url': issue.get_url(),
-                'target_issue_status': 'synchronized',
-                'message': msg,
-                'source_issue_key': exact_siblings[0].id,
-                'source_issue_url': exact_siblings[0].get_url()
-                })
+        if len(exact_siblings) == 1:
+            report.append(__process_exact_sibling__(issue, exact_siblings[0]))
             nb_applies += 1
             continue
-        if nb_exact_siblings > 1:
-            util.logger.info('Ambiguity for issue key %s, cannot automatically apply changelog', str(issue))
-            issue_list = []
-            for sibling in exact_siblings:
-                issue_list.append({
-                    'source_issue_key': sibling.id,
-                    'source_issue_url': sibling.get_url()})
-            report.append({
-                'target_issue_key': issue.id,
-                'target_issue_url': issue.get_url(),
-                'target_issue_status': 'unsynchronized',
-                'message': 'Multiple matches',
-                'matches': issue_list
-            })
+        if len(exact_siblings) > 1:
+            report.append(__process_multiple_exact_siblings__(issue, exact_siblings))
             continue
-        if nb_approx_siblings > 0:
-            util.logger.info('Found %d approximate siblings for issue %s, cannot automatically apply changelog',
-                            nb_approx_siblings, str(issue))
-            issue_list = []
-            for sibling in approx_siblings:
-                issue_list.append({
-                    'source_issue_key': sibling.id,
-                    'source_issue_url': sibling.get_url()})
-            report.append({
-                'target_issue_key': issue.id,
-                'target_issue_url': issue.get_url(),
-                'target_issue_status': 'unsynchronized',
-                'message': 'Approximate matches only',
-                'matches': issue_list
-            })
-            if nb_approx_siblings == 1:
-                nb_approx_match += 1
-        elif nb_modified_siblings > 0:
-            util.logger.info('Found %d modified siblings for issue %s, cannot automatically apply changelog',
-                            nb_approx_siblings, str(issue))
-            issue_list = []
-            for sibling in modified_siblings:
-                issue_list.append({
-                    'source_issue_key': sibling.id,
-                    'source_issue_url': sibling.get_url()})
-            report.append({
-                'target_issue_key': issue.id,
-                'target_issue_url': issue.get_url(),
-                'target_issue_status': 'unsynchronized',
-                'message': 'Target issue already has a changelog',
-                'matches': issue_list
-            })
+        if approx_siblings:
+            report.append(__process_approx_siblings__(issue, approx_siblings))
+            nb_approx_match += 1
+            continue
+        if modified_siblings:
+            nb_modified_siblings += 1
+            report.append(__process_modified_siblings__(issue, modified_siblings))
 
     print(json.dumps(report,indent=4, sort_keys=False, separators=(',', ': ')))
-    util.logger.info("Synchronized %d issues", nb_applies)
-    util.logger.info("%d issues that were only approximately matching were left unchange", nb_approx_match)
+    util.logger.info("%d issues were synchronized successfully", nb_applies)
+    util.logger.info("%d issues could not be synchronized because the match was approximate", nb_approx_match)
+    util.logger.info("%d issues could not be synchronized because target issue already had a changelog",
+                     nb_modified_siblings)
 
 
 if __name__ == '__main__':
