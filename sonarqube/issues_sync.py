@@ -49,6 +49,7 @@ def parse_args(desc):
                         or 2 branches on a same platform''')
     return parser.parse_args()
 
+
 def __process_arguments__(params):
     for key in params.copy():
         if params[key] is None:
@@ -68,6 +69,7 @@ def __process_arguments__(params):
     params.pop('targetBranch', 0)
     return (params, tgt_params)
 
+
 def __process_exact_sibling__(issue, sibling):
     if sibling.has_changelog():
         issues.apply_changelog(issue, sibling)
@@ -83,6 +85,7 @@ def __process_exact_sibling__(issue, sibling):
         'source_issue_url': sibling.get_url()
         }
 
+
 def __get_issues__(issue_list):
     iss_list = []
     for issue in issue_list:
@@ -90,6 +93,7 @@ def __get_issues__(issue_list):
             'source_issue_key': issue.key,
             'source_issue_url': issue.get_url()})
     return iss_list
+
 
 def __process_multiple_exact_siblings__(issue, siblings):
     util.logger.info('Ambiguity for issue key %s, cannot automatically apply changelog', str(issue))
@@ -100,6 +104,7 @@ def __process_multiple_exact_siblings__(issue, siblings):
         'message': 'Multiple matches',
         'matches': __get_issues__(siblings)
     }
+
 
 def __process_approx_siblings__(issue, siblings):
     util.logger.info('Found %d approximate siblings for issue %s, cannot automatically apply changelog',
@@ -112,6 +117,7 @@ def __process_approx_siblings__(issue, siblings):
         'matches': __get_issues__(siblings)
     }
 
+
 def __process_modified_siblings__(issue, siblings):
     util.logger.info(
         'Found %d siblings for issue %s, but they already have a changelog, cannot automatically apply changelog',
@@ -123,6 +129,7 @@ def __process_modified_siblings__(issue, siblings):
         'message': 'Target issue already has a changelog',
         'matches': __get_issues__(siblings)
     }
+
 
 def main():
     args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
@@ -175,7 +182,7 @@ def main():
             nb_modified_siblings += 1
             report.append(__process_modified_siblings__(issue, modified_siblings))
 
-    print(json.dumps(report,indent=4, sort_keys=False, separators=(',', ': ')))
+    print(json.dumps(report, indent=4, sort_keys=False, separators=(',', ': ')))
     util.logger.info("%d issues were synchronized successfully", nb_applies)
     util.logger.info("%d issues could not be synchronized because the match was approximate", nb_approx_match)
     util.logger.info("%d issues could not be synchronized because target issue already had a changelog",
