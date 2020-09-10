@@ -190,18 +190,18 @@ def get_event_from_diff(diff):
     if dkey == 'severity' or dkey == 'type' or dkey == 'tags':
         event = {'event': dkey, 'value': dnewval}
     if dkey == 'resolution' and 'newValue' in diff:
-        event =  resolution_diff_to_changelog(dnewval)
+        event = resolution_diff_to_changelog(dnewval)
     if dkey == 'status' and 'newValue' in diff and dnewval == 'CONFIRMED':
-        event =  {'event': 'transition', 'value': 'confirm'}
+        event = {'event': 'transition', 'value': 'confirm'}
     if dkey == 'status' and 'newValue' in diff and dnewval == 'REOPENED':
-        event =  reopen_diff_to_changelog(diff['oldValue'])
+        event = reopen_diff_to_changelog(diff['oldValue'])
     if dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
-        event =  {'event': 'transition', 'value': 'reopen'}
+        event = {'event': 'transition', 'value': 'reopen'}
     if dkey == 'assignee':
         event =  assignee_diff_to_changelog(diff)
     if dkey == 'from_short_branch':
-        event =  {'event': 'merge', 'value': '{0} -> {1}'.format(diff['oldValue'],dnewval)}
+        event = {'event': 'merge', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
     if dkey == 'effort':
-        event = {'event': 'effort', 'value': '{0} -> {1}'.format(diff['oldValue'],dnewval)}
+        event = {'event': 'effort', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
 
     return event
