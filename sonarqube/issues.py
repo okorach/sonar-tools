@@ -75,7 +75,7 @@ class Issue(sq.SqObject):
     MAX_SEARCH = 10000
     OPTIONS_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'authors', 'componentKeys',
                       'createdAfter', 'createdAt', 'createdBefore', 'createdInLast', 'directories',
-                      'facetMode', 'facets', 'fileUuids',
+                      'facetMode', 'facets', 'fileUuids', 'branch',
                       'issues', 'languages', 'onComponentOnly', 'p', 'ps', 'resolutions', 'resolved',
                       'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
@@ -90,7 +90,7 @@ class Issue(sq.SqObject):
         self.status = None
         self.resolution = None
         self.rule = None
-        self.project = None
+        self.projectKey = None
         self.language = None
         self.changelog = None
         self.comments = None
@@ -102,6 +102,7 @@ class Issue(sq.SqObject):
         self.creation_date = None
         self.modification_date = None
         self.hash = None
+        self.branch = None
         if data is not None:
             self.__load__(data)
 
@@ -115,7 +116,11 @@ class Issue(sq.SqObject):
 
     def get_url(self):
         if self.url is None:
-            self.url = '{0}/project/issues?id={1}&issues={2}'.format(self.env.get_url(), self.component, self.key)
+            branch = ''
+            if self.branch is not None:
+                branch = 'branch={}&'.format(self.branch)
+            self.url = '{}/project/issues?{}id={}&issues={}'.format(
+                self.env.get_url(), branch, self.projectKey, self.key)
         return self.url
 
     def __load__(self, jsondata):
@@ -132,7 +137,7 @@ class Issue(sq.SqObject):
 
         self.resolution = jsondata.get('resolution', None)
         self.rule = jsondata['rule']
-        self.project = jsondata['project']
+        self.projectKey = jsondata['project']
         self.language = None
         self.changelog = None
         self.creation_date = datetime.datetime.strptime(jsondata['creationDate'], SQ_DATETIME_FORMAT)
@@ -142,6 +147,7 @@ class Issue(sq.SqObject):
         self.hash = jsondata.get('hash', None)
         self.message = jsondata.get('message', None)
         self.debt = jsondata.get('debt', None)
+        self.branch = jsondata.get('branch', None)
 
     def read(self):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
@@ -241,9 +247,11 @@ class Issue(sq.SqObject):
         exact_matches = []
         approx_matches = []
         match_but_modified = []
-        for issue in issue_list:
+        for key, issue in issue_list.items():
+            if key == self.id:
+                continue
             if issue.strictly_identical_to(self, **kwargs):
-                if issue.has_changelog():
+                if self.has_changelog():
                     match_but_modified.append(issue)
                 else:
                     exact_matches.append(issue)
@@ -294,7 +302,6 @@ class Issue(sq.SqObject):
         )
 
     def almost_identical_to(self, another_issue, **kwargs):
-
         if self.rule != another_issue.rule or self.hash != another_issue.hash:
             return False
         score = 0
@@ -563,6 +570,7 @@ def search(endpoint=None, page=None, params=None):
     else:
         parms = params.copy()
     parms = __get_issues_search_params__(parms)
+    util.logger.debug("Search params = %s", str(parms))
     parms['ps'] = Issue.MAX_PAGE_SIZE
     p = 1
     issue_list = {}
@@ -760,8 +768,9 @@ def apply_changelog(target_issue, source_issue):
         return
 
     util.logger.info("Applying changelog of issue %s to issue %s", source_issue.key, target_issue.key)
-    target_issue.add_comment("Synchronized from [this original issue]({0})".format(source_issue.get_url()))
-    for d in sorted(events.iterkeys()):
+    target_issue.add_comment("Automatically synchronized from [this original issue]({0})".format(
+        source_issue.get_url()))
+    for d in sorted(events.keys()):
         event = events[d]
         util.logger.debug("Verifying event %s", str(event))
         if changelog.is_event_a_severity_change(event):
@@ -808,49 +817,5 @@ def __get_issues_search_params__(params):
     return outparams
 
 
-def resolution_diff_to_changelog(newval):
-    if newval == 'FALSE-POSITIVE':
-        return {'event':'transition', 'value':'falsepositive'}
-    elif newval == 'WONTFIX':
-        return {'event':'transition', 'value':'wontfix'}
-    elif newval == 'FIXED':
-        # TODO - Handle hotspots
-        return {'event':'fixed', 'value': None}
-    return {'event':'unknown', 'value': None}
 
-
-def reopen_diff_to_changelog(oldval):
-    if oldval == 'CONFIRMED':
-        return {'event':'transition', 'value':'unconfirm'}
-    return {'event':'transition', 'value':'reopen'}
-
-
-def assignee_diff_to_changelog(d):
-    if d['newValue'] in d:
-        return {'event':'assign', 'value': d['newValue']}
-    return {'event':'unassign', 'value':None}
-
-
-def get_event_from_diff(diff):
-    dkey = diff['key']
-    dnewval = diff['newValue']
-    event = {'event':'unknown', 'value':None}
-    if dkey == 'severity' or dkey == 'type' or dkey == 'tags':
-        event = {'event':dkey, 'value':dnewval}
-    if dkey == 'resolution' and 'newValue' in diff:
-        event =  resolution_diff_to_changelog(dnewval)
-    if dkey == 'status' and 'newValue' in diff and dnewval == 'CONFIRMED':
-        event =  {'event':'transition', 'value':'confirm'}
-    if dkey == 'status' and 'newValue' in diff and dnewval == 'REOPENED':
-        event =  reopen_diff_to_changelog(diff['oldValue'])
-    if dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
-        event =  {'event':'transition', 'value':'reopen'}
-    if dkey == 'assignee':
-        event =  assignee_diff_to_changelog(diff)
-    if dkey == 'from_short_branch':
-        event =  {'event':'merge', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
-    if dkey == 'effort':
-        event = {'event':'effort', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
-
-    return event
 
