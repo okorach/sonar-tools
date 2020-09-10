@@ -61,6 +61,7 @@ setuptools.setup(
             'sonar-projects-import = sonarqube.projects_import:main',
             'sonar-measures-export = sonarqube.measures_export:main',
             'sonar-housekeeper = sonarqube.housekeeper:main',
+            'sonar-issues-sync = sonarqube.issues_sync:main',
             'sonar-issues-export = sonarqube.issues_export:main'
         ]
     },

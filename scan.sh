@@ -36,7 +36,7 @@ if [ "$1" != "-nolint" ]; then
 
   echo "Running flake8"
   rm -f $flake8Report
-  flake8 --ignore=W503,E128,flake8:C901  --max-line-length=150 . >$flake8Report
+  flake8 --ignore=W503,E128,flake8:C901,W504 --max-line-length=150 . >$flake8Report
 
   echo "Running bandit"
   rm -f $banditReport
