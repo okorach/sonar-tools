@@ -18,6 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+import sonarqube.utilities as util
+
 def get_log_date(log):
     return log['creationDate']
 
@@ -150,3 +152,53 @@ def diff_to_changelog(diffs):
         event = get_event_from_diff(d)
         if event is not None:
             return event
+
+def resolution_diff_to_changelog(newval):
+    if newval == 'FALSE-POSITIVE':
+        return {'event':'transition', 'value':'falsepositive'}
+    elif newval == 'WONTFIX':
+        return {'event':'transition', 'value':'wontfix'}
+    elif newval == 'FIXED':
+        # TODO - Handle hotspots
+        return {'event':'fixed', 'value': None}
+    return {'event':'unknown', 'value': None}
+
+
+def reopen_diff_to_changelog(oldval):
+    if oldval == 'CONFIRMED':
+        return {'event':'transition', 'value':'unconfirm'}
+    return {'event':'transition', 'value':'reopen'}
+
+
+def assignee_diff_to_changelog(d):
+    if d['newValue'] in d:
+        return {'event':'assign', 'value': d['newValue']}
+    return {'event':'unassign', 'value':None}
+
+
+def get_event_from_diff(diff):
+    util.logger.debug("Diff = %s", str(diff))
+    event = {'event':'unknown', 'value':None}
+    dkey = diff['key']
+    if 'newValue' not in diff:
+        return event
+    dnewval = diff['newValue']
+
+    if dkey == 'severity' or dkey == 'type' or dkey == 'tags':
+        event = {'event':dkey, 'value':dnewval}
+    if dkey == 'resolution' and 'newValue' in diff:
+        event =  resolution_diff_to_changelog(dnewval)
+    if dkey == 'status' and 'newValue' in diff and dnewval == 'CONFIRMED':
+        event =  {'event':'transition', 'value':'confirm'}
+    if dkey == 'status' and 'newValue' in diff and dnewval == 'REOPENED':
+        event =  reopen_diff_to_changelog(diff['oldValue'])
+    if dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
+        event =  {'event':'transition', 'value':'reopen'}
+    if dkey == 'assignee':
+        event =  assignee_diff_to_changelog(diff)
+    if dkey == 'from_short_branch':
+        event =  {'event':'merge', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
+    if dkey == 'effort':
+        event = {'event':'effort', 'value':'{0} -> {1}'.format(diff['oldValue'],dnewval)}
+
+    return event
