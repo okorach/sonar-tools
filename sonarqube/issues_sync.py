@@ -160,13 +160,13 @@ def main():
     ignore_component = tgt_params['projectKey'] != params['projectKey']
     nb_applies = 0
     nb_approx_match = 0
+    nb_modified_siblings = 0
     report = []
 
     for _, issue in all_target_issues.items():
         util.logger.debug('Searching sibling for issue %s', str(issue))
         (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
             all_source_issues, ignore_component=ignore_component)
-        nb_modified_siblings = len(modified_siblings)
         if len(exact_siblings) == 1:
             report.append(__process_exact_sibling__(issue, exact_siblings[0]))
             nb_applies += 1
