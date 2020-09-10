@@ -198,7 +198,7 @@ def get_event_from_diff(diff):
     if dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
         event = {'event': 'transition', 'value': 'reopen'}
     if dkey == 'assignee':
-        event =  assignee_diff_to_changelog(diff)
+        event = assignee_diff_to_changelog(diff)
     if dkey == 'from_short_branch':
         event = {'event': 'merge', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
     if dkey == 'effort':
