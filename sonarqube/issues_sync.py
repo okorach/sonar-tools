@@ -72,7 +72,7 @@ def __process_arguments__(params):
 
 def __process_exact_sibling__(issue, sibling):
     if sibling.has_changelog():
-        issues.apply_changelog(issue, sibling)
+        issue.apply_changelog(sibling)
         msg = 'Source issue changelog applied successfully'
     else:
         msg = 'Source issue has no changelog'
@@ -83,7 +83,7 @@ def __process_exact_sibling__(issue, sibling):
         'message': msg,
         'source_issue_key': sibling.key,
         'source_issue_url': sibling.get_url()
-        }
+    }
 
 
 def __get_issues__(issue_list):
@@ -143,6 +143,11 @@ def __process_no_match__(issue):
     }
 
 
+def __verify_branch_params__(src_branch, tgt_branch):
+    if (src_branch is None and tgt_branch is not None or src_branch is not None and tgt_branch is None):
+        util.logger.error("Both source and target branches should be specified, aborting")
+        sys.exit(2)
+
 def main():
     args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
     source_env = env.Environment(url=args.url, token=args.token)
@@ -150,15 +155,10 @@ def main():
     params = vars(args)
     util.check_environment(params)
 
-    if (args.sourceBranch is None and args.targetBranch is not None or
-            args.sourceBranch is not None and args.targetBranch is None):
-        util.logger.error("Both source and target branches should be specified, aborting")
-        sys.exit(2)
+    __verify_branch_params__(args.sourceBranch, args.targetBranch)
 
-    if args.urlTarget is None:
-        args.urlTarget = args.url
-    if args.tokenTarget is None:
-        args.tokenTarget = args.token
+    args.urlTarget = params.get('urlTarget', params['url'])
+    args.tokenTarget = params.get('tokenTarget', params['token'])
     target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
 
     (params, tgt_params) = __process_arguments__(params)
