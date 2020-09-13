@@ -178,6 +178,7 @@ def main():
     nb_modified_siblings = 0
     nb_multiple_matches = 0
     nb_no_match = 0
+    nb_no_changelog = 0
     report = []
 
     for _, issue in all_target_issues.items():
@@ -186,7 +187,10 @@ def main():
             all_source_issues, ignore_component=ignore_component)
         if len(exact_siblings) == 1:
             report.append(__process_exact_sibling__(issue, exact_siblings[0]))
-            nb_applies += 1
+            if exact_siblings[0].has_changelog():
+                nb_applies += 1
+            else:
+                nb_no_changelog += 1
             continue
         if len(exact_siblings) > 1:
             report.append(__process_multiple_exact_siblings__(issue, exact_siblings))
@@ -205,7 +209,8 @@ def main():
             report.append(__process_no_match__(issue))
 
     print(json.dumps(report, indent=4, sort_keys=False, separators=(',', ': ')))
-    util.logger.info("%d issues in source, %d issues in target", len(all_source_issues), len(all_target_issues))
+    util.logger.info("%d issues to sync in target, %d issues in source", len(all_target_issues), len(all_source_issues))
+    util.logger.info("%d issues were already in sync since source had no changelog", nb_no_changelog)
     util.logger.info("%d issues were synchronized successfully", nb_applies)
     util.logger.info("%d issues could not be synchronized because no match was found in source", nb_no_match)
     util.logger.info("%d issues could not be synchronized because there were multiple matches", nb_multiple_matches)
