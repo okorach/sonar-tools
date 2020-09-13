@@ -795,8 +795,6 @@ def apply_changelog(target_issue, source_issue):
             util.logger.error("Event %s can't be applied", str(event))
 
 
-
-
 def identical_attributes(o1, o2, key_list):
     for key in key_list:
         if o1[key] != o2[key]:
@@ -815,7 +813,3 @@ def __get_issues_search_params__(params):
         if params[key] is not None and key in Issue.OPTIONS_SEARCH:
             outparams[key] = params[key]
     return outparams
-
-
-
-

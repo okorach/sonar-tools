@@ -96,7 +96,7 @@ def __get_issues__(issue_list):
 
 
 def __process_multiple_exact_siblings__(issue, siblings):
-    util.logger.info('Ambiguity for issue key %s, cannot automatically apply changelog', str(issue))
+    util.logger.info('Multiple matches for issue key %s, cannot automatically apply changelog', str(issue))
     return {
         'target_issue_key': issue.id,
         'target_issue_url': issue.get_url(),
@@ -131,6 +131,18 @@ def __process_modified_siblings__(issue, siblings):
     }
 
 
+def __process_no_match__(issue):
+    util.logger.info(
+        'Found no match for issue %s', issue.get_url())
+    return {
+        'target_issue_key': issue.key,
+        'target_issue_url': issue.get_url(),
+        'target_issue_status': 'unsynchronized',
+        'message': 'No match issue found in source',
+        'matches': []
+    }
+
+
 def main():
     args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
     source_env = env.Environment(url=args.url, token=args.token)
@@ -161,6 +173,8 @@ def main():
     nb_applies = 0
     nb_approx_match = 0
     nb_modified_siblings = 0
+    nb_multiple_matches = 0
+    nb_no_match = 0
     report = []
 
     for _, issue in all_target_issues.items():
@@ -173,6 +187,7 @@ def main():
             continue
         if len(exact_siblings) > 1:
             report.append(__process_multiple_exact_siblings__(issue, exact_siblings))
+            nb_multiple_matches += 1
             continue
         if approx_siblings:
             report.append(__process_approx_siblings__(issue, approx_siblings))
@@ -181,9 +196,16 @@ def main():
         if modified_siblings:
             nb_modified_siblings += 1
             report.append(__process_modified_siblings__(issue, modified_siblings))
+            continue
+        if not exact_siblings and not approx_siblings and not modified_siblings:
+            nb_no_match += 1
+            report.append(__process_no_match__(issue))
 
     print(json.dumps(report, indent=4, sort_keys=False, separators=(',', ': ')))
+    util.logger.info("%d issues in source, %d issues in target", len(all_source_issues), len(all_target_issues))
     util.logger.info("%d issues were synchronized successfully", nb_applies)
+    util.logger.info("%d issues could not be synchronized because no match was found in source", nb_no_match)
+    util.logger.info("%d issues could not be synchronized because there were multiple matches", nb_multiple_matches)
     util.logger.info("%d issues could not be synchronized because the match was approximate", nb_approx_match)
     util.logger.info("%d issues could not be synchronized because target issue already had a changelog",
                      nb_modified_siblings)
