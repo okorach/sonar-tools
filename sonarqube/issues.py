@@ -387,10 +387,48 @@ class Issue(sq.SqObject):
         msg = re.sub('"', '""', self.message)
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
-                                          cdate, ctime, mdate, mtime, self.project,
-                                          projects.get(self.project, self.env).name, self.component, line,
+                                          cdate, ctime, mdate, mtime, self.projectKey,
+                                          projects.get(self.projectKey, self.env).name, self.component, line,
                                           debt, '"' + msg + '"']])
 
+    def apply_changelog(self, source_issue):
+        if self.has_changelog():
+            util.logger.error("Can't apply changelog to an issue that already has a changelog")
+            return False
+
+        events = source_issue.get_all_events(True)
+
+        if events is None or not events:
+            util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.key)
+            return False
+
+        util.logger.info("Applying changelog of issue %s to issue %s", source_issue.key, self.key)
+        self.add_comment("Automatically synchronized from [this original issue]({0})".format(
+            source_issue.get_url()))
+        for d in sorted(events.keys()):
+            event = events[d]
+            util.logger.debug("Verifying event %s", str(event))
+            if changelog.is_event_a_severity_change(event):
+                self.set_severity(changelog.get_log_new_severity(event))
+            elif changelog.is_event_a_type_change(event):
+                self.set_type(changelog.get_log_new_type(event))
+            elif changelog.is_event_a_reopen(event):
+                self.reopen()
+            elif changelog.is_event_a_resolve_as_fp(event):
+                self.mark_as_false_positive()
+            elif changelog.is_event_a_resolve_as_wf(event):
+                self.mark_as_wont_fix()
+            elif changelog.is_event_a_resolve_as_reviewed(event):
+                self.mark_as_reviewed()
+            elif changelog.is_event_an_assignment(event):
+                self.assign(event['value'])
+            elif changelog.is_event_a_tag_change(event):
+                self.set_tags(event['value'].replace(' ', ','))
+            elif changelog.is_event_a_comment(event):
+                self.add_comment(event['value'])
+            else:
+                util.logger.error("Event %s can't be applied", str(event))
+        return True
 
 # ------------------------------- Static methods --------------------------------------
 def check_fp_transition(diffs):
@@ -754,45 +792,6 @@ def search_project_issues(key, sqenv=None, **kwargs):
 
     util.logger.debug("For project %s, %d issues found", key, len(issues))
     return issues
-
-
-def apply_changelog(target_issue, source_issue):
-    if target_issue.has_changelog():
-        util.logger.error("Can't apply changelog to an issue that already has a changelog")
-        return
-
-    events = source_issue.get_all_events(True)
-
-    if events is None or not events:
-        util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.key)
-        return
-
-    util.logger.info("Applying changelog of issue %s to issue %s", source_issue.key, target_issue.key)
-    target_issue.add_comment("Automatically synchronized from [this original issue]({0})".format(
-        source_issue.get_url()))
-    for d in sorted(events.keys()):
-        event = events[d]
-        util.logger.debug("Verifying event %s", str(event))
-        if changelog.is_event_a_severity_change(event):
-            target_issue.set_severity(changelog.get_log_new_severity(event))
-        elif changelog.is_event_a_type_change(event):
-            target_issue.set_type(changelog.get_log_new_type(event))
-        elif changelog.is_event_a_reopen(event):
-            target_issue.reopen()
-        elif changelog.is_event_a_resolve_as_fp(event):
-            target_issue.mark_as_false_positive()
-        elif changelog.is_event_a_resolve_as_wf(event):
-            target_issue.mark_as_wont_fix()
-        elif changelog.is_event_a_resolve_as_reviewed(event):
-            target_issue.mark_as_reviewed()
-        elif changelog.is_event_an_assignment(event):
-            target_issue.assign(event['value'])
-        elif changelog.is_event_a_tag_change(event):
-            target_issue.set_tags(event['value'].replace(' ', ','))
-        elif changelog.is_event_a_comment(event):
-            target_issue.add_comment(event['value'])
-        else:
-            util.logger.error("Event %s can't be applied", str(event))
 
 
 def identical_attributes(o1, o2, key_list):

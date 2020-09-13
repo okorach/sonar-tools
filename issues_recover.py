@@ -77,12 +77,11 @@ print("Number of mistakenly closed issues: ", len(mistakenly_closed_issues))
 
 for issue in mistakenly_closed_issues:
     print('Searching sibling for issue key: ', issue.id)
-    siblings = sonarqube.issues.search_siblings(issue, non_closed_issues, False)
+    (siblings, approx_siblings, modified_siblings) = issue.search_siblings(non_closed_issues)
     nb_siblings = len(siblings)
-    print("Number of siblings: ", nb_siblings)
     if nb_siblings == 1:
         print('   Automatically applying changelog')
-        sonarqube.issues.apply_changelog(siblings[0], issue)
+        siblings[0].apply_changelog(issue)
     elif nb_siblings > 1:
         print('   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below')
         for sibling in siblings:
