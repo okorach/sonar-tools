@@ -130,6 +130,7 @@ def __process_modified_siblings__(issue, siblings):
         'matches': __get_issues__(siblings)
     }
 
+
 def __process_no_match__(issue):
     util.logger.info(
         'Found no match for issue %s', issue.get_url())
@@ -195,6 +196,7 @@ def main():
         if modified_siblings:
             nb_modified_siblings += 1
             report.append(__process_modified_siblings__(issue, modified_siblings))
+            continue
         if not exact_siblings and not approx_siblings and not modified_siblings:
             nb_no_match += 1
             report.append(__process_no_match__(issue))
