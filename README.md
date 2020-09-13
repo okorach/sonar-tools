@@ -8,6 +8,7 @@ The following utilities are available:
 - **sonar-housekeeper**: Deletes projects that have not been analyzed since a certain number of days
 - **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the platform i CSV
 - **sonar-issues-export**: Exports issues (potentially filtered) from the platform in CSV
+- **sonar-issues-sync**: Synchronizes issue changelog between branches, projects or even platforms
 - **sonar-projects-export**: Exports all projects from a platform (EE and higher)
 - **sonar-projects-import**: Imports a list of projects into a platform (EE and higher)
 
@@ -175,6 +176,40 @@ sonar-issues-export -u <url> -t <token> -k <projectKey> >project_issues.csv
 sonar-issues-export -u <url> -t <token> -r FALSE-POSITIVE,WONTFIX >fp_wf.csv
 sonar-issues-export -u <url> -t <token> -a 2020-01-01 >issues_created_in_2020.csv
 sonar-issues-export -u <url> -t <token> -types VULNERABILITY,BUG >bugs_and_vulnerabilities.csv
+```
+
+
+# sonar-issues-sync
+
+Synchronizes issues changelog between:
+- 2 branches of a same project
+- The main branch of 2 different projects of a same platform
+- The main branch of 2 projects from different platforms
+
+Issues changelog synchronization includes:
+- Change of issue type
+- Change of issue severity
+- Issue marked as Won't fix or False positive
+- Issue re-opened
+- Custom tags added to the issue
+- Issue comments
+
+The source and target issues are synchronized ony when there is a 100% certainty that the issues are the same, and that the target issue currently has no changelog.
+When a issue is synchronized, a special comment is added on the target issue with a link to the source one, for cross checking purposes
+The tool sends to standard output a JSON file with, for each issue on the target branch or project:
+- If the issue was synchonized
+- If synchronized, the reference to the source issue
+- If not synchronized, the reason for that. The reasons can be:
+  - No match was found in the source branch/project
+  - A match was found but the target issue already has a changelog
+  - Multiple matches were found (list of all matches are given in the JSON)
+  - A match was found but it is only approximate (ie not 100% certain match). The approximate match is provided in the JSON
+
+## Examples
+```
+sonar-issues-sync -u <url> -t <token> -k <projectKey> -b <sourceBranch> -B <targetBranch>  >sync_2_branches.json
+sonar-issues-sync -u <url> -t <token> -k <sourceProjectKey> -K <targetProjectKey> >sync_2_projects.json
+sonar-issues-sync -u <sourceUrl> -t <sourceToken> -k <sourceProjectKey> -U <targetUrl> -t <targetToken> -K <targetProjectKey> >sync_2_platforms.json
 ```
 
 
