@@ -157,8 +157,11 @@ def main():
 
     __verify_branch_params__(args.sourceBranch, args.targetBranch)
 
-    args.urlTarget = params.get('urlTarget', params['url'])
-    args.tokenTarget = params.get('tokenTarget', params['token'])
+    if args.urlTarget is None:
+        args.urlTarget = args.url
+    if args.tokenTarget is None:
+        args.tokenTarget = args.token
+    util.logger.debug("Target = %s@%s", args.tokenTarget, args.urlTarget)
     target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
 
     (params, tgt_params) = __process_arguments__(params)
