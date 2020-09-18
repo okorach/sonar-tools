@@ -108,15 +108,7 @@ class Environment:
                 r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            if r.status_code == 401:
-                util.logger.fatal(AUTHENTICATION_ERROR_MSG)
-                raise SystemExit(errh)
-            if r.status_code == 403:
-                util.logger.fatal(AUTORIZATION_ERROR_MSG)
-                raise SystemExit(errh)
-            if (r.status_code // 100) != 2:
-                util.logger.fatal(HTTP_FATAL_ERROR_MSG, r.status_code, errh)
-                raise SystemExit(errh)
+            __log_and_exit__(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise SystemExit(e)
@@ -132,15 +124,7 @@ class Environment:
                 r = requests.post(url=self.root_url + api, auth=self.get_credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            if r.status_code == 401:
-                util.logger.fatal(AUTHENTICATION_ERROR_MSG)
-                raise SystemExit(errh)
-            if r.status_code == 403:
-                util.logger.fatal(AUTORIZATION_ERROR_MSG)
-                raise SystemExit(errh)
-            if (r.status_code // 100) != 2:
-                util.logger.fatal(HTTP_FATAL_ERROR_MSG, r.status_code, errh)
-                raise SystemExit(errh)
+            __log_and_exit__(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise SystemExit(e)
@@ -156,18 +140,12 @@ class Environment:
                 r = requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            if r.status_code == 401:
-                util.logger.fatal(AUTHENTICATION_ERROR_MSG)
-                raise SystemExit(errh)
-            if r.status_code == 403:
-                util.logger.fatal(AUTORIZATION_ERROR_MSG)
-                raise SystemExit(errh)
-            if (r.status_code // 100) != 2:
-                util.logger.fatal(HTTP_FATAL_ERROR_MSG, r.status_code, errh)
-                raise SystemExit(errh)
+            __log_and_exit__(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise SystemExit(e)
+
+
 
     def urlstring(self, api, params):
         first = True
@@ -372,6 +350,18 @@ def __normalize_api__(api):
     else:
         api = '/api/' + api
     return api
+
+
+def __log_and_exit__(code, err):
+    if code == 401:
+        util.logger.fatal(AUTHENTICATION_ERROR_MSG)
+        raise SystemExit(err)
+    if code == 403:
+        util.logger.fatal(AUTORIZATION_ERROR_MSG)
+        raise SystemExit(err)
+    if (code // 100) != 2:
+        util.logger.fatal(HTTP_FATAL_ERROR_MSG, code, err)
+        raise SystemExit(err)
 
 
 def get(api, params=None, ctxt=None):
