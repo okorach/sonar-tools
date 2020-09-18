@@ -35,7 +35,9 @@ import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 import sonarqube.audit_config as conf
 
-HTTP_ERROR_MSG = "%s%s raised error %d: %s"
+AUTHENTICATION_ERROR_MSG = "Authentication error. Is token valid ?"
+AUTORIZATION_ERROR_MSG = "Insufficient permissions to perform operation"
+HTTP_FATAL_ERROR_MSG = "HTTP fatal error %d - %s"
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 DEFAULT_URL = 'http://localhost:9000'
 
@@ -104,11 +106,20 @@ class Environment:
                 r = requests.get(url=self.root_url + api, auth=self.get_credentials())
             else:
                 r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=params)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            if r.status_code == 401:
+                util.logger.fatal(AUTHENTICATION_ERROR_MSG)
+                raise SystemExit(errh)
+            if r.status_code == 403:
+                util.logger.fatal(AUTORIZATION_ERROR_MSG)
+                raise SystemExit(errh)
+            if (r.status_code // 100) != 2:
+                util.logger.fatal(HTTP_FATAL_ERROR_MSG, r.status_code, errh)
+                raise SystemExit(errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise
-        if (r.status_code // 100) != 2:
-            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.status_code, r.text)
+            raise SystemExit(e)
         return r
 
     def post(self, api, params=None):
@@ -119,11 +130,20 @@ class Environment:
                 r = requests.post(url=self.root_url + api, auth=self.get_credentials())
             else:
                 r = requests.post(url=self.root_url + api, auth=self.get_credentials(), params=params)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            if r.status_code == 401:
+                util.logger.fatal(AUTHENTICATION_ERROR_MSG)
+                raise SystemExit(errh)
+            if r.status_code == 403:
+                util.logger.fatal(AUTORIZATION_ERROR_MSG)
+                raise SystemExit(errh)
+            if (r.status_code // 100) != 2:
+                util.logger.fatal(HTTP_FATAL_ERROR_MSG, r.status_code, errh)
+                raise SystemExit(errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise
-        if (r.status_code // 100) != 2:
-            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.status_code, r.text)
+            raise SystemExit(e)
         return r
 
     def delete(self, api, params=None):
@@ -134,12 +154,20 @@ class Environment:
                 r = requests.delete(url=self.root_url + api, auth=self.get_credentials())
             else:
                 r = requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=params)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as errh:
+            if r.status_code == 401:
+                util.logger.fatal(AUTHENTICATION_ERROR_MSG)
+                raise SystemExit(errh)
+            if r.status_code == 403:
+                util.logger.fatal(AUTORIZATION_ERROR_MSG)
+                raise SystemExit(errh)
+            if (r.status_code // 100) != 2:
+                util.logger.fatal(HTTP_FATAL_ERROR_MSG, r.status_code, errh)
+                raise SystemExit(errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise
-        if (r.status_code // 100) != 2:
-            util.logger.error(HTTP_ERROR_MSG, self.root_url, api, r.status_code, r.text)
-        return r
+            raise SystemExit(e)
 
     def urlstring(self, api, params):
         first = True
