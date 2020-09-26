@@ -39,7 +39,7 @@ def parse_args(desc):
                         tags, severity and type change can be recovered too''')
     parser.add_argument('-d', '--dryrun', required=False,
                         help='If True, show changes but don\'t apply, if False, apply changes - Default is true')
-    return parser.parse_args()
+    return utils.parse_and_check_token(parser)
 
 
 args = parse_args('Search for unexpectedly closed issues and recover their history in a corresponding new issue.')

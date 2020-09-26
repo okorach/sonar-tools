@@ -53,7 +53,8 @@ def main():
                         help='''Output format for audit report
 If not specified, it is the output file extension if json or csv, then csv by default''')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
-    args = parser.parse_args()
+    args = util.parse_and_check_token(parser)
+
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)

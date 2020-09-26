@@ -112,6 +112,14 @@ def check_environment(kwargs):
     set_debug_level(kwargs.pop(OPT_VERBOSE))
 
 
+def parse_and_check_token(parser):
+    args = parser.parse_args()
+    if args.token is None:
+        logger.critical("Token is missing (Argument -t/--token)")
+        sys.exit(4)
+    return args
+
+
 def json_dump_debug(json_data, pre_string=''):
     logger.debug("%s%s", pre_string, json.dumps(
         json_data, sort_keys=True, indent=3, separators=(',', ': ')))
