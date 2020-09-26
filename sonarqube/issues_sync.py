@@ -47,6 +47,8 @@ def parse_args(desc):
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
+    parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
+
     return parser.parse_args()
 
 
@@ -148,6 +150,19 @@ def __verify_branch_params__(src_branch, tgt_branch):
         util.logger.error("Both source and target branches should be specified, aborting")
         sys.exit(2)
 
+
+def _dump_report_(report, file):
+    if file is None:
+        f = sys.stdout
+        util.logger.info("Dumping report to stdout")
+    else:
+        f = open(file, "w")
+        util.logger.info("Dumping report to file '%s'", file)
+    print(json.dumps(report, indent=4, sort_keys=False, separators=(',', ': ')), file=f)
+    if file is not None:
+        f.close()
+
+
 def main():
     args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
     source_env = env.Environment(url=args.url, token=args.token)
@@ -208,7 +223,7 @@ def main():
             nb_no_match += 1
             report.append(__process_no_match__(issue))
 
-    print(json.dumps(report, indent=4, sort_keys=False, separators=(',', ': ')))
+    _dump_report_(report, args.file)
     util.logger.info("%d issues to sync in target, %d issues in source", len(all_target_issues), len(all_source_issues))
     util.logger.info("%d issues were already in sync since source had no changelog", nb_no_changelog)
     util.logger.info("%d issues were synchronized successfully", nb_applies)
