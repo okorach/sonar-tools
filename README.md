@@ -212,6 +212,11 @@ sonar-issues-sync -u <url> -t <token> -k <sourceProjectKey> -K <targetProjectKey
 sonar-issues-sync -u <sourceUrl> -t <sourceToken> -k <sourceProjectKey> -U <targetUrl> -t <targetToken> -K <targetProjectKey> >sync_2_platforms.json
 ```
 
+## :information_source: Limitations
+- The sync is not 100% deterministic. In some rare corner cases (typically less than 5%) it is not possible to determine that an issue is the same between 2 branches or 2 platforms,in which case the issue is not sync'ed. The script will log those cases
+- When sync'ing an issue, all changes of the target issue are applied with the user whose token is provided to the script (it cannot be applied with the user of the original issue). Some comments are added to mention who was the original user that made the change
+- To be modified (sync'ed from a source issue), the target issue must has zero manual changes ie it must be has created originally by SonarQube
+
 
 # sonar-projects-export
 
@@ -263,29 +268,6 @@ Issue recovery means:
 ```
 issues_recover.py -u <url> -t <token> -k <projectKey>
 ```
-
-## sonar-issues-sync
-
-This tool tries to sync issues manual changes (FP, WF, Comments, Change of Severity or of issue type) between:
-- 2 different branches of a same project
-- A same project on 2 different SonarQube platforms
-
-Issue sync means:
-- Applying all transitions of the source issue to the target issue
-- Applying all manual comments
-- Applying all severity or issue type change
-
-### Examples
-```
-# Syncs issues for project <projectKey> from platform <src_url> to platform <target_url>
-sonar-issues-sync -u <src_url> -t <src_token> -k <projectKey> -U <target_url> -T <target_token>
-```
-
-### :information_source: Limitations
-- The sync is not 100% deterministic. In some rare corner cases (typically less than 5%) it is not possible to determine that an issue is the same between 2 branches or 2 platforms,in which case the issue is not sync'ed. The script will log those cases
-- When sync'ing an issue, all changes of the target issue are applied with the user whose token is provided to the script (it cannot be applied with the user of the original issue). Some comments are added to mention who was the original user that made the change
-- To be modified (sync'ed from a source issue), the target issue must has zero manual changes ie it must be has created originally by SonarQube
-
 
 ## sonar-project-history
 Extracts the history of some given metrics for a given project
