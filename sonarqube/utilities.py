@@ -23,7 +23,9 @@
 
 '''
 import sys
+import os
 import logging
+import argparse
 import json
 
 
@@ -59,19 +61,15 @@ def set_logger(name):
 
 def set_common_args(desc):
     """Parses options common to all sonarqube-tools scripts"""
-    try:
-        import argparse
-    except ImportError:
-        if sys.version_info < (2, 7, 0):
-            print("""Error: You are running an old version of python. Two options to fix the problem
-                Option 1: Upgrade to python version >= 2.7
-                Option 2: Install argparse library for the current python version
-                See: https://pypi.python.org/pypi/argparse""")
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('-t', '--token', required=True,
-                        help='Token to authenticate to the source SonarQube - Unauthenticated usage is not possible')
-    parser.add_argument('-u', '--url', required=False, default='http://localhost:9000',
-                        help='Root URL of the source SonarQube server, default is http://localhost:9000')
+    parser.add_argument(
+        '-t', '--token', required=False,
+        default=os.getenv('SONAR_TOKEN', None),
+        help='Token to authenticate to the source SonarQube - Unauthenticated usage is not possible')
+    parser.add_argument(
+        '-u', '--url', required=False,
+        default=os.getenv('SONAR_HOST_URL', 'http://localhost:9000'),
+        help='Root URL of the source SonarQube server, default is http://localhost:9000')
     parser.add_argument('-v', '--' + OPT_VERBOSE, required=False, choices=['WARN', 'INFO', 'DEBUG'],
                         default='INFO', help='Logging verbosity level')
     return parser
