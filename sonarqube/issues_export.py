@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument('--types', help='Comma separated issue types', required=False)
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
 
-    return parser.parse_args()
+    return util.parse_and_check_token(parser)
 
 
 def main():

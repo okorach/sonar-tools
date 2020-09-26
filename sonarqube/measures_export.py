@@ -49,7 +49,7 @@ def main():
     parser.add_argument('-r', '--ratingsAsLetters', action='store_true', required=False,
                         help='Reports ratings as ABCDE letters instead of 12345 numbers')
 
-    args = parser.parse_args()
+    args = util.parse_and_check_token(parser)
     endpoint = env.Environment(url=args.url, token=args.token)
     util.check_environment(vars(args))
 

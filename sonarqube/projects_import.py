@@ -33,7 +33,7 @@ def main():
     parser = util.set_common_args('Imports a list of projects in a SonarQube platform')
     parser.add_argument('-f', '--projectsFile', required=True, help='File with the list of projects')
 
-    args = parser.parse_args()
+    args = util.parse_and_check_token(parser)
     myenv = env.Environment(url=args.url, token=args.token)
     util.check_environment(vars(args))
 

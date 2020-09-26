@@ -40,7 +40,7 @@ def main():
                         help="If 'dry-run', script only lists projects to delete, if 'delete' it deletes projects")
     parser.add_argument('-o', '--olderThan', required=True, type=int,
                         help='Number of days since last analysis to delete file')
-    args = parser.parse_args()
+    args = util.parse_and_check_token(parser)
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
     mode = args.mode

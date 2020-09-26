@@ -34,7 +34,7 @@ def main():
     parser = util.set_common_args('Exports all projects of a SonarQube platform')
     parser.add_argument('--exportTimeout', required=False, type=int, default=180, help='Maximum wait time for export')
 
-    args = parser.parse_args()
+    args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
 
     project_list = projects.search(endpoint=env.Environment(url=args.url, token=args.token))

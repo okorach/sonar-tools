@@ -49,7 +49,7 @@ def parse_args(desc):
                         or 2 branches on a same platform''')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
 
-    return parser.parse_args()
+    return util.parse_and_check_token(parser)
 
 
 def __process_arguments__(params):
