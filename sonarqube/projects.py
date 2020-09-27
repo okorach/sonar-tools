@@ -132,12 +132,24 @@ class Project(comp.Component):
         nb_perms = int(data['paging']['total'])
         nb_pages = (nb_perms + MAX_PERMISSION_PAGE_SIZE - 1) // MAX_PERMISSION_PAGE_SIZE
         permissions = []
+
         for page in range(nb_pages):
             resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
                            params={'projectKey': self.key, 'ps': MAX_PERMISSION_PAGE_SIZE, 'p': page + 1})
             data = json.loads(resp.text)
+            # Workaround for SQ 7.9+, all groups/users even w/o permissions are returned
+            # Stop collecting permissions as soon as 5 groups with no permissions are encountered
+            no_perms_count = 0
             for p in data[perm_type]:
+                if not p['permissions']:
+                    no_perms_count = no_perms_count + 1
+                else:
+                    no_perms_count = 0
                 permissions.append(p)
+                if no_perms_count >= 5:
+                    break
+            if no_perms_count >= 5:
+                break
         if perm_type == 'group':
             self.group_permissions = permissions
         else:
