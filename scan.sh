@@ -67,7 +67,7 @@ if [ "$dolint" != "false" ]; then
 
   echo "Running flake8"
   rm -f $flake8Report
-  flake8 --ignore=W503,E128,C901,W504,E302,E265,E741,W291,W293,W391 --max-line-length=150 . >$flake8Report
+  flake8 --ignore=W503,E128,C901,W504,E302,E265,E741,W291,W293,W391,F821 --max-line-length=150 . >$flake8Report
 
   echo "Running bandit"
   rm -f $banditReport
