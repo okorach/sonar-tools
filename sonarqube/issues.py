@@ -504,10 +504,11 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
     try:
         issue_list = search(endpoint=endpoint, params=parms)
     except TooManyIssuesError:
-        if self.env.get_version() >= (8, 5, 0):
-            file_facet='files'
+        file_facet = 'files'
+        if env.get_version() >= (8, 5, 0):
+            file_facet = 'files'
         else:
-            file_facet='fileUuids'
+            file_facet = 'fileUuids'
         facets = get_facets(facets=file_facet, project_key=parms['componentKeys'], endpoint=endpoint, params=parms)
         if len(facets) < 100:
             for f in facets:
@@ -518,7 +519,7 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
 
 
 def search_by_facet(project_key, facets='rules,files,severities,types', endpoint=None, params=None):
-    if self.env.get_version() < (8, 5, 0):
+    if env.get_version() < (8, 5, 0):
         facets = facets.replace('files', 'fileUuids')
     issue_list = {}
     selected_facet = None
