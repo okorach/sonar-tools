@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# sonarqube-tools
+# sonar-tools
 # Copyright (C) 2019-2021 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
