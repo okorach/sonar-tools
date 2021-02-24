@@ -281,9 +281,6 @@ class Issue(sq.SqObject):
     def get_key(self):
         return self.key
 
-    def __same_debt(self, another_issue):
-        return self.debt == another_issue.debt
-
     def same_general_attributes(self, another_issue):
         return (
             self.rule == another_issue.rule and
@@ -505,7 +502,7 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
         issue_list = search(endpoint=endpoint, params=parms)
     except TooManyIssuesError:
         file_facet = 'files'
-        if env.get_version() >= (8, 5, 0):
+        if endpoint.get_version() >= (8, 5, 0):
             file_facet = 'files'
         else:
             file_facet = 'fileUuids'
@@ -519,7 +516,7 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
 
 
 def search_by_facet(project_key, facets='rules,files,severities,types', endpoint=None, params=None):
-    if env.get_version() < (8, 5, 0):
+    if endpoint.get_version() < (8, 5, 0):
         facets = facets.replace('files', 'fileUuids')
     issue_list = {}
     selected_facet = None
