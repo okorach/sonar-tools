@@ -74,7 +74,7 @@ if [ "$dolint" != "false" ]; then
   bandit -f json --skip B311,B303 -r . -x .vscode,./testpytest,./testunittest >$banditReport
 fi
 
-version=$(grep MEDIA_TOOLS_VERSION mediatools/version.py | cut -d "=" -f 2 | cut -d "'" -f 2)
+version=$(grep PACKAGE_VERSION mediatools/version.py | cut -d "=" -f 2 | cut -d "'" -f 2)
 
 pr_branch=""
 for o in $scanOpts
