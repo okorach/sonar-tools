@@ -25,7 +25,6 @@
     Usage: issuerecoverer.py -r -t <SQ_TOKEN> -u <SQ_URL>
 '''
 
-import json
 import sonarqube.env
 import sonarqube.issues
 import sonarqube.utilities as utils
