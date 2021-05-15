@@ -36,6 +36,8 @@ import sonarqube.audit_types as typ
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 import sonarqube.permissions as perms
+import sonarqube.custom_measures as custom_measures
+
 PROJECTS = {}
 
 PROJECT_SEARCH_API = 'projects/search'
@@ -402,6 +404,8 @@ Is this normal ?", gr['name'], self.key)
         resp = env.post('project_dump/import', params={'key': self.key}, ctxt=self.env)
         return resp.status_code
 
+    def search_custom_measures(self):
+        return custom_measures.search(self.key, self.env)
 
 def __get_permissions_counts__(entities):
     counts = {}
