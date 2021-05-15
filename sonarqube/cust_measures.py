@@ -34,7 +34,8 @@ def parse_args(desc):
     parser = utils.set_common_args(desc)
     parser = utils.set_component_args(parser)
     parser.add_argument('-m', '--metricKey', required=True, help='What custom metric to work on')
-    parser.add_argument('--updateValue', required=False, help='Updates the value of the metric')
+    parser.add_argument('--value', required=False, help='Updates the value of the metric')
+    parser.add_argument('--description', required=False, help='Updates the description of the metric')
     return utils.parse_and_check_token(parser)
 
 
@@ -51,9 +52,9 @@ def main():
     # Add SQ environment
     params.update({'env': sqenv})
 
-    if params.get('updateValue', None) is not None:
+    if params.get('value', None) is not None:
         cust_measures.update(project_key=params['componentKeys'], metric_key=params['metricKey'],
-            value=params['updateValue'])
+            value=params['value'], description=params['description'])
 
 if __name__ == '__main__':
     main()
