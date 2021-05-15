@@ -75,7 +75,7 @@ class Issue(sq.SqObject):
     MAX_SEARCH = 10000
     OPTIONS_SEARCH = ['additionalFields', 'asc', 'assigned', 'assignees', 'authors', 'componentKeys',
                       'createdAfter', 'createdAt', 'createdBefore', 'createdInLast', 'directories',
-                      'facetMode', 'facets', 'fileUuids', 'branch',
+                      'facetMode', 'facets', 'files', 'branch',
                       'issues', 'languages', 'onComponentOnly', 'p', 'ps', 'resolutions', 'resolved',
                       'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
@@ -280,9 +280,6 @@ class Issue(sq.SqObject):
 
     def get_key(self):
         return self.key
-
-    def __same_debt(self, another_issue):
-        return self.debt == another_issue.debt
 
     def same_general_attributes(self, another_issue):
         return (
@@ -504,7 +501,12 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
     try:
         issue_list = search(endpoint=endpoint, params=parms)
     except TooManyIssuesError:
-        facets = get_facets(facets='fileUuids', project_key=parms['componentKeys'], endpoint=endpoint, params=parms)
+        file_facet = 'files'
+        if endpoint.get_version() >= (8, 5, 0):
+            file_facet = 'files'
+        else:
+            file_facet = 'fileUuids'
+        facets = get_facets(facets=file_facet, project_key=parms['componentKeys'], endpoint=endpoint, params=parms)
         if len(facets) < 100:
             for f in facets:
                 issue_list.update(search_by_file(root_key=root_key, file_uuid=f['val'],
@@ -513,7 +515,9 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
     return issue_list
 
 
-def search_by_facet(project_key, facets='rules,fileUuids,severities,types', endpoint=None, params=None):
+def search_by_facet(project_key, facets='rules,files,severities,types', endpoint=None, params=None):
+    if endpoint.get_version() < (8, 5, 0):
+        facets = facets.replace('files', 'fileUuids')
     issue_list = {}
     selected_facet = None
     largest_facet = 0
@@ -528,7 +532,7 @@ def search_by_facet(project_key, facets='rules,fileUuids,severities,types', endp
         for f in facets[selected_facet]:
             if selected_facet == 'rules':
                 issue_list.update(search_by_rule(root_key=project_key, rule=f['val'], endpoint=endpoint, params=params))
-            elif selected_facet == 'fileUuids':
+            elif selected_facet in ('fileUuids', 'files'):
                 issue_list.update(search_by_file(root_key=project_key, file_uuid=f['val'],
                                                  endpoint=endpoint, params=params))
             else:

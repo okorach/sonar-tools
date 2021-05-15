@@ -45,7 +45,7 @@ def main():
     kwargs = vars(args)
     mode = args.mode
     util.check_environment(kwargs)
-    util.logger.info('sonar-tools version %s', version.SONAR_TOOLS_VERSION)
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     if args.olderThan < 90:
         util.logger.error("Can't delete projects more recent than 90 days")
         sys.exit(1)

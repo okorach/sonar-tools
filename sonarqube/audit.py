@@ -58,7 +58,7 @@ If not specified, it is the output file extension if json or csv, then csv by de
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)
-    util.logger.info('sonar-tools version %s', version.SONAR_TOOLS_VERSION)
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     settings = conf.load('sonar-audit.properties')
 
     if args.what is None:

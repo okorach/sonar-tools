@@ -9,7 +9,7 @@
 			"connectionId": "SQ LATEST",
 			"projectKey": "sonarqube-tools"
 		},
-		"python.pythonPath": "/Library/Frameworks/Python.framework/Versions/3.6/bin/python3",
+		"python.pythonPath": "/usr/local/bin/python3",
 		"sonarlint.analyzerProperties": null,
 		"git.confirmSync": false,
 		"git.autofetch": true,

@@ -25,7 +25,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name='sonar-tools',
-    version=version.SONAR_TOOLS_VERSION,
+    version=version.PACKAGE_VERSION,
     scripts=['sonar-tools'],
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",

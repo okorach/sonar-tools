@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # sonar-tools
-# Copyright (C) 2019-2020 Olivier Korach
+# Copyright (C) 2019-2021 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -18,13 +18,44 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+dolint=true
+tests=pytest
+while [ $# -ne 0 ]
+do
+  case "$1" in
+    -nolint)
+      dolint=false
+      ;;
+    -unittest)
+      tests=unittest
+      ;;
+    *)
+      scanOpts="$scanOpts $1"
+      ;;
+  esac
+  shift
+done
+
 buildDir="build"
-[ ! -d $buildDir ] && mkdir $buildDir
 pylintReport="$buildDir/pylint-report.out"
 banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
+coverageReport="$buildDir/coverage.xml"
 
-if [ "$1" != "-nolint" ]; then
+[ ! -d $buildDir ] && mkdir $buildDir
+rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
+
+echo "Running tests"
+if [ "$tests" != "unittest" ]; then
+  coverage run -m pytest
+  # pytest --cov=mediatools --cov-branch --cov-report=xml:$coverageReport testpytest/
+else
+  coverage run --source=. --branch -m unittest discover
+fi
+coverage xml -o $coverageReport
+
+if [ "$dolint" != "false" ]; then
   echo "Running pylint"
   rm -f $pylintReport
   pylint *.py */*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee $pylintReport
@@ -36,21 +67,40 @@ if [ "$1" != "-nolint" ]; then
 
   echo "Running flake8"
   rm -f $flake8Report
-  flake8 --ignore=W503,E128,C901,W504 --max-line-length=150 . >$flake8Report
+  flake8 --ignore=W503,E128,C901,W504,E302,E265,E741,W291,W293,W391,F821 --max-line-length=150 . >$flake8Report
 
   echo "Running bandit"
   rm -f $banditReport
-  bandit -f json -r . >$banditReport
-else
-  shift
+  bandit -f json --skip B311,B303 -r . -x .vscode,./testpytest,./testunittest >$banditReport
 fi
 
-version=`cat sonarqube/utilities.py | grep SONAR_TOOLS_VERSION | cut -d "=" -f 2 | cut -d "'" -f 2`
+version=$(grep PACKAGE_VERSION mediatools/version.py | cut -d "=" -f 2 | cut -d "'" -f 2)
+
+pr_branch=""
+for o in $scanOpts
+do
+  key="$(echo $o | cut -d '=' -f 1)"
+  if [ "$key" = "-Dsonar.pullrequest.key" ]; then
+    pr_branch="-Dsonar.pullrequest.branch=foo"
+  fi
+done
+
+
+echo "Running: sonar-scanner \
+  -Dsonar.projectVersion=$version \
+  -Dsonar.python.flake8.reportPaths=$flake8Report \
+  -Dsonar.python.pylint.reportPaths=$pylintReport \
+  -Dsonar.python.bandit.reportPaths=$banditReport \
+  -Dsonar.python.coverage.reportPaths=$coverageReport \
+  $pr_branch \
+  $scanOpts"
 
 sonar-scanner \
   -Dsonar.projectVersion=$version \
-  -Dsonar.host.url=$SQ_URL \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
-  -Dsonar.python.pylint.reportPath=$pylintReport \
+  -Dsonar.python.pylint.reportPaths=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
-  $*
+  -Dsonar.python.coverage.reportPaths=$coverageReport \
+  -Dsonar.coverage.exclusions=**/*.sh \
+  $pr_branch \
+  $scanOpts
