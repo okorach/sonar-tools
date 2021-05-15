@@ -150,13 +150,16 @@ class Environment:
     def urlstring(self, api, params):
         first = True
         url = "{0}{1}".format(str(self), api)
-        if params is not None:
-            for p in params:
-                sep = '?' if first else '&'
-                first = False
-                if isinstance(params[p], datetime.date):
-                    params[p] = util.format_date(params[p])
-                url += '{0}{1}={2}'.format(sep, p, params[p])
+        if params is None:
+            return url
+        for p in params:
+            if params[p] is None:
+                continue
+            sep = '?' if first else '&'
+            first = False
+            if isinstance(params[p], datetime.date):
+                params[p] = util.format_date(params[p])
+            url += '{0}{1}={2}'.format(sep, p, params[p])
         return url
 
     def audit(self, audit_settings=None):
@@ -527,7 +530,7 @@ def __audit_ce_settings__(sysinfo):
     ce_workers = ce_tasks['Worker Count']
     if ce_workers > 4:
         problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, typ.Type.HIGH,
+            typ.Type.PERFORMANCE, sev.Severity.HIGH,
             "{} CE workers configured, more than the max 4 recommended".format(ce_workers)))
     else:
         util.logger.info("%d CE workers configured, correct compared to the max 4 recommended", ce_workers)
