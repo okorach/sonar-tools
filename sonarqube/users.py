@@ -93,7 +93,7 @@ def search(q=None, endpoint=None, p=None, ps=500):
 
 
 def create(name, login=None, endpoint=None):
-    resp = env.post(User.API_CREATE, {'name':name, 'login': login}, endpoint)
+    resp = env.post(User.API_CREATE, {'name': name, 'login': login}, endpoint)
     data = json.loads(resp.text)
     return User(data['login'], data['name'], endpoint, **data)
 
