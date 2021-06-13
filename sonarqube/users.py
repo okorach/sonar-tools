@@ -63,7 +63,7 @@ class User(sq.SqObject):
         return self.login
 
     def deactivate(self):
-        env.post(User.API_DEACTIVATE, {'name':self.name, 'login':self.login}, self.env)
+        env.post(User.API_DEACTIVATE, {'name': self.name, 'login': self.login}, self.env)
         return True
 
     def tokens(self):
@@ -74,7 +74,7 @@ class User(sq.SqObject):
 
 def search(q=None, endpoint=None, p=None, ps=500):
     users_list = {}
-    resp = env.get(User.API_SEARCH, {'q':q, 'p':p, 'ps':ps}, endpoint)
+    resp = env.get(User.API_SEARCH, {'q': q, 'p': p, 'ps': ps}, endpoint)
     data = json.loads(resp.text)
     nb_pages = (data['paging']['total'] + ps - 1) // ps
     for u in data['users']:
@@ -83,7 +83,7 @@ def search(q=None, endpoint=None, p=None, ps=500):
         return users_list
     p = 2
     while p <= nb_pages:
-        resp = env.get(User.API_SEARCH, {'q':q, 'p':p, 'ps':ps}, endpoint)
+        resp = env.get(User.API_SEARCH, {'q': q, 'p': p, 'ps': ps}, endpoint)
         data = json.loads(resp.text)
         nb_pages = (data['paging']['total'] + ps - 1) // ps
         for u in data['users']:

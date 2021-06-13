@@ -55,12 +55,12 @@ class UserToken(sq.SqObject):
     def revoke(self):
         if self.name is None:
             return False
-        env.post(UserToken.API_REVOKE, {'name':self.name, 'login': self.login}, self.env)
+        env.post(UserToken.API_REVOKE, {'name': self.name, 'login': self.login}, self.env)
         return True
 
 
 def search(login, endpoint=None):
-    resp = env.get(UserToken.API_SEARCH, {'login':login}, endpoint)
+    resp = env.get(UserToken.API_SEARCH, {'login': login}, endpoint)
     token_list = []
     data = json.loads(resp.text)
     for tk in data['userTokens']:
@@ -70,6 +70,6 @@ def search(login, endpoint=None):
 
 
 def generate(name, login=None, endpoint=None):
-    resp = env.post(UserToken.API_GENERATE, {'name':name, 'login': login}, endpoint)
+    resp = env.post(UserToken.API_GENERATE, {'name': name, 'login': login}, endpoint)
     data = json.loads(resp.text)
     return UserToken(data['login'], data['name'], data['createdAt'], data['token'])
