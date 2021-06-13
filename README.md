@@ -5,7 +5,8 @@ Command line tools to help in SonarQube administration tasks.
 
 The following utilities are available:
 - **sonar-audit**: Audits a SonarQube platform
-- **sonar-housekeeper**: Deletes projects that have not been analyzed since a certain number of days
+- **sonar-housekeeper**: Deletes projects that have not been analyzed since a certain number of days, or
+deletes tokens created since more than a certain number of days
 - **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the platform i CSV
 - **sonar-issues-export**: Exports issues (potentially filtered) from the platform in CSV
 - **sonar-issues-sync**: Synchronizes issue changelog between branches, projects or even platforms
@@ -127,10 +128,13 @@ When `--what` is not specified, everything is audited
 
 Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
 
-Usage: `sonar-housekeeper -u <url> -t <token> -o days [--mode batch]`
+Usage: `sonar-housekeeper -u <url> -t <token> -o days [-P] [-T] [--mode batch] [-h]`
 
 
-- `-o <days>`: Minimum number of days since project last analysis. To avoid deleting too recent projects it is denied to specify less than 90 days
+- `-o <days>`: Minimum number of days since project last analysis (or token creation date).
+To avoid deleting too recent projects it is denied to specify less than 90 days
+- `-P`: Will search for projects not analyzed since more than so many days
+- `-T`: Will search for tokens created since more than so many days
 - `--mode batch`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects that would be deleted.
 If specified projects are actually deleted
 
