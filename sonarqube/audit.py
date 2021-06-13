@@ -27,6 +27,7 @@ import sys
 import sonarqube.projects as projects
 import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.qualitygates as qualitygates
+import sonarqube.users as users
 import sonarqube.utilities as util
 import sonarqube.version as version
 import sonarqube.env as env
@@ -74,6 +75,8 @@ If not specified, it is the output file extension if json or csv, then csv by de
         problems += qualitygates.audit(endpoint=sq)
     if 'settings' in what_to_audit:
         problems += sq.audit(audit_settings=settings)
+    if 'users' in what_to_audit:
+        problems += users.audit(endpoint=sq, audit_settings=settings)
 
     args.format = __deduct_format__(args.format, args.file)
     pb.dump_report(problems, args.file, args.format)
