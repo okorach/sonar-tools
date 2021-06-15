@@ -108,6 +108,6 @@ def audit(audit_settings, endpoint=None):
                 continue
             problems.append(pb.Problem(
                 typ.Type.SECURITY, sev.Severity.HIGH,
-                "Token '{}' of user '{}' is {} days old and should be revoke".format(
+                "Token '{}' of user '{}' is {} days old and should be revoked".format(
                     str(t), str(u), abs((today - t.createdAt).days)), concerned_object=t))
     return problems
