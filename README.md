@@ -50,6 +50,7 @@ When `--what` is not specified, everything is audited
 - `--what qp`: Audits quality profiles
 - `--what qg`: Audits quality gates
 - `--what projects`: Audits all projects. This can be a fairly long operation
+- `--what users`: Audits users and their tokens
 
 <details>
   <summary>Click to see details of what is audited</summary>
@@ -122,6 +123,8 @@ When `--what` is not specified, everything is audited
     - More than 2 groups with issue admin permission
     - More than 2 groups with hotspot admin permission
     - More than 2 groups with project admin permission
+- Users:
+    - Tokens older than 90 days, or `audit.tokens.maxAge`
 </details>
 
 # sonar-housekeeper
