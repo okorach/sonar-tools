@@ -63,7 +63,7 @@ If not specified, it is the output file extension if json or csv, then csv by de
     settings = conf.load('sonar-audit.properties')
 
     if args.what is None:
-        args.what = 'qp,qg,settings,projects'
+        args.what = 'qp,qg,settings,projects,users'
     what_to_audit = args.what.split(',')
 
     problems = []
