@@ -84,8 +84,8 @@ def main():
                         If 'dry-run', script only lists objects (projects or tokens) to delete,
                         If 'delete' it deletes projects or tokens
                         ''')
-    parser.add_argument('-P', '--projects', required=False, help='Deletes projects')
-    parser.add_argument('-T', '--tokens', required=False, help='Deletes user tokens')
+    parser.add_argument('-P', '--projects', required=False, help='Deletes projects', action='store_true')
+    parser.add_argument('-T', '--tokens', required=False, help='Deletes user tokens', action='store_true')
     parser.add_argument('-o', '--olderThan', required=True, type=int,
                         help='Number of days since last analysis to delete file')
     args = util.parse_and_check_token(parser)
@@ -96,10 +96,10 @@ def main():
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     problems = []
-    if args.projects is not None:
+    if args.projects:
         problems = get_project_problems(max_days, sq)
 
-    if args.tokens is not None:
+    if args.tokens:
         problems += get_user_problems(max_days, sq)
 
     pb.dump_report(problems, file=None, file_format='csv')
