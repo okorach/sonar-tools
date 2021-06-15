@@ -138,8 +138,9 @@ Usage: `sonar-housekeeper -u <url> -t <token> -o days [-P] [-T] [--mode batch] [
 To avoid deleting too recent projects it is denied to specify less than 90 days
 - `-P`: Will search for projects not analyzed since more than so many days
 - `-T`: Will search for tokens created since more than so many days
-- `--mode batch`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects that would be deleted.
-If specified projects are actually deleted
+- `--mode delete`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects
+and tokens that would be deleted.
+If specified projects and tokens are actually deleted
 
 
 ### :information_source: Limitations
