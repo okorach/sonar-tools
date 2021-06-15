@@ -65,11 +65,13 @@ def set_common_args(desc):
     parser.add_argument(
         '-t', '--token', required=False,
         default=os.getenv('SONAR_TOKEN', None),
-        help='Token to authenticate to the source SonarQube - Unauthenticated usage is not possible')
+        help='''Token to authenticate to the source SonarQube, default is environment variable $SONAR_TOKEN
+        - Unauthenticated usage is not possible''')
     parser.add_argument(
         '-u', '--url', required=False,
         default=os.getenv('SONAR_HOST_URL', 'http://localhost:9000'),
-        help='Root URL of the source SonarQube server, default is http://localhost:9000')
+        help='''Root URL of the source SonarQube server,
+        default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set''')
     parser.add_argument('-v', '--' + OPT_VERBOSE, required=False, choices=['WARN', 'INFO', 'DEBUG'],
                         default='INFO', help='Logging verbosity level')
     return parser

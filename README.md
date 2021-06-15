@@ -29,8 +29,10 @@ deletes tokens created since more than a certain number of days
 
 All tools accept the following common parameters:
 - `-h` : Displays a help and exits
-- `-u` : URL of the SonarQube server. The default is `http://localhost:9000`
+- `-u` : URL of the SonarQube server. The default is environment variable `$SONAR_HOST_URL``
+or `http://localhost:9000` if not set
 - `-t` : User token to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06`.
+The default is environment variable `$SONAR_TOKEN`.
 Using login/password is not possible.
 The user corresponding to the token must have enough permissions to achieve the tool tasks
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
@@ -41,7 +43,7 @@ The user corresponding to the token must have enough permissions to achieve the 
 Audits the SonarQube platform and output warning logs whenever a suspicious or incorrect setting/situation is found.
 The detail of what is audited is listed at the bottom of this (long) page
 
-Usage: `sonar-audit -u <url> -t <token> [--what [settings|projects|qg|qp]]`
+Usage: `sonar-audit -u <url> -t <token> [--what [settings|projects|qg|qp|users]]`
 
 `--what` can be followed by a list of comma separated items
 When `--what` is not specified, everything is audited
