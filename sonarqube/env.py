@@ -221,9 +221,14 @@ class Environment:
     def __audit_project_default_visibility__(self):
         util.logger.info('Auditing project default visibility')
         problems = []
-        resp = self.get('navigation/organization', params={'organization': 'default-organization'})
-        data = json.loads(resp.text)
-        visi = data['organization']['projectVisibility']
+        if self.get_version() < (8, 7, 0):
+            resp = self.get('navigation/organization', params={'organization': 'default-organization'})
+            data = json.loads(resp.text)
+            visi = data['organization']['projectVisibility']
+        else:
+            resp = self.get('settings/values', params={'keys': 'projects.default.visibility'})
+            data = json.loads(resp.text)
+            visi = data['settings'][0]['value']
         util.logger.info('Project default visibility is %s', visi)
         if conf.get_property('checkDefaultProjectVisibility') and visi != 'private':
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
