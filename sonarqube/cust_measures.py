@@ -54,7 +54,7 @@ def main():
 
     if params.get('value', None) is not None:
         cust_measures.update(project_key=params['componentKeys'], metric_key=params['metricKey'],
-            value=params['value'], description=params['description'])
+            value=params['value'], description=params.get('description', None))
 
 if __name__ == '__main__':
     main()
