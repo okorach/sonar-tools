@@ -1,15 +1,23 @@
 # sonar-tools
 Command line tools to help in SonarQube administration tasks.
 
-**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company editing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarlcoud.io) and [SonarLint](https://sonarlint.org) products
+![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
+![License](https://img.shields.io/pypi/l/sonar-tools?color=informational)
+![Quality Gate](https://img.shields.io/sonar/alert_status/okorach_sonarqube-tools?server=https%3A%2F%2Fsonarcloud.io&sonarVersion=8.9)
+![Issues](https://img.shields.io/github/issues/okorach/sonarqube-tools)
+![Python-Versions](https://img.shields.io/pypi/pyversions/sonar-tools)
+![LoC](https://img.shields.io/tokei/lines/github/okorach/sonarqube-tools)
+![Stars](https://img.shields.io/github/stars/okorach/sonarqube-tools?style=social)
+
+**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company editing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarcloud.io) and [SonarLint](https://sonarlint.org) products
 
 The following utilities are available:
 - **sonar-audit**: Audits a SonarQube instance
 - **sonar-housekeeper**: Deletes projects that have not been analyzed since a certain number of days, or
 deletes tokens created since more than a certain number of days
-- **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the instance i CSV
+- **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the instance in CSV
 - **sonar-issues-export**: Exports issues (potentially filtered) from the instance in CSV
-- **sonar-issues-sync**: Synchronizes issue changelog between branches, projects or even SonarQube instancs
+- **sonar-issues-sync**: Synchronizes issue changelog between branches, projects or even SonarQube instances
 - **sonar-projects-export**: Exports all projects from a SonarQube instance (EE and higher)
 - **sonar-projects-import**: Imports a list of projects into a SonarQube instance (EE and higher)
 
