@@ -2,12 +2,15 @@
 Command line tools to help in SonarQube administration tasks.
 
 ![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
-![License](https://img.shields.io/pypi/l/sonar-tools?color=informational)
-![Quality Gate](https://img.shields.io/sonar/alert_status/okorach_sonarqube-tools?server=https%3A%2F%2Fsonarcloud.io&sonarVersion=8.9)
-![Issues](https://img.shields.io/github/issues/okorach/sonarqube-tools)
 ![Python-Versions](https://img.shields.io/pypi/pyversions/sonar-tools)
-![LoC](https://img.shields.io/tokei/lines/github/okorach/sonarqube-tools)
+![License](https://img.shields.io/pypi/l/sonar-tools?color=informational)
+![Issues](https://img.shields.io/github/issues/okorach/sonarqube-tools)
 ![Stars](https://img.shields.io/github/stars/okorach/sonarqube-tools?style=social)
+
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=okorach_sonarqube-tools)](https://sonarcloud.io/dashboard?id=okorach_sonarqube-tools)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonarqube-tools&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=okorach_sonarqube-tools)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonarqube-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach_sonarqube-tools)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonarqube-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach_sonarqube-tools)
 
 **DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company editing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarcloud.io) and [SonarLint](https://sonarlint.org) products
 
