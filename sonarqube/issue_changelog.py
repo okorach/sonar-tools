@@ -201,6 +201,8 @@ def get_event_from_diff(diff):
         event = assignee_diff_to_changelog(diff)
     if dkey == 'from_short_branch':
         event = {'event': 'merge', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
+    if dkey == 'from_branch':
+        event = {'event': 'fork', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
     if dkey == 'effort':
         event = {'event': 'effort', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
 

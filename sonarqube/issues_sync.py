@@ -181,10 +181,17 @@ def main():
 
     (params, tgt_params) = __process_arguments__(params)
 
-    all_source_issues = issues.search(endpoint=source_env, params=params)
-    util.logger.info("Found %d issues with manual changes on source project/branch", len(all_source_issues))
+    all_source_issues = issues.search_by_project(params['projectKey'], endpoint=source_env, params=params)
+    manual_source_issues = {}
+    for key, issue in all_source_issues.items():
+        if issue.has_changelog():
+            manual_source_issues[key] = issue
+    all_source_issues = manual_source_issues
 
-    all_target_issues = issues.search(endpoint=target_env, params=tgt_params)
+    util.logger.info("Found %d issues with manual changes on project %s branch %s",
+        len(all_source_issues), params['projectKey'], params['branch'])
+
+    all_target_issues = issues.search_by_project(params['projectKey'], endpoint=target_env, params=tgt_params)
     util.logger.info("Found %d target issues on target project/branch", len(all_target_issues))
 
     ignore_component = tgt_params['projectKey'] != params['projectKey']
@@ -221,7 +228,7 @@ def main():
             continue
         if not exact_siblings and not approx_siblings and not modified_siblings:
             nb_no_match += 1
-            report.append(__process_no_match__(issue))
+            # report.append(__process_no_match__(issue))
 
     _dump_report_(report, args.file)
     util.logger.info("%d issues to sync in target, %d issues in source", len(all_target_issues), len(all_source_issues))
