@@ -406,10 +406,12 @@ def __get_memory__(setting):
 
 def __get_store_size__(setting):
     (val, unit) = setting.split(' ')
+    # For decimal separator in some countries
+    val = val.replace(',', '.')
     if unit == 'MB':
-        return int(val)
+        return float(val)
     elif unit == 'GB':
-        return int(val) * 1024
+        return float(val) * 1024
     return None
 
 
