@@ -72,7 +72,7 @@ If not specified, it is the output file extension if json or csv, then csv by de
     if 'qp' in what_to_audit:
         problems += qualityprofiles.audit(endpoint=sq)
     if 'qg' in what_to_audit:
-        problems += qualitygates.audit(endpoint=sq)
+        problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
     if 'settings' in what_to_audit:
         problems += sq.audit(audit_settings=settings)
     if 'users' in what_to_audit:
