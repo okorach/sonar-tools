@@ -133,3 +133,9 @@ def format_date_ymd(year, month, day):
 
 def format_date(somedate):
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
+
+
+def get_setting(settings, key, default):
+    if settings is None:
+        return default
+    return settings.get(key, default)
