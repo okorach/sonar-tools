@@ -604,6 +604,26 @@ too low for index size of {} MB".format(es_ram, index_size)))
     return problems
 
 
+def __audit_jdbc_url__(sysinfo):
+    util.logger.info('Auditing JDBC settings')
+    problems = []
+    stats = sysinfo.get('Settings')
+    if stats is None:
+        util.logger.error("Can't verify Database settings in System Info File, was it corrupted or redacted ?")
+        return problems
+    url = stats.get('sonar.jdbc.url', None)
+    util.logger.debug('JDBC URL = %s', str(url))
+    if url is None:
+        problems.append(pb.Problem(
+            typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
+            'JDBC URL is not set, most probably SonarQube runs on internal H2 DB that is'
+            ' not supported for production. You will not be able to upgrade'))      
+    elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0\.0\.1)', url):
+        problems.append(pb.Problem(
+            typ.Type.PERFORMANCE, sev.Severity.HIGH,
+            "JDBC URL '{}' is pointing to local machine which is highly discouraged for production".format(url)))
+    return problems
+
 def __audit_dce_settings__(sysinfo):
     util.logger.info('Auditing DCE settings')
     problems = []
@@ -653,7 +673,8 @@ def audit_sysinfo(sysinfo):
         __audit_ce_settings__(sysinfo) +
         __audit_ce_background_tasks__(sysinfo) +
         __audit_es_settings__(sysinfo) +
-        __audit_dce_settings__(sysinfo)
+        __audit_dce_settings__(sysinfo) +
+        __audit_jdbc_url__(sysinfo)
     )
 
 
