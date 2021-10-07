@@ -616,11 +616,12 @@ def __audit_jdbc_url__(sysinfo):
     if url is None:
         problems.append(pb.Problem(
             typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
-            'JDBC URL is not set, most probably SonarQube runs on internal H2 DB that is not supported for production'))      
+            'JDBC URL is not set, most probably SonarQube runs on internal H2 DB that is'
+            ' not supported for production. You will not be able to upgrade'))      
     elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0\.0\.1)', url):
         problems.append(pb.Problem(
             typ.Type.PERFORMANCE, sev.Severity.HIGH,
-            "JDBC URL '{}' is pointing to local machine which is highly discouraged for production".format(url)))      
+            "JDBC URL '{}' is pointing to local machine which is highly discouraged for production".format(url)))
     return problems
 
 def __audit_dce_settings__(sysinfo):
