@@ -26,6 +26,7 @@ import json
 import datetime as dt
 import sonarqube.env as env
 import sonarqube.sqobject as sq
+import sonarqube.utilities as util
 
 
 SQ_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
@@ -39,7 +40,7 @@ class UserToken(sq.SqObject):
     API_SEARCH = API_ROOT + '/search'
     API_GENERATE = API_ROOT + '/generate'
 
-    def __init__(self, login, name, createdAt=None, token=None, endpoint=None):
+    def __init__(self, login, name=None, json_data=None, createdAt=None, token=None, endpoint=None):
         super().__init__(key=login, env=endpoint)
         self.login = login
         if isinstance(createdAt, str):
@@ -47,7 +48,15 @@ class UserToken(sq.SqObject):
         else:
             self.createdAt = createdAt
         self.name = name
+        if self.name is None and 'name' in json_data:
+            self.name = json_data['name']
+        if self.createdAt is None and 'createdAt' in json_data:
+            self.createdAt = dt.datetime.strptime(json_data['createdAt'], SQ_DATETIME_FORMAT)
+        self.lastConnectionDate = None
+        if 'lastConnectionDate' in json_data:
+            self.lastConnectionDate = dt.datetime.strptime(json_data['lastConnectionDate'], SQ_DATETIME_FORMAT)
         self.token = token
+        util.logger.debug("Created token %s", str(vars(self)))
 
     def __str__(self):
         return self.name
@@ -65,11 +74,12 @@ def search(login, endpoint=None):
     data = json.loads(resp.text)
     for tk in data['userTokens']:
         token_list.append(UserToken(
-            login=data['login'], name=tk['name'], createdAt=tk['createdAt'], endpoint=endpoint))
+            login=data['login'], json_data=tk, endpoint=endpoint))
     return token_list
 
 
 def generate(name, login=None, endpoint=None):
     resp = env.post(UserToken.API_GENERATE, {'name': name, 'login': login}, endpoint)
     data = json.loads(resp.text)
-    return UserToken(data['login'], data['name'], data['createdAt'], data['token'])
+    return UserToken(login=data['login'], name=data['name'],
+                     createdAt=data['createdAt'], token=data['token'], endpoint=endpoint)

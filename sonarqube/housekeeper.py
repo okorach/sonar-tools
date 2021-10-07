@@ -65,7 +65,7 @@ def get_project_problems(max_days, endpoint):
 def get_user_problems(max_days, endpoint):
     settings = {
         'audit.tokens.maxAge': max_days,
-        'audit.tokens.unusedAge': 30,
+        'audit.tokens.maxUnusedAge': 30,
     }
     user_problems = users.audit(endpoint=endpoint, audit_settings=settings)
     nb_user_problems = len(user_problems)
