@@ -100,14 +100,28 @@ def create(name, login=None, endpoint=None):
 
 def audit(audit_settings, endpoint=None):
     today = dt.datetime.today().replace(tzinfo=pytz.UTC)
-    max_days = audit_settings['audit.tokens.maxAge']
+    max_age = audit_settings['audit.tokens.maxAge']
+    max_unused_days = audit_settings['audit.tokens.maxUnusedAge']
     problems = []
     for l, u in search(endpoint=endpoint).items():
         for t in u.tokens():
-            if abs((today - t.createdAt).days) <= max_days:
+            age = abs((today - t.createdAt).days)
+            if age > max_age:
+                problems.append(pb.Problem(
+                    typ.Type.SECURITY, sev.Severity.HIGH,
+                    "Token '{}' of user '{}' is {} days old and should be revoked".format(
+                        str(t), str(u), age), concerned_object=t))
+            if t.lastConnectionDate is None and age > max_unused_days:
+                problems.append(pb.Problem(
+                    typ.Type.SECURITY, sev.Severity.MEDIUM,
+                    "Token '{}' of user '{}' is has been created {} days ago but never used since then, "
+                    "it may need to be revoked".format(str(t), str(u), age), concerned_object=t))
+            if t.lastConnectionDate is None:
                 continue
-            problems.append(pb.Problem(
-                typ.Type.SECURITY, sev.Severity.HIGH,
-                "Token '{}' of user '{}' is {} days old and should be revoked".format(
-                    str(t), str(u), abs((today - t.createdAt).days)), concerned_object=t))
+            last_cnx_age = abs((today - t.lastConnectionDate).days)
+            if last_cnx_age > max_unused_days:
+                problems.append(pb.Problem(
+                    typ.Type.SECURITY, sev.Severity.MEDIUM,
+                    "Token '{}' of user '{}' is has not be used for {} days and should be revoked".format(
+                        str(t), str(u), last_cnx_age), concerned_object=t))
     return problems

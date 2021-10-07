@@ -93,6 +93,8 @@ sonar-audit --what settings,qg,qp
   - `sonar.core.serverBaseURL` is set
   - `sonar.global.exclusions` is empty
   - Project default visibility is `private`
+  - SonarQube configured to use built-in H2 database
+  - SonarQube configured to use external database on same host as SonarQube itself
 - Global permissions:
   - Max 3 users with global admin, admin quality gates, admin quality profiles or create project permission
   - Max 10 users with global permissions
@@ -151,6 +153,8 @@ sonar-audit --what settings,qg,qp
     - More than 2 groups with project admin permission
 - Users:
     - Tokens older than 90 days, or `audit.tokens.maxAge`
+    - Tokens created but never used after 30 days or `audit.maxUnusedAge`
+    - Tokens not used for 30 days or `audit.maxUnusedAge`
 </details>
 
 # sonar-housekeeper
