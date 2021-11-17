@@ -91,11 +91,10 @@ def main():
 
         for b in branch_list:
             nb_branches += 1
-            p_meas = measures.component(project.key, wanted_metrics, branch_name=b['name'], endpoint=endpoint)
+            p_meas = measures.component(project.key, wanted_metrics, branch=b['name'], endpoint=endpoint)
             last_analysis = b.get('analysisDate', '')
             line = ''
-            print("%s%s%s%s%s%s%s" % (project.key, csv_sep, project.name, csv_sep, b['name'],
-                                      csv_sep, last_analysis), end='')
+            print("{1}{0}{2}{0}{3}{0}{4}".format(csv_sep, project.key, project.name, b['name'], last_analysis), end='')
             if args.metricKeys == '_all':
                 for metric in main_metrics_list:
                     line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep
