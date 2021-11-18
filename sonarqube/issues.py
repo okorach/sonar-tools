@@ -604,7 +604,9 @@ def search_by_project(project_key, endpoint=None, params=None):
         parms = {}
     else:
         parms = params.copy()
-    branch = 'MAIN' if params['branch'] is None else params['branch']
+    branch = parms.get('branch', None)
+    if branch is None:
+        branch = 'MAIN'
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
