@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+import os
 import jprops
 import sonarqube.utilities as util
 
@@ -28,14 +29,14 @@ def load(config_file=None):
     global CONFIG_SETTINGS
     file_to_load = config_file
     if file_to_load is None:
-        file_to_load = pathlib.Path(__file__).parent / 'sonar-tools.properties'
+        file_to_load =  f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
 
     try:
         util.logger.info("Trying to load audit config %s", file_to_load)
         fp = open(file_to_load)
     except FileNotFoundError:
         if config_file is None:
-            file_to_load = pathlib.Path(__file__).parent / 'sonar-tools.properties'
+            file_to_load = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
         else:
             file_to_load = pathlib.Path(__file__).parent / config_file
         util.logger.info("Loading default audit config %s", config_file)
