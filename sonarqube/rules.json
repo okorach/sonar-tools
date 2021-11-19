@@ -294,7 +294,7 @@
         "object": "Token",
         "message": "Token '{}' of user '{}' is not used since {} days, it should be revoked"
     },
-    "TOKEN_NEVER_UNUSED":
+    "TOKEN_NEVER_USED":
     {
         "severity": "MEDIUM",
         "type": "SECURITY",
