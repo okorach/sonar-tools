@@ -32,6 +32,7 @@ import sonarqube.audit_severities as sev
 import sonarqube.audit_types as typ
 import sonarqube.audit_problem as pb
 import sonarqube.user_tokens as tok
+import sonarqube.audit_rules as rules
 
 SQ_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 SQ_DATE_FORMAT = "%Y-%m-%d"
@@ -107,21 +108,18 @@ def audit(audit_settings, endpoint=None):
         for t in u.tokens():
             age = abs((today - t.createdAt).days)
             if age > max_age:
-                problems.append(pb.Problem(
-                    typ.Type.SECURITY, sev.Severity.HIGH,
-                    "Token '{}' of user '{}' is {} days old and should be revoked".format(
-                        str(t), str(u), age), concerned_object=t))
+                rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(u), age),
+                    concerned_object=t))
             if t.lastConnectionDate is None and age > max_unused_days:
-                problems.append(pb.Problem(
-                    typ.Type.SECURITY, sev.Severity.MEDIUM,
-                    "Token '{}' of user '{}' is has been created {} days ago but never used since then, "
-                    "it may need to be revoked".format(str(t), str(u), age), concerned_object=t))
+                rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(u), age),
+                    concerned_object=t))
             if t.lastConnectionDate is None:
                 continue
             last_cnx_age = abs((today - t.lastConnectionDate).days)
             if last_cnx_age > max_unused_days:
-                problems.append(pb.Problem(
-                    typ.Type.SECURITY, sev.Severity.MEDIUM,
-                    "Token '{}' of user '{}' is has not be used for {} days and should be revoked".format(
-                        str(t), str(u), last_cnx_age), concerned_object=t))
+                rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(u), last_cnx_age),
+                    concerned_object=t))
     return problems

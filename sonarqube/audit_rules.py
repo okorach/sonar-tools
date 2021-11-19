@@ -80,6 +80,10 @@ class RuleId(enum.Enum):
     QP_NOT_USED = 3004
     QP_USE_DEPRECATED_RULES = 3005
 
+    TOKEN_TOO_OLD = 4000
+    TOKEN_UNUSED = 4001
+    TOKEN_NEVER_USED = 4002
+
     def __str__(self):
         return repr(self.name)[1:-1]
 
