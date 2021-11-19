@@ -66,6 +66,12 @@ When `--what` is not specified, everything is audited
 - `--what projects`: Audits all projects. This can be a fairly long operation
 - `--what users`: Audits users and their tokens
 
+### Configuration file
+`sonar-audit` can be configured with a configuration file to select what to audit and some different
+other audit parameters.
+See [audit-settings.md](audit-settings.md) for the details of parameters
+
+
 ### Example
 ```
 export SONAR_HOST_URL=https://sonar.acme-corp.com
