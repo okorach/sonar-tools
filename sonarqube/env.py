@@ -636,7 +636,7 @@ def __audit_dce_settings__(sysinfo):
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
         node_plugins = json.dumps(node['Plugins'], sort_keys=True, indent=3, separators=(',', ': '))
         if node_plugins != ref_plugins:
-            rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
+            rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
         if not node['System']['Official Distribution']:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)
