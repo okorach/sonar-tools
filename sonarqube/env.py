@@ -51,6 +51,10 @@ GLOBAL_PERMISSIONS = {
     "scan": "Run Analysis"
 }
 
+class UnsupportedOperation(Exception):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
 
 class Environment:
 
@@ -62,10 +66,11 @@ class Environment:
         self.minor = None
         self.patch = None
         self.build = None
+        self.sysinfo = None
 
     def __str__(self):
         redacted_token = re.sub(r'(...).*(...)', r'\1***\2', self.token)
-        return "{0}@{1}".format(redacted_token, self.root_url)
+        return f"{redacted_token}@{self.root_url}"
 
     def set_env(self, url, token):
         self.root_url = url
@@ -94,9 +99,16 @@ class Environment:
         return (int(self.major), int(self.minor), int(self.patch))
 
     def get_sysinfo(self):
-        resp = self.get('system/info')
-        sysinfo = json.loads(resp.text)
-        return sysinfo
+        if self.sysinfo is None:
+            resp = self.get('system/info')
+            self.sysinfo = json.loads(resp.text)
+        return self.sysinfo
+
+    def edition(self):
+        return self.get_sysinfo()['Statistics']['edition']
+
+    def database(self):
+        return self.get_sysinfo()['Statistics']['database']['name']
 
     def get(self, api, params=None):
         api = __normalize_api__(api)
@@ -383,6 +395,15 @@ def post(api, params=None, ctxt=None):
         ctxt = this.context
     return ctxt.post(api, params)
 
+def edition(ctxt=None):
+    if ctxt is None:
+        ctxt = this.context
+    return ctxt.edition()
+
+def version(ctxt=None):
+    if ctxt is None:
+        ctxt = this.context
+    return ctxt.edition()
 
 def delete(api, params=None, ctxt=None):
     if ctxt is None:
@@ -617,7 +638,7 @@ def __audit_jdbc_url__(sysinfo):
         problems.append(pb.Problem(
             typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
             'JDBC URL is not set, most probably SonarQube runs on internal H2 DB that is'
-            ' not supported for production. You will not be able to upgrade'))      
+            ' not supported for production. You will not be able to upgrade'))  
     elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0\.0\.1)', url):
         problems.append(pb.Problem(
             typ.Type.PERFORMANCE, sev.Severity.HIGH,
