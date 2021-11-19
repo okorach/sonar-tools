@@ -24,6 +24,7 @@
 
 '''
 import sys
+import json
 import sonarqube.projects as projects
 import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.qualitygates as qualitygates
@@ -45,27 +46,15 @@ def __deduct_format__(fmt, file):
     return 'csv'
 
 
-def main():
-    util.set_logger('sonar-audit')
-    parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
-    parser.add_argument('-w', '--what', required=False,
-                        help='What to audit (qp,qg,settings,projects) comma separated, everything by default')
-    parser.add_argument('--format', choices=['csv', 'json'], required=False,
-                        help='''Output format for audit report
-If not specified, it is the output file extension if json or csv, then csv by default''')
-    parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
-    args = util.parse_and_check_token(parser)
+def _audit_sif(sif):
+    with open(sif, 'r') as f:
+        sif = json.loads(f.read())
+    return env.audit_sysinfo(sif)
 
-    sq = env.Environment(url=args.url, token=args.token)
-    kwargs = vars(args)
-    util.check_environment(kwargs)
-    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-    settings = conf.load('sonar-audit.properties')
-
-    if args.what is None:
-        args.what = 'qp,qg,settings,projects,users'
-    what_to_audit = args.what.split(',')
-
+def _audit_sq(sq, settings, what=None):
+    if what is None:
+        what = 'qp,qg,settings,projects,users'
+    what_to_audit = what.split(',')
     problems = []
     if 'projects' in what_to_audit:
         problems += projects.audit(endpoint=sq, audit_settings=settings)
@@ -77,6 +66,34 @@ If not specified, it is the output file extension if json or csv, then csv by de
         problems += sq.audit(audit_settings=settings)
     if 'users' in what_to_audit:
         problems += users.audit(endpoint=sq, audit_settings=settings)
+    return problems
+
+def main():
+    util.set_logger('sonar-audit')
+    parser = util.set_common_args('Audits a SonarQube platform or a SIF (Support Info File or System Info File)')
+    parser.add_argument('-w', '--what', required=False,
+                        help='What to audit (qp,qg,settings,projects,sif) comma separated, everything by default')
+    parser.add_argument('--format', choices=['csv', 'json'], required=False,
+                        help='''Output format for audit report
+If not specified, it is the output file extension if json or csv, then csv by default''')
+    parser.add_argument('--sif', required=False, help='SIF file to audit when auditing SIF')
+    parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
+    args = parser.parse_args()
+    if args.sif is None:
+        if args.token is None:
+            util.logger.critical("Token is missing (Argument -t/--token) when not analyzing local SIF")
+            sys.exit(4)
+        sq = env.Environment(url=args.url, token=args.token)
+
+    kwargs = vars(args)
+    util.check_environment(kwargs)
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
+    settings = conf.load('sonar-audit.properties')
+
+    if kwargs.get('sif', None) is not None:
+        problems = _audit_sif(kwargs['sif'])
+    else:
+        problems = _audit_sq(sq, settings, args.what)
 
     args.format = __deduct_format__(args.format, args.file)
     pb.dump_report(problems, args.file, args.format)
@@ -86,7 +103,6 @@ If not specified, it is the output file extension if json or csv, then csv by de
     else:
         util.logger.info("%d issues found during audit", len(problems))
     sys.exit(len(problems))
-
 
 if __name__ == "__main__":
     main()
