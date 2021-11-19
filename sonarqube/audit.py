@@ -46,6 +46,28 @@ def __deduct_format__(fmt, file):
     return 'csv'
 
 
+def _audit_sif(sif):
+    with open(sif, 'r') as f:
+        sif = json.loads(f.read())
+    return env.audit_sysinfo(sif)
+
+def _audit_sq(sq, settings, what=None):
+    if what is None:
+        what = 'qp,qg,settings,projects,users'
+    what_to_audit = what.split(',')
+    problems = []
+    if 'projects' in what_to_audit:
+        problems += projects.audit(endpoint=sq, audit_settings=settings)
+    if 'qp' in what_to_audit:
+        problems += qualityprofiles.audit(endpoint=sq)
+    if 'qg' in what_to_audit:
+        problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
+    if 'settings' in what_to_audit:
+        problems += sq.audit(audit_settings=settings)
+    if 'users' in what_to_audit:
+        problems += users.audit(endpoint=sq, audit_settings=settings)
+    return problems
+
 def main():
     util.set_logger('sonar-audit')
     parser = util.set_common_args('Audits a SonarQube platform or a SIF (Support Info File or System Info File)')
@@ -68,26 +90,10 @@ If not specified, it is the output file extension if json or csv, then csv by de
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     settings = conf.load('sonar-audit.properties')
 
-    if args.what is None:
-        args.what = 'qp,qg,settings,projects,users'
-    what_to_audit = args.what.split(',')
-
-    problems = []
     if kwargs.get('sif', None) is not None:
-        with open(kwargs['sif'], 'r') as f:
-            sif = json.loads(f.read())
-        problems += env.audit_sysinfo(sif)
+        problems = _audit_sif(kwargs['sif'])
     else:
-        if 'projects' in what_to_audit:
-            problems += projects.audit(endpoint=sq, audit_settings=settings)
-        if 'qp' in what_to_audit:
-            problems += qualityprofiles.audit(endpoint=sq)
-        if 'qg' in what_to_audit:
-            problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
-        if 'settings' in what_to_audit:
-            problems += sq.audit(audit_settings=settings)
-        if 'users' in what_to_audit:
-            problems += users.audit(endpoint=sq, audit_settings=settings)
+        problems = _audit_sq(sq, settings, args.what)
 
     args.format = __deduct_format__(args.format, args.file)
     pb.dump_report(problems, args.file, args.format)
@@ -97,7 +103,6 @@ If not specified, it is the output file extension if json or csv, then csv by de
     else:
         util.logger.info("%d issues found during audit", len(problems))
     sys.exit(len(problems))
-
 
 if __name__ == "__main__":
     main()
