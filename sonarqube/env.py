@@ -519,13 +519,11 @@ def __audit_web_settings__(sysinfo):
     problems = []
     web_ram = __get_memory__(sysinfo['Settings']['sonar.web.javaOpts'])
     if web_ram < 1024 or web_ram > 2048:
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.HIGH,
-            "sonar.web.javaOpts -Xmx memory setting value is {} MB, \
-not in recommended range [1024-2048]".format(web_ram)))
+        rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048)))
     else:
-        util.logger.info("sonar.web.javaOpts -Xmx memory setting value is %d MB, \
-within the recommended range [1024-2048]", web_ram)
+        util.logger.info("sonar.web.javaOpts -Xmx memory setting value is %d MB, "
+                         "within the recommended range [1024-2048]", web_ram)
     return problems
 
 
@@ -535,21 +533,20 @@ def __audit_ce_settings__(sysinfo):
     ce_ram = __get_memory__(sysinfo['Settings']['sonar.ce.javaOpts'])
     ce_tasks = sysinfo['Compute Engine Tasks']
     ce_workers = ce_tasks['Worker Count']
-    if ce_workers > 4:
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.HIGH,
-            "{} CE workers configured, more than the max 4 recommended".format(ce_workers)))
+    MAX_WORKERS = 4
+    if ce_workers > MAX_WORKERS:
+        rule = rules.get_rule(rules.RuleId.SETTING_CE_TOO_MANY_WORKERS)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_workers, MAX_WORKERS)))
     else:
-        util.logger.info("%d CE workers configured, correct compared to the max 4 recommended", ce_workers)
+        util.logger.info("%d CE workers configured, correct compared to the max %d recommended",
+                         ce_workers, MAX_WORKERS)
 
     if ce_ram < 512 * ce_workers or ce_ram > 2048 * ce_workers:
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.HIGH,
-            "sonar.ce.javaOpts -Xmx memory setting value is {} MB, \
-not in recommended range ([512-2048] x {} workers)".format(ce_ram, ce_workers)))
+        rule = rules.get_rule(rules.RuleId.SETTING_CE_HEAP)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers)))
     else:
-        util.logger.info("sonar.ce.javaOpts -Xmx memory setting value is %d MB, \
-within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
+        util.logger.info("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
+                         "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
     return problems
 
 
@@ -566,24 +563,18 @@ def __audit_ce_background_tasks__(sysinfo):
     else:
         failure_rate = ce_error / (ce_success+ce_error)
     if ce_error > 10 and failure_rate > 0.01:
-        problems.append(pb.Problem(
-            typ.Type.OPERATIONS, sev.Severity.HIGH,
-            'Background task failure rate ({}%) is high, verify failed background tasks'.format(
-                int(failure_rate * 100))))
+        rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(int(failure_rate * 100))))
     else:
         util.logger.info('Number of failed background tasks (%d), and failure rate %d%% is OK',
-                         ce_error, failure_rate)
+                         ce_error, int(failure_rate * 100))
 
     if ce_pending > 100:
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
-            'Number of pending background tasks ({}) is very high, verify CE dimensioning'.format(
-                ce_pending)))
+        rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
     elif ce_pending > 20 and ce_pending > (10*ce_workers):
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.HIGH,
-            'Number of pending background tasks ({}) is  high, verify CE dimensioning'.format(
-                ce_pending)))
+        rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
     else:
         util.logger.info('Number of pending background tasks (%d) is OK', ce_pending)
     return problems
@@ -595,10 +586,8 @@ def __audit_es_settings__(sysinfo):
     es_ram = __get_memory__(sysinfo['Settings']['sonar.search.javaOpts'])
     index_size = __get_store_size__(sysinfo['Search State']['Store Size'])
     if es_ram < 2 * index_size and es_ram < index_size + 1000:
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
-            "sonar.search.javaOpts -Xmx memory setting value is {} MB,\
-too low for index size of {} MB".format(es_ram, index_size)))
+        rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
     else:
         util.logger.info("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
     return problems
@@ -614,14 +603,11 @@ def __audit_jdbc_url__(sysinfo):
     url = stats.get('sonar.jdbc.url', None)
     util.logger.debug('JDBC URL = %s', str(url))
     if url is None:
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
-            'JDBC URL is not set, most probably SonarQube runs on internal H2 DB that is'
-            ' not supported for production. You will not be able to upgrade'))      
-    elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0\.0\.1)', url):
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.HIGH,
-            "JDBC URL '{}' is pointing to local machine which is highly discouraged for production".format(url)))
+        rule = rules.get_rule(rules.RuleId.SETTING_JDBC_URL_NOT_SET)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg))   
+    elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]', url):
+        rule = rules.get_rule(rules.RuleId.SETTING_DB_ON_SAME_HOST)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(url)))
     return problems
 
 def __audit_dce_settings__(sysinfo):
@@ -646,24 +632,18 @@ def __audit_dce_settings__(sysinfo):
     for node in appnodes:
         node_version = node['System']['Version']
         if node_version != ref_version:
-            problems.append(pb.Problem(
-                typ.Type.OPERATIONS, sev.Severity.CRITICAL,
-                'App nodes {} and {} do not run the same SonarQube versions, this must be corrected ASAP'.format(
-                    ref_name, node['Name'])))
+            rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
         node_plugins = json.dumps(node['Plugins'], sort_keys=True, indent=3, separators=(',', ': '))
         if node_plugins != ref_plugins:
-            problems.append(pb.Problem(
-                typ.Type.OPERATIONS, sev.Severity.CRITICAL,
-                'Some plugins on app nodes {} and {} are different, this must be corrected ASAP'.format(
-                    ref_name, node['Name'])))
+            rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
         if not node['System']['Official Distribution']:
-            problems.append(pb.Problem(
-                typ.Type.OPERATIONS, sev.Severity.CRITICAL,
-                'Node {} does not run an official distribution of SonarQube'.format(node['Name'])))
+            rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(node['Name'])))
         if node['Health'] != "GREEN":
-            problems.append(pb.Problem(
-                typ.Type.OPERATIONS, sev.Severity.HIGH,
-                'Node {} health is {}, it should be GREEN'.format(node['Name'], node['Health'])))
+            rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_NOT_GREEN)
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(node['Name'], node['Health'])))
     return problems
 
 

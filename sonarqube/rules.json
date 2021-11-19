@@ -52,17 +52,82 @@
     "SETTING_MAINT_GRID": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
-        "message": "Maintainability rating threshold for '{}' is outside of recommended range [{}-{}]"
+        "message": "Maintainability rating threshold of '{}' for {} rating is outside of recommended range [{}-{}]"
     },
     "SETTING_SLB_RETENTION": {
         "severity": "MEDIUM",
         "type": "PERFORMANCE",
-        "message": "Short Lived Branches retention duration '{}' is outside of recommended range [{}-{}]"
+        "message": "Short Lived Branches retention duration of {} days is outside of recommended range [{}-{}]"
+    },
+    "SETTING_WEB_HEAP": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Web process heap ('sonar.web.javaOpts' -Xmx) memory setting value is {} MB, outside of recommended range [{}-{}]"
+    },
+    "SETTING_CE_HEAP": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "CE process heap ('sonar.ce.javaOpts' -Xmx) memory setting value is {} MB, outside of recommended range [{}-{}] x {} workers"
+    },
+    "SETTING_ES_HEAP": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
+    },
+    "SETTING_JDBC_URL_NOT_SET": {
+        "severity": "CRITICAL",
+        "type": "PERFORMANCE",
+        "message": "JDBC URL is not set, most probably SonarQube runs on internal H2 DB that is not supported for production. You will not be able to upgrade"
+    },
+    "SETTING_DB_ON_SAME_HOST": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "JDBC URL '{}' is pointing to local host which is highly discouraged for production"
+    },
+    "SETTING_CE_TOO_MANY_WORKERS": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "CE has {} workers configured, more than the max {} recommended"
     },
     "SETTING_TD_LOC_COST": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "message": "Time to develop 1 line of code '{} min' is outside of recommended range [{}-{}]"
+    },
+    "BACKGROUND_TASKS_FAILURE_RATE_HIGH": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "message": "Background task failure rate ({}%) is high, verify failed background tasks"
+    },
+    "BACKGROUND_TASKS_PENDING_QUEUE_LONG": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Number of pending background tasks ({}) is high, verify CE dimensioning"
+    },
+    "BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG": {
+        "severity": "CRITICAL",
+        "type": "PERFORMANCE",
+        "message": "Number of pending background tasks ({}) is very high, verify CE dimensioning"
+    },
+    "DCE_DIFFERENT_APP_NODES_VERSIONS": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "App nodes '{}' and '{}' do not run the same SonarQube versions, this must be corrected ASAP"
+    },
+    "DCE_DIFFERENT_APP_NODES_PLUGINS": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Some plugins on app nodes '{}' and '{}' are different, this must be corrected ASAP"
+    },
+    "DCE_APP_NODE_UNOFFICIAL_DISTRO": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "App node '{}' does not run an official distribution of SonarQube, this must be corrected ASAP"
+    },
+    "DCE_APP_NODE_NOT_GREEN": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "message": "Node '{}' health is {}, it should be GREEN"
     },
     "PROJ_LAST_ANALYSIS": {
         "severity": "MEDIUM",
