@@ -24,6 +24,7 @@
 
 '''
 import sys
+import json
 import sonarqube.projects as projects
 import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.qualitygates as qualitygates
@@ -47,16 +48,21 @@ def __deduct_format__(fmt, file):
 
 def main():
     util.set_logger('sonar-audit')
-    parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
+    parser = util.set_common_args('Audits a SonarQube platform or a SIF (Support Info File or System Info File)')
     parser.add_argument('-w', '--what', required=False,
-                        help='What to audit (qp,qg,settings,projects) comma separated, everything by default')
+                        help='What to audit (qp,qg,settings,projects,sif) comma separated, everything by default')
     parser.add_argument('--format', choices=['csv', 'json'], required=False,
                         help='''Output format for audit report
 If not specified, it is the output file extension if json or csv, then csv by default''')
+    parser.add_argument('--sif', required=False, help='SIF file to audit when auditing SIF')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
-    args = util.parse_and_check_token(parser)
+    args = parser.parse_args()
+    if args.sif is None:
+        if args.token is None:
+            util.logger.critical("Token is missing (Argument -t/--token) when not analyzing local SIF")
+            sys.exit(4)
+        sq = env.Environment(url=args.url, token=args.token)
 
-    sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
@@ -67,16 +73,21 @@ If not specified, it is the output file extension if json or csv, then csv by de
     what_to_audit = args.what.split(',')
 
     problems = []
-    if 'projects' in what_to_audit:
-        problems += projects.audit(endpoint=sq, audit_settings=settings)
-    if 'qp' in what_to_audit:
-        problems += qualityprofiles.audit(endpoint=sq)
-    if 'qg' in what_to_audit:
-        problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
-    if 'settings' in what_to_audit:
-        problems += sq.audit(audit_settings=settings)
-    if 'users' in what_to_audit:
-        problems += users.audit(endpoint=sq, audit_settings=settings)
+    if kwargs.get('sif', None) is not None:
+        with open(kwargs['sif'], 'r') as f:
+            sif = json.loads(f.read())
+        problems += env.audit_sysinfo(sif)
+    else:
+        if 'projects' in what_to_audit:
+            problems += projects.audit(endpoint=sq, audit_settings=settings)
+        if 'qp' in what_to_audit:
+            problems += qualityprofiles.audit(endpoint=sq)
+        if 'qg' in what_to_audit:
+            problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
+        if 'settings' in what_to_audit:
+            problems += sq.audit(audit_settings=settings)
+        if 'users' in what_to_audit:
+            problems += users.audit(endpoint=sq, audit_settings=settings)
 
     args.format = __deduct_format__(args.format, args.file)
     pb.dump_report(problems, args.file, args.format)
