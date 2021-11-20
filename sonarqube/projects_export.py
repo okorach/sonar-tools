@@ -48,7 +48,12 @@ def main():
     exports = []
 
     for key, p in project_list.items():
-        dump = p.export(timeout=args.exportTimeout)
+        try:
+            dump = p.export(timeout=args.exportTimeout)
+        except env.UnsupportedOperation as e:
+            util.logger.critical("%s", e.message)
+            print(f"{e.message}")
+            sys.exit(1)
         status = dump['status']
         if status in statuses:
             statuses[status] += 1
