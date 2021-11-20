@@ -4,9 +4,10 @@ The `sonar-audit` tool accept a configuration where a certain number of auditing
 can be configured. The following parameters can be customized. The value listed below is the
 default value.
 `sonar-audit` will:
-- first check for a `sonar-audit.properties` file in the local running directory
-- second check for a `.sonar-audit.properties` file in the user home directory
-- third will otherwise apply the default settings
+- first check for a `.sonar-audit.properties` file in the user home directory
+- second will otherwise apply the default settings
+
+You can create a default config file in the home directory by running `sonar-audit --config`
 
 ```
 #======================== SELECT AUDIT SCOPE CONFIGURATION =======================
