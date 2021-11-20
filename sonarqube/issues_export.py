@@ -49,11 +49,12 @@ def parse_args():
     parser.add_argument('-b', '--createdBefore', required=False,
                         help='issues created on or before a given date (YYYY-MM-DD)')
     parser.add_argument('-r', '--resolutions', required=False,
-                        help='''Comma separated resolution states of the issues,
-                                  UNRESOLVED, FALSE-POSITIVE, WONTFIX''')
+                        help='Comma separated resolution states of the issues among'
+                             'UNRESOLVED, FALSE-POSITIVE, WONTFIX')
     parser.add_argument('--severities', required=False,
-                        help='Comma separated severities, BLOCKER, CRITICAL, MAJOR, MINOR, INFO')
-    parser.add_argument('--types', help='Comma separated issue types', required=False)
+                        help='Comma separated severities among BLOCKER, CRITICAL, MAJOR, MINOR, INFO')
+    parser.add_argument('--types', required=False,
+                        help='Comma separated issue types among CODE_SMELL, BUG, VULNERABILITY')
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
 
     return util.parse_and_check_token(parser)
