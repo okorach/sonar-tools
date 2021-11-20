@@ -1,0 +1,120 @@
+name: SonarCloud scan
+on:
+  push:
+    branches:
+      - master # or the name of your main branch
+  pull_request:
+    types: [opened, synchronize, reopened]
+  # schedule:
+  #  - cron: '17 0 * * 4'
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    #strategy:
+    #  matrix:
+    #    python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pylint bandit pytest coverage jprops argparse datetime mp3_tagger ffmpeg-python ExifRead
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      #- name: Lint with flake8
+      #  run: |
+      #    stop the build if there are Python syntax errors or undefined names
+      #    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      #    exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+      #    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      # - name: Test with pytest
+      #     run: |
+      #       pytest
+      # - name: Run tests
+      #  working-directory: .
+      #  run: |
+      #    chmod +x ./run_tests.sh
+      #    ./run_tests.sh
+      #    echo "--------- UT report ---------"; cat build/ut.xml
+      #    echo "---------Coverage report ---------"; cat build/coverage.xml
+      - name: Run linters
+        working-directory: .
+        run: |
+          chmod +x ./run_linters.sh
+          ./run_linters.sh
+          pwd
+          find .
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Patch project version
+        run: |
+          version=$(grep VERSION sonarqube/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
+          echo "sonar.projectVersion=$version" >> sonar-project.properties
+      - name: SonarCloud scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.verbose=true
+
+
+  # code-ql:
+  #   name: CodeQL
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     actions: read
+  #     contents: read
+  #     security-events: write
+
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       language: [ 'python' ]
+  #       # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
+  #       # Learn more:
+  #       # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
+
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v2
+
+  #   # Initializes the CodeQL tools for scanning.
+  #   - name: Initialize CodeQL
+  #     uses: github/codeql-action/init@v1
+  #     with:
+  #       languages: ${{ matrix.language }}
+  #       # If you wish to specify custom queries, you can do so here or in a config file.
+  #       # By default, queries listed here will override any specified in a config file.
+  #       # Prefix the list here with "+" to use these queries and those in the config file.
+  #       # queries: ./path/to/local/query, your-org/your-repo/queries@main
+
+  #   # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
+  #   # If this step fails, then you should remove it and run the build manually (see below)
+  #   - name: Autobuild
+  #     uses: github/codeql-action/autobuild@v1
+
+  #   # ℹ️ Command-line programs to run using the OS shell.
+  #   # 📚 https://git.io/JvXDl
+
+  #   # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
+  #   #    and modify them (or add more) to build your code if your project
+  #   #    uses a compiled language
+
+  #   #- run: |
+  #   #   make bootstrap
+  #   #   make release
+
+  #   - name: Perform CodeQL Analysis
+  #     uses: github/codeql-action/analyze@v1

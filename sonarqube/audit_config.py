@@ -17,6 +17,9 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+import os
+import sys
+import pathlib
 import jprops
 import sonarqube.utilities as util
 
@@ -24,24 +27,19 @@ CONFIG_SETTINGS = None
 
 
 def load(config_file=None):
-    import pathlib
     global CONFIG_SETTINGS
     file_to_load = config_file
-    if file_to_load is None:
-        file_to_load = pathlib.Path(__file__).parent / 'sonar-tools.properties'
+    if file_to_load is None or not os.path.isfile(file_to_load):
+        file_to_load =  f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
+        util.logger.info("File %s is not present, trying %s", config_file, file_to_load)
+    if not os.path.isfile(file_to_load):
+        util.logger.info("File %s is not present, opening package default config", file_to_load)
+        file_to_load = pathlib.Path(__file__).parent / config_file
 
-    try:
-        util.logger.info("Trying to load audit config %s", file_to_load)
-        fp = open(file_to_load)
-    except FileNotFoundError:
-        if config_file is None:
-            file_to_load = pathlib.Path(__file__).parent / 'sonar-tools.properties'
-        else:
-            file_to_load = pathlib.Path(__file__).parent / config_file
-        util.logger.info("Loading default audit config %s", config_file)
-        fp = open(file_to_load)
-    CONFIG_SETTINGS = jprops.load_properties(fp)
-    fp.close()
+    util.logger.info("Loading config file %s", file_to_load)
+    with open(file_to_load, 'r', encoding="utf-8") as fp:
+        CONFIG_SETTINGS = jprops.load_properties(fp)
+
     for key, value in CONFIG_SETTINGS.items():
         value = value.lower()
         if value == 'yes' or value == 'true' or value == 'on':
@@ -64,3 +62,18 @@ def get_property(name, settings=None):
         global CONFIG_SETTINGS
         settings = CONFIG_SETTINGS
     return settings.get(name, '')
+
+def configure():
+    template_file = pathlib.Path(__file__).parent / 'sonar-audit.properties'
+    with open(template_file, 'r', encoding="utf-8") as f:
+        text = f.read()
+
+    config_file = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
+    if os.path.isfile(config_file):
+        f = sys.stdout
+        util.logger.info("Config file '%s' already exists, sending configuration to stdout", config_file)
+    else:
+        util.logger.info("Creating file '%s'", config_file)
+        f = open(config_file, "w", encoding="utf-8")
+    print(text, file=f)
+    f.close()
