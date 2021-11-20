@@ -372,7 +372,7 @@ Is this normal ?", gr['name'], self.key)
 
     def export(self, timeout=180):
         util.logger.info('Exporting project key = %s (synchronously)', self.key)
-        if self.env.get_version() < (9, 2, 0) and self.env.edition() not in ['enterprise', 'datacenter']:
+        if self.env.version() < (9, 2, 0) and self.env.edition() not in ['enterprise', 'datacenter']:
             raise env.UnsupportedOperation("Project export is only available with Enterprise and Datacenter Edition,"
             " or with SonarQube 9.2 or higher for any Edition")
         resp = env.post('project_dump/export', params={'key': self.key}, ctxt=self.env)
@@ -380,7 +380,7 @@ Is this normal ?", gr['name'], self.key)
             return {'status': 'HTTP_ERROR {0}'.format(resp.status_code)}
         data = json.loads(resp.text)
         params = {'type': 'PROJECT_EXPORT', 'status': 'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
-        if self.env.get_version() >= (8, 0, 0):
+        if self.env.version() >= (8, 0, 0):
             params['component'] = self.key
         else:
             params['q'] = self.key

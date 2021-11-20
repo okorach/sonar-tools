@@ -137,7 +137,7 @@ class QualityGate(sq.SqObject):
             params = {}
         params['gateId'] = self.key
         page = 1
-        if self.env.get_version() < (7, 9, 0):
+        if self.env.version() < (7, 9, 0):
             params['ps'] = 100
             params['p'] = page
         else:
@@ -147,7 +147,7 @@ class QualityGate(sq.SqObject):
         while more:
             resp = env.get('qualitygates/search', ctxt=self.env, params=params)
             data = json.loads(resp.text)
-            if self.env.get_version() >= (7, 9, 0):
+            if self.env.version() >= (7, 9, 0):
                 count = data['paging']['total']
                 more = False
             else:
@@ -185,7 +185,7 @@ def list_qg(endpoint=None):
 
     for qg in data['qualitygates']:
         qg_obj = QualityGate(key=qg['id'], endpoint=endpoint, data=qg)
-        if endpoint.get_version() < (7, 9, 0) and 'default' in data and data['default'] == qg['id']:
+        if endpoint.version() < (7, 9, 0) and 'default' in data and data['default'] == qg['id']:
             qg_obj.is_default = True
         qg_list.append(qg_obj)
     return qg_list

@@ -61,12 +61,8 @@ class Environment:
     def __init__(self, url, token):
         self.root_url = url
         self.token = token
-        self.version = None
-        self.major = None
-        self.minor = None
-        self.patch = None
-        self.build = None
-        self.sysinfo = None
+        self._version = None
+        self._sys_info = None
 
     def __str__(self):
         redacted_token = re.sub(r'(...).*(...)', r'\1***\2', self.token)
@@ -92,23 +88,29 @@ class Environment:
     def get_url(self):
         return self.root_url
 
-    def get_version(self):
-        if self.version is None:
+    def version(self, digits=3, as_string=False):
+        if self._version is None:
             resp = self.get('/api/server/version')
-            (self.major, self.minor, self.patch, self.build) = resp.text.split('.')
-        return (int(self.major), int(self.minor), int(self.patch))
+            self._version = resp.text.split('.')
+        if as_string:
+            return '.'.join(self._version[0:digits])
+        else:
+            return tuple([int(n) for n in self._version[0:digits]])
 
-    def get_sysinfo(self):
-        if self.sysinfo is None:
+    def sys_info(self):
+        if self._sys_info is None:
             resp = self.get('system/info')
-            self.sysinfo = json.loads(resp.text)
-        return self.sysinfo
+            self._sys_info = json.loads(resp.text)
+        return self._sys_info
 
     def edition(self):
-        return self.get_sysinfo()['Statistics']['edition']
+        return self.sys_info()['Statistics']['edition']
 
     def database(self):
-        return self.get_sysinfo()['Statistics']['database']['name']
+        return self.sys_info()['Statistics']['database']['name']
+
+    def plugins(self):
+        return self.sys_info()['Statistics']['plugins']
 
     def get(self, api, params=None):
         api = __normalize_api__(api)
@@ -195,7 +197,7 @@ class Environment:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
-                    self.get_version() >= (8, 0, 0):
+                    self.version() >= (8, 0, 0):
                     util.logger.error("Setting %s his ineffective on SonaQube 8.0+, skipping audit",
                                       v[0])
                     continue
@@ -224,7 +226,7 @@ class Environment:
                 platform_settings['sonar.technicalDebt.ratingGrid'],
                 audit_settings)
             + self.__audit_project_default_visibility__()
-            + audit_sysinfo(self.get_sysinfo())
+            + audit_sysinfo(self.sys_info())
             + self.__audit_admin_password__()
             + self.__audit_global_permissions__()
         )
@@ -233,7 +235,7 @@ class Environment:
     def __audit_project_default_visibility__(self):
         util.logger.info('Auditing project default visibility')
         problems = []
-        if self.get_version() < (8, 7, 0):
+        if self.version() < (8, 7, 0):
             resp = self.get('navigation/organization', params={'organization': 'default-organization'})
             data = json.loads(resp.text)
             visi = data['organization']['projectVisibility']
@@ -327,7 +329,6 @@ class Environment:
         return self.__audit_user_permissions__() + self.__audit_group_permissions__()
 
 
-
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
@@ -403,7 +404,7 @@ def edition(ctxt=None):
 def version(ctxt=None):
     if ctxt is None:
         ctxt = this.context
-    return ctxt.edition()
+    return ctxt.version()
 
 def delete(api, params=None, ctxt=None):
     if ctxt is None:
