@@ -56,6 +56,10 @@ jobs:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
+      - name: Patch project version
+        run: |
+          version=$(grep VERSION sonarqube/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
+          echo "sonar.projectVersion=$version" >> sonar-project.properties
       - name: SonarCloud scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
