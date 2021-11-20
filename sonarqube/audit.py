@@ -83,10 +83,9 @@ def main():
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
     args = parser.parse_args()
     kwargs = vars(args)
-    if args.sif is None and args.config is None:
-        if args.token is None:
-            util.logger.critical("Token is missing (Argument -t/--token) when not analyzing local SIF")
-            sys.exit(4)
+    if args.sif is None and args.config is None and args.token is None:
+        util.logger.critical("Token is missing (Argument -t/--token) when not analyzing local SIF")
+        sys.exit(4)
     sq = env.Environment(url=args.url, token=args.token)
 
     util.check_environment(kwargs)
