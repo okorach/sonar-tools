@@ -25,6 +25,7 @@
 '''
 import sys
 import os
+import json
 import sonarqube.projects as projects
 import sonarqube.utilities as util
 import sonarqube.env as env
@@ -37,11 +38,18 @@ def main():
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
 
-    project_list = projects.search(endpoint=env.Environment(url=args.url, token=args.token))
+    sq = env.Environment(url=args.url, token=args.token)
+    if (sq.edition() in ('community', 'developer') and sq.version(digits=2) < (9, 2)):
+        util.logger.critical("Can't export projects on Community and Developer Edition before 9.2, aborting...")
+        print("Can't export project on Community and Developer Edition before 9.2, aborting...")
+        sys.exit(1)
+
+    project_list = projects.search(endpoint=sq)
     nb_projects = len(project_list)
     util.logger.info("%d projects to export", nb_projects)
-    i = 0
     statuses = {}
+    exports = []
+
     for key, p in project_list.items():
         try:
             dump = p.export(timeout=args.exportTimeout)
@@ -54,17 +62,28 @@ def main():
             statuses[status] += 1
         else:
             statuses[status] = 1
+
+        data = {'key': key, 'status': status}
         if status == 'SUCCESS':
-            print("{0},SUCCESS,{1}".format(key, os.path.basename(dump['file'])))
-        else:
-            print("{0},FAIL,{1}".format(key, status))
-        i += 1
-        util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects,
-                         int(i * 100 / nb_projects), key, status)
+            data['file'] = os.path.basename(dump['file'])
+            data['path'] = dump['file']
+
+        exports.append(data)
+        util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", len(exports), nb_projects,
+                         int(len(exports) * 100 / nb_projects), key, status)
+
         summary = ''
         for s in statuses:
-            summary += "{0}:{1}, ".format(s, statuses[s])
+            summary += f"{s}:{statuses[s]}, "
         util.logger.info("%s", summary)
+
+    print(json.dumps({
+        'sonarqube_environment': {
+            'version': sq.version(digits=2, as_string=True),
+            'plugins': sq.plugins(),
+        },
+        'project_exports': exports}, sort_keys=True, indent=3, separators=(',', ': ')))
+    util.logger.info("%s", summary)
     sys.exit(0)
 
 

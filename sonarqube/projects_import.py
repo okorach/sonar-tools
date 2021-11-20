@@ -24,49 +24,67 @@
 
 '''
 import sys
+import json
 import sonarqube.projects as projects
 import sonarqube.utilities as util
 import sonarqube.env as env
 
+def _check_sq_environments(import_sq, export_sq):
+    version = import_sq.version(digits=2, as_string=True)
+    if version != export_sq['version']:
+        util.logger.error("Export was not performed with same SonarQube version, aborting...")
+        print("Export was not performed with same SonarQube version, aborting...")
+        sys.exit(1)
+    for export_plugin in export_sq['plugins']:
+        e_name = export_plugin['name']
+        e_vers = export_plugin['version']
+        found = False
+        for import_plugin in import_sq.plugins():
+            if import_plugin['name'] == e_name and import_plugin['version'] == e_vers:
+                found = True
+                break
+        if not found:
+            util.logger.critical(
+                'Plugin %s version %s was not found or not in same version on import platform, aborting...',
+                e_name, e_vers)
+            print(f'Plugin {e_name} version {e_vers} was not found or not in same version on import platform, aborting...')
+            sys.exit(2)
 
 def main():
     parser = util.set_common_args('Imports a list of projects in a SonarQube platform')
     parser.add_argument('-f', '--projectsFile', required=True, help='File with the list of projects')
 
     args = util.parse_and_check_token(parser)
-    myenv = env.Environment(url=args.url, token=args.token)
+    sq = env.Environment(url=args.url, token=args.token)
     util.check_environment(vars(args))
 
-    f = open(args.projectsFile, "r")
-    project_list = []
-    for line in f:
-        (key, status, _) = line.split(',', 2)
-        if status is None or status != 'FAIL':
-            project_list.append(key)
-    f.close()
+    with open(args.projectsFile, "r", encoding='utf-8') as file:
+        data = json.load(file)
+    project_list = data['project_exports']
+    _check_sq_environments(sq, data['sonarqube_environment'])
 
     nb_projects = len(project_list)
     util.logger.info("%d projects to import", nb_projects)
     i = 0
     statuses = {}
-    for key in project_list:
-        status = projects.create_project(key=key, sqenv=myenv)
+    for project in project_list:
+        status = projects.create_project(key=project['key'], sqenv=sq)
         if status != 200:
-            s = "CREATE {0}".format(status)
+            s = f"CREATE {status}"
             if s in statuses:
                 statuses[s] += 1
             else:
                 statuses[s] = 1
         else:
-            status = projects.Project(key, endpoint=myenv).importproject()
-            s = "IMPORT {0}".format(status)
+            status = projects.Project(project['key'], endpoint=sq).importproject()
+            s = f"IMPORT {status}"
             if s in statuses:
                 statuses[s] += 1
             else:
                 statuses[s] = 1
         i += 1
         util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects,
-                         int(i * 100 / nb_projects), key, status)
+                         int(i * 100 / nb_projects), project['key'], status)
         summary = ''
         for s in statuses:
             summary += "{0}:{1}, ".format(s, statuses[s])
