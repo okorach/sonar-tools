@@ -39,7 +39,10 @@ def main():
     util.check_environment(vars(args))
 
     sq = env.Environment(url=args.url, token=args.token)
-    version = '.'.join([str(n) for n in sq.get_version()[0:2]])
+    if (sq.edition() in ('community', 'developer') and sq.version(digits=2) < (9, 2)):
+        util.logger.critical("Can't export projects on Community and Developer Edition before 9.2, aborting...")
+        print("Can't export project on Community and Developer Edition before 9.2, aborting...")
+        sys.exit(1)
 
     project_list = projects.search(endpoint=sq)
     nb_projects = len(project_list)
@@ -62,11 +65,8 @@ def main():
 
         data = {'key': key, 'status': status}
         if status == 'SUCCESS':
-            #print(f"{key},SUCCESS,{os.path.basename(dump['file'])}")
             data['file'] = os.path.basename(dump['file'])
             data['path'] = dump['file']
-        #else:
-            #print(f"{key},FAIL,{status}")
 
         exports.append(data)
         util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", len(exports), nb_projects,
@@ -79,8 +79,8 @@ def main():
 
     print(json.dumps({
         'sonarqube_environment': {
-            'version': version,
-            'plugins': sq.get_sysinfo()['Statistics']['plugins'],
+            'version': sq.version(digits=2, as_string=True),
+            'plugins': sq.plugins(),
         },
         'project_exports': exports}, sort_keys=True, indent=3, separators=(',', ': ')))
     util.logger.info("%s", summary)

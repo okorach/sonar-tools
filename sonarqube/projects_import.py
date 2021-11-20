@@ -30,7 +30,7 @@ import sonarqube.utilities as util
 import sonarqube.env as env
 
 def _check_sq_environments(import_sq, export_sq):
-    version = '.'.join([str(n) for n in import_sq.get_version()[0:1]])
+    version = import_sq.version(digits=2, as_string=True)
     if version != export_sq['version']:
         util.logger.error("Export was not performed with same SonarQube version, aborting...")
         sys.exit(1)
@@ -38,7 +38,7 @@ def _check_sq_environments(import_sq, export_sq):
         e_name = export_plugin['name']
         e_vers = export_plugin['version']
         found = False
-        for import_plugin in import_sq.get_sysinfo()['Statistics']['plugins']:
+        for import_plugin in import_sq.plugins():
             if import_plugin['name'] == e_name and import_plugin['version'] == e_vers:
                 found = True
                 break
