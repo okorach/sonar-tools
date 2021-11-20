@@ -95,7 +95,7 @@ class Environment:
         if as_string:
             return '.'.join(self._version[0:digits])
         else:
-            return tuple([int(n) for n in self._version[0:digits]])
+            return tuple(int(n) for n in self._version[0:digits])
 
     def sys_info(self):
         if self._sys_info is None:

@@ -58,7 +58,7 @@ def main():
     sq = env.Environment(url=args.url, token=args.token)
     util.check_environment(vars(args))
 
-    with open(args.projectsFile, "r") as file:
+    with open(args.projectsFile, "r", encoding='utf-8') as file:
         data = json.load(file)
     project_list = data['project_exports']
     _check_sq_environments(sq, data['sonarqube_environment'])
