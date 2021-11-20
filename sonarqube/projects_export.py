@@ -42,7 +42,6 @@ def main():
     project_list = projects.search(endpoint=sq)
     nb_projects = len(project_list)
     util.logger.info("%d projects to export", nb_projects)
-    i = 0
     statuses = {}
     exports = []
 
@@ -73,7 +72,7 @@ def main():
 
     print(json.dumps({
         'sonarqube_environment': {
-            'version': '.'.join([str(n) for n in sq.get_version()]),
+            'version': '.'.join([str(n) for n in sq.get_version()[0:2]]),
             'plugins': sq.get_sysinfo()['Statistics']['plugins'],
         },
         'project_exports': exports}, sort_keys=True, indent=3, separators=(',', ': ')))
