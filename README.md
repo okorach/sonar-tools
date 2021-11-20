@@ -69,6 +69,8 @@ When `--what` is not specified, everything is audited
 ### Configuration file
 `sonar-audit` can be configured with a configuration file to select what to audit and some different
 other audit parameters.
+You can create a default config file in the home directory by running `sonar-audit --config`
+
 See [audit-settings.md](audit-settings.md) for the details of parameters
 
 
