@@ -74,12 +74,15 @@ def main():
     parser.add_argument('-w', '--what', required=False,
                         help='What to audit (qp,qg,settings,projects,sif) comma separated, everything by default')
     parser.add_argument('--format', choices=['csv', 'json'], required=False,
-                        help='''Output format for audit report
-If not specified, it is the output file extension if json or csv, then csv by default''')
+                        help="Output format for audit report.\nIf not specified, "
+                             "it is the output file extension if json or csv, then csv by default")
     parser.add_argument('--sif', required=False, help='SIF file to audit when auditing SIF')
+    parser.add_argument('--config', required=False, dest='config', action='store_true',
+                        help='Creates the $HOME/.sonar-audit.properties configuration file, if not already present'
+                        'or outputs to stdout if it already exist')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
     args = parser.parse_args()
-    if args.sif is None:
+    if args.sif is None and args.config is None:
         if args.token is None:
             util.logger.critical("Token is missing (Argument -t/--token) when not analyzing local SIF")
             sys.exit(4)
@@ -89,6 +92,10 @@ If not specified, it is the output file extension if json or csv, then csv by de
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     settings = conf.load('sonar-audit.properties')
+
+    if kwargs.get('config', False):
+        conf.configure()
+        sys.exit(0)
 
     if kwargs.get('sif', None) is not None:
         problems = _audit_sif(kwargs['sif'])

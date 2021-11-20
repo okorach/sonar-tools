@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 import os
+import sys
 import jprops
 import sonarqube.utilities as util
 
@@ -65,3 +66,19 @@ def get_property(name, settings=None):
         global CONFIG_SETTINGS
         settings = CONFIG_SETTINGS
     return settings.get(name, '')
+
+def configure():
+    import pathlib
+    template_file = pathlib.Path(__file__).parent / 'sonar-audit.properties'
+    with open(template_file, 'r') as f:
+        text = f.read()
+
+    config_file =  f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
+    if os.path.isfile(config_file):
+        f = sys.stdout
+        util.logger.info("Config file '%s' already exists, sending configuration to stdout", config_file)
+    else:
+        util.logger.info("Creating file '%s'", config_file)
+        f = open(config_file, "w")
+    print(text, file=f)
+    f.close()
