@@ -33,6 +33,7 @@ def _check_sq_environments(import_sq, export_sq):
     version = import_sq.version(digits=2, as_string=True)
     if version != export_sq['version']:
         util.logger.error("Export was not performed with same SonarQube version, aborting...")
+        print("Export was not performed with same SonarQube version, aborting...")
         sys.exit(1)
     for export_plugin in export_sq['plugins']:
         e_name = export_plugin['name']
