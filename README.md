@@ -71,7 +71,7 @@ When `--what` is not specified, everything is audited
 other audit parameters.
 You can create a default config file in the home directory by running `sonar-audit --config`
 
-See [audit-settings.md](audit-settings.md) for the details of parameters
+See [sonar-audit configuration](https://github.com/okorach/sonarqube-tools/blob/master/audit-settings.md) for the details of parameters
 
 
 ### Example
@@ -226,7 +226,7 @@ Plenty of issue filters can be specified from the command line, type `sonar-issu
 :warning: On large SonarQube instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
 ## Limitations
-`sonar-issue-export` does not export issues on branches (see [Issue #166](https://github.com/okorach/sonarqube-tools/issues/166)
+`sonar-issue-export` does not export issues on branches (see [Issue #166](https://github.com/okorach/sonarqube-tools/issues/166))
 
 ## Examples
 ```
