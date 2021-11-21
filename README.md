@@ -26,6 +26,9 @@ deletes tokens created since more than a certain number of days
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 8.9.x) and LATEST versions**
 
+# Release notes
+See: https://github.com/okorach/sonarqube-tools/releases
+
 # Requirements and Installation
 - `sonar-tools` requires python 3.6 or higher
 - Installation is based on [pip](/https://pypi.org/project/pip/).
