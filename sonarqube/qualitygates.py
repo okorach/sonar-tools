@@ -112,21 +112,28 @@ class QualityGate(sq.SqObject):
         return problems
 
     def audit(self, audit_settings=None):
-        util.logger.info("Auditing quality gate %s", self.name)
+        util.logger.debug("Auditing quality gate '%s'", self.name)
         problems = []
         if self.is_built_in:
             return problems
+        max_cond = int(util.get_setting(audit_settings, 'audit.qualitygates.maxConditions', 8))
         nb_conditions = len(self.conditions)
+        util.logger.debug("Auditing quality gate '%s' number of conditions (%d) is OK",
+            self.name, nb_conditions)
         if nb_conditions == 0:
+            util.logger.warning("Quality gate '%s' has 0 conditions", self.name)
             rule = rules.get_rule(rules.RuleId.QG_NO_COND)
             problems.append(pb.Problem(
                 rule.type, rule.severity, rule.msg.format(self.name)))
-        elif nb_conditions > util.get_setting(audit_settings, 'audit.qualitygates.maxConditions', 8):
+        elif nb_conditions > max_cond:
+            util.logger.warning("Quality gate '%s' has too many (%d) conditions", self.name, nb_conditions)
             rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_COND)
             problems.append(pb.Problem(
                 rule.type, rule.severity, rule.msg.format(self.name, len(self.conditions), 8)))
         problems += self.__audit_conditions__()
+        util.logger.debug("Auditing quality gate '%s' has some assigned projects", self.name)
         if not self.is_default and not self.get_projects():
+            util.logger.warning("Quality gate '%s' has no assigned projects", self.name)
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
             problems.append(pb.Problem(
                 rule.type, rule.severity, rule.msg.format(self.name)))
@@ -192,11 +199,13 @@ def list_qg(endpoint=None):
 
 
 def audit(endpoint=None, audit_settings=None):
-    util.logger.info("Auditing quality gates")
+    util.logger.info("--- Auditing quality gates ---")
     problems = []
     quality_gates_list = list_qg(endpoint)
+    max_qg = util.get_setting(audit_settings, 'audit.qualitygates.maxNumber', 5)
     nb_qg = len(quality_gates_list)
-    if nb_qg > util.get_setting(audit_settings, 'audit.qualitygates.maxNumber', 5):
+    util.logger.debug("Auditing that there are no more than %s quality gates", str(max_qg))
+    if nb_qg > max_qg:
         rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_GATES)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qg, 5)))
     for qg in quality_gates_list:

@@ -27,9 +27,7 @@ import datetime as dt
 import pytz
 import sonarqube.env as env
 import sonarqube.sqobject as sq
-
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
+import sonarqube.utilities as util
 import sonarqube.audit_problem as pb
 import sonarqube.user_tokens as tok
 import sonarqube.audit_rules as rules
@@ -72,6 +70,28 @@ class User(sq.SqObject):
             self.tokens_list = tok.search(self.login, self.env)
         return self.tokens_list
 
+    def audit(self, settings=None):
+        util.logger.debug("Auditing user '%s'", self.name)
+        today = dt.datetime.today().replace(tzinfo=pytz.UTC)
+        problems = []
+        for t in self.tokens():
+            age = abs((today - t.createdAt).days)
+            if age > settings['audit.tokens.maxAge']:
+                rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(self), age),
+                    concerned_object=t))
+            if t.lastConnectionDate is None and age > settings['audit.tokens.maxUnusedAge']:
+                rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(self), age),
+                    concerned_object=t))
+            if t.lastConnectionDate is None:
+                continue
+            last_cnx_age = abs((today - t.lastConnectionDate).days)
+            if last_cnx_age > settings['audit.tokens.maxUnusedAge']:
+                rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(self), last_cnx_age),
+                    concerned_object=t))
+        return problems
 
 def search(q=None, endpoint=None, p=None, ps=500):
     users_list = {}
@@ -100,26 +120,8 @@ def create(name, login=None, endpoint=None):
 
 
 def audit(audit_settings, endpoint=None):
-    today = dt.datetime.today().replace(tzinfo=pytz.UTC)
-    max_age = audit_settings['audit.tokens.maxAge']
-    max_unused_days = audit_settings['audit.tokens.maxUnusedAge']
+    util.logger.info("--- Auditing users---")
     problems = []
-    for l, u in search(endpoint=endpoint).items():
-        for t in u.tokens():
-            age = abs((today - t.createdAt).days)
-            if age > max_age:
-                rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(u), age),
-                    concerned_object=t))
-            if t.lastConnectionDate is None and age > max_unused_days:
-                rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(u), age),
-                    concerned_object=t))
-            if t.lastConnectionDate is None:
-                continue
-            last_cnx_age = abs((today - t.lastConnectionDate).days)
-            if last_cnx_age > max_unused_days:
-                rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(u), last_cnx_age),
-                    concerned_object=t))
+    for _, u in search(endpoint=endpoint).items():
+        problems += u.audit(audit_settings)
     return problems
