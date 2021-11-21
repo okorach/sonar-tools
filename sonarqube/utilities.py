@@ -24,6 +24,7 @@
 '''
 import sys
 import os
+import re
 import logging
 import argparse
 import json
@@ -139,3 +140,8 @@ def get_setting(settings, key, default):
     if settings is None:
         return default
     return settings.get(key, default)
+
+def redacted_token(token):
+    if token is None:
+        return '-'
+    return re.sub(r'(...).*(...)', r'\1***\2', token)

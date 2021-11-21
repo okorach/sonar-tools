@@ -56,10 +56,10 @@ class UserToken(sq.SqObject):
         if 'lastConnectionDate' in json_data:
             self.lastConnectionDate = dt.datetime.strptime(json_data['lastConnectionDate'], SQ_DATETIME_FORMAT)
         self.token = token
-        util.logger.debug("Created token %s", str(vars(self)))
+        util.logger.debug("Created token '%s'", str(self))
 
     def __str__(self):
-        return self.name
+        return f"{self.name}:{util.redacted_token(self.token)}"
 
     def revoke(self):
         if self.name is None:

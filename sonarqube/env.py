@@ -65,8 +65,7 @@ class Environment:
         self._sys_info = None
 
     def __str__(self):
-        redacted_token = re.sub(r'(...).*(...)', r'\1***\2', self.token)
-        return f"{redacted_token}@{self.root_url}"
+        return f"{util.redacted_token(self.token)}@{self.root_url}"
 
     def set_env(self, url, token):
         self.root_url = url
@@ -177,7 +176,7 @@ class Environment:
         return url
 
     def audit(self, audit_settings=None):
-        util.logger.info('Auditing global settings')
+        util.logger.info('--- Auditing global settings ---')
         problems = []
         resp = self.get('settings/values')
         json_s = json.loads(resp.text)
@@ -325,7 +324,7 @@ class Environment:
         return problems
 
     def __audit_global_permissions__(self):
-        util.logger.info('Auditing global permissions')
+        util.logger.info('--- Auditing global permissions ---')
         return self.__audit_user_permissions__() + self.__audit_group_permissions__()
 
 
@@ -487,11 +486,13 @@ def __audit_setting_is_not_set__(settings, key, severity=sev.Severity.MEDIUM, do
 
 def __audit_maintainability_rating_range__(value, min_val, max_val, rating_letter,
                                            severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    util.logger.info('Checking that maintainability rating threshold %3.0f%% for %s is \
-within recommended range [%3.0f%%-%3.0f%%]', value*100, rating_letter, min_val*100, max_val*100)
+    util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is \
+within recommended range [%3.0f%%-%3.0f%%]", value*100, rating_letter, min_val*100, max_val*100)
     value = float(value)
     problems = []
     if value < min_val or value > max_val:
+        util.logger.warning("Maintainability rating threshold %3.0f%% for '%s' is outside of recommended range [%3.0f%%-%3.0f%%]",
+                value * 100, rating_letter, min_val * 100, max_val * 100)
         problems.append(pb.Problem(
             domain, severity,
             'Maintainability rating threshold {}% for {} is NOT within recommended range [{}%-{}%]'.format(
@@ -502,6 +503,7 @@ within recommended range [%3.0f%%-%3.0f%%]', value*100, rating_letter, min_val*1
 def __audit_maintainability_rating_grid__(grid, audit_settings):
     thresholds = grid.split(',')
     problems = []
+    util.logger.debug("Auditing maintainabillity rating grid")
     for key in audit_settings:
         if not re.match(r'audit.globalSetting.maintainabilityRating', key):
             continue
@@ -520,15 +522,17 @@ def __audit_maintainability_rating_grid__(grid, audit_settings):
 
 
 def __check_log_level__(sysinfo):
-    util.logger.info('Auditing log levels')
+    util.logger.debug('Auditing log levels')
     problems = []
     log_level = sysinfo["Web Logging"]["Logs Level"]
     if log_level == "DEBUG":
+        util.logger.warning("DEBUG log level is active, revert to INFO fro performance")
         problems.append(pb.Problem(
             typ.Type.PERFORMANCE, sev.Severity.HIGH,
             "Log level is set to DEBUG, this may affect platform performance, \
 reverting to INFO is recommended"))
     elif log_level == "TRACE":
+        util.logger.warning("TRACE log level is active, revert to INFO fro performance")
         problems.append(pb.Problem(
             typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
             "Log level set to TRACE, this does very negatively affect platform performance, \
@@ -537,14 +541,16 @@ reverting to INFO is required"))
 
 
 def __audit_web_settings__(sysinfo):
-    util.logger.info('Auditing Web settings')
+    util.logger.debug('Auditing Web settings')
     problems = []
     web_ram = __get_memory__(sysinfo['Settings']['sonar.web.javaOpts'])
     if web_ram < 1024 or web_ram > 2048:
+        util.logger.warning("sonar.web.javaOpts -Xmx memory setting value is %d MB, "
+                         "outside of the recommended range [1024-2048]", web_ram)
         rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048)))
     else:
-        util.logger.info("sonar.web.javaOpts -Xmx memory setting value is %d MB, "
+        util.logger.debug("sonar.web.javaOpts -Xmx memory setting value is %d MB, "
                          "within the recommended range [1024-2048]", web_ram)
     return problems
 
@@ -557,23 +563,27 @@ def __audit_ce_settings__(sysinfo):
     ce_workers = ce_tasks['Worker Count']
     MAX_WORKERS = 4
     if ce_workers > MAX_WORKERS:
+        util.logger.warning("%d CE workers configured, incorrect compared to the max %d recommended",
+                         ce_workers, MAX_WORKERS)
         rule = rules.get_rule(rules.RuleId.SETTING_CE_TOO_MANY_WORKERS)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_workers, MAX_WORKERS)))
     else:
-        util.logger.info("%d CE workers configured, correct compared to the max %d recommended",
+        util.logger.debug("%d CE workers configured, correct compared to the max %d recommended",
                          ce_workers, MAX_WORKERS)
 
     if ce_ram < 512 * ce_workers or ce_ram > 2048 * ce_workers:
+        util.logger.warning("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
+                         "outside recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
         rule = rules.get_rule(rules.RuleId.SETTING_CE_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers)))
     else:
-        util.logger.info("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
+        util.logger.debug("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
                          "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
     return problems
 
 
 def __audit_ce_background_tasks__(sysinfo):
-    util.logger.info('Auditing CE background tasks')
+    util.logger.debug('Auditing CE background tasks')
     problems = []
     ce_tasks = sysinfo['Compute Engine Tasks']
     ce_workers = ce_tasks['Worker Count']
@@ -585,20 +595,24 @@ def __audit_ce_background_tasks__(sysinfo):
     else:
         failure_rate = ce_error / (ce_success+ce_error)
     if ce_error > 10 and failure_rate > 0.01:
+        util.logger.warning('Number of failed background tasks (%d), and failure rate %d%% is high',
+                         ce_error, int(failure_rate * 100))
         rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(int(failure_rate * 100))))
     else:
-        util.logger.info('Number of failed background tasks (%d), and failure rate %d%% is OK',
+        util.logger.debug('Number of failed background tasks (%d), and failure rate %d%% is OK',
                          ce_error, int(failure_rate * 100))
 
     if ce_pending > 100:
+        util.logger.warning('Number of pending background tasks (%d) is very high', ce_pending)
         rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
     elif ce_pending > 20 and ce_pending > (10*ce_workers):
+        util.logger.warning('Number of pending background tasks (%d) is high', ce_pending)
         rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
     else:
-        util.logger.info('Number of pending background tasks (%d) is OK', ce_pending)
+        util.logger.debug('Number of pending background tasks (%d) is OK', ce_pending)
     return problems
 
 
@@ -608,10 +622,11 @@ def __audit_es_settings__(sysinfo):
     es_ram = __get_memory__(sysinfo['Settings']['sonar.search.javaOpts'])
     index_size = __get_store_size__(sysinfo['Search State']['Store Size'])
     if es_ram < 2 * index_size and es_ram < index_size + 1000:
+        util.logger.warning("Search server memory %d MB is inconsystent wrt to index size of %d MB", es_ram, index_size)
         rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
     else:
-        util.logger.info("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
+        util.logger.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
     return problems
 
 
@@ -670,6 +685,7 @@ def __audit_dce_settings__(sysinfo):
 
 
 def audit_sysinfo(sysinfo):
+    util.logger.info("Auditing System Info")
     return (
         __audit_web_settings__(sysinfo) +
         __audit_ce_settings__(sysinfo) +
