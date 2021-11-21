@@ -257,41 +257,41 @@ Is this normal ?", gr['name'], self.key)
 
     def __audit_permissions__(self, audit_settings):
         if not audit_settings.get('audit.projects.permissions', ''):
-            util.logger.info('Auditing project permissions is disabled by configuration, skipping')
+            util.logger.debug('Auditing project permissions is disabled by configuration, skipping')
             return []
-        util.logger.info("Auditing permissions for project '%s'", self.key)
+        util.logger.debug("Auditing project '%s' permissions", self.key)
         problems = (self.__audit_user_permissions__(audit_settings)
                     + self.__audit_group_permissions__(audit_settings))
         if not problems:
-            util.logger.info("No issue found in project '%s' permissions", self.key)
+            util.logger.debug("No issue found in project '%s' permissions", self.key)
         return problems
 
     def __audit_last_analysis__(self, audit_settings):
-        util.logger.info("Auditing project '%s' last analysis date", self.key)
+        util.logger.debug("Auditing project '%s' last analysis date", self.key)
         age = self.age_of_last_analysis()
         if age is None:
             if not audit_settings.get('audit.projects.neverAnalyzed', True):
-                util.logger.info("Auditing of never analyzed projects is disabled, skipping")
+                util.logger.debug("Auditing of never analyzed projects is disabled, skipping")
                 return []
             rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(self.key), concerned_object=self)]
         if age > audit_settings.get('audit.projects.maxLastAnalysisAge', 180):
             if not audit_settings.get('audit.projects.lastAnalysisDate', True):
-                util.logger.info("Auditing of projects with old analysis date is disabled, skipping")
+                util.logger.debug("Auditing of projects with old analysis date is disabled, skipping")
                 return []
             rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
             severity = sev.Severity.HIGH if age > 365 else rule.severity
             loc = self.get_measure('ncloc', fallback='0')
             return [pb.Problem(rule.type, severity, rule.msg.format(self.key, loc, age), concerned_object=self)]
 
-        util.logger.info("Project %s last analysis is %d days old", self.key, age)
+        util.logger.debug("Project '%s' last analysis is %d days old", self.key, age)
         return []
 
     def __audit_visibility__(self, audit_settings):
         if not audit_settings.get('audit.projects.visibility', True):
-            util.logger.info("Project visibility audit is disabled by configuration, skipping...")
+            util.logger.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
-        util.logger.info("Auditing Project '%s' visibility", self.key)
+        util.logger.debug("Auditing project '%s' visibility", self.key)
         resp = env.get('navigation/component', ctxt=self.env, params={'component': self.key})
         data = json.loads(resp.text)
         visi = data['visibility']
@@ -300,14 +300,14 @@ Is this normal ?", gr['name'], self.key)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(self.key, visi),
                                concerned_object=self)]
 
-        util.logger.info("Project '%s' visibility is private", self.key)
+        util.logger.debug("Project '%s' visibility is private", self.key)
         return []
 
     def __audit_languages__(self, audit_settings):
         if not audit_settings.get('audit.xmlLoc.suspicious', False):
-            util.logger.info('XML LoCs count audit disabled by configuration, skipping')
+            util.logger.debug('XML LoCs count audit disabled by configuration, skipping')
             return []
-        util.logger.info('Auditing suspicious XML LoC count')
+        util.logger.debug("Auditing project '%s' suspicious XML LoC count", self.key)
 
         total_locs = 0
         languages = {}
@@ -322,11 +322,11 @@ Is this normal ?", gr['name'], self.key)
             rule = rules.get_rule(rules.RuleId.PROJ_XML_LOCS)
             return [pb.Problem(rule.type, rule.severity, rule.format(self.key, languages['xml']),
                                concerned_object=self)]
-        util.logger.info('XML LoCs count seems reasonable')
+        util.logger.debug("Project '%s' XML LoCs count seems reasonable", self.key)
         return []
 
     def audit(self, audit_settings):
-        util.logger.info("Auditing project %s", self.key)
+        util.logger.debug("Auditing project '%s'", self.key)
         return (
             self.__audit_last_analysis__(audit_settings)
             + self.__audit_visibility__(audit_settings)
@@ -339,9 +339,9 @@ Is this normal ?", gr['name'], self.key)
         mindate = today - datetime.timedelta(days=days)
         last_analysis = self.get_last_analysis_date(include_branches=True)
         loc = int(self.get_measure('ncloc'))
-        print("Project key %s - %d LoCs - Not analysed for %d days" %
+        print("Project key '%s' - %d LoCs - Not analysed for %d days" %
               (self.key, loc, (today - last_analysis).days))
-        util.logger.info("Project key %s - %d LoCs - Not analysed for %d days",
+        util.logger.debug("Project key '%s' - %d LoCs - Not analysed for %d days",
                          self.key, loc, (today - last_analysis).days)
         if last_analysis < mindate:
             return self.delete()
@@ -479,6 +479,7 @@ def create_project(key, name=None, visibility='private', sqenv=None):
 
 
 def audit(audit_settings, endpoint=None):
+    util.logger.info("--- Auditing projects ---")
     plist = search(endpoint)
     problems = []
     for key, p in plist.items():

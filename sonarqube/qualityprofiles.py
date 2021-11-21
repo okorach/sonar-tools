@@ -95,7 +95,7 @@ class QualityProfile(sq.SqObject):
         if self.is_built_in:
             return []
 
-        util.logger.info("Auditing quality profile %s (key %s)", self.long_name, self.key)
+        util.logger.debug("Auditing quality profile '%s' (key '%s')", self.long_name, self.key)
         problems = []
         age = self.age_of_last_update()
         if age > 180:
@@ -139,6 +139,7 @@ def search(endpoint=None, params=None):
 
 
 def audit(endpoint=None):
+    util.logger.info("--- Auditing quality profiles ---")
     problems = []
     langs = {}
     for qp in search(endpoint):
