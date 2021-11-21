@@ -487,7 +487,7 @@ def __audit_setting_is_not_set__(settings, key, severity=sev.Severity.MEDIUM, do
 def __audit_maintainability_rating_range__(value, min_val, max_val, rating_letter,
                                            severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
     util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is \
-within recommended range [%3.0f%%-%3.0f%%]", value*100, rating_letter, min_val*100, max_val*100)
+within recommended range [%3.0f%%-%3.0f%%]", value * 100, rating_letter, min_val * 100, max_val * 100)
     value = float(value)
     problems = []
     if value < min_val or value > max_val:
