@@ -484,17 +484,16 @@ def audit(audit_settings, endpoint=None):
     problems = []
     for key, p in plist.items():
         problems += p.audit(audit_settings)
-        if audit_settings.get('audit.projects.duplicates', 'yes') != 'yes':
+        if not audit_settings.get('audit.projects.duplicates', False):
             continue
-        if not audit_settings.get('audit.projects.duplicates', True):
-            util.logger.info("Auditing for potential duplicate projects is disabled, skipping")
-        util.logger.info("Auditing for potential duplicate projects")
+        util.logger.debug("Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key2, key):
-                problems.append(pb.Problem(
-                    typ.Type.OPERATIONS, sev.Severity.MEDIUM,
-                    "Project '{}' is likely to be a branch of '{}', and if so should be deleted".format(key, key2),
-                    concerned_object=p))
-    if audit_settings.get('audit.projects.duplicates', 'yes') != 'yes':
+                rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE)
+                util.logger.warning("Project '%s' is likely to be a branch of project '%s'", key, key2)
+                return [pb.Problem(rule.type, rule.severity, rule.msg.format(key, key2),
+                                   concerned_object=p)]
+
+    if not audit_settings.get('audit.projects.duplicates', False):
         util.logger.info("Project duplicates auditing was disabled by configuration")
     return problems
