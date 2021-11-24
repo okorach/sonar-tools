@@ -20,40 +20,49 @@
 import os
 import sys
 import pathlib
+import json
 import jprops
 import sonarqube.utilities as util
 
 CONFIG_SETTINGS = None
 
 
+def _load_properties_file(file):
+    settings = {}
+    with open(file, 'r', encoding="utf-8") as fp:
+        util.logger.info("Loading config file %s", file)
+        settings = jprops.load_properties(fp)
+    return settings
+
 def load(config_file=None):
     global CONFIG_SETTINGS
-    file_to_load = config_file
-    if file_to_load is None or not os.path.isfile(file_to_load):
-        file_to_load =  f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
-        util.logger.info("File %s is not present, trying %s", config_file, file_to_load)
-    if not os.path.isfile(file_to_load):
-        util.logger.info("File %s is not present, opening package default config", file_to_load)
-        file_to_load = pathlib.Path(__file__).parent / config_file
 
-    util.logger.info("Loading config file %s", file_to_load)
-    with open(file_to_load, 'r', encoding="utf-8") as fp:
-        CONFIG_SETTINGS = jprops.load_properties(fp)
+    default_conf = _load_properties_file(pathlib.Path(__file__).parent / config_file)
+    home_conf = _load_properties_file(f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties")
+    local_conf = _load_properties_file(pathlib.Path(__file__).parent / config_file)
+
+    CONFIG_SETTINGS = {**default_conf, **home_conf, **local_conf}
 
     for key, value in CONFIG_SETTINGS.items():
         value = value.lower()
-        if value == 'yes' or value == 'true' or value == 'on':
+        if value in ('yes', 'true', 'on'):
             CONFIG_SETTINGS[key] = True
             continue
-        if value == 'no' or value == 'false' or value == 'off':
+        if value in ('no', 'false', 'off'):
             CONFIG_SETTINGS[key] = False
             continue
         try:
             intval = int(value)
             CONFIG_SETTINGS[key] = intval
         except ValueError:
-            pass
+            try:
+                floatval = float(value)
+                CONFIG_SETTINGS[key] = floatval
+            except ValueError:
+                pass
 
+    util.logger.debug("Audit settings = %s",
+        json.dumps(CONFIG_SETTINGS, sort_keys=True, indent=3, separators=(',', ': ')))
     return CONFIG_SETTINGS
 
 
