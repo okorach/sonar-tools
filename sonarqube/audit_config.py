@@ -55,7 +55,11 @@ def load(config_file=None):
             intval = int(value)
             CONFIG_SETTINGS[key] = intval
         except ValueError:
-            pass
+            try:
+                floatval = float(value)
+                CONFIG_SETTINGS[key] = floatval
+            except ValueError:
+                pass
 
     util.logger.debug("Audit settings = %s",
         json.dumps(CONFIG_SETTINGS, sort_keys=True, indent=3, separators=(',', ': ')))
