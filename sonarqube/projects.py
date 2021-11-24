@@ -58,6 +58,7 @@ class Project(comp.Component):
         self.user_permissions = None
         self.group_permissions = None
         self.branches = None
+        self.pull_requests = None
         self.ncloc = None
         self.__load__(data)
         PROJECTS[key] = self
@@ -103,7 +104,11 @@ class Project(comp.Component):
             return self.all_branches_last_analysis_date
 
         self.all_branches_last_analysis_date = self.main_branch_last_analysis_date
-        for b in self.get_branches():
+        if self.env.version() >= (9, 2, 0):
+            # Starting from 9.2 project last analysis date takes into account branches and PR
+            return self.all_branches_last_analysis_date
+
+        for b in self.get_branches() + self.get_pull_requests():
             if 'analysisDate' not in b:
                 continue
             b_ana_date = datetime.datetime.strptime(b['analysisDate'], '%Y-%m-%dT%H:%M:%S%z')
@@ -112,13 +117,26 @@ class Project(comp.Component):
         return self.all_branches_last_analysis_date
 
     def get_branches(self):
-        if self.branches is not None:
-            return self.branches
+        if self.env.edition() == 'community':
+            util.logger.warning("Branches not available in Community Edition")
+            return []
 
-        resp = env.get('project_branches/list', params={'project': self.key}, ctxt=self.env)
-        data = json.loads(resp.text)
-        self.branches = data['branches']
+        if self.branches is None:
+            resp = env.get('project_branches/list', params={'project': self.key}, ctxt=self.env)
+            data = json.loads(resp.text)
+            self.branches = data['branches']
         return self.branches
+
+    def get_pull_requests(self):
+        if self.env.edition() == 'community':
+            util.logger.warning("Pull requests not available in Community Edition")
+            return []
+
+        if self.pull_requests is None:
+            resp = env.get('project_pull_requests/list', params={'project': self.key}, ctxt=self.env)
+            data = json.loads(resp.text)
+            self.pull_requests = data['pullRequests']
+        return self.pull_requests
 
     def get_permissions(self, perm_type):
         MAX_PERMISSION_PAGE_SIZE = 100
