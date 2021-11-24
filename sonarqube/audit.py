@@ -59,7 +59,7 @@ def _audit_sq(sq, settings, what=None):
     if 'projects' in what_to_audit:
         problems += projects.audit(endpoint=sq, audit_settings=settings)
     if 'qp' in what_to_audit:
-        problems += qualityprofiles.audit(endpoint=sq)
+        problems += qualityprofiles.audit(endpoint=sq, audit_settings=settings)
     if 'qg' in what_to_audit:
         problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
     if 'settings' in what_to_audit:
