@@ -245,7 +245,7 @@ class Environment:
         util.logger.info('Project default visibility is %s', visi)
         if conf.get_property('checkDefaultProjectVisibility') and visi != 'private':
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.ms.format(visi)))
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msq.format(visi)))
         return problems
 
     def __audit_admin_password__(self):
@@ -641,7 +641,7 @@ def __audit_jdbc_url__(sysinfo):
     util.logger.debug('JDBC URL = %s', str(url))
     if url is None:
         rule = rules.get_rule(rules.RuleId.SETTING_JDBC_URL_NOT_SET)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg))   
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
     elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]', url):
         rule = rules.get_rule(rules.RuleId.SETTING_DB_ON_SAME_HOST)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(url)))
@@ -654,11 +654,11 @@ def __audit_dce_settings__(sysinfo):
     if stats is None:
         util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
         return problems
-    edition = stats.get('edition', None)
-    if edition is None:
+    sq_edition = stats.get('edition', None)
+    if sq_edition is None:
         util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
         return problems
-    if edition != "datacenter":
+    if sq_edition != "datacenter":
         util.logger.info('Not a Data Center Edition, skipping DCE checks')
         return problems
     # Verify that app nodes have the same plugins installed
