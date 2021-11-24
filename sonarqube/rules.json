@@ -301,7 +301,7 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "QualityProfile",
-        "message": "Quality Profile '{}' uses deprecated rules, it should be updated"
+        "message": "Quality Profile '{}' uses {} deprecated rules, it should be updated"
     },
     "TOKEN_TOO_OLD": {
         "severity": "HIGH",

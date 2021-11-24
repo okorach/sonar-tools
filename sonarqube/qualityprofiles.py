@@ -71,60 +71,64 @@ class QualityProfile(sq.SqObject):
         return perms
 
     def last_used_date(self):
-        last_use = None
-        return last_use
+        return self.last_used
 
     def last_updated_date(self):
-        last_use = None
-        return last_use
+        return self.last_updated
 
     def number_associated_projects(self):
         return 0
 
     def age_of_last_use(self):
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         if self.last_used is None:
             return None
+        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         return abs(today - self.last_used).days
 
     def age_of_last_update(self):
+        if self.last_updated is None:
+            return None
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         return abs(today - self.last_updated).days
 
-    def audit(self):
+    def audit(self, audit_settings=None):
+        util.logger.debug("Auditing quality profile '%s'", self.long_name)
         if self.is_built_in:
+            util.logger.debug("Quality profile '%s' is built-in, skipping audit", self.long_name)
             return []
 
         util.logger.debug("Auditing quality profile '%s' (key '%s')", self.long_name, self.key)
         problems = []
         age = self.age_of_last_update()
-        if age > 180:
+        if age > audit_settings['audit.qualityProfiles.maxLastChangeAge']:
             rule = arules.get_rule(arules.RuleId.QP_LAST_CHANGE_DATE)
-            problems.append(pb.Problem(
-                rule.type, rule.severity,
-                rule.msg.format(self.long_name, age, 180)))
-        if self.is_built_in:
-            return problems
+            msg = rule.msg.format(self.long_name, age)
+            util.logger.warning(msg)
+            problems.append(pb.Problem(rule.type, rule.severity, msg))
+
         total_rules = rules.count(endpoint=self.env, params={'languages': self.language})
-        if self.nb_rules < int(total_rules * 0.5):
+        if self.nb_rules < int(total_rules * audit_settings['audit.qualityProfiles.minNumberOfRules']):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
-            problems.append(pb.Problem(
-                rule.type, rule.severity,
-                rule.msg.format(self.long_name, self.nb_rules, total_rules)))
+            msg = rule.msg.format(self.long_name, self.nb_rules, total_rules)
+            util.logger.warning(msg)
+            problems.append(pb.Problem(rule.type, rule.severity, msg))
+
         age = self.age_of_last_use()
-        if age is None or not self.is_default and self.project_count == 0:
+        if self.project_count == 0:
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.msg.format(self.long_name)))
-        elif age > 180:
+            msg = rule.msg.format(self.long_name)
+            util.logger.warning(msg)
+            problems.append(pb.Problem(rule.type, rule.severity, msg))
+        elif age > audit_settings['audit.qualityProfiles.maxUnusedAge']:
             rule = arules.get_rule(arules.RuleId.QP_LAST_USED_DATE)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.msg.format(self.long_name, age)))
-        if self.deprecated_rules > 0:
+            msg = rule.msg.format(self.long_name, age)
+            util.logger.warning(msg)
+            problems.append(pb.Problem(rule.type, rule.severity, msg))
+        if audit_settings['audit.qualityProfiles.checkDeprecatedRules'] and self.deprecated_rules > 0:
             rule = arules.get_rule(arules.RuleId.QP_USE_DEPRECATED_RULES)
-            problems.append(pb.Problem(
-                rule.type, rule.severity,
-                rule.msg.format(self.long_name, self.deprecated_rules)))
+            msg = rule.msg.format(self.long_name, self.deprecated_rules)
+            util.logger.warning(msg)
+            problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         return problems
 
@@ -138,12 +142,12 @@ def search(endpoint=None, params=None):
     return qp_list
 
 
-def audit(endpoint=None):
+def audit(endpoint=None, audit_settings=None):
     util.logger.info("--- Auditing quality profiles ---")
     problems = []
     langs = {}
     for qp in search(endpoint):
-        problems += qp.audit()
+        problems += qp.audit(audit_settings)
         langs[qp.language] = langs.get(qp.language, 0) + 1
     for lang in langs:
         if langs[lang] > 5:
