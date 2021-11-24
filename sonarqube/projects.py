@@ -178,7 +178,7 @@ class Project(comp.Component):
         problems = []
         counts = __get_permissions_counts__(self.get_permissions('users'))
 
-        max_users = int(audit_settings.get('audit.projects.permissions.maxUsers', '5'))
+        max_users = audit_settings['audit.projects.permissions.maxUsers']
         if counts['overall'] > max_users:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
             problems.append(pb.Problem(
@@ -186,7 +186,7 @@ class Project(comp.Component):
                 rule.msg.format(self.key, counts['overall']),
                 concerned_object=self))
 
-        max_admins = int(audit_settings.get('audit.projects.permissions.maxAdminUsers', '2'))
+        max_admins = audit_settings['audit.projects.permissions.maxAdminUsers']
         if counts['admin'] > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_USERS)
             problems.append(pb.Problem(
@@ -218,35 +218,35 @@ class Project(comp.Component):
                 util.logger.info("Group '%s' has browse permissions on project '%s'. \
 Is this normal ?", gr['name'], self.key)
 
-        max_perms = int(audit_settings.get('audit.projects.permissions.maxGroups', '5'))
+        max_perms = audit_settings['audit.projects.permissions.maxGroups']
         if counts['overall'] > max_perms:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
             problems.append(pb.Problem(
                 rule.type, rule.severity,
                 rule.msg.format(self.key, counts['overall'], max_perms),
                 concerned_object=self))
-        max_scan = int(audit_settings.get('audit.projects.permissions.maxScanGroups', '1'))
+        max_scan = audit_settings['audit.projects.permissions.maxScanGroups']
         if counts['scan'] > max_scan:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_SCAN_GROUPS)
             problems.append(pb.Problem(
                 rule.type, rule.severity,
                 rule.msg.format(self.key, counts['scan'], max_scan),
                 concerned_object=self))
-        max_issue_adm = int(audit_settings.get('audit.projects.permissions.maxIssueAdminGroups', '2'))
+        max_issue_adm = audit_settings['audit.projects.permissions.maxIssueAdminGroups']
         if counts['issueadmin'] > max_issue_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
             problems.append(pb.Problem(
                 rule.type, rule.severity,
                 rule.msg.format(self.key, counts['issueadmin'], max_issue_adm),
                 concerned_object=self))
-        max_spots_adm = int(audit_settings.get('audit.projects.permissions.maxHotspotAdminGroups', '2'))
+        max_spots_adm = audit_settings['audit.projects.permissions.maxHotspotAdminGroups']
         if counts['securityhotspotadmin'] > max_spots_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_HOTSPOT_ADM_GROUPS)
             problems.append(pb.Problem(
                 rule.type, rule.severity,
                 rule.msg.format(self.key, counts['securityhotspotadmin'], max_spots_adm),
                 concerned_object=self))
-        max_admins = int(audit_settings.get('audit.projects.permissions.maxAdminGroups', '2'))
+        max_admins = audit_settings['audit.projects.permissions.maxAdminGroups']
         if counts['admin'] > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_GROUPS)
             problems.append(pb.Problem(
@@ -256,7 +256,7 @@ Is this normal ?", gr['name'], self.key)
         return problems
 
     def __audit_permissions__(self, audit_settings):
-        if not audit_settings.get('audit.projects.permissions', ''):
+        if not audit_settings['audit.projects.permissions']:
             util.logger.debug('Auditing project permissions is disabled by configuration, skipping')
             return []
         util.logger.debug("Auditing project '%s' permissions", self.key)
@@ -268,24 +268,30 @@ Is this normal ?", gr['name'], self.key)
 
     def __audit_last_analysis__(self, audit_settings):
         util.logger.debug("Auditing project '%s' last analysis date", self.key)
+        problems = []
         age = self.age_of_last_analysis()
         if age is None:
-            if not audit_settings.get('audit.projects.neverAnalyzed', True):
+            if not audit_settings['audit.projects.neverAnalyzed']:
                 util.logger.debug("Auditing of never analyzed projects is disabled, skipping")
-                return []
-            rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(self.key), concerned_object=self)]
-        if age > audit_settings.get('audit.projects.maxLastAnalysisAge', 180):
-            if not audit_settings.get('audit.projects.lastAnalysisDate', True):
-                util.logger.debug("Auditing of projects with old analysis date is disabled, skipping")
-                return []
+            else:
+                rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
+                msg = rule.msg.format(self.key)
+                util.logger.warning(msg)
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            return problems
+
+        if not audit_settings['audit.projects.lastAnalysisDate']:
+            util.logger.debug("Auditing of projects with old analysis date is disabled, skipping")
+        elif age > audit_settings['audit.projects.maxLastAnalysisAge']:
             rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
             severity = sev.Severity.HIGH if age > 365 else rule.severity
             loc = self.get_measure('ncloc', fallback='0')
-            return [pb.Problem(rule.type, severity, rule.msg.format(self.key, loc, age), concerned_object=self)]
+            msg = rule.msg.format(self.key, loc, age)
+            util.logger.warning(msg)
+            problems.append(pb.Problem(rule.type, severity, rule.msg.format(self.key, loc, age), concerned_object=self))
 
         util.logger.debug("Project '%s' last analysis is %d days old", self.key, age)
-        return []
+        return problems
 
     def __audit_visibility__(self, audit_settings):
         if not audit_settings.get('audit.projects.visibility', True):
@@ -460,6 +466,8 @@ def search(endpoint=None, page=0, params=None):
     for p in range(nb_pages):
         params['p'] = p + 1
         project_list.update(search(endpoint=endpoint, page=p + 1, params=params))
+
+    util.logger.debug("Project search returned %d projects", len(project_list))
     return project_list
 
 
@@ -482,17 +490,18 @@ def audit(audit_settings, endpoint=None):
     util.logger.info("--- Auditing projects ---")
     plist = search(endpoint)
     problems = []
+
     for key, p in plist.items():
         problems += p.audit(audit_settings)
-        if not audit_settings.get('audit.projects.duplicates', False):
+        if not audit_settings['audit.projects.duplicates']:
             continue
         util.logger.debug("Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key2, key):
                 rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE)
                 util.logger.warning("Project '%s' is likely to be a branch of project '%s'", key, key2)
-                return [pb.Problem(rule.type, rule.severity, rule.msg.format(key, key2),
-                                   concerned_object=p)]
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(key, key2),
+                                   concerned_object=p))
 
     if not audit_settings.get('audit.projects.duplicates', False):
         util.logger.info("Project duplicates auditing was disabled by configuration")
