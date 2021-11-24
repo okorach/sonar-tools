@@ -32,7 +32,6 @@ import sonarqube.components as comp
 import sonarqube.utilities as util
 
 import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 import sonarqube.permissions as perms
