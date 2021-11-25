@@ -47,8 +47,18 @@ def __deduct_format__(fmt, file):
 
 
 def _audit_sif(sif):
-    with open(sif, 'r') as f:
-        sif = json.loads(f.read())
+    try:
+        with open(sif, 'r') as f:
+            sif = json.loads(f.read())
+    except json.decoder.JSONDecodeError:
+        util.logger.critical("File %s does not seem to be a legit JSON file", sif)
+        raise
+    except FileNotFoundError:
+        util.logger.critical("File %s does not exist", sif)
+        raise
+    except PermissionError:
+        util.logger.critical("No permission to open file %s", sif)
+        raise
     return env.audit_sysinfo(sif)
 
 def _audit_sq(sq, settings, what=None):
@@ -97,7 +107,20 @@ def main():
         sys.exit(0)
 
     if kwargs.get('sif', None) is not None:
-        problems = _audit_sif(kwargs['sif'])
+        try:
+            problems = _audit_sif(kwargs['sif'])
+        except json.decoder.JSONDecodeError:
+            print(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...")
+            sys.exit(3)
+        except FileNotFoundError:
+            print(f"File {kwargs['sif']} does not exist, aborting...")
+            sys.exit(4)
+        except PermissionError:
+            print(f"No permissiont to open file {kwargs['sif']}, aborting...")
+            sys.exit(5)
+        except env.NotSystemInfo:
+            print(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...")
+            sys.exit(6)
     else:
         problems = _audit_sq(sq, settings, args.what)
 

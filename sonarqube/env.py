@@ -56,6 +56,11 @@ class UnsupportedOperation(Exception):
         super().__init__()
         self.message = message
 
+class NotSystemInfo(Exception):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
+
 class Environment:
 
     def __init__(self, url, token):
@@ -684,7 +689,17 @@ def __audit_dce_settings__(sysinfo):
     return problems
 
 
+def is_sysinfo(sysinfo):
+    for key in ('Health', 'System', 'Database', 'Settings'):
+        if key not in sysinfo:
+            return False
+    return True
+
+
 def audit_sysinfo(sysinfo):
+    if not is_sysinfo(sysinfo):
+        util.logger.critical("Provided JSON does not seem to be a system info")
+        raise NotSystemInfo("JSON is not a system info nor a support info")
     util.logger.info("Auditing System Info")
     return (
         __audit_web_settings__(sysinfo) +
