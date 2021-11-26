@@ -135,6 +135,18 @@
         "object": "Project",
         "message": "Project '{}' with {} LoCs has not been analyzed since {} days, it could be deleted"
     },
+    "BRANCH_LAST_ANALYSIS": {
+        "severity": "MEDIUM",
+        "type": "PERFORMANCE",
+        "object": "Project",
+        "message": "Branch '{} of project '{}' has not been analyzed since {} days, it could be deleted"
+    },
+    "PULL_REQUEST_LAST_ANALYSIS": {
+        "severity": "LOW",
+        "type": "PERFORMANCE",
+        "object": "Project",
+        "message": "PR key '{}' of project '{}' has not been analyzed since {} days, it could be deleted"
+    },
     "PROJ_NOT_ANALYZED": {
         "severity": "LOW",
         "type": "PERFORMANCE",
