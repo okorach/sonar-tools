@@ -176,11 +176,11 @@ class Project(comp.Component):
 
     def delete(self, api='projects/delete', params=None):
         loc = int(self.get_measure('ncloc', fallback='0'))
-        util.logger.debug("Deleting project key %s", self.key)
+        util.logger.info("Deleting project key '%s', name '%s' with %d LoCs", self.key, self.name, loc)
         if not super().post('projects/delete', params={'project': self.key}):
-            util.logger.error("Project key %s deletion failed", self.key)
+            util.logger.error("Project key '%s' deletion failed", self.key)
             return False
-        util.logger.info("Successfully deleted project key %s - %d LoCs", self.key, loc)
+        util.logger.info("Successfully deleted project key '%s' - %d LoCs", self.key, loc)
         return True
 
     def age_of_last_analysis(self):
