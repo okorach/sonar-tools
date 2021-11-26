@@ -28,7 +28,7 @@ import re
 import logging
 import argparse
 import json
-
+import datetime
 
 OPT_VERBOSE = 'verbosity'
 OPT_MODE = 'mode'
@@ -37,7 +37,9 @@ CONFIRM = 'confirm'
 BATCH = 'batch'
 RUN_MODE = DRY_RUN
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
-
+SQ_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
+SQ_DATE_FORMAT = "%Y-%m-%d"
+SQ_TIME_FORMAT = "%H:%M:%S"
 
 logger = logging.getLogger('sonarqube-tools')
 formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)-7s | %(message)s')
@@ -135,6 +137,12 @@ def format_date_ymd(year, month, day):
 def format_date(somedate):
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
+
+def string_to_date(string):
+    return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
+
+def date_to_string(date):
+    return date.strftime(SQ_DATE_FORMAT)
 
 def get_setting(settings, key, default):
     if settings is None:

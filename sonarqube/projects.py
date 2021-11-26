@@ -76,8 +76,7 @@ class Project(comp.Component):
         self.name = data['name']
         self.visibility = data['visibility']
         if 'lastAnalysisDate' in data:
-            self.main_branch_last_analysis_date = datetime.datetime.strptime(
-                data['lastAnalysisDate'], '%Y-%m-%dT%H:%M:%S%z')
+            self.main_branch_last_analysis_date = util.string_to_date(data['lastAnalysisDate'])
         else:
             self.main_branch_last_analysis_date = None
         self.revision = data.get('revision', None)
@@ -111,7 +110,7 @@ class Project(comp.Component):
         for b in self.get_branches() + self.get_pull_requests():
             if 'analysisDate' not in b:
                 continue
-            b_ana_date = datetime.datetime.strptime(b['analysisDate'], '%Y-%m-%dT%H:%M:%S%z')
+            b_ana_date = util.string_to_date(b['analysisDate'])
             if self.all_branches_last_analysis_date is None or b_ana_date > self.all_branches_last_analysis_date:
                 self.all_branches_last_analysis_date = b_ana_date
         return self.all_branches_last_analysis_date
@@ -297,9 +296,10 @@ Is this normal ?", gr['name'], self.key)
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
             return problems
 
-        if not audit_settings['audit.projects.lastAnalysisDate']:
+        max_age = audit_settings['audit.projects.maxLastAnalysisAge']
+        if max_age == 0:
             util.logger.debug("Auditing of projects with old analysis date is disabled, skipping")
-        elif age > audit_settings['audit.projects.maxLastAnalysisAge']:
+        elif age > max_age:
             rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
             severity = sev.Severity.HIGH if age > 365 else rule.severity
             loc = self.get_measure('ncloc', fallback='0')
@@ -308,6 +308,45 @@ Is this normal ?", gr['name'], self.key)
             problems.append(pb.Problem(rule.type, severity, rule.msg.format(self.key, loc, age), concerned_object=self))
 
         util.logger.debug("Project '%s' last analysis is %d days old", self.key, age)
+        return problems
+
+    def __audit_branches_last_analysis(self, audit_settings):
+        problems = []
+        max_age = audit_settings['audit.projects.branches.maxLastAnalysisAge']
+        if max_age == 0:
+            util.logger.debug("Auditing of branchs last analysis age is disabled, skipping...")
+            return []
+        util.logger.debug("Auditing project '%s' branches age", self.key)
+        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
+        for branch in self.get_branches():
+            util.logger.debug(json.dumps(branch))
+            if 'analysisDate' not in branch:   # Main branch not analyzed yet
+                continue
+            age = (today - util.string_to_date(branch['analysisDate'])).days
+            if branch.get('excludedFromPurge', False):
+                util.logger.debug("Branch '%s' of project '%s' age is kept when inactive", branch['name'], self.key)
+            elif age > max_age:
+                rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
+                msg = rule.msg.format(branch['name'], self.key, age)
+                problems.append(pb.Problem(rule.type, rule.type, msg))
+            else:
+                util.logger.debug("Branch '%s' of project '%s' age is %d days", branch['name'], self.key, age)
+        return problems
+
+    def __audit_pull_requests_last_analysis(self, audit_settings):
+        problems = []
+        max_age = audit_settings['audit.projects.pullRequests.maxLastAnalysisAge']
+        if max_age == 0:
+            util.logger.debug("Auditing of pull request last analysis age is disabled, skipping...")
+            return []
+
+        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
+        for pr in self.get_pull_requests():
+            age = (today - util.string_to_date(pr['analysisDate'])).days
+            if age > max_age:
+                rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
+                msg = rule.msg.format(pr['key'], self.key, age)
+                problems.append(pb.Problem(rule.type, rule.type, msg))
         return problems
 
     def __audit_visibility__(self, audit_settings):
@@ -352,6 +391,8 @@ Is this normal ?", gr['name'], self.key)
         util.logger.debug("Auditing project '%s'", self.key)
         return (
             self.__audit_last_analysis__(audit_settings)
+            + self.__audit_branches_last_analysis(audit_settings)
+            + self.__audit_pull_requests_last_analysis(audit_settings)
             + self.__audit_visibility__(audit_settings)
             + self.__audit_languages__(audit_settings)
             + self.__audit_permissions__(audit_settings)

@@ -40,10 +40,10 @@ class QualityProfile(sq.SqObject):
         if data is not None:
             self.name = data['name']
             if 'lastUsed' in data:
-                self.last_used = datetime.datetime.strptime(data['lastUsed'], '%Y-%m-%dT%H:%M:%S%z')
+                self.last_used = util.string_to_date(data['lastUsed'])
             else:
                 self.last_used = None
-            self.last_updated = datetime.datetime.strptime(data['rulesUpdatedAt'], '%Y-%m-%dT%H:%M:%S%z')
+            self.last_updated = util.string_to_date(data['rulesUpdatedAt'])
             self.language = data['language']
             self.language_name = data['languageName']
             self.is_default = data['isDefault']
