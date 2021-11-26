@@ -26,6 +26,7 @@
 '''
 import sys
 import sonarqube.env as env
+import sonarqube.audit_config as conf
 import sonarqube.projects as projects
 import sonarqube.users as users
 import sonarqube.user_tokens as utokens
@@ -42,12 +43,14 @@ def get_project_problems(max_days, endpoint):
 
     settings = {
         'audit.projects.maxLastAnalysisAge': max_days,
+        'audit.projects.branches.maxLastAnalysisAge': 0,
+        'audit.projects.pullRequests.maxLastAnalysisAge': 0,
         'audit.projects.neverAnalyzed': False,
         'audit.projects.duplicates': False,
         'audit.projects.visibility': False,
-        'audit.projects.permissions': False,
-        'audit.projects.lastAnalysisDate': True
+        'audit.projects.permissions': False
     }
+    settings = conf.load(config_name='sonar-audit', settings=settings)
     problems = projects.audit(endpoint=endpoint, audit_settings=settings)
     nb_proj = len(problems)
     if nb_proj == 0:
@@ -67,6 +70,7 @@ def get_user_problems(max_days, endpoint):
         'audit.tokens.maxAge': max_days,
         'audit.tokens.maxUnusedAge': 30,
     }
+    settings = conf.load(config_name='sonar-audit', settings=settings)
     user_problems = users.audit(endpoint=endpoint, audit_settings=settings)
     nb_user_problems = len(user_problems)
     if nb_user_problems == 0:

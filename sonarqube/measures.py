@@ -88,7 +88,6 @@ def component(component_key, metric_keys, endpoint=None, **kwargs):
             m_list[m['metric']] = get_rating_letter(value)
         else:
             m_list[m['metric']] = value
-        util.logger.debug("Measure %s = %s", m['metric'], str(value))
     return m_list
 
 

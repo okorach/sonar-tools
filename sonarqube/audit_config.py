@@ -29,21 +29,31 @@ CONFIG_SETTINGS = None
 
 def _load_properties_file(file):
     settings = {}
-    with open(file, 'r', encoding="utf-8") as fp:
-        util.logger.info("Loading config file %s", file)
-        settings = jprops.load_properties(fp)
+    try:
+        with open(file, 'r', encoding="utf-8") as fp:
+            util.logger.info("Loading config file %s", file)
+            settings = jprops.load_properties(fp)
+    except FileNotFoundError:
+        pass
+    except PermissionError:
+        util.logger.warning("Insufficient permissions to open file %s, configuration will be skipped", file)
     return settings
 
-def load(config_file=None):
+def load(config_name=None, settings=None):
     global CONFIG_SETTINGS
 
-    default_conf = _load_properties_file(pathlib.Path(__file__).parent / config_file)
-    home_conf = _load_properties_file(f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties")
-    local_conf = _load_properties_file(pathlib.Path(__file__).parent / config_file)
+    if settings is None:
+        settings = {}
 
-    CONFIG_SETTINGS = {**default_conf, **home_conf, **local_conf}
+    default_conf = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
+    home_conf = _load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties")
+    local_conf = _load_properties_file(f"{os.getcwd()}{os.sep}{config_name}.properties")
+
+    CONFIG_SETTINGS = {**default_conf, **home_conf, **local_conf, **settings}
 
     for key, value in CONFIG_SETTINGS.items():
+        if not isinstance(value, str):
+            continue
         value = value.lower()
         if value in ('yes', 'true', 'on'):
             CONFIG_SETTINGS[key] = True
