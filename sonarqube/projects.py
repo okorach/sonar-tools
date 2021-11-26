@@ -320,7 +320,7 @@ Is this normal ?", gr['name'], self.key)
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         for branch in self.get_branches():
             util.logger.debug(json.dumps(branch))
-            if 'analysisDate' not in branch: # Main branch not analyzed yet
+            if 'analysisDate' not in branch:   # Main branch not analyzed yet
                 continue
             age = (today - util.string_to_date(branch['analysisDate'])).days
             if branch.get('excludedFromPurge', False):

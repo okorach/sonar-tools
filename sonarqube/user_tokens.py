@@ -23,11 +23,9 @@
 
 '''
 import json
-import datetime as dt
 import sonarqube.env as env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
-
 
 
 class UserToken(sq.SqObject):

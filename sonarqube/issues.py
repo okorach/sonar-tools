@@ -592,7 +592,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
                 search_by_date(endpoint=endpoint, date_start=date_middle, date_stop=date_stop, params=parms))
     if date_start is not None and date_stop is not None:
         util.logger.debug("Project %s has %d issues between %s and %s", parms.get('componentKeys', 'None'),
-                          len(issue_list), util.date_to_iso(date_start), util.date_to_iso(date_stop))
+                          len(issue_list), util.date_to_string(date_start), util.date_to_string(date_stop))
     return issue_list
 
 
