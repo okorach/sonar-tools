@@ -32,10 +32,6 @@ import sonarqube.audit_problem as pb
 import sonarqube.user_tokens as tok
 import sonarqube.audit_rules as rules
 
-SQ_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
-SQ_DATE_FORMAT = "%Y-%m-%d"
-SQ_TIME_FORMAT = "%H:%M:%S"
-
 
 class User(sq.SqObject):
     API_ROOT = 'users'

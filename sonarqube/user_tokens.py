@@ -29,10 +29,6 @@ import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 
 
-SQ_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
-SQ_DATE_FORMAT = "%Y-%m-%d"
-SQ_TIME_FORMAT = "%H:%M:%S"
-
 
 class UserToken(sq.SqObject):
     API_ROOT = 'user_tokens'
@@ -44,17 +40,17 @@ class UserToken(sq.SqObject):
         super().__init__(key=login, env=endpoint)
         self.login = login
         if isinstance(createdAt, str):
-            self.createdAt = dt.datetime.strptime(createdAt, SQ_DATETIME_FORMAT)
+            self.createdAt = util.string_to_date(createdAt)
         else:
             self.createdAt = createdAt
         self.name = name
         if self.name is None and 'name' in json_data:
             self.name = json_data['name']
         if self.createdAt is None and 'createdAt' in json_data:
-            self.createdAt = dt.datetime.strptime(json_data['createdAt'], SQ_DATETIME_FORMAT)
+            self.createdAt = util.string_to_date(json_data['createdAt'])
         self.lastConnectionDate = None
         if 'lastConnectionDate' in json_data:
-            self.lastConnectionDate = dt.datetime.strptime(json_data['lastConnectionDate'], SQ_DATETIME_FORMAT)
+            self.lastConnectionDate = util.string_to_date(json_data['lastConnectionDate'])
         self.token = token
         util.logger.debug("Created token '%s'", str(self))
 

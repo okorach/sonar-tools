@@ -32,9 +32,6 @@ import sonarqube.utilities as util
 import sonarqube.projects as projects
 import sonarqube.issue_changelog as changelog
 
-SQ_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
-SQ_DATE_FORMAT = "%Y-%m-%d"
-SQ_TIME_FORMAT = "%H:%M:%S"
 
 class ApiError(Exception):
     pass
@@ -140,8 +137,8 @@ class Issue(sq.SqObject):
         self.projectKey = jsondata['project']
         self.language = None
         self.changelog = None
-        self.creation_date = datetime.datetime.strptime(jsondata['creationDate'], SQ_DATETIME_FORMAT)
-        self.modification_date = datetime.datetime.strptime(jsondata['updateDate'], SQ_DATETIME_FORMAT)
+        self.creation_date = util.string_to_date(jsondata['creationDate'])
+        self.modification_date = util.string_to_date(jsondata['updateDate'])
 
         self.component = jsondata['component']
         self.hash = jsondata.get('hash', None)
@@ -381,10 +378,10 @@ class Issue(sq.SqObject):
             m = re.search(r'(\d+)min', self.debt)
             minutes = int(m.group(1)) if m else 0
             debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
-        cdate = self.creation_date.strftime(SQ_DATE_FORMAT)
-        ctime = self.creation_date.strftime(SQ_TIME_FORMAT)
-        mdate = self.modification_date.strftime(SQ_DATE_FORMAT)
-        mtime = self.modification_date.strftime(SQ_TIME_FORMAT)
+        cdate = self.creation_date.strftime(util.SQ_DATE_FORMAT)
+        ctime = self.creation_date.strftime(util.SQ_TIME_FORMAT)
+        mdate = self.modification_date.strftime(util.SQ_DATE_FORMAT)
+        mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
         # Strip timezone
         mtime = re.sub(r"\+.*", "", mtime)
         msg = re.sub('"', '""', self.message)
@@ -595,7 +592,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
                 search_by_date(endpoint=endpoint, date_start=date_middle, date_stop=date_stop, params=parms))
     if date_start is not None and date_stop is not None:
         util.logger.debug("Project %s has %d issues between %s and %s", parms.get('componentKeys', 'None'),
-                          len(issue_list), date_start.strftime(SQ_DATE_FORMAT), date_stop.strftime(SQ_DATE_FORMAT))
+                          len(issue_list), util.date_to_iso(date_start), util.date_to_iso(date_stop))
     return issue_list
 
 
