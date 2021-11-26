@@ -39,8 +39,11 @@ def _load_properties_file(file):
         util.logger.warning("Insufficient permissions to open file %s, configuration will be skipped", file)
     return settings
 
-def load(config_name=None, settings={}):
+def load(config_name=None, settings=None):
     global CONFIG_SETTINGS
+
+    if settings is None:
+        settings = {}
 
     default_conf = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
     home_conf = _load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties")
