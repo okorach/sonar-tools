@@ -100,7 +100,7 @@ def main():
 
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-    settings = conf.load('sonar-audit.properties')
+    settings = conf.load('sonar-audit')
 
     if kwargs.get('config', False):
         conf.configure()
