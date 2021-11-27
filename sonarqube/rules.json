@@ -139,7 +139,7 @@
         "severity": "MEDIUM",
         "type": "PERFORMANCE",
         "object": "Project",
-        "message": "Branch '{} of project '{}' is stale, it has not been analyzed since {} days, it could be deleted"
+        "message": "Branch '{}' of project '{}' is stale, it has not been analyzed since {} days, it could be deleted"
     },
     "PULL_REQUEST_LAST_ANALYSIS": {
         "severity": "LOW",
