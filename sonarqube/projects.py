@@ -27,9 +27,12 @@ import datetime
 import re
 import json
 import pytz
+import sonarqube.sqobject as sq
 import sonarqube.env as env
 import sonarqube.components as comp
 import sonarqube.utilities as util
+from sonarqube.branches import Branch
+from sonarqube.pull_requests import PullRequest
 
 import sonarqube.audit_severities as sev
 import sonarqube.audit_rules as rules
@@ -64,7 +67,7 @@ class Project(comp.Component):
         PROJECTS[key] = self
 
     def __str__(self):
-        return "Project key '{}'".format(self.key)
+        return f"Project key '{self.key}'"
 
     def __load__(self, data=None):
         ''' Loads a project object with contents of an api/projects/search call '''
@@ -94,7 +97,7 @@ class Project(comp.Component):
             self.__load__()
         return self.visibility
 
-    def get_last_analysis_date(self, include_branches=False):
+    def last_analysis_date(self, include_branches=False):
         if self.main_branch_last_analysis_date == 'undefined':
             self.__load__()
         if not include_branches:
@@ -108,9 +111,9 @@ class Project(comp.Component):
             return self.all_branches_last_analysis_date
 
         for b in self.get_branches() + self.get_pull_requests():
-            if 'analysisDate' not in b:
+            if b.last_analysis_date() is None:
                 continue
-            b_ana_date = util.string_to_date(b['analysisDate'])
+            b_ana_date = b.last_analysis_date()
             if self.all_branches_last_analysis_date is None or b_ana_date > self.all_branches_last_analysis_date:
                 self.all_branches_last_analysis_date = b_ana_date
         return self.all_branches_last_analysis_date
@@ -123,7 +126,9 @@ class Project(comp.Component):
         if self.branches is None:
             resp = env.get('project_branches/list', params={'project': self.key}, ctxt=self.env)
             data = json.loads(resp.text)
-            self.branches = data['branches']
+            self.branches = []
+            for b in data['branches']:
+                self.branches.append(Branch(name=b['name'], project=self, data=b))
         return self.branches
 
     def get_pull_requests(self):
@@ -134,7 +139,9 @@ class Project(comp.Component):
         if self.pull_requests is None:
             resp = env.get('project_pull_requests/list', params={'project': self.key}, ctxt=self.env)
             data = json.loads(resp.text)
-            self.pull_requests = data['pullRequests']
+            self.pull_requests = []
+            for p in data['pullRequests']:
+                self.pull_requests.append(PullRequest(key=p['key'], project=self, data=p))
         return self.pull_requests
 
     def get_permissions(self, perm_type):
@@ -185,7 +192,7 @@ class Project(comp.Component):
 
     def age_of_last_analysis(self):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        last_analysis = self.get_last_analysis_date(include_branches=True)
+        last_analysis = self.last_analysis_date(include_branches=True)
         if last_analysis is None:
             return None
         return abs(today - last_analysis).days
@@ -310,43 +317,24 @@ Is this normal ?", gr['name'], self.key)
         util.logger.debug("Project '%s' last analysis is %d days old", self.key, age)
         return problems
 
-    def __audit_branches_last_analysis(self, audit_settings):
-        problems = []
-        max_age = audit_settings['audit.projects.branches.maxLastAnalysisAge']
-        if max_age == 0:
+    def __audit_branches(self, audit_settings):
+        if audit_settings['audit.projects.branches.maxLastAnalysisAge'] == 0:
             util.logger.debug("Auditing of branchs last analysis age is disabled, skipping...")
             return []
-        util.logger.debug("Auditing project '%s' branches age", self.key)
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
+        util.logger.debug("Auditing project '%s' branches", self.key)
+        problems = []
         for branch in self.get_branches():
-            util.logger.debug(json.dumps(branch))
-            if 'analysisDate' not in branch:   # Main branch not analyzed yet
-                continue
-            age = (today - util.string_to_date(branch['analysisDate'])).days
-            if branch.get('excludedFromPurge', False):
-                util.logger.debug("Branch '%s' of project '%s' age is kept when inactive", branch['name'], self.key)
-            elif age > max_age:
-                rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
-                msg = rule.msg.format(branch['name'], self.key, age)
-                problems.append(pb.Problem(rule.type, rule.type, msg))
-            else:
-                util.logger.debug("Branch '%s' of project '%s' age is %d days", branch['name'], self.key, age)
+            problems += branch.audit(audit_settings)
         return problems
 
-    def __audit_pull_requests_last_analysis(self, audit_settings):
-        problems = []
+    def __audit_pull_requests(self, audit_settings):
         max_age = audit_settings['audit.projects.pullRequests.maxLastAnalysisAge']
         if max_age == 0:
             util.logger.debug("Auditing of pull request last analysis age is disabled, skipping...")
             return []
-
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
+        problems = []
         for pr in self.get_pull_requests():
-            age = (today - util.string_to_date(pr['analysisDate'])).days
-            if age > max_age:
-                rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
-                msg = rule.msg.format(pr['key'], self.key, age)
-                problems.append(pb.Problem(rule.type, rule.type, msg))
+            problems += pr.audit(audit_settings)
         return problems
 
     def __audit_visibility__(self, audit_settings):
@@ -391,8 +379,8 @@ Is this normal ?", gr['name'], self.key)
         util.logger.debug("Auditing project '%s'", self.key)
         return (
             self.__audit_last_analysis__(audit_settings)
-            + self.__audit_branches_last_analysis(audit_settings)
-            + self.__audit_pull_requests_last_analysis(audit_settings)
+            + self.__audit_branches(audit_settings)
+            + self.__audit_pull_requests(audit_settings)
             + self.__audit_visibility__(audit_settings)
             + self.__audit_languages__(audit_settings)
             + self.__audit_permissions__(audit_settings)
@@ -401,7 +389,7 @@ Is this normal ?", gr['name'], self.key)
     def delete_if_obsolete(self, days=180):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         mindate = today - datetime.timedelta(days=days)
-        last_analysis = self.get_last_analysis_date(include_branches=True)
+        last_analysis = self.last_analysis_date(include_branches=True)
         loc = int(self.get_measure('ncloc'))
         print("Project key '%s' - %d LoCs - Not analysed for %d days" %
               (self.key, loc, (today - last_analysis).days))
