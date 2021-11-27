@@ -27,7 +27,6 @@ import datetime
 import re
 import json
 import pytz
-import sonarqube.sqobject as sq
 import sonarqube.env as env
 import sonarqube.components as comp
 import sonarqube.utilities as util
