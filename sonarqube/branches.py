@@ -60,9 +60,13 @@ class Branch(sq.SqObject):
     def is_purgeable(self):
         return self.json.get('excludedFromPurge', False)
 
+    def is_main(self):
+        return self.json.get('isMain', False)
+
     def audit(self, audit_settings):
         age = self.last_analysis_age()
-        if age is None:    # Main branch not analyzed yet
+        if self.is_main() or age is None:
+            # Main branch (not purgeable) or branch not analyzed yet
             return []
         max_age = audit_settings['audit.projects.branches.maxLastAnalysisAge']
         problems = []
