@@ -28,23 +28,26 @@ import sys
 import sonarqube.env as env
 import sonarqube.audit_config as conf
 import sonarqube.projects as projects
+from sonarqube.branches import Branch
+from sonarqube.pull_requests import PullRequest
+from sonarqube.user_tokens import UserToken
 import sonarqube.users as users
-import sonarqube.user_tokens as utokens
+
 import sonarqube.utilities as util
 import sonarqube.version as version
 import sonarqube.audit_problem as pb
 
 
-def get_project_problems(max_days, endpoint):
+def get_project_problems(max_days_proj, max_days_branch, max_days_pr, endpoint):
     problems = []
-    if max_days < 90:
-        util.logger.error("Can't delete projects more recent than 90 days")
+    if max_days_proj < 90:
+        util.logger.error("As a safety measure, can't delete projects more recent than 90 days")
         return problems
 
     settings = {
-        'audit.projects.maxLastAnalysisAge': max_days,
-        'audit.projects.branches.maxLastAnalysisAge': 0,
-        'audit.projects.pullRequests.maxLastAnalysisAge': 0,
+        'audit.projects.maxLastAnalysisAge': max_days_proj,
+        'audit.projects.branches.maxLastAnalysisAge': max_days_branch,
+        'audit.projects.pullRequests.maxLastAnalysisAge': max_days_pr,
         'audit.projects.neverAnalyzed': False,
         'audit.projects.duplicates': False,
         'audit.projects.visibility': False,
@@ -52,17 +55,18 @@ def get_project_problems(max_days, endpoint):
     }
     settings = conf.load(config_name='sonar-audit', settings=settings)
     problems = projects.audit(endpoint=endpoint, audit_settings=settings)
-    nb_proj = len(problems)
+    nb_proj = 0
+    total_loc = 0
+    for p in problems:
+        if p.concerned_object is not None and isinstance(p.concerned_object, projects.Project):
+            nb_proj += 1
+            total_loc += int(p.concerned_object.get_measure('ncloc', fallback='0'))
+
     if nb_proj == 0:
-        util.logger.info("%d projects older than %d days found during audit", nb_proj, max_days)
+        util.logger.info("%d projects older than %d days found during audit", nb_proj, max_days_proj)
     else:
-        total_loc = 0
-        for p in problems:
-            if p.concerned_object is not None and isinstance(p.concerned_object, projects.Project):
-                loc = int(p.concerned_object.get_measure('ncloc', fallback='0'))
-                total_loc += loc
         util.logger.warning("%d projects older than %d days for a total of %d LoC found during audit",
-                            nb_proj, max_days, total_loc)
+                            nb_proj, max_days_proj, total_loc)
     return problems
 
 def get_user_problems(max_days, endpoint):
@@ -79,56 +83,86 @@ def get_user_problems(max_days, endpoint):
         util.logger.warning("%d user tokens older than %d days found during audit", nb_user_problems, max_days)
     return user_problems
 
-def main():
+
+def _parse_arguments():
     util.set_logger('sonar-housekeeper')
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
     parser.add_argument('--mode', required=False, choices=['dry-run', 'delete'],
                         default='dry-run',
                         help='''
-                        If 'dry-run', script only lists objects (projects or tokens) to delete,
+                        If 'dry-run', script only lists objects (projects, branches, PRs or tokens) to delete,
                         If 'delete' it deletes projects or tokens
                         ''')
-    parser.add_argument('-P', '--projects', required=False, help='Deletes projects', action='store_true')
-    parser.add_argument('-T', '--tokens', required=False, help='Deletes user tokens', action='store_true')
-    parser.add_argument('-o', '--olderThan', required=True, type=int,
-                        help='Number of days since last analysis to delete file')
-    args = util.parse_and_check_token(parser)
+    parser.add_argument('-P', '--projects', required=False, type=int, default=0,
+        help='Deletes projects not analyzed since a given number of days')
+    parser.add_argument('-B', '--branches', required=False, type=int, default=0,
+        help='Deletes branches not to be kept and not analyzed since a given number of days')
+    parser.add_argument('-R', '--pullrequests', required=False, type=int, default=0,
+        help='Deletes pull requests not analyzed since a given number of days')
+    parser.add_argument('-T', '--tokens', required=False, type=int, default=0,
+        help='Deletes user tokens older than a certain number of days')
+    return util.parse_and_check_token(parser)
+
+def _delete_objects(problems):
+    revoked_token_count = 0
+    deleted_projects = {}
+    deleted_branch_count = 0
+    deleted_pr_count = 0
+    deleted_loc = 0
+    for p in problems:
+        obj = p.concerned_object
+        if obj is None:
+            continue    # BUG
+        if isinstance(obj, projects.Project):
+            loc = int(obj.get_measure('ncloc', fallback='0'))
+            util.logger.info("Deleting project '%s', %d LoC", obj.key, loc)
+            if obj.delete():
+                deleted_projects[obj.key] = obj
+                deleted_loc += loc
+        if isinstance(obj, Branch):
+            if obj.project.key in deleted_projects:
+                util.logger.info("Project '%s' deleted, so no need to delete its branch '%s'",
+                    obj.project.key, obj.key)
+            else:
+                obj.delete()
+                deleted_branch_count += 1
+        if isinstance(obj, PullRequest):
+            if obj.project.key in deleted_projects:
+                util.logger.info("Project '%s' deleted, so no need to delete its PR '%s'",
+                    obj.project.key, obj.key)
+            else:
+                obj.delete()
+                deleted_pr_count += 1
+        if isinstance(obj, UserToken) and obj.revoke():
+            revoked_token_count += 1
+    return (len(deleted_projects), deleted_loc, deleted_branch_count, deleted_pr_count, revoked_token_count)
+
+def main():
+    args = _parse_arguments()
+
     sq = env.Environment(url=args.url, token=args.token)
     kwargs = vars(args)
     mode = args.mode
-    max_days = args.olderThan
     util.check_environment(kwargs)
+    util.logger.debug("Args = %s", str(kwargs))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     problems = []
-    if args.projects:
-        problems = get_project_problems(max_days, sq)
+    if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:
+        problems = get_project_problems(args.projects, args.branches, args.pullrequests, sq)
 
     if args.tokens:
-        problems += get_user_problems(max_days, sq)
+        problems += get_user_problems(args.tokens, sq)
 
     pb.dump_report(problems, file=None, file_format='csv')
 
     if mode == 'dry-run':
         sys.exit(0)
 
-    revoked_token_count = 0
-    deleted_project_count = 0
-    deleted_loc = 0
-    for p in problems:
-        if p.concerned_object is None:
-            continue    # BUG
-        if isinstance(p.concerned_object, projects.Project):
-            loc = int(p.concerned_object.get_measure('ncloc', fallback='0'))
-            util.logger.info("Deleting project '%s', %d LoC", p.concerned_object.key, loc)
-            p.concerned_object.delete()
-            deleted_project_count += 1
-            deleted_loc += loc
-        if isinstance(p.concerned_object, utokens.UserToken):
-            util.logger.info("Revoking token '%s' of user login '%s'", str(p.concerned_object), p.concerned_object.login)
-            p.concerned_object.revoke()
-            revoked_token_count += 1
-    util.logger.info("%d projects and %d LoCs deleted", deleted_project_count, deleted_loc)
-    util.logger.info("%d tokens revoked", revoked_token_count)
+    (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems)
+    util.logger.info("%d projects and %d LoCs deleted", deleted_proj, deleted_loc)
+    util.logger.info("%d branches deleted", deleted_branches)
+    util.logger.info("%d pull requests deleted", deleted_prs)
+    util.logger.info("%d tokens revoked", revoked_tokens)
     sys.exit(len(problems))
 
 if __name__ == "__main__":

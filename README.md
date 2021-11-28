@@ -151,21 +151,23 @@ sonar-audit --what settings,qg,qp
   - More than 5 QP for a given language
 - Projects:
   - Projects provisioned but never analyzed
-  - Projects not analyzed since 6 months (on any branch)
+  - Projects not analyzed since `audit.projects.maxLastAnalysisAge` days (on any branch) (default 180 days)
+  - Project branches not kept permanently and not analyzed since `audit.projects.branches.maxLastAnalysisAge` (default 30 days)
+  - Pull requests since `audit.projects.pullRequests.maxLastAnalysisAge`(default 30 days)
   - Projects with `public` visibility
   - Large projects with too much XML: Projects with more than 200K LoC and XML representing more than 50% of it
   - Permissions:
-    - More than 5 different users with direct permissions (use groups)
-    - More than 3 users with Project admin permission
-    - More than 5 different groups with permissions on project
-    - More than 1 group with execute analysis permission
-    - More than 2 groups with issue admin permission
-    - More than 2 groups with hotspot admin permission
-    - More than 2 groups with project admin permission
+    - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
+    - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
+    - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
+    - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
+    - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
+    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
 - Users:
-    - Tokens older than 90 days, or `audit.tokens.maxAge`
-    - Tokens created but never used after 30 days or `audit.maxUnusedAge`
-    - Tokens not used for 30 days or `audit.maxUnusedAge`
+    - Tokens older than `audit.tokens.maxAge` days (default 90 days)
+    - Tokens created but never used after `audit.tokens.maxUnusedAge` days (default 30 days)
+    - Tokens not used for `audit.tokens.maxUnusedAge` days (default 30 days)
 </details>
 
 # sonar-housekeeper
@@ -173,15 +175,17 @@ sonar-audit --what settings,qg,qp
 Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
 Deletes user tokens older than a given number of days
 
-Usage: `sonar-housekeeper [-u <url>] [-t <token>] -o days [-P] [-T] [--mode delete] [-h]`
+Usage: `sonar-housekeeper [-u <url>] [-t <token>] [-P <days>] [-B <days>] [-R <days>] [-T <days>] [--mode delete] [-h]`
 
-- `-o <days>`: Minimum number of days since project last analysis (or token creation date).
+- `-P <days>`: Will search for projects not analyzed since more than `<days>` days.
 To avoid deleting too recent projects it is denied to specify less than 90 days
-- `-P`: Will search for projects not analyzed since more than so many days
-- `-T`: Will search for tokens created since more than so many days
+- `-B <days>`: Will search for projects branches not analyzed since more than `<days>` days.
+Branches marked as "keep when inactive" are excluded from housekeeping
+- `-R <days>`: Will search for pull requests not analyzed since more than `<days>` days
+- `-T <days>`: Will search for tokens created since more than `<days>` days
 - `--mode delete`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects
-and tokens that would be deleted.
-If specified projects and tokens are actually deleted
+branches, pull requests and tokens that would be deleted.
+If `--mode delete` is specified objects are actually deleted
 
 ### :information_source: Limitations
 To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.

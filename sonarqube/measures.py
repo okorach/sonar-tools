@@ -73,8 +73,6 @@ class Measure(sq.SqObject):
 
 
 def component(component_key, metric_keys, endpoint=None, **kwargs):
-    util.logger.debug("Getting measures '%s' for '%s' with args '%s'", metric_keys,
-        component_key, str(kwargs))
     kwargs['component'] = component_key
     kwargs['metricKeys'] = metric_keys
     resp = env.get(Measure.API_COMPONENT, params=kwargs, ctxt=endpoint)
