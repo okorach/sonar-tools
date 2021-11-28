@@ -59,7 +59,7 @@ class PullRequest(sq.SqObject):
     def delete(self, api=None, params=None):
         util.logger.info("Deleting %s", str(self))
         if not self.post('api/project_pull_requests/delete',
-            params={'pullRequest': self.key, 'project': self.project.key}):
+                         params={'pullRequest': self.key, 'project': self.project.key}):
             util.logger.error("%s: deletion failed", str(self))
             return False
         util.logger.info("%s: Successfully deleted", str(self))

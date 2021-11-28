@@ -83,7 +83,8 @@ def get_user_problems(max_days, endpoint):
         util.logger.warning("%d user tokens older than %d days found during audit", nb_user_problems, max_days)
     return user_problems
 
-def main():
+
+def _parse_arguments():
     util.set_logger('sonar-housekeeper')
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
     parser.add_argument('--mode', required=False, choices=['dry-run', 'delete'],
@@ -100,25 +101,9 @@ def main():
         help='Deletes pull requests not analyzed since a given number of days')
     parser.add_argument('-T', '--tokens', required=False, type=int, default=0,
         help='Deletes user tokens older than a certain number of days')
-    args = util.parse_and_check_token(parser)
-    sq = env.Environment(url=args.url, token=args.token)
-    kwargs = vars(args)
-    mode = args.mode
-    util.check_environment(kwargs)
-    util.logger.debug("Args = %s", str(kwargs))
-    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-    problems = []
-    if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:
-        problems = get_project_problems(args.projects, args.branches, args.pullrequests, sq)
+    return util.parse_and_check_token(parser)
 
-    if args.tokens:
-        problems += get_user_problems(args.tokens, sq)
-
-    pb.dump_report(problems, file=None, file_format='csv')
-
-    if mode == 'dry-run':
-        sys.exit(0)
-
+def _delete_objects(problems):
     revoked_token_count = 0
     deleted_projects = {}
     deleted_branch_count = 0
@@ -150,10 +135,34 @@ def main():
                 deleted_pr_count += 1
         if isinstance(obj, UserToken) and obj.revoke():
             revoked_token_count += 1
-    util.logger.info("%d projects and %d LoCs deleted", len(deleted_projects), deleted_loc)
-    util.logger.info("%d branches deleted", deleted_branch_count)
-    util.logger.info("%d pull requests deleted", deleted_pr_count)
-    util.logger.info("%d tokens revoked", revoked_token_count)
+    return (len(deleted_projects), deleted_loc, deleted_branch_count, deleted_pr_count, revoked_token_count)
+
+def main():
+    args = _parse_arguments()
+
+    sq = env.Environment(url=args.url, token=args.token)
+    kwargs = vars(args)
+    mode = args.mode
+    util.check_environment(kwargs)
+    util.logger.debug("Args = %s", str(kwargs))
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
+    problems = []
+    if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:
+        problems = get_project_problems(args.projects, args.branches, args.pullrequests, sq)
+
+    if args.tokens:
+        problems += get_user_problems(args.tokens, sq)
+
+    pb.dump_report(problems, file=None, file_format='csv')
+
+    if mode == 'dry-run':
+        sys.exit(0)
+
+    (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems)
+    util.logger.info("%d projects and %d LoCs deleted", deleted_proj, deleted_loc)
+    util.logger.info("%d branches deleted", deleted_branches)
+    util.logger.info("%d pull requests deleted", deleted_prs)
+    util.logger.info("%d tokens revoked", revoked_tokens)
     sys.exit(len(problems))
 
 if __name__ == "__main__":
