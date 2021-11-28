@@ -65,7 +65,7 @@ class Branch(sq.SqObject):
 
     def delete(self, api=None, params=None):
         util.logger.info("Deleting %s", str(self))
-        if super().delete('api/project_branches/delete', params={'branch': self.name, 'project': self.key}):
+        if not self.post('api/project_branches/delete', params={'branch': self.name, 'project': self.project.key}):
             util.logger.error("%s: deletion failed", str(self))
             return False
         util.logger.info("%s: Successfully deleted", str(self))
@@ -83,6 +83,7 @@ class Branch(sq.SqObject):
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
             msg = rule.msg.format(self.name, self.project.key, age)
+            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
             util.logger.debug("%s age is %d days", str(self), age)
