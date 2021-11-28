@@ -175,15 +175,17 @@ sonar-audit --what settings,qg,qp
 Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
 Deletes user tokens older than a given number of days
 
-Usage: `sonar-housekeeper [-u <url>] [-t <token>] -o days [-P] [-T] [--mode delete] [-h]`
+Usage: `sonar-housekeeper [-u <url>] [-t <token>] [-P <days>] [-B <days>] [-R <days>] [-T <days>] [--mode delete] [-h]`
 
-- `-o <days>`: Minimum number of days since project last analysis (or token creation date).
+- `-P <days>`: Will search for projects not analyzed since more than `<days>` days.
 To avoid deleting too recent projects it is denied to specify less than 90 days
-- `-P`: Will search for projects not analyzed since more than so many days
-- `-T`: Will search for tokens created since more than so many days
+- `-B <days>`: Will search for projects branches not analyzed since more than `<days>` days.
+Branches marked as "keep when inactive" are excluded from housekeeping
+- `-R <days>`: Will search for pull requests not analyzed since more than `<days>` days
+- `-T <days>`: Will search for tokens created since more than `<days>` days
 - `--mode delete`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects
-and tokens that would be deleted.
-If specified projects and tokens are actually deleted
+branches, pull requests and tokens that would be deleted.
+If `--mode delete` is specified objects are actually deleted
 
 ### :information_source: Limitations
 To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.
