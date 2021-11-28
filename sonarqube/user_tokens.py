@@ -58,6 +58,7 @@ class UserToken(sq.SqObject):
     def revoke(self):
         if self.name is None:
             return False
+        util.logger.info("Revoking token '%s' of user login '%s'", self.name, self.login)
         env.post(UserToken.API_REVOKE, {'name': self.name, 'login': self.login}, self.env)
         return True
 
