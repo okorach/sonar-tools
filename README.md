@@ -151,21 +151,23 @@ sonar-audit --what settings,qg,qp
   - More than 5 QP for a given language
 - Projects:
   - Projects provisioned but never analyzed
-  - Projects not analyzed since 6 months (on any branch)
+  - Projects not analyzed since `audit.projects.maxLastAnalysisAge` days (on any branch) (default 180 days)
+  - Project branches not kept permanently and not analyzed since `audit.projects.branches.maxLastAnalysisAge` (default 30 days)
+  - Pull requests since `audit.projects.pullRequests.maxLastAnalysisAge`(default 30 days)
   - Projects with `public` visibility
   - Large projects with too much XML: Projects with more than 200K LoC and XML representing more than 50% of it
   - Permissions:
-    - More than 5 different users with direct permissions (use groups)
-    - More than 3 users with Project admin permission
-    - More than 5 different groups with permissions on project
-    - More than 1 group with execute analysis permission
-    - More than 2 groups with issue admin permission
-    - More than 2 groups with hotspot admin permission
-    - More than 2 groups with project admin permission
+    - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
+    - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
+    - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
+    - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
+    - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
+    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
 - Users:
-    - Tokens older than 90 days, or `audit.tokens.maxAge`
-    - Tokens created but never used after 30 days or `audit.maxUnusedAge`
-    - Tokens not used for 30 days or `audit.maxUnusedAge`
+    - Tokens older than `audit.tokens.maxAge` days (default 90 days)
+    - Tokens created but never used after `audit.tokens.maxUnusedAge` days (default 30 days)
+    - Tokens not used for `audit.tokens.maxUnusedAge` days (default 30 days)
 </details>
 
 # sonar-housekeeper
