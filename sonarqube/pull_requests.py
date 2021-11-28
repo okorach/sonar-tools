@@ -56,6 +56,15 @@ class PullRequest(sq.SqObject):
         else:
             return today - last_analysis
 
+    def delete(self, api=None, params=None):
+        util.logger.info("Deleting %s", str(self))
+        if super().delete('api/project_pull_requests/delete',
+            params={'pullRequest': self.key, 'project': self.key}):
+            util.logger.error("%s: deletion failed", str(self))
+            return False
+        util.logger.info("%s: Successfully deleted", str(self))
+        return True
+
     def audit(self, audit_settings):
         age = self.last_analysis_age()
         if age is None:    # Main branch not analyzed yet

@@ -28,8 +28,11 @@ import sys
 import sonarqube.env as env
 import sonarqube.audit_config as conf
 import sonarqube.projects as projects
+from sonarqube.branches import Branch
+from sonarqube.pull_requests import PullRequest
+from sonarqube.user_tokens import UserToken
 import sonarqube.users as users
-import sonarqube.user_tokens as utokens
+
 import sonarqube.utilities as util
 import sonarqube.version as version
 import sonarqube.audit_problem as pb
@@ -113,21 +116,28 @@ def main():
 
     revoked_token_count = 0
     deleted_project_count = 0
+    deleted_branch_count = 0
+    deleted_pr_count = 0
     deleted_loc = 0
     for p in problems:
-        if p.concerned_object is None:
+        obj = p.concerned_object
+        if obj is None:
             continue    # BUG
-        if isinstance(p.concerned_object, projects.Project):
-            loc = int(p.concerned_object.get_measure('ncloc', fallback='0'))
-            util.logger.info("Deleting project '%s', %d LoC", p.concerned_object.key, loc)
-            p.concerned_object.delete()
-            deleted_project_count += 1
-            deleted_loc += loc
-        if isinstance(p.concerned_object, utokens.UserToken):
-            util.logger.info("Revoking token '%s' of user login '%s'", str(p.concerned_object), p.concerned_object.login)
-            p.concerned_object.revoke()
+        if isinstance(obj, projects.Project):
+            loc = int(obj.get_measure('ncloc', fallback='0'))
+            util.logger.info("Deleting project '%s', %d LoC", obj.key, loc)
+            if obj.delete():
+                deleted_project_count += 1
+                deleted_loc += loc
+        if isinstance(obj, Branch) and obj.delete():
+            deleted_branch_count += 1
+        if isinstance(obj, PullRequest) and obj.delete():
+            deleted_pr_count += 1
+        if isinstance(obj, UserToken) and obj.revoke():
             revoked_token_count += 1
     util.logger.info("%d projects and %d LoCs deleted", deleted_project_count, deleted_loc)
+    util.logger.info("%d branches deleted", deleted_branch_count)
+    util.logger.info("%d pull requests deleted", deleted_pr_count)
     util.logger.info("%d tokens revoked", revoked_token_count)
     sys.exit(len(problems))
 

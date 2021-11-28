@@ -63,6 +63,14 @@ class Branch(sq.SqObject):
     def is_main(self):
         return self.json.get('isMain', False)
 
+    def delete(self, api=None, params=None):
+        util.logger.info("Deleting %s", str(self))
+        if super().delete('api/project_branches/delete', params={'branch': self.name, 'project': self.key}):
+            util.logger.error("%s: deletion failed", str(self))
+            return False
+        util.logger.info("%s: Successfully deleted", str(self))
+        return True
+
     def audit(self, audit_settings):
         age = self.last_analysis_age()
         if self.is_main() or age is None:
