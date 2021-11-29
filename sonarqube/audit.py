@@ -47,7 +47,6 @@ def __deduct_format__(fmt, file):
     return 'csv'
 
 
-
 def _audit_sif(sif):
     try:
         with open(sif, 'r') as f:
@@ -62,6 +61,7 @@ def _audit_sif(sif):
         util.logger.critical("No permission to open file %s", sif)
         raise
     return env.audit_sysinfo(sif)
+
 
 def _audit_sq(sq, settings, what=None):
     if what is None:

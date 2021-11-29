@@ -26,7 +26,6 @@ import json
 import sonarqube.env as env
 import sonarqube.components as comp
 import sonarqube.utilities as util
-
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 

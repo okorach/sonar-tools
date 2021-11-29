@@ -102,6 +102,7 @@ class RuleId(enum.Enum):
     TOKEN_TOO_OLD = 4000
     TOKEN_UNUSED = 4001
     TOKEN_NEVER_USED = 4002
+
     PORTFOLIO_EMPTY = 5000
 
     def __str__(self):
