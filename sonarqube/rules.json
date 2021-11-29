@@ -53,6 +53,7 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "message": "Maintainability rating threshold of '{}' for {} rating is outside of recommended range [{}-{}]"
+
     },
     "SETTING_SLB_RETENTION": {
         "severity": "MEDIUM",
@@ -332,5 +333,11 @@
         "type": "SECURITY",
         "object": "Token",
         "message": "Token '{}' of user '{}' has been created {} days ago but never used, it should be revoked"
+    },
+    "PORTFOLIO_EMPTY": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "object": "Portfolio",
+        "message": "{} is empty, it should be populated or delete"
     }
 }
