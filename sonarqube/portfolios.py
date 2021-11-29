@@ -88,8 +88,8 @@ class Portfolio(comp.Component):
         resp = env.get('measures/component_tree', ctxt=self.env,
             params={'component': self.key, 'metricKeys':'ncloc', 'strategy':'children', 'ps':500})
         comp_list = {}
-        for comp in json.loads(resp.text)['components']:
-            comp_list[comp['key']] = comp
+        for c in json.loads(resp.text)['components']:
+            comp_list[c['key']] = c
         return comp_list
 
     def nbr_projects(self):
@@ -123,14 +123,10 @@ class Portfolio(comp.Component):
 
         return problems
 
-    def __audit_permissions(self, audit_settings):
-        return []
-
     def audit(self, audit_settings):
         util.logger.info("Auditing project %s", self.key)
         return (
             self.__audit_projects(audit_settings)
-            + self.__audit_permissions(audit_settings)
         )
 
 
