@@ -81,7 +81,7 @@ class Portfolio(comp.Component):
 
     def get_components(self):
         resp = env.get('measures/component_tree', ctxt=self.env,
-            params={'component': self.key, 'metricKeys': 'ncloc', 'strategy':' children', 'ps': 500})
+            params={'component': self.key, 'metricKeys': 'ncloc', 'strategy': 'children', 'ps': 500})
         comp_list = {}
         for c in json.loads(resp.text)['components']:
             comp_list[c['key']] = c
@@ -126,7 +126,7 @@ class Portfolio(comp.Component):
 
 
 def count(endpoint=None):
-    resp = env.get(SEARCH_API, ctxt=endpoint, params={'ps':1})
+    resp = env.get(SEARCH_API, ctxt=endpoint, params={'ps': 1})
     data = json.loads(resp.text)
     return data['paging']['total']
 
