@@ -23,7 +23,7 @@
 
 '''
 import json
-import sonarqube.env as env
+from sonarqube import env
 import sonarqube.components as comp
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
@@ -46,10 +46,6 @@ class Portfolio(comp.Component):
         self.name = None
         self.selection_mode = None
         self.visibility = None
-        self.permissions = None
-        self.user_permissions = None
-        self.group_permissions = None
-        self.branches = None
         self.ncloc = None
         self._nbr_projects = None
         self.__load__(data)
@@ -85,7 +81,7 @@ class Portfolio(comp.Component):
 
     def get_components(self):
         resp = env.get('measures/component_tree', ctxt=self.env,
-            params={'component': self.key, 'metricKeys':'ncloc', 'strategy':'children', 'ps':500})
+            params={'component': self.key, 'metricKeys': 'ncloc', 'strategy':' children', 'ps': 500})
         comp_list = {}
         for c in json.loads(resp.text)['components']:
             comp_list[c['key']] = c
@@ -94,7 +90,7 @@ class Portfolio(comp.Component):
     def nbr_projects(self):
         if self._nbr_projects is None:
             data = json.loads(env.get('measures/component', ctxt=self.env,
-                params={'component': self.key, 'metricKeys':'projects,ncloc'}).text)['component']['measures']
+                params={'component': self.key, 'metricKeys': 'projects,ncloc'}).text)['component']['measures']
             for m in data:
                 if m['metric'] == 'projects':
                     self._nbr_projects = int(m['value'])
@@ -147,7 +143,7 @@ def search(endpoint=None):
 def get(key, sqenv=None):
     global PORTFOLIOS
     if key not in PORTFOLIOS:
-        _ = Portfolio(key=key, endpoint=sqenv)
+        PORTFOLIOS[key] = Portfolio(key=key, endpoint=sqenv)
     return PORTFOLIOS[key]
 
 
