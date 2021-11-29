@@ -124,7 +124,7 @@ class Portfolio(comp.Component):
         return problems
 
     def audit(self, audit_settings):
-        util.logger.info("Auditing project %s", self.key)
+        util.logger.info("Auditing %s", str(self))
         return (
             self.__audit_projects(audit_settings)
         )

@@ -27,6 +27,7 @@ import sys
 import sonarqube.projects as projects
 import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.qualitygates as qualitygates
+import sonarqube.portfolios as pf
 import sonarqube.users as users
 import sonarqube.utilities as util
 import sonarqube.version as version
@@ -40,7 +41,7 @@ def __deduct_format__(fmt, file):
         return fmt
     if file is not None:
         ext = file.split('.').pop(-1).lower()
-        if ext == 'csv' or ext == 'json':
+        if ext in ('csv', 'json'):
             return ext
     return 'csv'
 
@@ -49,7 +50,8 @@ def main():
     util.set_logger('sonar-audit')
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
     parser.add_argument('-w', '--what', required=False,
-                        help='What to audit (qp,qg,settings,projects) comma separated, everything by default')
+                        help='What to audit (qp,qg,settings,projects,users,portfolios) '
+                        'comma separated, everything by default')
     parser.add_argument('--format', choices=['csv', 'json'], required=False,
                         help='''Output format for audit report
 If not specified, it is the output file extension if json or csv, then csv by default''')
@@ -63,7 +65,7 @@ If not specified, it is the output file extension if json or csv, then csv by de
     settings = conf.load('sonar-audit.properties')
 
     if args.what is None:
-        args.what = 'qp,qg,settings,projects,users'
+        args.what = 'qp,qg,settings,projects,portfolios,users'
     what_to_audit = args.what.split(',')
 
     problems = []
@@ -77,6 +79,8 @@ If not specified, it is the output file extension if json or csv, then csv by de
         problems += sq.audit(audit_settings=settings)
     if 'users' in what_to_audit:
         problems += users.audit(endpoint=sq, audit_settings=settings)
+    if 'portfolios' in what_to_audit:
+        problems += pf.audit(endpoint=sq, audit_settings=settings)
 
     args.format = __deduct_format__(args.format, args.file)
     pb.dump_report(problems, args.file, args.format)
