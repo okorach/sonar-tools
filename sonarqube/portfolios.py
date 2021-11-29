@@ -93,13 +93,13 @@ class Portfolio(comp.Component):
 
     def nbr_projects(self):
         if self._nbr_projects is None:
-            data = env.get('measures/components', ctxt=self.env,
-                params={'component': self.key, 'metricKeys':'projects,ncloc'})['measures']
+            data = json.loads(env.get('measures/component', ctxt=self.env,
+                params={'component': self.key, 'metricKeys':'projects,ncloc'}).text)['component']['measures']
             for m in data:
                 if m['metric'] == 'projects':
-                    self._nbr_projects = m['value']
+                    self._nbr_projects = int(m['value'])
                 elif m['metric'] == 'ncloc':
-                    self.ncloc = m['value']
+                    self.ncloc = int(m['value'])
         return self._nbr_projects
 
     def delete(self, api='views/delete', params=None):
