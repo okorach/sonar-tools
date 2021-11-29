@@ -108,7 +108,7 @@ class Portfolio(comp.Component):
         return True
 
     def __audit_projects(self, audit_settings):
-        if audit_settings['audit.portfolios'] or audit_settings['audit.portfolios.empty']:
+        if not audit_settings['audit.portfolios'] or not audit_settings['audit.portfolios.empty']:
             util.logger.debug("Auditing portfolios is disabled, skipping...")
             return []
         problems = []
