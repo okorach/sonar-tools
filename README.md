@@ -164,10 +164,12 @@ sonar-audit --what settings,qg,qp
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
+- Portfolios: (if `audit.portfolios` is `yes`)
+  - Empty portfolios (with no projects) if `audit.portfolios.empty` is `yes`
 - Users:
-    - Tokens older than `audit.tokens.maxAge` days (default 90 days)
-    - Tokens created but never used after `audit.tokens.maxUnusedAge` days (default 30 days)
-    - Tokens not used for `audit.tokens.maxUnusedAge` days (default 30 days)
+  - Tokens older than `audit.tokens.maxAge` days (default 90 days)
+  - Tokens created but never used after `audit.tokens.maxUnusedAge` days (default 30 days)
+  - Tokens not used for `audit.tokens.maxUnusedAge` days (default 30 days)
 </details>
 
 # sonar-housekeeper
@@ -185,7 +187,8 @@ Branches marked as "keep when inactive" are excluded from housekeeping
 - `-T <days>`: Will search for tokens created since more than `<days>` days
 - `--mode delete`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects
 branches, pull requests and tokens that would be deleted.
-If `--mode delete` is specified objects are actually deleted
+If `--mode delete` is specified objects
+ are actually deleted
 
 ### :information_source: Limitations
 To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.
