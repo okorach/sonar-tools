@@ -104,6 +104,7 @@ class RuleId(enum.Enum):
     TOKEN_NEVER_USED = 4002
 
     PORTFOLIO_EMPTY = 5000
+    APPLICATION_EMPTY = 5100
 
     def __str__(self):
         return repr(self.name)[1:-1]

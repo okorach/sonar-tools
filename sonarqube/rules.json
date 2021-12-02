@@ -338,6 +338,12 @@
         "severity": "LOW",
         "type": "OPERATIONS",
         "object": "Portfolio",
-        "message": "{} is empty, it should be populated or delete"
+        "message": "{} is empty, it should be populated or deleted"
+    },
+    "APPLICATION_EMPTY": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "object": "Application",
+        "message": "{} is empty, it should be populated or deleted"
     }
 }
