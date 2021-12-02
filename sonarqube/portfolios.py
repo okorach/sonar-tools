@@ -29,7 +29,7 @@ import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 
-PORTFOLIOS = {}
+_PORTFOLIOS = {}
 
 LIST_API = 'views/list'
 SEARCH_API = 'views/search'
@@ -41,6 +41,7 @@ PORTFOLIO_QUALIFIER = 'VW'
 class Portfolio(comp.Component):
 
     def __init__(self, key, endpoint, data=None):
+        global _PORTFOLIOS
         super().__init__(key=key, sqenv=endpoint)
         self.id = None
         self.name = None
@@ -49,7 +50,7 @@ class Portfolio(comp.Component):
         self.ncloc = None
         self._nbr_projects = None
         self.__load__(data)
-        PORTFOLIOS[key] = self
+        _PORTFOLIOS[key] = self
 
     def __str__(self):
         return f"Portfolio key '{self.key}'"
@@ -136,15 +137,16 @@ def search(endpoint=None):
     data = json.loads(resp.text)
     plist = {}
     for p in data['views']:
-        plist[p['key']] = Portfolio(p['key'], endpoint=endpoint, data=p)
+        if p['qualifier'] == 'VW':
+            plist[p['key']] = Portfolio(p['key'], endpoint=endpoint, data=p)
     return plist
 
 
 def get(key, sqenv=None):
-    global PORTFOLIOS
-    if key not in PORTFOLIOS:
-        PORTFOLIOS[key] = Portfolio(key=key, endpoint=sqenv)
-    return PORTFOLIOS[key]
+    global _PORTFOLIOS
+    if key not in _PORTFOLIOS:
+        _PORTFOLIOS[key] = Portfolio(key=key, endpoint=sqenv)
+    return _PORTFOLIOS[key]
 
 
 def audit(audit_settings, endpoint=None):
