@@ -18,6 +18,7 @@ The following utilities are available:
 - **sonar-audit**: Audits a SonarQube instance
 - **sonar-housekeeper**: Deletes projects that have not been analyzed since a certain number of days, or
 deletes tokens created since more than a certain number of days
+- **sonar-loc**: Computes lines of code per project and in total, as they would be coputed by the license
 - **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the instance in CSV
 - **sonar-issues-export**: Exports issues (potentially filtered) from the instance in CSV
 - **sonar-issues-sync**: Synchronizes issue changelog between branches, projects or even SonarQube instances
@@ -200,6 +201,16 @@ To avoid bad mistakes (mistakenly deleting too many projects), the tools will re
 ```
 sonar-housekeeper -o 120 -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 ```
+
+# sonar-loc
+
+Exports all projects lines of code as they would be counted by the commercial licences.  
+See `sonar-measures-export -h` for details
+
+Basic Usage: `sonar-loc [-u <url>] [-t <token>] [-a] [-n] >locs.csv`  
+- `-n`: Outputs the project name in addition to the project key
+- `-a`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
+
 
 # sonar-measures-export
 
