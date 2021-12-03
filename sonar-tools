@@ -21,6 +21,7 @@
 print('''Collections of utilities for SonarQube:
 - sonar-audit: Audits a SonarQube platform for bad practices, performance, configuration problems
 - sonar-housekeeper: Deletes projects that have not been analyzed since a given number of days
+- sonar-loc: Produces a list of projects with their LoC count as computed by the license (ie taking the largest branch or PR)
 - sonar-measures-export: Exports measures/metrics of one, several or all projects of the platform in CSV
 - sonar-issues-export: Exports issues (potentially filtered) from the platform in CSV
 - sonar-issues-sync: Synchronizes issues between 2 branches, or 2 projects
