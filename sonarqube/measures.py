@@ -72,8 +72,8 @@ class Measure(sq.SqObject):
         return measures
 
 
-def component(component_key, metric_keys, branch=None, pr_id = None, endpoint=None, **kwargs):
-    params = {'component': component_key, 'metricKeys': metric_keys }
+def component(component_key, metric_keys, branch=None, pr_id=None, endpoint=None, **kwargs):
+    params = {'component': component_key, 'metricKeys': metric_keys}
     if branch is not None:
         params['branch'] = branch
     elif pr_id is not None:
