@@ -34,7 +34,7 @@ class Component(sq.SqObject):
 
     def __init__(self, key, sqenv=None, data=None):
         super().__init__(key, sqenv)
-        self.name = None
+        self._name = None
         self.id = None
         self.qualifier = None
         self.path = None
@@ -45,7 +45,7 @@ class Component(sq.SqObject):
 
     def __load__(self, data):
         self.id = data.get('id', None)
-        self.name = data.get('name', None)
+        self._name = data.get('name', None)
         self.qualifier = data.get('qualifier', None)
         self.path = data.get('path', None)
         self.language = data.get('language', None)

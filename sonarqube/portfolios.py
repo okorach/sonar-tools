@@ -23,11 +23,9 @@
 
 '''
 import json
-from sonarqube import env
-import sonarqube.components as comp
+from sonarqube import aggregations, env
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
 
 _PORTFOLIOS = {}
 
@@ -38,47 +36,27 @@ MAX_PAGE_SIZE = 500
 PORTFOLIO_QUALIFIER = 'VW'
 
 
-class Portfolio(comp.Component):
+class Portfolio(aggregations.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
         global _PORTFOLIOS
-        super().__init__(key=key, sqenv=endpoint)
-        self.id = None
-        self.name = None
-        self.selection_mode = None
-        self.visibility = None
-        self.ncloc = None
-        self._nbr_projects = None
-        self.__load__(data)
+        super().__init__(key=key, endpoint=endpoint)
+        self._selection_mode = None
+        self._load(data)
         _PORTFOLIOS[key] = self
 
     def __str__(self):
         return f"Portfolio key '{self.key}'"
 
-    def __load__(self, data=None):
+    def _load(self, data=None, api=None, key_name='key'):
         ''' Loads a portfolio object with contents of data '''
-        if data is None:
-            resp = env.get(GET_API, ctxt=self.env, params={'key': self.key})
-            data = json.loads(resp.text)
-        self.id = data.get('key', None)
-        self.name = data.get('name', None)
-        self.visibility = data.get('visibility', None)
-        self.selection_mode = data.get('selectionMode', None)
+        super()._load(data=data, api=GET_API, key_name='key')
+        self._selection_mode = data.get('selectionMode', None)
 
-    def get_name(self):
-        if self.name is None:
-            self.__load__()
-        return self.name
-
-    def get_visibility(self):
-        if self.visibility is None:
-            self.__load__()
-        return self.visibility
-
-    def get_selection_mode(self):
-        if self.selection_mode is None:
-            self.__load__()
-        return self.selection_mode
+    def selection_mode(self):
+        if self._selection_mode is None:
+            self._load()
+        return self._selection_mode
 
     def get_components(self):
         resp = env.get('measures/component_tree', ctxt=self.env,
@@ -88,48 +66,25 @@ class Portfolio(comp.Component):
             comp_list[c['key']] = c
         return comp_list
 
-    def nbr_projects(self):
-        if self._nbr_projects is None:
-            data = json.loads(env.get('measures/component', ctxt=self.env,
-                params={'component': self.key, 'metricKeys': 'projects,ncloc'}).text)['component']['measures']
-            for m in data:
-                if m['metric'] == 'projects':
-                    self._nbr_projects = int(m['value'])
-                elif m['metric'] == 'ncloc':
-                    self.ncloc = int(m['value'])
-        return self._nbr_projects
-
     def delete(self, api='views/delete', params=None):
         _ = env.post('views/delete', ctxt=self.env, params={'key': self.key})
         return True
 
-    def __audit_projects(self, audit_settings):
+    def _audit_projects(self, audit_settings):
         if not audit_settings['audit.portfolios'] or not audit_settings['audit.portfolios.empty']:
             util.logger.debug("Auditing portfolios is disabled, skipping...")
             return []
-        problems = []
-        n = self.nbr_projects()
-        if n in (None, 0):
-            rule = rules.get_rule(rules.RuleId.PORTFOLIO_EMPTY)
-            msg = rule.msg.format(str(self))
-            util.logger.warning(msg)
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
-        else:
-            util.logger.debug("%s has %d projects", str(self), n)
-
-        return problems
+        return self._audit_no_projects(broken_rule=rules.RuleId.PORTFOLIO_EMPTY)
 
     def audit(self, audit_settings):
         util.logger.info("Auditing %s", str(self))
         return (
-            self.__audit_projects(audit_settings)
+            self._audit_projects(audit_settings)
         )
 
 
 def count(endpoint=None):
-    resp = env.get(SEARCH_API, ctxt=endpoint, params={'ps': 1})
-    data = json.loads(resp.text)
-    return data['paging']['total']
+    return aggregations.count(api=SEARCH_API, endpoint=endpoint)
 
 
 def search(endpoint=None):
