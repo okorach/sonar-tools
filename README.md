@@ -205,7 +205,7 @@ sonar-housekeeper -o 120 -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a
 # sonar-loc
 
 Exports all projects lines of code as they would be counted by the commercial licences.  
-See `sonar-measures-export -h` for details
+See `sonar-loc -h` for details
 
 Basic Usage: `sonar-loc [-u <url>] [-t <token>] [-a] [-n] >locs.csv`  
 - `-n`: Outputs the project name in addition to the project key
