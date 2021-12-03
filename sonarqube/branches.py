@@ -38,6 +38,7 @@ class Branch(sq.SqObject):
         self.project = project
         self.json = data
         self._last_analysis_date = None
+        self._ncloc = None
 
     def __str__(self):
         return f"Branch '{self.name}' of {str(self.project)}"
@@ -46,6 +47,11 @@ class Branch(sq.SqObject):
         if self._last_analysis_date is None and 'analysisDate' in self.json:
             self._last_analysis_date = util.string_to_date(self.json['analysisDate'])
         return self._last_analysis_date
+
+    def ncloc(self):
+        if self._ncloc is None:
+            self._ncloc = int(self.project.get_measure('ncloc', branch=self.name, fallback=0))
+        return self._ncloc
 
     def last_analysis_age(self, rounded_to_days=True):
         last_analysis = self.last_analysis_date()

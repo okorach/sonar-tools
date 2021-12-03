@@ -63,7 +63,8 @@ setuptools.setup(
             'sonar-housekeeper = sonarqube.housekeeper:main',
             'sonar-issues-sync = sonarqube.issues_sync:main',
             'sonar-custom-measures = sonarqube.cust_measures:main',
-            'sonar-issues-export = sonarqube.issues_export:main'
+            'sonar-issues-export = sonarqube.issues_export:main',
+            'sonar-loc = sonarqube.loc:main'
         ]
     },
     python_requires='>=3.6',
