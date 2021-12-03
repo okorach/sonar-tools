@@ -29,6 +29,7 @@ import sonarqube.projects as projects
 import sonarqube.qualityprofiles as qualityprofiles
 import sonarqube.qualitygates as qualitygates
 import sonarqube.portfolios as pf
+import sonarqube.applications as apps
 import sonarqube.users as users
 import sonarqube.utilities as util
 import sonarqube.version as version
@@ -65,7 +66,7 @@ def _audit_sif(sif):
 
 def _audit_sq(sq, settings, what=None):
     if what is None:
-        what = 'qp,qg,settings,projects,portfolios,users'
+        what = 'qp,qg,settings,projects,users,portfolios,apps'
     what_to_audit = what.split(',')
     problems = []
     if 'projects' in what_to_audit:
@@ -80,6 +81,8 @@ def _audit_sq(sq, settings, what=None):
         problems += users.audit(endpoint=sq, audit_settings=settings)
     if 'portfolios' in what_to_audit:
         problems += pf.audit(endpoint=sq, audit_settings=settings)
+    if 'apps' in what_to_audit:
+        problems += apps.audit(endpoint=sq, audit_settings=settings)
     return problems
 
 
@@ -87,7 +90,7 @@ def main():
     util.set_logger('sonar-audit')
     parser = util.set_common_args('Audits a SonarQube platform or a SIF (Support Info File or System Info File)')
     parser.add_argument('-w', '--what', required=False,
-                        help='What to audit (qp,qg,settings,projects,users,portfolios) '
+                        help='What to audit (qp,qg,settings,projects,users,portfolios,apps) '
                         'comma separated, everything by default')
     parser.add_argument('--format', choices=['csv', 'json'], required=False,
                         help="Output format for audit report.\nIf not specified, "
