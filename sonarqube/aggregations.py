@@ -29,19 +29,9 @@ import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 
-_OBJECTS = {}
-
-LIST_API = 'APP'
-# SEARCH_API = 'projects/search'
-GET_API = 'applications/show'
-MAX_PAGE_SIZE = 500
-PORTFOLIO_QUALIFIER = 'VW'
-
-
 class Aggregation(comp.Component):
 
     def __init__(self, key, endpoint, data=None):
-        global _OBJECTS
         super().__init__(key=key, sqenv=endpoint)
         self._id = None
         self._name = None
@@ -79,7 +69,7 @@ class Aggregation(comp.Component):
                     self._ncloc = int(m['value'])
         return self._nbr_projects
 
-    def _audit_no_projects(self, broken_rule):
+    def _audit_empty_aggregation(self, broken_rule):
         problems = []
         n = self.nbr_projects()
         if n in (None, 0):
@@ -95,7 +85,7 @@ class Aggregation(comp.Component):
 
 def count(api, params=None, endpoint=None):
     if params is None:
-        params={}
+        params = {}
     params['ps'] = 1
     resp = env.get(api, params=params, ctxt=endpoint)
     data = json.loads(resp.text)

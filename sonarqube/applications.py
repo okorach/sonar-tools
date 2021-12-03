@@ -31,13 +31,6 @@ import sonarqube.audit_rules as rules
 
 _OBJECTS = {}
 
-LIST_API = 'APP'
-# SEARCH_API = 'projects/search'
-GET_API = 'applications/show'
-MAX_PAGE_SIZE = 500
-PORTFOLIO_QUALIFIER = 'VW'
-
-
 class Application(aggr.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
@@ -54,17 +47,16 @@ class Application(aggr.Aggregation):
         _ = env.post('applications/delete', ctxt=self.env, params={'application': self.key})
         return True
 
-    def _audit_projects(self, audit_settings):
+    def _audit_empty(self, audit_settings):
         if not audit_settings['audit.applications'] or not audit_settings['audit.applications.empty']:
             util.logger.debug("Auditing applications is disabled, skipping...")
             return []
-        return super()._audit_no_projects(broken_rule=rules.RuleId.APPLICATION_EMPTY)
-
+        return super()._audit_empty_aggregation(broken_rule=rules.RuleId.APPLICATION_EMPTY)
 
     def audit(self, audit_settings):
         util.logger.info("Auditing %s", str(self))
         return (
-            self._audit_projects(audit_settings)
+            self._audit_empty(audit_settings)
         )
 
 

@@ -27,7 +27,7 @@ from sonarqube import aggregations, env
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 
-_PORTFOLIOS = {}
+_OBJECTS = {}
 
 LIST_API = 'views/list'
 SEARCH_API = 'views/search'
@@ -39,11 +39,11 @@ PORTFOLIO_QUALIFIER = 'VW'
 class Portfolio(aggregations.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
-        global _PORTFOLIOS
+        global _OBJECTS
         super().__init__(key=key, endpoint=endpoint)
         self._selection_mode = None
         self._load(data)
-        _PORTFOLIOS[key] = self
+        _OBJECTS[key] = self
 
     def __str__(self):
         return f"Portfolio key '{self.key}'"
@@ -70,16 +70,16 @@ class Portfolio(aggregations.Aggregation):
         _ = env.post('views/delete', ctxt=self.env, params={'key': self.key})
         return True
 
-    def _audit_projects(self, audit_settings):
+    def _audit_empty(self, audit_settings):
         if not audit_settings['audit.portfolios'] or not audit_settings['audit.portfolios.empty']:
             util.logger.debug("Auditing portfolios is disabled, skipping...")
             return []
-        return self._audit_no_projects(broken_rule=rules.RuleId.PORTFOLIO_EMPTY)
+        return self._audit_empty_aggregation(broken_rule=rules.RuleId.PORTFOLIO_EMPTY)
 
     def audit(self, audit_settings):
         util.logger.info("Auditing %s", str(self))
         return (
-            self._audit_projects(audit_settings)
+            self._audit_empty(audit_settings)
         )
 
 
@@ -98,10 +98,10 @@ def search(endpoint=None):
 
 
 def get(key, sqenv=None):
-    global _PORTFOLIOS
-    if key not in _PORTFOLIOS:
-        _PORTFOLIOS[key] = Portfolio(key=key, endpoint=sqenv)
-    return _PORTFOLIOS[key]
+    global _OBJECTS
+    if key not in _OBJECTS:
+        _OBJECTS[key] = Portfolio(key=key, endpoint=sqenv)
+    return _OBJECTS[key]
 
 
 def audit(audit_settings, endpoint=None):
