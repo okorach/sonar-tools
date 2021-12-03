@@ -29,19 +29,35 @@ import sonarqube.utilities as util
 def main():
     parser = util.set_common_args('Extract projects lines of code, as computed for the licence')
     parser = util.set_component_args(parser)
+    parser.add_argument('-n', '--projectName', required=False, default=False, action='store_true',
+                        help='Also list the project name on top of the project key')
+    parser.add_argument('-a', '--lastAnalysis', required=False, default=False, action='store_true',
+                        help='Also list the last analysis date on top of nbr of LoC')
     args = util.parse_and_check_token(parser)
     endpoint = env.Environment(url=args.url, token=args.token)
     util.check_environment(vars(args))
 
     # Mandatory script input parameters
     sep = ","
-    print("Project Key{0}Project Name{0}LoC{0}Last Analysis".format(sep))
+    print("# Project Key", end='')
+    if args.projectName:
+        print(f"{sep}Project Name", end='')
+    print(f"{sep}LoC", end='')
+    if args.lastAnalysis:
+        print(f"{sep}Last Analysis", end='')
+    print('')
 
     project_list = projects.search(endpoint=endpoint)
     nb_loc = 0
     for _, p in project_list.items():
         project_loc = p.ncloc(include_branches=True)
-        print(f"{p.key}{sep}{p.name}{sep}{project_loc}{sep}{p.last_analysis_date(include_branches=True)}")
+        print(f"{p.key}", end='')
+        if args.projectName:
+            print(f"{sep}{p.name}", end='')
+        print(f"{sep}{project_loc}", end='')
+        if args.lastAnalysis:
+            print(f"{sep}{p.last_analysis_date(include_branches=True)}", end='')
+        print('')
         nb_loc += project_loc
     util.logger.info("%d PROJECTS and %d LoCs", len(project_list), nb_loc)
     sys.exit(0)
