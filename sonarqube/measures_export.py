@@ -86,18 +86,21 @@ def main():
         branch_data = project.get_branches()
         branch_list = []
         for b in branch_data:
-            if args.withBranches or b['isMain']:
+            if args.withBranches or b.is_main():
                 branch_list.append(b)
-                util.logger.debug("Branch %s appended", b['name'])
+                util.logger.debug("Branch %s appended", b.name)
         project_loc = 0
         for b in branch_list:
             nb_branches += 1
-            p_meas = measures.component(project.key, wanted_metrics, branch=b['name'], endpoint=endpoint)
-            last_analysis = b.get('analysisDate', '')
+            p_meas = measures.component(project.key, wanted_metrics, branch=b.name, endpoint=endpoint)
+            if b.last_analysis_date() is None:
+                last_analysis = "Never"
+            else:
+                last_analysis = util.date_to_string(b.last_analysis_date())
             line = ''
             if 'ncloc' in p_meas:
                 project_loc = max(project_loc, int(p_meas['ncloc']))
-            print("{1}{0}{2}{0}{3}{0}{4}".format(csv_sep, project.key, project.name, b['name'], last_analysis), end='')
+            print("{1}{0}{2}{0}{3}{0}{4}".format(csv_sep, project.key, project.name, b.name, last_analysis), end='')
             if args.metricKeys == '_all':
                 for metric in main_metrics_list:
                     line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep
