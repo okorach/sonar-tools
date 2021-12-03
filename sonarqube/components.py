@@ -40,6 +40,7 @@ class Component(sq.SqObject):
         self.path = None
         self.language = None
         self.nbr_issues = None
+        self._ncloc = None
         if data is not None:
             self.__load__(data)
 
@@ -105,11 +106,12 @@ class Component(sq.SqObject):
         self.nbr_issues = len(issue_list)
         return issue_list
 
-    def get_measures(self, metric_list):
-        return measures.component(component_key=self.key, metric_keys=','.join(metric_list), endpoint=self.env)
+    def get_measures(self, metric_list, branch=None, pr_id=None):
+        return measures.component(component_key=self.key, metric_keys=','.join(metric_list),
+            endpoint=self.env, branch=branch, pr_id=pr_id)
 
-    def get_measure(self, metric, fallback=None):
-        res = self.get_measures(metric_list=[metric])
+    def get_measure(self, metric, branch=None, pr_id=None, fallback=None):
+        res = self.get_measures(metric_list=[metric], branch=branch, pr_id=pr_id)
         for key in res:
             if key == metric:
                 return res[key]

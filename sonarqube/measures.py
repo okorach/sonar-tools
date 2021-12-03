@@ -72,10 +72,14 @@ class Measure(sq.SqObject):
         return measures
 
 
-def component(component_key, metric_keys, endpoint=None, **kwargs):
-    kwargs['component'] = component_key
-    kwargs['metricKeys'] = metric_keys
-    resp = env.get(Measure.API_COMPONENT, params=kwargs, ctxt=endpoint)
+def component(component_key, metric_keys, branch=None, pr_id=None, endpoint=None, **kwargs):
+    params = {'component': component_key, 'metricKeys': metric_keys}
+    if branch is not None:
+        params['branch'] = branch
+    elif pr_id is not None:
+        params['pullRequest'] = pr_id
+
+    resp = env.get(Measure.API_COMPONENT, params={**kwargs, **params}, ctxt=endpoint)
     data = json.loads(resp.text)
     m_list = {}
     for m in data['component']['measures']:

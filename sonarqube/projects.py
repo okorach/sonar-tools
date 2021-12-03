@@ -61,7 +61,7 @@ class Project(comp.Component):
         self.group_permissions = None
         self.branches = None
         self.pull_requests = None
-        self.ncloc = None
+        self._ncloc_with_branches = None
         self.__load__(data)
         PROJECTS[key] = self
 
@@ -116,6 +116,19 @@ class Project(comp.Component):
             if self.all_branches_last_analysis_date is None or b_ana_date > self.all_branches_last_analysis_date:
                 self.all_branches_last_analysis_date = b_ana_date
         return self.all_branches_last_analysis_date
+
+    def ncloc(self, include_branches=True):
+        if self._ncloc is None:
+            self._ncloc = self.get_measure('ncloc', fallback=0)
+        if not include_branches:
+            return self._ncloc
+        if self._ncloc_with_branches is not None:
+            return self._ncloc_with_branches
+        self._ncloc_with_branches = 0
+        for b in self.get_branches() + self.get_pull_requests():
+            if b.ncloc() > self._ncloc_with_branches:
+                self._ncloc_with_branches = b.ncloc()
+        return self._ncloc_with_branches
 
     def get_branches(self):
         if self.env.edition() == 'community':
