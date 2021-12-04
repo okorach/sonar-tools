@@ -81,7 +81,10 @@ def main():
 
     if args.componentKeys is not None:
         proj_list = args.componentKeys.replace(' ', '')
-    project_list = projects.search(endpoint=endpoint, params={'projects': proj_list})
+        filters = {'projects': proj_list}
+    else:
+        filters = None
+    project_list = projects.search(endpoint=endpoint, params=filters)
     nb_branches = 0
     nb_loc = 0
     for _, project in project_list.items():
