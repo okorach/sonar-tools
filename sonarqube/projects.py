@@ -505,7 +505,7 @@ def count(endpoint=None, params=None):
 def search(endpoint=None, page=0, params=None):
     if params is None:
         params = {}
-        params['qualifiers'] = 'TRK'
+    params['qualifiers'] = 'TRK'
     if page != 0:
         params['p'] = page
         if 'ps' in params and params['ps'] == 0:
