@@ -48,11 +48,11 @@ class QualityProfile(sq.SqObject):
             self.language_name = data['languageName']
             self.is_default = data['isDefault']
             self.project_count = data.get('projectCount', None)
-            self.is_built_in = data['isBuiltIn']
+            self._is_built_in = data['isBuiltIn']
             self.nb_rules = int(data['activeRuleCount'])
-            self.deprecated_rules = int(data['activeDeprecatedRuleCount'])
-            self.is_inherited = data['isInherited']
-            self.parent = data.get('parentKey', None)
+            self._nbr_deprecated_rules = int(data['activeDeprecatedRuleCount'])
+            self._parent_key = data.get('parentKey', None)
+            self._parent_name = data.get('parentName', None)
             self.long_name = "{0} of language {1}".format(self.name, self.language_name)
 
     def get_permissions(self, perm_type):
@@ -91,9 +91,39 @@ class QualityProfile(sq.SqObject):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         return abs(today - self.last_updated).days
 
+    def parent_key(self):
+        return self._parent_key
+
+    def parent_name(self):
+        return self._parent_name
+
+    def is_child(self):
+        return self.parent_key() is not None
+
+    def is_built_in(self):
+        return self._is_built_in
+
+    def inherits_from_built_in(self):
+        return self.get_built_in_parent() is not None
+
+    def get_built_in_parent(self):
+        if self.is_built_in():
+            return self
+        parent = self.parent_name()
+        if parent is None:
+            return None
+        parent_qp = search(self.env, {'language': self.language, 'qualityProfile': self.parent_name()})[0]
+        return parent_qp.get_built_in_parent()
+
+    def has_deprecated_rules(self):
+        return self.nbr_of_deprecated_rules() > 0
+
+    def nbr_of_deprecated_rules(self):
+        return self._nbr_deprecated_rules
+
     def audit(self, audit_settings=None):
         util.logger.debug("Auditing quality profile '%s'", self.long_name)
-        if self.is_built_in:
+        if self.is_built_in():
             util.logger.debug("Quality profile '%s' is built-in, skipping audit", self.long_name)
             return []
 
@@ -124,11 +154,16 @@ class QualityProfile(sq.SqObject):
             msg = rule.msg.format(self.long_name, age)
             util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
-        if audit_settings['audit.qualityProfiles.checkDeprecatedRules'] and self.deprecated_rules > 0:
-            rule = arules.get_rule(arules.RuleId.QP_USE_DEPRECATED_RULES)
-            msg = rule.msg.format(self.long_name, self.deprecated_rules)
-            util.logger.warning(msg)
-            problems.append(pb.Problem(rule.type, rule.severity, msg))
+        if audit_settings['audit.qualityProfiles.checkDeprecatedRules']:
+            max_deprecated_rules = 0
+            parent_qp = self.get_built_in_parent()
+            if parent_qp is not None:
+                max_deprecated_rules = parent_qp.nbr_of_deprecated_rules()
+            if self.nbr_of_deprecated_rules() > max_deprecated_rules:
+                rule = arules.get_rule(arules.RuleId.QP_USE_DEPRECATED_RULES)
+                msg = rule.msg.format(self.long_name, self._nbr_deprecated_rules)
+                util.logger.warning(msg)
+                problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         return problems
 
