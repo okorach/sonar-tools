@@ -33,7 +33,7 @@ import sonarqube.utilities as util
 import sonarqube.env as env
 
 
-def diff(first, second):
+def __diff(first, second):
     second = set(second)
     return [item for item in first if item not in second]
 
@@ -68,18 +68,20 @@ def main():
         wanted_metrics = main_metrics
     metrics_list = re.split(',', wanted_metrics)
 
-    print("Project Key%sProject Name%sBranch%sLast Analysis" % (csv_sep, csv_sep, csv_sep), end=csv_sep)
+    print("# Project Key%sProject Name%sBranch%sLast Analysis" % (csv_sep, csv_sep, csv_sep), end=csv_sep)
 
     if args.metricKeys == '_all':
         # Display main metrics first
         print(main_metrics)
-        metrics_list = diff(metrics_list, main_metrics_list)
+        metrics_list = __diff(metrics_list, main_metrics_list)
 
     for m in metrics_list:
         print("{0}".format(m), end=csv_sep)
     print('')
 
-    project_list = projects.search(endpoint=endpoint)
+    if args.componentKeys is not None:
+        proj_list = args.componentKeys.replace(' ', '')
+    project_list = projects.search(endpoint=endpoint, params={'projects': proj_list})
     nb_branches = 0
     nb_loc = 0
     for _, project in project_list.items():
