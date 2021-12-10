@@ -48,8 +48,6 @@ jobs:
         run: |
           chmod +x ./run_linters.sh
           ./run_linters.sh
-          pwd
-          find .
       - name: Cache SonarQube packages
         uses: actions/cache@v1
         with:
@@ -70,7 +68,10 @@ jobs:
             -Dsonar.verbose=false
             -Dsonar.userHome=./.sonar
 
-
+      - name: Make cache readable
+        working-directory: .
+        run: |
+          chmod -R a+r ./.sonar
   # code-ql:
   #   name: CodeQL
   #   runs-on: ubuntu-latest
