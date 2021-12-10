@@ -34,8 +34,7 @@
     [--tags]
 '''
 import sys
-import sonarqube.env as env
-import sonarqube.issues as issues
+from sonarqube import env, issues, version
 import sonarqube.utilities as util
 
 
@@ -66,6 +65,7 @@ def main():
     sqenv.set_env(args.url, args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
     # Remove unset params from the dict
     params = vars(args)

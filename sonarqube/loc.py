@@ -22,7 +22,7 @@
     Exports LoC per projects
 '''
 import sys
-from sonarqube import projects, env
+from sonarqube import projects, env, version
 import sonarqube.utilities as util
 
 
@@ -36,6 +36,7 @@ def main():
     args = util.parse_and_check_token(parser)
     endpoint = env.Environment(url=args.url, token=args.token)
     util.check_environment(vars(args))
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
     # Mandatory script input parameters
     sep = ","

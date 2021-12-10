@@ -26,11 +26,8 @@
 '''
 import sys
 import re
-import sonarqube.measures as measures
-import sonarqube.metrics as metrics
-import sonarqube.projects as projects
+from sonarqube import measures, metrics, projects, env, version
 import sonarqube.utilities as util
-import sonarqube.env as env
 
 
 def __diff(first, second):
@@ -52,6 +49,7 @@ def main():
     args = util.parse_and_check_token(parser)
     endpoint = env.Environment(url=args.url, token=args.token)
     util.check_environment(vars(args))
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
     # Mandatory script input parameters
     csv_sep = ","
