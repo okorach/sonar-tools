@@ -34,8 +34,7 @@
     [--tags]
 '''
 import sys
-import sonarqube.env as env
-import sonarqube.issues as issues
+from sonarqube import env, issues, version
 import sonarqube.utilities as util
 
 

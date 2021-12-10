@@ -26,7 +26,7 @@
 '''
 import sys
 import re
-from sonarqube import measures, metrics, projects, env
+from sonarqube import measures, metrics, projects, env, version
 import sonarqube.utilities as util
 
 
