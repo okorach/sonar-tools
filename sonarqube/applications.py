@@ -68,9 +68,14 @@ def count(endpoint=None):
 
 
 def search(endpoint=None):
-    objects = comp.search_objects('api/components/search_projects', params={'filter': 'qualifier = APP'},
+    app_list = {}
+    edition = env.edition(ctxt=endpoint)
+    if edition == 'community':
+        util.logger.info("No applications in %s edition", edition)
+    else:
+        app_list = comp.search_objects('api/components/search_projects', params={'filter': 'qualifier = APP'},
         returned_field='components', object_class=Application, endpoint=endpoint)
-    return objects
+    return app_list
 
 
 def get(key, sqenv=None):
