@@ -54,8 +54,8 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ./.sonar
-          key: ${{ runner.os }}-sonarscanner-new
-          restore-keys: ${{ runner.os }}-sonarscanner-new
+          key: ${{ runner.os }}-sonar-cache
+          restore-keys: ${{ runner.os }}-sonar-cache
       - name: Patch project version
         run: |
           version=$(grep VERSION sonarqube/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
@@ -67,7 +67,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.verbose=true
+            -Dsonar.verbose=false
             -Dsonar.userHome=./.sonar
 
 
