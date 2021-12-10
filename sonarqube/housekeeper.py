@@ -25,16 +25,12 @@
 
 '''
 import sys
-import sonarqube.env as env
 import sonarqube.audit_config as conf
-import sonarqube.projects as projects
+from sonarqube import projects, users, env, version
 from sonarqube.branches import Branch
 from sonarqube.pull_requests import PullRequest
 from sonarqube.user_tokens import UserToken
-import sonarqube.users as users
-
 import sonarqube.utilities as util
-import sonarqube.version as version
 import sonarqube.audit_problem as pb
 
 
