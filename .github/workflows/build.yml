@@ -53,7 +53,7 @@ jobs:
       - name: Cache SonarQube packages
         uses: actions/cache@v1
         with:
-          path: /opt/sonar-scanner/.sonar
+          path: ~/.sonar
           key: ${{ runner.os }}-sonarscanner
           restore-keys: ${{ runner.os }}-sonarscanner
       - name: Patch project version
