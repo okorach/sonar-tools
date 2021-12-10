@@ -18,7 +18,11 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-print('''Collections of utilities for SonarQube:
+from sonarqube import version
+
+print(f'''
+sonar-tools version {version.PACKAGE_VERSION}
+Collections of utilities for SonarQube:
 - sonar-audit: Audits a SonarQube platform for bad practices, performance, configuration problems
 - sonar-housekeeper: Deletes projects that have not been analyzed since a given number of days
 - sonar-loc: Produces a list of projects with their LoC count as computed by the SonarQube

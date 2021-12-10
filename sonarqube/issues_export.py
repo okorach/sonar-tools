@@ -66,6 +66,7 @@ def main():
     sqenv.set_env(args.url, args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
     # Remove unset params from the dict
     params = vars(args)

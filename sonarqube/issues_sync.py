@@ -30,8 +30,7 @@
 
 import sys
 import json
-import sonarqube.env as env
-import sonarqube.issues as issues
+from sonarqube import env, issues, version
 import sonarqube.utilities as util
 
 
@@ -169,6 +168,7 @@ def main():
 
     params = vars(args)
     util.check_environment(params)
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
     __verify_branch_params__(args.sourceBranch, args.targetBranch)
 
