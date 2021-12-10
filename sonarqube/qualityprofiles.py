@@ -144,7 +144,7 @@ class QualityProfile(sq.SqObject):
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         age = self.age_of_last_use()
-        if self.project_count == 0:
+        if self.project_count == 0 or age is None:
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
             msg = rule.msg.format(self.long_name)
             util.logger.warning(msg)
