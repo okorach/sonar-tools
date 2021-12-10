@@ -48,14 +48,12 @@ jobs:
         run: |
           chmod +x ./run_linters.sh
           ./run_linters.sh
-          pwd
-          find .
-      - name: Cache SonarQube packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+      #- name: Cache SonarQube packages
+      #  uses: actions/cache@v1
+      #  with:
+      #    path: ./.sonar
+      #    key: ${{ runner.os }}-sonar-cache
+      #    restore-keys: ${{ runner.os }}-sonar-cache
       - name: Patch project version
         run: |
           version=$(grep VERSION sonarqube/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
@@ -66,6 +64,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
+          # Add: -Dsonar.userHome=./.sonar for local cache
           args: >
             -Dsonar.verbose=false
 

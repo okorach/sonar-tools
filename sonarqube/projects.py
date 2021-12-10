@@ -119,15 +119,16 @@ class Project(comp.Component):
 
     def ncloc(self, include_branches=True):
         if self._ncloc is None:
-            self._ncloc = self.get_measure('ncloc', fallback=0)
+            self._ncloc = int(self.get_measure('ncloc', fallback=0))
         if not include_branches:
             return self._ncloc
         if self._ncloc_with_branches is not None:
             return self._ncloc_with_branches
-        self._ncloc_with_branches = 0
-        for b in self.get_branches() + self.get_pull_requests():
-            if b.ncloc() > self._ncloc_with_branches:
-                self._ncloc_with_branches = b.ncloc()
+        self._ncloc_with_branches = self._ncloc
+        if not self.env.edition() == 'community':
+            for b in self.get_branches() + self.get_pull_requests():
+                if b.ncloc() > self._ncloc_with_branches:
+                    self._ncloc_with_branches = b.ncloc()
         return self._ncloc_with_branches
 
     def get_branches(self):
