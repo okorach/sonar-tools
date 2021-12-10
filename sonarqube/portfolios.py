@@ -88,13 +88,17 @@ def count(endpoint=None):
 
 
 def search(endpoint=None):
-    resp = env.get(LIST_API, ctxt=endpoint)
-    data = json.loads(resp.text)
-    plist = {}
-    for p in data['views']:
-        if p['qualifier'] == 'VW':
-            plist[p['key']] = Portfolio(p['key'], endpoint=endpoint, data=p)
-    return plist
+    portfolio_list = {}
+    edition = env.edition(ctxt=endpoint)
+    if edition not in ('enterprise', 'datacenter'):
+        util.logger.info("No portfolios in %s edition", edition)
+    else:
+        resp = env.get(LIST_API, ctxt=endpoint)
+        data = json.loads(resp.text)
+        for p in data['views']:
+            if p['qualifier'] == 'VW':
+                portfolio_list[p['key']] = Portfolio(p['key'], endpoint=endpoint, data=p)
+    return portfolio_list
 
 
 def get(key, sqenv=None):
