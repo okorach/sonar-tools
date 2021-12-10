@@ -54,8 +54,8 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /opt/sonar-scanner/.sonar
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+          key: ${{ runner.os }}-sonarscanner
+          restore-keys: ${{ runner.os }}-sonarscanner
       - name: Patch project version
         run: |
           version=$(grep VERSION sonarqube/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
