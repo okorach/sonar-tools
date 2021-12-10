@@ -68,7 +68,7 @@ jobs:
         with:
           args: >
             -Dsonar.verbose=true
-            -Dsonar.userHome=.
+            -Dsonar.userHome=./.sonar
 
 
   # code-ql:
