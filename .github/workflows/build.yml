@@ -67,7 +67,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.verbose=false
+            -Dsonar.verbose=true
 
 
   # code-ql:
