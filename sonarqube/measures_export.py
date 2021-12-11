@@ -29,10 +29,48 @@ import re
 from sonarqube import measures, metrics, projects, env, version
 import sonarqube.utilities as util
 
+csv_sep = ","
 
 def __diff(first, second):
     second = set(second)
     return [item for item in first if item not in second]
+
+def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True):
+    if with_branches:
+        branch_data = project.get_branches()
+        lines = ''
+        for branch in branch_data:
+            lines += __get_branch_measures(branch, project, wanted_metrics, endpoint) + "\n"
+        return lines[:-1]
+    else:
+        p_meas = measures.component(project.key, wanted_metrics, endpoint=endpoint)
+        last_analysis = project.last_analysis_date()
+        if last_analysis is None:
+            last_analysis = "Never"
+        else:
+            last_analysis = util.date_to_string(last_analysis)
+        line = "{1}{0}{2}{0}{3}".format(csv_sep, project.key, project.name, last_analysis)
+        for metric in wanted_metrics.split(','):
+            if metric in p_meas:
+                line += csv_sep + p_meas[metric].replace(csv_sep, '|')
+            else:
+                line += csv_sep + "None"
+    return line
+
+def __get_branch_measures(branch, project, wanted_metrics, endpoint):
+    p_meas = measures.component(project.key, wanted_metrics, branch=branch.name, endpoint=endpoint)
+    last_analysis = branch.last_analysis_date()
+    if last_analysis is None:
+        last_analysis = "Never"
+    else:
+        last_analysis = util.date_to_string(last_analysis)
+    line = "{1}{0}{2}{0}{3}{0}{4}".format(csv_sep, project.key, project.name, branch.name, last_analysis)
+    for metric in wanted_metrics.split(','):
+        if metric in p_meas:
+            line += csv_sep + p_meas[metric].replace(csv_sep, '|')
+        else:
+            line += csv_sep + "None"
+    return line
 
 
 def main():
@@ -48,70 +86,49 @@ def main():
 
     args = util.parse_and_check_token(parser)
     endpoint = env.Environment(url=args.url, token=args.token)
+
+    with_branches = args.withBranches
+    if endpoint.edition() == 'community':
+        with_branches = False
+
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
     # Mandatory script input parameters
-    csv_sep = ","
 
     main_metrics = metrics.Metric.MAIN_METRICS
-    main_metrics_list = re.split(',', main_metrics)
-    if args.metricKeys == '_all':
-        wanted_metrics = metrics.as_csv(metrics.search(endpoint=endpoint).values())
-    elif args.metricKeys == '_main':
+    main_metrics_list = main_metrics.split(',')
+
+    wanted_metrics = args.metricKeys
+    if wanted_metrics == '_all':
+        all_metrics = metrics.as_csv(metrics.search(endpoint=endpoint).values()).split(',')
+        wanted_metrics = main_metrics + ',' + ','.join(__diff(all_metrics, main_metrics_list))
+    elif wanted_metrics == '_main' or wanted_metrics is None:
         wanted_metrics = main_metrics
-    elif args.metricKeys is not None:
-        wanted_metrics = args.metricKeys
+
+    if endpoint.edition() == 'community':
+        print("# Project Key%sProject Name%sLast Analysis" % (csv_sep, csv_sep), end=csv_sep)
     else:
-        wanted_metrics = main_metrics
+        print("# Project Key%sProject Name%sBranch%sLast Analysis" % (csv_sep, csv_sep, csv_sep), end=csv_sep)
+
     metrics_list = re.split(',', wanted_metrics)
-
-    print("# Project Key%sProject Name%sBranch%sLast Analysis" % (csv_sep, csv_sep, csv_sep), end=csv_sep)
-
-    if args.metricKeys == '_all':
-        # Display main metrics first
-        print(main_metrics)
-        metrics_list = __diff(metrics_list, main_metrics_list)
-
     for m in metrics_list:
         print("{0}".format(m), end=csv_sep)
     print('')
 
+    filters = None
     if args.componentKeys is not None:
-        proj_list = args.componentKeys.replace(' ', '')
-        filters = {'projects': proj_list}
-    else:
-        filters = None
+        filters = {'projects': args.componentKeys.replace(' ', '')}
     project_list = projects.search(endpoint=endpoint, params=filters)
     nb_branches = 0
     nb_loc = 0
     for _, project in project_list.items():
-        branch_data = project.get_branches()
-        branch_list = []
-        for b in branch_data:
-            if args.withBranches or b.is_main():
-                branch_list.append(b)
-                util.logger.debug("Branch %s appended", b.name)
-        project_loc = 0
-        for b in branch_list:
+        print(__get_project_measures(project, wanted_metrics, endpoint, with_branches))
+        nb_loc += project.ncloc()
+        if with_branches:
+            nb_branches += len(project.get_branches())
+        else:
             nb_branches += 1
-            p_meas = measures.component(project.key, wanted_metrics, branch=b.name, endpoint=endpoint)
-            if b.last_analysis_date() is None:
-                last_analysis = "Never"
-            else:
-                last_analysis = util.date_to_string(b.last_analysis_date())
-            line = ''
-            if 'ncloc' in p_meas:
-                project_loc = max(project_loc, int(p_meas['ncloc']))
-            print("{1}{0}{2}{0}{3}{0}{4}".format(csv_sep, project.key, project.name, b.name, last_analysis), end='')
-            if args.metricKeys == '_all':
-                for metric in main_metrics_list:
-                    line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas else line + csv_sep
-            for metric in metrics_list:
-                line = line + csv_sep + p_meas[metric].replace(csv_sep, '|') if metric in p_meas \
-                    else line + csv_sep + "None"
-            print(line)
-        nb_loc += project_loc
     util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)
     sys.exit(0)
 
