@@ -109,6 +109,7 @@ def get(key, sqenv=None):
 
 
 def audit(audit_settings, endpoint=None):
+    util.logger.info("--- Auditing portfolios ---")
     plist = search(endpoint)
     problems = []
     for _, p in plist.items():

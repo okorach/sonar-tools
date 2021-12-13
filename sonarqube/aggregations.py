@@ -75,7 +75,6 @@ class Aggregation(comp.Component):
         if n in (None, 0):
             rule = rules.get_rule(broken_rule)
             msg = rule.msg.format(str(self))
-            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
             util.logger.debug("%s has %d projects", str(self), n)

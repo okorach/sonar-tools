@@ -66,7 +66,7 @@ class Project(comp.Component):
         PROJECTS[key] = self
 
     def __str__(self):
-        return f"Project key '{self.key}'"
+        return f"project '{self.key}'"
 
     def __load__(self, data=None):
         ''' Loads a project object with contents of an api/projects/search call '''
@@ -133,7 +133,7 @@ class Project(comp.Component):
 
     def get_branches(self):
         if self.env.edition() == 'community':
-            util.logger.warning("Branches not available in Community Edition")
+            util.logger.debug("Branches not available in Community Edition")
             return []
 
         if self.branches is None:
@@ -146,7 +146,7 @@ class Project(comp.Component):
 
     def get_pull_requests(self):
         if self.env.edition() == 'community':
-            util.logger.warning("Pull requests not available in Community Edition")
+            util.logger.debug("Pull requests not available in Community Edition")
             return []
 
         if self.pull_requests is None:
@@ -196,11 +196,11 @@ class Project(comp.Component):
 
     def delete(self, api='projects/delete', params=None):
         loc = int(self.get_measure('ncloc', fallback='0'))
-        util.logger.info("Deleting project key '%s', name '%s' with %d LoCs", self.key, self.name, loc)
+        util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
         if not super().post('projects/delete', params={'project': self.key}):
-            util.logger.error("Project key '%s' deletion failed", self.key)
+            util.logger.error("%s deletion failed", str(self))
             return False
-        util.logger.info("Successfully deleted project key '%s' - %d LoCs", self.key, loc)
+        util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
         return True
 
     def age_of_last_analysis(self):
@@ -217,17 +217,14 @@ class Project(comp.Component):
         max_users = audit_settings['audit.projects.permissions.maxUsers']
         if counts['overall'] > max_users:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
-            problems.append(pb.Problem(
-                rule.type, rule.severity,
-                rule.msg.format(self.key, counts['overall']),
-                concerned_object=self))
+            msg = rule.msg.format(str(self), counts['overall'])
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_admins = audit_settings['audit.projects.permissions.maxAdminUsers']
         if counts['admin'] > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_USERS)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.msg.format(self.key, counts['admin'], max_admins),
-                concerned_object=self))
+            msg = rule.msg.format(str(self), counts['admin'], max_admins)
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         return problems
 
@@ -247,47 +244,42 @@ class Project(comp.Component):
                     rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
                 else:
                     rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
-                problems.append(pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(gr['name'], self.key),
-                    concerned_object=self))
+                msg = rule.msg.format(gr['name'], str(self))
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
             else:
-                util.logger.info("Group '%s' has browse permissions on project '%s'. \
-Is this normal ?", gr['name'], self.key)
+                util.logger.info("Group '%s' has browse permissions on %s. \
+Is this normal ?", gr['name'], str(self.key))
 
         max_perms = audit_settings['audit.projects.permissions.maxGroups']
         if counts['overall'] > max_perms:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
-            problems.append(pb.Problem(
-                rule.type, rule.severity,
-                rule.msg.format(self.key, counts['overall'], max_perms),
-                concerned_object=self))
+            msg = rule.msg.format(str(self), counts['overall'], max_perms)
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+
         max_scan = audit_settings['audit.projects.permissions.maxScanGroups']
         if counts['scan'] > max_scan:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_SCAN_GROUPS)
-            problems.append(pb.Problem(
-                rule.type, rule.severity,
-                rule.msg.format(self.key, counts['scan'], max_scan),
-                concerned_object=self))
+            msg = rule.msg.format(str(self), counts['scan'], max_scan)
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+
         max_issue_adm = audit_settings['audit.projects.permissions.maxIssueAdminGroups']
         if counts['issueadmin'] > max_issue_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
-            problems.append(pb.Problem(
-                rule.type, rule.severity,
-                rule.msg.format(self.key, counts['issueadmin'], max_issue_adm),
-                concerned_object=self))
+            msg = rule.msg.format(str(self), counts['issueadmin'], max_issue_adm)
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+
         max_spots_adm = audit_settings['audit.projects.permissions.maxHotspotAdminGroups']
         if counts['securityhotspotadmin'] > max_spots_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_HOTSPOT_ADM_GROUPS)
-            problems.append(pb.Problem(
-                rule.type, rule.severity,
-                rule.msg.format(self.key, counts['securityhotspotadmin'], max_spots_adm),
-                concerned_object=self))
+            msg = rule.msg.format(str(self), counts['securityhotspotadmin'], max_spots_adm)
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+
         max_admins = audit_settings['audit.projects.permissions.maxAdminGroups']
         if counts['admin'] > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_GROUPS)
             problems.append(pb.Problem(
                 rule.type, rule.severity,
-                rule.msg.format(self.key, counts['admin'], max_admins),
+                rule.msg.format(str(self), counts['admin'], max_admins),
                 concerned_object=self))
         return problems
 
@@ -295,15 +287,15 @@ Is this normal ?", gr['name'], self.key)
         if not audit_settings['audit.projects.permissions']:
             util.logger.debug('Auditing project permissions is disabled by configuration, skipping')
             return []
-        util.logger.debug("Auditing project '%s' permissions", self.key)
+        util.logger.debug("Auditing %s permissions", str(self))
         problems = (self.__audit_user_permissions__(audit_settings)
                     + self.__audit_group_permissions__(audit_settings))
         if not problems:
-            util.logger.debug("No issue found in project '%s' permissions", self.key)
+            util.logger.debug("No issue found in %s permissions", str(self))
         return problems
 
     def __audit_last_analysis__(self, audit_settings):
-        util.logger.debug("Auditing project '%s' last analysis date", self.key)
+        util.logger.debug("Auditing %s last analysis date", str(self))
         problems = []
         age = self.age_of_last_analysis()
         if age is None:
@@ -311,8 +303,7 @@ Is this normal ?", gr['name'], self.key)
                 util.logger.debug("Auditing of never analyzed projects is disabled, skipping")
             else:
                 rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
-                msg = rule.msg.format(self.key)
-                util.logger.warning(msg)
+                msg = rule.msg.format(str(self))
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
             return problems
 
@@ -323,18 +314,17 @@ Is this normal ?", gr['name'], self.key)
             rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
             severity = sev.Severity.HIGH if age > 365 else rule.severity
             loc = self.get_measure('ncloc', fallback='0')
-            msg = rule.msg.format(self.key, loc, age)
-            util.logger.warning(msg)
-            problems.append(pb.Problem(rule.type, severity, rule.msg.format(self.key, loc, age), concerned_object=self))
+            msg = rule.msg.format(str(self), loc, age)
+            problems.append(pb.Problem(rule.type, severity, msg, concerned_object=self))
 
-        util.logger.debug("Project '%s' last analysis is %d days old", self.key, age)
+        util.logger.debug("%s last analysis is %d days old", str(self), age)
         return problems
 
     def __audit_branches(self, audit_settings):
         if audit_settings['audit.projects.branches.maxLastAnalysisAge'] == 0:
             util.logger.debug("Auditing of branchs last analysis age is disabled, skipping...")
             return []
-        util.logger.debug("Auditing project '%s' branches", self.key)
+        util.logger.debug("Auditing %s branches", str(self))
         problems = []
         for branch in self.get_branches():
             problems += branch.audit(audit_settings)
@@ -354,23 +344,23 @@ Is this normal ?", gr['name'], self.key)
         if not audit_settings.get('audit.projects.visibility', True):
             util.logger.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
-        util.logger.debug("Auditing project '%s' visibility", self.key)
+        util.logger.debug("Auditing %s visibility", str(self))
         resp = env.get('navigation/component', ctxt=self.env, params={'component': self.key})
         data = json.loads(resp.text)
         visi = data['visibility']
         if visi != 'private':
             rule = rules.get_rule(rules.RuleId.PROJ_VISIBILITY)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(self.key, visi),
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), visi),
                                concerned_object=self)]
 
-        util.logger.debug("Project '%s' visibility is private", self.key)
+        util.logger.debug("%s visibility is private", str(self))
         return []
 
     def __audit_languages__(self, audit_settings):
         if not audit_settings.get('audit.xmlLoc.suspicious', False):
             util.logger.debug('XML LoCs count audit disabled by configuration, skipping')
             return []
-        util.logger.debug("Auditing project '%s' suspicious XML LoC count", self.key)
+        util.logger.debug("Auditing %s suspicious XML LoC count", str(self))
 
         total_locs = 0
         languages = {}
@@ -383,13 +373,13 @@ Is this normal ?", gr['name'], self.key)
             total_locs += int(ncloc)
         if total_locs > 100000 and 'xml' in languages and (languages['xml'] / total_locs) > 0.5:
             rule = rules.get_rule(rules.RuleId.PROJ_XML_LOCS)
-            return [pb.Problem(rule.type, rule.severity, rule.format(self.key, languages['xml']),
+            return [pb.Problem(rule.type, rule.severity, rule.format(str(self), languages['xml']),
                                concerned_object=self)]
-        util.logger.debug("Project '%s' XML LoCs count seems reasonable", self.key)
+        util.logger.debug("%s XML LoCs count seems reasonable", str(self))
         return []
 
     def audit(self, audit_settings):
-        util.logger.debug("Auditing project '%s'", self.key)
+        util.logger.debug("Auditing %s", str(self))
         return (
             self.__audit_last_analysis__(audit_settings)
             + self.__audit_branches(audit_settings)
@@ -404,10 +394,8 @@ Is this normal ?", gr['name'], self.key)
         mindate = today - datetime.timedelta(days=days)
         last_analysis = self.last_analysis_date(include_branches=True)
         loc = int(self.get_measure('ncloc'))
-        print("Project key '%s' - %d LoCs - Not analysed for %d days" %
-              (self.key, loc, (today - last_analysis).days))
-        util.logger.debug("Project key '%s' - %d LoCs - Not analysed for %d days",
-                         self.key, loc, (today - last_analysis).days)
+        # print(f"{str(self)} - {loc} LoCs - Not analysed for {(today - last_analysis).days} days")
+        util.logger.debug("%s - %d LoCs - Not analysed for %d days", str(self), loc, (today - last_analysis).days)
         if last_analysis < mindate:
             return self.delete()
         return False
@@ -429,17 +417,17 @@ Is this normal ?", gr['name'], self.key)
                 if status == 'SUCCESS' or status == 'FAILED' or status == 'CANCELED':
                     finished = True
                     break
-            util.logger.debug("Task id %s is %s", task_id, status)
+            util.logger.debug("Task id '%s' is %s", task_id, status)
             if wait_time >= timeout:
                 status = 'TIMEOUT'
                 finished = True
         return status
 
     def export(self, timeout=180):
-        util.logger.info('Exporting project key = %s (synchronously)', self.key)
+        util.logger.info('Exporting %s (synchronously)', str(self))
         if self.env.version() < (9, 2, 0) and self.env.edition() not in ['enterprise', 'datacenter']:
             raise env.UnsupportedOperation("Project export is only available with Enterprise and Datacenter Edition,"
-            " or with SonarQube 9.2 or higher for any Edition")
+                                           " or with SonarQube 9.2 or higher for any Edition")
         resp = env.post('project_dump/export', params={'key': self.key}, ctxt=self.env)
         if resp.status_code != 200:
             return {'status': 'HTTP_ERROR {0}'.format(resp.status_code)}
@@ -451,16 +439,16 @@ Is this normal ?", gr['name'], self.key)
             params['q'] = self.key
         status = self.__wait_for_task_completion__(data['taskId'], params=params, timeout=timeout)
         if status != 'SUCCESS':
-            util.logger.error("Project key %s export %s", self.key, status)
+            util.logger.error("%s export %s", str(self), status)
             return {'status': status}
         resp = env.get('project_dump/status', params={'key': self.key}, ctxt=self.env)
         data = json.loads(resp.text)
         dump_file = data['exportedDump']
-        util.logger.debug("Project key %s export %s, dump file %s", self.key, status, dump_file)
+        util.logger.debug("%s export %s, dump file %s", str(self), status, dump_file)
         return {'status': status, 'file': dump_file}
 
     def export_async(self):
-        util.logger.info('Exporting project key = %s (asynchronously)', self.key)
+        util.logger.info('Exporting %s (asynchronously)', str(self))
         resp = env.post('project_dump/export', params={'key': self.key}, ctxt=self.env)
         if resp.status_code != 200:
             return None
@@ -468,7 +456,7 @@ Is this normal ?", gr['name'], self.key)
         return data['taskId']
 
     def importproject(self):
-        util.logger.info('Importing project key = %s (asynchronously)', self.key)
+        util.logger.info('Importing %s (asynchronously)', str(self))
         if self.env.edition() not in ['enterprise', 'datacenter']:
             raise env.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         resp = env.post('project_dump/import', params={'key': self.key}, ctxt=self.env)
@@ -476,6 +464,7 @@ Is this normal ?", gr['name'], self.key)
 
     def search_custom_measures(self):
         return custom_measures.search(self.key, self.env)
+
 
 def __get_permissions_counts__(entities):
     counts = {}
@@ -558,9 +547,7 @@ def audit(audit_settings, endpoint=None):
         for key2 in plist:
             if key2 != key and re.match(key2, key):
                 rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE)
-                util.logger.warning("Project '%s' is likely to be a branch of project '%s'", key, key2)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(key, key2),
-                                   concerned_object=p))
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(p), key2), concerned_object=p))
 
     if not audit_settings.get('audit.projects.duplicates', False):
         util.logger.info("Project duplicates auditing was disabled by configuration")

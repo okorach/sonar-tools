@@ -84,6 +84,9 @@ class QualityGate(sq.SqObject):
         for c in data.get('conditions', []):
             self.conditions.append(c)
 
+    def __str__(self):
+        return f"quality gate '{self.name}'"
+
     def get_projects(self):
         if self.projects is None:
             self.projects = self.search()
@@ -99,44 +102,40 @@ class QualityGate(sq.SqObject):
             m = c['metric']
             if m not in GOOD_QG_CONDITIONS:
                 rule = rules.get_rule(rules.RuleId.QG_WRONG_METRIC)
-                problems.append(pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(self.name, m)))
+                msg = rule.msg.format(str(self), m)
+                problems.append(pb.Problem(rule.type, rule.severity, msg))
                 continue
             val = int(c['error'])
             (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
-            util.logger.debug('Condition on metric "%s": Check that %d in range [%d - %d]', m, val, mini, maxi)
+            util.logger.debug("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
-                problems.append(pb.Problem(
-                    typ.Type.BAD_PRACTICE, sev.Severity.HIGH,
-                    "Quality Gate '{}' condition on metric '{}': {}".format(self.name, m, msg)))
+                msg = f"{str(self)} condition on metric '{m}': {msg}".format(self.name, m, msg)
+                problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.HIGH, msg))
         return problems
 
     def audit(self, audit_settings=None):
-        util.logger.debug("Auditing quality gate '%s'", self.name)
+        my_name = str(self)
+        util.logger.debug("Auditing %s", my_name)
         problems = []
         if self.is_built_in:
             return problems
         max_cond = int(util.get_setting(audit_settings, 'audit.qualitygates.maxConditions', 8))
         nb_conditions = len(self.conditions)
-        util.logger.debug("Auditing quality gate '%s' number of conditions (%d) is OK",
-            self.name, nb_conditions)
+        util.logger.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
         if nb_conditions == 0:
-            util.logger.warning("Quality gate '%s' has 0 conditions", self.name)
             rule = rules.get_rule(rules.RuleId.QG_NO_COND)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.msg.format(self.name)))
+            msg = rule.msg.format(my_name)
+            problems.append(pb.Problem(rule.type, rule.severity, msg))
         elif nb_conditions > max_cond:
-            util.logger.warning("Quality gate '%s' has too many (%d) conditions", self.name, nb_conditions)
             rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_COND)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.msg.format(self.name, len(self.conditions), 8)))
+            msg = rule.msg.format(my_name, nb_conditions, max_cond)
+            problems.append(pb.Problem(rule.type, rule.severity, msg))
         problems += self.__audit_conditions__()
-        util.logger.debug("Auditing quality gate '%s' has some assigned projects", self.name)
+        util.logger.debug("Auditing that %s has some assigned projects", my_name)
         if not self.is_default and not self.get_projects():
-            util.logger.warning("Quality gate '%s' has no assigned projects", self.name)
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.msg.format(self.name)))
+            msg = rule.msg.format(my_name)
+            problems.append(pb.Problem(rule.type, rule.severity, msg))
         return problems
 
     def count(self, params=None):

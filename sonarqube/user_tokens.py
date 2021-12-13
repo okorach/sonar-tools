@@ -53,7 +53,8 @@ class UserToken(sq.SqObject):
         util.logger.debug("Created token '%s'", str(self))
 
     def __str__(self):
-        return f"{self.name}:{util.redacted_token(self.token)}"
+        return f"token '{self.name}' of user '{self.login}'"
+        # return f"{self.name}:{util.redacted_token(self.token)}"
 
     def revoke(self):
         if self.name is None:

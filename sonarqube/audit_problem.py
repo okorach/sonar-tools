@@ -18,7 +18,6 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 import sys
-import enum
 import json
 import sonarqube.utilities as util
 # Using enum class create enumerations
@@ -31,6 +30,7 @@ class Problem():
         self.type = problem_type
         self.severity = severity
         self.message = msg
+        util.logger.warning(msg)
 
     def __str__(self):
         return "Type: {0} - Severity: {1} - Description: {2}".format(

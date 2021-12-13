@@ -51,13 +51,16 @@ class Component(sq.SqObject):
         self.path = data.get('path', None)
         self.language = data.get('language', None)
 
+    def __str__(self):
+        return self._name
+
     def get_subcomponents(self, strategy='children', with_issues=False):
         parms = {'component': self.key, 'strategy': strategy, 'ps': 1,
                  'metricKeys': 'bugs,vulnerabilities,code_smells,security_hotspots'}
         resp = env.get('measures/component_tree', params=parms, ctxt=self.env)
         data = json.loads(resp.text)
         nb_comp = data['paging']['total']
-        util.logger.debug("Found %d subcomponents to %s", nb_comp, self.key)
+        util.logger.debug("Found %d subcomponents to %s", nb_comp, str(self))
         nb_pages = (nb_comp + 500 - 1)//500
         comp_list = {}
         parms['ps'] = 500
