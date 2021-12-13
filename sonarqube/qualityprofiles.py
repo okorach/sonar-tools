@@ -136,26 +136,22 @@ class QualityProfile(sq.SqObject):
         if age > audit_settings['audit.qualityProfiles.maxLastChangeAge']:
             rule = arules.get_rule(arules.RuleId.QP_LAST_CHANGE_DATE)
             msg = rule.msg.format(str(self), age)
-            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         total_rules = rules.count(endpoint=self.env, params={'languages': self.language})
         if self.nb_rules < int(total_rules * audit_settings['audit.qualityProfiles.minNumberOfRules']):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
             msg = rule.msg.format(str(self), self.nb_rules, total_rules)
-            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         age = self.age_of_last_use()
         if self.project_count == 0 or age is None:
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
             msg = rule.msg.format(str(self))
-            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
         elif age > audit_settings['audit.qualityProfiles.maxUnusedAge']:
             rule = arules.get_rule(arules.RuleId.QP_LAST_USED_DATE)
             msg = rule.msg.format(str(self), age)
-            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
         if audit_settings['audit.qualityProfiles.checkDeprecatedRules']:
             max_deprecated_rules = 0
@@ -165,7 +161,6 @@ class QualityProfile(sq.SqObject):
             if self.nbr_of_deprecated_rules() > max_deprecated_rules:
                 rule = arules.get_rule(arules.RuleId.QP_USE_DEPRECATED_RULES)
                 msg = rule.msg.format(str(self), self._nbr_deprecated_rules)
-                util.logger.warning(msg)
                 problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         return problems

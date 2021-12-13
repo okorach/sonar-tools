@@ -80,7 +80,6 @@ class PullRequest(sq.SqObject):
         if age > max_age:
             rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
             msg = rule.msg.format(self.key, self.project.key, age)
-            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
             util.logger.debug("%s age is %d days", str(self), age)

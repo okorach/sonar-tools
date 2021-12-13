@@ -103,7 +103,6 @@ class QualityGate(sq.SqObject):
             if m not in GOOD_QG_CONDITIONS:
                 rule = rules.get_rule(rules.RuleId.QG_WRONG_METRIC)
                 msg = rule.msg.format(str(self), m)
-                util.logger.warning(msg)
                 problems.append(pb.Problem(rule.type, rule.severity, msg))
                 continue
             val = int(c['error'])
@@ -111,7 +110,6 @@ class QualityGate(sq.SqObject):
             util.logger.debug("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
                 msg = f"{str(self)} condition on metric '{m}': {msg}".format(self.name, m, msg)
-                util.logger.warning(msg)
                 problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.HIGH, msg))
         return problems
 
@@ -125,20 +123,16 @@ class QualityGate(sq.SqObject):
         nb_conditions = len(self.conditions)
         util.logger.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
         if nb_conditions == 0:
-            util.logger.warning("%s has 0 conditions", my_name)
             rule = rules.get_rule(rules.RuleId.QG_NO_COND)
             msg = rule.msg.format(my_name)
-            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
         elif nb_conditions > max_cond:
             rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_COND)
             msg = rule.msg.format(my_name, nb_conditions, max_cond)
-            util.logger.warning(msg)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
         problems += self.__audit_conditions__()
         util.logger.debug("Auditing that %s has some assigned projects", my_name)
         if not self.is_default and not self.get_projects():
-            util.logger.warning("%s has no assigned projects", my_name)
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
             msg = rule.msg.format(my_name)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
