@@ -133,7 +133,7 @@ class Project(comp.Component):
 
     def get_branches(self):
         if self.env.edition() == 'community':
-            util.logger.warning("Branches not available in Community Edition")
+            util.logger.debug("Branches not available in Community Edition")
             return []
 
         if self.branches is None:
@@ -146,7 +146,7 @@ class Project(comp.Component):
 
     def get_pull_requests(self):
         if self.env.edition() == 'community':
-            util.logger.warning("Pull requests not available in Community Edition")
+            util.logger.debug("Pull requests not available in Community Edition")
             return []
 
         if self.pull_requests is None:
