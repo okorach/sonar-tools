@@ -202,7 +202,7 @@ class Environment:
                     continue
                 if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
                     self.version() >= (8, 0, 0):
-                    util.logger.error("Setting %s his ineffective on SonaQube 8.0+, skipping audit",
+                    util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit",
                                       v[0])
                     continue
                 problems += __audit_setting_range__(platform_settings, v[0], v[1], v[2], v[3], v[4])
@@ -247,7 +247,7 @@ class Environment:
             resp = self.get('settings/values', params={'keys': 'projects.default.visibility'})
             data = json.loads(resp.text)
             visi = data['settings'][0]['value']
-        util.logger.info('Project default visibility is %s', visi)
+        util.logger.info("Project default visibility is '%s'", visi)
         if conf.get_property('checkDefaultProjectVisibility') and visi != 'private':
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msq.format(visi)))
@@ -341,7 +341,7 @@ this.context = Environment("http://localhost:9000", '')
 
 def set_env(url, token):
     this.context = Environment(url, token)
-    util.logger.debug('Setting GLOBAL environment: %s@%s', token, url)
+    util.logger.debug('Setting GLOBAL environment: %s@%s', util.redacted_token(token), url)
 
 
 def set_token(token):
