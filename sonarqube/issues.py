@@ -108,7 +108,7 @@ class Issue(sq.SqObject):
 
     def __format__(self, format_spec=''):
         return f"Key: {self.key} - Type: {self.type} - Severity: {self.severity}" \
-                f" - File/Line: {self.component}/{self.line} - Rule: {self.rule}"
+               f" - File/Line: {self.component}/{self.line} - Rule: {self.rule}"
 
     def to_string(self):
         """Dumps the object in a string"""

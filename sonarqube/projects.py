@@ -266,7 +266,7 @@ Is this normal ?", gr['name'], str(self.key))
         if counts['issueadmin'] > max_issue_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
             msg = rule.msg.format(str(self), counts['issueadmin'], max_issue_adm)
-            problems.append(pb.Problem( rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_spots_adm = audit_settings['audit.projects.permissions.maxHotspotAdminGroups']
         if counts['securityhotspotadmin'] > max_spots_adm:
