@@ -104,8 +104,11 @@ class Issue(sq.SqObject):
             self.__load__(data)
 
     def __str__(self):
-        return "Key: {0} - Type: {1} - Severity: {2} - File/Line: {3}/{4} - Rule: {5}".format(
-            self.key, self.type, self.severity, self.component, self.line, self.rule)
+        return f"Issue key '{self.key}'"
+
+    def __format__(self, format_spec=''):
+        return f"Key: {self.key} - Type: {self.type} - Severity: {self.severity}" \
+                f" - File/Line: {self.component}/{self.line} - Rule: {self.rule}"
 
     def to_string(self):
         """Dumps the object in a string"""
@@ -341,15 +344,15 @@ class Issue(sq.SqObject):
         return self.post('issues/do_transition', {'issue': self.key, 'transition': transition})
 
     def reopen(self):
-        util.logger.debug("Reopening issue %s", self.id)
+        util.logger.debug("Reopening %s", str(self))
         return self.do_transition('reopen')
 
     def mark_as_false_positive(self):
-        util.logger.debug("Marking issue %s as false positive", self.key)
+        util.logger.debug("Marking %s as false positive", str(self))
         return self.do_transition('falsepositive')
 
     def mark_as_wont_fix(self):
-        util.logger.debug("Marking issue %s as won't fix", self.key)
+        util.logger.debug("Marking %s as won't fix", str(self))
         return self.do_transition('wontfix')
 
     def mark_as_reviewed(self):

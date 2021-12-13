@@ -111,21 +111,21 @@ def _delete_objects(problems):
             continue    # BUG
         if isinstance(obj, projects.Project):
             loc = int(obj.get_measure('ncloc', fallback='0'))
-            util.logger.info("Deleting project '%s', %d LoC", obj.key, loc)
+            util.logger.info("Deleting %s, %d LoC", str(obj), loc)
             if obj.delete():
                 deleted_projects[obj.key] = obj
                 deleted_loc += loc
         if isinstance(obj, Branch):
             if obj.project.key in deleted_projects:
-                util.logger.info("Project '%s' deleted, so no need to delete its branch '%s'",
-                    obj.project.key, obj.key)
+                util.logger.info("% deleted, so no need to delete its branch '%s'",
+                    str(obj.project), obj.key)
             else:
                 obj.delete()
                 deleted_branch_count += 1
         if isinstance(obj, PullRequest):
             if obj.project.key in deleted_projects:
-                util.logger.info("Project '%s' deleted, so no need to delete its PR '%s'",
-                    obj.project.key, obj.key)
+                util.logger.info("%s deleted, so no need to delete its PR '%s'",
+                    str(obj.project), obj.key)
             else:
                 obj.delete()
                 deleted_pr_count += 1
