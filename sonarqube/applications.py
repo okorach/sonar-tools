@@ -86,6 +86,7 @@ def get(key, sqenv=None):
 
 
 def audit(audit_settings, endpoint=None):
+    util.logger.info("--- Auditing applications ---")
     objects_list = search(endpoint)
     problems = []
     for _, obj in objects_list.items():
