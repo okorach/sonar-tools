@@ -55,7 +55,7 @@ class User(sq.SqObject):
         self.tokens_list = None
 
     def __str__(self):
-        return self.login
+        return f"user '{self.login}'"
 
     def deactivate(self):
         env.post(User.API_DEACTIVATE, {'name': self.name, 'login': self.login}, self.env)
@@ -67,26 +67,29 @@ class User(sq.SqObject):
         return self.tokens_list
 
     def audit(self, settings=None):
-        util.logger.debug("Auditing user '%s'", self.name)
+        util.logger.debug("Auditing %s", str(self))
         today = dt.datetime.today().replace(tzinfo=pytz.UTC)
         problems = []
         for t in self.tokens():
             age = abs((today - t.createdAt).days)
             if age > settings['audit.tokens.maxAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(self), age),
-                    concerned_object=t))
+                msg = rule.msg.format(str(t), age)
+                util.logger.warning(msg)
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
             if t.lastConnectionDate is None and age > settings['audit.tokens.maxUnusedAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(self), age),
-                    concerned_object=t))
+                msg = rule.msg.format(str(t), age)
+                util.logger.warning(msg)
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
             if t.lastConnectionDate is None:
                 continue
             last_cnx_age = abs((today - t.lastConnectionDate).days)
             if last_cnx_age > settings['audit.tokens.maxUnusedAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(t), str(self), last_cnx_age),
-                    concerned_object=t))
+                msg = rule.msg.format(str(t), last_cnx_age)
+                util.logger.warning(msg)
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
         return problems
 
 def search(q=None, endpoint=None, p=None, ps=500):
@@ -116,7 +119,7 @@ def create(name, login=None, endpoint=None):
 
 
 def audit(audit_settings, endpoint=None):
-    util.logger.info("--- Auditing users---")
+    util.logger.info("--- Auditing users ---")
     problems = []
     for _, u in search(endpoint=endpoint).items():
         problems += u.audit(audit_settings)
