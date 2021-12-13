@@ -40,7 +40,7 @@ class PullRequest(sq.SqObject):
         self._ncloc = None
 
     def __str__(self):
-        return f"Pull Request '{self.key}' of {str(self.project)}"
+        return f"pull request key '{self.key}' of {str(self.project)}"
 
     def last_analysis_date(self):
         if self._last_analysis_date is None and 'analysisDate' in self.json:
@@ -79,8 +79,8 @@ class PullRequest(sq.SqObject):
         problems = []
         if age > max_age:
             rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
-            msg = rule.msg.format(self.key, self.project.key, age)
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(pb.Problem(rule.type, rule.severity,
+                                       rule.msg.format(str(self), age), concerned_object=self))
         else:
             util.logger.debug("%s age is %d days", str(self), age)
         return problems
