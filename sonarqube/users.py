@@ -23,6 +23,7 @@
 
 '''
 import json
+import re
 import datetime as dt
 import pytz
 import sonarqube.env as env
@@ -68,8 +69,15 @@ class User(sq.SqObject):
 
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
+
+        protected_users = re.split(r'\s*,\s*', settings['audit.tokens.neverExpire'])
+        if self.login in protected_users:
+            util.logger.info("%s tokens are marked as protected, they never expire", str(self))
+            return []
+
         today = dt.datetime.today().replace(tzinfo=pytz.UTC)
         problems = []
+
         for t in self.tokens():
             age = abs((today - t.createdAt).days)
             if age > settings['audit.tokens.maxAge']:
