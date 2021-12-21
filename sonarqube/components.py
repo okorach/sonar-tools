@@ -52,7 +52,7 @@ class Component(sq.SqObject):
         self.language = data.get('language', None)
 
     def __str__(self):
-        return self._name
+        return self.key
 
     def get_subcomponents(self, strategy='children', with_issues=False):
         parms = {'component': self.key, 'strategy': strategy, 'ps': 1,
