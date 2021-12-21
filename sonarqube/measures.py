@@ -23,6 +23,7 @@
 
 '''
 import json
+import re
 import sonarqube.env as env
 import sonarqube.utilities as util
 import sonarqube.sqobject as sq
@@ -103,7 +104,57 @@ def get_rating_letter(rating_number_str):
 
 
 def get_rating_number(rating_letter):
+    if not isinstance(rating_letter, str):
+        return int(rating_letter)
     l = rating_letter.upper()
-    if l in ['A', 'B', 'C', 'D', 'E']:
+    if l in ('A', 'B', 'C', 'D', 'E'):
         return ord(l) - 64
     return rating_letter
+
+
+def as_rating_letter(metric, value):
+    if metric in metrics.Metric.RATING_METRICS and value not in ('A', 'B', 'C', 'D', 'E'):
+        return get_rating_letter(value)
+    return value
+
+
+def as_rating_number(metric, value):
+    if metric in metrics.Metric.RATING_METRICS:
+        return get_rating_number(value)
+    return value
+
+
+def as_ratio(metric, value):
+    try:
+        if re.match(r'.*(ratio|density)', metric):
+            # Return pct with 3 significant digits
+            value = int(float(value)*10) / 1000.0
+    except ValueError:
+        pass
+    return value
+
+
+def as_percent(metric, value):
+    try:
+        if re.match(r'.*(ratio|density|coverage)', metric):
+            # Return pct with 3 significant digits
+            value = str(int(float(value)*10) / 10.0) + '%'
+    except ValueError:
+        pass
+    return value
+
+
+def convert(metric, value, ratings='letters', percents='float', dates='datetime'):
+    value = util.convert_to_type(value)
+    if ratings == 'numbers':
+        value = as_rating_number(metric, value)
+    else:
+        value = as_rating_letter(metric, value)
+    if percents == 'percents':
+        value = as_percent(metric, value)
+    else:
+        value = as_ratio(metric, value)
+    if dates == 'dateonly' and metric in (
+       'last_analysis', 'createdAt', 'updatedAt', 'creation_date', 'modification_date'):
+        value = util.date_to_string(util.string_to_date(value), False)
+    return value

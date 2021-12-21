@@ -34,10 +34,20 @@ class Metric(sq.SqObject):
     Inventory = {}
     MAX_PAGE_SIZE = 500
     SEARCH_API = 'metrics/search'
-    MAIN_METRICS = 'ncloc,bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
-        'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
-        'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
-        'new_coverage,new_duplicated_lines_density'
+    MAIN_METRICS = (
+        'bugs', 'vulnerabilities', 'code_smells', 'security_hotspots',
+        'reliability_rating', 'security_rating', 'sqale_rating', 'security_review_rating',
+        'sqale_debt_ratio', 'coverage', 'duplicated_lines_density', 'security_hotspots_reviewed',
+        'new_bugs', 'new_vulnerabilities', 'new_code_smells', 'new_security_hotspots',
+        'new_reliability_rating', 'new_security_rating', 'new_maintainability_rating', 'new_security_review_rating',
+        'new_sqale_debt_ratio', 'new_coverage', 'new_duplicated_lines_density', 'new_security_hotspots_reviewed',
+        'ncloc'
+    )
+
+    RATING_METRICS = ('sqale_rating', 'new_maintainability_rating',
+                      'security_rating', 'new_security_rating',
+                      'reliability_rating', 'new_reliability_rating',
+                      'security_review_rating', 'new_security_review_rating')
 
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key=key, env=endpoint)
@@ -63,7 +73,7 @@ class Metric(sq.SqObject):
                     break
         if data is None:
             return False
-        util.logger.debug('Lading metric %s', str(data))
+        util.logger.debug('Loading metric %s', str(data))
         self.id = data.get('id', None)
         self.type = data['type']
         self.name = data['name']
@@ -71,7 +81,7 @@ class Metric(sq.SqObject):
         self.domain = data.get('domain', '')
         self.qualitative = data['qualitative']
         self.hidden = data['hidden']
-        self.custom = data['custom']
+        self.custom = data.get('custom', None)
         return True
 
     def is_a_rating(self):
@@ -86,22 +96,27 @@ def count(endpoint):
     return Metric.Count
 
 
-def search(endpoint=None, page=None):
-    if Metric.Inventory:
-        return Metric.Inventory
-    m_list = {}
-    if page is not None:
-        resp = env.get(Metric.SEARCH_API, params={'ps': 500, 'p': page}, ctxt=endpoint)
-        data = json.loads(resp.text)
-        for m in data['metrics']:
-            m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
-    else:
-        nb_metrics = count(endpoint)
-        nb_pages = (nb_metrics + Metric.MAX_PAGE_SIZE - 1) // Metric.MAX_PAGE_SIZE
-        for p in range(nb_pages):
-            m_list.update(search(endpoint=endpoint, page=p + 1))
-        Metric.Inventory = m_list
-    return m_list
+def search(endpoint=None, page=None, skip_hidden_metrics=True):
+    if not Metric.Inventory:
+        m_list = {}
+        if page is not None:
+            resp = env.get(Metric.SEARCH_API, params={'ps': 500, 'p': page}, ctxt=endpoint)
+            data = json.loads(resp.text)
+            for m in data['metrics']:
+                m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
+            return m_list
+        else:
+            nb_metrics = count(endpoint)
+            nb_pages = (nb_metrics + Metric.MAX_PAGE_SIZE - 1) // Metric.MAX_PAGE_SIZE
+            for p in range(nb_pages):
+                m_list.update(search(endpoint=endpoint, page=p + 1))
+            Metric.Inventory = m_list
+    final_list = {}
+    for k, v in Metric.Inventory.items():
+        if skip_hidden_metrics and v.hidden:
+            continue
+        final_list[k] = v
+    return final_list
 
 
 def as_csv(metric_list, separator=','):
@@ -110,7 +125,7 @@ def as_csv(metric_list, separator=','):
         if metric.key == 'new_development_cost':
             # Skip new_development_cost metric to work around a SonarQube 7.9 bug
             continue
-        csv = csv + "{0}{1}".format(metric.key, separator)
+        csv = csv + f"{metric.key}{separator}"
     return csv[:-1]
 
 

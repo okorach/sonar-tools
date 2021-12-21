@@ -108,7 +108,6 @@ def get_logging_level(level):
 
 
 def set_debug_level(level):
-    global logger
     logger.setLevel(get_logging_level(level))
     logger.info("Set debug level to %s", level)
 
@@ -141,8 +140,11 @@ def format_date(somedate):
 def string_to_date(string):
     return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
 
-def date_to_string(date):
-    return date.strftime(SQ_DATE_FORMAT)
+def date_to_string(date, with_time=True):
+    fmt = SQ_DATETIME_FORMAT
+    if not with_time:
+        fmt = SQ_DATE_FORMAT
+    return date.strftime(fmt)
 
 def get_setting(settings, key, default):
     if settings is None:
@@ -153,3 +155,16 @@ def redacted_token(token):
     if token is None:
         return '-'
     return re.sub(r'(...).*(...)', r'\1***\2', token)
+
+def convert_to_type(value):
+    try:
+        newval = int(value)
+        return newval
+    except ValueError:
+        pass
+    try:
+        newval = float(value)
+        return newval
+    except ValueError:
+        pass
+    return value
