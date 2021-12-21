@@ -73,7 +73,7 @@ class Metric(sq.SqObject):
                     break
         if data is None:
             return False
-        util.logger.debug('Lading metric %s', str(data))
+        util.logger.debug('Loading metric %s', str(data))
         self.id = data.get('id', None)
         self.type = data['type']
         self.name = data['name']
@@ -96,22 +96,30 @@ def count(endpoint):
     return Metric.Count
 
 
-def search(endpoint=None, page=None):
-    if Metric.Inventory:
-        return Metric.Inventory
-    m_list = {}
-    if page is not None:
-        resp = env.get(Metric.SEARCH_API, params={'ps': 500, 'p': page}, ctxt=endpoint)
-        data = json.loads(resp.text)
-        for m in data['metrics']:
-            m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
-    else:
-        nb_metrics = count(endpoint)
-        nb_pages = (nb_metrics + Metric.MAX_PAGE_SIZE - 1) // Metric.MAX_PAGE_SIZE
-        for p in range(nb_pages):
-            m_list.update(search(endpoint=endpoint, page=p + 1))
-        Metric.Inventory = m_list
-    return m_list
+def search(endpoint=None, page=None, skip_hidden_metrics=True):
+    if not Metric.Inventory:
+        m_list = {}
+        if page is not None:
+            resp = env.get(Metric.SEARCH_API, params={'ps': 500, 'p': page}, ctxt=endpoint)
+            data = json.loads(resp.text)
+            for m in data['metrics']:
+                m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
+            return m_list
+        else:
+            nb_metrics = count(endpoint)
+            nb_pages = (nb_metrics + Metric.MAX_PAGE_SIZE - 1) // Metric.MAX_PAGE_SIZE
+            for p in range(nb_pages):
+                m_list.update(search(endpoint=endpoint, page=p + 1))
+            Metric.Inventory = m_list
+    final_list = {}
+    for k, v in Metric.Inventory.items():
+        if skip_hidden_metrics and v.hidden:
+            util.logger.debug("Metric %s is hidden", k)
+            continue
+        else:
+            util.logger.debug("Metric %s is not hidden", k)
+        final_list[k] = v
+    return final_list
 
 
 def as_csv(metric_list, separator=','):
