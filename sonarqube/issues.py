@@ -591,7 +591,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
         date_stop = get_newest_issue(endpoint=endpoint,
                                      params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
     util.logger.debug("Issue search by date for project %s within [%s - %s]", params['componentKeys'],
-        util.date_to_string(date_start), util.date_to_string(date_stop))
+        util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
     issue_list = {}
     new_params.update({'createdAfter': date_start, 'createdBefore': date_stop})
     try:
@@ -617,7 +617,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
                 search_by_date(endpoint=endpoint, date_start=date_middle, date_stop=date_stop, params=new_params))
     if date_start is not None and date_stop is not None:
         util.logger.debug("Project %s has %d issues between %s and %s", new_params.get('componentKeys', 'None'),
-                          len(issue_list), util.date_to_string(date_start), util.date_to_string(date_stop))
+                          len(issue_list), util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
     return issue_list
 
 
