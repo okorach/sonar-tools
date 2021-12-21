@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument('-o', '--outputFile', required=False, help='File to generate the report, default is stdout'
                         'Format is automatically deducted from file extension, if extension given')
     parser.add_argument('-f', '--format', required=False, default='csv',
-                         help='Format of output (json, csv), default is csv')
+                        help='Format of output (json, csv), default is csv')
     parser.add_argument('-s', '--statuses', required=False, help='comma separated issue status, '
                         'OPEN, WONTFIX, FALSE-POSITIVE, FIXED, CLOSED, REOPENED, REVIEWED')
     parser.add_argument('-a', '--createdAfter', required=False,
@@ -67,7 +67,7 @@ def __dump_issues(issues_list, file, file_format):
         f = sys.stdout
         util.logger.info("Dumping report to stdout")
     else:
-        f = open(file, "w")
+        f = open(file, "w", encoding='utf-8')
         util.logger.info("Dumping report to file '%s'", file)
     if file_format == 'json':
         print("[", file=f)

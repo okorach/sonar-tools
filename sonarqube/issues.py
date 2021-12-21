@@ -369,7 +369,6 @@ class Issue(sq.SqObject):
         util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.key)
         return False
 
-
     def get_numeric_debt(self):
         num_debt = 0
         if self.debt is not None:
@@ -413,7 +412,6 @@ class Issue(sq.SqObject):
         for field in ('env', 'id', 'json', 'changelog', 'url', 'assignee', 'hash', 'sonarqube',
                       'creation_date', 'modification_date', 'debt', 'component', 'language', 'branch', 'resolution'):
             data.pop(field, None)
-        # data['message'] = re.sub('"', '""', self.message)
         return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))
 
     def apply_changelog(self, source_issue):
@@ -595,7 +593,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
     util.logger.debug("Issue search by date for project %s within [%s - %s]", params['componentKeys'],
         util.date_to_string(date_start), util.date_to_string(date_stop))
     issue_list = {}
-    new_params.update({'createdAfter':date_start, 'createdBefore': date_stop})
+    new_params.update({'createdAfter': date_start, 'createdBefore': date_stop})
     try:
         issue_list = search(endpoint=endpoint, params=new_params)
     except TooManyIssuesError:
