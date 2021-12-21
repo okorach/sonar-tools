@@ -33,6 +33,8 @@ import sonarqube.utilities as util
 SEP = ","
 RATINGS = 'letters'
 PERCENTS = 'float'
+DATEFMT = 'datetime'
+CONVERT_OPTIONS = {'ratings': 'letters', 'percents': 'float', 'dates': 'datetime'}
 
 def __diff(first, second):
     second = set(second)
@@ -41,10 +43,13 @@ def __diff(first, second):
 
 def __last_analysis(project_or_branch):
     last_analysis = project_or_branch.last_analysis_date()
+    with_time = True
+    if CONVERT_OPTIONS['dates'] == 'dateonly':
+        with_time = False
     if last_analysis is None:
         last_analysis = "Never"
     else:
-        last_analysis = util.date_to_string(last_analysis)
+        last_analysis = util.date_to_string(last_analysis, with_time)
     return last_analysis
 
 
@@ -81,11 +86,10 @@ def __get_json_project_measures(project, wanted_metrics, endpoint, with_branches
     else:
         p_meas = measures.component(project.key, wanted_metrics, endpoint=endpoint)
         prj = {'last_analysis': __last_analysis(project),
-                'projectKey': project.key,
-                'projectName': project.name}
+               'projectKey': project.key, 'projectName': project.name}
         for metric in wanted_metrics.split(','):
             if metric in p_meas:
-                prj[metric] = measures.convert(metric, p_meas[metric], ratings=RATINGS, percents=PERCENTS)
+                prj[metric] = measures.convert(metric, p_meas[metric], **CONVERT_OPTIONS)
         data.append(prj)
     return data
 
@@ -104,7 +108,7 @@ def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True
         for metric in wanted_metrics.split(','):
             val = "None"
             if metric in p_meas:
-                val = measures.convert(metric, p_meas[metric].replace(SEP, '|'), ratings=RATINGS, percents=PERCENTS)
+                val = str(measures.convert(metric, p_meas[metric].replace(SEP, '|'), **CONVERT_OPTIONS))
             line += SEP + val
     return line
 
@@ -112,12 +116,10 @@ def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True
 def __get_json_branch_measures(branch, project, wanted_metrics, endpoint):
     p_meas = measures.component(project.key, wanted_metrics, branch=branch.name, endpoint=endpoint)
     data = {'last_analysis': __last_analysis(branch),
-            'projectKey': project.key,
-            'projectName': project.name,
-            'branch': branch.name}
+            'projectKey': project.key, 'projectName': project.name, 'branch': branch.name}
     for metric in wanted_metrics.split(','):
         if metric in p_meas:
-            data[metric] = measures.convert(metric, p_meas[metric], ratings=RATINGS, percents=PERCENTS)
+            data[metric] = measures.convert(metric, p_meas[metric], **CONVERT_OPTIONS)
     return data
 
 
@@ -126,13 +128,35 @@ def __get_branch_measures(branch, project, wanted_metrics, endpoint):
     line = f"{project.key}{SEP}{project.name}{SEP}{branch.name}{SEP}{__last_analysis(branch)}"
     for metric in wanted_metrics.split(','):
         if metric in p_meas:
-            line += SEP + measures.convert(metric, p_meas[metric].replace(SEP, '|'), ratings=RATINGS, percents=PERCENTS)
+            line += SEP + str(measures.convert(metric, p_meas[metric].replace(SEP, '|'), **CONVERT_OPTIONS))
         else:
             line += SEP + "None"
     return line
 
 
-def main():
+def __get_wanted_metrics(args, endpoint):
+    main_metrics = ','.join(metrics.Metric.MAIN_METRICS)
+    wanted_metrics = args.metricKeys
+    if wanted_metrics == '_all':
+        all_metrics = metrics.as_csv(metrics.search(endpoint=endpoint).values()).split(',')
+        wanted_metrics = main_metrics + ',' + ','.join(__diff(all_metrics, metrics.Metric.MAIN_METRICS))
+    elif wanted_metrics == '_main' or wanted_metrics is None:
+        wanted_metrics = main_metrics
+    return wanted_metrics
+
+
+def __get_fmt_and_file(args):
+    kwargs = vars(args)
+    fmt = kwargs['format']
+    file = kwargs.get('outputFile', None)
+    if file is not None:
+        ext = file.split('.')[-1].lower()
+        if ext in ('csv', 'json'):
+            fmt = ext
+    return (fmt, file)
+
+
+def __parse_cmd_line():
     parser = util.set_common_args('Extract measures of projects')
     parser = util.set_component_args(parser)
     parser.add_argument('-o', '--outputFile', required=False, help='File to generate the report, default is stdout'
@@ -148,41 +172,32 @@ def main():
                         help='Reports ratings as 12345 numbers instead of ABCDE letters')
     parser.add_argument('-p', '--percentsAsString', action='store_true', default=False, required=False,
                         help='Reports percentages as string xy.z%% instead of float values 0.xyz')
+    parser.add_argument('-d', '--datesWithoutTime', action='store_true', default=False, required=False,
+                        help='Reports timestamps only with date, not time')
     args = util.parse_and_check_token(parser)
+    util.check_environment(vars(args))
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     if args.ratingsAsNumbers:
-        global RATINGS
-        RATINGS = 'numbers'
+        CONVERT_OPTIONS['ratings'] = 'numbers'
     if args.percentsAsString:
-        global PERCENTS
-        PERCENTS = 'percents'
+        CONVERT_OPTIONS['percents'] = 'percents'
+    if args.datesWithoutTime:
+        CONVERT_OPTIONS['dates'] = 'dateonly'
 
+    return args
+
+
+def main():
+    args = __parse_cmd_line()
     endpoint = env.Environment(url=args.url, token=args.token)
 
     with_branches = args.withBranches
     if endpoint.edition() == 'community':
         with_branches = False
 
-    util.check_environment(vars(args))
-    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
+    wanted_metrics = __get_wanted_metrics(args, endpoint)
+    (fmt, file) = __get_fmt_and_file(args)
 
-    # Mandatory script input parameters
-
-    main_metrics_list = metrics.Metric.MAIN_METRICS
-    main_metrics = ','.join(main_metrics_list)
-    wanted_metrics = args.metricKeys
-    if wanted_metrics == '_all':
-        all_metrics = metrics.as_csv(metrics.search(endpoint=endpoint).values()).split(',')
-        wanted_metrics = main_metrics + ',' + ','.join(__diff(all_metrics, main_metrics_list))
-    elif wanted_metrics == '_main' or wanted_metrics is None:
-        wanted_metrics = main_metrics
-
-    kwargs = vars(args)
-    fmt = kwargs['format']
-    file = kwargs.get('outputFile', None)
-    if file is not None:
-        ext = file.split('.')[-1].lower()
-        if ext in ('csv', 'json'):
-            fmt = ext
     fd = __open_output(file)
     if fmt == 'json':
         print('[', end='', file=fd)
@@ -193,10 +208,10 @@ def main():
     if args.componentKeys is not None:
         filters = {'projects': args.componentKeys.replace(' ', '')}
     project_list = projects.search(endpoint=endpoint, params=filters)
-    nb_branches = 0
-    nb_loc = 0
+    nb_branches, nb_loc = 0, 0
     is_first = True
     for _, project in project_list.items():
+        util.logger.info('Exporting measures for %s', str(project))
         if fmt == 'json':
             if not is_first:
                 print(',', end='', file=fd)
@@ -214,6 +229,8 @@ def main():
     if fmt == 'json':
         print("\n]\n", file=fd)
     __close_output(file, fd)
+    if file is not None:
+        util.logger.info("File '%s' generated", file)
     util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)
     sys.exit(0)
 
