@@ -155,6 +155,6 @@ def convert(metric, value, ratings='letters', percents='float', dates='datetime'
     else:
         value = as_ratio(metric, value)
     if dates == 'dateonly' and metric in (
-        'last_analysis', 'createdAt', 'updatedAt', 'creation_date', 'modification_date'):
+       'last_analysis', 'createdAt', 'updatedAt', 'creation_date', 'modification_date'):
         value = util.date_to_string(util.string_to_date(value), False)
     return value

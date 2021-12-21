@@ -42,7 +42,7 @@ class Metric(sq.SqObject):
         'new_reliability_rating', 'new_security_rating', 'new_maintainability_rating', 'new_security_review_rating',
         'new_sqale_debt_ratio', 'new_coverage', 'new_duplicated_lines_density', 'new_security_hotspots_reviewed',
         'ncloc'
-        )
+    )
 
     RATING_METRICS = ('sqale_rating', 'new_maintainability_rating',
                       'security_rating', 'new_security_rating',
@@ -114,10 +114,7 @@ def search(endpoint=None, page=None, skip_hidden_metrics=True):
     final_list = {}
     for k, v in Metric.Inventory.items():
         if skip_hidden_metrics and v.hidden:
-            util.logger.debug("Metric %s is hidden", k)
             continue
-        else:
-            util.logger.debug("Metric %s is not hidden", k)
         final_list[k] = v
     return final_list
 
