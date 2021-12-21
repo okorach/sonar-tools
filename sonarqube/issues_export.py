@@ -41,8 +41,12 @@ import sonarqube.utilities as util
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
     parser = util.set_component_args(parser)
-    parser.add_argument('-s', '--statuses', required=False, help='comma separated issue status, \
-        OPEN, WONTFIX, FALSE-POSITIVE, FIXED, CLOSED, REOPENED, REVIEWED')
+    parser.add_argument('-o', '--outputFile', required=False, help='File to generate the report, default is stdout'
+                        'Format is automatically deducted from file extension, if extension given')
+    parser.add_argument('-f', '--format', required=False, default='csv',
+                         help='Format of output (json, csv), default is csv')
+    parser.add_argument('-s', '--statuses', required=False, help='comma separated issue status, '
+                        'OPEN, WONTFIX, FALSE-POSITIVE, FIXED, CLOSED, REOPENED, REVIEWED')
     parser.add_argument('-a', '--createdAfter', required=False,
                         help='issues created on or after a given date (YYYY-MM-DD)')
     parser.add_argument('-b', '--createdBefore', required=False,
@@ -57,6 +61,31 @@ def parse_args():
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
 
     return util.parse_and_check_token(parser)
+
+def __dump_issues(issues_list, file, file_format):
+    if file is None:
+        f = sys.stdout
+        util.logger.info("Dumping report to stdout")
+    else:
+        f = open(file, "w")
+        util.logger.info("Dumping report to file '%s'", file)
+    if file_format == 'json':
+        print("[", file=f)
+    else:
+        print(issues.to_csv_header(), file=f)
+    is_first = True
+    for _, issue in issues_list.items():
+        if file_format == 'json':
+            pfx = "" if is_first else ",\n"
+            print(pfx + issue.to_json(), file=f, end='')
+            is_first = False
+        else:
+            print(issue.to_csv(), file=f)
+
+    if file_format == 'json':
+        print("\n]", file=f)
+    if file is not None:
+        f.close()
 
 
 def main():
@@ -77,10 +106,13 @@ def main():
     params.update({'env': sqenv})
 
     all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys', None))
-    print(issues.to_csv_header())
-    for _, issue in all_issues.items():
-        # util.logger.debug("ISSUE = %s", str(issue))
-        print(issue.to_csv())
+
+    fmt = kwargs['format']
+    if kwargs.get('outputFile', None) is not None:
+        ext = kwargs['outputFile'].split('.')[-1].lower()
+        if ext in ('csv', 'json'):
+            fmt = ext
+    __dump_issues(all_issues, kwargs.get('outputFile', None), fmt)
     util.logger.info("Returned issues: %d", len(all_issues))
     sys.exit(0)
 
