@@ -153,3 +153,16 @@ def redacted_token(token):
     if token is None:
         return '-'
     return re.sub(r'(...).*(...)', r'\1***\2', token)
+
+def convert_to_type(value):
+    try:
+        newval = int(value)
+        return newval
+    except ValueError:
+        pass
+    try:
+        newval = float(value)
+        return newval
+    except ValueError:
+        pass
+    return value

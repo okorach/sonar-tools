@@ -34,10 +34,20 @@ class Metric(sq.SqObject):
     Inventory = {}
     MAX_PAGE_SIZE = 500
     SEARCH_API = 'metrics/search'
-    MAIN_METRICS = 'ncloc,bugs,reliability_rating,vulnerabilities,security_rating,code_smells,' + \
-        'sqale_rating,sqale_index,coverage,duplicated_lines_density,new_bugs,new_vulnerabilities,new_code_smells,' + \
-        'new_technical_debt,new_maintainability_rating,coverage,duplicated_lines_density,' + \
-        'new_coverage,new_duplicated_lines_density'
+    MAIN_METRICS = (
+        'ncloc',
+        'bugs' , 'vulnerabilities', 'code_smells', 'security_hotspots',
+        'reliability_rating', 'security_rating', 'sqale_rating', 'security_review_rating',
+        'sqale_debt_ratio', 'coverage', 'duplicated_lines_density', 'security_hotspots_reviewed',
+        'new_bugs', 'new_vulnerabilities', 'new_code_smells', 'new_security_hotspots',
+        'new_reliability_rating', 'new_security_rating', 'new_maintainability_rating', 'new_security_review_rating',
+        'new_sqale_debt_ratio', 'new_coverage', 'new_duplicated_lines_density', 'new_security_hotspots_reviewed'
+        )
+
+    RATING_METRICS = ('sqale_rating', 'new_maintainability_rating',
+                      'security_rating', 'new_security_rating',
+                      'reliability_rating', 'new_reliability_rating',
+                      'security_review_rating', 'new_security_review_rating')
 
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key=key, env=endpoint)

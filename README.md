@@ -218,12 +218,15 @@ Exports one or all projects with all (or some selected) measures in a CSV file.
 The CSV is sent to standard output.  
 Plenty of issue filters can be specified from the command line, type `sonar-measures-export -h` for details
 
-Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] >measures.csv`  
+Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] [-p] [-f json|csv] [-o <outputFile>]`  
 - `-m`: comma separated list of metrics to export
   - `-m _main` is a shortcut to list all main metrics. It's the recommended option  
   - `-m _all` is a shortcut to list all metrics, including the most obscure ones
 - `-b`: Exports measures for all project branches (by default only export measures of the main branch)
-- `-r`: Converts ratings as letters (by default ratings are exported as numbers between 1 and 5)
+- `-r`: Converts ratings as numbers (by default ratings are exported as letters between A and E)
+- `-p`: Converts percentages as strings "xy.z%" (by default percentages are exported as floats between 0 and 1)
+- `-f`: Choose export format between csv (default) and json
+- `-o`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 
 ## Examples
 ```
@@ -234,15 +237,15 @@ export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 sonar-measures-export -m ncloc,bugs,vulnerabilities >measures.csv
 
 # Exports main metrics of all projects and all their branches
-sonar-measures-export -m _main -b >main_measures.csv
+sonar-measures-export -m _main -b -o measures.json
 
 # Exports all metrics of projects myProjectKey1 and myOtherProjectKey main branch. Convert ratings to letters
-sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r >all_measures.csv
+sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -o all_measures.csv
 ```
 
 # sonar-issues-export
 
-Exports a list of issues as CSV (sent to standard output)  
+Exports a list of issues as CSV  or JSON. The export is sent to standard output or into a file
 Plenty of issue filters can be specified from the command line, type `sonar-issues-export -h` for details.  
 :warning: On large SonarQube instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
@@ -258,16 +261,16 @@ export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 sonar-issues-export >all_issues.csv
 
 # Exports all issues of project myProjectKey
-sonar-issues-export -k myProjectKey >project_issues.csv
+sonar-issues-export -k myProjectKey -o project_issues.csv
 
 # Exports all false positive and won't fix issues across all projects
-sonar-issues-export -r FALSE-POSITIVE,WONTFIX >fp_wf.csv
+sonar-issues-export -r FALSE-POSITIVE,WONTFIX -o fp_wf.json
 
 # Exports all issues created in 2020
-sonar-issues-export -a 2020-01-01 -b 2020-12-31 >issues_created_in_2020.csv
+sonar-issues-export -a 2020-01-01 -b 2020-12-31 -o issues_created_in_2020.csv
 
 # Exports all vulnerabilities and bugs
-sonar-issues-export -types VULNERABILITY,BUG >bugs_and_vulnerabilities.csv
+sonar-issues-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.json
 ```
 
 # sonar-issues-sync
