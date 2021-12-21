@@ -66,6 +66,7 @@ def __open_output(file):
 def __close_output(file, fd):
     if file is not None:
         fd.close()
+        util.logger.info("File '%s' generated", file)
 
 
 def __get_csv_header(wanted_metrics, edition):
@@ -229,8 +230,6 @@ def main():
     if fmt == 'json':
         print("\n]\n", file=fd)
     __close_output(file, fd)
-    if file is not None:
-        util.logger.info("File '%s' generated", file)
     util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)
     sys.exit(0)
 
