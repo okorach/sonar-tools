@@ -35,13 +35,13 @@ class Metric(sq.SqObject):
     MAX_PAGE_SIZE = 500
     SEARCH_API = 'metrics/search'
     MAIN_METRICS = (
-        'ncloc',
-        'bugs' , 'vulnerabilities', 'code_smells', 'security_hotspots',
+        'bugs', 'vulnerabilities', 'code_smells', 'security_hotspots',
         'reliability_rating', 'security_rating', 'sqale_rating', 'security_review_rating',
         'sqale_debt_ratio', 'coverage', 'duplicated_lines_density', 'security_hotspots_reviewed',
         'new_bugs', 'new_vulnerabilities', 'new_code_smells', 'new_security_hotspots',
         'new_reliability_rating', 'new_security_rating', 'new_maintainability_rating', 'new_security_review_rating',
-        'new_sqale_debt_ratio', 'new_coverage', 'new_duplicated_lines_density', 'new_security_hotspots_reviewed'
+        'new_sqale_debt_ratio', 'new_coverage', 'new_duplicated_lines_density', 'new_security_hotspots_reviewed',
+        'ncloc'
         )
 
     RATING_METRICS = ('sqale_rating', 'new_maintainability_rating',
@@ -81,7 +81,7 @@ class Metric(sq.SqObject):
         self.domain = data.get('domain', '')
         self.qualitative = data['qualitative']
         self.hidden = data['hidden']
-        self.custom = data['custom']
+        self.custom = data.get('custom', None)
         return True
 
     def is_a_rating(self):
@@ -120,7 +120,7 @@ def as_csv(metric_list, separator=','):
         if metric.key == 'new_development_cost':
             # Skip new_development_cost metric to work around a SonarQube 7.9 bug
             continue
-        csv = csv + "{0}{1}".format(metric.key, separator)
+        csv = csv + f"{metric.key}{separator}"
     return csv[:-1]
 
 
