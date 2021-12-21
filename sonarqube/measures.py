@@ -105,7 +105,7 @@ def get_rating_letter(rating_number_str):
 
 def get_rating_number(rating_letter):
     if not isinstance(rating_letter, str):
-        return rating_letter
+        return int(rating_letter)
     l = rating_letter.upper()
     if l in ('A', 'B', 'C', 'D', 'E'):
         return ord(l) - 64
@@ -136,7 +136,7 @@ def as_ratio(metric, value):
 
 def as_percent(metric, value):
     try:
-        if re.match(r'.*(ratio|density)', metric):
+        if re.match(r'.*(ratio|density|coverage)', metric):
             # Return pct with 3 significant digits
             value = str(int(float(value)*10) / 10.0) + '%'
     except ValueError:
@@ -154,4 +154,7 @@ def convert(metric, value, ratings='letters', percents='float', dates='datetime'
         value = as_percent(metric, value)
     else:
         value = as_ratio(metric, value)
+    if dates == 'dateonly' and metric in (
+        'last_analysis', 'createdAt', 'updatedAt', 'creation_date', 'modification_date'):
+        value = util.date_to_string(util.string_to_date(value), False)
     return value
