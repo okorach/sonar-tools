@@ -40,13 +40,31 @@ def __deduct_format(fmt, file):
 
 
 def __csv_line(project, with_name=False, with_analysis=False):
-
-    line = f"{project.key}"
+    line = project.key
     if with_name:
         line += f"{sep}{project.name}"
     line += f"{sep}{project.ncloc(include_branches=True)}"
     if with_analysis:
         line += f"{sep}{project.last_analysis_date(include_branches=True)}"
+    return line
+
+
+def __json_data(project, with_name=False, with_analysis=False):
+    data = {'projectKey': project.key, 'ncloc': project.ncloc(include_branches=True)}
+    if with_name:
+        data['projectName'] = project.name
+    if with_analysis:
+        data['last_analysis'] = project.last_analysis_date(include_branches=True)
+    return data
+
+
+def __csv_header_line(project, with_name=False, with_analysis=False):
+    line = "# Project Key"
+    if with_name:
+        line += f"{sep}Project Name"
+    line += f"{sep}LoC"
+    if with_analysis:
+        line += f"{sep}Last Analysis"
     return line
 
 def __dump_loc(project_list, file, file_format, **kwargs):
@@ -60,28 +78,16 @@ def __dump_loc(project_list, file, file_format, **kwargs):
     with_name = kwargs['projectName']
     with_last = kwargs['lastAnalysis']
     if file_format != 'json':
-        print("# Project Key", end='', file=fd)
-        if with_name:
-            print(f"{sep}Project Name", end='', file=fd)
-        print(f"{sep}LoC", end='', file=fd)
-        if with_last:
-            print(f"{sep}Last Analysis", end='', file=fd)
-        print('', file=fd)
+        print(__csv_header_line(with_name, with_last), file=fd)
     nb_loc = 0
     nb_projects = 0
     loc_list = []
     for _, p in project_list.items():
-        project_loc = p.ncloc(include_branches=True)
         if file_format == 'json':
-            data = {'projectKey': p.key, 'ncloc': project_loc}
-            if with_name:
-                data['projectName'] = p.name
-            if with_last:
-                data['last_analysis'] = p.last_analysis_date(include_branches=True)
-            loc_list.append(data)
+            loc_list.append(__json_data(p, with_name, with_last))
         else:
             print(__csv_line(p, with_name, with_last), end='', file=fd)
-        nb_loc += project_loc
+        nb_loc += p.ncloc()
         nb_projects += 1
         if nb_projects % 50 == 0:
             util.logger.info("%d PROJECTS and %d LoCs, still counting...", nb_projects, nb_loc)
@@ -89,7 +95,7 @@ def __dump_loc(project_list, file, file_format, **kwargs):
         print(json.dumps(loc_list, indent=3, sort_keys=False, separators=(',', ': ')), file=fd)
     if file is not None:
         fd.close()
-    util.logger.info("%d PROJECTS and %d LoCs", len(project_list), nb_loc)
+    util.logger.info("%d PROJECTS and %d LoCs in total", len(project_list), nb_loc)
 
 
 def main():
