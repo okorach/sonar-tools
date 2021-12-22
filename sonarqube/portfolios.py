@@ -24,6 +24,7 @@
 '''
 import json
 from sonarqube import aggregations, env
+import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 
@@ -39,7 +40,6 @@ PORTFOLIO_QUALIFIER = 'VW'
 class Portfolio(aggregations.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
-        global _OBJECTS
         super().__init__(key=key, endpoint=endpoint)
         self._selection_mode = None
         self._load(data)
@@ -87,24 +87,21 @@ def count(endpoint=None):
     return aggregations.count(api=SEARCH_API, endpoint=endpoint)
 
 
-def search(endpoint=None):
+def search(endpoint=None, params=None):
     portfolio_list = {}
     edition = env.edition(ctxt=endpoint)
     if edition not in ('enterprise', 'datacenter'):
         util.logger.info("No portfolios in %s edition", edition)
     else:
-        resp = env.get(LIST_API, ctxt=endpoint)
-        data = json.loads(resp.text)
-        for p in data['views']:
-            if p['qualifier'] == 'VW':
-                portfolio_list[p['key']] = Portfolio(p['key'], endpoint=endpoint, data=p)
+        portfolio_list = sq.search_objects(
+            api='views/search', params=params,
+            returned_field='components', key_field='key', object_class=Portfolio, endpoint=endpoint)
     return portfolio_list
 
 
 def get(key, sqenv=None):
-    global _OBJECTS
     if key not in _OBJECTS:
-        _OBJECTS[key] = Portfolio(key=key, endpoint=sqenv)
+        _ = Portfolio(key=key, endpoint=sqenv)
     return _OBJECTS[key]
 
 

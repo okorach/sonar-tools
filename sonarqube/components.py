@@ -131,14 +131,3 @@ def get_subcomponents(component_key, strategy='children', with_issues=False, end
     return Component(key=component_key, sqenv=endpoint).get_subcomponents(strategy=strategy, with_issues=with_issues)
 
 
-def search_objects(api, params, returned_field, object_class, endpoint=None):
-    params['ps'] = 500
-    resp = env.get(api, params=params, ctxt=endpoint)
-    data = json.loads(resp.text)
-    if 'paging' in data['paging'] and 'total' in data['paging'] and data['paging']['total'] > 500:
-        util.logger.critical("Pagination on applications search is not yet supported "
-        "and there are more than 500 of them. Will return only 500 first objects")
-    objects = {}
-    for obj in data[returned_field]:
-        objects[obj['key']] = object_class(obj['key'], endpoint=endpoint, data=obj)
-    return objects

@@ -22,7 +22,8 @@
     Abstraction of the SonarQube general object concept
 
 '''
-import sonarqube.env
+import json
+import sonarqube.env as env
 
 
 class SqObject:
@@ -38,11 +39,39 @@ class SqObject:
         return self.env
 
     def get(self, api, params=None):
-        return sonarqube.env.get(api, params, self.env)
+        return env.get(api, params, self.env)
 
     def post(self, api, params=None):
-        return sonarqube.env.post(api, params, self.env)
+        return env.post(api, params, self.env)
 
     def delete(self, api, params=None):
-        resp = sonarqube.env.delete(api, params, self.env)
+        resp = env.delete(api, params, self.env)
         return (resp.status_code // 100) == 2
+
+def search_objects(api, params, key_field, returned_field, object_class, p=None, ps=500, endpoint=None):
+    if params is None:
+        params = {}
+    params['ps'] = ps
+    resp = env.get(api, params=params, ctxt=endpoint)
+    data = json.loads(resp.text)
+    #if 'paging' in data['paging'] and 'total' in data['paging'] and data['paging']['total'] > 500:
+    #    util.logger.critical("Pagination on applications search is not yet supported "
+    #    "and there are more than 500 of them. Will return only 500 first objects")
+
+    objects = {}
+    for obj in data[returned_field]:
+        objects[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
+    if p is not None:
+        return objects
+
+    nb_pages = (data['paging']['total'] + ps - 1) // ps
+    p = 2
+    while p <= nb_pages:
+        params['p'] = p
+        resp = env.get(api, params, endpoint)
+        data = json.loads(resp.text)
+        nb_pages = (data['paging']['total'] + ps - 1) // ps
+        for obj in data[returned_field]:
+            objects[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
+        p += 1
+    return objects

@@ -28,6 +28,7 @@ import re
 import json
 import pytz
 import sonarqube.env as env
+import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
 from sonarqube.branches import Branch
@@ -41,7 +42,6 @@ import sonarqube.custom_measures as custom_measures
 
 PROJECTS = {}
 
-PROJECT_SEARCH_API = 'projects/search'
 MAX_PAGE_SIZE = 500
 PRJ_QUALIFIER = 'TRK'
 APP_QUALIFIER = 'APP'
@@ -492,35 +492,15 @@ def count(endpoint=None, params=None):
     return data['paging']['total']
 
 
-def search(endpoint=None, page=0, params=None):
+def search(endpoint=None, params=None):
     if params is None:
         params = {}
     params['qualifiers'] = 'TRK'
-    if page != 0:
-        params['p'] = page
-        if 'ps' in params and params['ps'] == 0:
-            params['ps'] = MAX_PAGE_SIZE
-        resp = env.get(PROJECT_SEARCH_API, ctxt=endpoint, params=params)
-        data = json.loads(resp.text)
-        plist = {}
-        for prj in data['components']:
-            plist[prj['key']] = Project(prj['key'], endpoint=endpoint, data=prj)
-        return plist
-
-    nb_projects = count(endpoint=endpoint, params=params)
-    nb_pages = ((nb_projects - 1) // MAX_PAGE_SIZE) + 1
-    params['ps'] = MAX_PAGE_SIZE
-    project_list = {}
-    for p in range(nb_pages):
-        params['p'] = p + 1
-        project_list.update(search(endpoint=endpoint, page=p + 1, params=params))
-
-    util.logger.debug("Project search returned %d projects", len(project_list))
-    return project_list
+    return sq.search_objects(api='projects/search', params=params, key_field='key',
+        returned_field='components', endpoint=endpoint, object_class=Project, ps=500)
 
 
 def get(key, sqenv=None):
-    global PROJECTS
     if key not in PROJECTS:
         _ = Project(key=key, endpoint=sqenv)
     return PROJECTS[key]
