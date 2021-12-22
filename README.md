@@ -171,6 +171,8 @@ sonar-audit --what settings,qg,qp
   - Tokens older than `audit.tokens.maxAge` days (default 90 days)
   - Tokens created but never used after `audit.tokens.maxUnusedAge` days (default 30 days)
   - Tokens not used for `audit.tokens.maxUnusedAge` days (default 30 days)
+- Groups:
+  - Empty groups
 </details>
 
 # sonar-housekeeper

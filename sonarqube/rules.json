@@ -345,5 +345,11 @@
         "type": "OPERATIONS",
         "object": "Application",
         "message": "{} is empty, it should be populated or deleted"
+    },
+    "GROUP_EMPTY": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "object": "Group",
+        "message": "{} is empty, it should have members added or be deleted"
     }
 }

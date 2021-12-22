@@ -106,6 +106,8 @@ class RuleId(enum.Enum):
     PORTFOLIO_EMPTY = 5000
     APPLICATION_EMPTY = 5100
 
+    GROUP_EMPTY = 5200
+
     def __str__(self):
         return repr(self.name)[1:-1]
 
