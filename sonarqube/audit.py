@@ -25,15 +25,10 @@
 '''
 import sys
 import json
-import sonarqube.projects as projects
-import sonarqube.qualityprofiles as qualityprofiles
-import sonarqube.qualitygates as qualitygates
 import sonarqube.portfolios as pf
 import sonarqube.applications as apps
-import sonarqube.users as users
+from sonarqube import users, groups, version, env, qualityprofiles, qualitygates, projects
 import sonarqube.utilities as util
-import sonarqube.version as version
-import sonarqube.env as env
 import sonarqube.audit_problem as pb
 import sonarqube.audit_config as conf
 
@@ -50,7 +45,7 @@ def __deduct_format__(fmt, file):
 
 def _audit_sif(sif):
     try:
-        with open(sif, 'r') as f:
+        with open(sif, 'r', encoding='utf-8') as f:
             sif = json.loads(f.read())
     except json.decoder.JSONDecodeError:
         util.logger.critical("File %s does not seem to be a legit JSON file", sif)
@@ -66,7 +61,7 @@ def _audit_sif(sif):
 
 def _audit_sq(sq, settings, what=None):
     if what is None:
-        what = 'qp,qg,settings,projects,users,portfolios,apps'
+        what = 'qp,qg,settings,projects,users,portfolios,apps,groups'
     what_to_audit = what.split(',')
     problems = []
     if 'projects' in what_to_audit:
@@ -79,6 +74,8 @@ def _audit_sq(sq, settings, what=None):
         problems += sq.audit(audit_settings=settings)
     if 'users' in what_to_audit:
         problems += users.audit(endpoint=sq, audit_settings=settings)
+    if 'groups' in what_to_audit:
+        problems += groups.audit(endpoint=sq, audit_settings=settings)
     if 'portfolios' in what_to_audit:
         problems += pf.audit(endpoint=sq, audit_settings=settings)
     if 'apps' in what_to_audit:

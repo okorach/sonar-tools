@@ -33,7 +33,7 @@ import sonarqube.audit_problem as pb
 
 class PullRequest(sq.SqObject):
     def __init__(self, project, key, data=None):
-        super().__init__(key=key, env=project.env)
+        super().__init__(key, project.endpoint)
         self.project = project
         self.json = data
         self._last_analysis_date = None

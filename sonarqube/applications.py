@@ -24,7 +24,7 @@
 '''
 import json
 from sonarqube import env
-import sonarqube.components as comp
+import sonarqube.sqobject as sq
 import sonarqube.aggregations as aggr
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
@@ -34,8 +34,7 @@ _OBJECTS = {}
 class Application(aggr.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
-        global _OBJECTS
-        super().__init__(key=key, endpoint=endpoint)
+        super().__init__(key, endpoint)
         self._nbr_projects = None
         self._load(data)
         _OBJECTS[key] = self
@@ -44,7 +43,7 @@ class Application(aggr.Aggregation):
         return f"Application key '{self.key}'"
 
     def delete(self, api='applications/delete', params=None):
-        _ = env.post('applications/delete', ctxt=self.env, params={'application': self.key})
+        _ = env.post('applications/delete', ctxt=self.endpoint, params={'application': self.key})
         return True
 
     def _audit_empty(self, audit_settings):
@@ -67,19 +66,22 @@ def count(endpoint=None):
     return data['paging']['total']
 
 
-def search(endpoint=None):
+def search(params=None, endpoint=None):
     app_list = {}
     edition = env.edition(ctxt=endpoint)
     if edition == 'community':
         util.logger.info("No applications in %s edition", edition)
     else:
-        app_list = comp.search_objects('api/components/search_projects', params={'filter': 'qualifier = APP'},
-        returned_field='components', object_class=Application, endpoint=endpoint)
+        new_params = {'filter': 'qualifier = APP'}
+        if params is not None:
+            new_params.update(params)
+        app_list = sq.search_objects(
+            api='api/components/search_projects', params=new_params,
+            returned_field='components', key_field='key', object_class=Application, endpoint=endpoint)
     return app_list
 
 
 def get(key, sqenv=None):
-    global _OBJECTS
     if key not in _OBJECTS:
         _OBJECTS[key] = Application(key=key, endpoint=sqenv)
     return _OBJECTS[key]
@@ -87,7 +89,7 @@ def get(key, sqenv=None):
 
 def audit(audit_settings, endpoint=None):
     util.logger.info("--- Auditing applications ---")
-    objects_list = search(endpoint)
+    objects_list = search(endpoint=endpoint)
     problems = []
     for _, obj in objects_list.items():
         problems += obj.audit(audit_settings)

@@ -33,7 +33,7 @@ import sonarqube.audit_problem as pb
 
 class Branch(sq.SqObject):
     def __init__(self, project, name, data=None):
-        super().__init__(key=name, env=project.env)
+        super().__init__(name, project.endpoint)
         self.name = name
         self.project = project
         self.json = data

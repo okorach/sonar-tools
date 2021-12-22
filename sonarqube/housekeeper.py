@@ -26,7 +26,7 @@
 '''
 import sys
 import sonarqube.audit_config as conf
-from sonarqube import projects, users, env, version
+from sonarqube import projects, users, groups, env, version
 from sonarqube.branches import Branch
 from sonarqube.pull_requests import PullRequest
 from sonarqube.user_tokens import UserToken
@@ -69,14 +69,22 @@ def get_user_problems(max_days, endpoint):
     settings = {
         'audit.tokens.maxAge': max_days,
         'audit.tokens.maxUnusedAge': 30,
+        'audit.groups.empty': True
     }
     settings = conf.load(config_name='sonar-audit', settings=settings)
     user_problems = users.audit(endpoint=endpoint, audit_settings=settings)
-    nb_user_problems = len(user_problems)
-    if nb_user_problems == 0:
-        util.logger.info("%d user tokens older than %d days found during audit", nb_user_problems, max_days)
+    nb_problems = len(user_problems)
+    if nb_problems == 0:
+        util.logger.info("%d user tokens older than %d days found during audit", nb_problems, max_days)
     else:
-        util.logger.warning("%d user tokens older than %d days found during audit", nb_user_problems, max_days)
+        util.logger.warning("%d user tokens older than %d days found during audit", nb_problems, max_days)
+    group_problems = groups.audit(endpoint=endpoint, audit_settings=settings)
+    user_problems += group_problems
+    nb_problems = len(group_problems)
+    if nb_problems == 0:
+        util.logger.info("%d empty groups found during audit", nb_problems)
+    else:
+        util.logger.warning("%d empty groups found during audit", nb_problems)
     return user_problems
 
 

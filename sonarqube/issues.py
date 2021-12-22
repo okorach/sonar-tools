@@ -77,7 +77,7 @@ class Issue(sq.SqObject):
                       'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
     def __init__(self, key, endpoint, data=None):
-        super().__init__(key=key, env=endpoint)
+        super().__init__(key, endpoint)
         self.url = None
         self.json = None
         self.severity = None
@@ -118,9 +118,8 @@ class Issue(sq.SqObject):
         if self.url is None:
             branch = ''
             if self.branch is not None:
-                branch = 'branch={}&'.format(self.branch)
-            self.url = '{}/project/issues?{}id={}&issues={}'.format(
-                self.env.get_url(), branch, self.projectKey, self.key)
+                branch = f'branch={self.branch}&'
+            self.url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
         return self.url
 
     def __load__(self, jsondata):
@@ -392,11 +391,11 @@ class Issue(sq.SqObject):
         mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
         # Strip timezone
         mtime = re.sub(r"\+.*", "", mtime)
-        msg = re.sub('"', '""', self.message)
+        msg = str.replace('"', '""', self.message)
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,
-                                          projects.get(self.projectKey, self.env).name, self.component, line,
+                                          projects.get(self.projectKey, self.endpoint).name, self.component, line,
                                           debt, '"' + msg + '"']])
 
     def to_json(self):
@@ -409,7 +408,7 @@ class Issue(sq.SqObject):
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         data['path'] = self.component.split(":")[-1]
-        for field in ('env', 'id', 'json', 'changelog', 'url', 'assignee', 'hash', 'sonarqube',
+        for field in ('endpoint', 'id', 'json', 'changelog', 'url', 'assignee', 'hash', 'sonarqube',
                       'creation_date', 'modification_date', 'debt', 'component', 'language', 'branch', 'resolution'):
             data.pop(field, None)
         return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))
@@ -426,8 +425,7 @@ class Issue(sq.SqObject):
             return False
 
         util.logger.info("Applying changelog of issue %s to issue %s", source_issue.key, self.key)
-        self.add_comment("Automatically synchronized from [this original issue]({0})".format(
-            source_issue.get_url()))
+        self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.get_url()})")
         for d in sorted(events.keys()):
             event = events[d]
             util.logger.debug("Verifying event %s", str(event))

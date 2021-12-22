@@ -24,6 +24,7 @@
 '''
 import json
 from sonarqube import aggregations, env
+import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 
@@ -39,8 +40,7 @@ PORTFOLIO_QUALIFIER = 'VW'
 class Portfolio(aggregations.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
-        global _OBJECTS
-        super().__init__(key=key, endpoint=endpoint)
+        super().__init__(key, endpoint)
         self._selection_mode = None
         self._load(data)
         _OBJECTS[key] = self
@@ -59,7 +59,7 @@ class Portfolio(aggregations.Aggregation):
         return self._selection_mode
 
     def get_components(self):
-        resp = env.get('measures/component_tree', ctxt=self.env,
+        resp = env.get('measures/component_tree', ctxt=self.endpoint,
             params={'component': self.key, 'metricKeys': 'ncloc', 'strategy': 'children', 'ps': 500})
         comp_list = {}
         for c in json.loads(resp.text)['components']:
@@ -67,7 +67,7 @@ class Portfolio(aggregations.Aggregation):
         return comp_list
 
     def delete(self, api='views/delete', params=None):
-        _ = env.post('views/delete', ctxt=self.env, params={'key': self.key})
+        _ = env.post('views/delete', ctxt=self.endpoint, params={'key': self.key})
         return True
 
     def _audit_empty(self, audit_settings):
@@ -87,24 +87,21 @@ def count(endpoint=None):
     return aggregations.count(api=SEARCH_API, endpoint=endpoint)
 
 
-def search(endpoint=None):
+def search(endpoint=None, params=None):
     portfolio_list = {}
     edition = env.edition(ctxt=endpoint)
     if edition not in ('enterprise', 'datacenter'):
         util.logger.info("No portfolios in %s edition", edition)
     else:
-        resp = env.get(LIST_API, ctxt=endpoint)
-        data = json.loads(resp.text)
-        for p in data['views']:
-            if p['qualifier'] == 'VW':
-                portfolio_list[p['key']] = Portfolio(p['key'], endpoint=endpoint, data=p)
+        portfolio_list = sq.search_objects(
+            api='views/search', params=params,
+            returned_field='components', key_field='key', object_class=Portfolio, endpoint=endpoint)
     return portfolio_list
 
 
 def get(key, sqenv=None):
-    global _OBJECTS
     if key not in _OBJECTS:
-        _OBJECTS[key] = Portfolio(key=key, endpoint=sqenv)
+        _ = Portfolio(key=key, endpoint=sqenv)
     return _OBJECTS[key]
 
 

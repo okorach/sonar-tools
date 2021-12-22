@@ -36,7 +36,7 @@ class Measure(sq.SqObject):
     API_HISTORY = API_ROOT + '/search_history'
 
     def __init__(self, key=None, value=None, endpoint=None):
-        super().__init__(key=key, env=endpoint)
+        super().__init__(key, endpoint)
         if metrics.is_a_rating(self.key):
             self.value = get_rating_letter(value)
         else:

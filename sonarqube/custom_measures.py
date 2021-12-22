@@ -31,14 +31,14 @@ class CustomMeasure(sq.SqObject):
     API_ROOT = 'api/custom_measures/'
 
     def __init__(self, key=None, endpoint=None, uuid=None, project_key=None, value=None, description=None):
-        super().__init__(key=key, env=endpoint)
+        super().__init__(key, endpoint)
         self.uuid = uuid
         self.projectKey = project_key
         self.value = value
         self.description = description
 
     def create(self, project_key, metric_key, value, description=None):
-        return self.post(CustomMeasure.API_ROOT + 'create', 
+        return self.post(CustomMeasure.API_ROOT + 'create',
             {'component': project_key, 'metricKeys': metric_key, 'value': value, 'description': description})
 
     def update(self, value, description=None):

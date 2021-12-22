@@ -44,3 +44,7 @@ do
 
     sonar-projects-export
 done
+
+echo "====================================="
+echo "          IT tests success"
+echo "====================================="

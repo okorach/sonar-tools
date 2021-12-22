@@ -41,7 +41,7 @@ class User(sq.SqObject):
     API_DEACTIVATE = API_ROOT + '/deactivate'
 
     def __init__(self, login, name, endpoint=None, **kwargs):
-        super().__init__(key=login, env=endpoint)
+        super().__init__(login, endpoint)
         self.login = login
         self.name = name
         self.local = kwargs.get('local', False)
@@ -59,12 +59,12 @@ class User(sq.SqObject):
         return f"user '{self.login}'"
 
     def deactivate(self):
-        env.post(User.API_DEACTIVATE, {'name': self.name, 'login': self.login}, self.env)
+        env.post(User.API_DEACTIVATE, {'name': self.name, 'login': self.login}, self.endpoint)
         return True
 
     def tokens(self):
         if self.tokens_list is None:
-            self.tokens_list = tok.search(self.login, self.env)
+            self.tokens_list = tok.search(self.login, self.endpoint)
         return self.tokens_list
 
     def audit(self, settings=None):

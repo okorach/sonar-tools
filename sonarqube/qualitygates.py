@@ -71,13 +71,13 @@ GOOD_QG_CONDITIONS = {
 class QualityGate(sq.SqObject):
 
     def __init__(self, key, endpoint, data=None):
-        super().__init__(key=key, env=endpoint)
+        super().__init__(key, endpoint)
         if data is None:
             return
         self.name = data['name']
         self.is_default = data.get('isDefault', False)
         self.is_built_in = data.get('isBuiltIn', False)
-        resp = env.get('qualitygates/show', ctxt=self.env, params={'id': self.key})
+        resp = env.get('qualitygates/show', ctxt=self.endpoint, params={'id': self.key})
         data = json.loads(resp.text)
         self.conditions = []
         self.projects = None
@@ -143,7 +143,7 @@ class QualityGate(sq.SqObject):
             params = {}
         params['gateId'] = self.key
         page = 1
-        if self.env.version() < (7, 9, 0):
+        if self.endpoint.version() < (7, 9, 0):
             params['ps'] = 100
             params['p'] = page
         else:
@@ -151,9 +151,9 @@ class QualityGate(sq.SqObject):
         more = True
         count = 0
         while more:
-            resp = env.get('qualitygates/search', ctxt=self.env, params=params)
+            resp = env.get('qualitygates/search', ctxt=self.endpoint, params=params)
             data = json.loads(resp.text)
-            if self.env.version() >= (7, 9, 0):
+            if self.endpoint.version() >= (7, 9, 0):
                 count = data['paging']['total']
                 more = False
             else:
@@ -167,7 +167,7 @@ class QualityGate(sq.SqObject):
         params['ps'] = 500
         if page != 0:
             params['p'] = page
-            resp = env.get('qualitygates/search', ctxt=self.env, params=params)
+            resp = env.get('qualitygates/search', ctxt=self.endpoint, params=params)
             data = json.loads(resp.text)
             return data['results']
 
