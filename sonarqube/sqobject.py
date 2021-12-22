@@ -23,7 +23,7 @@
 
 '''
 import json
-import sonarqube.env as env
+from sonarqube import env
 
 
 class SqObject:
