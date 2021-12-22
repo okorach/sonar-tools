@@ -19,6 +19,8 @@ audit.projects = yes
 audit.qualityGates = yes
 audit.qualityProfiles = yes
 audit.tokens = yes
+audit.portfolios = yes
+audit.applications = yes
 
 #===================== GLOBAL SETTINGS AUDIT CONFIGURATION ====================
 
@@ -189,11 +191,28 @@ audit.qualitygates.reliability_rating.range = 4, 4
 audit.qualitygates.security_rating.range = 3, 4
 audit.qualitygates.hotspot_rating.range = 4, 4
 
-#========================= TOKENS AUDIT CONFIGURATION =========================
+#========================= USERS AND TOKENS AUDIT CONFIGURATION =========================
+
+# Audit (and warn) for empty portfolios
+audit.groups.empty = yes
+
+# Audit for users that have not logged in for a given number of days
+audit.users.maxLoginAge = 180
+
+# Comma separated list of SonarQube users whose tokens are not considered for expiration
+audit.tokens.neverExpire =
 
 # Audit today for days after which a token should be revoked (and potentially renewed)
 audit.tokens.maxAge = 90
 
 # Audit today for days after which an unused token should be revoked (and potentially renewed)
 audit.tokens.maxUnusedAge = 30
+
+#========================= PORTFOLIOS AND APPS AUDIT CONFIGURATION =========================
+
+# Audit (and warn) for empty portfolios
+audit.portfolios.empty = yes
+
+# Audit (and warn) for empty portfolios
+audit.applications.empty = yes
 ```
