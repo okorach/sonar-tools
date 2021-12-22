@@ -21,45 +21,75 @@
 '''
     Exports LoC per projects
 '''
+import json
 import sys
 from sonarqube import projects, env, version
 import sonarqube.utilities as util
 
+sep = ','
 
-def __dump_loc(projects, file, file_format, **kwargs):
+
+def __deduct_format(fmt, file):
+    if fmt is not None:
+        return fmt
+    if file is not None:
+        ext = file.split('.').pop(-1).lower()
+        if ext == 'json':
+            return ext
+    return 'csv'
+
+
+def __csv_line(project, with_name=False, with_analysis=False):
+
+    line = f"{project.key}"
+    if with_name:
+        line += f"{sep}{project.name}"
+    line += f"{sep}{project.ncloc(include_branches=True)}"
+    if with_analysis:
+        line += f"{sep}{project.last_analysis_date(include_branches=True)}"
+    return line
+
+def __dump_loc(project_list, file, file_format, **kwargs):
     if file is None:
         fd = sys.stdout
         util.logger.info("Dumping LoC report to stdout")
     else:
         fd = open(file, "w", encoding='utf-8')
         util.logger.info("Dumping LoC report to file '%s'", file)
-    sep = ','
 
-    print("# Project Key", end='', file=fd)
-    if kwargs['projectName']:
-        print(f"{sep}Project Name", end='', file=fd)
-    print(f"{sep}LoC", end='', file=fd)
-    if kwargs['lastAnalysis']:
-        print(f"{sep}Last Analysis", end='', file=fd)
-    print('', file=fd)
+    with_name = kwargs['projectName']
+    with_last = kwargs['lastAnalysis']
+    if file_format != 'json':
+        print("# Project Key", end='', file=fd)
+        if with_name:
+            print(f"{sep}Project Name", end='', file=fd)
+        print(f"{sep}LoC", end='', file=fd)
+        if with_last:
+            print(f"{sep}Last Analysis", end='', file=fd)
+        print('', file=fd)
     nb_loc = 0
     nb_projects = 0
-    for _, p in projects.items():
+    loc_list = []
+    for _, p in project_list.items():
         project_loc = p.ncloc(include_branches=True)
-        print(f"{p.key}", end='', file=fd)
-        if kwargs['projectName']:
-            print(f"{sep}{p.name}", end='', file=fd)
-        print(f"{sep}{project_loc}", end='', file=fd)
-        if kwargs['lastAnalysis']:
-            print(f"{sep}{p.last_analysis_date(include_branches=True)}", end='', file=fd)
-        print('', file=fd)
+        if file_format == 'json':
+            data = {'projectKey': p.key, 'ncloc': project_loc}
+            if with_name:
+                data['projectName'] = p.name
+            if with_last:
+                data['last_analysis'] = p.last_analysis_date(include_branches=True)
+            loc_list.append(data)
+        else:
+            print(__csv_line(p, with_name, with_last), end='', file=fd)
         nb_loc += project_loc
         nb_projects += 1
         if nb_projects % 50 == 0:
             util.logger.info("%d PROJECTS and %d LoCs, still counting...", nb_projects, nb_loc)
+    if file_format == 'json':
+        print(json.dumps(loc_list, indent=3, sort_keys=False, separators=(',', ': ')), file=fd)
     if file is not None:
         fd.close()
-    util.logger.info("%d PROJECTS and %d LoCs", len(projects), nb_loc)
+    util.logger.info("%d PROJECTS and %d LoCs", len(project_list), nb_loc)
 
 
 def main():
@@ -78,10 +108,7 @@ def main():
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
-    # Mandatory script input parameters
-
-
-
+    args.format = __deduct_format(args.format, args.outputFile)
     project_list = projects.search(endpoint=endpoint)
     __dump_loc(project_list, args.outputFile, args.format, **vars(args))
     sys.exit(0)
