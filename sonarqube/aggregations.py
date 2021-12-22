@@ -32,7 +32,7 @@ import sonarqube.audit_problem as pb
 class Aggregation(comp.Component):
 
     def __init__(self, key, endpoint, data=None):
-        super().__init__(key=key, sqenv=endpoint)
+        super().__init__(key, endpoint)
         self._id = None
         self._name = None
         self._visibility = None
@@ -42,7 +42,7 @@ class Aggregation(comp.Component):
     def _load(self, data=None, api=None, key_name='key'):
         ''' Loads an aggregation object with contents of data '''
         if data is None:
-            resp = env.get(api, ctxt=self.env, params={key_name: self.key})
+            resp = env.get(api, ctxt=self.endpoint, params={key_name: self.key})
             data = json.loads(resp.text)
         self._id = self.key
         self._name = data.get('name', None)
@@ -60,7 +60,7 @@ class Aggregation(comp.Component):
 
     def nbr_projects(self):
         if self._nbr_projects is None:
-            data = json.loads(env.get('measures/component', ctxt=self.env,
+            data = json.loads(env.get('measures/component', ctxt=self.endpoint,
                 params={'component': self.key, 'metricKeys': 'projects,ncloc'}).text)['component']['measures']
             for m in data:
                 if m['metric'] == 'projects':

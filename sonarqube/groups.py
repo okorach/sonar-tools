@@ -31,7 +31,7 @@ import sonarqube.audit_rules as rules
 class Group(sq.SqObject):
 
     def __init__(self, id, name=None, endpoint=None, data=None):
-        super().__init__(key=id, env=endpoint)
+        super().__init__(id, endpoint)
         self.name = name
         if data is None:
             return
@@ -39,7 +39,7 @@ class Group(sq.SqObject):
             self.name = data['name']
         self.members_count = data['membersCount']
         self.is_default = data['default']
-        self.description = data['description']
+        self.description = data.get('description', '')
 
     def __str__(self):
         return f"group '{self.name}'"

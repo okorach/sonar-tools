@@ -79,7 +79,7 @@ def get_user_problems(max_days, endpoint):
     else:
         util.logger.warning("%d user tokens older than %d days found during audit", nb_problems, max_days)
     group_problems = groups.audit(endpoint=endpoint, audit_settings=settings)
-    user_problems.append(group_problems)
+    user_problems += group_problems
     nb_problems = len(group_problems)
     if nb_problems == 0:
         util.logger.info("%d empty groups found during audit", nb_problems)

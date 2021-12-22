@@ -34,7 +34,7 @@ _OBJECTS = {}
 class Application(aggr.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
-        super().__init__(key=key, endpoint=endpoint)
+        super().__init__(key, endpoint)
         self._nbr_projects = None
         self._load(data)
         _OBJECTS[key] = self
@@ -43,7 +43,7 @@ class Application(aggr.Aggregation):
         return f"Application key '{self.key}'"
 
     def delete(self, api='applications/delete', params=None):
-        _ = env.post('applications/delete', ctxt=self.env, params={'application': self.key})
+        _ = env.post('applications/delete', ctxt=self.endpoint, params={'application': self.key})
         return True
 
     def _audit_empty(self, audit_settings):

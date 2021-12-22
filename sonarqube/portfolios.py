@@ -40,7 +40,7 @@ PORTFOLIO_QUALIFIER = 'VW'
 class Portfolio(aggregations.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
-        super().__init__(key=key, endpoint=endpoint)
+        super().__init__(key, endpoint)
         self._selection_mode = None
         self._load(data)
         _OBJECTS[key] = self
@@ -59,7 +59,7 @@ class Portfolio(aggregations.Aggregation):
         return self._selection_mode
 
     def get_components(self):
-        resp = env.get('measures/component_tree', ctxt=self.env,
+        resp = env.get('measures/component_tree', ctxt=self.endpoint,
             params={'component': self.key, 'metricKeys': 'ncloc', 'strategy': 'children', 'ps': 500})
         comp_list = {}
         for c in json.loads(resp.text)['components']:
@@ -67,7 +67,7 @@ class Portfolio(aggregations.Aggregation):
         return comp_list
 
     def delete(self, api='views/delete', params=None):
-        _ = env.post('views/delete', ctxt=self.env, params={'key': self.key})
+        _ = env.post('views/delete', ctxt=self.endpoint, params={'key': self.key})
         return True
 
     def _audit_empty(self, audit_settings):

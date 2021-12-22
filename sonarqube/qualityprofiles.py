@@ -36,7 +36,7 @@ import sonarqube.audit_problem as pb
 class QualityProfile(sq.SqObject):
 
     def __init__(self, key, endpoint, data=None):
-        super().__init__(key=key, env=endpoint)
+        super().__init__(key, endpoint)
         if data is not None:
             self.name = data['name']
             if 'lastUsed' in data:
@@ -53,20 +53,18 @@ class QualityProfile(sq.SqObject):
             self._nbr_deprecated_rules = int(data['activeDeprecatedRuleCount'])
             self._parent_key = data.get('parentKey', None)
             self._parent_name = data.get('parentName', None)
-            self.long_name = "{0} of language {1}".format(self.name, self.language_name)
 
     def __str__(self):
         return f"quality profile '{self.name}' of language '{self.language_name}'"
 
     def get_permissions(self, perm_type):
-        resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
-                       params={'projectKey': self.key, 'ps': 1})
+        resp = env.get(f'permissions/{perm_type}', ctxt=self.endpoint, params={'projectKey': self.key, 'ps': 1})
         data = json.loads(resp.text)
         nb_perms = int(data['paging']['total'])
         nb_pages = (nb_perms + 99) // 100
         perms = []
         for page in range(nb_pages):
-            resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
+            resp = env.get(f'permissions/{perm_type}', ctxt=self.endpoint,
                            params={'projectKey': self.key, 'ps': 100, 'p': page + 1})
             data = json.loads(resp.text)
             for p in data[perm_type]:
@@ -115,7 +113,7 @@ class QualityProfile(sq.SqObject):
         parent = self.parent_name()
         if parent is None:
             return None
-        parent_qp = search(self.env, {'language': self.language, 'qualityProfile': self.parent_name()})[0]
+        parent_qp = search(self.endpoint, {'language': self.language, 'qualityProfile': self.parent_name()})[0]
         return parent_qp.get_built_in_parent()
 
     def has_deprecated_rules(self):
@@ -138,7 +136,7 @@ class QualityProfile(sq.SqObject):
             msg = rule.msg.format(str(self), age)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
-        total_rules = rules.count(endpoint=self.env, params={'languages': self.language})
+        total_rules = rules.count(endpoint=self.endpoint, params={'languages': self.language})
         if self.nb_rules < int(total_rules * audit_settings['audit.qualityProfiles.minNumberOfRules']):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
             msg = rule.msg.format(str(self), self.nb_rules, total_rules)
@@ -182,9 +180,8 @@ def audit(endpoint=None, audit_settings=None):
     for qp in search(endpoint):
         problems += qp.audit(audit_settings)
         langs[qp.language] = langs.get(qp.language, 0) + 1
-    for lang in langs:
-        if langs[lang] > 5:
+    for lang, nb_qp in langs.items():
+        if nb_qp > 5:
             rule = arules.get_rule(arules.RuleId.QP_TOO_MANY_QP)
-            problems.append(pb.Problem(
-                rule.type, rule.severity, rule.msg.format(langs[lang], lang, 5)))
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5)))
     return problems

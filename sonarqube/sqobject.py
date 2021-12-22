@@ -30,22 +30,22 @@ class SqObject:
 
     def __init__(self, key, endpoint):
         self.key = key
-        self.env = endpoint
+        self.endpoint = endpoint
 
     def set_env(self, endpoint):
-        self.env = endpoint
+        self.endpoint = endpoint
 
     def get_env(self):
-        return self.env
+        return self.endpoint
 
     def get(self, api, params=None):
-        return env.get(api, params, self.env)
+        return env.get(api, params, self.endpoint)
 
     def post(self, api, params=None):
-        return env.post(api, params, self.env)
+        return env.post(api, params, self.endpoint)
 
     def delete(self, api, params=None):
-        resp = env.delete(api, params, self.env)
+        resp = env.delete(api, params, self.endpoint)
         return (resp.status_code // 100) == 2
 
 def search_objects(api, params, key_field, returned_field, object_class, p=None, ps=500, endpoint=None):

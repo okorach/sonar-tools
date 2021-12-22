@@ -50,7 +50,7 @@ class Metric(sq.SqObject):
                       'security_review_rating', 'new_security_review_rating')
 
     def __init__(self, key=None, endpoint=None, data=None):
-        super().__init__(key=key, endpoint=endpoint)
+        super().__init__(key, endpoint)
         self.id = None
         self.type = None
         self.name = None
@@ -65,7 +65,7 @@ class Metric(sq.SqObject):
     def __load__(self, data):
         if data is None:
             # TODO handle pagination
-            resp = env.get(Metric.SEARCH_API, params={'ps': 500}, ctxt=self.env)
+            resp = env.get(Metric.SEARCH_API, params={'ps': 500}, ctxt=self.endpoint)
             data_json = json.loads(resp.text)
             for m in data_json['metrics']:
                 if self.key == m['key']:

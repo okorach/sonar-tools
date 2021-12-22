@@ -77,7 +77,7 @@ class Issue(sq.SqObject):
                       'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
     def __init__(self, key, endpoint, data=None):
-        super().__init__(key=key, endpoint=endpoint)
+        super().__init__(key, endpoint)
         self.url = None
         self.json = None
         self.severity = None
@@ -119,7 +119,7 @@ class Issue(sq.SqObject):
             branch = ''
             if self.branch is not None:
                 branch = f'branch={self.branch}&'
-            self.url = f'{self.env.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
+            self.url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
         return self.url
 
     def __load__(self, jsondata):
@@ -395,7 +395,7 @@ class Issue(sq.SqObject):
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,
-                                          projects.get(self.projectKey, self.env).name, self.component, line,
+                                          projects.get(self.projectKey, self.endpoint).name, self.component, line,
                                           debt, '"' + msg + '"']])
 
     def to_json(self):
@@ -408,7 +408,7 @@ class Issue(sq.SqObject):
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         data['path'] = self.component.split(":")[-1]
-        for field in ('env', 'id', 'json', 'changelog', 'url', 'assignee', 'hash', 'sonarqube',
+        for field in ('endpoint', 'id', 'json', 'changelog', 'url', 'assignee', 'hash', 'sonarqube',
                       'creation_date', 'modification_date', 'debt', 'component', 'language', 'branch', 'resolution'):
             data.pop(field, None)
         return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))

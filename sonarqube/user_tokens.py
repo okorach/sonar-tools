@@ -35,7 +35,7 @@ class UserToken(sq.SqObject):
     API_GENERATE = API_ROOT + '/generate'
 
     def __init__(self, login, name=None, json_data=None, createdAt=None, token=None, endpoint=None):
-        super().__init__(key=login, env=endpoint)
+        super().__init__(login, endpoint)
         self.login = login
         if isinstance(createdAt, str):
             self.createdAt = util.string_to_date(createdAt)
@@ -60,7 +60,7 @@ class UserToken(sq.SqObject):
         if self.name is None:
             return False
         util.logger.info("Revoking token '%s' of user login '%s'", self.name, self.login)
-        env.post(UserToken.API_REVOKE, {'name': self.name, 'login': self.login}, self.env)
+        env.post(UserToken.API_REVOKE, {'name': self.name, 'login': self.login}, self.endpoint)
         return True
 
 
