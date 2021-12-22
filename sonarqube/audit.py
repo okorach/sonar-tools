@@ -45,7 +45,7 @@ def __deduct_format__(fmt, file):
 
 def _audit_sif(sif):
     try:
-        with open(sif, 'r') as f:
+        with open(sif, 'r', encoding='utf-8') as f:
             sif = json.loads(f.read())
     except json.decoder.JSONDecodeError:
         util.logger.critical("File %s does not seem to be a legit JSON file", sif)

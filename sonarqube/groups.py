@@ -22,11 +22,6 @@
     Abstraction of the SonarQube "group" concept
 
 '''
-import json
-import re
-import datetime as dt
-import pytz
-import sonarqube.env as env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.audit_problem as pb

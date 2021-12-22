@@ -28,12 +28,12 @@ import sonarqube.env as env
 
 class SqObject:
 
-    def __init__(self, key, env):
+    def __init__(self, key, endpoint):
         self.key = key
-        self.env = env
+        self.env = endpoint
 
-    def set_env(self, env):
-        self.env = env
+    def set_env(self, endpoint):
+        self.env = endpoint
 
     def get_env(self):
         return self.env
@@ -54,10 +54,6 @@ def search_objects(api, params, key_field, returned_field, object_class, p=None,
     params['ps'] = ps
     resp = env.get(api, params=params, ctxt=endpoint)
     data = json.loads(resp.text)
-    #if 'paging' in data['paging'] and 'total' in data['paging'] and data['paging']['total'] > 500:
-    #    util.logger.critical("Pagination on applications search is not yet supported "
-    #    "and there are more than 500 of them. Will return only 500 first objects")
-
     objects = {}
     for obj in data[returned_field]:
         objects[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)

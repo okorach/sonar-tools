@@ -26,7 +26,7 @@
 '''
 import sys
 import sonarqube.audit_config as conf
-from sonarqube import projects, users, env, version
+from sonarqube import projects, users, groups, env, version
 from sonarqube.branches import Branch
 from sonarqube.pull_requests import PullRequest
 from sonarqube.user_tokens import UserToken
@@ -78,7 +78,7 @@ def get_user_problems(max_days, endpoint):
         util.logger.info("%d user tokens older than %d days found during audit", nb_problems, max_days)
     else:
         util.logger.warning("%d user tokens older than %d days found during audit", nb_problems, max_days)
-    group_problems = groups.audit(endpoint=endpoint, audit_settings=settings))
+    group_problems = groups.audit(endpoint=endpoint, audit_settings=settings)
     user_problems.append(group_problems)
     nb_problems = len(group_problems)
     if nb_problems == 0:

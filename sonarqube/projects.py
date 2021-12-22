@@ -43,6 +43,7 @@ import sonarqube.custom_measures as custom_measures
 PROJECTS = {}
 
 MAX_PAGE_SIZE = 500
+PROJECT_SEARCH_API = 'projects/search'
 PRJ_QUALIFIER = 'TRK'
 APP_QUALIFIER = 'APP'
 
@@ -164,15 +165,14 @@ class Project(comp.Component):
         if perm_type == 'group' and self.group_permissions is not None:
             return self.group_permissions
 
-        resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
-                       params={'projectKey': self.key, 'ps': 1})
+        resp = env.get(f'permissions/{perm_type}', ctxt=self.env, params={'projectKey': self.key, 'ps': 1})
         data = json.loads(resp.text)
         nb_perms = int(data['paging']['total'])
         nb_pages = (nb_perms + MAX_PERMISSION_PAGE_SIZE - 1) // MAX_PERMISSION_PAGE_SIZE
         permissions = []
 
         for page in range(nb_pages):
-            resp = env.get('permissions/{0}'.format(perm_type), ctxt=self.env,
+            resp = env.get(f'permissions/{perm_type}', ctxt=self.env,
                            params={'projectKey': self.key, 'ps': MAX_PERMISSION_PAGE_SIZE, 'p': page + 1})
             data = json.loads(resp.text)
             # Workaround for SQ 7.9+, all groups/users even w/o permissions are returned
@@ -430,7 +430,7 @@ Is this normal ?", gr['name'], str(self.key))
                                            " or with SonarQube 9.2 or higher for any Edition")
         resp = env.post('project_dump/export', params={'key': self.key}, ctxt=self.env)
         if resp.status_code != 200:
-            return {'status': 'HTTP_ERROR {0}'.format(resp.status_code)}
+            return {'status': f'HTTP_ERROR {resp.status_code}'}
         data = json.loads(resp.text)
         params = {'type': 'PROJECT_EXPORT', 'status': 'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
         if self.env.version() >= (8, 0, 0):

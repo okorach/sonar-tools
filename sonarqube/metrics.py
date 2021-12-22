@@ -50,7 +50,7 @@ class Metric(sq.SqObject):
                       'security_review_rating', 'new_security_review_rating')
 
     def __init__(self, key=None, endpoint=None, data=None):
-        super().__init__(key=key, env=endpoint)
+        super().__init__(key=key, endpoint=endpoint)
         self.id = None
         self.type = None
         self.name = None

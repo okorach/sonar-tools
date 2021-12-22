@@ -34,7 +34,6 @@ _OBJECTS = {}
 class Application(aggr.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
-        global _OBJECTS
         super().__init__(key=key, endpoint=endpoint)
         self._nbr_projects = None
         self._load(data)
@@ -83,7 +82,6 @@ def search(params=None, endpoint=None):
 
 
 def get(key, sqenv=None):
-    global _OBJECTS
     if key not in _OBJECTS:
         _OBJECTS[key] = Application(key=key, endpoint=sqenv)
     return _OBJECTS[key]
