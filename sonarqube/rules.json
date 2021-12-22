@@ -334,6 +334,12 @@
         "object": "Token",
         "message": "{} has been created {} days ago but never used, it should be revoked"
     },
+    "USER_UNUSED": {
+        "severity": "MEDIUM",
+        "type": "SECURITY",
+        "object": "User",
+        "message": "{} has not connected since {} days, it should be deactivated"
+    },
     "PORTFOLIO_EMPTY": {
         "severity": "LOW",
         "type": "OPERATIONS",

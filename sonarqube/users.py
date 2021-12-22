@@ -40,20 +40,18 @@ class User(sq.SqObject):
     API_SEARCH = API_ROOT + '/search'
     API_DEACTIVATE = API_ROOT + '/deactivate'
 
-    def __init__(self, login, name, endpoint=None, **kwargs):
+    def __init__(self, login, endpoint=None, data=None):
         super().__init__(login, endpoint)
         self.login = login
-        self.name = name
-        self.local = kwargs.get('local', False)
-        self.password = kwargs.get('password', None)
-        self.email = kwargs.get('email', None)
-        self.scmAccounts = kwargs.get('scmAccounts', None)
-        self.groups = kwargs.get('groups', None)
-        self.externalIdentity = kwargs.get('externalIdentity', None)
-        self.externalProvider = kwargs.get('externalProvider', None)
-        self.avatar = kwargs.get('avatar', None)
-        self.tokenCount = kwargs.get('tokenCount', None)
+        self.jsondata = data
+        self.name = data.get('name', None)
+        self.is_local = data.get('local', False)
+        self.email = data.get('email', None)
+        self.scmAccounts = data.get('scmAccounts', None)
+        self.groups = data.get('groups', None)
+        self.nb_tokens = data.get('tokenCount', None)
         self.tokens_list = None
+        self._last_login_date = None
 
     def __str__(self):
         return f"user '{self.login}'"
@@ -67,12 +65,17 @@ class User(sq.SqObject):
             self.tokens_list = tok.search(self.login, self.endpoint)
         return self.tokens_list
 
+    def last_login_date(self):
+        if self._last_login_date is None and 'lastConnectionDate' in self.jsondata:
+            self._last_login_date = util.string_to_date(self.jsondata['lastConnectionDate'])
+        return self._last_login_date
+
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
 
         protected_users = re.split(r'\s*,\s*', settings['audit.tokens.neverExpire'])
         if self.login in protected_users:
-            util.logger.info("%s tokens are marked as protected, they never expire", str(self))
+            util.logger.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
         today = dt.datetime.today().replace(tzinfo=pytz.UTC)
@@ -94,28 +97,23 @@ class User(sq.SqObject):
             if last_cnx_age > settings['audit.tokens.maxUnusedAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
                 msg = rule.msg.format(str(t), last_cnx_age)
-
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
+
+        cnx = self.last_login_date()
+        if cnx is not None:
+            age = abs((today - cnx).days)
+            if age > settings['audit.users.maxLoginAge']:
+                rule = rules.get_rule(rules.RuleId.USER_UNUSED)
+                msg = rule.msg.format(str(self), age)
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
 
-def search(q=None, endpoint=None, p=None, ps=500):
-    users_list = {}
-    resp = env.get(User.API_SEARCH, {'q': q, 'p': p, 'ps': ps}, endpoint)
-    data = json.loads(resp.text)
-    nb_pages = (data['paging']['total'] + ps - 1) // ps
-    for u in data['users']:
-        users_list[u['login']] = User(endpoint=endpoint, **u)
-    if p is not None:
-        return users_list
-    p = 2
-    while p <= nb_pages:
-        resp = env.get(User.API_SEARCH, {'q': q, 'p': p, 'ps': ps}, endpoint)
-        data = json.loads(resp.text)
-        nb_pages = (data['paging']['total'] + ps - 1) // ps
-        for u in data['users']:
-            users_list[u['login']] = User(endpoint=endpoint, **u)
-        p += 1
-    return users_list
+def search(params=None, endpoint=None):
+    if params is None:
+        params = {}
+    return sq.search_objects(
+        api=User.API_SEARCH, params=params,
+        returned_field='users', key_field='login', object_class=User, endpoint=endpoint)
 
 
 def create(name, login=None, endpoint=None):
