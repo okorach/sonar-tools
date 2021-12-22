@@ -54,7 +54,7 @@ def __json_data(project, with_name=False, with_analysis=False):
     if with_name:
         data['projectName'] = project.name
     if with_analysis:
-        data['last_analysis'] = project.last_analysis_date(include_branches=True)
+        data['lastAnalysis'] = util.date_to_string(project.last_analysis_date(include_branches=True))
     return data
 
 
