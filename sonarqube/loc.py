@@ -34,9 +34,20 @@ def __deduct_format(fmt, file):
         return fmt
     if file is not None:
         ext = file.split('.').pop(-1).lower()
+        util.logger.debug("File extension = %s", ext)
         if ext == 'json':
             return ext
     return 'csv'
+
+
+def __csv_header_line(with_name=False, with_analysis=False):
+    line = "# Project Key"
+    if with_name:
+        line += f"{sep}Project Name"
+    line += f"{sep}LoC"
+    if with_analysis:
+        line += f"{sep}Last Analysis"
+    return line
 
 
 def __csv_line(project, with_name=False, with_analysis=False):
@@ -58,15 +69,6 @@ def __json_data(project, with_name=False, with_analysis=False):
     return data
 
 
-def __csv_header_line(project, with_name=False, with_analysis=False):
-    line = "# Project Key"
-    if with_name:
-        line += f"{sep}Project Name"
-    line += f"{sep}LoC"
-    if with_analysis:
-        line += f"{sep}Last Analysis"
-    return line
-
 def __dump_loc(project_list, file, file_format, **kwargs):
     if file is None:
         fd = sys.stdout
@@ -86,7 +88,7 @@ def __dump_loc(project_list, file, file_format, **kwargs):
         if file_format == 'json':
             loc_list.append(__json_data(p, with_name, with_last))
         else:
-            print(__csv_line(p, with_name, with_last), end='', file=fd)
+            print(__csv_line(p, with_name, with_last), file=fd)
         nb_loc += p.ncloc()
         nb_projects += 1
         if nb_projects % 50 == 0:
@@ -107,7 +109,7 @@ def main():
                         help='Also list the last analysis date on top of nbr of LoC')
     parser.add_argument('-o', '--outputFile', required=False, help='File to generate the report, default is stdout'
                         'Format is automatically deducted from file extension, if extension given')
-    parser.add_argument('-f', '--format', required=False, default='csv',
+    parser.add_argument('-f', '--format', required=False,
                         help='Format of output (json, csv), default is csv')
     args = util.parse_and_check_token(parser)
     endpoint = env.Environment(url=args.url, token=args.token)
