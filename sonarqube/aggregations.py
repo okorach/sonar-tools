@@ -69,17 +69,22 @@ class Aggregation(comp.Component):
                     self._ncloc = int(m['value'])
         return self._nbr_projects
 
-    def _audit_empty_aggregation(self, broken_rule):
+    def _audit_aggregation_cardinality(self, sizes, broken_rule):
         problems = []
         n = self.nbr_projects()
-        if n in (None, 0):
+        if n in sizes:
             rule = rules.get_rule(broken_rule)
             msg = rule.msg.format(str(self))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
             util.logger.debug("%s has %d projects", str(self), n)
-
         return problems
+
+    def _audit_empty_aggregation(self, broken_rule):
+        return self._audit_aggregation_cardinality((0, None), broken_rule)
+
+    def _audit_singleton_aggregation(self, broken_rule):
+        return self._audit_aggregation_cardinality((1, 1), broken_rule)
 
 
 def count(api, params=None, endpoint=None):

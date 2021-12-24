@@ -167,6 +167,10 @@ sonar-audit --what settings,qg,qp
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
 - Portfolios: (if `audit.portfolios` is `yes`)
   - Empty portfolios (with no projects) if `audit.portfolios.empty` is `yes`
+  - Portfolios composed of a single project if `audit.portfolios.singleton` is `yes`
+- Applications: (if `audit.applications` is `yes`)
+  - Empty applications (with no projects) if `audit.applications.empty` is `yes`
+  - Applications composed of a single project if `audit.applications.singleton` is `yes`
 - Users:
   - Users that did not login on the platform since `audit.users.maxLoginAge` days (default 180 days)
   - Tokens older than `audit.tokens.maxAge` days (default 90 days)

@@ -71,15 +71,27 @@ class Portfolio(aggregations.Aggregation):
         return True
 
     def _audit_empty(self, audit_settings):
-        if not audit_settings['audit.portfolios'] or not audit_settings['audit.portfolios.empty']:
+        if not audit_settings['audit.portfolios.empty']:
             util.logger.debug("Auditing portfolios is disabled, skipping...")
             return []
         return self._audit_empty_aggregation(broken_rule=rules.RuleId.PORTFOLIO_EMPTY)
 
+    def _audit_nbr_projects(self, audit_settings):
+        problems = []
+        if audit_settings['audit.portfolios.singleton']:
+            problems += super()._audit_singleton_aggregation(broken_rule=rules.RuleId.PORTFOLIO_SINGLETON)
+        else:
+            util.logger.debug("Auditing singleton portfolios is disabled, skipping...")
+        if audit_settings['audit.portfolios.empty']:
+            problems += super()._audit_empty_aggregation(broken_rule=rules.RuleId.PORTFOLIO_EMPTY)
+        else:
+            util.logger.debug("Auditing empty portfolios is disabled, skipping...")
+        return problems
+
     def audit(self, audit_settings):
         util.logger.info("Auditing %s", str(self))
         return (
-            self._audit_empty(audit_settings)
+            self._audit_nbr_projects(audit_settings)
         )
 
 
@@ -106,6 +118,9 @@ def get(key, sqenv=None):
 
 
 def audit(audit_settings, endpoint=None):
+    if not audit_settings['audit.portfolios']:
+        util.logger.debug("Auditing portfolios is disabled, skipping...")
+        return []
     util.logger.info("--- Auditing portfolios ---")
     plist = search(endpoint)
     problems = []

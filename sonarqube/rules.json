@@ -352,6 +352,18 @@
         "object": "Application",
         "message": "{} is empty, it should be populated or deleted"
     },
+    "PORTFOLIO_SINGLETON": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "object": "Portfolio",
+        "message": "{} is composed of a single project, this makes little sense"
+    },
+    "APPLICATION_SINGLETON": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "object": "Application",
+        "message": "{} is composed of a single project, this makes little sense"
+    },
     "GROUP_EMPTY": {
         "severity": "LOW",
         "type": "OPERATIONS",
