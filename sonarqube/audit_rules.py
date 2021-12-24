@@ -105,7 +105,10 @@ class RuleId(enum.Enum):
     USER_UNUSED = 4010
 
     PORTFOLIO_EMPTY = 5000
+    PORTFOLIO_SINGLETON = 5001
+
     APPLICATION_EMPTY = 5100
+    APPLICATION_SINGLETON = 5101
 
     GROUP_EMPTY = 5200
 
@@ -146,13 +149,13 @@ def load():
     __RULES__ = {}
     for rule_id, rule in rules.items():
         if to_id(rule_id) is None:
-            raise RuleConfigError("Rule '{}' from rules.json is not a legit ruleId".format(rule_id))
+            raise RuleConfigError(f"Rule '{rule_id}' from rules.json is not a legit ruleId")
         if typ.to_type(rule.get('type', '')) is None:
-            raise RuleConfigError("Rule '{}' from rules.json has no or incorrect type".format(rule_id))
+            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect type")
         if sev.to_severity(rule.get('severity', '')) is None:
-            raise RuleConfigError("Rule '{}' from rules.json has no or incorrect severity".format(rule_id))
+            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect severity")
         if 'message' not in rule:
-            raise RuleConfigError("Rule '{}' from rules.json has no message defined'".format(rule_id))
+            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no message defined'")
         __RULES__[to_id(rule_id)] = Rule(
             rule_id, rule['severity'], rule['type'], rule.get('object', ''), rule['message'])
 
@@ -163,5 +166,4 @@ def load():
 
 
 def get_rule(rule_id):
-    global __RULES__
     return __RULES__[rule_id]
