@@ -48,13 +48,13 @@ class Application(aggr.Aggregation):
 
     def _audit_empty(self, audit_settings):
         if not audit_settings['audit.applications.empty']:
-            util.logger.debug("Auditing applications is disabled, skipping...")
+            util.logger.debug("Auditing empty applications is disabled, skipping...")
             return []
         return super()._audit_empty_aggregation(broken_rule=rules.RuleId.APPLICATION_EMPTY)
 
     def _audit_singleton(self, audit_settings):
         if not audit_settings['audit.applications.singleton']:
-            util.logger.debug("Auditing applications is disabled, skipping...")
+            util.logger.debug("Auditing singleton applications is disabled, skipping...")
             return []
         return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
 
