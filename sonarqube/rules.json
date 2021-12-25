@@ -4,6 +4,31 @@
         "type": "SECURITY",
         "message": "Default admin password has not been changed, this is a critical security risk"
     },
+    "BELOW_LTS": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Platform is version is lower than the Long Term Support version"
+    },
+    "BELOW_LATEST": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "message": "Platform is version is greater than the LTS version bu not on LATEST"
+    },
+    "LOG4SHELL_ES": {
+        "severity": "CRITICAL",
+        "type": "SECURITY",
+        "message": "Search server is not protected against the log4shell vulnerability"
+    },
+    "LOG4SHELL_WEB": {
+        "severity": "CRITICAL",
+        "type": "SECURITY",
+        "message": "Web server is not protected against the log4shell vulnerability"
+    },
+    "LOG4SHELL_CE": {
+        "severity": "CRITICAL",
+        "type": "SECURITY",
+        "message": "Compute Engine is not protected against the log4shell vulnerability"
+    },
     "SETTING_FORCE_AUTH": {
         "severity": "HIGH",
         "type": "SECURITY",
