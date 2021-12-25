@@ -27,7 +27,7 @@ import datetime
 import re
 import json
 import pytz
-import sonarqube.env as env
+from sonarqube import env, issues
 import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
@@ -465,6 +465,22 @@ Is this normal ?", gr['name'], str(self.key))
     def search_custom_measures(self):
         return custom_measures.search(self.key, self.endpoint)
 
+
+    def get_findings(self, branch=None):
+        issue_list = []
+        if self.endpoint.version() > (9, 1, 0) and self.endpoint.edition() in ('enterprise', 'datacenter'):
+            params={'project': self.key}
+            if branch is not None:
+                params['branch'] = branch
+            resp = env.get('projects/export_findings', params=params, ctxt=self.endpoint)
+            issue_list = {}
+            for i in json.loads(resp.text)['export_findings']:
+                i['projectKey'] = self.key
+                if branch is not None:
+                    i['branch'] = branch
+                issue_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+        util.logger.info("%d findings exported for %s", len(issue_list), str(self))
+        return issue_list
 
 def __get_permissions_counts__(entities):
     counts = {}

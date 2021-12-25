@@ -76,7 +76,7 @@ class Issue(sq.SqObject):
                       'issues', 'languages', 'onComponentOnly', 'p', 'ps', 'resolutions', 'resolved',
                       'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
-    def __init__(self, key, endpoint, data=None):
+    def __init__(self, key, endpoint, data=None, from_findings=False):
         super().__init__(key, endpoint)
         self.url = None
         self.json = None
@@ -101,7 +101,10 @@ class Issue(sq.SqObject):
         self.hash = None
         self.branch = None
         if data is not None:
-            self.__load__(data)
+            if from_findings:
+                self.__load_finding(data)
+            else:
+                self.__load(data)
 
     def __str__(self):
         return f"Issue key '{self.key}'"
@@ -122,36 +125,40 @@ class Issue(sq.SqObject):
             self.url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
         return self.url
 
-    def __load__(self, jsondata):
-        self.json = jsondata
-        self.id = jsondata['key']
-        self.type = jsondata['type']
-        if self.type != 'SECURITY_HOTSPOT':
-            self.severity = jsondata['severity']
-
+    def __load(self, jsondata):
+        self.__load_common(jsondata)
         self.author = jsondata['author']
         self.assignee = jsondata.get('assignee', None)
-        self.status = jsondata['status']
-        self.line = jsondata.get('line', None)
-
-        self.resolution = jsondata.get('resolution', None)
-        self.rule = jsondata['rule']
         self.projectKey = jsondata['project']
-        self.language = None
-        self.changelog = None
         self.creation_date = util.string_to_date(jsondata['creationDate'])
         self.modification_date = util.string_to_date(jsondata['updateDate'])
 
         self.component = jsondata['component']
-        util.logger.debug("Issue Key %s Component %s", self.key, self.component)
         self.hash = jsondata.get('hash', None)
-        self.message = jsondata.get('message', None)
         self.debt = jsondata.get('debt', None)
         self.branch = jsondata.get('branch', None)
 
+    def __load_finding(self, jsondata):
+        self.__load_common(jsondata)
+        self.projectKey = jsondata['projectKey']
+        self.creation_date = util.string_to_date(jsondata['createdAt'])
+        self.modification_date = util.string_to_date(jsondata['updatedAt'])
+
+
+    def __load_common(self, jsondata):
+        self.json = jsondata
+        self.type = jsondata['type']
+        self.severity = jsondata.get('severity', None)
+        self.line = jsondata.get('line', jsondata.get('lineNumber', None))
+        self.resolution = jsondata.get('resolution', None)
+        self.rule = jsondata.get('rule', jsondata.get('ruleReference', None))
+        self.message = jsondata.get('message', None)
+        self.status = jsondata['status']
+
+
     def read(self):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
-        self.__load__(resp.issues[0])
+        self.__load(resp.issues[0])
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
@@ -254,7 +261,7 @@ class Issue(sq.SqObject):
         approx_matches = []
         match_but_modified = []
         for key, issue in issue_list.items():
-            if key == self.id:
+            if key == self.key:
                 continue
             if issue.strictly_identical_to(self, **kwargs):
                 if self.has_changelog():
@@ -625,21 +632,25 @@ def search_by_project(project_key, endpoint=None, params=None):
     else:
         new_params = params.copy()
     branch = new_params.get('branch', None)
-    if branch is None:
-        branch = 'MAIN'
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
-        util.logger.info("Issue search by project %s branch %s", project_key, branch)
         key_list = [project_key]
     issue_list = {}
     for k in key_list:
+        util.logger.info("Issue search by project %s branch %s", k, str(branch))
+        if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ('enterprise', 'datacenter'):
+            util.logger.info('Using new export findings to speed up issue export')
+            issue_list.update(projects.Project(k, endpoint).get_findings(branch))
+            continue
+
+        util.logger.info('Traditional issue search by project')
         new_params['componentKeys'] = k
         try:
             project_issue_list = search(endpoint=endpoint, params=new_params)
         except TooManyIssuesError:
             project_issue_list = search_by_date(endpoint=endpoint, params=new_params)
-        util.logger.info("Project %s branch %s has %d issues", k, branch, len(project_issue_list))
+        util.logger.info("Project %s branch %s has %d issues", k, str(branch), len(project_issue_list))
         issue_list.update(project_issue_list)
     return issue_list
 
