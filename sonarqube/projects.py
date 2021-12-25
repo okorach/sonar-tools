@@ -473,8 +473,11 @@ Is this normal ?", gr['name'], str(self.key))
             if branch is not None:
                 params['branch'] = branch
             resp = env.get('projects/export_findings', params=params, ctxt=self.endpoint)
+            util.logger.debug('export_findings response received')
+            data = json.loads(resp.text)
+            util.logger.debug('json loaded')
             issue_list = {}
-            for i in json.loads(resp.text)['export_findings']:
+            for i in data['export_findings']:
                 i['projectKey'] = self.key
                 if branch is not None:
                     i['branch'] = branch
