@@ -233,6 +233,7 @@ class Environment:
             + audit_sysinfo(self.sys_info())
             + self.__audit_admin_password__()
             + self.__audit_global_permissions__()
+            + self.__audit_lts_latest()
         )
         return problems
 
@@ -332,6 +333,19 @@ class Environment:
         util.logger.info('--- Auditing global permissions ---')
         return self.__audit_user_permissions__() + self.__audit_group_permissions__()
 
+    def __audit_lts_latest(self):
+        problems = []
+        vers = self.version()
+        if vers < (8, 9, 0):
+            rule = rules.get_rule(rules.RuleId.BELOW_LTS)
+            msg = rule.msg.format(str(self))
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+        elif vers < (9, 2, 0):
+            rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
+            msg = rule.msg.format(str(self))
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+        return problems
+
 
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
@@ -409,6 +423,7 @@ def version(ctxt=None):
     if ctxt is None:
         ctxt = this.context
     return ctxt.version()
+
 
 def delete(api, params=None, ctxt=None):
     if ctxt is None:
@@ -541,23 +556,35 @@ reverting to INFO is required"))
     return problems
 
 
+def __sif_version(sif, digits=3, as_string=False):
+    vers = sif['System']['Version'].split('.')
+    if as_string:
+        return '.'.join(vers[0:digits])
+    else:
+        return tuple(int(n) for n in vers[0:digits])
+
+
 def __audit_web_settings__(sysinfo):
     util.logger.debug('Auditing Web settings')
     problems = []
-    web_ram = __get_memory__(sysinfo['Settings']['sonar.web.javaOpts'])
+    web_settings = sysinfo['Settings']['sonar.web.javaOpts'] + " " + sysinfo['Settings']['sonar.web.javaAdditionalOpts']
+    web_ram = __get_memory__(web_settings)
     if web_ram < 1024 or web_ram > 2048:
         rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048)))
     else:
         util.logger.debug("sonar.web.javaOpts -Xmx memory setting value is %d MB, "
                          "within the recommended range [1024-2048]", web_ram)
+
+    problems += __audit_log4shell(__sif_version(sysinfo), web_settings, rules.RuleId.LOG4SHELL_WEB)
     return problems
 
 
 def __audit_ce_settings__(sysinfo):
     util.logger.info('Auditing CE settings')
     problems = []
-    ce_ram = __get_memory__(sysinfo['Settings']['sonar.ce.javaOpts'])
+    ce_settings = sysinfo['Settings']['sonar.ce.javaOpts'] + " " + sysinfo['Settings']['sonar.ce.javaAdditionalOpts']
+    ce_ram = __get_memory__(ce_settings)
     ce_tasks = sysinfo['Compute Engine Tasks']
     ce_workers = ce_tasks['Worker Count']
     MAX_WORKERS = 4
@@ -574,6 +601,8 @@ def __audit_ce_settings__(sysinfo):
     else:
         util.logger.debug("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
                          "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
+
+    problems += __audit_log4shell(__sif_version(sysinfo), ce_settings, rules.RuleId.LOG4SHELL_CE)
     return problems
 
 
@@ -610,14 +639,27 @@ def __audit_ce_background_tasks__(sysinfo):
 def __audit_es_settings__(sysinfo):
     util.logger.info('Auditing Search Server settings')
     problems = []
-    es_ram = __get_memory__(sysinfo['Settings']['sonar.search.javaOpts'])
+    es_settings = sysinfo['Settings']['sonar.search.javaOpts'] + " " + sysinfo['Settings']['sonar.search.javaAdditionalOpts']
+    es_ram = __get_memory__(es_settings)
     index_size = __get_store_size__(sysinfo['Search State']['Store Size'])
     if es_ram < 2 * index_size and es_ram < index_size + 1000:
         rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
     else:
         util.logger.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
+    problems += __audit_log4shell(__sif_version(sysinfo), es_settings, rules.RuleId.LOG4SHELL_ES)
     return problems
+
+
+def __audit_log4shell(sq_version, jvm_settings, broken_rule):
+    util.logger.debug('Auditing log4shell vulnerability fix')
+    if sq_version < (8, 9, 6) or ((9, 0, 0) <= sq_version < (9, 2, 4)):
+        for s in jvm_settings.split(' '):
+            if s == '-Dlog4j2.formatMsgNoLookups=true':
+                return []
+        rule = rules.get_rule(broken_rule)
+        return [pb.Problem(rule.type, rule.severity, rule.msg)]
+    return []
 
 
 def __audit_jdbc_url__(sysinfo):

@@ -96,6 +96,8 @@ sonar-audit --what settings,qg,qp
 - General checks:
   - Verifies that your SonarQube instance is an official distribution
   - Verifies that the `admin` user password is not the default value `admin`
+  - Verifies that the platform is on LTS
+  - Verifies that the log4shell fix is implemented (either with recent enough SonarQube patch level or the -Dlog4j2.formatMsgNoLookups=true option)
   - DCE: Verifies that same plugins are installed on all app nodes
   - DCE: Verifies that all app nodes run the same version of SonarQube
   - DCE: Verifies that all nodes are in GREEN status
