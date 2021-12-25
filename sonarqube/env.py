@@ -336,15 +336,16 @@ class Environment:
     def __audit_lts_latest(self):
         problems = []
         vers = self.version()
-        if vers < ( 8, 9, 0 ):
+        if vers < (8, 9, 0):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
             msg = rule.msg.format(str(self))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
-        elif vers < ( 9, 2, 0 ):
+        elif vers < (9, 2, 0):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
             msg = rule.msg.format(str(self))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
+
 
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
@@ -650,9 +651,9 @@ def __audit_es_settings__(sysinfo):
     return problems
 
 
-def __audit_log4shell(version, jvm_settings, broken_rule):
+def __audit_log4shell(sq_version, jvm_settings, broken_rule):
     util.logger.debug('Auditing log4shell vulnerability fix')
-    if version < (8, 9, 6) or (version >= (9, 0, 0) and version < (9, 2, 4)):
+    if sq_version < (8, 9, 6) or ((9, 0, 0) <= sq_version < (9, 2, 4)):
         for s in jvm_settings.split(' '):
             if s == '-Dlog4j2.formatMsgNoLookups=true':
                 return []
