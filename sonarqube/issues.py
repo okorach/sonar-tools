@@ -414,7 +414,13 @@ class Issue(sq.SqObject):
         data['effort'] = self.get_numeric_debt()
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
-        data['path'] = self.component.split(":")[-1]
+        if self.component is not None:
+            data['path'] = self.component.split(":")[-1]
+        elif 'export_findings' in self.json and 'path' in self.json['export_findings']:
+            data['path'] = self.json['export_findings']['path']
+        else:
+            util.logger.warning("Can't find file path for %s", str(self))
+            data['path'] = 'Unknown'
         for field in ('endpoint', 'id', 'json', 'changelog', 'url', 'assignee', 'hash', 'sonarqube',
                       'creation_date', 'modification_date', 'debt', 'component', 'language', 'branch', 'resolution'):
             data.pop(field, None)
