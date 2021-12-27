@@ -78,7 +78,7 @@ class Issue(sq.SqObject):
 
     def __init__(self, key, endpoint, data=None, from_findings=False):
         super().__init__(key, endpoint)
-        self.url = None
+        self._url = None
         self._json = None
         self.severity = None
         self.type = None
@@ -117,13 +117,13 @@ class Issue(sq.SqObject):
         """Dumps the object in a string"""
         return json.dumps(self._json, sort_keys=True, indent=3, separators=(',', ': '))
 
-    def get_url(self):
-        if self.url is None:
+    def url(self):
+        if self._url is None:
             branch = ''
             if self.branch is not None:
                 branch = f'branch={self.branch}&'
-            self.url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
-        return self.url
+            self._url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
+        return self._url
 
 
     def __load(self, jsondata):
@@ -157,13 +157,14 @@ class Issue(sq.SqObject):
         if self._debt is not None:
             return self._debt
         if 'debt' in self._json:
-            m = re.search(r'(\d+)kd', self._debt)
+            debt = self._json['debt']
+            m = re.search(r'(\d+)kd', debt)
             kdays = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)d', self._debt)
+            m = re.search(r'(\d+)d', debt)
             days = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)h', self._debt)
+            m = re.search(r'(\d+)h', debt)
             hours = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)min', self._debt)
+            m = re.search(r'(\d+)min', debt)
             minutes = int(m.group(1)) if m else 0
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         elif 'effort' in self._json:
@@ -440,7 +441,7 @@ class Issue(sq.SqObject):
             return False
 
         util.logger.info("Applying changelog of issue %s to issue %s", source_issue.key, self.key)
-        self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.get_url()})")
+        self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
         for d in sorted(events.keys()):
             event = events[d]
             util.logger.debug("Verifying event %s", str(event))
