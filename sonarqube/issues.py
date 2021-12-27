@@ -172,6 +172,7 @@ class Issue(sq.SqObject):
                 self._debt = 0
             else:
                 self._debt = int(self._json['effort'])
+        return self._debt
 
     def read(self):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
@@ -401,7 +402,7 @@ class Issue(sq.SqObject):
         mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
         # Strip timezone
         mtime = re.sub(r"\+.*", "", mtime)
-        msg = str.replace('"', '""', self.message)
+        msg = re.sub('"', '""', self.message)
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,

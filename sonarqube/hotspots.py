@@ -123,12 +123,12 @@ class Hotspot(sq.SqObject):
         mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
         # Strip timezone
         mtime = re.sub(r"\+.*", "", mtime)
-        msg = str.replace('"', '""', self.message)
+        msg = re.sub('"', '""', self.message)
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, 'SECURITY_HOTSPOT', self.vulnerabilityProbability, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,
                                           projects.get(self.projectKey, self.endpoint).name, self.file, line,
-                                          '-', '"' + msg + '"']])
+                                          0, '"' + msg + '"']])
 
     def to_json(self):
         data = vars(self)
