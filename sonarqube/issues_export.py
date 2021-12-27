@@ -34,7 +34,7 @@
     [--tags]
 '''
 import sys
-from sonarqube import env, issues, version
+from sonarqube import env, issues, hotspots, version
 import sonarqube.utilities as util
 
 
@@ -106,9 +106,12 @@ def main():
     # Add SQ environment
     params.update({'env': sqenv})
 
-    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys', None),
+    project_key = kwargs.get('componentKeys', None)
+    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=project_key,
         search_findings=kwargs['useFindings'])
 
+    if not kwargs['useFindings']:
+        all_issues.update(hotspots.search_by_project(endpoint=sqenv, params=params, project_key=project_key))
     fmt = kwargs['format']
     if kwargs.get('outputFile', None) is not None:
         ext = kwargs['outputFile'].split('.')[-1].lower()

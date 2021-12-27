@@ -415,6 +415,7 @@ class Issue(sq.SqObject):
         for old_name, new_name in (('line', 'lineNumber'), ('rule', 'ruleReference')):
             data[new_name] = data.pop(old_name, None)
         data['effort'] = self.debt()
+        data['url'] = self.url()
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         if self.component is not None:
@@ -424,8 +425,8 @@ class Issue(sq.SqObject):
         else:
             util.logger.warning("Can't find file path for %s", str(self))
             data['path'] = 'Unknown'
-        for field in ('endpoint', 'id', 'json', 'changelog', 'url', 'assignee', 'hash', 'sonarqube',
-                      'creation_date', 'modification_date', 'debt', 'component', 'language', 'branch', 'resolution'):
+        for field in ('endpoint', 'id', '_json', 'changelog', '_url', 'assignee', 'hash', 'sonarqube',
+                      'creation_date', 'modification_date', '_debt', 'component', 'language', 'branch', 'resolution'):
             data.pop(field, None)
         return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))
 
@@ -681,7 +682,7 @@ def search(endpoint=None, page=None, params=None):
             new_params['p'] = page
         resp = env.get(Issue.SEARCH_API, params=new_params, ctxt=endpoint)
         data = json.loads(resp.text)
-        nbr_issues = data['total']
+        nbr_issues = data['paging']['total']
         nbr_pages = (nbr_issues + Issue.MAX_PAGE_SIZE-1) // Issue.MAX_PAGE_SIZE
         util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, new_params['p'], nbr_pages)
         if page is None and nbr_issues > Issue.MAX_SEARCH:
