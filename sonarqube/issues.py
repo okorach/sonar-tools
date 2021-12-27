@@ -634,7 +634,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
     return issue_list
 
 
-def search_by_project(project_key, endpoint=None, params=None):
+def search_by_project(project_key, endpoint=None, params=None, search_findings=False):
     if params is None:
         new_params = {}
     else:
@@ -647,7 +647,7 @@ def search_by_project(project_key, endpoint=None, params=None):
     issue_list = {}
     for k in key_list:
         util.logger.info("Issue search by project %s branch %s", k, str(branch))
-        if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ('enterprise', 'datacenter'):
+        if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ('enterprise', 'datacenter') and search_findings:
             util.logger.info('Using new export findings to speed up issue export')
             issue_list.update(projects.Project(k, endpoint).get_findings(branch))
             continue

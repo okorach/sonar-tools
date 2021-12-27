@@ -59,7 +59,8 @@ def parse_args():
     parser.add_argument('--types', required=False,
                         help='Comma separated issue types among CODE_SMELL, BUG, VULNERABILITY')
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
-
+    parser.add_argument('--useFindings', required=False, default=False, action='store_true',
+                        help='Use export_findings() whenever possible')
     return util.parse_and_check_token(parser)
 
 def __dump_issues(issues_list, file, file_format):
@@ -105,7 +106,8 @@ def main():
     # Add SQ environment
     params.update({'env': sqenv})
 
-    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys', None))
+    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys', None),
+        search_findings=kwargs['useFindings'])
 
     fmt = kwargs['format']
     if kwargs.get('outputFile', None) is not None:
