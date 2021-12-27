@@ -27,7 +27,7 @@ import datetime
 import re
 import json
 import pytz
-from sonarqube import env, issues
+from sonarqube import env, issues, hotspots
 import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
@@ -467,7 +467,7 @@ Is this normal ?", gr['name'], str(self.key))
 
 
     def get_findings(self, branch=None):
-        issue_list = []
+        findings_list = {}
         if self.endpoint.version() > (9, 1, 0) and self.endpoint.edition() in ('enterprise', 'datacenter'):
             params={'project': self.key}
             if branch is not None:
@@ -476,14 +476,16 @@ Is this normal ?", gr['name'], str(self.key))
             util.logger.debug('export_findings response received')
             data = json.loads(resp.text)
             util.logger.debug('json loaded')
-            issue_list = {}
             for i in data['export_findings']:
                 i['projectKey'] = self.key
                 if branch is not None:
                     i['branch'] = branch
-                issue_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
-        util.logger.info("%d findings exported for %s", len(issue_list), str(self))
-        return issue_list
+                if i['type'] == 'SECURITY_HOTSPOT':
+                    findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+                else:
+                    findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+        util.logger.info("%d findings exported for %s", len(findings_list), str(self))
+        return findings_list
 
 def __get_permissions_counts__(entities):
     counts = {}
