@@ -51,7 +51,7 @@ class Hotspot(sq.SqObject):
     def __init__(self, key, endpoint, data=None, from_findings=False):
         super().__init__(key, endpoint)
         self.url = None
-        self.json = None
+        self._json = None
         self.vuln_probability = None
         self.category = None
         self.author = None
@@ -94,7 +94,7 @@ class Hotspot(sq.SqObject):
         self.modification_date = util.string_to_date(jsondata['updatedAt'])
 
     def __load_common(self, jsondata):
-        self.json = jsondata
+        self._json = jsondata
         self.vuln_probability = jsondata.get('vulnerabilityProbability', None)
         self.line = jsondata.get('line', jsondata.get('lineNumber', None))
         self.rule = jsondata.get('rule', jsondata.get('ruleReference', None))
@@ -124,8 +124,8 @@ class Hotspot(sq.SqObject):
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         if data['lineNumber'] is None:
             data.pop('lineNumber')
-        if 'path' in self.json:
-            data['path'] = self.json['path']
+        if 'path' in self._json:
+            data['path'] = self._json['path']
         else:
             util.logger.warning("Can't find file path for %s", str(self))
             data['path'] = 'Unknown'

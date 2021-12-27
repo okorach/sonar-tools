@@ -79,7 +79,7 @@ class Issue(sq.SqObject):
     def __init__(self, key, endpoint, data=None, from_findings=False):
         super().__init__(key, endpoint)
         self.url = None
-        self.json = None
+        self._json = None
         self.severity = None
         self.type = None
         self.author = None
@@ -115,7 +115,7 @@ class Issue(sq.SqObject):
 
     def to_string(self):
         """Dumps the object in a string"""
-        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
+        return json.dumps(self._json, sort_keys=True, indent=3, separators=(',', ': '))
 
     def get_url(self):
         if self.url is None:
@@ -144,7 +144,7 @@ class Issue(sq.SqObject):
         self.modification_date = util.string_to_date(jsondata['updatedAt'])
 
     def __load_common(self, jsondata):
-        self.json = jsondata
+        self._json = jsondata
         self.type = jsondata['type']
         self.severity = jsondata.get('severity', None)
         self.line = jsondata.get('line', jsondata.get('lineNumber', None))
@@ -156,7 +156,7 @@ class Issue(sq.SqObject):
     def debt(self):
         if self._debt is not None:
             return self._debt
-        if 'debt' in self.json:
+        if 'debt' in self._json:
             m = re.search(r'(\d+)kd', self._debt)
             kdays = int(m.group(1)) if m else 0
             m = re.search(r'(\d+)d', self._debt)
@@ -166,8 +166,11 @@ class Issue(sq.SqObject):
             m = re.search(r'(\d+)min', self._debt)
             minutes = int(m.group(1)) if m else 0
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
-        elif 'effort' in self.json:
-            self._debt = int(self.json['effort'])
+        elif 'effort' in self._json:
+            if self._json['effort'] == 'null':
+                self._debt = 0
+            else:
+                self._debt = int(self._json['effort'])
 
     def read(self):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
@@ -193,12 +196,12 @@ class Issue(sq.SqObject):
         return len(self.get_changelog()) > 0
 
     def get_comments(self):
-        if 'comments' not in self.json:
+        if 'comments' not in self._json:
             self.comments = []
         elif self.comments is None:
             self.comments = []
-            util.json_dump_debug(self.json['comments'], "Issue Comments = ")
-            for c in self.json['comments']:
+            util.json_dump_debug(self._json['comments'], "Issue Comments = ")
+            for c in self._json['comments']:
                 self.comments.append({'date': c['createdAt'], 'event': 'comment', 'value': c['markdown'],
                     'user': c['login'], 'userName': c['login']})
         return self.comments
@@ -415,8 +418,8 @@ class Issue(sq.SqObject):
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         if self.component is not None:
             data['path'] = self.component.split(":")[-1]
-        elif 'path' in self.json:
-            data['path'] = self.json['path']
+        elif 'path' in self._json:
+            data['path'] = self._json['path']
         else:
             util.logger.warning("Can't find file path for %s", str(self))
             data['path'] = 'Unknown'
