@@ -416,8 +416,8 @@ class Issue(sq.SqObject):
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         if self.component is not None:
             data['path'] = self.component.split(":")[-1]
-        elif 'export_findings' in self.json and 'path' in self.json['export_findings']:
-            data['path'] = self.json['export_findings']['path']
+        elif 'path' in self.json:
+            data['path'] = self.json['path']
         else:
             util.logger.warning("Can't find file path for %s", str(self))
             data['path'] = 'Unknown'
