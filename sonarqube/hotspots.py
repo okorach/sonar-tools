@@ -122,6 +122,8 @@ class Hotspot(sq.SqObject):
             data[new_name] = data.pop(old_name, None)
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
+        if data['lineNumber'] is None:
+            data.pop('lineNumber')
         if 'path' in self.json:
             data['path'] = self.json['path']
         else:
