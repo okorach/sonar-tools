@@ -125,7 +125,6 @@ class Issue(sq.SqObject):
             self._url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
         return self._url
 
-
     def __load(self, jsondata):
         self.__load_common(jsondata)
         self.author = jsondata['author']
@@ -392,7 +391,6 @@ class Issue(sq.SqObject):
 
         util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.key)
         return False
-
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message

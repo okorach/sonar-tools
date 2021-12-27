@@ -465,11 +465,10 @@ Is this normal ?", gr['name'], str(self.key))
     def search_custom_measures(self):
         return custom_measures.search(self.key, self.endpoint)
 
-
     def get_findings(self, branch=None):
         findings_list = {}
         if self.endpoint.version() > (9, 1, 0) and self.endpoint.edition() in ('enterprise', 'datacenter'):
-            params={'project': self.key}
+            params = {'project': self.key}
             if branch is not None:
                 params['branch'] = branch
             resp = env.get('projects/export_findings', params=params, ctxt=self.endpoint)
