@@ -94,7 +94,7 @@ class Issue(sq.SqObject):
         self.line = None
         self.component = None
         self.message = None
-        self.debt = None
+        self._debt = None
         self.sonarqube = None
         self.creation_date = None
         self.modification_date = None
@@ -125,6 +125,7 @@ class Issue(sq.SqObject):
             self.url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
         return self.url
 
+
     def __load(self, jsondata):
         self.__load_common(jsondata)
         self.author = jsondata['author']
@@ -132,10 +133,8 @@ class Issue(sq.SqObject):
         self.projectKey = jsondata['project']
         self.creation_date = util.string_to_date(jsondata['creationDate'])
         self.modification_date = util.string_to_date(jsondata['updateDate'])
-
         self.component = jsondata['component']
         self.hash = jsondata.get('hash', None)
-        self.debt = jsondata.get('debt', None)
         self.branch = jsondata.get('branch', None)
 
     def __load_finding(self, jsondata):
@@ -143,7 +142,6 @@ class Issue(sq.SqObject):
         self.projectKey = jsondata['projectKey']
         self.creation_date = util.string_to_date(jsondata['createdAt'])
         self.modification_date = util.string_to_date(jsondata['updatedAt'])
-
 
     def __load_common(self, jsondata):
         self.json = jsondata
@@ -155,6 +153,21 @@ class Issue(sq.SqObject):
         self.message = jsondata.get('message', None)
         self.status = jsondata['status']
 
+    def debt(self):
+        if self._debt is not None:
+            return self._debt
+        if 'debt' in self.json:
+            m = re.search(r'(\d+)kd', self._debt)
+            kdays = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)d', self._debt)
+            days = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)h', self._debt)
+            hours = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)min', self._debt)
+            minutes = int(m.group(1)) if m else 0
+            self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
+        elif 'effort' in self.json:
+            self._debt = int(self.json['effort'])
 
     def read(self):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
@@ -299,7 +312,7 @@ class Issue(sq.SqObject):
             self.rule == another_issue.rule and
             self.hash == another_issue.hash and
             self.message == another_issue.message and
-            self.debt == another_issue.debt
+            self.debt() == another_issue.debt()
         )
 
     def strictly_identical_to(self, another_issue, **kwargs):
@@ -307,7 +320,7 @@ class Issue(sq.SqObject):
             self.rule == another_issue.rule and
             self.hash == another_issue.hash and
             self.message == another_issue.message and
-            self.debt == another_issue.debt and
+            self.debt() == another_issue.debt() and
             (self.component == another_issue.component or kwargs.get('ignore_component', False))
         )
 
@@ -317,7 +330,7 @@ class Issue(sq.SqObject):
         score = 0
         if self.message == another_issue.message or kwargs.get('ignore_message', False):
             score += 2
-        if self.debt == another_issue.debt or kwargs.get('ignore_debt', False):
+        if self.debt() == another_issue.debt() or kwargs.get('ignore_debt', False):
             score += 1
         if self.line == another_issue.line or kwargs.get('ignore_line', False):
             score += 1
@@ -375,23 +388,9 @@ class Issue(sq.SqObject):
         util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.key)
         return False
 
-    def get_numeric_debt(self):
-        num_debt = 0
-        if self.debt is not None:
-            m = re.search(r'(\d+)kd', self.debt)
-            kdays = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)d', self.debt)
-            days = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)h', self.debt)
-            hours = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)min', self.debt)
-            minutes = int(m.group(1)) if m else 0
-            num_debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
-        return num_debt
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
-        debt = self.get_numeric_debt()
         cdate = self.creation_date.strftime(util.SQ_DATE_FORMAT)
         ctime = self.creation_date.strftime(util.SQ_TIME_FORMAT)
         mdate = self.modification_date.strftime(util.SQ_DATE_FORMAT)
@@ -403,7 +402,7 @@ class Issue(sq.SqObject):
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,
                                           projects.get(self.projectKey, self.endpoint).name, self.component, line,
-                                          debt, '"' + msg + '"']])
+                                          self.debt(), '"' + msg + '"']])
 
     def to_json(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
@@ -411,7 +410,7 @@ class Issue(sq.SqObject):
 
         for old_name, new_name in (('line', 'lineNumber'), ('rule', 'ruleReference')):
             data[new_name] = data.pop(old_name, None)
-        data['effort'] = self.get_numeric_debt()
+        data['effort'] = self.debt()
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         if self.component is not None:
