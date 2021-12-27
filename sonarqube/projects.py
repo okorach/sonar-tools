@@ -474,9 +474,12 @@ Is this normal ?", gr['name'], str(self.key))
                 params['branch'] = branch
             resp = env.get('projects/export_findings', params=params, ctxt=self.endpoint)
             util.logger.debug('export_findings response received')
-            data = json.loads(resp.text)
-            util.logger.debug('json loaded')
-            for i in data['export_findings']:
+            data = json.loads(resp.text)['export_findings']
+            util.logger.debug('json loaded, size = %d', len(data))
+            for i in data:
+                util.logger.debug("Processing %s:%s:%s", i['key'], i.get('path', '-'), i.get('lineNumber', '-'))
+                if i['key'] in findings_list:
+                    util.logger.warning('Finding %s already in past findings as %s', str(i), str(findings_list[i['key']]._json))
                 i['projectKey'] = self.key
                 if branch is not None:
                     i['branch'] = branch
