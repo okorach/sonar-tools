@@ -30,7 +30,7 @@
     [-a <createdAfter>] issues created on or after a given date (YYYY-MM-DD)
     [-b <createdBefore>] issues created before or on a given date (YYYY-MM-DD)
     [--severities <severities>] Comma separated desired severities: BLOCKER, CRITICAL, MAJOR, MINOR, INFO
-    [--types <types>] Comma separated issue types (VULNERABILITY,BUG,CODE_SMELL)
+    [--types <types>] Comma separated issue types (VULNERABILITY,BUG,CODE_SMELL,HOTSPOT)
     [--tags]
 '''
 import sys
@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument('--severities', required=False,
                         help='Comma separated severities among BLOCKER, CRITICAL, MAJOR, MINOR, INFO')
     parser.add_argument('--types', required=False,
-                        help='Comma separated issue types among CODE_SMELL, BUG, VULNERABILITY')
+                        help='Comma separated issue types among CODE_SMELL, BUG, VULNERABILITY, HOTSPOT')
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
     parser.add_argument('--useFindings', required=False, default=False, action='store_true',
                         help='Use export_findings() whenever possible')
