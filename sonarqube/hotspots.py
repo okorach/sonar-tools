@@ -23,28 +23,11 @@
 
 '''
 
-import re
 import json
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 from sonarqube import env, projects
 
-'''
-      "key": "AX37OzKIZoChGW6hZPyd",
-      "projectKey": "demo:joomla",
-      "path": "libraries/src/Filesystem/File.php",
-      "lineNumber": "291",
-      "message": "Make sure this permission is safe.",
-      "status": "TO_REVIEW",
-      "author": "rschley@ebay.com",
-      "createdAt": "2021-12-27T10:32:51+0100",
-      "updatedAt": "2021-12-27T10:32:51+0100",
-      "ruleReference": "S2612",
-      "comments": [],
-      "securityCategory": "auth",
-      "vulnerabilityProbability": "HIGH",
-      "type": "SECURITY_HOTSPOT"
-'''
 
 class TooManyHotspotsError(Exception):
     def __init__(self, nbr_issues, message):
