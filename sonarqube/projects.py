@@ -466,26 +466,29 @@ Is this normal ?", gr['name'], str(self.key))
         return custom_measures.search(self.key, self.endpoint)
 
     def get_findings(self, branch=None):
+
+        if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ('enterprise', 'datacenter'):
+            return {}
+
         findings_list = {}
-        if self.endpoint.version() > (9, 1, 0) and self.endpoint.edition() in ('enterprise', 'datacenter'):
-            params = {'project': self.key}
+        params = {'project': self.key}
+        if branch is not None:
+            params['branch'] = branch
+        resp = env.get('projects/export_findings', params=params, ctxt=self.endpoint)
+        util.logger.debug('export_findings response received')
+        data = json.loads(resp.text)['export_findings']
+        util.logger.debug('json loaded, size = %d', len(data))
+        for i in data:
+            util.logger.debug("Processing %s:%s:%s", i['key'], i.get('path', '-'), i.get('lineNumber', '-'))
+            if i['key'] in findings_list:
+                util.logger.warning('Finding %s already in past findings as %s', str(i), str(findings_list[i['key']]))
+            i['projectKey'] = self.key
             if branch is not None:
-                params['branch'] = branch
-            resp = env.get('projects/export_findings', params=params, ctxt=self.endpoint)
-            util.logger.debug('export_findings response received')
-            data = json.loads(resp.text)['export_findings']
-            util.logger.debug('json loaded, size = %d', len(data))
-            for i in data:
-                util.logger.debug("Processing %s:%s:%s", i['key'], i.get('path', '-'), i.get('lineNumber', '-'))
-                if i['key'] in findings_list:
-                    util.logger.warning('Finding %s already in past findings as %s', str(i), str(findings_list[i['key']]._json))
-                i['projectKey'] = self.key
-                if branch is not None:
-                    i['branch'] = branch
-                if i['type'] == 'SECURITY_HOTSPOT':
-                    findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
-                else:
-                    findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+                i['branch'] = branch
+            if i['type'] == 'SECURITY_HOTSPOT':
+                findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+            else:
+                findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
         util.logger.info("%d findings exported for %s", len(findings_list), str(self))
         return findings_list
 

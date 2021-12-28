@@ -122,8 +122,8 @@ class Hotspot(sq.SqObject):
         mdate = self.modification_date.strftime(util.SQ_DATE_FORMAT)
         mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
         # Strip timezone
-        mtime = re.sub(r"\+.*", "", mtime)
-        msg = re.sub('"', '""', self.message)
+        mtime = mtime.split('+')[0]
+        msg = self.message.replace('"', '""')
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, 'SECURITY_HOTSPOT', self.vulnerabilityProbability, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,
