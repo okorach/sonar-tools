@@ -495,6 +495,7 @@ def search_by_file(root_key, file_uuid, params=None, endpoint=None):
         parms = {}
     else:
         parms = params.copy()
+    util.logger.info("Search by file, comp key = %s, file = %s", root_key, file_uuid)
     parms.pop('directories', None)
     parms['componentKeys'] = f"{root_key}:{file_uuid}"
     util.logger.debug("Issue search by file: %s", file_uuid)
@@ -505,6 +506,7 @@ def search_by_file(root_key, file_uuid, params=None, endpoint=None):
 
 
 def search_by_component(root_key, component=None, endpoint=None, params=None):
+    util.logger.info("Search by component for root key %s", root_key)
     if params is None:
         parms = {}
     else:
@@ -546,7 +548,7 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
     else:
         new_params = params.copy()
     new_params['rules'] = rule
-    util.logger.debug("Searching issues for rule %s", rule)
+    util.logger.info("Searching by rule %s", rule)
     issue_list = {}
     try:
         issue_list = search(endpoint=endpoint, params=new_params)
@@ -565,18 +567,135 @@ def search_by_rule(root_key, rule, endpoint=None, params=None):
     return issue_list
 
 
+def _search_all_by_severities(params, endpoint=None):
+    issue_list = {}
+    new_params = params.copy()
+    for sev in ('BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO'):
+        util.logger.info('Search by severity %s', sev)
+        new_params['severities'] = sev
+        try:
+            issue_list.update(_search_all(params=new_params, endpoint=endpoint))
+        except TooManyIssuesError:
+            util.logger.info('Too many issues, recursing')
+            issue_list.update(_search_all_by_types(params=new_params, endpoint=endpoint))
+    util.logger.info('Total: %d for %s', len(issue_list), str(params))
+    return issue_list
+
+
+def _search_all_by_types(params, endpoint=None):
+    issue_list = {}
+    new_params = params.copy()
+    for issue_type in ('BUG', 'VULNERABILITY', 'CODE_SMELL'):
+        try:
+            util.logger.info('Search by type %s', issue_type)
+            new_params['types'] = issue_type
+            issue_list.update(_search_all(new_params, endpoint))
+        except TooManyIssuesError:
+            util.logger.info('Too many issues, recursing')
+            issue_list.update(_search_all_by_directories(params=new_params, endpoint=endpoint))
+    return issue_list
+
+
+def _search_all_by_directories(params, endpoint=None):
+    new_params = params.copy()
+    dirs = get_facets(new_params['componentKeys'], facets='directories', params=new_params, endpoint=endpoint)['directories']
+    issue_list = {}
+    for d in dirs:
+        util.logger.info('Search by directory %s', d['val'])
+        new_params['directories'] = d['val']
+        issue_list.update(_search_all(new_params, endpoint, raise_error=False))
+    return issue_list
+
+def _search_all_by_date(params, date_start=None, date_stop=None, endpoint=None):
+    new_params = params.copy()
+    if date_start is None:
+        date_start = get_oldest_issue(endpoint=endpoint,
+                                      params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
+    if date_stop is None:
+        date_stop = get_newest_issue(endpoint=endpoint,
+                                     params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
+    util.logger.info("Search by date between [%s - %s]", str(date_start), str(date_stop))
+    issue_list = {}
+    new_params.update({'createdAfter': date_start, 'createdBefore': date_stop})
+    try:
+        issue_list = _search_all(params=new_params, endpoint=endpoint)
+    except TooManyIssuesError:
+        diff = (date_stop - date_start).days
+        if diff == 0:
+            util.logger.info('Too many issues, recursing')
+            issue_list = _search_all_by_severities(new_params, endpoint=endpoint)
+        elif diff == 1:
+            issue_list.update(
+                _search_all_by_date(new_params, date_start=date_start, date_stop=date_start, endpoint=endpoint))
+            issue_list.update(
+                _search_all_by_date(new_params, date_start=date_stop, date_stop=date_stop, endpoint=endpoint))
+        else:
+            date_middle = date_start + datetime.timedelta(days=diff//2)
+            issue_list.update(
+                _search_all_by_date(new_params, date_start=date_start, date_stop=date_middle, endpoint=endpoint))
+            date_middle = date_middle + datetime.timedelta(days=1)
+            issue_list.update(
+                _search_all_by_date(new_params, date_start=date_middle, date_stop=date_stop, endpoint=endpoint))
+    if date_start is not None and date_stop is not None:
+        util.logger.debug("Project %s has %d issues between %s and %s", new_params['componentKeys'], len(issue_list),
+                          util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
+    return issue_list
+
+
+def _search_all_by_project(project_key, params, endpoint=None):
+    if project_key is None:
+        key_list = projects.search(endpoint).keys()
+    else:
+        key_list = project_key.split(',')
+    issue_list = {}
+    for k in key_list:
+        params['componentKeys'] = k
+        try:
+            issue_list.update(_search_all(params, endpoint))
+        except TooManyIssuesError:
+            util.logger.info('Too many issues, recursing')
+            issue_list.update(_search_all_by_date(params=params, endpoint=endpoint))
+    return issue_list
+
+
+def _search_all(params, endpoint=None, raise_error=True):
+    new_params = params.copy()
+    new_params['ps'] = Issue.MAX_PAGE_SIZE
+    issue_list = {}
+    p, nbr_pages = 1, 20
+    util.logger.debug("Search all with %s", str(params))
+    while p <= nbr_pages:
+        new_params['p'] = p
+        resp = env.get(Issue.SEARCH_API, params=new_params, ctxt=endpoint)
+        data = json.loads(resp.text)
+        for i in data['issues']:
+            issue_list[i['key']] = Issue(key=i['key'], endpoint=endpoint, data=i)
+        nbr_issues = data['paging']['total']
+        #util.logger.info("nbr_issues = %d max = %d raise error = %s", nbr_issues, Issue.MAX_SEARCH, str(raise_error))
+        if nbr_issues > Issue.MAX_SEARCH and raise_error:
+            raise TooManyIssuesError(nbr_issues, f'{nbr_issues} issues returned by api/issues/search, '
+                                     f'this is more than the max {Issue.MAX_SEARCH} possible')
+        p += 1
+    util.logger.info('Returning %d issues', len(issue_list))
+    return issue_list
+
+
 def search_by_facet(project_key, facets='rules,files,severities,types', endpoint=None, params=None):
     if endpoint.version() < (8, 5, 0):
         facets = facets.replace('files', 'fileUuids')
+    util.logger.info("Search by facet")
     issue_list = {}
     selected_facet = None
     largest_facet = 0
     facets = get_facets(facets=facets, project_key=project_key, endpoint=endpoint, params=params)
     for key, facet in facets.items():
+        util.logger.info("Checking facet %s size %d", key, len(facet))
         if len(facet) > largest_facet and len(facet) < 100:
             selected_facet = key
+            util.logger.info("Selected facet = %s, size %d", key, len(facet))
             largest_facet = len(facet)
     if selected_facet is None:
+        util.logger.info("No facet selected")
         return None
     try:
         for f in facets[selected_facet]:
@@ -604,7 +723,7 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
     if date_stop is None:
         date_stop = get_newest_issue(endpoint=endpoint,
                                      params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
-    util.logger.debug("Issue search by date for project %s within [%s - %s]", params['componentKeys'],
+    util.logger.info("Issue search by date for project %s within [%s - %s]", params['componentKeys'],
         util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
     issue_list = {}
     new_params.update({'createdAfter': date_start, 'createdBefore': date_stop})
@@ -635,16 +754,12 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
     return issue_list
 
 
-def search_by_project(project_key, endpoint=None, params=None, search_findings=False):
-    if params is None:
-        new_params = {}
-    else:
-        new_params = params.copy()
-    branch = new_params.get('branch', None)
+def search_by_project(project_key, endpoint=None, branch=None, search_findings=False):
+    params = {}
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
-        key_list = [project_key]
+        key_list = project_key.split(',')
     issue_list = {}
     for k in key_list:
         util.logger.info("Issue search by project %s branch %s", k, str(branch))
@@ -652,15 +767,8 @@ def search_by_project(project_key, endpoint=None, params=None, search_findings=F
             util.logger.info('Using new export findings to speed up issue export')
             issue_list.update(projects.Project(k, endpoint).get_findings(branch))
             continue
-
         util.logger.info('Traditional issue search by project')
-        new_params['componentKeys'] = k
-        try:
-            project_issue_list = search(endpoint=endpoint, params=new_params)
-        except TooManyIssuesError:
-            project_issue_list = search_by_date(endpoint=endpoint, params=new_params)
-        util.logger.info("Project %s branch %s has %d issues", k, str(branch), len(project_issue_list))
-        issue_list.update(project_issue_list)
+        issue_list.update(_search_all_by_project(k, params, endpoint=endpoint))
     return issue_list
 
 
