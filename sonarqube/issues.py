@@ -27,7 +27,6 @@ import datetime
 import json
 import sonarqube.env as env
 import sonarqube.sqobject as sq
-import sonarqube.components as components
 import sonarqube.utilities as util
 import sonarqube.projects as projects
 import sonarqube.issue_changelog as changelog
@@ -492,9 +491,9 @@ def sort_comments(comments):
 
 def __search_all_by_directories(params, endpoint=None):
     new_params = params.copy()
-    dirs = get_facets(new_params['componentKeys'], facets='directories', params=new_params, endpoint=endpoint)['directories']
+    facets = get_facets(new_params['componentKeys'], facets='directories', params=new_params, endpoint=endpoint)
     issue_list = {}
-    for d in dirs:
+    for d in facets['directories']:
         util.logger.info('Search by directory %s', d['val'])
         new_params['directories'] = d['val']
         issue_list.update(_search_all(new_params, endpoint, raise_error=False))
