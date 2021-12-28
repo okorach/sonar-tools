@@ -478,22 +478,30 @@ Is this normal ?", gr['name'], str(self.key))
         util.logger.debug('export_findings response received')
         data = json.loads(resp.text)['export_findings']
         util.logger.debug('json loaded, size = %d', len(data))
-        findings_conflicts = 0
+        findings_conflicts = {'SECURITY_HOTSPOT': 0, 'BUG': 0, 'CODE_SMELL': 0, 'VULNERABILITY': 0}
+        nbr_findings = {'SECURITY_HOTSPOT': 0, 'BUG': 0, 'CODE_SMELL': 0, 'VULNERABILITY': 0}
+        util.logger.debug(json.dumps(data, indent=3, sort_keys=True, separators=(',', ': ')))
         for i in data:
             util.logger.debug("Processing %s:%s:%s", i['key'], i.get('path', '-'), i.get('lineNumber', '-'))
+            util.logger.debug(json.dumps(i, indent=3, sort_keys=True, separators=(',', ': ')))
             if i['key'] in findings_list:
-                util.logger.warning('Finding %s already in past findings', i['key'])
-                findings_conflicts += 1
+                util.logger.warning('Finding %s (%s) already in past findings', i['key'], i['type'])
+                findings_conflicts[i['type']] += 1
             i['projectKey'] = self.key
             if branch is not None:
                 i['branch'] = branch
+            nbr_findings[i['type']] += 1
             if i['type'] == 'SECURITY_HOTSPOT':
                 findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+
             else:
                 findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
-        if findings_conflicts > 0:
-            util.logger.warning('%d findings missed because of JSON conflict', findings_conflicts)
+        for t in ('SECURITY_HOTSPOT', 'BUG', 'CODE_SMELL', 'VULNERABILITY'):
+            if findings_conflicts[t] > 0:
+                util.logger.warning('%d %s findings missed because of JSON conflict', findings_conflicts[t], t)
         util.logger.info("%d findings exported for %s", len(findings_list), str(self))
+        for t in ('SECURITY_HOTSPOT', 'BUG', 'CODE_SMELL', 'VULNERABILITY'):
+            util.logger.info("%d %s exported", nbr_findings[t], t)
 
         return findings_list
 
