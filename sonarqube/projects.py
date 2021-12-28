@@ -478,10 +478,12 @@ Is this normal ?", gr['name'], str(self.key))
         util.logger.debug('export_findings response received')
         data = json.loads(resp.text)['export_findings']
         util.logger.debug('json loaded, size = %d', len(data))
+        findings_conflicts = 0
         for i in data:
             util.logger.debug("Processing %s:%s:%s", i['key'], i.get('path', '-'), i.get('lineNumber', '-'))
             if i['key'] in findings_list:
-                util.logger.warning('Finding %s already in past findings as %s', str(i), str(findings_list[i['key']]))
+                util.logger.warning('Finding %s already in past findings', i['key'])
+                findings_conflicts += 1
             i['projectKey'] = self.key
             if branch is not None:
                 i['branch'] = branch
@@ -489,7 +491,10 @@ Is this normal ?", gr['name'], str(self.key))
                 findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
             else:
                 findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+        if findings_conflicts > 0:
+            util.logger.warning('%d findings missed because of JSON conflict', findings_conflicts)
         util.logger.info("%d findings exported for %s", len(findings_list), str(self))
+
         return findings_list
 
 def __get_permissions_counts__(entities):
