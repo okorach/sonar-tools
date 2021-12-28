@@ -30,11 +30,11 @@
     [-a <createdAfter>] issues created on or after a given date (YYYY-MM-DD)
     [-b <createdBefore>] issues created before or on a given date (YYYY-MM-DD)
     [--severities <severities>] Comma separated desired severities: BLOCKER, CRITICAL, MAJOR, MINOR, INFO
-    [--types <types>] Comma separated issue types (VULNERABILITY,BUG,CODE_SMELL)
+    [--types <types>] Comma separated issue types (VULNERABILITY,BUG,CODE_SMELL,HOTSPOT)
     [--tags]
 '''
 import sys
-from sonarqube import env, issues, version
+from sonarqube import env, issues, hotspots, version
 import sonarqube.utilities as util
 
 
@@ -57,9 +57,10 @@ def parse_args():
     parser.add_argument('--severities', required=False,
                         help='Comma separated severities among BLOCKER, CRITICAL, MAJOR, MINOR, INFO')
     parser.add_argument('--types', required=False,
-                        help='Comma separated issue types among CODE_SMELL, BUG, VULNERABILITY')
+                        help='Comma separated issue types among CODE_SMELL, BUG, VULNERABILITY, HOTSPOT')
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
-
+    parser.add_argument('--useFindings', required=False, default=False, action='store_true',
+                        help='Use export_findings() whenever possible')
     return util.parse_and_check_token(parser)
 
 def __dump_issues(issues_list, file, file_format):
@@ -105,8 +106,12 @@ def main():
     # Add SQ environment
     params.update({'env': sqenv})
 
-    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=kwargs.get('componentKeys', None))
+    project_key = kwargs.get('componentKeys', None)
+    all_issues = issues.search_by_project(endpoint=sqenv, params=params, project_key=project_key,
+        search_findings=kwargs['useFindings'])
 
+    if not kwargs['useFindings']:
+        all_issues.update(hotspots.search_by_project(endpoint=sqenv, params=params, project_key=project_key))
     fmt = kwargs['format']
     if kwargs.get('outputFile', None) is not None:
         ext = kwargs['outputFile'].split('.')[-1].lower()

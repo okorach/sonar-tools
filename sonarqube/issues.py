@@ -76,10 +76,10 @@ class Issue(sq.SqObject):
                       'issues', 'languages', 'onComponentOnly', 'p', 'ps', 'resolutions', 'resolved',
                       'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
-    def __init__(self, key, endpoint, data=None):
+    def __init__(self, key, endpoint, data=None, from_findings=False):
         super().__init__(key, endpoint)
-        self.url = None
-        self.json = None
+        self._url = None
+        self._json = None
         self.severity = None
         self.type = None
         self.author = None
@@ -94,14 +94,17 @@ class Issue(sq.SqObject):
         self.line = None
         self.component = None
         self.message = None
-        self.debt = None
+        self._debt = None
         self.sonarqube = None
         self.creation_date = None
         self.modification_date = None
         self.hash = None
         self.branch = None
         if data is not None:
-            self.__load__(data)
+            if from_findings:
+                self.__load_finding(data)
+            else:
+                self.__load(data)
 
     def __str__(self):
         return f"Issue key '{self.key}'"
@@ -112,46 +115,67 @@ class Issue(sq.SqObject):
 
     def to_string(self):
         """Dumps the object in a string"""
-        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
+        return json.dumps(self._json, sort_keys=True, indent=3, separators=(',', ': '))
 
-    def get_url(self):
-        if self.url is None:
+    def url(self):
+        if self._url is None:
             branch = ''
             if self.branch is not None:
                 branch = f'branch={self.branch}&'
-            self.url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
-        return self.url
+            self._url = f'{self.endpoint.get_url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
+        return self._url
 
-    def __load__(self, jsondata):
-        self.json = jsondata
-        self.id = jsondata['key']
-        self.type = jsondata['type']
-        if self.type != 'SECURITY_HOTSPOT':
-            self.severity = jsondata['severity']
-
+    def __load(self, jsondata):
+        self.__load_common(jsondata)
         self.author = jsondata['author']
         self.assignee = jsondata.get('assignee', None)
-        self.status = jsondata['status']
-        self.line = jsondata.get('line', None)
-
-        self.resolution = jsondata.get('resolution', None)
-        self.rule = jsondata['rule']
         self.projectKey = jsondata['project']
-        self.language = None
-        self.changelog = None
         self.creation_date = util.string_to_date(jsondata['creationDate'])
         self.modification_date = util.string_to_date(jsondata['updateDate'])
-
         self.component = jsondata['component']
-        util.logger.debug("Issue Key %s Component %s", self.key, self.component)
         self.hash = jsondata.get('hash', None)
-        self.message = jsondata.get('message', None)
-        self.debt = jsondata.get('debt', None)
         self.branch = jsondata.get('branch', None)
+
+    def __load_finding(self, jsondata):
+        self.__load_common(jsondata)
+        self.projectKey = jsondata['projectKey']
+        self.creation_date = util.string_to_date(jsondata['createdAt'])
+        self.modification_date = util.string_to_date(jsondata['updatedAt'])
+
+    def __load_common(self, jsondata):
+        self._json = jsondata
+        self.type = jsondata['type']
+        self.severity = jsondata.get('severity', None)
+        self.line = jsondata.get('line', jsondata.get('lineNumber', None))
+        self.resolution = jsondata.get('resolution', None)
+        self.rule = jsondata.get('rule', jsondata.get('ruleReference', None))
+        self.message = jsondata.get('message', None)
+        self.status = jsondata['status']
+
+    def debt(self):
+        if self._debt is not None:
+            return self._debt
+        if 'debt' in self._json:
+            debt = self._json['debt']
+            m = re.search(r'(\d+)kd', debt)
+            kdays = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)d', debt)
+            days = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)h', debt)
+            hours = int(m.group(1)) if m else 0
+            m = re.search(r'(\d+)min', debt)
+            minutes = int(m.group(1)) if m else 0
+            self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
+        elif 'effort' in self._json:
+            if self._json['effort'] == 'null':
+                self._debt = 0
+            else:
+                self._debt = int(self._json['effort'])
+        return self._debt
 
     def read(self):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
-        self.__load__(resp.issues[0])
+        self.__load(resp.issues[0])
 
     def get_changelog(self, force_api = False):
         if (force_api or self.changelog is None):
@@ -173,12 +197,12 @@ class Issue(sq.SqObject):
         return len(self.get_changelog()) > 0
 
     def get_comments(self):
-        if 'comments' not in self.json:
+        if 'comments' not in self._json:
             self.comments = []
         elif self.comments is None:
             self.comments = []
-            util.json_dump_debug(self.json['comments'], "Issue Comments = ")
-            for c in self.json['comments']:
+            util.json_dump_debug(self._json['comments'], "Issue Comments = ")
+            for c in self._json['comments']:
                 self.comments.append({'date': c['createdAt'], 'event': 'comment', 'value': c['markdown'],
                     'user': c['login'], 'userName': c['login']})
         return self.comments
@@ -254,7 +278,7 @@ class Issue(sq.SqObject):
         approx_matches = []
         match_but_modified = []
         for key, issue in issue_list.items():
-            if key == self.id:
+            if key == self.key:
                 continue
             if issue.strictly_identical_to(self, **kwargs):
                 if self.has_changelog():
@@ -292,7 +316,7 @@ class Issue(sq.SqObject):
             self.rule == another_issue.rule and
             self.hash == another_issue.hash and
             self.message == another_issue.message and
-            self.debt == another_issue.debt
+            self.debt() == another_issue.debt()
         )
 
     def strictly_identical_to(self, another_issue, **kwargs):
@@ -300,7 +324,7 @@ class Issue(sq.SqObject):
             self.rule == another_issue.rule and
             self.hash == another_issue.hash and
             self.message == another_issue.message and
-            self.debt == another_issue.debt and
+            self.debt() == another_issue.debt() and
             (self.component == another_issue.component or kwargs.get('ignore_component', False))
         )
 
@@ -310,7 +334,7 @@ class Issue(sq.SqObject):
         score = 0
         if self.message == another_issue.message or kwargs.get('ignore_message', False):
             score += 2
-        if self.debt == another_issue.debt or kwargs.get('ignore_debt', False):
+        if self.debt() == another_issue.debt() or kwargs.get('ignore_debt', False):
             score += 1
         if self.line == another_issue.line or kwargs.get('ignore_line', False):
             score += 1
@@ -368,35 +392,20 @@ class Issue(sq.SqObject):
         util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.key)
         return False
 
-    def get_numeric_debt(self):
-        num_debt = 0
-        if self.debt is not None:
-            m = re.search(r'(\d+)kd', self.debt)
-            kdays = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)d', self.debt)
-            days = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)h', self.debt)
-            hours = int(m.group(1)) if m else 0
-            m = re.search(r'(\d+)min', self.debt)
-            minutes = int(m.group(1)) if m else 0
-            num_debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
-        return num_debt
-
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
-        debt = self.get_numeric_debt()
         cdate = self.creation_date.strftime(util.SQ_DATE_FORMAT)
         ctime = self.creation_date.strftime(util.SQ_TIME_FORMAT)
         mdate = self.modification_date.strftime(util.SQ_DATE_FORMAT)
         mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
         # Strip timezone
-        mtime = re.sub(r"\+.*", "", mtime)
-        msg = str.replace('"', '""', self.message)
+        mtime = mtime.split('+')[0]
+        msg = self.message.replace('"', '""')
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,
                                           projects.get(self.projectKey, self.endpoint).name, self.component, line,
-                                          debt, '"' + msg + '"']])
+                                          self.debt(), '"' + msg + '"']])
 
     def to_json(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
@@ -404,12 +413,19 @@ class Issue(sq.SqObject):
 
         for old_name, new_name in (('line', 'lineNumber'), ('rule', 'ruleReference')):
             data[new_name] = data.pop(old_name, None)
-        data['effort'] = self.get_numeric_debt()
+        data['effort'] = self.debt()
+        data['url'] = self.url()
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
-        data['path'] = self.component.split(":")[-1]
-        for field in ('endpoint', 'id', 'json', 'changelog', 'url', 'assignee', 'hash', 'sonarqube',
-                      'creation_date', 'modification_date', 'debt', 'component', 'language', 'branch', 'resolution'):
+        if self.component is not None:
+            data['path'] = self.component.split(":")[-1]
+        elif 'path' in self._json:
+            data['path'] = self._json['path']
+        else:
+            util.logger.warning("Can't find file path for %s", str(self))
+            data['path'] = 'Unknown'
+        for field in ('endpoint', 'id', '_json', 'changelog', '_url', 'assignee', 'hash', 'sonarqube',
+                      'creation_date', 'modification_date', '_debt', 'component', 'language', 'branch', 'resolution'):
             data.pop(field, None)
         return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))
 
@@ -425,7 +441,7 @@ class Issue(sq.SqObject):
             return False
 
         util.logger.info("Applying changelog of issue %s to issue %s", source_issue.key, self.key)
-        self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.get_url()})")
+        self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
         for d in sorted(events.keys()):
             event = events[d]
             util.logger.debug("Verifying event %s", str(event))
@@ -619,27 +635,31 @@ def search_by_date(date_start=None, date_stop=None, endpoint=None, params=None):
     return issue_list
 
 
-def search_by_project(project_key, endpoint=None, params=None):
+def search_by_project(project_key, endpoint=None, params=None, search_findings=False):
     if params is None:
         new_params = {}
     else:
         new_params = params.copy()
     branch = new_params.get('branch', None)
-    if branch is None:
-        branch = 'MAIN'
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
-        util.logger.info("Issue search by project %s branch %s", project_key, branch)
         key_list = [project_key]
     issue_list = {}
     for k in key_list:
+        util.logger.info("Issue search by project %s branch %s", k, str(branch))
+        if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ('enterprise', 'datacenter') and search_findings:
+            util.logger.info('Using new export findings to speed up issue export')
+            issue_list.update(projects.Project(k, endpoint).get_findings(branch))
+            continue
+
+        util.logger.info('Traditional issue search by project')
         new_params['componentKeys'] = k
         try:
             project_issue_list = search(endpoint=endpoint, params=new_params)
         except TooManyIssuesError:
             project_issue_list = search_by_date(endpoint=endpoint, params=new_params)
-        util.logger.info("Project %s branch %s has %d issues", k, branch, len(project_issue_list))
+        util.logger.info("Project %s branch %s has %d issues", k, str(branch), len(project_issue_list))
         issue_list.update(project_issue_list)
     return issue_list
 
@@ -661,7 +681,7 @@ def search(endpoint=None, page=None, params=None):
             new_params['p'] = page
         resp = env.get(Issue.SEARCH_API, params=new_params, ctxt=endpoint)
         data = json.loads(resp.text)
-        nbr_issues = data['total']
+        nbr_issues = data['paging']['total']
         nbr_pages = (nbr_issues + Issue.MAX_PAGE_SIZE-1) // Issue.MAX_PAGE_SIZE
         util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, new_params['p'], nbr_pages)
         if page is None and nbr_issues > Issue.MAX_SEARCH:

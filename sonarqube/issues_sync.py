@@ -79,11 +79,11 @@ def __process_exact_sibling__(issue, sibling):
         msg = 'Source issue has no changelog'
     return {
         'target_issue_key': issue.key,
-        'target_issue_url': issue.get_url(),
+        'target_issue_url': issue.url(),
         'target_issue_status': 'synchronized',
         'message': msg,
         'source_issue_key': sibling.key,
-        'source_issue_url': sibling.get_url()
+        'source_issue_url': sibling.url()
     }
 
 
@@ -92,7 +92,7 @@ def __get_issues__(issue_list):
     for issue in issue_list:
         iss_list.append({
             'source_issue_key': issue.key,
-            'source_issue_url': issue.get_url()})
+            'source_issue_url': issue.url()})
     return iss_list
 
 
@@ -100,7 +100,7 @@ def __process_multiple_exact_siblings__(issue, siblings):
     util.logger.info('Multiple matches for issue key %s, cannot automatically apply changelog', str(issue))
     return {
         'target_issue_key': issue.id,
-        'target_issue_url': issue.get_url(),
+        'target_issue_url': issue.url(),
         'target_issue_status': 'unsynchronized',
         'message': 'Multiple matches',
         'matches': __get_issues__(siblings)
@@ -112,7 +112,7 @@ def __process_approx_siblings__(issue, siblings):
                      len(siblings), str(issue))
     return {
         'target_issue_key': issue.key,
-        'target_issue_url': issue.get_url(),
+        'target_issue_url': issue.url(),
         'target_issue_status': 'unsynchronized',
         'message': 'Approximate matches only',
         'matches': __get_issues__(siblings)
@@ -125,7 +125,7 @@ def __process_modified_siblings__(issue, siblings):
         len(siblings), str(issue))
     return {
         'target_issue_key': issue.key,
-        'target_issue_url': issue.get_url(),
+        'target_issue_url': issue.url(),
         'target_issue_status': 'unsynchronized',
         'message': 'Target issue already has a changelog',
         'matches': __get_issues__(siblings)
@@ -134,10 +134,10 @@ def __process_modified_siblings__(issue, siblings):
 
 def __process_no_match__(issue):
     util.logger.info(
-        'Found no match for issue %s', issue.get_url())
+        'Found no match for issue %s', issue.url())
     return {
         'target_issue_key': issue.key,
-        'target_issue_url': issue.get_url(),
+        'target_issue_url': issue.url(),
         'target_issue_status': 'unsynchronized',
         'message': 'No match issue found in source',
         'matches': []
