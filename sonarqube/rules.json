@@ -269,6 +269,12 @@
         "object": "Project",
         "message": "{} has {} XML LoCs, this is suspiciously high, verify scanning settings"
     },
+    "PROJ_SUSPICIOUS_EXCLUSION": {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "Project",
+        "message": "{} has suspicious exclusions '{}', please review analysis properties"
+    },
     "QG_NO_COND": {
         "severity": "HIGH",
         "type": "GOVERNANCE",
