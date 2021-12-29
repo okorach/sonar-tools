@@ -22,12 +22,11 @@
     Abstraction of the SonarQube "project" concept
 
 '''
-import time
 import datetime
 import re
 import json
 import pytz
-from sonarqube import env, issues, hotspots
+from sonarqube import env, issues, hotspots, tasks
 import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
@@ -378,6 +377,9 @@ Is this normal ?", gr['name'], str(self.key))
         util.logger.debug("%s XML LoCs count seems reasonable", str(self))
         return []
 
+    def __audit_bg_tasks(self, audit_settings):
+        return tasks.search_last(component_key=self.key, endpoint=self.endpoint).audit(audit_settings)
+
     def audit(self, audit_settings):
         util.logger.debug("Auditing %s", str(self))
         return (
@@ -387,6 +389,7 @@ Is this normal ?", gr['name'], str(self.key))
             + self.__audit_visibility__(audit_settings)
             + self.__audit_languages__(audit_settings)
             + self.__audit_permissions__(audit_settings)
+            + self.__audit_bg_tasks(audit_settings)
         )
 
     def delete_if_obsolete(self, days=180):
@@ -400,29 +403,6 @@ Is this normal ?", gr['name'], str(self.key))
             return self.delete()
         return False
 
-    def __wait_for_task_completion__(self, task_id, params, timeout=180):
-        finished = False
-        wait_time = 0
-        sleep_time = 0.5
-        while not finished:
-            time.sleep(sleep_time)
-            wait_time += sleep_time
-            sleep_time *= 2
-            resp = env.get('ce/activity', params=params, ctxt=self.endpoint)
-            data = json.loads(resp.text)
-            for t in data['tasks']:
-                if t['id'] != task_id:
-                    continue
-                status = t['status']
-                if status == 'SUCCESS' or status == 'FAILED' or status == 'CANCELED':
-                    finished = True
-                    break
-            util.logger.debug("Task id '%s' is %s", task_id, status)
-            if wait_time >= timeout:
-                status = 'TIMEOUT'
-                finished = True
-        return status
-
     def export(self, timeout=180):
         util.logger.info('Exporting %s (synchronously)', str(self))
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in ['enterprise', 'datacenter']:
@@ -432,13 +412,8 @@ Is this normal ?", gr['name'], str(self.key))
         if resp.status_code != 200:
             return {'status': f'HTTP_ERROR {resp.status_code}'}
         data = json.loads(resp.text)
-        params = {'type': 'PROJECT_EXPORT', 'status': 'PENDING,IN_PROGRESS,SUCCESS,FAILED,CANCELED'}
-        if self.endpoint.version() >= (8, 0, 0):
-            params['component'] = self.key
-        else:
-            params['q'] = self.key
-        status = self.__wait_for_task_completion__(data['taskId'], params=params, timeout=timeout)
-        if status != 'SUCCESS':
+        status = tasks.Task(task_id=data['taskId'], endpoint=self.endpoint, data=data).wait_for_completion(timeout=timeout)
+        if status != tasks.SUCCESS:
             util.logger.error("%s export %s", str(self), status)
             return {'status': status}
         resp = env.get('project_dump/status', params={'key': self.key}, ctxt=self.endpoint)

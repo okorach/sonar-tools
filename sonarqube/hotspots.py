@@ -131,16 +131,12 @@ class Hotspot(sq.SqObject):
         return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))
 
 
-def search_by_project(project_key, endpoint=None, params=None):
-    if params is None:
-        new_params = {}
-    else:
-        new_params = params.copy()
-    branch = new_params.get('branch', None)
+def search_by_project(project_key, endpoint=None, branch=None):
+    new_params = {}
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
-        key_list = [project_key]
+        key_list = project_key.split(',')
     hotspots = {}
     for k in key_list:
         util.logger.info("Hotspots search by project %s branch %s", k, str(branch))

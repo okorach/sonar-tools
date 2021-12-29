@@ -167,6 +167,12 @@ sonar-audit --what settings,qg,qp
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
+  - Suspicious exclusions:
+    - Usage of `**/<directory>/**/*` pattern
+    - Usage of `**/*.<extension>` pattern
+    - Exceptions: `__pycache__`, `node_modules`, `vendor`, `lib`, `libs` directories
+    - Above patterns and exceptions are configurable
+
 - Portfolios: (if `audit.portfolios` is `yes`)
   - Empty portfolios (with no projects) if `audit.portfolios.empty` is `yes`
   - Portfolios composed of a single project if `audit.portfolios.singleton` is `yes`

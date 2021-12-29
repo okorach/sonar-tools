@@ -90,6 +90,8 @@ class RuleId(enum.Enum):
 
     PROJ_XML_LOCS = 1300
 
+    PROJ_SUSPICIOUS_EXCLUSION = 1301
+
     QG_NO_COND = 2000
     QG_TOO_MANY_COND = 2001
     QG_NOT_USED = 2002
