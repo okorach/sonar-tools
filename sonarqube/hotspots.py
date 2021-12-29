@@ -140,7 +140,7 @@ def search_by_project(project_key, endpoint=None, params=None):
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
-        key_list = [project_key]
+        key_list = project_key.split(',')
     hotspots = {}
     for k in key_list:
         util.logger.info("Hotspots search by project %s branch %s", k, str(branch))
