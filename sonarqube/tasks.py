@@ -54,8 +54,6 @@ class Task(sq.SqObject):
         self._json = data
         self._context = None
         self._error = None
-        self._comp_key = None
-        self._execution_time = None
         self._submitted_at = None
         self._started_at = None
         self._ended_at = None
@@ -130,9 +128,6 @@ class Task(sq.SqObject):
                 status = TIMEOUT
             util.logger.debug("%s is '%s'", str(self), status)
         return status
-
-
-
 
     def scanner_context(self):
         if not self.has_scanner_context():
