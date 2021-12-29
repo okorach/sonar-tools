@@ -162,6 +162,7 @@ class Task(sq.SqObject):
         return problems
 
     def audit(self, audit_settings):
+        util.logger.debug('Auditing background %s', str(self))
         if not audit_settings['audit.projects.exclusions']:
             util.logger.info('Project exclusions auditing disabled, skipping...')
             return []
@@ -176,7 +177,7 @@ class Task(sq.SqObject):
         for line in context:
             if not line.startswith('sonar'):
                 continue
-            (prop, val) = line.split("=", 2)
+            (prop, val) = line.split("=", 1)
             if prop not in ('sonar.exclusions', 'sonar.global.exclusions'):
                 continue
             for excl in [x.strip() for x in val.split(',')]:
