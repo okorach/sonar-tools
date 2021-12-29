@@ -1,5 +1,5 @@
 
-set -euxo pipefail
+set -euo pipefail
 
 echo "Hello $*"
 
@@ -24,8 +24,10 @@ do
     [ -s "issues-$env-1.csv" ]
     sonar-issues-export -o issues-$env-1.json
     [ -s "issues-$env-1.json" ]
-    sonar-issues-export -f json -k audio-video-tools,okorach_sonarqube-tools >issues-$env-2.json
+    sonar-issues-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools >issues-$env-2.json
     [ -s "issues-$env-2.json" ]
+    sonar-issues-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >issues-$env-3.json
+    [ -s "issues-$env-3.json" ]
 
     sonar-audit || echo "OK" >audit-$env-1.csv
     [ -s "audit-$env-1.csv" ]
