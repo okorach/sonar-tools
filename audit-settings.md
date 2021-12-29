@@ -137,6 +137,12 @@ audit.projects.visibility = yes
 # Audit (and warn) for suspicious projects permissions
 audit.projects.permissions = yes
 
+# Audit (and warn) for suspicious projects exclusions
+audit.projects.exclusions = yes
+audit.projects.suspiciousExclusionsPatterns = \*\*/[^\/]+/\*\*, \*\*\/\*\.\w+, **/*\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)
+audit.projects.suspiciousExclusionsExceptions = \*\*/(__pycache__|lib|lib|vendor|node_modules)\/\*\*
+
+
 # Audit (and warn) for projects whose last analysis date is older than maxLastAnalysisAge
 audit.projects.lastAnalysisDate = yes
 audit.projects.maxLastAnalysisAge = 180
