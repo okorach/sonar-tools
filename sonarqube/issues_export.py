@@ -107,10 +107,10 @@ def main():
     params.update({'env': sqenv})
 
     project_key = kwargs.get('componentKeys', None)
-    all_issues = issues.search_by_project(endpoint=sqenv, project_key=project_key, search_findings=kwargs['useFindings'])
+    all_issues = issues.search_by_project(project_key, sqenv, search_findings=kwargs['useFindings'])
 
     if not kwargs['useFindings']:
-        all_issues.update(hotspots.search_by_project(endpoint=sqenv, params=params, project_key=project_key))
+        all_issues.update(hotspots.search_by_project(project_key, sqenv))
     fmt = kwargs['format']
     if kwargs.get('outputFile', None) is not None:
         ext = kwargs['outputFile'].split('.')[-1].lower()
