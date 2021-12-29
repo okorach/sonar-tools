@@ -44,7 +44,8 @@ TIMEOUT = 'TIMEOUT'
 
 STATUSES = (SUCCESS, PENDING, IN_PROGRESS, FAILED, CANCELED)
 
-SUSPICIOUS_EXCLUSIONS = (r'\*\*/[^\/]+/\*\*', r'\*\*\/\*\.\w+')
+__SUSPICIOUS_EXCLUSIONS = None
+__SUSPICIOUS_EXCEPTIONS = None
 
 class Task(sq.SqObject):
 
@@ -133,6 +134,24 @@ class Task(sq.SqObject):
         self.__load_context()
         return self._json.get('errorMessage', None)
 
+    def __audit_exclusions(self, exclusion_pattern, susp_exclusions, susp_exceptions):
+        problems = []
+        for susp in susp_exclusions:
+            if not re.search(rf"{susp}", exclusion_pattern):
+                continue
+            is_exception = False
+            for exception in susp_exceptions:
+                if re.search(rf"{exception}", exclusion_pattern):
+                    util.logger.debug("Exclusion %s matches exception %s, no audit problem will be raised",
+                                       exclusion_pattern, exception)
+                    is_exception = True
+                    break
+            if not is_exception:
+                rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
+                msg = rule.msg.format(f"project key '{self.component()}'", exclusion_pattern)
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+        return problems
+
     def audit(self, audit_settings):
         if not audit_settings['audit.projects.exclusions']:
             util.logger.info('Project exclusions auditing disabled, skipping...')
@@ -143,6 +162,8 @@ class Task(sq.SqObject):
             return []
         problems = []
         context = self.scanner_context().split("\n  - ")
+        susp_exclusions = _get_suspicious_exclusions(audit_settings['audit.projects.suspiciousExclusionsPatterns'])
+        susp_exceptions = _get_suspicious_exceptions(audit_settings['audit.projects.suspiciousExclusionsExceptions'])
         for line in context:
             if not line.startswith('sonar'):
                 continue
@@ -150,12 +171,7 @@ class Task(sq.SqObject):
             if prop not in ('sonar.exclusions', 'sonar.global.exclusions'):
                 continue
             for excl in [x.strip() for x in val.split(',')]:
-                for susp in SUSPICIOUS_EXCLUSIONS:
-                    if not re.search(susp, excl):
-                        continue
-                    rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
-                    msg = rule.msg.format(f"project key '{self.component()}'", excl)
-                    problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
         return problems
 
 
@@ -182,3 +198,19 @@ def search_last(component_key, endpoint=None):
 
 def search_all(component_key, endpoint=None):
     return search(component_key=component_key, endpoint=endpoint)
+
+def _get_suspicious_exclusions(patterns):
+    global __SUSPICIOUS_EXCLUSIONS
+    if __SUSPICIOUS_EXCLUSIONS is not None:
+        return __SUSPICIOUS_EXCLUSIONS
+    __SUSPICIOUS_EXCLUSIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
+             for x in patterns.split(',')]
+    return __SUSPICIOUS_EXCLUSIONS
+
+def _get_suspicious_exceptions(patterns):
+    global __SUSPICIOUS_EXCEPTIONS
+    if __SUSPICIOUS_EXCEPTIONS is not None:
+        return __SUSPICIOUS_EXCEPTIONS
+    __SUSPICIOUS_EXCEPTIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
+             for x in patterns.split(',')]
+    return __SUSPICIOUS_EXCEPTIONS
