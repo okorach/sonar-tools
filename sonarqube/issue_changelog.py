@@ -175,6 +175,7 @@ def reopen_diff_to_changelog(oldval):
 
 def assignee_diff_to_changelog(d):
     if 'newValue' in d:
+        # FIXME: Unfortunately the 'newValue' field is the potentially non unique user name, not the unique login
         return {'event': 'assign', 'value': d['newValue']}
     return {'event': 'unassign', 'value': None}
 
