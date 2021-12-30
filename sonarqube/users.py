@@ -128,3 +128,11 @@ def audit(audit_settings, endpoint=None):
     for _, u in search(endpoint=endpoint).items():
         problems += u.audit(audit_settings)
     return problems
+
+def get_login_from_name(name, endpoint=None):
+    u_list = search(params={'q': name}, endpoint=endpoint)
+    if not u_list:
+        return None
+    if len(u_list) > 1:
+        util.logger.warning("More than 1 user with name '%s', will return the 1st one", name)
+    return list(u_list.keys()).pop(0)
