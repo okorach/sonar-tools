@@ -493,11 +493,15 @@ class Issue(sq.SqObject):
         start_change = len(self.changelog) + 1
         util.logger.info("Applying changelog of issue %s to issue %s, from change %d",
                          source_issue.key, self.key, start_change)
+        comment_added = False
         for d in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
                 util.logger.debug("Skipping change %s", str(events[d]))
                 continue
+            if not comment_added:
+                self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
+                comment_added = True
             self.__apply_event(events[d])
         return True
 
