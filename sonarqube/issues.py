@@ -288,20 +288,27 @@ class Issue(sq.SqObject):
         '''Returns list of users that commented the issue'''
         return util.unique_dict_field(self.get_comments(), 'user')
 
-    def search_siblings(self, issue_list, allowed_users=None, **kwargs):
+    def modifiers_excluding_service_users(self, service_users):
+        mods = []
+        for u in self.modifiers():
+            if u not in service_users:
+                mods.append(u)
+        return mods
+
+    def search_siblings(self, issue_list, allowed_users=None, ignore_component=False, **kwargs):
         exact_matches = []
         approx_matches = []
         match_but_modified = []
         for key, issue in issue_list.items():
             if key == self.key:
                 continue
-            if issue.strictly_identical_to(self, **kwargs):
+            if issue.strictly_identical_to(self, ignore_component, **kwargs):
                 util.logger.debug("Issues %s and %s are strictly identical", self.key, key)
                 if self.__has_sync_breaking_changelog(allowed_users):
                     match_but_modified.append(issue)
                 else:
                     exact_matches.append(issue)
-            elif issue.almost_identical_to(self, **kwargs):
+            elif issue.almost_identical_to(self, ignore_component, **kwargs):
                 util.logger.debug("Issues %s and %s are almost identical", self.key, key)
                 if self.__has_sync_breaking_changelog(allowed_users):
                     match_but_modified.append(issue)
@@ -338,16 +345,16 @@ class Issue(sq.SqObject):
             self.debt() == another_issue.debt()
         )
 
-    def strictly_identical_to(self, another_issue, **kwargs):
+    def strictly_identical_to(self, another_issue, ignore_component=False):
         return (
             self.rule == another_issue.rule and
             self.hash == another_issue.hash and
             self.message == another_issue.message and
             self.debt() == another_issue.debt() and
-            (self.component == another_issue.component or kwargs.get('ignore_component', False))
+            (self.component == another_issue.component or ignore_component)
         )
 
-    def almost_identical_to(self, another_issue, **kwargs):
+    def almost_identical_to(self, another_issue, ignore_component=False, **kwargs):
         if self.rule != another_issue.rule or self.hash != another_issue.hash:
             return False
         score = 0
@@ -357,7 +364,7 @@ class Issue(sq.SqObject):
             score += 1
         if self.line == another_issue.line or kwargs.get('ignore_line', False):
             score += 1
-        if self.component == another_issue.component or kwargs.get('ignore_component', False):
+        if self.component == another_issue.component or ignore_component:
             score += 1
         if self.author == another_issue.author or kwargs.get('ignore_author', False):
             score += 1
@@ -636,6 +643,8 @@ def _search_all(params, endpoint=None, raise_error=True):
 def search_by_project(project_key, endpoint=None, branch=None, params=None, search_findings=False):
     if params is None:
         params = {}
+    if branch is not None:
+        params['branch'] = branch
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
