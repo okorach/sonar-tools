@@ -34,7 +34,7 @@ from sonarqube import env, issues, version
 import sonarqube.utilities as util
 
 
-def parse_args(desc):
+def __parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_component_args(parser)
     parser = util.set_target_args(parser)
@@ -46,7 +46,7 @@ def parse_args(desc):
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
-    parser.add_argument('--users', required=True, help='List of services users used for issue-sync')
+    # parser.add_argument('--users', required=True, help='List of services users used for issue-sync')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
 
     return util.parse_and_check_token(parser)
@@ -157,7 +157,7 @@ def _dump_report_(report, file):
 
 
 def main():
-    args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
+    args = __parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     source_env = env.Environment(url=args.url, token=args.token)
     params = vars(args)
@@ -167,13 +167,13 @@ def main():
     target_url = params.get('urlTarget', None)
     if target_url is None:
         target_url = args.url
-    target_token  = params.get('tokenTarget', None)
+    target_token = params.get('tokenTarget', None)
     if target_token is None:
         target_token = args.token
     target_env = env.Environment(url=target_url, token=target_token)
 
     __verify_branch_params__(args.sourceBranch, args.targetBranch)
-    users = [x.strip() for x in args.users.split(',')]
+    # users = [x.strip() for x in args.users.split(',')]
 
     for opt in ('url', 'token', 'urlTarget', 'tokenTarget'):
         params.pop(opt, None)
