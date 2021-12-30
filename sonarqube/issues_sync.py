@@ -241,8 +241,7 @@ def main():
         util.logger.info("Found %d issues with manual changes on project %s branch %s",
             len(src_issues), source_key, source_branch)
         tgt_issues = issues.search_by_project(target_key, endpoint=source_env, params=tgt_params)
-        util.logger.info("Found %d issues with manual changes on project %s branch %s",
-            len(tgt_issues), target_key, target_branch)
+        util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
         report = sync_issues_list(src_issues, tgt_issues, users, ignore_component=(target_key != source_key))
 
     elif target_url is not None and target_key is not None:
@@ -252,12 +251,10 @@ def main():
         for key, issue in issues.search_by_project(source_key, endpoint=source_env, params=None).items():
             if issue.has_changelog():
                 src_issues[key] = issue
-        util.logger.info("Found %d issues with manual changes on project %s branch %s",
-            len(src_issues), source_key, source_branch)
+        util.logger.info("Found %d issues with manual changes on project %s", len(src_issues), source_key)
 
         tgt_issues = issues.search_by_project(target_key, endpoint=target_env, params=None)
-        util.logger.info("Found %d issues with manual changes on project %s branch %s",
-            len(tgt_issues), target_key, target_branch)
+        util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
         report = sync_issues_list(src_issues, tgt_issues, users, ignore_component=(target_key != source_key))
 
     _dump_report_(report, args.file)
