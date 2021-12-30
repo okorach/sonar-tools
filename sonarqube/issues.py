@@ -280,15 +280,19 @@ class Issue(sq.SqObject):
             if key == self.key:
                 continue
             if issue.strictly_identical_to(self, **kwargs):
+                util.logger.debug("Issues %s and %s are strictly identical", self.key, key)
                 if self.has_changelog():
                     match_but_modified.append(issue)
                 else:
                     exact_matches.append(issue)
             elif issue.almost_identical_to(self, **kwargs):
+                util.logger.debug("Issues %s and %s are almost identical", self.key, key)
                 if issue.has_changelog():
                     match_but_modified.append(issue)
                 else:
                     approx_matches.append(issue)
+            else:
+                util.logger.debug("Issues %s and %s are not siblings", self.key, key)
         return (exact_matches, approx_matches, match_but_modified)
 
     def is_wont_fix(self):
@@ -603,8 +607,9 @@ def _search_all(params, endpoint=None, raise_error=True):
     return issue_list
 
 
-def search_by_project(project_key, endpoint=None, branch=None, search_findings=False):
-    params = {}
+def search_by_project(project_key, endpoint=None, branch=None, params=None, search_findings=False):
+    if params is None:
+        params = {}
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:

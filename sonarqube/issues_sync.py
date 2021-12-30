@@ -46,29 +46,23 @@ def parse_args(desc):
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
+    parser.add_argument('--users', required=True, help='List of services users used for issue-sync')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
 
     return util.parse_and_check_token(parser)
 
 
-def __process_arguments__(params):
-    for key in params.copy():
-        if params[key] is None:
-            del params[key]
-    params['projectKey'] = params['componentKeys']
-    tgt_params = params.copy()
-    if 'targetComponentKeys' in tgt_params and tgt_params['targetComponentKeys'] is not None:
-        tgt_params['projectKey'] = tgt_params['targetComponentKeys']
-        tgt_params['componentKeys'] = tgt_params['targetComponentKeys']
-    # Add SQ environment
-
+def __process_arguments(params):
+    src_params = {'componentKeys': params['componentKeys']}
     if 'sourceBranch' in params and params['sourceBranch'] is not None:
-        params['branch'] = params['sourceBranch']
-    params.pop('sourceBranch', 0)
+        src_params['branch'] = params['sourceBranch']
+
+    tgt_params = {'componentKeys': params['componentKeys']}
+    if 'targetComponentKeys' in params and params['targetComponentKeys'] is not None:
+        tgt_params = {'componentKeys': params['targetComponentKeys']}
     if 'targetBranch' in params and params['targetBranch'] is not None:
         tgt_params['branch'] = params['targetBranch']
-    params.pop('targetBranch', 0)
-    return (params, tgt_params)
+    return (src_params, tgt_params)
 
 
 def __process_exact_sibling__(issue, sibling):
@@ -164,37 +158,41 @@ def _dump_report_(report, file):
 
 def main():
     args = parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     source_env = env.Environment(url=args.url, token=args.token)
-
     params = vars(args)
     util.check_environment(params)
-    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
+    source_key = params['componentKeys']
+    target_key = params.get('targetComponentKeys', source_key)
+    target_url = params.get('urlTarget', None)
+    if target_url is None:
+        target_url = args.url
+    target_token  = params.get('tokenTarget', None)
+    if target_token is None:
+        target_token = args.token
+    target_env = env.Environment(url=target_url, token=target_token)
 
     __verify_branch_params__(args.sourceBranch, args.targetBranch)
+    users = [x.strip() for x in args.users.split(',')]
 
-    if args.urlTarget is None:
-        args.urlTarget = args.url
-    if args.tokenTarget is None:
-        args.tokenTarget = args.token
-    util.logger.debug("Target = %s@%s", args.tokenTarget, args.urlTarget)
-    target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
+    for opt in ('url', 'token', 'urlTarget', 'tokenTarget'):
+        params.pop(opt, None)
+    (src_params, tgt_params) = __process_arguments(params)
 
-    (params, tgt_params) = __process_arguments__(params)
-
-    all_source_issues = issues.search_by_project(params['projectKey'], endpoint=source_env, params=params)
+    all_source_issues = issues.search_by_project(source_key, endpoint=source_env, params=src_params)
     manual_source_issues = {}
     for key, issue in all_source_issues.items():
         if issue.has_changelog():
             manual_source_issues[key] = issue
     all_source_issues = manual_source_issues
-
     util.logger.info("Found %d issues with manual changes on project %s branch %s",
-        len(all_source_issues), params['projectKey'], params['branch'])
+        len(all_source_issues), src_params['componentKeys'], src_params['branch'])
 
-    all_target_issues = issues.search_by_project(params['projectKey'], endpoint=target_env, params=tgt_params)
-    util.logger.info("Found %d target issues on target project/branch", len(all_target_issues))
+    all_target_issues = issues.search_by_project(target_key, endpoint=target_env, params=tgt_params)
+    util.logger.info("Found %d issues with manual changes on project %s branch %s",
+        len(all_target_issues), tgt_params['componentKeys'], tgt_params['branch'])
 
-    ignore_component = tgt_params['projectKey'] != params['projectKey']
+    ignore_component = target_key != source_key
     nb_applies = 0
     nb_approx_match = 0
     nb_modified_siblings = 0
