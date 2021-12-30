@@ -30,7 +30,7 @@
 
 import sys
 import json
-from sonarqube import env, issues, version
+from sonarqube import env, issues, projects, version
 import sonarqube.utilities as util
 
 
@@ -138,12 +138,6 @@ def __process_no_match__(issue):
     }
 
 
-def __verify_branch_params__(src_branch, tgt_branch):
-    if (src_branch is None and tgt_branch is not None or src_branch is not None and tgt_branch is None):
-        util.logger.error("Both source and target branches should be specified, aborting")
-        sys.exit(2)
-
-
 def _dump_report_(report, file):
     if file is None:
         f = sys.stdout
@@ -156,43 +150,7 @@ def _dump_report_(report, file):
         f.close()
 
 
-def main():
-    args = __parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
-    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-    source_env = env.Environment(url=args.url, token=args.token)
-    params = vars(args)
-    util.check_environment(params)
-    source_key = params['componentKeys']
-    target_key = params.get('targetComponentKeys', source_key)
-    target_url = params.get('urlTarget', None)
-    if target_url is None:
-        target_url = args.url
-    target_token = params.get('tokenTarget', None)
-    if target_token is None:
-        target_token = args.token
-    target_env = env.Environment(url=target_url, token=target_token)
-
-    __verify_branch_params__(args.sourceBranch, args.targetBranch)
-    users = [x.strip() for x in args.users.split(',')]
-
-    for opt in ('url', 'token', 'urlTarget', 'tokenTarget'):
-        params.pop(opt, None)
-    (src_params, tgt_params) = __process_arguments(params)
-
-    all_source_issues = issues.search_by_project(source_key, endpoint=source_env, params=src_params)
-    manual_source_issues = {}
-    for key, issue in all_source_issues.items():
-        if issue.has_changelog():
-            manual_source_issues[key] = issue
-    all_source_issues = manual_source_issues
-    util.logger.info("Found %d issues with manual changes on project %s branch %s",
-        len(all_source_issues), src_params['componentKeys'], src_params['branch'])
-
-    all_target_issues = issues.search_by_project(target_key, endpoint=target_env, params=tgt_params)
-    util.logger.info("Found %d issues with manual changes on project %s branch %s",
-        len(all_target_issues), tgt_params['componentKeys'], tgt_params['branch'])
-
-    ignore_component = target_key != source_key
+def sync_issues_list(src_issues, tgt_issues, users, ignore_component=False):
     nb_applies = 0
     nb_approx_match = 0
     nb_modified_siblings = 0
@@ -201,35 +159,29 @@ def main():
     nb_no_changelog = 0
     report = []
 
-    for _, issue in all_target_issues.items():
+    for _, issue in tgt_issues.items():
         util.logger.debug('Searching sibling for issue %s', str(issue))
         (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
-            all_source_issues, allowed_users=users, ignore_component=ignore_component)
+            src_issues, allowed_users=users, ignore_component=ignore_component)
         if len(exact_siblings) == 1:
             report.append(__process_exact_sibling__(issue, exact_siblings[0]))
             if exact_siblings[0].has_changelog():
                 nb_applies += 1
             else:
                 nb_no_changelog += 1
-            continue
-        if len(exact_siblings) > 1:
+        elif len(exact_siblings) > 1:
             report.append(__process_multiple_exact_siblings__(issue, exact_siblings))
             nb_multiple_matches += 1
-            continue
-        if approx_siblings:
+        elif approx_siblings:
             report.append(__process_approx_siblings__(issue, approx_siblings))
             nb_approx_match += 1
-            continue
-        if modified_siblings:
+        elif modified_siblings:
             nb_modified_siblings += 1
             report.append(__process_modified_siblings__(issue, modified_siblings))
-            continue
-        if not exact_siblings and not approx_siblings and not modified_siblings:
+        elif not exact_siblings and not approx_siblings and not modified_siblings:
             nb_no_match += 1
-            # report.append(__process_no_match__(issue))
 
-    _dump_report_(report, args.file)
-    util.logger.info("%d issues to sync in target, %d issues in source", len(all_target_issues), len(all_source_issues))
+    util.logger.info("%d issues to sync in target, %d issues in source", len(tgt_issues), len(src_issues))
     util.logger.info("%d issues were already in sync since source had no changelog", nb_no_changelog)
     util.logger.info("%d issues were synchronized successfully", nb_applies)
     util.logger.info("%d issues could not be synchronized because no match was found in source", nb_no_match)
@@ -237,6 +189,75 @@ def main():
     util.logger.info("%d issues could not be synchronized because the match was approximate", nb_approx_match)
     util.logger.info("%d issues could not be synchronized because target issue already had a changelog",
                      nb_modified_siblings)
+    return report
+
+def sync_project_branches(project_key, src_branch, tgt_branch, users, endpoint):
+    src_issues = {}
+    for key, issue in issues.search_by_project(project_key, branch=src_branch, endpoint=endpoint).items():
+        if issue.has_changelog() and len(issue.modifiers_excluding_service_users(users)) > 0:
+            src_issues[key] = issue
+    util.logger.info("Found %d issues with manual changes on project %s branch %s",
+        len(src_issues), project_key, src_branch)
+    tgt_issues = issues.search_by_project(project_key, branch=tgt_branch, endpoint=endpoint)
+    util.logger.info("Found %d issues with manual changes on project %s target branch %s",
+        len(tgt_issues), project_key, tgt_branch)
+    return sync_issues_list(src_issues, tgt_issues, users)
+
+
+def main():
+    args = __parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
+    util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
+    source_env = env.Environment(url=args.url, token=args.token)
+    params = vars(args)
+    util.check_environment(params)
+    source_key = params['componentKeys']
+    target_key = params.get('targetComponentKeys', None)
+    source_branch = params.get('sourceBranch', None)
+    target_branch = params.get('targetBranch', None)
+    target_url = params.get('urlTarget', None)
+    users = [x.strip() for x in args.users.split(',')]
+
+    for opt in ('url', 'token', 'urlTarget', 'tokenTarget'):
+        params.pop(opt, None)
+    (src_params, tgt_params) = __process_arguments(params)
+    report = []
+    if target_url is None and target_key is None and source_branch is None and target_branch is None:
+        # Sync all branches of a given project
+        branches = projects.Project(key=source_key, endpoint=source_env).get_branches()
+        for b1 in branches:
+            for b2 in branches:
+                report += sync_project_branches(source_key, b1.name, b2.name, users, endpoint=source_env)
+
+    elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
+        # Sync 2 branches of a given project
+        report = sync_project_branches(source_key, source_branch, target_branch, users, endpoint=source_env)
+
+    elif target_url is None and target_key is not None:
+        # sync main branch of 2 projects
+        src_issues = {}
+        for key, issue in issues.search_by_project(source_key, endpoint=source_env, params=None).items():
+            if issue.has_changelog():
+                src_issues[key] = issue
+        util.logger.info("Found %d issues with manual changes on project %s branch %s",
+            len(src_issues), source_key, source_branch)
+        tgt_issues = issues.search_by_project(target_key, endpoint=source_env, params=tgt_params)
+        util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
+        report = sync_issues_list(src_issues, tgt_issues, users, ignore_component=(target_key != source_key))
+
+    elif target_url is not None and target_key is not None:
+        # sync main branch of 2 projects on different platforms
+        target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
+        src_issues = {}
+        for key, issue in issues.search_by_project(source_key, endpoint=source_env, params=None).items():
+            if issue.has_changelog():
+                src_issues[key] = issue
+        util.logger.info("Found %d issues with manual changes on project %s", len(src_issues), source_key)
+
+        tgt_issues = issues.search_by_project(target_key, endpoint=target_env, params=None)
+        util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
+        report = sync_issues_list(src_issues, tgt_issues, users, ignore_component=(target_key != source_key))
+
+    _dump_report_(report, args.file)
 
 
 if __name__ == '__main__':
