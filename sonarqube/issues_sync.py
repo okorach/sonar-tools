@@ -46,7 +46,7 @@ def __parse_args(desc):
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
-    # parser.add_argument('--users', required=True, help='List of services users used for issue-sync')
+    parser.add_argument('--users', required=True, help='List of services users used for issue-sync')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
 
     return util.parse_and_check_token(parser)
@@ -173,7 +173,7 @@ def main():
     target_env = env.Environment(url=target_url, token=target_token)
 
     __verify_branch_params__(args.sourceBranch, args.targetBranch)
-    # users = [x.strip() for x in args.users.split(',')]
+    users = [x.strip() for x in args.users.split(',')]
 
     for opt in ('url', 'token', 'urlTarget', 'tokenTarget'):
         params.pop(opt, None)
@@ -204,7 +204,7 @@ def main():
     for _, issue in all_target_issues.items():
         util.logger.debug('Searching sibling for issue %s', str(issue))
         (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
-            all_source_issues, ignore_component=ignore_component)
+            all_source_issues, allowed_users=users, ignore_component=ignore_component)
         if len(exact_siblings) == 1:
             report.append(__process_exact_sibling__(issue, exact_siblings[0]))
             if exact_siblings[0].has_changelog():
