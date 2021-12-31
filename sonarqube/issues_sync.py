@@ -198,7 +198,7 @@ def sync_branches(key1, endpoint1, users, key2=None, endpoint2=None, branch1=Non
         src_issues[key] = issue
     util.logger.info("Found %d issues with manual changes on project %s branch %s", len(src_issues), key1, branch1)
     if len(src_issues) <= 0:
-        util.logger.info("No issues with manual changes on project %s branch %s, skipping...", project_key, src_branch)
+        util.logger.info("No issues with manual changes on project %s branch %s, skipping...", key1, branch1)
         return {}
     tgt_issues = issues.search_by_project(key2, endpoint=endpoint2, branch=branch2)
     util.logger.info("Found %d issues on project %s branch %s", len(tgt_issues), key2, branch2)
@@ -294,7 +294,7 @@ def main():
                 report = sync_issues_list(src_issues, tgt_issues, users, settings)
             else:
                 # sync main all branches of 2 projects on different platforms
-                report = sync_project_branches_between_platforms(source_key, target_key, users, 
+                report = sync_project_branches_between_platforms(source_key, target_key, users,
                     endpoint=source_env, target_endpoint=target_env, settings=settings)
 
         __dump_report(report, args.file)
