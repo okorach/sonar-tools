@@ -46,28 +46,21 @@ def __parse_args(desc):
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
-    parser.add_argument('--users', required=True, help='List of services users used for issue-sync')
+    parser.add_argument('--users', required=True, help='Comma separated list of services users used for issue-sync')
+    parser.add_argument('--nocomment', required=False, default=False, action='store_true',
+                        help='If specified, will not comment related to the sync in the target issue')
+    # parser.add_argument('--noassign', required=False, default=False, action='store_true',
+    #                    help="If specified, will not apply issue assignment in the target issue")
+    parser.add_argument('--nolink', required=False, default=False, action='store_true',
+                        help="If specified, will not add a link to source issue in the target issue comments")
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
 
     return util.parse_and_check_token(parser)
 
 
-def __process_arguments(params):
-    src_params = {'componentKeys': params['componentKeys']}
-    if 'sourceBranch' in params and params['sourceBranch'] is not None:
-        src_params['branch'] = params['sourceBranch']
-
-    tgt_params = {'componentKeys': params['componentKeys']}
-    if 'targetComponentKeys' in params and params['targetComponentKeys'] is not None:
-        tgt_params = {'componentKeys': params['targetComponentKeys']}
-    if 'targetBranch' in params and params['targetBranch'] is not None:
-        tgt_params['branch'] = params['targetBranch']
-    return (src_params, tgt_params)
-
-
-def __process_exact_sibling__(issue, sibling):
+def __process_exact_sibling(issue, sibling, settings):
     if sibling.has_changelog():
-        issue.apply_changelog(sibling)
+        issue.apply_changelog(sibling, settings)
         msg = 'Source issue changelog applied successfully'
     else:
         msg = 'Source issue has no changelog'
@@ -81,7 +74,7 @@ def __process_exact_sibling__(issue, sibling):
     }
 
 
-def __get_issues__(issue_list):
+def __get_issues(issue_list):
     iss_list = []
     for issue in issue_list:
         iss_list.append({
@@ -90,18 +83,18 @@ def __get_issues__(issue_list):
     return iss_list
 
 
-def __process_multiple_exact_siblings__(issue, siblings):
+def __process_multiple_exact_siblings(issue, siblings):
     util.logger.info('Multiple matches for issue key %s, cannot automatically apply changelog', str(issue))
     return {
         'target_issue_key': issue.id,
         'target_issue_url': issue.url(),
         'target_issue_status': 'unsynchronized',
         'message': 'Multiple matches',
-        'matches': __get_issues__(siblings)
+        'matches': __get_issues(siblings)
     }
 
 
-def __process_approx_siblings__(issue, siblings):
+def __process_approx_siblings(issue, siblings):
     util.logger.info('Found %d approximate siblings for issue %s, cannot automatically apply changelog',
                      len(siblings), str(issue))
     return {
@@ -109,11 +102,11 @@ def __process_approx_siblings__(issue, siblings):
         'target_issue_url': issue.url(),
         'target_issue_status': 'unsynchronized',
         'message': 'Approximate matches only',
-        'matches': __get_issues__(siblings)
+        'matches': __get_issues(siblings)
     }
 
 
-def __process_modified_siblings__(issue, siblings):
+def __process_modified_siblings(issue, siblings):
     util.logger.info(
         'Found %d siblings for issue %s, but they already have a changelog, cannot automatically apply changelog',
         len(siblings), str(issue))
@@ -122,11 +115,11 @@ def __process_modified_siblings__(issue, siblings):
         'target_issue_url': issue.url(),
         'target_issue_status': 'unsynchronized',
         'message': 'Target issue already has a changelog',
-        'matches': __get_issues__(siblings)
+        'matches': __get_issues(siblings)
     }
 
 
-def __process_no_match__(issue):
+def __process_no_match(issue):
     util.logger.info(
         'Found no match for issue %s', issue.url())
     return {
@@ -138,7 +131,7 @@ def __process_no_match__(issue):
     }
 
 
-def _dump_report_(report, file):
+def __dump_report(report, file):
     if file is None:
         f = sys.stdout
         util.logger.info("Dumping report to stdout")
@@ -150,7 +143,7 @@ def _dump_report_(report, file):
         f.close()
 
 
-def sync_issues_list(src_issues, tgt_issues, users, ignore_component=False):
+def sync_issues_list(src_issues, tgt_issues, users, settings):
     nb_applies = 0
     nb_approx_match = 0
     nb_modified_siblings = 0
@@ -162,22 +155,22 @@ def sync_issues_list(src_issues, tgt_issues, users, ignore_component=False):
     for _, issue in tgt_issues.items():
         util.logger.debug('Searching sibling for issue %s', str(issue))
         (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
-            src_issues, allowed_users=users, ignore_component=ignore_component)
+            src_issues, allowed_users=users, ignore_component=settings[issues.SYNC_IGNORE_COMPONENTS])
         if len(exact_siblings) == 1:
-            report.append(__process_exact_sibling__(issue, exact_siblings[0]))
+            report.append(__process_exact_sibling(issue, exact_siblings[0], settings))
             if exact_siblings[0].has_changelog():
                 nb_applies += 1
             else:
                 nb_no_changelog += 1
         elif len(exact_siblings) > 1:
-            report.append(__process_multiple_exact_siblings__(issue, exact_siblings))
+            report.append(__process_multiple_exact_siblings(issue, exact_siblings))
             nb_multiple_matches += 1
         elif approx_siblings:
-            report.append(__process_approx_siblings__(issue, approx_siblings))
+            report.append(__process_approx_siblings(issue, approx_siblings))
             nb_approx_match += 1
         elif modified_siblings:
             nb_modified_siblings += 1
-            report.append(__process_modified_siblings__(issue, modified_siblings))
+            report.append(__process_modified_siblings(issue, modified_siblings))
         elif not exact_siblings and not approx_siblings and not modified_siblings:
             nb_no_match += 1
 
@@ -191,7 +184,7 @@ def sync_issues_list(src_issues, tgt_issues, users, ignore_component=False):
                      nb_modified_siblings)
     return report
 
-def sync_project_branches(project_key, src_branch, tgt_branch, users, endpoint):
+def sync_project_branches(project_key, src_branch, tgt_branch, users, settings, endpoint):
     src_issues = {}
     for key, issue in issues.search_by_project(project_key, branch=src_branch, endpoint=endpoint).items():
         if issue.has_changelog() and len(issue.modifiers_excluding_service_users(users)) > 0:
@@ -201,7 +194,7 @@ def sync_project_branches(project_key, src_branch, tgt_branch, users, endpoint):
     tgt_issues = issues.search_by_project(project_key, branch=tgt_branch, endpoint=endpoint)
     util.logger.info("Found %d issues with manual changes on project %s target branch %s",
         len(tgt_issues), project_key, tgt_branch)
-    return sync_issues_list(src_issues, tgt_issues, users)
+    return sync_issues_list(src_issues, tgt_issues, users, settings)
 
 
 def main():
@@ -217,20 +210,21 @@ def main():
     target_url = params.get('urlTarget', None)
     users = [x.strip() for x in args.users.split(',')]
 
-    for opt in ('url', 'token', 'urlTarget', 'tokenTarget'):
-        params.pop(opt, None)
-    (src_params, tgt_params) = __process_arguments(params)
+    settings = { issues.SYNC_ADD_COMMENTS:not params['nocomment'],
+                 issues.SYNC_ADD_LINK: not params['nolink'],
+                 issues.SYNC_ASSIGN: True,
+                 issues.SYNC_IGNORE_COMPONENTS: False }
     report = []
     if target_url is None and target_key is None and source_branch is None and target_branch is None:
         # Sync all branches of a given project
         branches = projects.Project(key=source_key, endpoint=source_env).get_branches()
         for b1 in branches:
             for b2 in branches:
-                report += sync_project_branches(source_key, b1.name, b2.name, users, endpoint=source_env)
+                report += sync_project_branches(source_key, b1.name, b2.name, users, settings, endpoint=source_env)
 
     elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
         # Sync 2 branches of a given project
-        report = sync_project_branches(source_key, source_branch, target_branch, users, endpoint=source_env)
+        report = sync_project_branches(source_key, source_branch, target_branch, users, settings, endpoint=source_env)
 
     elif target_url is None and target_key is not None:
         # sync main branch of 2 projects
@@ -240,9 +234,10 @@ def main():
                 src_issues[key] = issue
         util.logger.info("Found %d issues with manual changes on project %s branch %s",
             len(src_issues), source_key, source_branch)
-        tgt_issues = issues.search_by_project(target_key, endpoint=source_env, params=tgt_params)
+        tgt_issues = issues.search_by_project(target_key, endpoint=source_env)
         util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
-        report = sync_issues_list(src_issues, tgt_issues, users, ignore_component=(target_key != source_key))
+        settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
+        report = sync_issues_list(src_issues, tgt_issues, users, settings)
 
     elif target_url is not None and target_key is not None:
         # sync main branch of 2 projects on different platforms
@@ -255,9 +250,10 @@ def main():
 
         tgt_issues = issues.search_by_project(target_key, endpoint=target_env, params=None)
         util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
-        report = sync_issues_list(src_issues, tgt_issues, users, ignore_component=(target_key != source_key))
+        settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
+        report = sync_issues_list(src_issues, tgt_issues, users, settings)
 
-    _dump_report_(report, args.file)
+    __dump_report(report, args.file)
 
 
 if __name__ == '__main__':

@@ -31,6 +31,12 @@ import sonarqube.utilities as util
 import sonarqube.issue_changelog as changelog
 
 
+SYNC_IGNORE_COMPONENTS = 'ignore_components'
+SYNC_ADD_LINK = 'add_link'
+SYNC_ADD_COMMENTS = 'add_comments'
+SYNC_COMMENTS = 'sync_comments'
+SYNC_ASSIGN = 'sync_assignments'
+
 class ApiError(Exception):
     pass
 
@@ -235,9 +241,12 @@ class Issue(sq.SqObject):
     def has_changelog_or_comments(self):
         return self.has_changelog() or self.has_comments()
 
-    def add_comment(self, comment):
+    def add_comment(self, comment, really=True):
         util.logger.debug("Adding comment %s to issue %s", comment, self.key)
-        return self.post('issues/add_comment', {'issue': self.key, 'text': comment})
+        if really:
+            return self.post('issues/add_comment', {'issue': self.key, 'text': comment})
+        else:
+            return None
 
     # def delete_comment(self, comment_id):
 
@@ -455,42 +464,43 @@ class Issue(sq.SqObject):
             data.pop(field, None)
         return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))
 
-    def __apply_event(self, event):
+    def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
         origin = f"originally by *{event['userName']}* on original branch"
         if changelog.is_event_a_severity_change(event):
             self.set_severity(changelog.get_log_new_severity(event))
-            self.add_comment(f"Change of severity {origin}")
+            self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_type_change(event):
             self.set_type(changelog.get_log_new_type(event))
-            self.add_comment(f"Change of issue type {origin}")
+            self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_reopen(event):
             self.reopen()
-            self.add_comment(f"Issue re-open {origin}")
+            self.add_comment(f"Issue re-open {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_fp(event):
             self.mark_as_false_positive()
-            self.add_comment(f"False positive {origin}")
+            self.add_comment(f"False positive {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_wf(event):
             self.mark_as_wont_fix()
-            self.add_comment(f"Won't fix {origin}")
+            self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_reviewed(event):
             self.mark_as_reviewed()
             self.add_comment(f"Hotspot review {origin}")
         elif changelog.is_event_an_assignment(event):
-            self.assign(users.get_login_from_name(event['value'], self.endpoint))
-            self.add_comment(f"Issue assigned {origin}")
+            if settings[SYNC_ASSIGN]:
+                self.assign(users.get_login_from_name(event['value'], self.endpoint))
+                self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_tag_change(event):
             self.set_tags(event['value'].replace(' ', ','))
-            self.add_comment(f"Tag change {origin}")
+            self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_comment(event):
             self.add_comment(event['value'])
-            self.add_comment("Above comment {origin}")
+            self.add_comment("Above comment {origin}", settings[SYNC_ADD_COMMENTS])
         else:
             util.logger.error("Event %s can't be applied", str(event))
             return False
         return True
 
-    def apply_changelog(self, source_issue):
+    def apply_changelog(self, source_issue, settings):
         events = source_issue.get_all_events(True)
         if events is None or not events:
             util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.key)
@@ -500,16 +510,17 @@ class Issue(sq.SqObject):
         start_change = len(self.changelog) + 1
         util.logger.info("Applying changelog of issue %s to issue %s, from change %d",
                          source_issue.key, self.key, start_change)
-        comment_added = False
+        link_added = False
         for d in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
                 util.logger.debug("Skipping change %s", str(events[d]))
                 continue
-            if not comment_added:
-                self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
-                comment_added = True
-            self.__apply_event(events[d])
+            if not link_added:
+                if settings[SYNC_ADD_LINK]:
+                    self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
+                link_added = True
+            self.__apply_event(events[d], settings)
         return True
 
 # ------------------------------- Static methods --------------------------------------
