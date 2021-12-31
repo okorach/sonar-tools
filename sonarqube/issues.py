@@ -488,10 +488,10 @@ class Issue(sq.SqObject):
             self.add_comment(f"Hotspot review {origin}")
         elif changelog.is_event_an_assignment(event):
             if settings[SYNC_ASSIGN]:
-                u = users.get_login_from_name(event['value'])
+                u = users.get_login_from_name(event['value'], endpoint=self.endpoint)
                 if u is None:
                     u = settings[SYNC_SERVICE_ACCOUNTS][0]
-                self.assign(users.get_login_from_name(u, self.endpoint))
+                self.assign(u)
                 self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_tag_change(event):
             self.set_tags(event['value'].replace(' ', ','))

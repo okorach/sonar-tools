@@ -129,7 +129,7 @@ def audit(audit_settings, endpoint=None):
         problems += u.audit(audit_settings)
     return problems
 
-def get_login_from_name(name, endpoint=None):
+def get_login_from_name(name, endpoint):
     u_list = search(params={'q': name}, endpoint=endpoint)
     if not u_list:
         return None
