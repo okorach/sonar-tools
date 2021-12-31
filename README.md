@@ -290,21 +290,32 @@ sonar-issues-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.j
 
 # sonar-issues-sync
 
+:warning: The `sonar-issue-sync` tool MUST be run with a specific service account (to be named on the command line) so that `sonar-issue-sync` can recognize past synchronizations and complement them if some updates happened on an issue that has already been synchronized before with the same service account.
+`sonar-issues-sync --login <serviceAccount> -t <tokenOfThatServiceAccount> ...`
+
 Synchronizes issues changelog between:
-- 2 branches of a same project
-- The main branch of 2 different projects of a same SonarQube instance
-- The main branch of 2 projects from different SonarQube instance
+- All branches of a same project: `sonar-issue-sync -k <projectKey>`
+- 2 branches of a same project: `sonar-issue-sync -k <projectKey> -b <sourceBranch> -B <targetBranch>`
+- The main branch of 2 different projects of a same SonarQube instance: `sonar-issue-sync -k <sourceProjectKey> -K <targetProject>`
+- The main branch of 2 projects from different SonarQube instance:
+  `sonar-issue-sync -k <sourceProjectKey> -u <sourceUrl> -t <sourceToken> -K <targetProjectKey> -U <targetUrl> -T <targetToken>`
 
 Issues changelog synchronization includes:
 - Change of issue type
 - Change of issue severity
 - Issue marked as Won't fix or False positive
 - Issue re-opened
+- Issue assignments
 - Custom tags added to the issue
-- Issue comments
+
+Issue comments are not (yet) synchronized
 
 The source and target issues are synchronized ony when there is a 100% certainty that the issues are the same, and that the target issue currently has no changelog.
-When a issue is synchronized, a special comment is added on the target issue with a link to the source one, for cross checking purposes
+
+When a issue is synchronized, a special comment is added on the target issue with a link to the source one, for cross checking purposes. This comment can be disabled by using the `--nolink` option
+
+All changes on an in issue that is synchronized, a special comment is added on the target issue the original login of the user that made the change, for information. Indeed all issues automatically synchronized are modified by the same service account. It's possible to disable these comments by using the `--nocomment` option
+
 The tool sends to standard output a JSON file with, for each issue on the target branch or project:
 - If the issue was synchonized
 - If synchronized, the reference to the source issue
