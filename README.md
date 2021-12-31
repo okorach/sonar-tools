@@ -59,7 +59,7 @@ The user corresponding to the token must have enough permissions to achieve the 
 Audits the SonarQube instance and output warning logs whenever a suspicious or incorrect setting/situation is found.
 The detail of what is audited is listed at the bottom of this (long) page
 
-Usage: `sonar-audit [-u <url>] [-t <token>] [--what [settings|projects|qg|qp|users]] [-h]`
+Usage: `sonar-audit [-u <url>] [-t <token>] [--what [settings,projects,qg,qp,users,groups,portfolios,apps]] [-h]`
 
 `--what` can be followed by a list of comma separated items
 When `--what` is not specified, everything is audited
@@ -69,6 +69,9 @@ When `--what` is not specified, everything is audited
 - `--what qg`: Audits quality gates
 - `--what projects`: Audits all projects. This can be a fairly long operation
 - `--what users`: Audits users and their tokens
+- `--what groups`: Audits groups
+- `--what portfolios`: Audits portfolios
+- `--what apps`: Audits applications
 
 ### Configuration file
 `sonar-audit` can be configured with a configuration file to select what to audit and some different
