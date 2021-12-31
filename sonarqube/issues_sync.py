@@ -39,7 +39,7 @@ SYNC_MSG = 'syncMessage'
 SYNC_MATCHES = 'matches'
 TGT_KEY = 'targetIssueKey'
 TGT_URL = 'targetIssueUrl'
-TGT_STATUS = 'targetIssuesStatus'
+TGT_STATUS = 'targetIssueStatus'
 
 def __parse_args(desc):
     parser = util.set_common_args(desc)
