@@ -87,7 +87,7 @@ def main():
     util.set_logger('sonar-audit')
     parser = util.set_common_args('Audits a SonarQube platform or a SIF (Support Info File or System Info File)')
     parser.add_argument('-w', '--what', required=False,
-                        help='What to audit (qp,qg,settings,projects,users,portfolios,apps) '
+                        help='What to audit (qp,qg,settings,projects,users,groups,portfolios,apps) '
                         'comma separated, everything by default')
     parser.add_argument('--format', choices=['csv', 'json'], required=False,
                         help="Output format for audit report.\nIf not specified, "
