@@ -210,10 +210,10 @@ def main():
     target_url = params.get('urlTarget', None)
     users = [x.strip() for x in args.users.split(',')]
 
-    settings = { issues.SYNC_ADD_COMMENTS:not params['nocomment'],
-                 issues.SYNC_ADD_LINK: not params['nolink'],
-                 issues.SYNC_ASSIGN: True,
-                 issues.SYNC_IGNORE_COMPONENTS: False }
+    settings = {issues.SYNC_ADD_COMMENTS: not params['nocomment'],
+                issues.SYNC_ADD_LINK: not params['nolink'],
+                issues.SYNC_ASSIGN: True,
+                issues.SYNC_IGNORE_COMPONENTS: False}
     report = []
     if target_url is None and target_key is None and source_branch is None and target_branch is None:
         # Sync all branches of a given project
