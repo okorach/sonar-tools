@@ -36,6 +36,7 @@ SYNC_ADD_LINK = 'add_link'
 SYNC_ADD_COMMENTS = 'add_comments'
 SYNC_COMMENTS = 'sync_comments'
 SYNC_ASSIGN = 'sync_assignments'
+SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
 
 class ApiError(Exception):
     pass
@@ -487,7 +488,10 @@ class Issue(sq.SqObject):
             self.add_comment(f"Hotspot review {origin}")
         elif changelog.is_event_an_assignment(event):
             if settings[SYNC_ASSIGN]:
-                self.assign(users.get_login_from_name(event['value'], self.endpoint))
+                u = users.get_login_from_name(event['value'], endpoint=self.endpoint)
+                if u is None:
+                    u = settings[SYNC_SERVICE_ACCOUNTS][0]
+                self.assign(u)
                 self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_tag_change(event):
             self.set_tags(event['value'].replace(' ', ','))
