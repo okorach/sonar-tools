@@ -184,21 +184,50 @@ def sync_issues_list(src_issues, tgt_issues, users, settings):
                      nb_modified_siblings)
     return report
 
-def sync_project_branches(project_key, src_branch, tgt_branch, users, settings, endpoint):
-    util.logger.info("Synchronizing branch %s and branch %s of project %s", src_branch, tgt_branch, project_key)
+
+def sync_branches(key1, endpoint1, users, key2=None, endpoint2=None, branch1=None, branch2=None, settings=None):
+    util.logger.info("Synchronizing branch %s of project %s and branch %s of project %s", branch1, key1, branch2, key2)
+    if key2 is None:
+        key2 = key1
+    if endpoint2 is None:
+        endpoint2 = endpoint1
     src_issues = {}
-    for key, issue in issues.search_by_project(project_key, branch=src_branch, endpoint=endpoint).items():
-        if issue.has_changelog() and len(issue.modifiers_excluding_service_users(users)) > 0:
-            src_issues[key] = issue
+    for key, issue in issues.search_by_project(key1, endpoint=endpoint1, branch=branch1).items():
+        if not issue.has_changelog():
+            continue
+        src_issues[key] = issue
+    util.logger.info("Found %d issues with manual changes on project %s branch %s", len(src_issues), key1, branch1)
     if len(src_issues) <= 0:
-        util.logger.info("No issues with manual changes on project %s branch %s, skipping...", project_key, src_branch)
+        util.logger.info("No issues with manual changes on project %s branch %s, skipping...", key1, branch1)
         return {}
-    util.logger.info("Found %d issues with manual changes on project %s branch %s",
-        len(src_issues), project_key, src_branch)
-    tgt_issues = issues.search_by_project(project_key, branch=tgt_branch, endpoint=endpoint)
-    util.logger.info("Found %d issues with manual changes on project %s target branch %s",
-        len(tgt_issues), project_key, tgt_branch)
+    tgt_issues = issues.search_by_project(key2, endpoint=endpoint2, branch=branch2)
+    util.logger.info("Found %d issues on project %s branch %s", len(tgt_issues), key2, branch2)
+    settings[issues.SYNC_IGNORE_COMPONENTS] = (key1 != key2)
     return sync_issues_list(src_issues, tgt_issues, users, settings)
+
+
+def sync_project_branches_between_platforms(source_key, target_key, users, settings, endpoint, target_endpoint):
+    src_branches = projects.Project(key=source_key, endpoint=endpoint).get_branches()
+    tgt_branches = projects.Project(key=target_key, endpoint=target_endpoint).get_branches()
+    report = []
+    for src_b in src_branches:
+        for tgt_b in tgt_branches:
+            if src_b.name != tgt_b.name:
+                continue
+            report += sync_branches(key1=source_key, key2=target_key, endpoint1=endpoint, endpoint2=target_endpoint,
+                                    users=users, branch1=src_b.name, branch2=tgt_b.name, settings=settings)
+    return report
+
+def sync_all_project_branches(key, users, settings, endpoint):
+    branches = projects.Project(key=key, endpoint=endpoint).get_branches()
+    report = []
+    for b1 in branches:
+        for b2 in branches:
+            if b1.name == b2.name:
+                continue
+            report += sync_branches(key1=key, endpoint1=endpoint, users=users, branch1=b1.name, branch2=b2.name,
+                                    settings=settings)
+    return report
 
 
 def main():
@@ -224,45 +253,49 @@ def main():
             raise env.NonExistingObjectError(source_key, f"Project key '{source_key}' does not exist")
         if target_url is None and target_key is None and source_branch is None and target_branch is None:
             # Sync all branches of a given project
-            branches = projects.Project(key=source_key, endpoint=source_env).get_branches()
-            for b1 in branches:
-                for b2 in branches:
-                    report += sync_project_branches(source_key, b1.name, b2.name, users, settings, endpoint=source_env)
-
+            report = sync_all_project_branches(source_key, users, settings, source_env)
         elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
             # Sync 2 branches of a given project
-            report = sync_project_branches(source_key, source_branch, target_branch, users, settings, endpoint=source_env)
+            if source_branch != target_branch:
+                report = sync_branches(key1=source_key, users=users, endpoint1=source_env, settings=settings,
+                                       branch1=source_branch, branch2=target_branch)
+            else:
+                util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
 
         elif target_url is None and target_key is not None:
-            # sync main branch of 2 projects
+            # sync 2 branches of 2 different projects
             if not projects.exists(target_key, endpoint=source_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             src_issues = {}
-            for key, issue in issues.search_by_project(source_key, endpoint=source_env, params=None).items():
+            for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch).items():
                 if issue.has_changelog():
                     src_issues[key] = issue
             util.logger.info("Found %d issues with manual changes on project %s branch %s",
                 len(src_issues), source_key, source_branch)
-            tgt_issues = issues.search_by_project(target_key, endpoint=source_env)
+            tgt_issues = issues.search_by_project(target_key, endpoint=source_env, branch=target_branch)
             util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
             settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             report = sync_issues_list(src_issues, tgt_issues, users, settings)
 
         elif target_url is not None and target_key is not None:
-            # sync main branch of 2 projects on different platforms
             target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
             if not projects.exists(target_key, endpoint=target_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             src_issues = {}
-            for key, issue in issues.search_by_project(source_key, endpoint=source_env, params=None).items():
-                if issue.has_changelog():
-                    src_issues[key] = issue
-            util.logger.info("Found %d issues with manual changes on project %s", len(src_issues), source_key)
-
-            tgt_issues = issues.search_by_project(target_key, endpoint=target_env, params=None)
-            util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
             settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
-            report = sync_issues_list(src_issues, tgt_issues, users, settings)
+            if source_branch is not None or target_branch is not None:
+                # sync main 2 branches of 2 projects on different platforms
+                for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch).items():
+                    if issue.has_changelog():
+                        src_issues[key] = issue
+                util.logger.info("Found %d issues with manual changes on project %s", len(src_issues), source_key)
+                tgt_issues = issues.search_by_project(target_key, endpoint=target_env, branch=target_branch)
+                util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
+                report = sync_issues_list(src_issues, tgt_issues, users, settings)
+            else:
+                # sync main all branches of 2 projects on different platforms
+                report = sync_project_branches_between_platforms(source_key, target_key, users,
+                    endpoint=source_env, target_endpoint=target_env, settings=settings)
 
         __dump_report(report, args.file)
     except env.NonExistingObjectError as e:
