@@ -201,7 +201,6 @@ def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=
     return sync_issues_list(src_issues, tgt_issues, settings)
 
 
-
 def __add_counters(counts, tmp_counts):
     for k in tmp_counts:
         if k not in counts:
