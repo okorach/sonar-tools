@@ -143,7 +143,7 @@ def __dump_report(report, file):
         f.close()
 
 
-def sync_issues_list(src_issues, tgt_issues, users, settings):
+def sync_issues_list(src_issues, tgt_issues, settings):
     nb_applies = 0
     nb_approx_match = 0
     nb_modified_siblings = 0
@@ -155,7 +155,8 @@ def sync_issues_list(src_issues, tgt_issues, users, settings):
     for _, issue in tgt_issues.items():
         util.logger.debug('Searching sibling for issue %s', str(issue))
         (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
-            src_issues, allowed_users=users, ignore_component=settings[issues.SYNC_IGNORE_COMPONENTS])
+            src_issues, allowed_users=settings[issues.SYNC_SERVICE_ACCOUNTS],
+            ignore_component=settings[issues.SYNC_IGNORE_COMPONENTS])
         if len(exact_siblings) == 1:
             report.append(__process_exact_sibling(issue, exact_siblings[0], settings))
             if exact_siblings[0].has_changelog():
@@ -185,7 +186,7 @@ def sync_issues_list(src_issues, tgt_issues, users, settings):
     return report
 
 
-def sync_branches(key1, endpoint1, users, key2=None, endpoint2=None, branch1=None, branch2=None, settings=None):
+def sync_branches(key1, endpoint1,  settings, key2=None, endpoint2=None, branch1=None, branch2=None):
     util.logger.info("Synchronizing branch %s of project %s and branch %s of project %s", branch1, key1, branch2, key2)
     if key2 is None:
         key2 = key1
@@ -203,10 +204,10 @@ def sync_branches(key1, endpoint1, users, key2=None, endpoint2=None, branch1=Non
     tgt_issues = issues.search_by_project(key2, endpoint=endpoint2, branch=branch2)
     util.logger.info("Found %d issues on project %s branch %s", len(tgt_issues), key2, branch2)
     settings[issues.SYNC_IGNORE_COMPONENTS] = (key1 != key2)
-    return sync_issues_list(src_issues, tgt_issues, users, settings)
+    return sync_issues_list(src_issues, tgt_issues, settings)
 
 
-def sync_project_branches_between_platforms(source_key, target_key, users, settings, endpoint, target_endpoint):
+def sync_project_branches_between_platforms(source_key, target_key, settings, endpoint, target_endpoint):
     src_branches = projects.Project(key=source_key, endpoint=endpoint).get_branches()
     tgt_branches = projects.Project(key=target_key, endpoint=target_endpoint).get_branches()
     report = []
@@ -215,18 +216,17 @@ def sync_project_branches_between_platforms(source_key, target_key, users, setti
             if src_b.name != tgt_b.name:
                 continue
             report += sync_branches(key1=source_key, key2=target_key, endpoint1=endpoint, endpoint2=target_endpoint,
-                                    users=users, branch1=src_b.name, branch2=tgt_b.name, settings=settings)
+                                    branch1=src_b.name, branch2=tgt_b.name, settings=settings)
     return report
 
-def sync_all_project_branches(key, users, settings, endpoint):
+def sync_all_project_branches(key, settings, endpoint):
     branches = projects.Project(key=key, endpoint=endpoint).get_branches()
     report = []
     for b1 in branches:
         for b2 in branches:
             if b1.name == b2.name:
                 continue
-            report += sync_branches(key1=key, endpoint1=endpoint, users=users, branch1=b1.name, branch2=b2.name,
-                                    settings=settings)
+            report += sync_branches(key1=key, endpoint1=endpoint, branch1=b1.name, branch2=b2.name, settings=settings)
     return report
 
 
@@ -241,23 +241,23 @@ def main():
     source_branch = params.get('sourceBranch', None)
     target_branch = params.get('targetBranch', None)
     target_url = params.get('urlTarget', None)
-    users = [x.strip() for x in args.login.split(',')]
 
     settings = {issues.SYNC_ADD_COMMENTS: not params['nocomment'],
                 issues.SYNC_ADD_LINK: not params['nolink'],
                 issues.SYNC_ASSIGN: True,
-                issues.SYNC_IGNORE_COMPONENTS: False}
+                issues.SYNC_IGNORE_COMPONENTS: False,
+                issues.SYNC_SERVICE_ACCOUNTS: [x.strip() for x in args.login.split(',')]}
     report = []
     try:
         if not projects.exists(source_key, endpoint=source_env):
             raise env.NonExistingObjectError(source_key, f"Project key '{source_key}' does not exist")
         if target_url is None and target_key is None and source_branch is None and target_branch is None:
             # Sync all branches of a given project
-            report = sync_all_project_branches(source_key, users, settings, source_env)
+            report = sync_all_project_branches(source_key, settings, source_env)
         elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
             # Sync 2 branches of a given project
             if source_branch != target_branch:
-                report = sync_branches(key1=source_key, users=users, endpoint1=source_env, settings=settings,
+                report = sync_branches(key1=source_key, endpoint1=source_env, settings=settings,
                                        branch1=source_branch, branch2=target_branch)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
@@ -275,7 +275,7 @@ def main():
             tgt_issues = issues.search_by_project(target_key, endpoint=source_env, branch=target_branch)
             util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
             settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
-            report = sync_issues_list(src_issues, tgt_issues, users, settings)
+            report = sync_issues_list(src_issues, tgt_issues, settings)
 
         elif target_url is not None and target_key is not None:
             target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
@@ -291,10 +291,10 @@ def main():
                 util.logger.info("Found %d issues with manual changes on project %s", len(src_issues), source_key)
                 tgt_issues = issues.search_by_project(target_key, endpoint=target_env, branch=target_branch)
                 util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
-                report = sync_issues_list(src_issues, tgt_issues, users, settings)
+                report = sync_issues_list(src_issues, tgt_issues, settings)
             else:
                 # sync main all branches of 2 projects on different platforms
-                report = sync_project_branches_between_platforms(source_key, target_key, users,
+                report = sync_project_branches_between_platforms(source_key, target_key,
                     endpoint=source_env, target_endpoint=target_env, settings=settings)
 
         __dump_report(report, args.file)
