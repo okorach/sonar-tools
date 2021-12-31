@@ -46,7 +46,7 @@ def __parse_args(desc):
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
-    parser.add_argument('--login', required=True, help='Comma separated list of services accounts used for issue-sync')
+    parser.add_argument('--login', required=True, help='One (or several) comma separated services accounts used for issue-sync')
     parser.add_argument('--nocomment', required=False, default=False, action='store_true',
                         help='If specified, will not comment related to the sync in the target issue')
     # parser.add_argument('--noassign', required=False, default=False, action='store_true',
