@@ -546,3 +546,7 @@ def audit(audit_settings, endpoint=None):
     if not audit_settings.get('audit.projects.duplicates', False):
         util.logger.info("Project duplicates auditing was disabled by configuration")
     return problems
+
+
+def exists(key, endpoint):
+    return len(search(params={'projects': key}, endpoint=endpoint)) > 0

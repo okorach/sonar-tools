@@ -61,6 +61,12 @@ class NotSystemInfo(Exception):
         super().__init__()
         self.message = message
 
+class NonExistingObjectError(Exception):
+    def __init__(self, key, message):
+        super().__init__()
+        self.key = key
+        self.message = message
+
 class Environment:
 
     def __init__(self, url, token):
