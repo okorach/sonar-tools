@@ -180,7 +180,7 @@ def sync_issues_list(src_issues, tgt_issues, settings):
     return (report, counters)
 
 
-def sync_branches(key1, endpoint1,  settings, key2=None, endpoint2=None, branch1=None, branch2=None):
+def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=None, branch2=None):
     util.logger.info("Synchronizing branch %s of project %s and branch %s of project %s", branch1, key1, branch2, key2)
     if key2 is None:
         key2 = key1
