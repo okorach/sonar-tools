@@ -125,8 +125,8 @@ class Issue(sq.SqObject):
         if self._url is None:
             branch = ''
             if self.branch is not None:
-                branch = f'branch={self.branch}&'
-            self._url = f'{self.endpoint.url()}/project/issues?{branch}id={self.projectKey}&issues={self.key}'
+                branch = f'&branch={self.branch}'
+            self._url = f'{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}'
         return self._url
 
     def __load(self, jsondata):

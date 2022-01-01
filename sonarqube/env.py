@@ -129,7 +129,7 @@ class Environment:
             _log_and_exit(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise SystemExit(e)
+            raise SystemExit(e) from e
         return r
 
     def post(self, api, params=None):
@@ -145,7 +145,7 @@ class Environment:
             _log_and_exit(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise SystemExit(e)
+            raise SystemExit(e) from e
         return r
 
     def delete(self, api, params=None):
@@ -161,7 +161,7 @@ class Environment:
             _log_and_exit(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise SystemExit(e)
+            raise SystemExit(e) from e
 
     def urlstring(self, api, params):
         first = True
