@@ -195,6 +195,7 @@ class Environment:
         for key in audit_settings:
             if key.startswith('audit.globalSettings.range'):
                 v = _get_multiple_values(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
@@ -455,6 +456,7 @@ def _get_store_size(setting):
 
 def _audit_setting_range(settings, key, range, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
     if key not in settings:
+        util.logger.warning("Setting %s does not exist, skipping...", key)
         return []
     value = float(settings[key])
     min_v = float(range[0])
@@ -469,6 +471,9 @@ def _audit_setting_range(settings, key, range, severity=sev.Severity.MEDIUM, dom
 
 
 def _audit_setting_value(settings, key, value, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+    if key not in settings:
+        util.logger.warning("Setting %s does not exist, skipping...", key)
+        return []
     util.logger.info("Auditing that setting %s has common/recommended value '%s'", key, value)
     s = settings.get(key, '')
     problems = []
@@ -480,6 +485,9 @@ def _audit_setting_value(settings, key, value, severity=sev.Severity.MEDIUM, dom
 
 
 def _audit_setting_is_set(settings, key):
+    if key not in settings:
+        util.logger.warning("Setting %s does not exist, skipping...", key)
+        return []
     util.logger.info("Auditing that setting %s is set", key)
     problems = []
     if key in settings and settings[key] != '':
@@ -491,6 +499,9 @@ def _audit_setting_is_set(settings, key):
 
 
 def _audit_setting_is_not_set(settings, key, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+    if key not in settings:
+        util.logger.warning("Setting %s does not exist, skipping...", key)
+        return []
     util.logger.info("Auditing that setting %s is not set", key)
     problems = []
     if key in settings and settings[key] != '':
@@ -502,13 +513,13 @@ def _audit_setting_is_not_set(settings, key, severity=sev.Severity.MEDIUM, domai
     return problems
 
 
-def _audit_maintainability_rating_range(value, min_val, max_val, rating_letter,
+def _audit_maintainability_rating_range(value, range, rating_letter,
         severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
     util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is \
 within recommended range [%3.0f%%-%3.0f%%]", value * 100, rating_letter, min_val * 100, max_val * 100)
     value = float(value)
     problems = []
-    if value < min_val or value > max_val:
+    if value < range[0] or value > range[1]:
         problems.append(pb.Problem(
             domain, severity,
             f'Maintainability rating threshold {value * 100}% for {rating_letter} '
@@ -521,7 +532,7 @@ def _audit_maintainability_rating_grid(grid, audit_settings):
     problems = []
     util.logger.debug("Auditing maintainabillity rating grid")
     for key in audit_settings:
-        if not re.match(r'audit.globalSetting.maintainabilityRating', key):
+        if not re.match(r'audit.globalSettings.maintainabilityRating', key):
             continue
         util.logger.debug('Unpacking %s', key)
         (_, _, _, letter, _, _) = key.split('.')
