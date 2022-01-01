@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pylint bandit pytest coverage jprops argparse datetime mp3_tagger ffmpeg-python ExifRead
+          pip install flake8 pylint bandit pytest coverage jprops argparse datetime mp3_tagger ffmpeg-python ExifRead requests
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       #- name: Lint with flake8
       #  run: |
