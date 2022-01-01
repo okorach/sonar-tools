@@ -25,9 +25,8 @@
 '''
 import sys
 import json
-import sonarqube.projects as projects
+from sonarqube import projects, env
 import sonarqube.utilities as util
-import sonarqube.env as env
 
 def _check_sq_environments(import_sq, export_sq):
     version = import_sq.version(digits=2, as_string=True)
@@ -86,9 +85,9 @@ def main():
         util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects,
                          int(i * 100 / nb_projects), project['key'], status)
         summary = ''
-        for s in statuses:
-            summary += "{0}:{1}, ".format(s, statuses[s])
-        util.logger.info("%s", summary)
+        for k, v in statuses.items():
+            summary += f"{k}:{v}, "
+        util.logger.info("%s", summary[:-2])
     sys.exit(0)
 
 

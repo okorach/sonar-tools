@@ -90,7 +90,7 @@ class Metric(sq.SqObject):
 
 def count(endpoint):
     if Metric.Count is None:
-        resp = env.get(Metric.SEARCH_API, params={'ps':1}, ctxt=endpoint)
+        resp = env.get(Metric.SEARCH_API, params={'ps': 1}, ctxt=endpoint)
         data = json.loads(resp.text)
         Metric.Count = data['total']
     return Metric.Count

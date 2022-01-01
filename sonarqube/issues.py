@@ -220,7 +220,6 @@ class Issue(sq.SqObject):
                     'user': c['login'], 'userName': c['login']})
         return self._comments
 
-
     def has_comments(self):
         comments = self.comments()
         return len(comments) > 0
@@ -234,10 +233,6 @@ class Issue(sq.SqObject):
             return self.post('issues/add_comment', {'issue': self.key, 'text': comment})
         else:
             return None
-
-    # def delete_comment(self, comment_id):
-
-    # def edit_comment(self, comment_id, comment_str)
 
     def severity(self, force_api=False):
         if force_api or self._severity is None:
@@ -649,8 +644,8 @@ def search(endpoint=None, page=None, params=None):
         util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, new_params['p'], nbr_pages)
         if page is None and nbr_issues > Issue.MAX_SEARCH:
             raise TooManyIssuesError(nbr_issues,
-                                     '{} issues returned by api/{}, this is more than the max {} possible'.format(
-                                         nbr_issues, Issue.SEARCH_API, Issue.MAX_SEARCH))
+                f'{nbr_issues} issues returned by api/{Issue.SEARCH_API}, '
+                f'this is more than the max {Issue.MAX_SEARCH} possible')
 
         for i in data['issues']:
             issue_list[i['key']] = Issue(key=i['key'], endpoint=endpoint, data=i)
@@ -672,14 +667,10 @@ def search_all_issues(params=None, endpoint=None):
         params['p'] = page
         returned_data = search(endpoint=endpoint, params=params)
         issues = issues + returned_data['issues']
-        #if returned_data['total'] > Issue.MAX_SEARCH and page == 20: NOSONAR
-        #    raise TooManyIssuesError(returned_data['total'], \
-        #          'Request found %d issues which is more than the maximum allowed %d' % \
-        #          (returned_data['total'], Issue.MAX_SEARCH) NOSONAR
         page = returned_data['page']
         nbr_pages = returned_data['pages']
         page = page + 1
-    util.logger.debug ("Total number of issues: %d", len(issues))
+    util.logger.debug("Total number of issues: %d", len(issues))
     return issues
 
 
@@ -746,12 +737,12 @@ def _search_project_daily_issues(key, day, sqenv=None, **kwargs):
     kw = kwargs.copy()
     kw['componentKeys'] = key
     if kwargs is None or 'severities' not in kwargs:
-        severities = {'INFO','MINOR','MAJOR','CRITICAL','BLOCKER'}
+        severities = {'INFO', 'MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER'}
     else:
         severities = re.split(',', kwargs['severities'])
     util.logger.debug("Severities = %s", str(severities))
     if kwargs is None or 'types' not in kwargs:
-        types = {'CODE_SMELL','VULNERABILITY','BUG','SECURITY_HOTSPOT'}
+        types = {'CODE_SMELL', 'VULNERABILITY', 'BUG', 'SECURITY_HOTSPOT'}
     else:
         types = re.split(',', kwargs['types'])
     util.logger.debug("Types = %s", str(types))
@@ -794,7 +785,7 @@ def search_project_issues(key, sqenv=None, **kwargs):
         sliced_enough = False
         while not sliced_enough:
             window_size = datetime.timedelta(days=current_slice)
-            kwargs['createdAfter']  = util.format_date(window_start)
+            kwargs['createdAfter'] = util.format_date(window_start)
             window_stop = window_start + window_size
             kwargs['createdBefore'] = util.format_date(window_stop)
             found_issues = search_all_issues(endpoint=sqenv, **kwargs)
@@ -828,11 +819,11 @@ def identical_attributes(o1, o2, key_list):
 
 def to_csv_header():
     return "# id;rule;type;severity;status;creation date;creation time;modification date;" + \
-    "modification time;project key;project name;file;line;debt(min);message"
+           "modification time;project key;project name;file;line;debt(min);message"
 
 
 def __get_issues_search_params(params):
-    outparams = {'additionalFields':'comments'}
+    outparams = {'additionalFields': 'comments'}
     for key in params:
         if params[key] is not None and key in Issue.OPTIONS_SEARCH:
             outparams[key] = params[key]

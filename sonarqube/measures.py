@@ -24,10 +24,9 @@
 '''
 import json
 import re
-import sonarqube.env as env
+from sonarqube import env, metrics
 import sonarqube.utilities as util
 import sonarqube.sqobject as sq
-import sonarqube.metrics as metrics
 
 
 class Measure(sq.SqObject):

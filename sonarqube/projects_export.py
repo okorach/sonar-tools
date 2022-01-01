@@ -26,9 +26,8 @@
 import sys
 import os
 import json
-import sonarqube.projects as projects
+from sonarqube import env, projects
 import sonarqube.utilities as util
-import sonarqube.env as env
 
 
 def main():
@@ -73,9 +72,9 @@ def main():
                          int(len(exports) * 100 / nb_projects), key, status)
 
         summary = ''
-        for s in statuses:
-            summary += f"{s}:{statuses[s]}, "
-        util.logger.info("%s", summary)
+        for k, v in statuses.items():
+            summary += f"{k}:{v}, "
+        util.logger.info("%s", summary[:-2])
 
     print(json.dumps({
         'sonarqube_environment': {

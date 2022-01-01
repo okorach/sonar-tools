@@ -137,16 +137,14 @@ def __process_no_match(issue):
 
 
 def __dump_report(report, file):
+    txt = json.dumps(report, indent=3, sort_keys=False, separators=(',', ': '))
     if file is None:
-        f = sys.stdout
         util.logger.info("Dumping report to stdout")
+        print(txt)
     else:
-        f = open(file, "w")
         util.logger.info("Dumping report to file '%s'", file)
-    print(json.dumps(report, indent=4, sort_keys=False, separators=(',', ': ')), file=f)
-    if file is not None:
-        f.close()
-
+        with open(file, "w", encoding='utf-8') as fh:
+            print(txt, file=fh)
 
 def sync_issues_list(src_issues, tgt_issues, settings):
     counters = {'nb_applies': 0, 'nb_approx_match': 0, 'nb_modified_siblings': 0,

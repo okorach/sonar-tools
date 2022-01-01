@@ -78,9 +78,9 @@ class Environment:
     def __str__(self):
         return f"{util.redacted_token(self.token)}@{self.url}"
 
-    def set_env(self, url, token):
-        self.url = url
-        self.token = token
+    def set_env(self, some_url, some_token):
+        self.url = some_url
+        self.token = some_token
         util.logger.debug('Setting environment: %s', str(self))
 
     def set_token(self, token):
@@ -89,8 +89,8 @@ class Environment:
     def credentials(self):
         return (self.token, '')
 
-    def set_url(self, url):
-        self.url = url
+    def set_url(self, some_url):
+        self.url = some_url
 
     def version(self, digits=3, as_string=False):
         if self._version is None:
@@ -165,9 +165,9 @@ class Environment:
 
     def urlstring(self, api, params):
         first = True
-        url = f"{str(self)}{api}"
+        url_prefix = f"{str(self)}{api}"
         if params is None:
-            return url
+            return url_prefix
         for p in params:
             if params[p] is None:
                 continue
@@ -175,8 +175,8 @@ class Environment:
             first = False
             if isinstance(params[p], datetime.date):
                 params[p] = util.format_date(params[p])
-            url += f'{sep}{p}={params[p]}'
-        return url
+            url_prefix += f'{sep}{p}={params[p]}'
+        return url_prefix
 
     def audit(self, audit_settings=None):
         util.logger.info('--- Auditing global settings ---')
@@ -500,8 +500,8 @@ def _audit_setting_is_not_set(settings, key, severity=sev.Severity.MEDIUM, domai
     return problems
 
 
-def _audit_maintainability_rating_range__(value, min_val, max_val, rating_letter,
-                                           severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+def _audit_maintainability_rating_range(value, min_val, max_val, rating_letter,
+        severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
     util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is \
 within recommended range [%3.0f%%-%3.0f%%]", value * 100, rating_letter, min_val * 100, max_val * 100)
     value = float(value)
@@ -529,7 +529,7 @@ def _audit_maintainability_rating_grid(grid, audit_settings):
         value = thresholds[ord(letter.upper()) - 65]
         (min_val, max_val, severity, domain) = __get_multiple_values(
             4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
-        problems += _audit_maintainability_rating_range__(
+        problems += _audit_maintainability_rating_range(
             float(value), float(min_val), float(max_val),
             letter, severity, domain)
     return problems

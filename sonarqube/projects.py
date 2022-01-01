@@ -26,7 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonarqube import env, issues, hotspots, tasks
+from sonarqube import env, issues, hotspots, tasks, custom_measures
 import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
@@ -37,7 +37,6 @@ import sonarqube.audit_severities as sev
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 import sonarqube.permissions as perms
-import sonarqube.custom_measures as custom_measures
 
 PROJECTS = {}
 
