@@ -36,7 +36,7 @@ class Problem():
         return f"Type: {self.type} - Severity: {self.severity} - Description: {self.message}"
 
     def to_json(self):
-        d = vars(self)  
+        d = vars(self)
         d['type'] = str(self.type)
         d['severity'] = str(self.severity)
         d['concerned_object'] = str(d['concerned_object'])

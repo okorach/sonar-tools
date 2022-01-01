@@ -41,7 +41,7 @@ def parse_args(desc):
 
 def main():
     args = parse_args('Manipulate custom metrics')
-    sqenv = env.Environment(url=args.url, token=args.token)
+    sqenv = env.Environment(some_url=args.url, some_token=args.token)
     env.set_env(args.url, args.token)
 
     # Remove unset params from the dict

@@ -102,7 +102,7 @@ def main():
     if args.sif is None and args.config is None and args.token is None:
         util.logger.critical("Token is missing (Argument -t/--token) when not analyzing local SIF")
         sys.exit(4)
-    sq = env.Environment(url=args.url, token=args.token)
+    sq = env.Environment(some_url=args.url, some_token=args.token)
 
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)

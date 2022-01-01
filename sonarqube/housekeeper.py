@@ -145,7 +145,7 @@ def _delete_objects(problems):
 def main():
     args = _parse_arguments()
 
-    sq = env.Environment(url=args.url, token=args.token)
+    sq = env.Environment(some_url=args.url, some_token=args.token)
     kwargs = vars(args)
     mode = args.mode
     util.check_environment(kwargs)

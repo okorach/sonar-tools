@@ -55,7 +55,7 @@ def main():
     parser.add_argument('-f', '--projectsFile', required=True, help='File with the list of projects')
 
     args = util.parse_and_check_token(parser)
-    sq = env.Environment(url=args.url, token=args.token)
+    sq = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
 
     with open(args.projectsFile, "r", encoding='utf-8') as file:

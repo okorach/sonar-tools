@@ -38,7 +38,7 @@ def main():
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
 
-    sq = env.Environment(url=args.url, token=args.token)
+    sq = env.Environment(some_url=args.url, some_token=args.token)
     if (sq.edition() in ('community', 'developer') and sq.version(digits=2) < (9, 2)):
         util.logger.critical("Can't export projects on Community and Developer Edition before 9.2, aborting...")
         print("Can't export project on Community and Developer Edition before 9.2, aborting...")

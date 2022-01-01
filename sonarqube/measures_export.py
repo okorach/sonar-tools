@@ -190,7 +190,7 @@ def __parse_cmd_line():
 
 def main():
     args = __parse_cmd_line()
-    endpoint = env.Environment(url=args.url, token=args.token)
+    endpoint = env.Environment(some_url=args.url, some_token=args.token)
 
     with_branches = args.withBranches
     if endpoint.edition() == 'community':

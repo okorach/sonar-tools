@@ -220,19 +220,6 @@ class Issue(sq.SqObject):
                     'user': c['login'], 'userName': c['login']})
         return self._comments
 
-    def __get_all_events(self, is_sorted=True):
-        events = self.changelog()
-        util.logger.debug('Get all events: Issue %s has %d changelog', self.key, len(events))
-        comments = self.comments()
-        util.logger.debug('Get all events: Issue %s has %d comments', self.key, len(comments))
-        for c in comments:
-            events.append(c)
-        if not is_sorted:
-            return events
-        bydate = {}
-        for e in events:
-            bydate[e['date']] = e
-        return bydate
 
     def has_comments(self):
         comments = self.comments()

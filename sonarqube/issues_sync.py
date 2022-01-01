@@ -244,7 +244,7 @@ def sync_all_project_branches(key, settings, endpoint):
 def main():
     args = __parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-    source_env = env.Environment(url=args.url, token=args.token)
+    source_env = env.Environment(some_url=args.url, some_token=args.token)
     params = vars(args)
     util.check_environment(params)
     source_key = params['componentKeys']
@@ -289,7 +289,7 @@ def main():
             (report, counters) = sync_issues_list(src_issues, tgt_issues, settings)
 
         elif target_url is not None and target_key is not None:
-            target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
+            target_env = env.Environment(some_url=args.urlTarget, some_token=args.tokenTarget)
             if not projects.exists(target_key, endpoint=target_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             src_issues = {}
