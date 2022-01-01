@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master # or the name of your main branch
+      - release-*
   pull_request:
     types: [opened, synchronize, reopened]
   # schedule:
