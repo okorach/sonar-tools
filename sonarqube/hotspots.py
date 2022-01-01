@@ -95,7 +95,7 @@ class Hotspot(sq.SqObject):
             branch = ''
             if self.branch is not None:
                 branch = f'branch={self.branch}&'
-            self._url = f'{self.endpoint.url()}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
+            self._url = f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
         return self._url
 
     def to_csv(self):

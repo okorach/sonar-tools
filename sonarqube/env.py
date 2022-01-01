@@ -83,8 +83,8 @@ class Environment:
         self.token = some_token
         util.logger.debug('Setting environment: %s', str(self))
 
-    def set_token(self, token):
-        self.token = token
+    def set_token(self, some_token):
+        self.token = some_token
 
     def credentials(self):
         return (self.token, '')
@@ -516,14 +516,14 @@ def _audit_setting_is_not_set(settings, key, severity=sev.Severity.MEDIUM, domai
 def _audit_maintainability_rating_range(value, range, rating_letter,
         severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
     util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is \
-within recommended range [%3.0f%%-%3.0f%%]", value * 100, rating_letter, min_val * 100, max_val * 100)
+within recommended range [%3.0f%%-%3.0f%%]", value * 100, rating_letter, range[0] * 100, range[1] * 100)
     value = float(value)
     problems = []
     if value < range[0] or value > range[1]:
         problems.append(pb.Problem(
             domain, severity,
             f'Maintainability rating threshold {value * 100}% for {rating_letter} '
-            f'is NOT within recommended range [{min_val * 100}%-{max_val * 100}%]'))
+            f'is NOT within recommended range [{range[0] * 100}%-{range[1] * 100}%]'))
     return problems
 
 
@@ -543,7 +543,7 @@ def _audit_maintainability_rating_grid(grid, audit_settings):
         (min_val, max_val, severity, domain) = _get_multiple_values(
             4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
         problems += _audit_maintainability_rating_range(
-            float(value), float(min_val), float(max_val),
+            float(value), (float(min_val), float(max_val)),
             letter, severity, domain)
     return problems
 
@@ -648,7 +648,8 @@ def _audit_ce_background_tasks(sysinfo):
 def _audit_es_settings(sysinfo):
     util.logger.info('Auditing Search Server settings')
     problems = []
-    es_settings = sysinfo['Settings']['sonar.search.javaOpts'] + " " + sysinfo['Settings']['sonar.search.javaAdditionalOpts']
+    es_settings = sysinfo['Settings']['sonar.search.javaOpts'] + " " + \
+                  sysinfo['Settings']['sonar.search.javaAdditionalOpts']
     es_ram = __get_memory(es_settings)
     index_size = _get_store_size(sysinfo['Search State']['Store Size'])
     if es_ram < 2 * index_size and es_ram < index_size + 1000:

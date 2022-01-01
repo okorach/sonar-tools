@@ -46,7 +46,8 @@ def _check_sq_environments(import_sq, export_sq):
             util.logger.critical(
                 'Plugin %s version %s was not found or not in same version on import platform, aborting...',
                 e_name, e_vers)
-            print(f'Plugin {e_name} version {e_vers} was not found or not in same version on import platform, aborting...')
+            print(f'Plugin {e_name} version {e_vers} was not found or '
+                  'not in same version on import platform, aborting...')
             sys.exit(2)
 
 def main():
