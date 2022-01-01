@@ -42,7 +42,7 @@ def parse_args(desc):
 
 
 args = parse_args('Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
-sqenv = sonarqube.env.Environment(url=args.url, token=args.token)
+sqenv = sonarqube.env.Environment(some_url=args.url, some_token=args.token)
 sonarqube.env.set_env(args.url, args.token)
 
 # Remove unset params from the dict
