@@ -201,7 +201,7 @@ class Environment:
                 platform_settings[s['key']] = s['fieldValues']
 
         for key in audit_settings:
-            if re.match(r'audit.globalSetting.range', key):
+            if re.match(r'audit.globalSettings.range', key):
                 v = __get_multiple_values__(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
@@ -212,19 +212,19 @@ class Environment:
                                       v[0])
                     continue
                 problems += __audit_setting_range__(platform_settings, v[0], v[1], v[2], v[3], v[4])
-            elif re.match(r'audit.globalSetting.value', key):
+            elif re.match(r'audit.globalSettings.value', key):
                 v = __get_multiple_values__(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += __audit_setting_value__(platform_settings, v[0], v[1], v[2], v[3])
-            elif re.match(r'audit.globalSetting.isSet', key):
+            elif re.match(r'audit.globalSettings.isSet', key):
                 v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += __audit_setting_is_set__(platform_settings, v[0])
-            elif re.match(r'audit.globalSetting.isNotSet', key):
+            elif re.match(r'audit.globalSettings.isNotSet', key):
                 v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
