@@ -25,11 +25,10 @@
 import datetime
 import json
 import pytz
+from sonarqube import env, rules
 import sonarqube.sqobject as sq
-import sonarqube.env as env
-import sonarqube.rules as rules
-import sonarqube.utilities as util
 import sonarqube.audit_rules as arules
+import sonarqube.utilities as util
 import sonarqube.audit_problem as pb
 
 
@@ -76,9 +75,6 @@ class QualityProfile(sq.SqObject):
 
     def last_updated_date(self):
         return self.last_updated
-
-    def number_associated_projects(self):
-        return 0
 
     def age_of_last_use(self):
         if self.last_used is None:

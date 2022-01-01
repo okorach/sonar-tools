@@ -24,8 +24,9 @@
 '''
 import json
 import sonarqube.sqobject as sq
-import sonarqube.env as env
+from sonarqube import env
 
+API_RULES_SEARCH = 'rules/search'
 
 class Rule(sq.SqObject):
     def __init__(self, key, endpoint, data):
@@ -48,7 +49,7 @@ class Rule(sq.SqObject):
 
 
 def get_facet(facet, endpoint=None):
-    resp = env.get('rules/search', ctxt=endpoint, params={'ps': 1, 'facets': facet})
+    resp = env.get(API_RULES_SEARCH, ctxt=endpoint, params={'ps': 1, 'facets': facet})
     data = json.loads(resp.text)
     facet_dict = {}
     for f in data['facets'][0]['values']:
@@ -61,13 +62,13 @@ def count(endpoint=None, params=None):
         params = {}
     params['ps'] = 1
     params['p'] = 1
-    resp = env.get('rules/search', ctxt=endpoint, params=params)
+    resp = env.get(API_RULES_SEARCH, ctxt=endpoint, params=params)
     data = json.loads(resp.text)
     return data['total']
 
 
 def search(endpoint=None, params=None):
-    resp = env.get('rules/search', ctxt=endpoint, params=params)
+    resp = env.get(API_RULES_SEARCH, ctxt=endpoint, params=params)
     data = json.loads(resp.text)
     rule_list = []
     for rule in data['rules']:
