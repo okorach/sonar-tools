@@ -193,8 +193,8 @@ class Environment:
                 platform_settings[s['key']] = s['fieldValues']
 
         for key in audit_settings:
-            if re.match(r'audit.globalSetting.range', key):
-                v = __get_multiple_values(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+            if key.startswith('audit.globalSettings.range'):
+                v = _get_multiple_values(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
@@ -203,21 +203,21 @@ class Environment:
                     util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit",
                                       v[0])
                     continue
-                problems += _audit_setting_range(platform_settings, v[0], v[1], v[2], v[3], v[4])
-            elif re.match(r'audit.globalSetting.value', key):
-                v = __get_multiple_values(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+                problems += _audit_setting_range(platform_settings, (v[0], v[1]), v[2], v[3], v[4])
+            elif key.startswith('audit.globalSettings.value'):
+                v = _get_multiple_values(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += _audit_setting_value(platform_settings, v[0], v[1], v[2], v[3])
-            elif re.match(r'audit.globalSetting.isSet', key):
-                v = __get_multiple_values(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+            elif key.startswith('audit.globalSettings.isSet'):
+                v = _get_multiple_values(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += _audit_setting_is_set(platform_settings, v[0])
-            elif re.match(r'audit.globalSetting.isNotSet', key):
-                v = __get_multiple_values(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+            elif key.startswith('audit.globalSettings.isNotSet'):
+                v = _get_multiple_values(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
@@ -453,16 +453,18 @@ def _get_store_size(setting):
     return None
 
 
-def _audit_setting_range(settings, key, min_val, max_val, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+def _audit_setting_range(settings, key, range, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+    if key not in settings:
+        return []
     value = float(settings[key])
-    min_v = float(min_val)
-    max_v = float(max_val)
+    min_v = float(range[0])
+    max_v = float(range[1])
     util.logger.info("Auditing that setting %s is within recommended range [%f-%f]", key, min_v, max_v)
     problems = []
     if value < min_v or value > max_v:
         problems.append(pb.Problem(
             domain, severity,
-            f"Setting {key} value {value} is outside recommended range [{min_val}-{max_val}]"))
+            f"Setting {key} value {value} is outside recommended range [{range[0]}-{range[1]}]"))
     return problems
 
 
@@ -527,7 +529,7 @@ def _audit_maintainability_rating_grid(grid, audit_settings):
             util.logger.error("Incorrect audit configuration setting %s, skipping audit", key)
             continue
         value = thresholds[ord(letter.upper()) - 65]
-        (min_val, max_val, severity, domain) = __get_multiple_values(
+        (min_val, max_val, severity, domain) = _get_multiple_values(
             4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
         problems += _audit_maintainability_rating_range(
             float(value), float(min_val), float(max_val),
@@ -744,7 +746,7 @@ def _get_permissions_count(users_or_groups):
     return perm_counts
 
 
-def __get_multiple_values(n, setting, severity, domain):
+def _get_multiple_values(n, setting, severity, domain):
     values = [x.strip() for x in setting.split(',')]
     if len(values) < (n - 2):
         return None
