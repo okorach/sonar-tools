@@ -107,6 +107,7 @@ def _parse_arguments():
         help='Deletes user tokens older than a certain number of days')
     return util.parse_and_check_token(parser)
 
+
 def _delete_objects(problems):
     revoked_token_count = 0
     deleted_projects = {}
@@ -168,6 +169,7 @@ def main():
     util.logger.info("%d pull requests deleted", deleted_prs)
     util.logger.info("%d tokens revoked", revoked_tokens)
     sys.exit(len(problems))
+
 
 if __name__ == "__main__":
     main()

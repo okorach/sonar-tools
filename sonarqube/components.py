@@ -26,8 +26,7 @@
 import json
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
-import sonarqube.env as env
-import sonarqube.measures as measures
+from sonarqube import env, measures
 
 
 class Component(sq.SqObject):
@@ -81,7 +80,7 @@ class Component(sq.SqObject):
         return comp_list
 
     def get_number_of_filtered_issues(self, params):
-        import sonarqube.issues as issues
+        from sonarqube import issues
         params['componentKey'] = self.key
         params['ps'] = 1
         returned_data = issues.search(endpoint=self.endpoint, params=params)
@@ -95,16 +94,16 @@ class Component(sq.SqObject):
 
     def get_oldest_issue_date(self):
         ''' Returns the oldest date of all issues found '''
-        import sonarqube.issues as issues
+        from sonarqube import issues
         return issues.get_oldest_issue(endpoint=self.endpoint, params={'componentKeys': self.key})
 
     def get_newest_issue_date(self):
         ''' Returns the newest date of all issues found '''
-        import sonarqube.issues as issues
+        from sonarqube import issues
         return issues.get_newest_issue(endpoint=self.endpoint, params={'componentKeys': self.key})
 
     def get_issues(self):
-        import sonarqube.issues as issues
+        from sonarqube import issues
         issue_list = issues.search(endpoint=self.endpoint, params={'componentKeys': self.key})
         self.nbr_issues = len(issue_list)
         return issue_list

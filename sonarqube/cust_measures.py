@@ -25,7 +25,7 @@
         Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 '''
 
-import sonarqube.env
+from sonarqube import env
 import sonarqube.custom_measures as cust_measures
 import sonarqube.utilities as utils
 
@@ -41,8 +41,8 @@ def parse_args(desc):
 
 def main():
     args = parse_args('Manipulate custom metrics')
-    sqenv = sonarqube.env.Environment(url=args.url, token=args.token)
-    sonarqube.env.set_env(args.url, args.token)
+    sqenv = env.Environment(url=args.url, token=args.token)
+    env.set_env(args.url, args.token)
 
     # Remove unset params from the dict
     params = vars(args)
@@ -55,6 +55,7 @@ def main():
     if params.get('value', None) is not None:
         cust_measures.update(project_key=params['componentKeys'], metric_key=params['metricKey'],
             value=params['value'], description=params.get('description', None))
+
 
 if __name__ == '__main__':
     main()

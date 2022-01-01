@@ -139,5 +139,6 @@ def main():
         util.logger.info("%d issues found during audit", len(problems))
     sys.exit(len(problems))
 
+
 if __name__ == "__main__":
     main()

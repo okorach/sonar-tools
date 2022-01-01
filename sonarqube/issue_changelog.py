@@ -188,7 +188,7 @@ def get_event_from_diff(diff):
         return event
     dnewval = diff['newValue']
 
-    if dkey == 'severity' or dkey == 'type' or dkey == 'tags':
+    if dkey in ('severity', 'type', 'tags'):
         event = {'event': dkey, 'value': dnewval}
     if dkey == 'resolution' and 'newValue' in diff:
         event = resolution_diff_to_changelog(dnewval)
@@ -201,10 +201,10 @@ def get_event_from_diff(diff):
     if dkey == 'assignee':
         event = assignee_diff_to_changelog(diff)
     if dkey == 'from_short_branch':
-        event = {'event': 'merge', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
+        event = {'event': 'merge', 'value': f"{diff['oldValue']} -> {dnewval}"}
     if dkey == 'from_branch':
-        event = {'event': 'fork', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
+        event = {'event': 'fork', 'value': f"{diff['oldValue']} -> {dnewval}"}
     if dkey == 'effort':
-        event = {'event': 'effort', 'value': '{0} -> {1}'.format(diff['oldValue'], dnewval)}
+        event = {'event': 'effort', 'value': f"{diff['oldValue']} -> {dnewval}"}
 
     return event

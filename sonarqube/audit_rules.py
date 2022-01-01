@@ -24,7 +24,7 @@ import sonarqube.audit_types as typ
 
 import sonarqube.utilities as util
 
-__RULES__ = {}
+__RULES = {}
 
 
 class RuleId(enum.Enum):
@@ -146,14 +146,14 @@ def to_id(val):
 
 
 def load():
-    global __RULES__
+    global __RULES
     import pathlib
     util.logger.info("Loading audit rules")
     path = pathlib.Path(__file__).parent
-    with open(path / 'rules.json', 'r') as rulefile:
+    with open(path / 'rules.json', 'r', encoding='utf-8') as rulefile:
         rules = json.loads(rulefile.read())
     rulefile.close()
-    __RULES__ = {}
+    __RULES = {}
     for rule_id, rule in rules.items():
         if to_id(rule_id) is None:
             raise RuleConfigError(f"Rule '{rule_id}' from rules.json is not a legit ruleId")
@@ -163,14 +163,14 @@ def load():
             raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect severity")
         if 'message' not in rule:
             raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no message defined'")
-        __RULES__[to_id(rule_id)] = Rule(
+        __RULES[to_id(rule_id)] = Rule(
             rule_id, rule['severity'], rule['type'], rule.get('object', ''), rule['message'])
 
     # Cross check that all rule Ids are defined in the JSON
     for rule in RuleId:
-        if rule not in __RULES__:
-            raise RuleConfigError("Rule {} has no configuration defined in 'rules.json'".format(str(rule)))
+        if rule not in __RULES:
+            raise RuleConfigError(f"Rule {rule} has no configuration defined in 'rules.json'")
 
 
 def get_rule(rule_id):
-    return __RULES__[rule_id]
+    return __RULES[rule_id]
