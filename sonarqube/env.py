@@ -201,7 +201,7 @@ class Environment:
                 platform_settings[s['key']] = s['fieldValues']
 
         for key in audit_settings:
-            if re.match(r'audit.globalSetting.range', key):
+            if re.match(r'audit.globalSettings.range', key):
                 v = __get_multiple_values__(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
@@ -212,19 +212,19 @@ class Environment:
                                       v[0])
                     continue
                 problems += __audit_setting_range__(platform_settings, v[0], v[1], v[2], v[3], v[4])
-            elif re.match(r'audit.globalSetting.value', key):
+            elif re.match(r'audit.globalSettings.value', key):
                 v = __get_multiple_values__(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += __audit_setting_value__(platform_settings, v[0], v[1], v[2], v[3])
-            elif re.match(r'audit.globalSetting.isSet', key):
+            elif re.match(r'audit.globalSettings.isSet', key):
                 v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
                     continue
                 problems += __audit_setting_is_set__(platform_settings, v[0])
-            elif re.match(r'audit.globalSetting.isNotSet', key):
+            elif re.match(r'audit.globalSettings.isNotSet', key):
                 v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
                     util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
@@ -463,6 +463,9 @@ def __get_store_size__(setting):
 
 
 def __audit_setting_range__(settings, key, min_val, max_val, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+    if key not in settings:
+        util.logger.warning("Setting %s does not exist, skipping...", key)
+        return []
     value = float(settings[key])
     min_v = float(min_val)
     max_v = float(max_val)
@@ -477,6 +480,9 @@ def __audit_setting_range__(settings, key, min_val, max_val, severity=sev.Severi
 
 
 def __audit_setting_value__(settings, key, value, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+    if key not in settings:
+        util.logger.warning("Setting %s does not exist, skipping...", key)
+        return []
     util.logger.info("Auditing that setting %s has common/recommended value '%s'", key, value)
     s = settings.get(key, '')
     problems = []
@@ -488,6 +494,9 @@ def __audit_setting_value__(settings, key, value, severity=sev.Severity.MEDIUM, 
 
 
 def __audit_setting_is_set__(settings, key):
+    if key not in settings:
+        util.logger.warning("Setting %s does not exist, skipping...", key)
+        return []
     util.logger.info("Auditing that setting %s is set", key)
     problems = []
     if key in settings and settings[key] != '':
@@ -499,6 +508,9 @@ def __audit_setting_is_set__(settings, key):
 
 
 def __audit_setting_is_not_set__(settings, key, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
+    if key not in settings:
+        util.logger.warning("Setting %s does not exist, skipping...", key)
+        return []
     util.logger.info("Auditing that setting %s is not set", key)
     problems = []
     if key in settings and settings[key] != '':
@@ -529,7 +541,7 @@ def __audit_maintainability_rating_grid__(grid, audit_settings):
     problems = []
     util.logger.debug("Auditing maintainabillity rating grid")
     for key in audit_settings:
-        if not re.match(r'audit.globalSetting.maintainabilityRating', key):
+        if not re.match(r'audit.globalSettings.maintainabilityRating', key):
             continue
         util.logger.debug('Unpacking %s', key)
         (_, _, _, letter, _, _) = key.split('.')
