@@ -723,15 +723,6 @@ def get_newest_issue(endpoint=None, params=None):
     return __get_one_issue_date(endpoint=endpoint, asc_sort='false', params=params)
 
 
-def get_number_of_issues(endpoint=None, **kwargs):
-    ''' Returns number of issues of a search '''
-    kwtemp = kwargs.copy()
-    kwtemp['ps'] = 1
-    returned_data = search(endpoint=endpoint, params=kwtemp)
-    util.logger.debug("Project %s has %d issues", kwargs['componentKeys'], returned_data['total'])
-    return returned_data['total']
-
-
 def _search_project_daily_issues(key, day, sqenv=None, **kwargs):
     util.logger.debug("Searching daily issues for project %s on day %s", key, day)
     kw = kwargs.copy()
@@ -758,10 +749,11 @@ def _search_project_daily_issues(key, day, sqenv=None, **kwargs):
     return issues
 
 
-def count(endpoint=None, params=None):
-    resp = env.get(Issue.SEARCH_API, params=params, ctxt=endpoint)
-    data = resp.json_load(resp.text)
-    return data['total']
+def count(endpoint=None, **kwargs):
+    ''' Returns number of issues of a search '''
+    returned_data = search(endpoint=endpoint, params=kwargs.copy().update({'ps': 1}))
+    util.logger.debug("Issue search %s would return %d issues", str(kwargs), returned_data['total'])
+    return returned_data['total']
 
 
 def search_project_issues(key, sqenv=None, **kwargs):
@@ -772,7 +764,7 @@ def search_project_issues(key, sqenv=None, **kwargs):
     startdate = oldest
     enddate = get_newest_issue(endpoint=sqenv, **kwargs)
 
-    nbr_issues = get_number_of_issues(sqenv=sqenv, **kwargs)
+    nbr_issues = count(sqenv=sqenv, **kwargs)
     days_slice = abs((enddate - startdate).days)+1
     if nbr_issues > Issue.MAX_SEARCH:
         days_slice = (Issue.MAX_SEARCH * days_slice) // (nbr_issues * 4)
