@@ -51,7 +51,7 @@ class QualityProfile(sq.SqObject):
             self.project_count = data.get('projectCount', None)
             self.is_built_in = data['isBuiltIn']
             self.nbr_rules = int(data['activeRuleCount'])
-            self._nbr_deprecated_rules = int(data['activeDeprecatedRuleCount'])
+            self.nbr_deprecated_rules = int(data['activeDeprecatedRuleCount'])
             self.parent_key = data.get('parentKey', None)
             self.parent_name = data.get('parentName', None)
 
@@ -104,10 +104,7 @@ class QualityProfile(sq.SqObject):
         return parent_qp.get_built_in_parent()
 
     def has_deprecated_rules(self):
-        return self.nbr_of_deprecated_rules() > 0
-
-    def nbr_of_deprecated_rules(self):
-        return self._nbr_deprecated_rules
+        return self.nbr_deprecated_rules > 0
 
     def audit(self, audit_settings=None):
         util.logger.debug("Auditing %s", str(self))
@@ -142,10 +139,10 @@ class QualityProfile(sq.SqObject):
             max_deprecated_rules = 0
             parent_qp = self.get_built_in_parent()
             if parent_qp is not None:
-                max_deprecated_rules = parent_qp.nbr_of_deprecated_rules()
-            if self.nbr_of_deprecated_rules() > max_deprecated_rules:
+                max_deprecated_rules = parent_qp.nbr_deprecated_rules
+            if self.nbr_deprecated_rules > max_deprecated_rules:
                 rule = arules.get_rule(arules.RuleId.QP_USE_DEPRECATED_RULES)
-                msg = rule.msg.format(str(self), self._nbr_deprecated_rules)
+                msg = rule.msg.format(str(self), self.nbr_deprecated_rules)
                 problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         return problems
