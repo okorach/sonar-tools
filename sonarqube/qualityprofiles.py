@@ -122,7 +122,7 @@ class QualityProfile(sq.SqObject):
     def audit(self, audit_settings=None):
         util.logger.debug("Auditing %s", str(self))
         if self.is_built_in():
-            util.logger.debug("%s is built-in, skipping audit", str(self))
+            util.logger.info("%s is built-in, skipping audit", str(self))
             return []
 
         util.logger.debug("Auditing %s (key '%s')", str(self), self.key)
