@@ -11,6 +11,7 @@ echo "Y" | pip uninstall sonar-tools
 pip install sonar-tools
 for env in $*
 do
+    . sqenv $env
     sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main
     sonar-issues-export -o tmp/issues-$env-released.csv
     sonar-audit || echo "OK" >tmp/audit-$env-released.csv
