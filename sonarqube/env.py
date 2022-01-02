@@ -208,9 +208,7 @@ class Environment:
                 problems += _audit_setting_set(key, False, platform_settings, audit_settings)
 
         problems += (
-            _audit_maintainability_rating_grid(
-                platform_settings['sonar.technicalDebt.ratingGrid'],
-                audit_settings)
+            _audit_maintainability_rating_grid(platform_settings,audit_settings)
             + self._audit_project_default_visibility()
             + audit_sysinfo(self.sys_info())
             + self._audit_admin_password()
@@ -224,12 +222,10 @@ class Environment:
         problems = []
         if self.version() < (8, 7, 0):
             resp = self.get('navigation/organization', params={'organization': 'default-organization'})
-            data = json.loads(resp.text)
-            visi = data['organization']['projectVisibility']
+            visi = json.loads(resp.text)['organization']['projectVisibility']
         else:
             resp = self.get('settings/values', params={'keys': 'projects.default.visibility'})
-            data = json.loads(resp.text)
-            visi = data['settings'][0]['value']
+            visi = json.loads(resp.text)['settings'][0]['value']
         util.logger.info("Project default visibility is '%s'", visi)
         if conf.get_property('checkDefaultProjectVisibility') and visi != 'private':
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
@@ -509,8 +505,8 @@ def _audit_maintainability_rating_range(value, range, rating_letter, severity, d
         f'is NOT within recommended range [{range[0] * 100}%-{range[1] * 100}%]')]
 
 
-def _audit_maintainability_rating_grid(grid, audit_settings):
-    thresholds = grid.split(',')
+def _audit_maintainability_rating_grid(platform_settings, audit_settings):
+    thresholds = platform_settings['sonar.technicalDebt.ratingGrid'].split(',')
     problems = []
     util.logger.debug("Auditing maintainabillity rating grid")
     for key in audit_settings:
@@ -530,19 +526,18 @@ def _audit_maintainability_rating_grid(grid, audit_settings):
 
 def _audit_log_level(sysinfo):
     util.logger.debug('Auditing log levels')
-    problems = []
     log_level = sysinfo["Web Logging"]["Logs Level"]
+    if log_level not in ("DEBUG", "TRACE"):
+        return []
+    if log_level == "TRACE":
+        return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
+            "Log level set to TRACE, this does very negatively affect platform performance, "
+            "reverting to INFO is required")]
     if log_level == "DEBUG":
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.HIGH,
-            "Log level is set to DEBUG, this may affect platform performance, \
-reverting to INFO is recommended"))
-    elif log_level == "TRACE":
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
-            "Log level set to TRACE, this does very negatively affect platform performance, \
-reverting to INFO is required"))
-    return problems
+        return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.HIGH,
+            "Log level is set to DEBUG, this may affect platform performance, "
+            "reverting to INFO is recommended")]
+    return []
 
 
 def __sif_version(sif, digits=3, as_string=False):
