@@ -6,11 +6,11 @@
 	],
 	"settings": {
 		"sonarlint.connectedMode.project": {
-			"connectionId": "SQ LATEST",
-			"projectKey": "sonarqube-tools"
+			"connectionId": "SonarCloud",
+			"projectKey": "okorach_sonarqube-tools"
 		},
 		"python.pythonPath": "/usr/local/bin/python3",
-		"sonarlint.analyzerProperties": null,
+		"sonarlint.analyzerProperties": {},
 		"git.confirmSync": false,
 		"git.autofetch": true,
 		"window.zoomLevel": 0,
