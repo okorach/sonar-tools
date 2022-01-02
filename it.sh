@@ -14,7 +14,7 @@ do
     . sqenv $env
     sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main
     sonar-issues-export -o tmp/issues-$env-released.csv
-    sonar-audit || echo "OK" >tmp/audit-$env-released.csv
+    sonar-audit >tmp/audit-$env-released.csv || echo "OK"
     sonar-loc -n -a >tmp/loc-$env-released.csv 
 done
 
@@ -42,11 +42,11 @@ do
     sonar-issues-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >tmp/issues-$env-3.json
     [ -s "tmp/issues-$env-3.json" ]
 
-    sonar-audit || echo "OK" >tmp/audit-$env-unreleased.csv
+    sonar-audit >tmp/audit-$env-unreleased.csv || echo "OK"
     [ -s "tmp/audit-$env-unreleased.csv" ]
     sonar-audit -f tmp/audit-$env-1.json || echo "OK"
     [ -s "tmp/audit-$env-1.json" ]
-    sonar-audit --format json --what qp,qg,settings || echo "OK" >tmp/audit-$env-2.json
+    sonar-audit --format json --what qp,qg,settings >tmp/audit-$env-2.json || echo "OK"
     [ -s "tmp/audit-$env-2.json" ]
 
     sonar-housekeeper -P 365 -B 90 -T 180 -R 30 >tmp/housekeeper-$env-1.csv || echo "OK"
