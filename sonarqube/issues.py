@@ -394,7 +394,7 @@ class Issue(sq.SqObject):
         mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
         # Strip timezone
         mtime = mtime.split('+')[0]
-        msg = self.message.replace('"', '""')
+        msg = self.message.replace('"', '""').replace("\n", " ")
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self._severity, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,
@@ -535,12 +535,14 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
     if date_stop is None:
         date_stop = get_newest_issue(endpoint=endpoint,
                                      params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
-    util.logger.info("Search by date between [%s - %s]", str(date_start), str(date_stop))
+    util.logger.info("Search by date between [%s - %s]",
+        util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
     issue_list = {}
     new_params.update({'createdAfter': date_start, 'createdBefore': date_stop})
     try:
         issue_list = _search_all(params=new_params, endpoint=endpoint)
-    except TooManyIssuesError:
+    except TooManyIssuesError as e:
+        util.logger.info("Too many issues (%d), splitting time window", e.nbr_issues)
         diff = (date_stop - date_start).days
         if diff == 0:
             util.logger.info('Too many issues, recursing')
@@ -597,7 +599,7 @@ def _search_all(params, endpoint=None, raise_error=True):
             raise TooManyIssuesError(nbr_issues, f'{nbr_issues} issues returned by api/issues/search, '
                                      f'this is more than the max {Issue.MAX_SEARCH} possible')
         p += 1
-    util.logger.info('Returning %d issues', len(issue_list))
+    util.logger.info('Collected %d issues', len(issue_list))
     return issue_list
 
 
