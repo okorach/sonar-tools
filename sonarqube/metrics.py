@@ -24,7 +24,7 @@
 '''
 import re
 import json
-import sonarqube.env as env
+from sonarqube import env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 

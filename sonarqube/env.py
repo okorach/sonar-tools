@@ -208,7 +208,7 @@ class Environment:
                 problems += _audit_setting_set(key, False, platform_settings, audit_settings)
 
         problems += (
-            _audit_maintainability_rating_grid(platform_settings,audit_settings)
+            _audit_maintainability_rating_grid(platform_settings, audit_settings)
             + self._audit_project_default_visibility()
             + audit_sysinfo(self.sys_info())
             + self._audit_admin_password()
@@ -448,7 +448,6 @@ def _audit_setting_value(key, platform_settings, audit_settings):
     return [pb.Problem(v[2], v[3], f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'")]
 
 
-
 def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version):
     v = _get_multiple_values(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
     if v is None:
@@ -458,7 +457,7 @@ def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version):
         util.logger.warning("Setting %s does not exist, skipping...", v[0])
         return []
     if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
-        sq_version >= (8, 0, 0):
+       sq_version >= (8, 0, 0):
         util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit", v[0])
         return []
     value, min_v, max_v = float(platform_settings[v[0]]), float(v[1]), float(v[2])
