@@ -68,15 +68,15 @@ class Component(sq.SqObject):
             resp = env.get('measures/component_tree', params=parms, ctxt=self.endpoint)
             data = json.loads(resp.text)
             for d in data['components']:
-                issues = 0
+                nbr_issues = 0
                 for m in d['measures']:
-                    issues += int(m['value'])
-                if with_issues and issues == 0:
+                    nbr_issues += int(m['value'])
+                if with_issues and nbr_issues == 0:
                     util.logger.debug("Subcomponent %s has 0 issues, skipping", d['key'])
                     continue
                 comp_list[d['key']] = Component(d['key'], self.endpoint, data=d)
-                comp_list[d['key']].nbr_issues = issues
-                util.logger.debug("Component %s has %d issues", d['key'], issues)
+                comp_list[d['key']].nbr_issues = nbr_issues
+                util.logger.debug("Component %s has %d issues", d['key'], nbr_issues)
         return comp_list
 
     def get_number_of_filtered_issues(self, params):
