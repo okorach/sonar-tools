@@ -199,13 +199,9 @@ class Environment:
         platform_settings = self.__get_platform_settings()
         for key in audit_settings:
             if key.startswith('audit.globalSettings.range'):
-                problems += _get_range_problems(key, platform_settings, audit_settings, self.version())
+                problems += _audit_setting_in_range(key, platform_settings, audit_settings, self.version())
             elif key.startswith('audit.globalSettings.value'):
-                v = _get_multiple_values(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
-                if v is None:
-                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
-                    continue
-                problems += _audit_setting_value(platform_settings, v[0], v[1], v[2], v[3])
+                problems += _audit_setting_value(key, platform_settings, audit_settings)
             elif key.startswith('audit.globalSettings.isSet'):
                 problems += _audit_setting_set(key, True, platform_settings, audit_settings)
             elif key.startswith('audit.globalSettings.isNotSet'):
@@ -441,45 +437,40 @@ def _get_store_size(setting):
     return None
 
 
-def _audit_setting_range(settings, key, range, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    if key not in settings:
-        util.logger.warning("Setting %s does not exist, skipping...", key)
+def _audit_setting_value(key, platform_settings, audit_settings):
+    v = _get_multiple_values(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+    if v is None:
+        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
-    value = float(settings[key])
-    min_v, max_v = [float(x) for x in range]
-    util.logger.info("Auditing that setting %s is within recommended range [%f-%f]", key, min_v, max_v)
-    problems = []
-    if value < min_v or value > max_v:
-        problems = [pb.Problem(domain, severity,
-            f"Setting '{key}' value {value} is outside recommended range [{range[0]}-{range[1]}]")]
-    return problems
-
-
-def _audit_setting_value(settings, key, value, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    if key not in settings:
-        util.logger.warning("Setting %s does not exist, skipping...", key)
+    if v[0] not in platform_settings:
+        util.logger.warning("Setting %s does not exist, skipping...", v[0])
         return []
-    util.logger.info("Auditing that setting %s has common/recommended value '%s'", key, value)
-    s = settings.get(key, '')
-    problems = []
-    if s != value:
-        problems.append(pb.Problem(
-            domain, severity,
-            f"Setting {key} has potentially incorrect or unsafe value '{s}'"))
-    return problems
+    util.logger.info("Auditing that setting %s has common/recommended value '%s'", v[0], v[1])
+    s = platform_settings.get(v[0], '')
+    if s == v[1]:
+        return []
+    return [pb.Problem(v[2], v[3], f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'")]
 
 
 
-def _get_range_problems(key, platform_settings, audit_settings, version):
+def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version):
     v = _get_multiple_values(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
     if v is None:
         util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
+    if v[0] not in platform_settings:
+        util.logger.warning("Setting %s does not exist, skipping...", v[0])
+        return []
     if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
-        version >= (8, 0, 0):
+        sq_version >= (8, 0, 0):
         util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit", v[0])
         return []
-    return _audit_setting_range(platform_settings, (v[0], v[1]), v[2], v[3], v[4])
+    value, min_v, max_v = float(platform_settings[v[0]]), float(v[1]), float(v[2])
+    util.logger.info("Auditing that setting %s is within recommended range [%f-%f]", v[0], min_v, max_v)
+    if min_v <= value <= max_v:
+        return []
+    return [pb.Problem(v[4], v[3],
+            f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]")]
 
 
 def _audit_setting_set(key, check_is_set, platform_settings, audit_settings):
@@ -500,25 +491,22 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings):
             util.logger.info("Setting %s is not set", key)
     else:
         if not check_is_set:
-            util.logger.info("Setting %s is set with value %s", key, settings[key])
+            util.logger.info("Setting %s is set with value %s", key, platform_settings[key])
         else:
             problems = [pb.Problem(v[1], v[2], f"Setting {key} is set, although it should probably not")]
 
     return problems
 
 
-def _audit_maintainability_rating_range(value, range, rating_letter,
-        severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is \
-within recommended range [%3.0f%%-%3.0f%%]", value * 100, rating_letter, range[0] * 100, range[1] * 100)
-    value = float(value)
-    problems = []
-    if value < range[0] or value > range[1]:
-        problems.append(pb.Problem(
-            domain, severity,
-            f'Maintainability rating threshold {value * 100}% for {rating_letter} '
-            f'is NOT within recommended range [{range[0] * 100}%-{range[1] * 100}%]'))
-    return problems
+def _audit_maintainability_rating_range(value, range, rating_letter, severity, domain):
+    util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is "
+                      "within recommended range [%3.0f%%-%3.0f%%]",
+                      value * 100, rating_letter, range[0] * 100, range[1] * 100)
+    if range[0] <= value <= range[1]:
+        return []
+    return [pb.Problem(domain, severity,
+        f'Maintainability rating threshold {value * 100}% for {rating_letter} '
+        f'is NOT within recommended range [{range[0] * 100}%-{range[1] * 100}%]')]
 
 
 def _audit_maintainability_rating_grid(grid, audit_settings):
@@ -526,19 +514,17 @@ def _audit_maintainability_rating_grid(grid, audit_settings):
     problems = []
     util.logger.debug("Auditing maintainabillity rating grid")
     for key in audit_settings:
-        if not re.match(r'audit.globalSettings.maintainabilityRating', key):
+        if not key.startswith('audit.globalSettings.maintainabilityRating'):
             continue
-        util.logger.debug('Unpacking %s', key)
         (_, _, _, letter, _, _) = key.split('.')
         if letter not in ['A', 'B', 'C', 'D']:
             util.logger.error("Incorrect audit configuration setting %s, skipping audit", key)
             continue
-        value = thresholds[ord(letter.upper()) - 65]
-        (min_val, max_val, severity, domain) = _get_multiple_values(
-            4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
-        problems += _audit_maintainability_rating_range(
-            float(value), (float(min_val), float(max_val)),
-            letter, severity, domain)
+        value = float(thresholds[ord(letter.upper()) - 65])
+        v = _get_multiple_values(4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
+        if v is None:
+            continue
+        problems += _audit_maintainability_rating_range(value, (float(v[0]), float(v[1])), letter, v[2], v[3])
     return problems
 
 
