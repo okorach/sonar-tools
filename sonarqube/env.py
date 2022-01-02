@@ -51,6 +51,8 @@ _GLOBAL_PERMISSIONS = {
     "scan": "Run Analysis"
 }
 
+_JVM_OPTS = ('sonar.{}.javaOpts', 'sonar.{}.javaAdditionalOpts')
+
 class UnsupportedOperation(Exception):
     def __init__(self, message):
         super().__init__()
@@ -178,9 +180,7 @@ class Environment:
             url_prefix += f'{sep}{p}={params[p]}'
         return url_prefix
 
-    def audit(self, audit_settings=None):
-        util.logger.info('--- Auditing global settings ---')
-        problems = []
+    def __get_platform_settings(self):
         resp = self.get('settings/values')
         json_s = json.loads(resp.text)
         platform_settings = {}
@@ -191,20 +191,15 @@ class Environment:
                 platform_settings[s['key']] = ','.join(s['values'])
             elif 'fieldValues' in s:
                 platform_settings[s['key']] = s['fieldValues']
+        return platform_settings
 
+    def audit(self, audit_settings=None):
+        util.logger.info('--- Auditing global settings ---')
+        problems = []
+        platform_settings = self.__get_platform_settings()
         for key in audit_settings:
             if key.startswith('audit.globalSettings.range'):
-                v = _get_multiple_values(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
-
-                if v is None:
-                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
-                    continue
-                if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
-                   self.version() >= (8, 0, 0):
-                    util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit",
-                                      v[0])
-                    continue
-                problems += _audit_setting_range(platform_settings, (v[0], v[1]), v[2], v[3], v[4])
+                problems += _get_range_problems(key, platform_settings, audit_settings, self.version())
             elif key.startswith('audit.globalSettings.value'):
                 v = _get_multiple_values(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
                 if v is None:
@@ -212,17 +207,9 @@ class Environment:
                     continue
                 problems += _audit_setting_value(platform_settings, v[0], v[1], v[2], v[3])
             elif key.startswith('audit.globalSettings.isSet'):
-                v = _get_multiple_values(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
-                if v is None:
-                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
-                    continue
-                problems += _audit_setting_is_set(platform_settings, v[0])
+                problems += _audit_setting_set(key, True, platform_settings, audit_settings)
             elif key.startswith('audit.globalSettings.isNotSet'):
-                v = _get_multiple_values(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
-                if v is None:
-                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
-                    continue
-                problems += _audit_setting_is_not_set(platform_settings, v[0], v[1], v[2])
+                problems += _audit_setting_set(key, False, platform_settings, audit_settings)
 
         problems += (
             _audit_maintainability_rating_grid(
@@ -459,14 +446,12 @@ def _audit_setting_range(settings, key, range, severity=sev.Severity.MEDIUM, dom
         util.logger.warning("Setting %s does not exist, skipping...", key)
         return []
     value = float(settings[key])
-    min_v = float(range[0])
-    max_v = float(range[1])
+    min_v, max_v = [float(x) for x in range]
     util.logger.info("Auditing that setting %s is within recommended range [%f-%f]", key, min_v, max_v)
     problems = []
     if value < min_v or value > max_v:
-        problems.append(pb.Problem(
-            domain, severity,
-            f"Setting {key} value {value} is outside recommended range [{range[0]}-{range[1]}]"))
+        problems = [pb.Problem(domain, severity,
+            f"Setting '{key}' value {value} is outside recommended range [{range[0]}-{range[1]}]")]
     return problems
 
 
@@ -484,32 +469,41 @@ def _audit_setting_value(settings, key, value, severity=sev.Severity.MEDIUM, dom
     return problems
 
 
-def _audit_setting_is_set(settings, key):
-    if key not in settings:
-        util.logger.warning("Setting %s does not exist, skipping...", key)
+
+def _get_range_problems(key, platform_settings, audit_settings, version):
+    v = _get_multiple_values(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+    if v is None:
+        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
-    util.logger.info("Auditing that setting %s is set", key)
-    problems = []
-    if key in settings and settings[key] != '':
-        util.logger.info("Setting %s is set with value %s", key, settings[key])
-    else:
-        rule = rules.get_rule(rules.RuleId.SETTING_NOT_SET)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(key)))
-    return problems
+    if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
+        version >= (8, 0, 0):
+        util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit", v[0])
+        return []
+    return _audit_setting_range(platform_settings, (v[0], v[1]), v[2], v[3], v[4])
 
 
-def _audit_setting_is_not_set(settings, key, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    if key not in settings:
+def _audit_setting_set(key, check_is_set, platform_settings, audit_settings):
+    v = _get_multiple_values(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+    if v is None:
+        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
+        return []
+    if key not in platform_settings:
         util.logger.warning("Setting %s does not exist, skipping...", key)
         return []
-    util.logger.info("Auditing that setting %s is not set", key)
+    util.logger.info("Auditing whether setting %s is set or not", key)
     problems = []
-    if key in settings and settings[key] != '':
-        problems.append(
-            pb.Problem(domain, severity,
-                       f"Setting {key} is set, although it should probably not"))
+    if platform_settings[key] == '':
+        if check_is_set:
+            rule = rules.get_rule(rules.RuleId.SETTING_NOT_SET)
+            problems = [pb.Problem(rule.type, rule.severity, rule.msg.format(key))]
+        else:
+            util.logger.info("Setting %s is not set", key)
     else:
-        util.logger.info("Setting %s is not set", key)
+        if not check_is_set:
+            util.logger.info("Setting %s is set with value %s", key, settings[key])
+        else:
+            problems = [pb.Problem(v[1], v[2], f"Setting {key} is set, although it should probably not")]
+
     return problems
 
 
@@ -576,7 +570,8 @@ def __sif_version(sif, digits=3, as_string=False):
 def _audit_web_settings(sysinfo):
     util.logger.debug('Auditing Web settings')
     problems = []
-    web_settings = sysinfo['Settings']['sonar.web.javaOpts'] + " " + sysinfo['Settings']['sonar.web.javaAdditionalOpts']
+    opts = [x.format('web') for x in _JVM_OPTS]
+    web_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     web_ram = __get_memory(web_settings)
     if web_ram < 1024 or web_ram > 2048:
         rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
@@ -592,7 +587,8 @@ def _audit_web_settings(sysinfo):
 def _audit_ce_settings(sysinfo):
     util.logger.info('Auditing CE settings')
     problems = []
-    ce_settings = sysinfo['Settings']['sonar.ce.javaOpts'] + " " + sysinfo['Settings']['sonar.ce.javaAdditionalOpts']
+    opts = [x.format('ce') for x in _JVM_OPTS]
+    ce_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     ce_ram = __get_memory(ce_settings)
     ce_tasks = sysinfo['Compute Engine Tasks']
     ce_workers = ce_tasks['Worker Count']
@@ -609,7 +605,7 @@ def _audit_ce_settings(sysinfo):
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers)))
     else:
         util.logger.debug("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
-                         "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
+                          "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
 
     problems += __audit_log4shell(__sif_version(sysinfo), ce_settings, rules.RuleId.LOG4SHELL_CE)
     return problems
@@ -648,8 +644,8 @@ def _audit_ce_background_tasks(sysinfo):
 def _audit_es_settings(sysinfo):
     util.logger.info('Auditing Search Server settings')
     problems = []
-    es_settings = sysinfo['Settings']['sonar.search.javaOpts'] + " " + \
-                  sysinfo['Settings']['sonar.search.javaAdditionalOpts']
+    opts = [x.format('ce') for x in _JVM_OPTS]
+    es_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     es_ram = __get_memory(es_settings)
     index_size = _get_store_size(sysinfo['Search State']['Store Size'])
     if es_ram < 2 * index_size and es_ram < index_size + 1000:
