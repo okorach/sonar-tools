@@ -25,9 +25,11 @@
 import datetime
 import json
 import pytz
-from sonarqube import env, rules
+from sonarqube import env
 import sonarqube.sqobject as sq
 import sonarqube.audit_rules as arules
+import sonarqube.rules as rules
+
 import sonarqube.utilities as util
 import sonarqube.audit_problem as pb
 
