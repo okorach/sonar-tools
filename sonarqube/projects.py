@@ -45,6 +45,7 @@ PROJECT_SEARCH_API = 'projects/search'
 PRJ_QUALIFIER = 'TRK'
 APP_QUALIFIER = 'APP'
 
+_BIND_SEP = ":::"
 
 class Project(comp.Component):
 
@@ -61,6 +62,7 @@ class Project(comp.Component):
         self.branches = None
         self.pull_requests = None
         self._ncloc_with_branches = None
+        self._binding = {'has_binding': True, 'binding': None}
         self.__load__(data)
         PROJECTS[key] = self
 
@@ -200,6 +202,40 @@ class Project(comp.Component):
             return False
         util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
         return True
+
+    def has_binding(self):
+        _ = self.binding()
+        return self._binding['has_binding']
+
+    def binding(self):
+        if self._binding['has_binding'] and self._binding['binding'] is None:
+            resp = env.get('alm_settings/get_binding', ctxt=self.endpoint,
+                           params={'project': self.key}, exit_on_error=False)
+            util.logger.debug('resp = %s', str(resp))
+            # 8.9 returns 404, 9.x return 400
+            if resp.status_code in (400, 404):
+                self._binding['has_binding'] = False
+            elif resp.status_code // 100 == 2:
+                self._binding['has_binding'] = True
+                self._binding['binding'] = json.loads(resp.text)
+            else:
+                util.logger.fatal("alm_settings/get_binding returning status code %d, exiting", resp.status_code)
+                raise SystemExit(1)
+        return self._binding['binding']
+
+    def is_part_of_monorepo(self):
+        if self.binding() is None:
+            return False
+        return self.binding()['monorepo']
+
+    def binding_key(self):
+        p_bind = self.binding()
+        if p_bind is None:
+            return None
+        key = p_bind['alm'] + _BIND_SEP + p_bind['repository']
+        if p_bind['alm'] in ('azure', 'bitbucket'):
+            key += _BIND_SEP + p_bind['slug']
+        return key
 
     def age_of_last_analysis(self):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
@@ -379,6 +415,21 @@ Is this normal ?", gr['name'], str(self.key))
     def __audit_bg_tasks(self, audit_settings):
         return tasks.search_last(component_key=self.key, endpoint=self.endpoint).audit(audit_settings)
 
+    def __audit_binding_valid(self, audit_settings):
+        if self.endpoint.edition() == 'community' or not audit_settings['audit.projects.bindings'] or \
+           not self.has_binding():
+            return []
+        resp = env.get('alm_settings/validate_binding', ctxt=self.endpoint, params={'project': self.key},
+                       exit_on_error=False)
+        if resp.status_code // 100 == 2:
+            return []
+        elif resp.status_code == 404:
+            rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
+        else:
+            util.logger.fatal("alm_settings/validate_binding returning status code %d, exiting", resp.status_code)
+            raise SystemExit(1)
+
     def audit(self, audit_settings):
         util.logger.debug("Auditing %s", str(self))
         return (
@@ -389,6 +440,7 @@ Is this normal ?", gr['name'], str(self.key))
             + self.__audit_languages__(audit_settings)
             + self.__audit_permissions__(audit_settings)
             + self.__audit_bg_tasks(audit_settings)
+            + self.__audit_binding_valid(audit_settings)
         )
 
     def delete_if_obsolete(self, days=180):
@@ -530,10 +582,19 @@ def create_project(key, name=None, visibility='private', sqenv=None):
 def audit(audit_settings, endpoint=None):
     util.logger.info("--- Auditing projects ---")
     plist = search(endpoint)
+    is_community = (endpoint.edition() == 'community')
     problems = []
-
+    bindings = {}
     for key, p in plist.items():
         problems += p.audit(audit_settings)
+        if not is_community and audit_settings['audit.projects.bindings'] and not p.is_part_of_monorepo():
+            bindkey = p.binding_key()
+            if bindkey is not None and bindkey in bindings:
+                rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE_BINDING)
+                problems.append(pb.Problem(rule.type, rule.severity,
+                                rule.msg.format(str(p), str(bindings[bindkey])), concerned_object=p))
+            else:
+                bindings[bindkey] = p
         if not audit_settings['audit.projects.duplicates']:
             continue
         util.logger.debug("Auditing for potential duplicate projects")

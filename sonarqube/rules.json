@@ -275,6 +275,18 @@
         "object": "Project",
         "message": "{} has suspicious exclusions '{}', please review analysis properties"
     },
+    "PROJ_DUPLICATE_BINDING": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "object": "Project",
+        "message": "Non monorepo {} has same DevOps platform binding as {}, please review configuration"
+    },
+    "PROJ_INVALID_BINDING": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "object": "Project",
+        "message": "{} has invalid DevOps platform binding, please review configuration"
+    },
     "QG_NO_COND": {
         "severity": "HIGH",
         "type": "GOVERNANCE",

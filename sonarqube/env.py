@@ -118,7 +118,7 @@ class Environment:
     def plugins(self):
         return self.sys_info()['Statistics']['plugins']
 
-    def get(self, api, params=None):
+    def get(self, api, params=None, exit_on_error=True):
         api = _normalize_api(api)
         util.logger.debug('GET: %s', self.urlstring(api, params))
         try:
@@ -128,7 +128,8 @@ class Environment:
                 r = requests.get(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            _log_and_exit(r.status_code, errh)
+            if exit_on_error:
+                _log_and_exit(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
             raise SystemExit(e) from e
@@ -380,10 +381,10 @@ def _log_and_exit(code, err):
         raise SystemExit(err)
 
 
-def get(api, params=None, ctxt=None):
+def get(api, params=None, ctxt=None, exit_on_error=True):
     if ctxt is None:
         ctxt = this.context
-    return ctxt.get(api, params)
+    return ctxt.get(api, params, exit_on_error)
 
 
 def post(api, params=None, ctxt=None):
