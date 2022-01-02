@@ -72,21 +72,20 @@ class QualityProfile(sq.SqObject):
                 perms.append(p)
         return perms
 
-    def last_used_date(self):
-        return self.last_used
 
-    def last_updated_date(self):
-        return self.last_updated
-
-    def age_of_last_use(self):
+    def last_use(self, as_days=False):
         if self.last_used is None:
             return None
+        if not as_days:
+            return self.last_used
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         return abs(today - self.last_used).days
 
-    def age_of_last_update(self):
+    def last_update(self, as_days=False):
         if self.last_updated is None:
             return None
+        if not as_days:
+            return self.last_updated
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         return abs(today - self.last_updated).days
 
@@ -128,7 +127,7 @@ class QualityProfile(sq.SqObject):
 
         util.logger.debug("Auditing %s (key '%s')", str(self), self.key)
         problems = []
-        age = self.age_of_last_update()
+        age = self.last_update(as_days=True)
         if age > audit_settings['audit.qualityProfiles.maxLastChangeAge']:
             rule = arules.get_rule(arules.RuleId.QP_LAST_CHANGE_DATE)
             msg = rule.msg.format(str(self), age)
@@ -140,7 +139,7 @@ class QualityProfile(sq.SqObject):
             msg = rule.msg.format(str(self), self.nb_rules, total_rules)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
-        age = self.age_of_last_use()
+        age = self.last_use(as_days=True)
         if self.project_count == 0 or age is None:
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
             msg = rule.msg.format(str(self))
