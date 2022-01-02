@@ -209,7 +209,7 @@ class Project(comp.Component):
 
     def binding(self):
         if self._binding['has_binding'] and self._binding['binding'] is None:
-            resp = env.get(f'alm_settings/get_binding', ctxt=self.endpoint,
+            resp = env.get('alm_settings/get_binding', ctxt=self.endpoint,
                            params={'project': self.key}, exit_on_error=False)
             util.logger.debug('resp = %s', str(resp))
             # 8.9 returns 404, 9.x return 400
@@ -419,7 +419,7 @@ Is this normal ?", gr['name'], str(self.key))
         if self.endpoint.edition() == 'community' or not audit_settings['audit.projects.bindings'] or \
            not self.has_binding():
             return []
-        resp = env.get(f'alm_settings/validate_binding', ctxt=self.endpoint, params={'project': self.key},
+        resp = env.get('alm_settings/validate_binding', ctxt=self.endpoint, params={'project': self.key},
                        exit_on_error=False)
         if resp.status_code // 100 == 2:
             return []
@@ -429,7 +429,6 @@ Is this normal ?", gr['name'], str(self.key))
         else:
             util.logger.fatal("alm_settings/validate_binding returning status code %d, exiting", resp.status_code)
             raise SystemExit(1)
-
 
     def audit(self, audit_settings):
         util.logger.debug("Auditing %s", str(self))
