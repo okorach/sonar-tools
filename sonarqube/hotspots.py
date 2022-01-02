@@ -95,7 +95,7 @@ class Hotspot(sq.SqObject):
             branch = ''
             if self.branch is not None:
                 branch = f'branch={self.branch}&'
-            self._url = f'{self.endpoint.get_url()}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
+            self._url = f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
         return self._url
 
     def to_csv(self):
@@ -108,10 +108,10 @@ class Hotspot(sq.SqObject):
         mtime = mtime.split('+')[0]
         msg = self.message.replace('"', '""')
         line = '-' if self.line is None else self.line
-        return ';'.join([str(x) for x in [self.key, self.rule, 'SECURITY_HOTSPOT', self.vulnerabilityProbability, self.status,
-                                          cdate, ctime, mdate, mtime, self.projectKey,
+        return ';'.join([str(x) for x in [self.key, self.rule, 'SECURITY_HOTSPOT', self.vulnerabilityProbability,
+                                          self.status, cdate, ctime, mdate, mtime, self.projectKey,
                                           projects.get(self.projectKey, self.endpoint).name, self.file, line,
-                                          0, '"' + msg + '"']])
+                                          0, f'"{msg}"']])
 
     def to_json(self):
         data = vars(self)
@@ -122,7 +122,6 @@ class Hotspot(sq.SqObject):
         data['url'] = self.url()
         if data['path'] is None:
             util.logger.warning("Can't find file path for %s", str(self))
-            # data['path'] = 'Unknown'
         for field in ('endpoint', '_json', 'changelog', 'component', '_url', 'creation_date', 'modification_date'):
             data.pop(field, None)
         for k, v in data.copy().items():

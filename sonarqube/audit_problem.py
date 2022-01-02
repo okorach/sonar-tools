@@ -33,8 +33,7 @@ class Problem():
         util.logger.warning(msg)
 
     def __str__(self):
-        return "Type: {0} - Severity: {1} - Description: {2}".format(
-            str(self.type), str(self.severity), self.message)
+        return f"Type: {self.type} - Severity: {self.severity} - Description: {self.message}"
 
     def to_json(self):
         d = vars(self)
@@ -44,8 +43,7 @@ class Problem():
         return json.dumps(d, indent=4, sort_keys=False, separators=(',', ': '))
 
     def to_csv(self):
-        return '{0},{1},"{2}"'.format(
-            str(self.severity), str(self.type), self.message)
+        return f'{self.severity},{self.type},"{self.message}"'
 
 
 def dump_report(problems, file, file_format):
@@ -53,7 +51,7 @@ def dump_report(problems, file, file_format):
         f = sys.stdout
         util.logger.info("Dumping report to stdout")
     else:
-        f = open(file, "w")
+        f = open(file, "w", encoding='utf-8')
         util.logger.info("Dumping report to file '%s'", file)
     if file_format == 'json':
         print("[", file=f)

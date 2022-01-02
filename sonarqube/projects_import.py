@@ -25,9 +25,8 @@
 '''
 import sys
 import json
-import sonarqube.projects as projects
+from sonarqube import projects, env
 import sonarqube.utilities as util
-import sonarqube.env as env
 
 def _check_sq_environments(import_sq, export_sq):
     version = import_sq.version(digits=2, as_string=True)
@@ -47,7 +46,8 @@ def _check_sq_environments(import_sq, export_sq):
             util.logger.critical(
                 'Plugin %s version %s was not found or not in same version on import platform, aborting...',
                 e_name, e_vers)
-            print(f'Plugin {e_name} version {e_vers} was not found or not in same version on import platform, aborting...')
+            print(f'Plugin {e_name} version {e_vers} was not found or '
+                  'not in same version on import platform, aborting...')
             sys.exit(2)
 
 def main():
@@ -55,7 +55,7 @@ def main():
     parser.add_argument('-f', '--projectsFile', required=True, help='File with the list of projects')
 
     args = util.parse_and_check_token(parser)
-    sq = env.Environment(url=args.url, token=args.token)
+    sq = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
 
     with open(args.projectsFile, "r", encoding='utf-8') as file:
@@ -86,9 +86,9 @@ def main():
         util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects,
                          int(i * 100 / nb_projects), project['key'], status)
         summary = ''
-        for s in statuses:
-            summary += "{0}:{1}, ".format(s, statuses[s])
-        util.logger.info("%s", summary)
+        for k, v in statuses.items():
+            summary += f"{k}:{v}, "
+        util.logger.info("%s", summary[:-2])
     sys.exit(0)
 
 

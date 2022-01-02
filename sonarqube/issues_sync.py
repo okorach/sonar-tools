@@ -53,7 +53,8 @@ def __parse_args(desc):
     parser.add_argument('-K', '--targetComponentKeys', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
-    parser.add_argument('--login', required=True, help='One (or several) comma separated services accounts used for issue-sync')
+    parser.add_argument('--login', required=True,
+                        help='One (or several) comma separated services accounts used for issue-sync')
     parser.add_argument('--nocomment', required=False, default=False, action='store_true',
                         help='If specified, will not comment related to the sync in the target issue')
     # parser.add_argument('--noassign', required=False, default=False, action='store_true',
@@ -137,16 +138,14 @@ def __process_no_match(issue):
 
 
 def __dump_report(report, file):
+    txt = json.dumps(report, indent=3, sort_keys=False, separators=(',', ': '))
     if file is None:
-        f = sys.stdout
         util.logger.info("Dumping report to stdout")
+        print(txt)
     else:
-        f = open(file, "w")
         util.logger.info("Dumping report to file '%s'", file)
-    print(json.dumps(report, indent=4, sort_keys=False, separators=(',', ': ')), file=f)
-    if file is not None:
-        f.close()
-
+        with open(file, "w", encoding='utf-8') as fh:
+            print(txt, file=fh)
 
 def sync_issues_list(src_issues, tgt_issues, settings):
     counters = {'nb_applies': 0, 'nb_approx_match': 0, 'nb_modified_siblings': 0,
@@ -244,7 +243,7 @@ def sync_all_project_branches(key, settings, endpoint):
 def main():
     args = __parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-    source_env = env.Environment(url=args.url, token=args.token)
+    source_env = env.Environment(some_url=args.url, some_token=args.token)
     params = vars(args)
     util.check_environment(params)
     source_key = params['componentKeys']
@@ -289,7 +288,7 @@ def main():
             (report, counters) = sync_issues_list(src_issues, tgt_issues, settings)
 
         elif target_url is not None and target_key is not None:
-            target_env = env.Environment(url=args.urlTarget, token=args.tokenTarget)
+            target_env = env.Environment(some_url=args.urlTarget, some_token=args.tokenTarget)
             if not projects.exists(target_key, endpoint=target_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             src_issues = {}

@@ -24,7 +24,7 @@
 '''
 import re
 import json
-import sonarqube.env as env
+from sonarqube import env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 
@@ -90,7 +90,7 @@ class Metric(sq.SqObject):
 
 def count(endpoint):
     if Metric.Count is None:
-        resp = env.get(Metric.SEARCH_API, params={'ps':1}, ctxt=endpoint)
+        resp = env.get(Metric.SEARCH_API, params={'ps': 1}, ctxt=endpoint)
         data = json.loads(resp.text)
         Metric.Count = data['total']
     return Metric.Count

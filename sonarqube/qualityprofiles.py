@@ -25,11 +25,12 @@
 import datetime
 import json
 import pytz
+from sonarqube import env
 import sonarqube.sqobject as sq
-import sonarqube.env as env
-import sonarqube.rules as rules
-import sonarqube.utilities as util
 import sonarqube.audit_rules as arules
+import sonarqube.rules as rules
+
+import sonarqube.utilities as util
 import sonarqube.audit_problem as pb
 
 
@@ -48,11 +49,11 @@ class QualityProfile(sq.SqObject):
             self.language_name = data['languageName']
             self.is_default = data['isDefault']
             self.project_count = data.get('projectCount', None)
-            self._is_built_in = data['isBuiltIn']
-            self.nb_rules = int(data['activeRuleCount'])
-            self._nbr_deprecated_rules = int(data['activeDeprecatedRuleCount'])
-            self._parent_key = data.get('parentKey', None)
-            self._parent_name = data.get('parentName', None)
+            self.is_built_in = data['isBuiltIn']
+            self.nbr_rules = int(data['activeRuleCount'])
+            self.nbr_deprecated_rules = int(data['activeDeprecatedRuleCount'])
+            self.parent_key = data.get('parentKey', None)
+            self.parent_name = data.get('parentName', None)
 
     def __str__(self):
         return f"quality profile '{self.name}' of language '{self.language_name}'"
@@ -71,78 +72,61 @@ class QualityProfile(sq.SqObject):
                 perms.append(p)
         return perms
 
-    def last_used_date(self):
-        return self.last_used
-
-    def last_updated_date(self):
-        return self.last_updated
-
-    def number_associated_projects(self):
-        return 0
-
-    def age_of_last_use(self):
+    def last_use(self, as_days=False):
         if self.last_used is None:
             return None
+        if not as_days:
+            return self.last_used
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         return abs(today - self.last_used).days
 
-    def age_of_last_update(self):
+    def last_update(self, as_days=False):
         if self.last_updated is None:
             return None
+        if not as_days:
+            return self.last_updated
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         return abs(today - self.last_updated).days
 
-    def parent_key(self):
-        return self._parent_key
-
-    def parent_name(self):
-        return self._parent_name
-
     def is_child(self):
-        return self.parent_key() is not None
-
-    def is_built_in(self):
-        return self._is_built_in
+        return self.parent_key is not None
 
     def inherits_from_built_in(self):
         return self.get_built_in_parent() is not None
 
     def get_built_in_parent(self):
-        if self.is_built_in():
+        if self.is_built_in:
             return self
-        parent = self.parent_name()
+        parent = self.parent_name
         if parent is None:
             return None
-        parent_qp = search(self.endpoint, {'language': self.language, 'qualityProfile': self.parent_name()})[0]
+        parent_qp = search(self.endpoint, {'language': self.language, 'qualityProfile': parent})[0]
         return parent_qp.get_built_in_parent()
 
     def has_deprecated_rules(self):
-        return self.nbr_of_deprecated_rules() > 0
-
-    def nbr_of_deprecated_rules(self):
-        return self._nbr_deprecated_rules
+        return self.nbr_deprecated_rules > 0
 
     def audit(self, audit_settings=None):
         util.logger.debug("Auditing %s", str(self))
-        if self.is_built_in():
-            util.logger.debug("%s is built-in, skipping audit", str(self))
+        if self.is_built_in:
+            util.logger.info("%s is built-in, skipping audit", str(self))
             return []
 
         util.logger.debug("Auditing %s (key '%s')", str(self), self.key)
         problems = []
-        age = self.age_of_last_update()
+        age = self.last_update(as_days=True)
         if age > audit_settings['audit.qualityProfiles.maxLastChangeAge']:
             rule = arules.get_rule(arules.RuleId.QP_LAST_CHANGE_DATE)
             msg = rule.msg.format(str(self), age)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         total_rules = rules.count(endpoint=self.endpoint, params={'languages': self.language})
-        if self.nb_rules < int(total_rules * audit_settings['audit.qualityProfiles.minNumberOfRules']):
+        if self.nbr_rules < int(total_rules * audit_settings['audit.qualityProfiles.minNumberOfRules']):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
-            msg = rule.msg.format(str(self), self.nb_rules, total_rules)
+            msg = rule.msg.format(str(self), self.nbr_rules, total_rules)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
-        age = self.age_of_last_use()
+        age = self.last_use(as_days=True)
         if self.project_count == 0 or age is None:
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
             msg = rule.msg.format(str(self))
@@ -155,10 +139,10 @@ class QualityProfile(sq.SqObject):
             max_deprecated_rules = 0
             parent_qp = self.get_built_in_parent()
             if parent_qp is not None:
-                max_deprecated_rules = parent_qp.nbr_of_deprecated_rules()
-            if self.nbr_of_deprecated_rules() > max_deprecated_rules:
+                max_deprecated_rules = parent_qp.nbr_deprecated_rules
+            if self.nbr_deprecated_rules > max_deprecated_rules:
                 rule = arules.get_rule(arules.RuleId.QP_USE_DEPRECATED_RULES)
-                msg = rule.msg.format(str(self), self._nbr_deprecated_rules)
+                msg = rule.msg.format(str(self), self.nbr_deprecated_rules)
                 problems.append(pb.Problem(rule.type, rule.severity, msg))
 
         return problems

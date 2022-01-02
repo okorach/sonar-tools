@@ -91,7 +91,7 @@ def __dump_issues(issues_list, file, file_format):
 
 def main():
     args = parse_args()
-    sqenv = env.Environment(url=args.url, token=args.token)
+    sqenv = env.Environment(some_url=args.url, some_token=args.token)
     sqenv.set_env(args.url, args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)

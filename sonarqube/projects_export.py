@@ -26,9 +26,8 @@
 import sys
 import os
 import json
-import sonarqube.projects as projects
+from sonarqube import env, projects
 import sonarqube.utilities as util
-import sonarqube.env as env
 
 
 def main():
@@ -38,7 +37,7 @@ def main():
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
 
-    sq = env.Environment(url=args.url, token=args.token)
+    sq = env.Environment(some_url=args.url, some_token=args.token)
     if (sq.edition() in ('community', 'developer') and sq.version(digits=2) < (9, 2)):
         util.logger.critical("Can't export projects on Community and Developer Edition before 9.2, aborting...")
         print("Can't export project on Community and Developer Edition before 9.2, aborting...")
@@ -73,9 +72,9 @@ def main():
                          int(len(exports) * 100 / nb_projects), key, status)
 
         summary = ''
-        for s in statuses:
-            summary += f"{s}:{statuses[s]}, "
-        util.logger.info("%s", summary)
+        for k, v in statuses.items():
+            summary += f"{k}:{v}, "
+        util.logger.info("%s", summary[:-2])
 
     print(json.dumps({
         'sonarqube_environment': {

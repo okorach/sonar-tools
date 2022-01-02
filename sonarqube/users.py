@@ -82,18 +82,18 @@ class User(sq.SqObject):
         problems = []
 
         for t in self.tokens():
-            age = abs((today - t.createdAt).days)
+            age = abs((today - t.created_at).days)
             if age > settings['audit.tokens.maxAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
                 msg = rule.msg.format(str(t), age)
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
-            if t.lastConnectionDate is None and age > settings['audit.tokens.maxUnusedAge']:
+            if t.last_connection_date is None and age > settings['audit.tokens.maxUnusedAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
                 msg = rule.msg.format(str(t), age)
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
-            if t.lastConnectionDate is None:
+            if t.last_connection_date is None:
                 continue
-            last_cnx_age = abs((today - t.lastConnectionDate).days)
+            last_cnx_age = abs((today - t.last_connection_date).days)
             if last_cnx_age > settings['audit.tokens.maxUnusedAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
                 msg = rule.msg.format(str(t), last_cnx_age)

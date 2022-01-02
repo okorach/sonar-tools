@@ -112,7 +112,7 @@ def main():
     parser.add_argument('-f', '--format', required=False,
                         help='Format of output (json, csv), default is csv')
     args = util.parse_and_check_token(parser)
-    endpoint = env.Environment(url=args.url, token=args.token)
+    endpoint = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 

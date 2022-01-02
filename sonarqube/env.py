@@ -41,7 +41,7 @@ HTTP_FATAL_ERROR_MSG = "HTTP fatal error %d - %s"
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 DEFAULT_URL = 'http://localhost:9000'
 
-GLOBAL_PERMISSIONS = {
+_GLOBAL_PERMISSIONS = {
     "admin": "Global Administration",
     "gateadmin": "Administer Quality Gates",
     "profileadmin": "Administer Quality Profiles",
@@ -50,6 +50,8 @@ GLOBAL_PERMISSIONS = {
     "applicationcreator": "Create Applications",
     "scan": "Run Analysis"
 }
+
+_JVM_OPTS = ('sonar.{}.javaOpts', 'sonar.{}.javaAdditionalOpts')
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -69,34 +71,28 @@ class NonExistingObjectError(Exception):
 
 class Environment:
 
-    def __init__(self, url, token):
-        self.root_url = url
-        self.token = token
+    def __init__(self, some_url, some_token):
+        self.url = some_url
+        self.token = some_token
         self._version = None
         self._sys_info = None
 
     def __str__(self):
-        return f"{util.redacted_token(self.token)}@{self.root_url}"
+        return f"{util.redacted_token(self.token)}@{self.url}"
 
-    def set_env(self, url, token):
-        self.root_url = url
-        self.token = token
+    def set_env(self, some_url, some_token):
+        self.url = some_url
+        self.token = some_token
         util.logger.debug('Setting environment: %s', str(self))
 
-    def set_token(self, token):
-        self.token = token
+    def set_token(self, some_token):
+        self.token = some_token
 
-    def get_token(self):
-        return self.token
-
-    def get_credentials(self):
+    def credentials(self):
         return (self.token, '')
 
-    def set_url(self, url):
-        self.root_url = url
-
-    def get_url(self):
-        return self.root_url
+    def set_url(self, some_url):
+        self.url = some_url
 
     def version(self, digits=3, as_string=False):
         if self._version is None:
@@ -123,59 +119,57 @@ class Environment:
         return self.sys_info()['Statistics']['plugins']
 
     def get(self, api, params=None):
-        api = __normalize_api__(api)
+        api = _normalize_api(api)
         util.logger.debug('GET: %s', self.urlstring(api, params))
         try:
             if params is None:
-                r = requests.get(url=self.root_url + api, auth=self.get_credentials())
+                r = requests.get(url=self.url + api, auth=self.credentials())
             else:
-                r = requests.get(url=self.root_url + api, auth=self.get_credentials(), params=params)
+                r = requests.get(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            __log_and_exit__(r.status_code, errh)
+            _log_and_exit(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise SystemExit(e)
+            raise SystemExit(e) from e
         return r
 
     def post(self, api, params=None):
-        api = __normalize_api__(api)
+        api = _normalize_api(api)
         util.logger.debug('POST: %s', self.urlstring(api, params))
         try:
             if params is None:
-                r = requests.post(url=self.root_url + api, auth=self.get_credentials())
+                r = requests.post(url=self.url + api, auth=self.credentials())
             else:
-                r = requests.post(url=self.root_url + api, auth=self.get_credentials(), params=params)
+                r = requests.post(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            __log_and_exit__(r.status_code, errh)
+            _log_and_exit(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise SystemExit(e)
+            raise SystemExit(e) from e
         return r
 
     def delete(self, api, params=None):
-        api = __normalize_api__(api)
+        api = _normalize_api(api)
         util.logger.debug('DELETE: %s', self.urlstring(api, params))
         try:
             if params is None:
-                r = requests.delete(url=self.root_url + api, auth=self.get_credentials())
+                r = requests.delete(url=self.url + api, auth=self.credentials())
             else:
-                r = requests.delete(url=self.root_url + api, auth=self.get_credentials(), params=params)
+                r = requests.delete(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            __log_and_exit__(r.status_code, errh)
+            _log_and_exit(r.status_code, errh)
         except requests.RequestException as e:
             util.logger.error(str(e))
-            raise SystemExit(e)
-
-
+            raise SystemExit(e) from e
 
     def urlstring(self, api, params):
         first = True
-        url = "{0}{1}".format(str(self), api)
+        url_prefix = f"{str(self)}{api}"
         if params is None:
-            return url
+            return url_prefix
         for p in params:
             if params[p] is None:
                 continue
@@ -183,12 +177,10 @@ class Environment:
             first = False
             if isinstance(params[p], datetime.date):
                 params[p] = util.format_date(params[p])
-            url += '{0}{1}={2}'.format(sep, p, params[p])
-        return url
+            url_prefix += f'{sep}{p}={params[p]}'
+        return url_prefix
 
-    def audit(self, audit_settings=None):
-        util.logger.info('--- Auditing global settings ---')
-        problems = []
+    def __get_platform_settings(self):
         resp = self.get('settings/values')
         json_s = json.loads(resp.text)
         platform_settings = {}
@@ -199,72 +191,52 @@ class Environment:
                 platform_settings[s['key']] = ','.join(s['values'])
             elif 'fieldValues' in s:
                 platform_settings[s['key']] = s['fieldValues']
+        return platform_settings
 
+    def audit(self, audit_settings=None):
+        util.logger.info('--- Auditing global settings ---')
+        problems = []
+        platform_settings = self.__get_platform_settings()
         for key in audit_settings:
-            if re.match(r'audit.globalSettings.range', key):
-                v = __get_multiple_values__(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
-                if v is None:
-                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
-                    continue
-                if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
-                    self.version() >= (8, 0, 0):
-                    util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit",
-                                      v[0])
-                    continue
-                problems += __audit_setting_range__(platform_settings, v[0], v[1], v[2], v[3], v[4])
-            elif re.match(r'audit.globalSettings.value', key):
-                v = __get_multiple_values__(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
-                if v is None:
-                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
-                    continue
-                problems += __audit_setting_value__(platform_settings, v[0], v[1], v[2], v[3])
-            elif re.match(r'audit.globalSettings.isSet', key):
-                v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
-                if v is None:
-                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
-                    continue
-                problems += __audit_setting_is_set__(platform_settings, v[0])
-            elif re.match(r'audit.globalSettings.isNotSet', key):
-                v = __get_multiple_values__(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
-                if v is None:
-                    util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
-                    continue
-                problems += __audit_setting_is_not_set__(platform_settings, v[0], v[1], v[2])
+            if key.startswith('audit.globalSettings.range'):
+                problems += _audit_setting_in_range(key, platform_settings, audit_settings, self.version())
+            elif key.startswith('audit.globalSettings.value'):
+                problems += _audit_setting_value(key, platform_settings, audit_settings)
+            elif key.startswith('audit.globalSettings.isSet'):
+                problems += _audit_setting_set(key, True, platform_settings, audit_settings)
+            elif key.startswith('audit.globalSettings.isNotSet'):
+                problems += _audit_setting_set(key, False, platform_settings, audit_settings)
 
         problems += (
-            __audit_maintainability_rating_grid__(
-                platform_settings['sonar.technicalDebt.ratingGrid'],
-                audit_settings)
-            + self.__audit_project_default_visibility__()
+            _audit_maintainability_rating_grid(platform_settings, audit_settings)
+            + self._audit_project_default_visibility()
             + audit_sysinfo(self.sys_info())
-            + self.__audit_admin_password__()
-            + self.__audit_global_permissions__()
-            + self.__audit_lts_latest()
+            + self._audit_admin_password()
+            + self._audit_global_permissions()
+            + self._audit_lts_latest()
         )
         return problems
 
-    def __audit_project_default_visibility__(self):
+    def _audit_project_default_visibility(self):
         util.logger.info('Auditing project default visibility')
         problems = []
         if self.version() < (8, 7, 0):
             resp = self.get('navigation/organization', params={'organization': 'default-organization'})
-            data = json.loads(resp.text)
-            visi = data['organization']['projectVisibility']
+            visi = json.loads(resp.text)['organization']['projectVisibility']
         else:
             resp = self.get('settings/values', params={'keys': 'projects.default.visibility'})
-            data = json.loads(resp.text)
-            visi = data['settings'][0]['value']
+            visi = json.loads(resp.text)['settings'][0]['value']
         util.logger.info("Project default visibility is '%s'", visi)
         if conf.get_property('checkDefaultProjectVisibility') and visi != 'private':
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msq.format(visi)))
         return problems
 
-    def __audit_admin_password__(self):
+    def _audit_admin_password(self):
         util.logger.info('Auditing admin password')
         problems = []
         try:
-            r = requests.get(url=self.root_url + '/api/authentication/validate', auth=('admin', 'admin'))
+            r = requests.get(url=self.url + '/api/authentication/validate', auth=('admin', 'admin'))
             data = json.loads(r.text)
             if data.get('valid', False):
                 rule = rules.get_rule(rules.RuleId.DEFAULT_ADMIN_PASSWORD)
@@ -272,13 +244,13 @@ class Environment:
             else:
                 util.logger.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
-            util.logger.error("HTTP request exception for %s/%s: %s", self.root_url,
+            util.logger.error("HTTP request exception for %s/%s: %s", self.url,
                               'api/authentication/validate', str(e))
             raise
         return problems
 
-    def __get_permissions__(self, perm_type):
-        resp = self.get('permissions/{0}'.format(perm_type), params={'ps': 100})
+    def __get_permissions(self, perm_type):
+        resp = self.get(f'permissions/{perm_type}', params={'ps': 100})
         data = json.loads(resp.text)
         active_perms = []
         for item in data.get(perm_type, []):
@@ -286,14 +258,14 @@ class Environment:
                 active_perms.append(item)
         return active_perms
 
-    def __audit_group_permissions__(self):
+    def __audit_group_permissions(self):
         util.logger.info('Auditing group global permissions')
         problems = []
-        groups = self.__get_permissions__('groups')
+        groups = self.__get_permissions('groups')
         if len(groups) > 10:
             problems.append(
                 pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
-                           'Too many ({0}) groups with global permissions'.format(len(groups))))
+                           f'Too many ({len(groups)}) groups with global permissions'))
         for gr in groups:
             if gr['name'] == 'Anyone':
                 problems.append(pb.Problem(typ.Type.SECURITY, sev.Severity.HIGH,
@@ -304,42 +276,41 @@ class Environment:
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
 
-        perm_counts = __get_permissions_count__(groups)
+        perm_counts = _get_permissions_count(groups)
         maxis = {'admin': 2, 'gateadmin': 2, 'profileadmin': 2, 'scan': 2, 'provisioning': 3}
-        for perm in GLOBAL_PERMISSIONS:
-            if perm in maxis and perm_counts[perm] > maxis[perm]:
+        for key, name in _GLOBAL_PERMISSIONS.items():
+            if key in maxis and perm_counts[key] > maxis[key]:
                 problems.append(
                     pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
-                               'Too many ({}) groups with permission {}, {} max recommended'.format(
-                                   perm_counts[perm], GLOBAL_PERMISSIONS[perm], maxis[perm])))
+                               f'Too many ({perm_counts[key]}) groups with permission {name}, '
+                               f'{maxis[key]} max recommended'))
         return problems
 
-    def __audit_user_permissions__(self):
+    def __audit_user_permissions(self):
         util.logger.info('Auditing users global permissions')
         problems = []
-        users = self.__get_permissions__('users')
+        users = self.__get_permissions('users')
         if len(users) > 10:
             problems.append(
                 pb.Problem(
                     typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
-                    'Too many ({}) users with direct global permissions, use groups instead'.format(len(users))))
+                    f'Too many ({len(users)}) users with direct global permissions, use groups instead'))
 
-        perm_counts = __get_permissions_count__(users)
+        perm_counts = _get_permissions_count(users)
         maxis = {'admin': 3, 'gateadmin': 3, 'profileadmin': 3, 'scan': 3, 'provisioning': 3}
-        for perm in GLOBAL_PERMISSIONS:
-            if perm in maxis and perm_counts[perm] > maxis[perm]:
+        for key, name in _GLOBAL_PERMISSIONS.items():
+            if key in maxis and perm_counts[key] > maxis[key]:
                 problems.append(
                     pb.Problem(
                         typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
-                        'Too many ({}) users with permission {}, use groups instead'.format(
-                            perm_counts[perm], GLOBAL_PERMISSIONS[perm])))
+                        f'Too many ({perm_counts[key]}) users with permission {name}, use groups instead'))
         return problems
 
-    def __audit_global_permissions__(self):
+    def _audit_global_permissions(self):
         util.logger.info('--- Auditing global permissions ---')
-        return self.__audit_user_permissions__() + self.__audit_group_permissions__()
+        return self.__audit_user_permissions() + self.__audit_group_permissions()
 
-    def __audit_lts_latest(self):
+    def _audit_lts_latest(self):
         problems = []
         vers = self.version()
         if vers < (8, 9, 0):
@@ -359,32 +330,32 @@ this = sys.modules[__name__]
 this.context = Environment("http://localhost:9000", '')
 
 
-def set_env(url, token):
-    this.context = Environment(url, token)
-    util.logger.debug('Setting GLOBAL environment: %s@%s', util.redacted_token(token), url)
+def set_env(some_url, some_token):
+    this.context = Environment(some_url, some_token)
+    util.logger.debug('Setting GLOBAL environment: %s@%s', util.redacted_token(some_token), some_url)
 
 
-def set_token(token):
-    this.context.set_token(token)
+def set_token(some_token):
+    this.context.set_token(some_token)
 
 
-def get_token():
+def token():
     return this.context.token
 
 
-def get_credentials():
-    return (this.context.token, '')
+def credentials():
+    return this.context.credentials()
 
 
-def set_url(url):
-    this.context.set_url(url)
+def set_url(some_url):
+    this.context.set_url(some_url)
 
 
-def get_url():
-    return this.context.root_url
+def url():
+    return this.context.url()
 
 
-def __normalize_api__(api):
+def _normalize_api(api):
     api = api.lower()
     if re.match(r'/api', api):
         pass
@@ -397,7 +368,7 @@ def __normalize_api__(api):
     return api
 
 
-def __log_and_exit__(code, err):
+def _log_and_exit(code, err):
     if code == 401:
         util.logger.fatal(AUTHENTICATION_ERROR_MSG)
         raise SystemExit(err)
@@ -437,7 +408,7 @@ def delete(api, params=None, ctxt=None):
     return ctxt.delete(api, params)
 
 
-def __get_memory__(setting):
+def __get_memory(setting):
     for s in setting.split(' '):
         if re.match('-Xmx', s):
             val = int(s[4:-1])
@@ -451,7 +422,7 @@ def __get_memory__(setting):
     return None
 
 
-def __get_store_size__(setting):
+def _get_store_size(setting):
     (val, unit) = setting.split(' ')
     # For decimal separator in some countries
     val = val.replace(',', '.')
@@ -462,116 +433,110 @@ def __get_store_size__(setting):
     return None
 
 
-def __audit_setting_range__(settings, key, min_val, max_val, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    if key not in settings:
+def _audit_setting_value(key, platform_settings, audit_settings):
+    v = _get_multiple_values(4, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+    if v is None:
+        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
+        return []
+    if v[0] not in platform_settings:
+        util.logger.warning("Setting %s does not exist, skipping...", v[0])
+        return []
+    util.logger.info("Auditing that setting %s has common/recommended value '%s'", v[0], v[1])
+    s = platform_settings.get(v[0], '')
+    if s == v[1]:
+        return []
+    return [pb.Problem(v[2], v[3], f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'")]
+
+
+def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version):
+    v = _get_multiple_values(5, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+    if v is None:
+        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
+        return []
+    if v[0] not in platform_settings:
+        util.logger.warning("Setting %s does not exist, skipping...", v[0])
+        return []
+    if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
+       sq_version >= (8, 0, 0):
+        util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit", v[0])
+        return []
+    value, min_v, max_v = float(platform_settings[v[0]]), float(v[1]), float(v[2])
+    util.logger.info("Auditing that setting %s is within recommended range [%f-%f]", v[0], min_v, max_v)
+    if min_v <= value <= max_v:
+        return []
+    return [pb.Problem(v[4], v[3],
+            f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]")]
+
+
+def _audit_setting_set(key, check_is_set, platform_settings, audit_settings):
+    v = _get_multiple_values(3, audit_settings[key], 'MEDIUM', 'CONFIGURATION')
+    if v is None:
+        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
+        return []
+    if key not in platform_settings:
         util.logger.warning("Setting %s does not exist, skipping...", key)
         return []
-    value = float(settings[key])
-    min_v = float(min_val)
-    max_v = float(max_val)
-    util.logger.info("Auditing that setting %s is within recommended range [%f-%f]", key, min_v, max_v)
+    util.logger.info("Auditing whether setting %s is set or not", key)
     problems = []
-    if value < min_v or value > max_v:
-        problems.append(pb.Problem(
-            domain, severity,
-            "Setting {} value {} is outside recommended range [{}-{}]".format(
-                key, value, min_val, max_val)))
-    return problems
-
-
-def __audit_setting_value__(settings, key, value, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    if key not in settings:
-        util.logger.warning("Setting %s does not exist, skipping...", key)
-        return []
-    util.logger.info("Auditing that setting %s has common/recommended value '%s'", key, value)
-    s = settings.get(key, '')
-    problems = []
-    if s != value:
-        problems.append(pb.Problem(
-            domain, severity,
-            "Setting {} has potentially incorrect or unsafe value '{}'".format(key, s)))
-    return problems
-
-
-def __audit_setting_is_set__(settings, key):
-    if key not in settings:
-        util.logger.warning("Setting %s does not exist, skipping...", key)
-        return []
-    util.logger.info("Auditing that setting %s is set", key)
-    problems = []
-    if key in settings and settings[key] != '':
-        util.logger.info("Setting %s is set with value %s", key, settings[key])
+    if platform_settings[key] == '':
+        if check_is_set:
+            rule = rules.get_rule(rules.RuleId.SETTING_NOT_SET)
+            problems = [pb.Problem(rule.type, rule.severity, rule.msg.format(key))]
+        else:
+            util.logger.info("Setting %s is not set", key)
     else:
-        rule = rules.get_rule(rules.RuleId.SETTING_NOT_SET)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(key)))
+        if not check_is_set:
+            util.logger.info("Setting %s is set with value %s", key, platform_settings[key])
+        else:
+            problems = [pb.Problem(v[1], v[2], f"Setting {key} is set, although it should probably not")]
+
     return problems
 
 
-def __audit_setting_is_not_set__(settings, key, severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    if key not in settings:
-        util.logger.warning("Setting %s does not exist, skipping...", key)
+def _audit_maintainability_rating_range(value, range, rating_letter, severity, domain):
+    util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is "
+                      "within recommended range [%3.0f%%-%3.0f%%]",
+                      value * 100, rating_letter, range[0] * 100, range[1] * 100)
+    if range[0] <= value <= range[1]:
         return []
-    util.logger.info("Auditing that setting %s is not set", key)
-    problems = []
-    if key in settings and settings[key] != '':
-        problems.append(
-            pb.Problem(domain, severity,
-                       "Setting {} is set, although it should probably not".format(key)))
-    else:
-        util.logger.info("Setting %s is not set", key)
-    return problems
+    return [pb.Problem(domain, severity,
+        f'Maintainability rating threshold {value * 100}% for {rating_letter} '
+        f'is NOT within recommended range [{range[0] * 100}%-{range[1] * 100}%]')]
 
 
-def __audit_maintainability_rating_range__(value, min_val, max_val, rating_letter,
-                                           severity=sev.Severity.MEDIUM, domain=typ.Type.CONFIGURATION):
-    util.logger.debug("Checking that maintainability rating threshold %3.0f%% for '%s' is \
-within recommended range [%3.0f%%-%3.0f%%]", value * 100, rating_letter, min_val * 100, max_val * 100)
-    value = float(value)
-    problems = []
-    if value < min_val or value > max_val:
-        problems.append(pb.Problem(
-            domain, severity,
-            'Maintainability rating threshold {}% for {} is NOT within recommended range [{}%-{}%]'.format(
-                value * 100, rating_letter, min_val * 100, max_val * 100)))
-    return problems
-
-
-def __audit_maintainability_rating_grid__(grid, audit_settings):
-    thresholds = grid.split(',')
+def _audit_maintainability_rating_grid(platform_settings, audit_settings):
+    thresholds = platform_settings['sonar.technicalDebt.ratingGrid'].split(',')
     problems = []
     util.logger.debug("Auditing maintainabillity rating grid")
     for key in audit_settings:
-        if not re.match(r'audit.globalSettings.maintainabilityRating', key):
+        if not key.startswith('audit.globalSettings.maintainabilityRating'):
             continue
-        util.logger.debug('Unpacking %s', key)
         (_, _, _, letter, _, _) = key.split('.')
         if letter not in ['A', 'B', 'C', 'D']:
             util.logger.error("Incorrect audit configuration setting %s, skipping audit", key)
             continue
-        value = thresholds[ord(letter.upper()) - 65]
-        (min_val, max_val, severity, domain) = __get_multiple_values__(
-            4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
-        problems += __audit_maintainability_rating_range__(
-            float(value), float(min_val), float(max_val),
-            letter, severity, domain)
+        value = float(thresholds[ord(letter.upper()) - 65])
+        v = _get_multiple_values(4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
+        if v is None:
+            continue
+        problems += _audit_maintainability_rating_range(value, (float(v[0]), float(v[1])), letter, v[2], v[3])
     return problems
 
 
-def __check_log_level__(sysinfo):
+def _audit_log_level(sysinfo):
     util.logger.debug('Auditing log levels')
-    problems = []
     log_level = sysinfo["Web Logging"]["Logs Level"]
+    if log_level not in ("DEBUG", "TRACE"):
+        return []
+    if log_level == "TRACE":
+        return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
+            "Log level set to TRACE, this does very negatively affect platform performance, "
+            "reverting to INFO is required")]
     if log_level == "DEBUG":
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.HIGH,
-            "Log level is set to DEBUG, this may affect platform performance, \
-reverting to INFO is recommended"))
-    elif log_level == "TRACE":
-        problems.append(pb.Problem(
-            typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
-            "Log level set to TRACE, this does very negatively affect platform performance, \
-reverting to INFO is required"))
-    return problems
+        return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.HIGH,
+            "Log level is set to DEBUG, this may affect platform performance, "
+            "reverting to INFO is recommended")]
+    return []
 
 
 def __sif_version(sif, digits=3, as_string=False):
@@ -582,11 +547,12 @@ def __sif_version(sif, digits=3, as_string=False):
         return tuple(int(n) for n in vers[0:digits])
 
 
-def __audit_web_settings__(sysinfo):
+def _audit_web_settings(sysinfo):
     util.logger.debug('Auditing Web settings')
     problems = []
-    web_settings = sysinfo['Settings']['sonar.web.javaOpts'] + " " + sysinfo['Settings']['sonar.web.javaAdditionalOpts']
-    web_ram = __get_memory__(web_settings)
+    opts = [x.format('web') for x in _JVM_OPTS]
+    web_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
+    web_ram = __get_memory(web_settings)
     if web_ram < 1024 or web_ram > 2048:
         rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048)))
@@ -598,11 +564,12 @@ def __audit_web_settings__(sysinfo):
     return problems
 
 
-def __audit_ce_settings__(sysinfo):
+def _audit_ce_settings(sysinfo):
     util.logger.info('Auditing CE settings')
     problems = []
-    ce_settings = sysinfo['Settings']['sonar.ce.javaOpts'] + " " + sysinfo['Settings']['sonar.ce.javaAdditionalOpts']
-    ce_ram = __get_memory__(ce_settings)
+    opts = [x.format('ce') for x in _JVM_OPTS]
+    ce_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
+    ce_ram = __get_memory(ce_settings)
     ce_tasks = sysinfo['Compute Engine Tasks']
     ce_workers = ce_tasks['Worker Count']
     MAX_WORKERS = 4
@@ -618,13 +585,13 @@ def __audit_ce_settings__(sysinfo):
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers)))
     else:
         util.logger.debug("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
-                         "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
+                          "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
 
     problems += __audit_log4shell(__sif_version(sysinfo), ce_settings, rules.RuleId.LOG4SHELL_CE)
     return problems
 
 
-def __audit_ce_background_tasks__(sysinfo):
+def _audit_ce_background_tasks(sysinfo):
     util.logger.debug('Auditing CE background tasks')
     problems = []
     ce_tasks = sysinfo['Compute Engine Tasks']
@@ -654,12 +621,13 @@ def __audit_ce_background_tasks__(sysinfo):
     return problems
 
 
-def __audit_es_settings__(sysinfo):
+def _audit_es_settings(sysinfo):
     util.logger.info('Auditing Search Server settings')
     problems = []
-    es_settings = sysinfo['Settings']['sonar.search.javaOpts'] + " " + sysinfo['Settings']['sonar.search.javaAdditionalOpts']
-    es_ram = __get_memory__(es_settings)
-    index_size = __get_store_size__(sysinfo['Search State']['Store Size'])
+    opts = [x.format('ce') for x in _JVM_OPTS]
+    es_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
+    es_ram = __get_memory(es_settings)
+    index_size = _get_store_size(sysinfo['Search State']['Store Size'])
     if es_ram < 2 * index_size and es_ram < index_size + 1000:
         rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
@@ -680,24 +648,24 @@ def __audit_log4shell(sq_version, jvm_settings, broken_rule):
     return []
 
 
-def __audit_jdbc_url__(sysinfo):
+def _audit_jdbc_url(sysinfo):
     util.logger.info('Auditing JDBC settings')
     problems = []
     stats = sysinfo.get('Settings')
     if stats is None:
         util.logger.error("Can't verify Database settings in System Info File, was it corrupted or redacted ?")
         return problems
-    url = stats.get('sonar.jdbc.url', None)
-    util.logger.debug('JDBC URL = %s', str(url))
-    if url is None:
+    jdbc_url = stats.get('sonar.jdbc.url', None)
+    util.logger.debug('JDBC URL = %s', str(jdbc_url))
+    if jdbc_url is None:
         rule = rules.get_rule(rules.RuleId.SETTING_JDBC_URL_NOT_SET)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
-    elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]', url):
+    elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]', jdbc_url):
         rule = rules.get_rule(rules.RuleId.SETTING_DB_ON_SAME_HOST)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(url)))
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(jdbc_url)))
     return problems
 
-def __audit_dce_settings__(sysinfo):
+def _audit_dce_settings(sysinfo):
     util.logger.info('Auditing DCE settings')
     problems = []
     stats = sysinfo.get('Statistics')
@@ -747,25 +715,26 @@ def audit_sysinfo(sysinfo):
         raise NotSystemInfo("JSON is not a system info nor a support info")
     util.logger.info("Auditing System Info")
     return (
-        __audit_web_settings__(sysinfo) +
-        __audit_ce_settings__(sysinfo) +
-        __audit_ce_background_tasks__(sysinfo) +
-        __audit_es_settings__(sysinfo) +
-        __audit_dce_settings__(sysinfo) +
-        __audit_jdbc_url__(sysinfo)
+        _audit_web_settings(sysinfo) +
+        _audit_ce_settings(sysinfo) +
+        _audit_ce_background_tasks(sysinfo) +
+        _audit_es_settings(sysinfo) +
+        _audit_dce_settings(sysinfo) +
+        _audit_jdbc_url(sysinfo) +
+        _audit_log_level(sysinfo)
     )
 
 
-def __get_permissions_count__(users_or_groups):
-    perm_counts = dict(zip(GLOBAL_PERMISSIONS.keys(), [0, 0, 0, 0, 0, 0, 0]))
+def _get_permissions_count(users_or_groups):
+    perm_counts = dict(zip(_GLOBAL_PERMISSIONS.keys(), [0, 0, 0, 0, 0, 0, 0]))
     for user_or_group in users_or_groups:
-        for perm in GLOBAL_PERMISSIONS:
+        for perm in _GLOBAL_PERMISSIONS:
             if perm in user_or_group['permissions']:
                 perm_counts[perm] += 1
     return perm_counts
 
 
-def __get_multiple_values__(n, setting, severity, domain):
+def _get_multiple_values(n, setting, severity, domain):
     values = [x.strip() for x in setting.split(',')]
     if len(values) < (n - 2):
         return None

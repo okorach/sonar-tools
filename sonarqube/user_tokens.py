@@ -23,7 +23,7 @@
 
 '''
 import json
-import sonarqube.env as env
+from sonarqube import env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 
@@ -34,27 +34,26 @@ class UserToken(sq.SqObject):
     API_SEARCH = API_ROOT + '/search'
     API_GENERATE = API_ROOT + '/generate'
 
-    def __init__(self, login, name=None, json_data=None, createdAt=None, token=None, endpoint=None):
+    def __init__(self, login, name=None, json_data=None, created_at=None, token=None, endpoint=None):
         super().__init__(login, endpoint)
         self.login = login
-        if isinstance(createdAt, str):
-            self.createdAt = util.string_to_date(createdAt)
+        if isinstance(created_at, str):
+            self.created_at = util.string_to_date(created_at)
         else:
-            self.createdAt = createdAt
+            self.created_at = created_at
         self.name = name
         if self.name is None and 'name' in json_data:
             self.name = json_data['name']
-        if self.createdAt is None and 'createdAt' in json_data:
-            self.createdAt = util.string_to_date(json_data['createdAt'])
-        self.lastConnectionDate = None
+        if self.created_at is None and 'createdAt' in json_data:
+            self.created_at = util.string_to_date(json_data['createdAt'])
+        self.last_connection_date = None
         if 'lastConnectionDate' in json_data:
-            self.lastConnectionDate = util.string_to_date(json_data['lastConnectionDate'])
+            self.last_connection_date = util.string_to_date(json_data['lastConnectionDate'])
         self.token = token
         util.logger.debug("Created token '%s'", str(self))
 
     def __str__(self):
         return f"token '{self.name}' of user '{self.login}'"
-        # return f"{self.name}:{util.redacted_token(self.token)}"
 
     def revoke(self):
         if self.name is None:
@@ -78,4 +77,4 @@ def generate(name, login=None, endpoint=None):
     resp = env.post(UserToken.API_GENERATE, {'name': name, 'login': login}, endpoint)
     data = json.loads(resp.text)
     return UserToken(login=data['login'], name=data['name'],
-                     createdAt=data['createdAt'], token=data['token'], endpoint=endpoint)
+                     created_at=data['createdAt'], token=data['token'], endpoint=endpoint)
