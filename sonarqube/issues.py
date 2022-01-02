@@ -394,7 +394,7 @@ class Issue(sq.SqObject):
         mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
         # Strip timezone
         mtime = mtime.split('+')[0]
-        msg = self.message.replace('"', '""')
+        msg = self.message.replace('"', '""').replace("\n", " ")
         line = '-' if self.line is None else self.line
         return ';'.join([str(x) for x in [self.key, self.rule, self.type, self._severity, self.status,
                                           cdate, ctime, mdate, mtime, self.projectKey,
@@ -598,7 +598,7 @@ def _search_all(params, endpoint=None, raise_error=True):
             raise TooManyIssuesError(nbr_issues, f'{nbr_issues} issues returned by api/issues/search, '
                                      f'this is more than the max {Issue.MAX_SEARCH} possible')
         p += 1
-    util.logger.info('Returning %d issues', len(issue_list))
+    util.logger.info('Collected %d issues', len(issue_list))
     return issue_list
 
 
