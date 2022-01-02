@@ -535,12 +535,13 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
     if date_stop is None:
         date_stop = get_newest_issue(endpoint=endpoint,
                                      params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
-    util.logger.info("Search by date between [%s - %s]", str(date_start), str(date_stop))
+    util.logger.info("Search by date between [%s - %s]", util.date_to_string(date_start), util.date_to_string(date_stop))
     issue_list = {}
     new_params.update({'createdAfter': date_start, 'createdBefore': date_stop})
     try:
         issue_list = _search_all(params=new_params, endpoint=endpoint)
-    except TooManyIssuesError:
+    except TooManyIssuesError as e:
+        util.logger.info("Too many issues (%d), splitting time window", e.nbr_issues)
         diff = (date_stop - date_start).days
         if diff == 0:
             util.logger.info('Too many issues, recursing')
