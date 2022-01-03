@@ -417,11 +417,14 @@ Is this normal ?", gr['name'], str(self.key))
 
     def __audit_binding_valid(self, audit_settings):
         if self.endpoint.edition() == 'community' or not audit_settings['audit.projects.bindings'] or \
-           not self.has_binding():
+           not audit_settings['audit.projects.bindings.validation'] or not self.has_binding():
+            util.logger.info('Community edition, binding validation disabled or %s has no binding, '
+                             'skipping binding validation...', str(self))
             return []
         resp = env.get('alm_settings/validate_binding', ctxt=self.endpoint, params={'project': self.key},
                        exit_on_error=False)
         if resp.status_code // 100 == 2:
+            util.logger.debug('%s binding is valid', str(self))
             return []
         # 8.9 returns 404, 9.x returns 400
         elif resp.status_code in (400, 404):
