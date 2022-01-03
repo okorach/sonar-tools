@@ -77,7 +77,14 @@ class Branch(sq.SqObject):
         util.logger.info("%s: Successfully deleted", str(self))
         return True
 
-    def audit(self, audit_settings):
+    def __audit_zero_loc(self):
+        if self.last_analysis_date() is not None and self.ncloc() == 0:
+            rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)),
+                               concerned_object=self)]
+        return []
+
+    def __audit_last_analysis(self, audit_settings):
         age = self.last_analysis_age()
         if self.is_main() or age is None:
             # Main branch (not purgeable) or branch not analyzed yet
@@ -93,3 +100,10 @@ class Branch(sq.SqObject):
         else:
             util.logger.debug("%s age is %d days", str(self), age)
         return problems
+
+    def audit(self, audit_settings):
+        util.logger.debug("Auditing %s", str(self))
+        return (
+            self.__audit_last_analysis(audit_settings)
+            + self.__audit_zero_loc()
+        )

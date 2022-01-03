@@ -287,6 +287,12 @@
         "object": "Project",
         "message": "{} has invalid DevOps platform binding, please review configuration"
     },
+    "PROJ_ZERO_LOC": {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "Project",
+        "message": "{} has zero lines of code, please review analysis configuration"
+    },
     "QG_NO_COND": {
         "severity": "HIGH",
         "type": "GOVERNANCE",
