@@ -58,6 +58,9 @@ def search(params=None, endpoint=None):
 
 
 def audit(audit_settings, endpoint=None):
+    if not audit_settings['audit.groups']:
+        util.logger.info('Auditing groups is disabled, skipping...')
+        return []
     util.logger.info("--- Auditing groups ---")
     problems = []
     for _, g in search(endpoint=endpoint).items():

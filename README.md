@@ -186,12 +186,12 @@ sonar-audit --what settings,qg,qp
 - Applications: (if `audit.applications = yes`, default `yes`)
   - Empty applications (with no projects) if `audit.applications.empty` is `yes`
   - Applications composed of a single project if `audit.applications.singleton` is `yes`
-- Users:
+- Users: (if `audit.users = yes`, default `yes`)
   - Users that did not login on the platform since `audit.users.maxLoginAge` days (default 180 days)
   - Tokens older than `audit.tokens.maxAge` days (default 90 days)
   - Tokens created but never used after `audit.tokens.maxUnusedAge` days (default 30 days)
   - Tokens not used for `audit.tokens.maxUnusedAge` days (default 30 days)
-- Groups:
+- Groups: (if `audit.groups = yes`, default `yes`)
   - Empty groups
 </details>
 
