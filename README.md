@@ -170,8 +170,12 @@ sonar-audit --what settings,qg,qp
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
+  - Project bindings (controlled with `audit.projects.bindings`, default true)
+    - 2 non monorepo projects bound to the same DevOps platform repository
+    - Invalid project binding (controlled with `audit.projects.bindings`, default false).
+      This audit is turned off by default because it takes 1 to 3 seconds to validate a binding which can be too time consuming for platforms with large number of bound projects
   - Suspicious exclusions:
-    - Usage of `**/<directory>/**/*` pattern
+    - Usage of `**/<directory>/**/*`, `**`, `**/*` pattern (and more patterns configurable)
     - Usage of `**/*.<extension>` pattern
     - Exceptions: `__pycache__`, `node_modules`, `vendor`, `lib`, `libs` directories
     - Above patterns and exceptions are configurable
