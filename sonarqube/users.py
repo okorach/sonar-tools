@@ -123,6 +123,9 @@ def create(name, login=None, endpoint=None):
 
 
 def audit(audit_settings, endpoint=None):
+    if not audit_settings['audit.users']:
+        util.logger.info('Auditing users is disabled, skipping...')
+        return []
     util.logger.info("--- Auditing users ---")
     problems = []
     for _, u in search(endpoint=endpoint).items():
