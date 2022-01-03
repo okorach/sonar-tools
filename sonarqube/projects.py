@@ -212,7 +212,7 @@ class Project(comp.Component):
             resp = env.get('alm_settings/get_binding', ctxt=self.endpoint,
                            params={'project': self.key}, exit_on_error=False)
             util.logger.debug('resp = %s', str(resp))
-            # 8.9 returns 404, 9.x return 400
+            # 8.9 returns 404, 9.x returns 400
             if resp.status_code in (400, 404):
                 self._binding['has_binding'] = False
             elif resp.status_code // 100 == 2:
@@ -423,7 +423,8 @@ Is this normal ?", gr['name'], str(self.key))
                        exit_on_error=False)
         if resp.status_code // 100 == 2:
             return []
-        elif resp.status_code == 404:
+        # 8.9 returns 404, 9.x returns 400
+        elif resp.status_code in (400, 404):
             rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         else:
