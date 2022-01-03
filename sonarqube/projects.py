@@ -415,7 +415,7 @@ Is this normal ?", gr['name'], str(self.key))
     def __audit_bg_tasks(self, audit_settings):
         return tasks.search_last(component_key=self.key, endpoint=self.endpoint).audit(audit_settings)
 
-    def __audit_zero_loc(self, audit_settings):
+    def __audit_zero_loc(self):
         if self.last_analysis_date() is not None and self.ncloc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)),
@@ -452,7 +452,7 @@ Is this normal ?", gr['name'], str(self.key))
             + self.__audit_permissions__(audit_settings)
             + self.__audit_bg_tasks(audit_settings)
             + self.__audit_binding_valid(audit_settings)
-            + self.__audit_zero_loc(audit_settings)
+            + self.__audit_zero_loc()
         )
 
     def delete_if_obsolete(self, days=180):
