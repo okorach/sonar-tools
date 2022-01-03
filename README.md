@@ -240,7 +240,7 @@ Exports one or all projects with all (or some selected) measures in a CSV file.
 The CSV is sent to standard output.  
 Plenty of issue filters can be specified from the command line, type `sonar-measures-export -h` for details
 
-Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] [-p] [-f json|csv] [-o <outputFile>]`  
+Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] [-p] [-f json|csv] [--includeURLs] [-o <outputFile>]`  
 - `-m`: comma separated list of metrics to export
   - `-m _main` is a shortcut to list all main metrics. It's the recommended option  
   - `-m _all` is a shortcut to list all metrics, including the most obscure ones
@@ -249,6 +249,7 @@ Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] [
 - `-p`: Converts percentages as strings "xy.z%" (by default percentages are exported as floats between 0 and 1)
 - `-f`: Choose export format between csv (default) and json
 - `-o`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
+- `--includeURLs`: Add project or branch URL in measures export, default is to not include URLs
 
 ## Examples
 ```
