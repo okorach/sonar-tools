@@ -96,73 +96,75 @@ sonar-audit --what settings,qg,qp
 <details>
   <summary>Click to see details of what is audited</summary>
 
-- General checks:
-  - Verifies that your SonarQube instance is an official distribution
-  - Verifies that the `admin` user password is not the default value `admin`
-  - Verifies that the platform is on LTS
-  - Verifies that the log4shell fix is implemented (either with recent enough SonarQube patch level or the -Dlog4j2.formatMsgNoLookups=true option)
-  - DCE: Verifies that same plugins are installed on all app nodes
-  - DCE: Verifies that all app nodes run the same version of SonarQube
-  - DCE: Verifies that all nodes are in GREEN status
-- General global settings:
-  - `sonar.forceAuthentication` is `true`
-  - `sonar.cpd.cross_project` is `false`
-  - `sonar.core.serverBaseURL` is set
-  - `sonar.global.exclusions` is empty
-  - Project default visibility is `private`
-  - SonarQube configured to use built-in H2 database
-  - SonarQube configured to use external database on same host as SonarQube itself
-- Global permissions:
-  - Max 3 users with global admin, admin quality gates, admin quality profiles or create project permission
-  - Max 10 users with global permissions
-  - Group `Anyone` should have no global permissions
-  - Group `sonar-users` should not have `Admin`, `Admin QG`, `Admin QP` or `Create Projects` permissions
-  - Max 2 groups with global `admin`, `admin quality gates`, `admin quality profiles` permissions
-  - Max 3 groups with `create project` permission
-  - Max 10 groups with global permissions
-- DB Cleaner:
-  - Delay to delete inactive short lived branches (7.9) or branches (8.0+) between 10 and 60 days
-  - Delay to delete closed issues between 10 and 60 days
-  - `sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay` is between 12 and 240 hours (0.5 to 10 days)
-  - `sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek` is between 2 and 12 weeks (0.5 to 3 months)
-  - `sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth` is between 26 and 104 weeks (0.5 year to 2 years)
-  - `sonar.dbcleaner.weeksBeforeDeletingAllSnapshots` is between 104 and 260 weeks (2 to 5 years)
-- Maintainability rating grid:
-  - A maintainability rating threshold is between 3% and 5%
-  - B maintainability rating threshold is between 7% and 10%
-  - C maintainability rating threshold is between 15% and 20%
-  - D maintainability rating threshold is between 40% and 50%
-- Environment
-  - Web heap (`-Xmx`) is between 1 GB and 2 GB
-  - CE heap (`-Xmx`) is between 512 MB per worker and 2 GB per worker
-  - Maximum CE 4 workers
-  - CE background tasks failure rate is less than 1%
-  - Background tasks are not piling up: Less than 100 pending CE background tasks or more than 20 or 10 x Nbr workers
-  - ES heap (`-Xmx`) is more than twice the ES index size (small indexes) or more than ES index size + 1 GB (large indexes)
-- Quality Gates:
+**All the below will trigger an audit problem in the audit output report (CSV or JSON)**
+
+- General checks: (if `audit.globalSettings = yes`, default `yes`)
+  - SonarQube instance is not an official distribution
+  - The `admin` user password is the default value `admin`
+  - The platform is of version lower than LTS
+  - The log4shell fix is has not been implemented (either with recent enough SonarQube patch level or the `-Dlog4j2.formatMsgNoLookups=true` option)
+  - DCE: Different plugins are installed on different app nodes
+  - DCE: Different version of SonarQube running on different app nodes
+  - DCE: Some nodes are not in GREEN status
+- General global settings: (if `audit.globalSettings = yes`, default `yes`)
+  - `sonar.forceAuthentication` is `false`
+  - `sonar.cpd.cross_project` is `true`
+  - `sonar.core.serverBaseURL` is not set
+  - `sonar.global.exclusions` is not empty
+  - Project default visibility is `public`
+  - SonarQube uses the built-in H2 database
+  - SonarQube uses an external database on same host as SonarQube itself
+- Global permissions: (if `audit.globalSettings.permission = yes`, default `yes`)
+  - More than 3 users with global `admin`, `admin quality gates`, `admin quality profiles` or `create project` permission
+  - More than 10 users with any global permissions (excluding groups)
+  - Group `Anyone` has some global permissions
+  - Group `sonar-users` has `Admin`, `Admin QG`, `Admin QP` or `Create Projects` permissions
+  - More than 2 groups with global `admin`, `admin quality gates`, `admin quality profiles` permissions
+  - More than 3 groups with `create project` permission
+  - More than 10 groups with any global permissions
+- DB Cleaner: (if `audit.globalSettings = yes`, default `yes`)
+  - Delay to delete inactive short lived branches (7.9) or branches (8.0+) not between 10 and 60 days
+  - Delay to delete closed issues not between 10 and 60 days
+  - `sonar.dbcleaner.hoursBeforeKeepingOnlyOneSnapshotByDay` is not between 12 and 240 hours (0.5 to 10 days)
+  - `sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByWeek` is not between 2 and 12 weeks (0.5 to 3 months)
+  - `sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth` is not between 26 and 104 weeks (0.5 year to 2 years)
+  - `sonar.dbcleaner.weeksBeforeDeletingAllSnapshots` is not between 104 and 260 weeks (2 to 5 years)
+- Maintainability rating grid: (if `audit.globalSettings = yes`, default `yes`)
+  - A maintainability rating threshold is not between 3% and 5%
+  - B maintainability rating threshold is not between 7% and 10%
+  - C maintainability rating threshold is not between 15% and 20%
+  - D maintainability rating threshold is not between 40% and 50%
+- Environment: (if `audit.globalSettings = yes`, default `yes`)
+  - Web process heap (`-Xmx`) is not between 1 GB and 2 GB
+  - CE process heap (`-Xmx`) is not between 512 MB per worker and 2 GB per worker
+  - More than 4 CE
+  - CE background tasks failure rate is more than 1%
+  - Background tasks are piling up: More than 100 pending CE background tasks or more than 20 or 10 x Nbr workers
+  - Search process heap (`-Xmx`) is less than twice the ES index size (small indexes) or less than ES index size + 1 GB (large indexes)
+- Quality Gates: (if `audit.qualityGates = yes`, default `yes`)
   - Unused QG
   - QG with 0 conditions or more than 7 conditions
   - QG not using the recommended metrics: `reliability`, `security`, `maintainibility`, `coverage`, `duplication`,
     `security review rating on new code`, `new bugs`, `new vulnerabilities`, `new hotspots`, `new blocker issues`, `new critical issues`, `new major issues`
     and `reliability rating on overall code` and `security rating on overall code`
-  - Thresholds for the above metrics not consistent (non `A` for ratings on new code, non `0` for numeric count of issues,
+  - QG thresholds for the above metrics not consistent (non `A` for ratings on new code, non `0` for numeric count of issues,
     coverage not between 20% and 90%, duplication not between 1% and 3%, security and reliability on overall code lower than D)
   - More than 5 quality gates
-- Quality Profiles:
-  - QP not modified in 6 months
+- Quality Profiles: (if `audit.qualityProfiles = yes`, default `yes`)
+  - Non built-in QP not modified in 6 months
   - QP with less than 50% of all the available rules activated
   - QP not used by any projects
   - QP not used since more than 6 months
   - QP using deprecated rules
   - More than 5 QP for a given language
-- Projects:
+- Projects: (if `audit.projects = yes`, default `yes`)
   - Projects provisioned but never analyzed
   - Projects not analyzed since `audit.projects.maxLastAnalysisAge` days (on any branch) (default 180 days)
   - Project branches not kept permanently and not analyzed since `audit.projects.branches.maxLastAnalysisAge` (default 30 days)
-  - Pull requests since `audit.projects.pullRequests.maxLastAnalysisAge`(default 30 days)
+  - Pull requests not analyzed since `audit.projects.pullRequests.maxLastAnalysisAge`(default 30 days)
   - Projects with `public` visibility
   - Large projects with too much XML: Projects with more than 200K LoC and XML representing more than 50% of it
-  - Permissions:
+  - Permissions: (if `audit.projects.permissions = yes`, default `yes`)
     - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
     - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
     - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
@@ -170,16 +172,18 @@ sonar-audit --what settings,qg,qp
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
-  - Suspicious exclusions:
-    - Usage of `**/<directory>/**/*` pattern
-    - Usage of `**/*.<extension>` pattern
-    - Exceptions: `__pycache__`, `node_modules`, `vendor`, `lib`, `libs` directories
+  - Project bindings (if `audit.projects.bindings = yes`, default `yes`)
+    - 2 projects (not part of same monorepo) bound to the same DevOps platform repository
+    - Invalid project binding (if `audit.projects.bindings = yes`, default `false`).
+      This audit is turned off by default because it takes 1 to 3 seconds to validate a binding which can be too time consuming for platforms with large number of bound projects
+  - Suspicious exclusions: (if `audit.projects.exclusions = yes`, default `yes`)
+    - Usage of `**/<directory>/**/*`, `**`, `**/*`, `**/*.<extension>` pattern
+      (Exceptions: `__pycache__`, `node_modules`, `vendor`, `lib`, `libs` directories)
     - Above patterns and exceptions are configurable
-
-- Portfolios: (if `audit.portfolios` is `yes`)
+- Portfolios: (if `audit.applications = yes`, default `yes`)
   - Empty portfolios (with no projects) if `audit.portfolios.empty` is `yes`
   - Portfolios composed of a single project if `audit.portfolios.singleton` is `yes`
-- Applications: (if `audit.applications` is `yes`)
+- Applications: (if `audit.applications = yes`, default `yes`)
   - Empty applications (with no projects) if `audit.applications.empty` is `yes`
   - Applications composed of a single project if `audit.applications.singleton` is `yes`
 - Users:
