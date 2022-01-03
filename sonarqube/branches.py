@@ -77,6 +77,9 @@ class Branch(sq.SqObject):
         util.logger.info("%s: Successfully deleted", str(self))
         return True
 
+    def url(self):
+        return f"{self.endpoint.url}/dashboard?id={self.project.key}&branch={self.name}"
+
     def __audit_zero_loc(self):
         if self.last_analysis_date() is not None and self.ncloc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)

@@ -87,6 +87,9 @@ class Project(comp.Component):
 #    def __del__(self):
 #        # del PROJECTS[self.key]
 
+    def url(self):
+        return f"{self.endpoint.url}/dashboard?id={self.key}"
+
     def get_name(self):
         if self.name is None:
             self.__load__()

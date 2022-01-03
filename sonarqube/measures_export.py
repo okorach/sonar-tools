@@ -79,15 +79,20 @@ def __get_csv_header(wanted_metrics, edition):
     return header[:-1]
 
 
-def __get_json_project_measures(project, wanted_metrics, endpoint, with_branches=True):
+def __get_json_project_measures(project, wanted_metrics, endpoint, with_branches=True, with_url=False):
     data = []
     if with_branches:
         for branch in project.get_branches():
-            data.append(__get_json_branch_measures(branch, project, wanted_metrics, endpoint))
+            branch_measures = __get_json_branch_measures(branch, project, wanted_metrics, endpoint)
+            if with_url:
+                branch_measures['url'] = branch.url()
+            data.append(branch_measures)
     else:
         p_meas = measures.component(project.key, wanted_metrics, endpoint=endpoint)
         prj = {'last_analysis': __last_analysis(project),
                'projectKey': project.key, 'projectName': project.name}
+        if with_url:
+            prj['url'] = project.url()
         for metric in wanted_metrics.split(','):
             if metric in p_meas:
                 prj[metric] = measures.convert(metric, p_meas[metric], **CONVERT_OPTIONS)
@@ -95,11 +100,13 @@ def __get_json_project_measures(project, wanted_metrics, endpoint, with_branches
     return data
 
 
-def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True):
+def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True, with_url=False):
     if with_branches:
         branch_data = project.get_branches()
         lines = ''
         for branch in branch_data:
+            if with_url:
+                lines += f"{branch.url()}{SEP}"
             lines += __get_branch_measures(branch, project, wanted_metrics, endpoint) + "\n"
         return lines[:-1]
     else:
@@ -175,6 +182,8 @@ def __parse_cmd_line():
                         help='Reports percentages as string xy.z%% instead of float values 0.xyz')
     parser.add_argument('-d', '--datesWithoutTime', action='store_true', default=False, required=False,
                         help='Reports timestamps only with date, not time')
+    parser.add_argument('--includeURLs', action='store_true', default=False, required=False,
+                        help='Add projects/branches URLs in report')
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
@@ -216,12 +225,12 @@ def main():
         if fmt == 'json':
             if not is_first:
                 print(',', end='', file=fd)
-            values = __get_json_project_measures(project, wanted_metrics, endpoint, with_branches)
+            values = __get_json_project_measures(project, wanted_metrics, endpoint, with_branches, args.includeURLs)
             json_str = json.dumps(values, indent=3, sort_keys=True, separators=(',', ': '))[1:-2]
             print(json_str, end='', file=fd)
             is_first = False
         else:
-            print(__get_project_measures(project, wanted_metrics, endpoint, with_branches), file=fd)
+            print(__get_project_measures(project, wanted_metrics, endpoint, with_branches, args.includeURLs), file=fd)
         nb_loc += project.ncloc()
         if with_branches:
             nb_branches += len(project.get_branches())
