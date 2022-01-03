@@ -162,10 +162,10 @@ class Task(sq.SqObject):
         return problems
 
     def audit(self, audit_settings):
-        util.logger.debug('Auditing background %s', str(self))
         if not audit_settings['audit.projects.exclusions']:
             util.logger.info('Project exclusions auditing disabled, skipping...')
             return []
+        util.logger.debug('Auditing %s', str(self))
         if not self.has_scanner_context():
             util.logger.info("Last background task of project key '%s' has no scanner context, can't audit exclusions",
                              self.component())
@@ -204,7 +204,11 @@ def search_all_last(component_key=None, endpoint=None):
 
 
 def search_last(component_key, endpoint=None):
-    return search(only_current=True, component_key=component_key, endpoint=endpoint)[0]
+    bg_tasks = search(only_current=True, component_key=component_key, endpoint=endpoint)
+    if bg_tasks is None or not bg_tasks:
+        # No bgtask was found
+        return None
+    return bg_tasks[0]
 
 
 def search_all(component_key, endpoint=None):

@@ -413,7 +413,10 @@ Is this normal ?", gr['name'], str(self.key))
         return []
 
     def __audit_bg_tasks(self, audit_settings):
-        return tasks.search_last(component_key=self.key, endpoint=self.endpoint).audit(audit_settings)
+        last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
+        if last_task is not None:
+            return last_task.audit(audit_settings)
+        return []
 
     def __audit_zero_loc(self):
         if self.last_analysis_date() is not None and self.ncloc() == 0:
