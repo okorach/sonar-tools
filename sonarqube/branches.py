@@ -25,6 +25,7 @@
 
 import datetime
 import pytz
+import requests.utils
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
@@ -78,7 +79,7 @@ class Branch(sq.SqObject):
         return True
 
     def url(self):
-        return f"{self.endpoint.url}/dashboard?id={self.project.key}&branch={self.name}"
+        return f"{self.endpoint.url}/dashboard?id={self.project.key}&branch={requests.utils.quote(self.name)}"
 
     def __audit_zero_loc(self):
         if self.last_analysis_date() is not None and self.ncloc() == 0:
