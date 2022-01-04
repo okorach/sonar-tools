@@ -19,11 +19,11 @@ The following utilities are available:
 - [sonar-housekeeper](#sonar-housekeeper): Deletes projects that have not been analyzed since a certain number of days, or
 deletes tokens created since more than a certain number of days
 - [sonar-loc](#sonar-loc): Computes lines of code per project and in total, as they would be coputed by the license
-- **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the instance in CSV
-- **sonar-findings-export** (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
-- **sonar-issues-sync**: Synchronizes issue changelog between branches, projects or even SonarQube instances
-- **sonar-projects-export**: Exports all projects from a SonarQube instance (EE and higher)
-- **sonar-projects-import**: Imports a list of projects into a SonarQube instance (EE and higher)
+- [sonar-measures-export](#sonar-measures-export): Exports measures/metrics of one, several or all projects of the instance in CSV
+- [sonar-findings-export](#sonar-findings-export) (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
+- [sonar-issues-sync](#sonar-issues-sync): Synchronizes issue changelog between branches, projects or even SonarQube instances
+- [sonar-projects-export](#sonar-projects-export): Exports all projects from a SonarQube instance (EE and higher)
+- [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 8.9.x) and LATEST versions**
 
@@ -54,7 +54,7 @@ The user corresponding to the token must have enough permissions to achieve the 
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
 
-# sonar-audit
+# <a name="sonar-audit"></a>sonar-audit
 
 Audits the SonarQube instance and output warning logs whenever a suspicious or incorrect setting/situation is found.
 The detail of what is audited is listed at the bottom of this (long) page
@@ -195,7 +195,7 @@ sonar-audit --what settings,qg,qp
   - Empty groups
 </details>
 
-# sonar-housekeeper
+# <a name="sonar-housekeeper"></a>sonar-housekeeper
 
 Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
 Deletes user tokens older than a given number of days
@@ -234,7 +234,7 @@ Basic Usage: `sonar-loc [-u <url>] [-t <token>] [-a] [-n] >locs.csv`
 - `-a`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
 
 
-# sonar-measures-export
+# <a name="sonar-measures-export"></a>sonar-measures-export
 
 Exports one or all projects with all (or some selected) measures in a CSV file.  
 The CSV is sent to standard output.  
@@ -266,7 +266,7 @@ sonar-measures-export -m _main -b -o measures.json
 sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -o all_measures.csv
 ```
 
-# sonar-findings-export
+# <a name="sonar-findings-export"></a>sonar-findings-export
 (Also available as `sonar-issues-export` for backward compatibility, but deprecated)
 
 Exports a list of issues as CSV  or JSON. The export is sent to standard output or into a file
@@ -297,7 +297,7 @@ sonar-findings-export -a 2020-01-01 -b 2020-12-31 -o issues_created_in_2020.csv
 sonar-findings-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.json
 ```
 
-# sonar-issues-sync
+# <a name="sonar-issues-sync"></a>sonar-issues-sync
 
 :warning: The `sonar-issue-sync` tool MUST be run with a specific service account (to be named on the command line) so that `sonar-issue-sync` can recognize past synchronizations and complement them if some updates happened on an issue that has already been synchronized before with the same service account.
 `sonar-issues-sync --login <serviceAccount> -t <tokenOfThatServiceAccount> ...`
@@ -361,7 +361,7 @@ sonar-issues-sync -k myPorjectKey -U https://anothersonar.acme-corp.com -t d04d6
 - To be modified (sync'ed from a source issue), the target issue must has zero manual changes ie it must be has created originally by SonarQube
 - `sonar-issues-sync` can't sync all branches of 2 different projects (of a same instance or different instances). See [Issue #162](https://github.com/okorach/sonarqube-tools/issues/162)
 
-# sonar-projects-export
+# <a name="sonar-projects-export"></a>sonar-projects-export
 
 Exports all projects of a given SonarQube instance.  
 :warning: This requires a SonarQube Enterprise or Data Center Edition.  
@@ -380,7 +380,7 @@ export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 sonar-projects-export >exported_projects.csv
 ```
 
-# sonar-projects-import
+# <a name="sonar-projects-import"></a>sonar-projects-import
 
 Imports a list of projects previously exported with `sonar-projects-export`.  
 :warning: This requires a SonarQube Enterprise or Data Center Edition.  

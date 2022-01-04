@@ -242,8 +242,8 @@ def sync_all_project_branches(key, settings, endpoint):
 
 
 def main():
-    args = __parse_args("""Synchronizes issues changelog of different branches of same or
-different projects, see: https://pypi.org/project/sonar-tools/ for details""")
+    args = __parse_args('Synchronizes issues changelog of different branches of same or different projects, '
+                        'see: https://pypi.org/project/sonar-tools/#sonar-issues-sync')
 
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     source_env = env.Environment(some_url=args.url, some_token=args.token)
