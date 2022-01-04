@@ -13,7 +13,7 @@ for env in $*
 do
     . sqenv $env
     sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main
-    sonar-issues-export -o tmp/issues-$env-released.csv
+    sonar-findings-export -o tmp/findings-$env-released.csv
     sonar-audit >tmp/audit-$env-released.csv || echo "OK"
     sonar-loc -n -a >tmp/loc-$env-released.csv 
 done
@@ -33,14 +33,14 @@ do
     sonar-measures-export -b -p -r -d -m _all -f json >tmp/measures-$env-2.json
     [ -s "tmp/measures-$env-2.json" ]
 
-    sonar-issues-export -o tmp/issues-$env-unreleased.csv
-    [ -s "tmp/issues-$env-unreleased.csv" ]
-    sonar-issues-export -o tmp/issues-$env-1.json
-    [ -s "tmp/issues-$env-1.json" ]
-    sonar-issues-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools >tmp/issues-$env-2.json
-    [ -s "tmp/issues-$env-2.json" ]
-    sonar-issues-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >tmp/issues-$env-3.json
-    [ -s "tmp/issues-$env-3.json" ]
+    sonar-findings-export -o tmp/findings-$env-unreleased.csv
+    [ -s "tmp/findings-$env-unreleased.csv" ]
+    sonar-findings-export -o tmp/findings-$env-1.json
+    [ -s "tmp/findings-$env-1.json" ]
+    sonar-findings-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools >tmp/findings-$env-2.json
+    [ -s "tmp/findings-$env-2.json" ]
+    sonar-findings-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >tmp/findings-$env-3.json
+    [ -s "tmp/findings-$env-3.json" ]
 
     sonar-audit >tmp/audit-$env-unreleased.csv || echo "OK"
     [ -s "tmp/audit-$env-unreleased.csv" ]
@@ -63,7 +63,7 @@ done
 rm -f diff.txt
 for env in $*
 do
-    for f in measures issues audit loc
+    for f in measures findings audit loc
     do
         echo "==========================" | tee -a diff.txt
         echo $f-$env diff                 | tee -a diff.txt
