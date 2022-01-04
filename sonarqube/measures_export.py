@@ -112,7 +112,10 @@ def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True
     else:
         p_meas = measures.component(project.key, wanted_metrics, endpoint=endpoint)
         last_analysis = __last_analysis(project)
-        line = f"{project.key}{SEP}{project.name}{SEP}{last_analysis}"
+        line = ''
+        if with_url:
+            line = f"{project.url()}{SEP}"
+        line += f"{project.key}{SEP}{project.name}{SEP}{last_analysis}"
         for metric in wanted_metrics.split(','):
             val = "None"
             if metric in p_meas:
