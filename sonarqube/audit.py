@@ -137,7 +137,7 @@ def main():
         util.logger.warning("%d issues found during audit", len(problems))
     else:
         util.logger.info("%d issues found during audit", len(problems))
-    sys.exit(len(problems))
+    sys.exit(0)
 
 
 if __name__ == "__main__":

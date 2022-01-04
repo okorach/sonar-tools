@@ -6,18 +6,6 @@ set -euo pipefail
 mkdir -p tmp
 rm -f tmp/*
 
-echo "Restore sonar-tools last released version"
-echo "Y" | pip uninstall sonar-tools
-pip install sonar-tools
-for env in $*
-do
-    . sqenv $env
-    sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main
-    sonar-issues-export -o tmp/findings-$env-released.csv
-    sonar-audit >tmp/audit-$env-released.csv || echo "OK"
-    sonar-loc -n -a >tmp/loc-$env-released.csv 
-done
-
 echo "Install sonar-tools current local version"
 ./deploy.sh
 for env in $*
@@ -42,14 +30,14 @@ do
     sonar-findings-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >tmp/findings-$env-3.json
     [ -s "tmp/findings-$env-3.json" ]
 
-    sonar-audit >tmp/audit-$env-unreleased.csv || echo "OK"
+    sonar-audit >tmp/audit-$env-unreleased.csv
     [ -s "tmp/audit-$env-unreleased.csv" ]
-    sonar-audit -f tmp/audit-$env-1.json || echo "OK"
+    sonar-audit -f tmp/audit-$env-1.json
     [ -s "tmp/audit-$env-1.json" ]
-    sonar-audit --format json --what qp,qg,settings >tmp/audit-$env-2.json || echo "OK"
+    sonar-audit --format json --what qp,qg,settings >tmp/audit-$env-2.json
     [ -s "tmp/audit-$env-2.json" ]
 
-    sonar-housekeeper -P 365 -B 90 -T 180 -R 30 >tmp/housekeeper-$env-1.csv || echo "OK"
+    sonar-housekeeper -P 365 -B 90 -T 180 -R 30 >tmp/housekeeper-$env-1.csv
     [ -s "tmp/housekeeper-$env-1.csv" ]
 
     sonar-loc >tmp/loc-$env-1.csv
@@ -61,6 +49,19 @@ do
 done
 
 rm -f diff.txt
+
+echo "Restore sonar-tools last released version"
+echo "Y" | pip uninstall sonar-tools
+pip install sonar-tools
+for env in $*
+do
+    . sqenv $env
+    sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main
+    sonar-issues-export -o tmp/findings-$env-released.csv
+    sonar-audit >tmp/audit-$env-released.csv || echo "OK"
+    sonar-loc -n -a >tmp/loc-$env-released.csv 
+done
+./deploy.sh
 for env in $*
 do
     for f in measures findings audit loc
