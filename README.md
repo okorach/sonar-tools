@@ -267,7 +267,7 @@ sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -o all_measu
 ```
 
 # <a name="sonar-findings-export"></a>sonar-findings-export
-(Also available as `sonar-issues-export` for backward compatibility, but deprecated)
+(Also available as `sonar-issues-export` for backward compatibility, but **deprecated**)
 
 Exports a list of issues as CSV  or JSON. The export is sent to standard output or into a file
 Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.  
