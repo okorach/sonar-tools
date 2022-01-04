@@ -13,7 +13,7 @@ for env in $*
 do
     . sqenv $env
     sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main
-    sonar-findings-export -o tmp/findings-$env-released.csv
+    sonar-issues-export -o tmp/findings-$env-released.csv
     sonar-audit >tmp/audit-$env-released.csv || echo "OK"
     sonar-loc -n -a >tmp/loc-$env-released.csv 
 done
