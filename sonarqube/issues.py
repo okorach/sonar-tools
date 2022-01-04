@@ -421,7 +421,7 @@ class Issue(sq.SqObject):
         for field in ('endpoint', 'id', '_json', 'changelog', '_url', 'assignee', 'hash', 'sonarqube',
                       'creation_date', 'modification_date', '_debt', 'component', 'language', 'branch', 'resolution'):
             data.pop(field, None)
-        return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))
+        return data
 
     def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
