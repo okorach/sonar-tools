@@ -40,7 +40,6 @@ class Hotspot(sq.SqObject):
 
     def __init__(self, key, endpoint, data=None, from_findings=False):
         super().__init__(key, endpoint)
-        self._url = None
         self._json = None
         self.vulnerabilityProbability = None
         self.securityCategory = None
@@ -92,12 +91,10 @@ class Hotspot(sq.SqObject):
         self.status = jsondata['status']
 
     def url(self):
-        if self._url is None:
-            branch = ''
-            if self.branch is not None:
-                branch = f'branch={requests.utils.quote(self.branch)}&'
-            self._url = f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
-        return self._url
+        branch = ''
+        if self.branch is not None:
+            branch = f'branch={requests.utils.quote(self.branch)}&'
+        return f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
