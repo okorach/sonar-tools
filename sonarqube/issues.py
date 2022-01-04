@@ -25,6 +25,7 @@
 import re
 import datetime
 import json
+import requests.utils
 from sonarqube import env, projects, users
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
@@ -125,7 +126,7 @@ class Issue(sq.SqObject):
         if self._url is None:
             branch = ''
             if self.branch is not None:
-                branch = f'&branch={self.branch}'
+                branch = f'&branch={requests.utils.quote(self.branch)}'
             self._url = f'{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}'
         return self._url
 

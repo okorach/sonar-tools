@@ -24,6 +24,7 @@
 '''
 
 import json
+import requests.utils
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 from sonarqube import env, projects
@@ -94,7 +95,7 @@ class Hotspot(sq.SqObject):
         if self._url is None:
             branch = ''
             if self.branch is not None:
-                branch = f'branch={self.branch}&'
+                branch = f'branch={requests.utils.quote(self.branch)}&'
             self._url = f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
         return self._url
 
