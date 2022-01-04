@@ -353,7 +353,7 @@ def set_url(some_url):
 
 
 def url():
-    return this.context.url()
+    return this.context.url
 
 
 def _normalize_api(api):
