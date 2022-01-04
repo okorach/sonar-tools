@@ -599,6 +599,7 @@ def _search_all(params, endpoint=None, raise_error=True):
         if nbr_issues > Issue.MAX_SEARCH and raise_error:
             raise TooManyIssuesError(nbr_issues, f'{nbr_issues} issues returned by api/issues/search, '
                                      f'this is more than the max {Issue.MAX_SEARCH} possible')
+        nbr_pages = (nbr_issues + Issue.MAX_PAGE_SIZE - 1) // Issue.MAX_PAGE_SIZE
         p += 1
     util.logger.info('Collected %d issues', len(issue_list))
     return issue_list
