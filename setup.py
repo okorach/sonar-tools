@@ -64,6 +64,7 @@ setuptools.setup(
             'sonar-issues-sync = sonarqube.issues_sync:main',
             'sonar-custom-measures = sonarqube.cust_measures:main',
             'sonar-issues-export = sonarqube.issues_export:main',
+            'sonar-findings-export = sonarqube.issues_export:main',
             'sonar-loc = sonarqube.loc:main'
         ]
     },

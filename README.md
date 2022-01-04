@@ -20,7 +20,7 @@ The following utilities are available:
 deletes tokens created since more than a certain number of days
 - **sonar-loc**: Computes lines of code per project and in total, as they would be coputed by the license
 - **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the instance in CSV
-- **sonar-issues-export**: Exports issues (potentially filtered) from the instance in CSV
+- **sonar-findings-export** (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
 - **sonar-issues-sync**: Synchronizes issue changelog between branches, projects or even SonarQube instances
 - **sonar-projects-export**: Exports all projects from a SonarQube instance (EE and higher)
 - **sonar-projects-import**: Imports a list of projects into a SonarQube instance (EE and higher)
@@ -266,14 +266,14 @@ sonar-measures-export -m _main -b -o measures.json
 sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -o all_measures.csv
 ```
 
-# sonar-issues-export
+# sonar-findings-export (Also available as sonar-issues-export (deprecated) for backward compatibility)
 
 Exports a list of issues as CSV  or JSON. The export is sent to standard output or into a file
-Plenty of issue filters can be specified from the command line, type `sonar-issues-export -h` for details.  
+Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.  
 :warning: On large SonarQube instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
 ## Limitations
-`sonar-issue-export` does not export issues on branches (see [Issue #166](https://github.com/okorach/sonarqube-tools/issues/166))
+`sonar-findings-export` does not export issues on branches (see [Issue #166](https://github.com/okorach/sonarqube-tools/issues/166))
 
 ## Examples
 ```
@@ -281,19 +281,19 @@ export SONAR_HOST_URL=https://sonar.acme-corp.com
 export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 
 # Exports all issues (main branch). This can be very long and stressful for SonarQube APIs
-sonar-issues-export >all_issues.csv
+sonar-findings-export >all_issues.csv
 
 # Exports all issues of project myProjectKey
-sonar-issues-export -k myProjectKey -o project_issues.csv
+sonar-findings-export -k myProjectKey -o project_issues.csv
 
 # Exports all false positive and won't fix issues across all projects
-sonar-issues-export -r FALSE-POSITIVE,WONTFIX -o fp_wf.json
+sonar-findings-export -r FALSE-POSITIVE,WONTFIX -o fp_wf.json
 
 # Exports all issues created in 2020
-sonar-issues-export -a 2020-01-01 -b 2020-12-31 -o issues_created_in_2020.csv
+sonar-findings-export -a 2020-01-01 -b 2020-12-31 -o issues_created_in_2020.csv
 
 # Exports all vulnerabilities and bugs
-sonar-issues-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.json
+sonar-findings-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.json
 ```
 
 # sonar-issues-sync

@@ -27,9 +27,11 @@ Collections of utilities for SonarQube:
 - sonar-housekeeper: Deletes projects that have not been analyzed since a given number of days
 - sonar-loc: Produces a list of projects with their LoC count as computed by the SonarQube
   commercial licenses (ie taking the largest branch or PR)
-- sonar-measures-export: Exports measures/metrics of one, several or all projects of the platform in CSV
-- sonar-issues-export: Exports issues (potentially filtered) from the platform in CSV
-- sonar-issues-sync: Synchronizes issues between 2 branches, or 2 projects
+- sonar-measures-export: Exports measures/metrics of one, several or all projects of the platform in CSV or JSON
+- sonar-findings-export: Exports findings (potentially filtered) from the platform in CSV or JSON
+  (also available as sonar-issues-export for backward compatibility)
+- sonar-issues-sync: Synchronizes issues between 2 branches of a same project, a whole project
+  branches of 2 different projects (potentially on different platforms)
 - sonar-projects-export: Exports all projects from a platform (EE and higher)
 - sonar-projects-import: Imports a list of projects into a platform (EE and higher)
 See tools built-in -h help and https://github.com/okorach/sonarqube-tools for more documentation
