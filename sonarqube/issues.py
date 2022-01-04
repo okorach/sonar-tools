@@ -84,7 +84,6 @@ class Issue(sq.SqObject):
 
     def __init__(self, key, endpoint, data=None, from_findings=False):
         super().__init__(key, endpoint)
-        self._url = None
         self._json = None
         self._severity = None
         self.type = None
@@ -123,12 +122,10 @@ class Issue(sq.SqObject):
         return json.dumps(self._json, sort_keys=True, indent=3, separators=(',', ': '))
 
     def url(self):
-        if self._url is None:
-            branch = ''
-            if self.branch is not None:
-                branch = f'&branch={requests.utils.quote(self.branch)}'
-            self._url = f'{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}'
-        return self._url
+        branch = ''
+        if self.branch is not None:
+            branch = f'&branch={requests.utils.quote(self.branch)}'
+        return f'{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}'
 
     def __load(self, jsondata):
         self.__load_common(jsondata)

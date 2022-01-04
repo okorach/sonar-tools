@@ -70,8 +70,10 @@ do
         echo $f-$env diff                 | tee -a diff.txt
         echo "==========================" | tee -a diff.txt
         sort tmp/$f-$env-released.csv >tmp/$f-$env-released.sorted.csv
+        mv tmp/$f-$env-released.sorted.csv tmp/$f-$env-released.csv
         sort tmp/$f-$env-unreleased.csv >tmp/$f-$env-unreleased.sorted.csv
-        diff tmp/$f-$env-released.sorted.csv tmp/$f-$env-unreleased.sorted.csv | tee -a diff.txt
+        mv tmp/$f-$env-unreleased.sorted.csv tmp/$f-$env-unreleased.csv
+        diff tmp/$f-$env-released.csv tmp/$f-$env-unreleased.csv | tee -a diff.txt
     done
 done
 
