@@ -127,7 +127,7 @@ class Hotspot(sq.SqObject):
         for k, v in data.copy().items():
             if v is None:
                 data.pop(k)
-        return json.dumps(data, sort_keys=True, indent=3, separators=(',', ': '))
+        return data
 
 
 def search_by_project(project_key, endpoint=None, branch=None):

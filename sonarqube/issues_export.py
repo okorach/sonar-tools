@@ -34,9 +34,11 @@
     [--tags]
 '''
 import sys
+import json
 from sonarqube import env, issues, hotspots, version
 import sonarqube.utilities as util
 
+SEP = ','
 
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
@@ -61,9 +63,11 @@ def parse_args():
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
     parser.add_argument('--useFindings', required=False, default=False, action='store_true',
                         help='Use export_findings() whenever possible')
+    parser.add_argument('--includeURLs', required=False, default=False, action='store_true',
+                        help='Generate issues URL in the report, false by default')
     return util.parse_and_check_token(parser)
 
-def __dump_issues(issues_list, file, file_format):
+def __dump_issues(issues_list, file, file_format, with_urls=False):
     if file is None:
         f = sys.stdout
         util.logger.info("Dumping report to stdout")
@@ -75,13 +79,19 @@ def __dump_issues(issues_list, file, file_format):
     else:
         print(issues.to_csv_header(), file=f)
     is_first = True
+    url = ''
     for _, issue in issues_list.items():
         if file_format == 'json':
             pfx = "" if is_first else ",\n"
-            print(pfx + issue.to_json(), file=f, end='')
+            issue_json = issue.to_json()
+            if not with_urls:
+                issue_json.pop('url', None)
+            print(pfx + json.dumps(issue_json, sort_keys=True, indent=3, separators=(': ', ',')), file=f, end='')
             is_first = False
         else:
-            print(issue.to_csv(), file=f)
+            if with_urls:
+                url = f'"{issue.url()}"{SEP}'
+            print(f"{url}{issue.to_csv()}", file=f)
 
     if file_format == 'json':
         print("\n]", file=f)
@@ -116,7 +126,7 @@ def main():
         ext = kwargs['outputFile'].split('.')[-1].lower()
         if ext in ('csv', 'json'):
             fmt = ext
-    __dump_issues(all_issues, kwargs.get('outputFile', None), fmt)
+    __dump_issues(all_issues, kwargs.get('outputFile', None), fmt, with_urls=kwargs['includeURLs'])
     util.logger.info("Returned issues: %d", len(all_issues))
     sys.exit(0)
 
