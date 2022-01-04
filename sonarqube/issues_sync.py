@@ -21,10 +21,11 @@
 '''
     This script propagates the manual issue changes (FP, WF, Change
     of severity, of issue type, comments) from:
-    - One project to another (normally on different platforms but not necessarily)
+    - One project to another (normally on different platforms but not necessarily).
+      The 2 platform don't need to be identical in version, edition or plugins
     - One branch of a project to another branch of the same project (normally LLBs)
 
-    Only issues with a 100% match are propagates. When there's a doubt, nothing is done
+    Only issues with a 100% match are synchronized. When there's a doubt, nothing is done
 '''
 
 
@@ -54,7 +55,7 @@ def __parse_args(desc):
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
     parser.add_argument('--login', required=True,
-                        help='One (or several) comma separated services accounts used for issue-sync')
+                        help='One (or several comma separated) service account(s) used for issue-sync')
     parser.add_argument('--nocomment', required=False, default=False, action='store_true',
                         help='If specified, will not comment related to the sync in the target issue')
     # parser.add_argument('--noassign', required=False, default=False, action='store_true',
@@ -241,7 +242,9 @@ def sync_all_project_branches(key, settings, endpoint):
 
 
 def main():
-    args = __parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
+    args = __parse_args('Synchronizes issues changelog of different branches of same or different projects, '
+                        'see: https://pypi.org/project/sonar-tools/#sonar-issues-sync')
+
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     source_env = env.Environment(some_url=args.url, some_token=args.token)
     params = vars(args)
