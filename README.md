@@ -15,10 +15,10 @@ Command line tools to help in SonarQube administration tasks.
 **DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company editing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarcloud.io) and [SonarLint](https://sonarlint.org) products
 
 The following utilities are available:
-- **sonar-audit**: Audits a SonarQube instance
-- **sonar-housekeeper**: Deletes projects that have not been analyzed since a certain number of days, or
+- [sonar-audit](#sonar-audit): Audits a SonarQube instance
+- [sonar-housekeeper](#sonar-housekeeper): Deletes projects that have not been analyzed since a certain number of days, or
 deletes tokens created since more than a certain number of days
-- **sonar-loc**: Computes lines of code per project and in total, as they would be coputed by the license
+- [sonar-loc](#sonar-loc): Computes lines of code per project and in total, as they would be coputed by the license
 - **sonar-measures-export**: Exports measures/metrics of one, several or all projects of the instance in CSV
 - **sonar-findings-export** (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
 - **sonar-issues-sync**: Synchronizes issue changelog between branches, projects or even SonarQube instances
@@ -224,7 +224,7 @@ To avoid bad mistakes (mistakenly deleting too many projects), the tools will re
 sonar-housekeeper -o 120 -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 ```
 
-# sonar-loc
+# <a name="sonar-loc"></a>sonar-loc
 
 Exports all projects lines of code as they would be counted by the commercial licences.  
 See `sonar-loc -h` for details
@@ -266,7 +266,8 @@ sonar-measures-export -m _main -b -o measures.json
 sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -o all_measures.csv
 ```
 
-# sonar-findings-export (Also available as sonar-issues-export (deprecated) for backward compatibility)
+# sonar-findings-export
+(Also available as `sonar-issues-export` for backward compatibility, but deprecated)
 
 Exports a list of issues as CSV  or JSON. The export is sent to standard output or into a file
 Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.  
@@ -302,11 +303,17 @@ sonar-findings-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities
 `sonar-issues-sync --login <serviceAccount> -t <tokenOfThatServiceAccount> ...`
 
 Synchronizes issues changelog between:
-- All branches of a same project: `sonar-issue-sync -k <projectKey>`
-- 2 branches of a same project: `sonar-issue-sync -k <projectKey> -b <sourceBranch> -B <targetBranch>`
-- The main branch of 2 different projects of a same SonarQube instance: `sonar-issue-sync -k <sourceProjectKey> -K <targetProject>`
-- The main branch of 2 projects from different SonarQube instance:
+- All branches of a same project:
+  `sonar-issue-sync -k <projectKey>`
+- 2 branches of a same project:
+  `sonar-issue-sync -k <projectKey> -b <sourceBranch> -B <targetBranch>`
+- All branches with same name between 2 different projects of a same SonarQube instance:
+  `sonar-issue-sync -k <sourceProjectKey> -K <targetProject>`
+- 2 branches of 2 different projects of a same SonarQube instance:
+  `sonar-issue-sync -k <sourceProjectKey> -b <sourceBranch> -K <targetProject> -B <targetBranch>`
+- All branches with same name between 2 projects from different SonarQube instance:
   `sonar-issue-sync -k <sourceProjectKey> -u <sourceUrl> -t <sourceToken> -K <targetProjectKey> -U <targetUrl> -T <targetToken>`
+  There is no requirements on the 2 SonarQube instances: They do not need to be of same edition, version or have the same list of plugins
 
 Issues changelog synchronization includes:
 - Change of issue type

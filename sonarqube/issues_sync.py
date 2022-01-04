@@ -21,10 +21,11 @@
 '''
     This script propagates the manual issue changes (FP, WF, Change
     of severity, of issue type, comments) from:
-    - One project to another (normally on different platforms but not necessarily)
+    - One project to another (normally on different platforms but not necessarily).
+      The 2 platform don't need to be identical in version, edition or plugins
     - One branch of a project to another branch of the same project (normally LLBs)
 
-    Only issues with a 100% match are propagates. When there's a doubt, nothing is done
+    Only issues with a 100% match are synchronized. When there's a doubt, nothing is done
 '''
 
 
@@ -241,7 +242,9 @@ def sync_all_project_branches(key, settings, endpoint):
 
 
 def main():
-    args = __parse_args('Replicates issue history between 2 same projects on 2 SonarQube platforms or 2 branches')
+    args = __parse_args("""Synchronizes issues changelog of different branches of same or
+different projects, see: https://pypi.org/project/sonar-tools/ for details""")
+
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     source_env = env.Environment(some_url=args.url, some_token=args.token)
     params = vars(args)
