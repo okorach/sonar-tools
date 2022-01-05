@@ -159,6 +159,7 @@ class Task(sq.SqObject):
                 rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
                 msg = rule.msg.format(f"project key '{self.component()}'", exclusion_pattern)
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                break     # Report only on the 1st suspicious match
         return problems
 
     def audit(self, audit_settings):
