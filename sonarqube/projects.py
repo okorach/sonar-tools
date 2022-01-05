@@ -358,7 +358,7 @@ Is this normal ?", gr['name'], str(self.key))
         return problems
 
     def __audit_branches(self, audit_settings):
-        if audit_settings['audit.projects.branches'] == 0:
+        if not audit_settings['audit.projects.branches']:
             util.logger.debug("Auditing of branchs is disabled, skipping...")
             return []
         util.logger.debug("Auditing %s branches", str(self))
@@ -421,8 +421,9 @@ Is this normal ?", gr['name'], str(self.key))
             return last_task.audit(audit_settings)
         return []
 
-    def __audit_zero_loc(self):
-        if self.last_analysis_date() is not None and self.ncloc() == 0:
+    def __audit_zero_loc(self, audit_settings):
+        if (not audit_settings['audit.projects.branches'] and
+           self.last_analysis_date() is not None and self.ncloc() == 0):
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)),
                                concerned_object=self)]
@@ -458,7 +459,7 @@ Is this normal ?", gr['name'], str(self.key))
             + self.__audit_permissions__(audit_settings)
             + self.__audit_bg_tasks(audit_settings)
             + self.__audit_binding_valid(audit_settings)
-            + self.__audit_zero_loc()
+            + self.__audit_zero_loc(audit_settings)
         )
 
     def delete_if_obsolete(self, days=180):
