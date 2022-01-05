@@ -291,7 +291,7 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "Project",
-        "message": "{} has zero lines of code, please review analysis configuration"
+        "message": "{} has been analyzed but has zero lines of code, please review analysis configuration"
     },
     "QG_NO_COND": {
         "severity": "HIGH",

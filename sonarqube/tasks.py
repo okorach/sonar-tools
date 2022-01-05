@@ -159,6 +159,7 @@ class Task(sq.SqObject):
                 rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
                 msg = rule.msg.format(f"project key '{self.component()}'", exclusion_pattern)
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                break     # Report only on the 1st suspicious match
         return problems
 
     def audit(self, audit_settings):
@@ -181,6 +182,7 @@ class Task(sq.SqObject):
             if prop not in ('sonar.exclusions', 'sonar.global.exclusions'):
                 continue
             for excl in [x.strip() for x in val.split(',')]:
+                util.logger.debug("Pattern = '%s'", excl)
                 problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
         return problems
 
@@ -219,8 +221,8 @@ def _get_suspicious_exclusions(patterns):
     global __SUSPICIOUS_EXCLUSIONS
     if __SUSPICIOUS_EXCLUSIONS is not None:
         return __SUSPICIOUS_EXCLUSIONS
-    __SUSPICIOUS_EXCLUSIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
-             for x in patterns.split(',')]
+    # __SUSPICIOUS_EXCLUSIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
+    __SUSPICIOUS_EXCLUSIONS = [x.strip() for x in patterns.split(',')]
     return __SUSPICIOUS_EXCLUSIONS
 
 
@@ -228,6 +230,6 @@ def _get_suspicious_exceptions(patterns):
     global __SUSPICIOUS_EXCEPTIONS
     if __SUSPICIOUS_EXCEPTIONS is not None:
         return __SUSPICIOUS_EXCEPTIONS
-    __SUSPICIOUS_EXCEPTIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
-             for x in patterns.split(',')]
+#    __SUSPICIOUS_EXCEPTIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
+    __SUSPICIOUS_EXCEPTIONS = [x.strip() for x in patterns.split(',')]
     return __SUSPICIOUS_EXCEPTIONS
