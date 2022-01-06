@@ -47,6 +47,9 @@ _JSON_FIELDS_REMAPPED = (
 _JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'hash', 'sonarqube',
     'creation_date', 'modification_date', '_debt', 'component', 'language', 'resolution')
 
+_CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'createdAt', 'updatedAt', 'projectKey', 'projectName',
+            'branch', 'pullRequest', 'file', 'line', 'debt', 'message')
+
 class ApiError(Exception):
     pass
 
@@ -256,6 +259,15 @@ class Issue(sq.SqObject):
     #        self.read()
     #    return self._severity
 
+    def file(self):
+        if self.component is not None:
+            return self.component.split(":")[-1]
+        elif 'path' in self._json:
+            return self._json['path']
+        else:
+            util.logger.warning("Can't find file name for %s", str(self))
+            return None
+
     def set_severity(self, severity):
         """Sets severity"""
         util.logger.debug("Changing severity of issue %s from %s to %s", self.key, self.severity, severity)
@@ -405,18 +417,13 @@ class Issue(sq.SqObject):
 
     def to_csv(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
-        cdate = self.creation_date.strftime(util.SQ_DATE_FORMAT)
-        ctime = self.creation_date.strftime(util.SQ_TIME_FORMAT)
-        mdate = self.modification_date.strftime(util.SQ_DATE_FORMAT)
-        mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
-        # Strip timezone
-        mtime = mtime.split('+')[0]
-        msg = self.message.replace('"', '""').replace("\n", " ")
-        line = '-' if self.line is None else self.line
-        return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
-                                          cdate, ctime, mdate, mtime, self.projectKey, self.branch, self.pull_request,
-                                          projects.get(self.projectKey, self.endpoint).name, self.component, line,
-                                          self.debt(), '"' + msg + '"']])
+        data = self.to_json()
+        for field in _CSV_FIELDS:
+            if data.get(field, None) is None:
+                data[field] = ''
+        data['projectName'] = projects.get(self.projectKey, self.endpoint).name
+        data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
+        return ";".join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
@@ -427,17 +434,13 @@ class Issue(sq.SqObject):
         data['effort'] = self.debt()
         data['url'] = self.url()
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
+        util.logger.debug('Converted date of %s to %s', self.key, data['createdAt'])
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
-        if self.component is not None:
-            data['path'] = self.component.split(":")[-1]
-        elif 'path' in self._json:
-            data['path'] = self._json['path']
-        else:
-            util.logger.warning("Can't find file path for %s", str(self))
-            data['path'] = 'Unknown'
+        data['file'] = self.file()
         for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
         return data
+
 
     def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
@@ -608,6 +611,8 @@ def _search_all(params, endpoint=None, raise_error=True):
         resp = env.get(Issue.SEARCH_API, params=new_params, ctxt=endpoint)
         data = json.loads(resp.text)
         for i in data['issues']:
+            i['branch'] = params.get('branch', None)
+            i['pullRequest'] = params.get('pullRequest', None)
             issue_list[i['key']] = Issue(key=i['key'], endpoint=endpoint, data=i)
         nbr_issues = data['paging']['total']
         #util.logger.info("nbr_issues = %d max = %d raise error = %s", nbr_issues, Issue.MAX_SEARCH, str(raise_error))
@@ -669,6 +674,8 @@ def search(endpoint=None, page=None, params=None):
                 f'this is more than the max {Issue.MAX_SEARCH} possible')
 
         for i in data['issues']:
+            i['branch'] = new_params.get('branch', None)
+            i['pullRequest'] = new_params.get('pullRequest', None)
             issue_list[i['key']] = Issue(key=i['key'], endpoint=endpoint, data=i)
         if page is not None or p >= nbr_pages:
             break
@@ -831,8 +838,7 @@ def identical_attributes(o1, o2, key_list):
 
 
 def to_csv_header():
-    return "# id;rule;type;severity;status;creation date;creation time;modification date;" + \
-           "modification time;project key;project name;file;line;debt(min);message"
+    return "# " + ";".join(_CSV_FIELDS)
 
 
 def __get_issues_search_params(params):
