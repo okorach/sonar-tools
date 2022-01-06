@@ -40,8 +40,6 @@ SYNC_ASSIGN = 'sync_assignments'
 SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
 
 _JSON_FIELDS_REMAPPED = (
-    ('line', 'lineNumber'),
-    ('rule', 'ruleReference'),
     ('pull_request', 'pullRequest'),
     ('_comments', 'comments')
 )
@@ -161,6 +159,13 @@ class Issue(sq.SqObject):
         self.type = jsondata['type']
         self.severity = jsondata.get('severity', None)
         self.line = jsondata.get('line', jsondata.get('lineNumber', None))
+        if self.line == "null":
+            self.line = None
+        if self.line is not None:
+            try:
+                self.line = int(self.line)
+            except ValueError:
+                pass
         self.resolution = jsondata.get('resolution', None)
         self.rule = jsondata.get('rule', jsondata.get('ruleReference', None))
         self.message = jsondata.get('message', None)
@@ -631,10 +636,10 @@ def search_by_project(project_key, endpoint=None, branch=None, pull_request=None
         util.logger.info("Issue search by project %s branch %s", k, str(branch))
         if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ('enterprise', 'datacenter') and search_findings:
             util.logger.info('Using new export findings to speed up issue export')
-            issue_list.update(projects.Project(k, endpoint).get_findings(branch))
-            continue
-        util.logger.info('Traditional issue search by project')
-        issue_list.update(_search_all_by_project(k, params, endpoint=endpoint))
+            issue_list.update(projects.Project(k, endpoint).get_findings(branch, pull_request))
+        else:
+            util.logger.info('Traditional issue search by project')
+            issue_list.update(_search_all_by_project(k, params, endpoint=endpoint))
     return issue_list
 
 
