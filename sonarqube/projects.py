@@ -530,6 +530,8 @@ Is this normal ?", gr['name'], str(self.key))
             if i['key'] in findings_list:
                 util.logger.warning('Finding %s (%s) already in past findings', i['key'], i['type'])
                 findings_conflicts[i['type']] += 1
+            # FIXME - Hack for wrong projectKey returned in PR
+            # m = re.search(r"(\w+):PULL_REQUEST:(\w+)", i['projectKey'])
             i['projectKey'] = self.key
             if branch is not None:
                 i['branch'] = branch
