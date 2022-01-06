@@ -97,6 +97,8 @@ def main():
                         help='Creates the $HOME/.sonar-audit.properties configuration file, if not already present'
                         'or outputs to stdout if it already exist')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
+    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEP,
+                        help=f'CSV separator (for CSV output), default {util.CSV_SEP}')
     args = parser.parse_args()
     kwargs = vars(args)
     if args.sif is None and args.config is None and args.token is None:
@@ -131,7 +133,7 @@ def main():
         problems = _audit_sq(sq, settings, args.what)
 
     args.format = __deduct_format__(args.format, args.file)
-    pb.dump_report(problems, args.file, args.format)
+    pb.dump_report(problems, args.file, args.format, args.csvSeparator)
 
     if problems:
         util.logger.warning("%d issues found during audit", len(problems))
