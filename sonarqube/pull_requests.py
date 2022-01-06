@@ -30,6 +30,7 @@ import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 
+_PULL_REQUESTS = {}
 
 class PullRequest(sq.SqObject):
     def __init__(self, project, key, data=None):
@@ -38,6 +39,8 @@ class PullRequest(sq.SqObject):
         self.json = data
         self._last_analysis_date = None
         self._ncloc = None
+        _PULL_REQUESTS[_unique_key(project.key, key)] = self
+        util.logger.debug("Created %s", str(self))
 
     def __str__(self):
         return f"pull request key '{self.key}' of {str(self.project)}"
@@ -84,3 +87,13 @@ class PullRequest(sq.SqObject):
         else:
             util.logger.debug("%s age is %d days", str(self), age)
         return problems
+
+
+def _unique_key(project_key, pull_request_key):
+    return f"{project_key} {pull_request_key}"
+
+
+def get_object(pull_request_key, project, data=None):
+    return _PULL_REQUESTS.get(
+        _unique_key(project.key, pull_request_key),
+        PullRequest(project, pull_request_key, data))

@@ -26,12 +26,11 @@ import datetime
 import re
 import json
 import pytz
-from sonarqube import env, issues, hotspots, tasks, custom_measures
+from sonarqube import env, issues, hotspots, tasks, custom_measures, pull_requests
 import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
 from sonarqube.branches import Branch
-from sonarqube.pull_requests import PullRequest
 
 import sonarqube.audit_severities as sev
 import sonarqube.audit_rules as rules
@@ -158,7 +157,7 @@ class Project(comp.Component):
             data = json.loads(resp.text)
             self.pull_requests = []
             for p in data['pullRequests']:
-                self.pull_requests.append(PullRequest(key=p['key'], project=self, data=p))
+                self.pull_requests.append(pull_requests.get_object(p['key'], self, p))
         return self.pull_requests
 
     def get_permissions(self, perm_type):
