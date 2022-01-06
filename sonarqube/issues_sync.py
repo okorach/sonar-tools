@@ -139,7 +139,7 @@ def __process_no_match(issue):
 
 
 def __dump_report(report, file):
-    txt = json.dumps(report, indent=3, sort_keys=False, separators=(',', ': '))
+    txt = util.json_dump(report)
     if file is None:
         util.logger.info("Dumping report to stdout")
         print(txt)

@@ -229,7 +229,7 @@ def main():
             if not is_first:
                 print(',', end='', file=fd)
             values = __get_json_project_measures(project, wanted_metrics, endpoint, with_branches, args.includeURLs)
-            json_str = json.dumps(values, indent=3, sort_keys=True, separators=(',', ': '))[1:-2]
+            json_str = util.json_dump(values)[1:-2]
             print(json_str, end='', file=fd)
             is_first = False
         else:

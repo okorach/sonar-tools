@@ -92,7 +92,7 @@ def __dump_issues(issues_list, file, file_format, with_urls=False):
             issue_json = issue.to_json()
             if not with_urls:
                 issue_json.pop('url', None)
-            print(pfx + json.dumps(issue_json, sort_keys=True, indent=3, separators=(',', ': ')), file=f, end='')
+            print(pfx + util.json_dump(issue_json), file=f, end='')
             is_first = False
         else:
             if with_urls:

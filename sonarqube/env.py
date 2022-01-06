@@ -682,7 +682,7 @@ def _audit_dce_settings(sysinfo):
         return problems
     # Verify that app nodes have the same plugins installed
     appnodes = sysinfo['Application Nodes']
-    ref_plugins = json.dumps(appnodes[0]['Plugins'], sort_keys=True, indent=3, separators=(',', ': '))
+    ref_plugins = util.json_dump(appnodes[0]['Plugins'])
     ref_name = appnodes[0]['Name']
     ref_version = appnodes[0]['System']['Version']
     for node in appnodes:
@@ -690,7 +690,7 @@ def _audit_dce_settings(sysinfo):
         if node_version != ref_version:
             rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
-        node_plugins = json.dumps(node['Plugins'], sort_keys=True, indent=3, separators=(',', ': '))
+        node_plugins = util.json_dump(node['Plugins'])
         if node_plugins != ref_plugins:
             rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))

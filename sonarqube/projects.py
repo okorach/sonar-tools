@@ -526,7 +526,7 @@ Is this normal ?", gr['name'], str(self.key))
         data = json.loads(resp.text)['export_findings']
         findings_conflicts = {'SECURITY_HOTSPOT': 0, 'BUG': 0, 'CODE_SMELL': 0, 'VULNERABILITY': 0}
         nbr_findings = {'SECURITY_HOTSPOT': 0, 'BUG': 0, 'CODE_SMELL': 0, 'VULNERABILITY': 0}
-        util.logger.debug(json.dumps(data, indent=3, sort_keys=True, separators=(',', ': ')))
+        util.logger.debug(util.json_dump(data))
         for i in data:
             if i['key'] in findings_list:
                 util.logger.warning('Finding %s (%s) already in past findings', i['key'], i['type'])

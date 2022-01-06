@@ -125,8 +125,7 @@ def parse_and_check_token(parser):
 
 
 def json_dump_debug(json_data, pre_string=''):
-    logger.debug("%s%s", pre_string, json.dumps(
-        json_data, sort_keys=True, indent=3, separators=(',', ': ')))
+    logger.debug("%s%s", pre_string, json_dump(json_data))
 
 
 def format_date_ymd(year, month, day):
@@ -180,6 +179,10 @@ def unique_dict_field(data, field):
 
 def remove_nones(d):
     return {k: v for k, v in d.items() if v is not None}
+
+
+def json_dump(jsondata):
+    return json.dumps(remove_nones(jsondata), indent=3, sort_keys=True, separators=(',', ': '))
 
 
 def str_none(v):

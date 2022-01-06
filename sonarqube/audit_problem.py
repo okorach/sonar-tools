@@ -40,7 +40,7 @@ class Problem():
         d['type'] = str(self.type)
         d['severity'] = str(self.severity)
         d['concerned_object'] = str(d['concerned_object'])
-        return json.dumps(d, indent=4, sort_keys=False, separators=(',', ': '))
+        return util.json_dump(d)
 
     def to_csv(self):
         return f'{self.severity},{self.type},"{self.message}"'

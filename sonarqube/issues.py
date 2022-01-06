@@ -69,7 +69,7 @@ class IssueComments:
 
     def __str__(self):
         """Dumps the object in a string"""
-        return json.dumps(self.json, sort_keys=True, indent=3, separators=(',', ': '))
+        return util.json_dump(self.json)
 
 
 class Issue(sq.SqObject):
@@ -120,7 +120,7 @@ class Issue(sq.SqObject):
 
     def to_string(self):
         """Dumps the object in a string"""
-        return json.dumps(self._json, sort_keys=True, indent=3, separators=(',', ': '))
+        return util.json_dump(self._json)
 
     def url(self):
         branch = ''
