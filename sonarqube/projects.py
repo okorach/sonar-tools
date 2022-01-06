@@ -510,7 +510,7 @@ Is this normal ?", gr['name'], str(self.key))
     def search_custom_measures(self):
         return custom_measures.search(self.key, self.endpoint)
 
-    def get_findings(self, branch=None):
+    def get_findings(self, branch=None, pr=None):
 
         if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ('enterprise', 'datacenter'):
             return {}
@@ -519,32 +519,32 @@ Is this normal ?", gr['name'], str(self.key))
         params = {'project': self.key}
         if branch is not None:
             params['branch'] = branch
+        elif pr is not None:
+            params['pullRequest'] = pr
+
         resp = env.get('projects/export_findings', params=params, ctxt=self.endpoint)
-        util.logger.debug('export_findings response received')
         data = json.loads(resp.text)['export_findings']
-        util.logger.debug('json loaded, size = %d', len(data))
         findings_conflicts = {'SECURITY_HOTSPOT': 0, 'BUG': 0, 'CODE_SMELL': 0, 'VULNERABILITY': 0}
         nbr_findings = {'SECURITY_HOTSPOT': 0, 'BUG': 0, 'CODE_SMELL': 0, 'VULNERABILITY': 0}
         util.logger.debug(json.dumps(data, indent=3, sort_keys=True, separators=(',', ': ')))
         for i in data:
-            util.logger.debug("Processing %s:%s:%s", i['key'], i.get('path', '-'), i.get('lineNumber', '-'))
-            util.logger.debug(json.dumps(i, indent=3, sort_keys=True, separators=(',', ': ')))
             if i['key'] in findings_list:
                 util.logger.warning('Finding %s (%s) already in past findings', i['key'], i['type'])
                 findings_conflicts[i['type']] += 1
             i['projectKey'] = self.key
             if branch is not None:
                 i['branch'] = branch
+            elif pr is not None:
+                i['pullRequest'] = pr
             nbr_findings[i['type']] += 1
             if i['type'] == 'SECURITY_HOTSPOT':
                 findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
-
             else:
                 findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
         for t in ('SECURITY_HOTSPOT', 'BUG', 'CODE_SMELL', 'VULNERABILITY'):
             if findings_conflicts[t] > 0:
                 util.logger.warning('%d %s findings missed because of JSON conflict', findings_conflicts[t], t)
-        util.logger.info("%d findings exported for %s", len(findings_list), str(self))
+        util.logger.info("%d findings exported for %s branch %s PR %s", len(findings_list), str(self), branch, pr)
         for t in ('SECURITY_HOTSPOT', 'BUG', 'CODE_SMELL', 'VULNERABILITY'):
             util.logger.info("%d %s exported", nbr_findings[t], t)
 
