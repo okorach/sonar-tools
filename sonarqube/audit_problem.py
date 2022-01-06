@@ -45,7 +45,7 @@ class Problem():
         return f'{self.severity}{separator}{self.type}{separator}"{self.message}"'
 
 
-def dump_report(problems, file, file_format):
+def dump_report(problems, file, file_format, separator=','):
     if file is None:
         f = sys.stdout
         util.logger.info("Dumping report to stdout")
@@ -62,7 +62,7 @@ def dump_report(problems, file, file_format):
             print(p_dump, file=f, end='')
             is_first = False
         else:
-            p_dump = p.to_csv()
+            p_dump = p.to_csv(separator)
             print(p_dump, file=f)
 
     if file_format == 'json':
