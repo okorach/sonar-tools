@@ -37,7 +37,6 @@ import sys
 from sonarqube import env, issues, hotspots, version, projects
 import sonarqube.utilities as util
 
-_CSV_SEP = ','
 
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
@@ -95,8 +94,8 @@ def __dump_issues(issues_list, file, file_format, with_urls=False):
             is_first = False
         else:
             if with_urls:
-                url = f'"{issue.url()}"{_CSV_SEP}'
-            print(f"{url}{issue.to_csv(_CSV_SEP)}", file=f)
+                url = f'"{issue.url()}"{util.CSV_SEP}'
+            print(f"{url}{issue.to_csv(util.CSV_SEP)}", file=f)
 
     if file_format == 'json':
         print("\n]", file=f)

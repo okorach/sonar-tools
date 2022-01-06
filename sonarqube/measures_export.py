@@ -29,7 +29,6 @@ import re
 from sonarqube import measures, metrics, projects, env, version
 import sonarqube.utilities as util
 
-_CSV_SEP = ','
 RATINGS = 'letters'
 PERCENTS = 'float'
 DATEFMT = 'datetime'
@@ -70,11 +69,11 @@ def __close_output(file, fd):
 
 def __get_csv_header(wanted_metrics, edition):
     if edition == 'community':
-        header = f"# Project Key{_CSV_SEP}Project Name{_CSV_SEP}Last Analysis{_CSV_SEP}"
+        header = f"# Project Key{util.CSV_SEP}Project Name{util.CSV_SEP}Last Analysis{util.CSV_SEP}"
     else:
-        header = f"# Project Key{_CSV_SEP}Project Name{_CSV_SEP}Branch{_CSV_SEP}Last Analysis{_CSV_SEP}"
+        header = f"# Project Key{util.CSV_SEP}Project Name{util.CSV_SEP}Branch{util.CSV_SEP}Last Analysis{util.CSV_SEP}"
     for m in re.split(',', wanted_metrics):
-        header += f"{m}{_CSV_SEP}"
+        header += f"{m}{util.CSV_SEP}"
     return header[:-1]
 
 
@@ -105,7 +104,7 @@ def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True
         lines = ''
         for branch in branch_data:
             if with_url:
-                lines += f"{branch.url()}{_CSV_SEP}"
+                lines += f"{branch.url()}{util.CSV_SEP}"
             lines += __get_branch_measures(branch, project, wanted_metrics, endpoint) + "\n"
         return lines[:-1]
     else:
@@ -113,13 +112,13 @@ def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True
         last_analysis = __last_analysis(project)
         line = ''
         if with_url:
-            line = f"{project.url()}{_CSV_SEP}"
-        line += f"{project.key}{_CSV_SEP}{project.name}{_CSV_SEP}{last_analysis}"
+            line = f"{project.url()}{util.CSV_SEP}"
+        line += f"{project.key}{util.CSV_SEP}{project.name}{util.CSV_SEP}{last_analysis}"
         for metric in wanted_metrics.split(','):
             val = "None"
             if metric in p_meas:
-                val = str(measures.convert(metric, p_meas[metric].replace(_CSV_SEP, '|'), **CONVERT_OPTIONS))
-            line += _CSV_SEP + val
+                val = str(measures.convert(metric, p_meas[metric].replace(util.CSV_SEP, '|'), **CONVERT_OPTIONS))
+            line += util.CSV_SEP + val
     return line
 
 
@@ -135,12 +134,12 @@ def __get_json_branch_measures(branch, project, wanted_metrics, endpoint):
 
 def __get_branch_measures(branch, project, wanted_metrics, endpoint):
     p_meas = measures.component(project.key, wanted_metrics, branch=branch.name, endpoint=endpoint)
-    line = f"{project.key}{_CSV_SEP}{project.name}{_CSV_SEP}{branch.name}{_CSV_SEP}{__last_analysis(branch)}"
+    line = f"{project.key}{util.CSV_SEP}{project.name}{util.CSV_SEP}{branch.name}{util.CSV_SEP}{__last_analysis(branch)}"
     for metric in wanted_metrics.split(','):
         if metric in p_meas:
-            line += _CSV_SEP + str(measures.convert(metric, p_meas[metric].replace(_CSV_SEP, '|'), **CONVERT_OPTIONS))
+            line += util.CSV_SEP + str(measures.convert(metric, p_meas[metric].replace(util.CSV_SEP, '|'), **CONVERT_OPTIONS))
         else:
-            line += _CSV_SEP + "None"
+            line += util.CSV_SEP + "None"
     return line
 
 
@@ -167,7 +166,6 @@ def __get_fmt_and_file(args):
 
 
 def __parse_cmd_line():
-    global _CSV_SEP
     parser = util.set_common_args('Extract measures of projects')
     parser = util.set_component_args(parser)
     parser.add_argument('-o', '--outputFile', required=False, help='File to generate the report, default is stdout'
@@ -187,11 +185,11 @@ def __parse_cmd_line():
                         help='Reports timestamps only with date, not time')
     parser.add_argument('--includeURLs', action='store_true', default=False, required=False,
                         help='Add projects/branches URLs in report')
-    parser.add_argument('--csvSeparator', required=False, default=_CSV_SEP,
-                        help=f'CSV separator (for CSV output), default {_CSV_SEP}')
+    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEP,
+                        help=f'CSV separator (for CSV output), default {util.CSV_SEP}')
 
     args = util.parse_and_check_token(parser)
-    _CSV_SEP = args.csvSeparator
+    util.CSV_SEP = args.csvSeparator
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     if args.ratingsAsNumbers:

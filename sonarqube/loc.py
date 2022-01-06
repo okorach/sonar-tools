@@ -25,8 +25,6 @@ import sys
 from sonarqube import projects, env, version
 import sonarqube.utilities as util
 
-_CSV_SEP = ','
-
 
 def __deduct_format(fmt, file):
     if fmt is not None:
@@ -42,20 +40,20 @@ def __deduct_format(fmt, file):
 def __csv_header_line(with_name=False, with_analysis=False):
     line = "# Project Key"
     if with_name:
-        line += f"{_CSV_SEP}Project Name"
-    line += f"{_CSV_SEP}LoC"
+        line += f"{util.CSV_SEP}Project Name"
+    line += f"{util.CSV_SEP}LoC"
     if with_analysis:
-        line += f"{_CSV_SEP}Last Analysis"
+        line += f"{util.CSV_SEP}Last Analysis"
     return line
 
 
 def __csv_line(project, with_name=False, with_analysis=False):
     line = project.key
     if with_name:
-        line += f"{_CSV_SEP}{project.name}"
-    line += f"{_CSV_SEP}{project.ncloc(include_branches=True)}"
+        line += f"{util.CSV_SEP}{project.name}"
+    line += f"{util.CSV_SEP}{project.ncloc(include_branches=True)}"
     if with_analysis:
-        line += f"{_CSV_SEP}{project.last_analysis_date(include_branches=True)}"
+        line += f"{util.CSV_SEP}{project.last_analysis_date(include_branches=True)}"
     return line
 
 
@@ -100,7 +98,6 @@ def __dump_loc(project_list, file, file_format, **kwargs):
 
 
 def main():
-    global _CSV_SEP
     parser = util.set_common_args('Extract projects lines of code, as computed for the licence')
     parser = util.set_component_args(parser)
     parser.add_argument('-n', '--projectName', required=False, default=False, action='store_true',
@@ -111,14 +108,14 @@ def main():
                         'Format is automatically deducted from file extension, if extension given')
     parser.add_argument('-f', '--format', required=False,
                         help='Format of output (json, csv), default is csv')
-    parser.add_argument('--csvSeparator', required=False, default=_CSV_SEP,
-                        help=f'CSV separator (for CSV output), default {_CSV_SEP}')
+    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEP,
+                        help=f'CSV separator (for CSV output), default {util.CSV_SEP}')
     args = util.parse_and_check_token(parser)
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
-    _CSV_SEP = args.csvSeparator
+    util.CSV_SEP = args.csvSeparator
     args.format = __deduct_format(args.format, args.outputFile)
     project_list = projects.search(endpoint=endpoint)
     __dump_loc(project_list, args.outputFile, args.format, **vars(args))
