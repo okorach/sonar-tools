@@ -421,7 +421,7 @@ Is this normal ?", gr['name'], str(self.key))
         return []
 
     def __audit_zero_loc(self, audit_settings):
-        if (not audit_settings['audit.projects.branches'] and
+        if ((not audit_settings['audit.projects.branches'] or self.endpoint.edition() == 'community') and
            self.last_analysis_date() is not None and self.ncloc() == 0):
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)),
