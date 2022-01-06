@@ -415,7 +415,7 @@ class Issue(sq.SqObject):
         util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.key)
         return False
 
-    def to_csv(self):
+    def to_csv(self, separator=','):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
         data = self.to_json()
         for field in _CSV_FIELDS:
@@ -423,7 +423,7 @@ class Issue(sq.SqObject):
                 data[field] = ''
         data['projectName'] = projects.get(self.projectKey, self.endpoint).name
         data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
-        return ";".join([str(data[field]) for field in _CSV_FIELDS])
+        return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
@@ -836,8 +836,8 @@ def identical_attributes(o1, o2, key_list):
     return True
 
 
-def to_csv_header():
-    return "# " + ";".join(_CSV_FIELDS)
+def to_csv_header(separator=','):
+    return "# " + separator.join(_CSV_FIELDS)
 
 
 def __get_issues_search_params(params):

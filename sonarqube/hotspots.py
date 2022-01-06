@@ -106,7 +106,7 @@ class Hotspot(sq.SqObject):
             branch = f'pullRequest={requests.utils.quote(self.pull_request)}&'
         return f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
 
-    def to_csv(self):
+    def to_csv(self, separator=','):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
         cdate = self.creation_date.strftime(util.SQ_DATE_FORMAT)
         ctime = self.creation_date.strftime(util.SQ_TIME_FORMAT)
@@ -116,7 +116,7 @@ class Hotspot(sq.SqObject):
         mtime = mtime.split('+')[0]
         msg = self.message.replace('"', '""')
         line = '-' if self.line is None else self.line
-        return ';'.join([str(x) for x in [self.key, self.rule, 'SECURITY_HOTSPOT', self.vulnerabilityProbability,
+        return separator.join([str(x) for x in [self.key, self.rule, 'SECURITY_HOTSPOT', self.vulnerabilityProbability,
                                           self.status, cdate, ctime, mdate, mtime, self.projectKey,
                                           projects.get(self.projectKey, self.endpoint).name, self.file, line,
                                           0, f'"{msg}"']])

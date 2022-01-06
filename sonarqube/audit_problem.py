@@ -41,8 +41,8 @@ class Problem():
         d['concerned_object'] = str(d['concerned_object'])
         return util.json_dump(d)
 
-    def to_csv(self):
-        return f'{self.severity},{self.type},"{self.message}"'
+    def to_csv(self, separator=','):
+        return f'{self.severity}{separator}{self.type}{separator}"{self.message}"'
 
 
 def dump_report(problems, file, file_format):
