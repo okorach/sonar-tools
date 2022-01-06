@@ -178,7 +178,10 @@ def unique_dict_field(data, field):
 
 
 def remove_nones(d):
-    return {k: v for k, v in d.items() if v is not None}
+    if isinstance(d, dict):
+        return {k: v for k, v in d.items() if v is not None}
+    else:
+        return d
 
 
 def json_dump(jsondata):
