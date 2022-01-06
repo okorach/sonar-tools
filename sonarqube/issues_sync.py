@@ -30,7 +30,6 @@
 
 
 import sys
-import json
 from sonarqube import env, issues, projects, version
 import sonarqube.utilities as util
 

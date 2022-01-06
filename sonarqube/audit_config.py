@@ -19,7 +19,6 @@
 #
 import os
 import pathlib
-import json
 import jprops
 import sonarqube.utilities as util
 

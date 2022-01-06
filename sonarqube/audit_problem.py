@@ -18,7 +18,6 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 import sys
-import json
 import sonarqube.utilities as util
 # Using enum class create enumerations
 
