@@ -41,7 +41,7 @@ SQ_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 SQ_DATE_FORMAT = "%Y-%m-%d"
 SQ_TIME_FORMAT = "%H:%M:%S"
 
-CSV_SEP = ','
+CSV_SEPARATOR = ','
 
 logger = logging.getLogger('sonarqube-tools')
 formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)-7s | %(message)s')

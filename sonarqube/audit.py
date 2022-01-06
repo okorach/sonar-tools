@@ -97,8 +97,8 @@ def main():
                         help='Creates the $HOME/.sonar-audit.properties configuration file, if not already present'
                         'or outputs to stdout if it already exist')
     parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
-    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEP,
-                        help=f'CSV separator (for CSV output), default {util.CSV_SEP}')
+    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
+                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
     args = parser.parse_args()
     kwargs = vars(args)
     if args.sif is None and args.config is None and args.token is None:

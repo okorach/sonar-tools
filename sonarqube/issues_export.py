@@ -69,8 +69,8 @@ def parse_args():
                         help='Use export_findings() whenever possible')
     parser.add_argument('--includeURLs', required=False, default=False, action='store_true',
                         help='Generate issues URL in the report, false by default')
-    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEP,
-                        help=f'CSV separator (for CSV output), default {util.CSV_SEP}')
+    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
+                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
     return util.parse_and_check_token(parser)
 
 def __dump_issues(issues_list, file, file_format, **kwargs):

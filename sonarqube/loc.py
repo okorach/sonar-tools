@@ -106,8 +106,8 @@ def main():
                         'Format is automatically deducted from file extension, if extension given')
     parser.add_argument('-f', '--format', required=False,
                         help='Format of output (json, csv), default is csv')
-    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEP,
-                        help=f'CSV separator (for CSV output), default {util.CSV_SEP}')
+    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
+                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
     args = util.parse_and_check_token(parser)
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
