@@ -21,7 +21,6 @@
 '''
     Exports LoC per projects
 '''
-import json
 import sys
 from sonarqube import projects, env, version
 import sonarqube.utilities as util
@@ -94,7 +93,7 @@ def __dump_loc(project_list, file, file_format, **kwargs):
         if nb_projects % 50 == 0:
             util.logger.info("%d PROJECTS and %d LoCs, still counting...", nb_projects, nb_loc)
     if file_format == 'json':
-        print(json.dumps(loc_list, indent=3, sort_keys=False, separators=(',', ': ')), file=fd)
+        print(util.json_dump(loc_list), file=fd)
     if file is not None:
         fd.close()
     util.logger.info("%d PROJECTS and %d LoCs in total", len(project_list), nb_loc)

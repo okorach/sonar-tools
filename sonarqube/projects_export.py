@@ -25,7 +25,6 @@
 '''
 import sys
 import os
-import json
 from sonarqube import env, projects
 import sonarqube.utilities as util
 
@@ -76,12 +75,12 @@ def main():
             summary += f"{k}:{v}, "
         util.logger.info("%s", summary[:-2])
 
-    print(json.dumps({
+    print(util.json_dump({
         'sonarqube_environment': {
             'version': sq.version(digits=2, as_string=True),
             'plugins': sq.plugins(),
         },
-        'project_exports': exports}, sort_keys=True, indent=3, separators=(',', ': ')))
+        'project_exports': exports}))
     util.logger.info("%s", summary)
     sys.exit(0)
 

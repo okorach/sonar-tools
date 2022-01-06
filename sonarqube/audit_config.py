@@ -19,7 +19,6 @@
 #
 import os
 import pathlib
-import json
 import jprops
 import sonarqube.utilities as util
 
@@ -70,8 +69,7 @@ def load(config_name=None, settings=None):
             except ValueError:
                 pass
 
-    util.logger.debug("Audit settings = %s",
-        json.dumps(_CONFIG_SETTINGS, sort_keys=True, indent=3, separators=(',', ': ')))
+    util.logger.debug("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
     return _CONFIG_SETTINGS
 
 

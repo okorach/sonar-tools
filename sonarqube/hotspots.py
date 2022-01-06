@@ -30,6 +30,12 @@ import sonarqube.utilities as util
 from sonarqube import env, projects
 
 
+_JSON_FIELDS_REMAPPED = (
+    ('pull_request', 'pullRequest')
+)
+
+_JSON_FIELDS_PRIVATE = ('endpoint', '_json', 'changelog', 'component', '_url', 'creation_date', 'modification_date')
+
 class TooManyHotspotsError(Exception):
     def __init__(self, nbr_issues, message):
         super().__init__()
@@ -54,6 +60,7 @@ class Hotspot(sq.SqObject):
         self.modification_date = None
         self.author = None
         self.branch = None
+        self.pull_request = None
         if data is not None:
             if from_findings:
                 self.__load_finding(data)
@@ -71,7 +78,6 @@ class Hotspot(sq.SqObject):
         self.modification_date = util.string_to_date(jsondata['updateDate'])
         self.file = jsondata['component'].split(":")[-1]
         self.hash = jsondata.get('hash', None)
-        self.branch = jsondata.get('branch', None)
         self.category = jsondata['securityCategory']
         self.vulnerabilityProbability = jsondata['vulnerabilityProbability']
 
@@ -89,11 +95,15 @@ class Hotspot(sq.SqObject):
         self.rule = jsondata.get('rule', jsondata.get('ruleReference', None))
         self.message = jsondata.get('message', None)
         self.status = jsondata['status']
+        self.branch = jsondata.get('branch', None)
+        self.pull_request = jsondata.get('pullrequest', None)
 
     def url(self):
         branch = ''
         if self.branch is not None:
             branch = f'branch={requests.utils.quote(self.branch)}&'
+        elif self.pull_request is not None:
+            branch = f'pullRequest={requests.utils.quote(self.pull_request)}&'
         return f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
 
     def to_csv(self):
@@ -112,15 +122,15 @@ class Hotspot(sq.SqObject):
                                           0, f'"{msg}"']])
 
     def to_json(self):
-        data = vars(self)
-        for old_name, new_name in (('line', 'lineNumber'), ('rule', 'ruleReference'), ('file', 'path')):
+        data = vars(self).copy()
+        for old_name, new_name in ():
             data[new_name] = data.pop(old_name, None)
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         data['url'] = self.url()
-        if data['path'] is None:
+        if data['file'] is None:
             util.logger.warning("Can't find file path for %s", str(self))
-        for field in ('endpoint', '_json', 'changelog', 'component', '_url', 'creation_date', 'modification_date'):
+        for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
         for k, v in data.copy().items():
             if v is None:
@@ -128,15 +138,22 @@ class Hotspot(sq.SqObject):
         return data
 
 
-def search_by_project(project_key, endpoint=None, branch=None):
+def search_by_project(project_key, endpoint=None, branch=None, pull_request=None):
     new_params = {}
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
         key_list = project_key.split(',')
     hotspots = {}
+    if branch is not None:
+        new_params['branch'] = branch
+        key_list = [key_list[0]]
+    elif pull_request is not None:
+        new_params['pullRequest'] = pull_request
+        key_list = [key_list[0]]
+
     for k in key_list:
-        util.logger.info("Hotspots search by project %s branch %s", k, str(branch))
+        util.logger.info("Hotspots search by project %s branch %s PR %s", k, branch, pull_request)
         new_params['projectKey'] = k
         project_hotspots = search(endpoint=endpoint, params=new_params)
         util.logger.info("Project %s branch %s has %d hotspots", k, str(branch), len(project_hotspots))
