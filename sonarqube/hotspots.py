@@ -30,6 +30,12 @@ import sonarqube.utilities as util
 from sonarqube import env, projects
 
 
+_JSON_FIELDS_REMAPPED = (
+    ('pull_request', 'pullRequest')
+)
+
+_JSON_FIELDS_PRIVATE = ('endpoint', '_json', 'changelog', 'component', '_url', 'creation_date', 'modification_date')
+
 class TooManyHotspotsError(Exception):
     def __init__(self, nbr_issues, message):
         super().__init__()
@@ -117,14 +123,14 @@ class Hotspot(sq.SqObject):
 
     def to_json(self):
         data = vars(self).copy()
-        for old_name, new_name in (('line', 'lineNumber'), ('rule', 'ruleReference'), ('file', 'path'), ('pull_request', 'pullRequest')):
+        for old_name, new_name in ():
             data[new_name] = data.pop(old_name, None)
         data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         data['url'] = self.url()
-        if data['path'] is None:
+        if data['file'] is None:
             util.logger.warning("Can't find file path for %s", str(self))
-        for field in ('endpoint', '_json', 'changelog', 'component', '_url', 'creation_date', 'modification_date'):
+        for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
         for k, v in data.copy().items():
             if v is None:
