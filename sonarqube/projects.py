@@ -533,10 +533,8 @@ Is this normal ?", gr['name'], str(self.key))
             # FIXME - Hack for wrong projectKey returned in PR
             # m = re.search(r"(\w+):PULL_REQUEST:(\w+)", i['projectKey'])
             i['projectKey'] = self.key
-            if branch is not None:
-                i['branch'] = branch
-            elif pr is not None:
-                i['pullRequest'] = pr
+            i['branch'] = branch
+            i['pullRequest'] = pr
             nbr_findings[i['type']] += 1
             if i['type'] == 'SECURITY_HOTSPOT':
                 findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
