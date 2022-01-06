@@ -39,6 +39,16 @@ SYNC_COMMENTS = 'sync_comments'
 SYNC_ASSIGN = 'sync_assignments'
 SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
 
+_JSON_FIELDS_REMAPPED = (
+    ('line', 'lineNumber'),
+    ('rule', 'ruleReference'),
+    ('pull_request', 'pullRequest'),
+    ('_comments', 'comments')
+)
+
+_JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'hash', 'sonarqube',
+    'creation_date', 'modification_date', '_debt', 'component', 'language', 'resolution')
+
 class ApiError(Exception):
     pass
 
@@ -157,7 +167,6 @@ class Issue(sq.SqObject):
         self.status = jsondata['status']
         self.branch = jsondata.get('branch', None)
         self.pull_request = jsondata.get('pullRequest', None)
-        util.logger.debug("Issue PR = %s", self.pull_request)
 
     def debt(self):
         if self._debt is not None:
@@ -408,7 +417,7 @@ class Issue(sq.SqObject):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
         data = vars(self).copy()
 
-        for old_name, new_name in (('line', 'lineNumber'), ('rule', 'ruleReference'), ('pull_request', 'pullRequest')):
+        for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
         data['effort'] = self.debt()
         data['url'] = self.url()
@@ -421,8 +430,7 @@ class Issue(sq.SqObject):
         else:
             util.logger.warning("Can't find file path for %s", str(self))
             data['path'] = 'Unknown'
-        for field in ('endpoint', 'id', '_json', '_changelog', 'assignee', 'hash', 'sonarqube',
-                      'creation_date', 'modification_date', '_debt', 'component', 'language', 'resolution'):
+        for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
         return data
 
