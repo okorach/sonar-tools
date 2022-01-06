@@ -85,7 +85,7 @@ class Issue(sq.SqObject):
     def __init__(self, key, endpoint, data=None, from_findings=False):
         super().__init__(key, endpoint)
         self._json = None
-        self._severity = None
+        self.severity = None
         self.type = None
         self.author = None
         self.assignee = None
@@ -104,6 +104,7 @@ class Issue(sq.SqObject):
         self.modification_date = None
         self.hash = None
         self.branch = None
+        self.pull_request = None
         if data is not None:
             if from_findings:
                 self.__load_finding(data)
@@ -114,7 +115,7 @@ class Issue(sq.SqObject):
         return f"Issue key '{self.key}'"
 
     def __format__(self, format_spec=''):
-        return f"Key: {self.key} - Type: {self.type} - Severity: {self._severity}" \
+        return f"Key: {self.key} - Type: {self.type} - Severity: {self.severity}" \
                f" - File/Line: {self.component}/{self.line} - Rule: {self.rule}"
 
     def to_string(self):
@@ -125,6 +126,8 @@ class Issue(sq.SqObject):
         branch = ''
         if self.branch is not None:
             branch = f'&branch={requests.utils.quote(self.branch)}'
+        elif self.pull_request is not None:
+            branch = f'pullRequest={requests.utils.quote(self.pull_request)}&'
         return f'{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}'
 
     def __load(self, jsondata):
@@ -136,7 +139,6 @@ class Issue(sq.SqObject):
         self.modification_date = util.string_to_date(jsondata['updateDate'])
         self.component = jsondata['component']
         self.hash = jsondata.get('hash', None)
-        self.branch = jsondata.get('branch', None)
 
     def __load_finding(self, jsondata):
         self.__load_common(jsondata)
@@ -147,12 +149,15 @@ class Issue(sq.SqObject):
     def __load_common(self, jsondata):
         self._json = jsondata
         self.type = jsondata['type']
-        self._severity = jsondata.get('severity', None)
+        self.severity = jsondata.get('severity', None)
         self.line = jsondata.get('line', jsondata.get('lineNumber', None))
         self.resolution = jsondata.get('resolution', None)
         self.rule = jsondata.get('rule', jsondata.get('ruleReference', None))
         self.message = jsondata.get('message', None)
         self.status = jsondata['status']
+        self.branch = jsondata.get('branch', None)
+        self.pull_request = jsondata.get('pullRequest', None)
+        util.logger.debug("Issue PR = %s", self.pull_request)
 
     def debt(self):
         if self._debt is not None:
@@ -232,14 +237,14 @@ class Issue(sq.SqObject):
         else:
             return None
 
-    def severity(self, force_api=False):
-        if force_api or self._severity is None:
-            self.read()
-        return self._severity
+    # def severity(self, force_api=False):
+    #    if force_api or self._severity is None:
+    #        self.read()
+    #    return self._severity
 
     def set_severity(self, severity):
         """Sets severity"""
-        util.logger.debug("Changing severity of issue %s from %s to %s", self.key, self._severity, severity)
+        util.logger.debug("Changing severity of issue %s from %s to %s", self.key, self.severity, severity)
         return self.post('issues/set_severity', {'issue': self.key, 'severity': severity})
 
     def assign(self, assignee):
@@ -336,7 +341,7 @@ class Issue(sq.SqObject):
             score += 1
         if self.type == another_issue.type or kwargs.get('ignore_type', False):
             score += 1
-        if self._severity == another_issue.severity or kwargs.get('ignore_severity', False):
+        if self.severity == another_issue.severity or kwargs.get('ignore_severity', False):
             score += 1
         # Need at least 6 / 8 to match
         return score >= 6
@@ -394,16 +399,16 @@ class Issue(sq.SqObject):
         mtime = mtime.split('+')[0]
         msg = self.message.replace('"', '""').replace("\n", " ")
         line = '-' if self.line is None else self.line
-        return ';'.join([str(x) for x in [self.key, self.rule, self.type, self._severity, self.status,
-                                          cdate, ctime, mdate, mtime, self.projectKey,
+        return ';'.join([str(x) for x in [self.key, self.rule, self.type, self.severity, self.status,
+                                          cdate, ctime, mdate, mtime, self.projectKey, self.branch, self.pull_request,
                                           projects.get(self.projectKey, self.endpoint).name, self.component, line,
                                           self.debt(), '"' + msg + '"']])
 
     def to_json(self):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
-        data = vars(self)
+        data = vars(self).copy()
 
-        for old_name, new_name in (('line', 'lineNumber'), ('rule', 'ruleReference')):
+        for old_name, new_name in (('line', 'lineNumber'), ('rule', 'ruleReference'), ('pull_request', 'pullRequest')):
             data[new_name] = data.pop(old_name, None)
         data['effort'] = self.debt()
         data['url'] = self.url()
@@ -416,8 +421,8 @@ class Issue(sq.SqObject):
         else:
             util.logger.warning("Can't find file path for %s", str(self))
             data['path'] = 'Unknown'
-        for field in ('endpoint', 'id', '_json', 'changelog', '_url', 'assignee', 'hash', 'sonarqube',
-                      'creation_date', 'modification_date', '_debt', 'component', 'language', 'branch', 'resolution'):
+        for field in ('endpoint', 'id', '_json', '_changelog', 'assignee', 'hash', 'sonarqube',
+                      'creation_date', 'modification_date', '_debt', 'component', 'language', 'resolution'):
             data.pop(field, None)
         return data
 
@@ -602,11 +607,13 @@ def _search_all(params, endpoint=None, raise_error=True):
     return issue_list
 
 
-def search_by_project(project_key, endpoint=None, branch=None, params=None, search_findings=False):
+def search_by_project(project_key, endpoint=None, branch=None, pull_request=None, params=None, search_findings=False):
     if params is None:
         params = {}
     if branch is not None:
         params['branch'] = branch
+    if pull_request is not None:
+        params['pullRequest'] = pull_request
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
