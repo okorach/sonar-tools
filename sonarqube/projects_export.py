@@ -25,7 +25,6 @@
 '''
 import sys
 import os
-import json
 from sonarqube import env, projects
 import sonarqube.utilities as util
 

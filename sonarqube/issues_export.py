@@ -34,7 +34,6 @@
     [--tags]
 '''
 import sys
-import json
 from sonarqube import env, issues, hotspots, version, projects
 import sonarqube.utilities as util
 
@@ -140,11 +139,13 @@ def main():
             prs = [p.strip() for p in pr_str.split()]
         if branches or prs:
             for b in branches:
-                all_issues.update(issues.search_by_project(project_key, branch=b.name, endpoint=sqenv, search_findings=kwargs['useFindings']))
+                all_issues.update(issues.search_by_project(project_key, branch=b.name,
+                                  endpoint=sqenv, search_findings=kwargs['useFindings']))
                 if not kwargs['useFindings']:
                     all_issues.update(hotspots.search_by_project(project_key, sqenv, branch=b.name))
             for p in prs:
-                all_issues.update(issues.search_by_project(project_key, pull_request=p.key, endpoint=sqenv, search_findings=kwargs['useFindings']))
+                all_issues.update(issues.search_by_project(project_key, pull_request=p.key,
+                                  endpoint=sqenv, search_findings=kwargs['useFindings']))
                 if not kwargs['useFindings']:
                     all_issues.update(hotspots.search_by_project(project_key, sqenv, pull_request=p.key))
         else:

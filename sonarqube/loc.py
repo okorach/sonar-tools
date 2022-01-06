@@ -21,7 +21,6 @@
 '''
     Exports LoC per projects
 '''
-import json
 import sys
 from sonarqube import projects, env, version
 import sonarqube.utilities as util

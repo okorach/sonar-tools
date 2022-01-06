@@ -441,7 +441,6 @@ class Issue(sq.SqObject):
             data.pop(field, None)
         return data
 
-
     def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
         origin = f"originally by *{event['userName']}* on original branch"
