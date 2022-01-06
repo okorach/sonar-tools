@@ -37,36 +37,36 @@ def __deduct_format(fmt, file):
     return 'csv'
 
 
-def __csv_header_line(with_name=False, with_analysis=False):
+def __csv_header_line(**kwargs):
     line = "# Project Key"
-    if with_name:
-        line += f"{util.CSV_SEP}Project Name"
-    line += f"{util.CSV_SEP}LoC"
-    if with_analysis:
-        line += f"{util.CSV_SEP}Last Analysis"
+    if kwargs['projectName']:
+        line += f"{kwargs['csvSeparator']}Project Name"
+    line += f"{kwargs['csvSeparator']}LoC"
+    if kwargs['lastAnalysis']:
+        line += f"{kwargs['csvSeparator']}Last Analysis"
     return line
 
 
-def __csv_line(project, with_name=False, with_analysis=False):
+def __csv_line(project, **kwargs):
     line = project.key
-    if with_name:
-        line += f"{util.CSV_SEP}{project.name}"
-    line += f"{util.CSV_SEP}{project.ncloc(include_branches=True)}"
-    if with_analysis:
-        line += f"{util.CSV_SEP}{project.last_analysis_date(include_branches=True)}"
+    if kwargs['projectName']:
+        line += f"{kwargs['csvSeparator']}{project.name}"
+    line += f"{kwargs['csvSeparator']}{project.ncloc(include_branches=True)}"
+    if kwargs['lastAnalysis']:
+        line += f"{kwargs['csvSeparator']}{project.last_analysis_date(include_branches=True)}"
     return line
 
 
-def __json_data(project, with_name=False, with_analysis=False):
+def __json_data(project, **kwargs):
     data = {'projectKey': project.key, 'ncloc': project.ncloc(include_branches=True)}
-    if with_name:
+    if kwargs['projectName']:
         data['projectName'] = project.name
-    if with_analysis:
+    if kwargs['lastAnalysis']:
         data['lastAnalysis'] = util.date_to_string(project.last_analysis_date(include_branches=True))
     return data
 
 
-def __dump_loc(project_list, file, file_format, **kwargs):
+def __dump_loc(project_list, file, **kwargs):
     if file is None:
         fd = sys.stdout
         util.logger.info("Dumping LoC report to stdout")
@@ -74,23 +74,21 @@ def __dump_loc(project_list, file, file_format, **kwargs):
         fd = open(file, "w", encoding='utf-8')
         util.logger.info("Dumping LoC report to file '%s'", file)
 
-    with_name = kwargs['projectName']
-    with_last = kwargs['lastAnalysis']
-    if file_format != 'json':
-        print(__csv_header_line(with_name, with_last), file=fd)
+    if kwargs['format'] != 'json':
+        print(__csv_header_line(**kwargs), file=fd)
     nb_loc = 0
     nb_projects = 0
     loc_list = []
     for _, p in project_list.items():
-        if file_format == 'json':
-            loc_list.append(__json_data(p, with_name, with_last))
+        if kwargs['format'] == 'json':
+            loc_list.append(__json_data(p, **kwargs))
         else:
-            print(__csv_line(p, with_name, with_last), file=fd)
+            print(__csv_line(p, **kwargs), file=fd)
         nb_loc += p.ncloc()
         nb_projects += 1
         if nb_projects % 50 == 0:
             util.logger.info("%d PROJECTS and %d LoCs, still counting...", nb_projects, nb_loc)
-    if file_format == 'json':
+    if kwargs['format'] == 'json':
         print(util.json_dump(loc_list), file=fd)
     if file is not None:
         fd.close()
@@ -114,11 +112,9 @@ def main():
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-
-    util.CSV_SEP = args.csvSeparator
     args.format = __deduct_format(args.format, args.outputFile)
     project_list = projects.search(endpoint=endpoint)
-    __dump_loc(project_list, args.outputFile, args.format, **vars(args))
+    __dump_loc(project_list, args.outputFile, **vars(args))
     sys.exit(0)
 
 
