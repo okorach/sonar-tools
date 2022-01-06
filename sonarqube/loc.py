@@ -25,7 +25,7 @@ import sys
 from sonarqube import projects, env, version
 import sonarqube.utilities as util
 
-_CSV_SEP = ';'
+_CSV_SEP = ','
 
 
 def __deduct_format(fmt, file):
