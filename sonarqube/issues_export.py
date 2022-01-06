@@ -50,6 +50,9 @@ def parse_args():
     parser.add_argument('-b', '--branches', required=False, default=None,
                         help='Comma separated list of branches to export. Use * to export findings from all branches. '
                              'If not specified, only findings of the main branch will be exported')
+    parser.add_argument('-p', '--pullRequests', required=False, default=None,
+                        help='Comma separated list of pull request. Use * to export findings from all PRs. '
+                             'If not specified, only findings of the main branch will be exported')
     parser.add_argument('--statuses', required=False, help='comma separated issue status, '
                         'OPEN, WONTFIX, FALSE-POSITIVE, FIXED, CLOSED, REOPENED, REVIEWED')
     parser.add_argument('--createdAfter', required=False,
@@ -89,7 +92,7 @@ def __dump_issues(issues_list, file, file_format, with_urls=False):
             issue_json = issue.to_json()
             if not with_urls:
                 issue_json.pop('url', None)
-            print(pfx + json.dumps(issue_json, sort_keys=True, indent=3, separators=(': ', ',')), file=f, end='')
+            print(pfx + json.dumps(issue_json, sort_keys=True, indent=3, separators=(',', ': ')), file=f, end='')
             is_first = False
         else:
             if with_urls:
@@ -121,6 +124,7 @@ def main():
     all_issues = {}
     project_key = kwargs.get('componentKeys', None)
     branch_str = kwargs.get('branches', None)
+    pr_str = kwargs.get('pullRequests', None)
     if project_key is not None:
         branches = []
         if branch_str == '*':
@@ -128,16 +132,28 @@ def main():
             branches = project.get_branches()
         elif branch_str is not None:
             branches = [b.strip() for b in branch_str.split()]
-        if branches:
+        if pr_str == '*':
+            project = projects.Project(project_key, sqenv)
+            prs = project.get_pull_requests()
+        elif pr_str is not None:
+            prs = [p.strip() for p in pr_str.split()]
+        if branches or prs:
             for b in branches:
                 all_issues.update(issues.search_by_project(project_key, branch=b.name, endpoint=sqenv, search_findings=kwargs['useFindings']))
+                if not kwargs['useFindings']:
+                    all_issues.update(hotspots.search_by_project(project_key, sqenv, branch=b.name))
+            for p in prs:
+                all_issues.update(issues.search_by_project(project_key, pull_request=p.key, endpoint=sqenv, search_findings=kwargs['useFindings']))
+                if not kwargs['useFindings']:
+                    all_issues.update(hotspots.search_by_project(project_key, sqenv, pull_request=p.key))
         else:
             all_issues = issues.search_by_project(project_key, sqenv, search_findings=kwargs['useFindings'])
+            if not kwargs['useFindings']:
+                all_issues.update(hotspots.search_by_project(project_key, sqenv))
     else:
         all_issues = issues.search_by_project(project_key, sqenv, search_findings=kwargs['useFindings'])
-
-    if not kwargs['useFindings']:
-        all_issues.update(hotspots.search_by_project(project_key, sqenv))
+        if not kwargs['useFindings']:
+            all_issues.update(hotspots.search_by_project(project_key, sqenv))
     fmt = kwargs['format']
     if kwargs.get('outputFile', None) is not None:
         ext = kwargs['outputFile'].split('.')[-1].lower()
