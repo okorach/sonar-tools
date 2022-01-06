@@ -35,7 +35,7 @@
 '''
 import sys
 import json
-from sonarqube import env, issues, hotspots, version
+from sonarqube import env, issues, hotspots, version, projects
 import sonarqube.utilities as util
 
 SEP = ','
@@ -47,13 +47,16 @@ def parse_args():
                         'Format is automatically deducted from file extension, if extension given')
     parser.add_argument('-f', '--format', required=False, default='csv',
                         help='Format of output (json, csv), default is csv')
-    parser.add_argument('-s', '--statuses', required=False, help='comma separated issue status, '
+    parser.add_argument('-b', '--branches', required=False, default=None,
+                        help='Comma separated list of branches to export. Use * to export findings from all branches. '
+                             'If not specified, only findings of the main branch will be exported')
+    parser.add_argument('--statuses', required=False, help='comma separated issue status, '
                         'OPEN, WONTFIX, FALSE-POSITIVE, FIXED, CLOSED, REOPENED, REVIEWED')
-    parser.add_argument('-a', '--createdAfter', required=False,
+    parser.add_argument('--createdAfter', required=False,
                         help='issues created on or after a given date (YYYY-MM-DD)')
-    parser.add_argument('-b', '--createdBefore', required=False,
+    parser.add_argument('--createdBefore', required=False,
                         help='issues created on or before a given date (YYYY-MM-DD)')
-    parser.add_argument('-r', '--resolutions', required=False,
+    parser.add_argument('--resolutions', required=False,
                         help='Comma separated resolution states of the issues among'
                              'UNRESOLVED, FALSE-POSITIVE, WONTFIX')
     parser.add_argument('--severities', required=False,
@@ -115,9 +118,23 @@ def main():
 
     # Add SQ environment
     params.update({'env': sqenv})
-
+    all_issues = {}
     project_key = kwargs.get('componentKeys', None)
-    all_issues = issues.search_by_project(project_key, sqenv, search_findings=kwargs['useFindings'])
+    branch_str = kwargs.get('branches', None)
+    if project_key is not None:
+        branches = []
+        if branch_str == '*':
+            project = projects.Project(project_key, sqenv)
+            branches = project.get_branches()
+        elif branch_str is not None:
+            branches = [b.strip() for b in branch_str.split()]
+        if branches:
+            for b in branches:
+                all_issues.update(issues.search_by_project(project_key, branch=b.name, endpoint=sqenv, search_findings=kwargs['useFindings']))
+        else:
+            all_issues = issues.search_by_project(project_key, sqenv, search_findings=kwargs['useFindings'])
+    else:
+        all_issues = issues.search_by_project(project_key, sqenv, search_findings=kwargs['useFindings'])
 
     if not kwargs['useFindings']:
         all_issues.update(hotspots.search_by_project(project_key, sqenv))
