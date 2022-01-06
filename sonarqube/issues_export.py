@@ -127,6 +127,7 @@ def main():
     pr_str = kwargs.get('pullRequests', None)
     if project_key is not None:
         branches = []
+        prs = []
         if branch_str == '*':
             project = projects.Project(project_key, sqenv)
             branches = project.get_branches()
