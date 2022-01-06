@@ -176,3 +176,14 @@ def unique_dict_field(data, field):
         if element is not None and element not in item_list:
             item_list.append(element)
     return item_list
+
+
+def remove_nones(d):
+    return {k: v for k, v in d.items() if v is not None}
+
+
+def str_none(v):
+    if v is None:
+        return ''
+    else:
+        return str(v)
