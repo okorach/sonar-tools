@@ -27,7 +27,6 @@ import datetime
 import json
 import requests.utils
 from sonarqube import env, projects, users, findings
-import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.issue_changelog as changelog
 
