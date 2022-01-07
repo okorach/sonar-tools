@@ -195,3 +195,15 @@ def str_none(v):
         return ''
     else:
         return str(v)
+
+
+def csv_to_list(string, separator=','):
+    return [s.strip() for s in string.split(separator)]
+
+
+def list_to_csv(array, separator=','):
+    return separator.join(array)
+
+
+def csv_normalize(string, separator=','):
+    return list_to_csv(csv_to_list(string))

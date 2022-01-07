@@ -62,7 +62,7 @@ def _audit_sif(sif):
 def _audit_sq(sq, settings, what=None):
     if what is None:
         what = 'qp,qg,settings,projects,users,portfolios,apps,groups'
-    what_to_audit = what.split(',')
+    what_to_audit = util.csv_to_list(what)
     problems = []
     if 'projects' in what_to_audit:
         problems += projects.audit(endpoint=sq, audit_settings=settings)

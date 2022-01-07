@@ -484,7 +484,7 @@ def _search_all_by_project(project_key, params, endpoint=None):
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
-        key_list = project_key.split(',')
+        key_list = util.csv_to_list(project_key)
     issue_list = {}
     for k in key_list:
         params['componentKeys'] = k
@@ -531,7 +531,7 @@ def search_by_project(project_key, endpoint=None, branch=None, pull_request=None
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
-        key_list = project_key.split(',')
+        key_list = util.csv_to_list(project_key)
     issue_list = {}
     for k in key_list:
         util.logger.info("Issue search by project %s branch %s", k, str(branch))
@@ -611,7 +611,7 @@ def _get_facets(project_key, facets='directories', endpoint=None, params=None):
     data = json.loads(resp.text)
     util.json_dump_debug(data['facets'], 'FACETS = ')
     l = {}
-    facets_list = facets.split(',')
+    facets_list = util.csv_to_list(facets)
     for f in data['facets']:
         if f['property'] in facets_list:
             l[f['property']] = f['values']
@@ -654,12 +654,12 @@ def _search_project_daily_issues(key, day, sqenv=None, **kwargs):
     if kwargs is None or 'severities' not in kwargs:
         severities = {'INFO', 'MINOR', 'MAJOR', 'CRITICAL', 'BLOCKER'}
     else:
-        severities = re.split(',', kwargs['severities'])
+        severities = util.csv_to_list(kwargs['severities'])
     util.logger.debug("Severities = %s", str(severities))
     if kwargs is None or 'types' not in kwargs:
         types = {'CODE_SMELL', 'VULNERABILITY', 'BUG', 'SECURITY_HOTSPOT'}
     else:
-        types = re.split(',', kwargs['types'])
+        types = util.csv_to_list(kwargs['types'])
     util.logger.debug("Types = %s", str(types))
     kw['createdAfter'] = day
     kw['createdBefore'] = day

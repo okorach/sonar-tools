@@ -81,7 +81,7 @@ def search_by_project(project_key, endpoint=None, branch=None, pull_request=None
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
-        key_list = project_key.split(',')
+        key_list = util.csv_to_list(project_key)
     hotspots = {}
     if branch is not None:
         new_params['branch'] = branch
