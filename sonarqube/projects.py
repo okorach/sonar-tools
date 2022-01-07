@@ -537,7 +537,7 @@ Is this normal ?", gr['name'], str(self.key))
             i['pullRequest'] = pr
             nbr_findings[i['type']] += 1
             if i['type'] == 'SECURITY_HOTSPOT':
-                findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+                findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_export=True)
             else:
                 findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_export=True)
         for t in ('SECURITY_HOTSPOT', 'BUG', 'CODE_SMELL', 'VULNERABILITY'):
