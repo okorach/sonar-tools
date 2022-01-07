@@ -96,7 +96,7 @@ class Issue(findings.Finding):
         super().__init__(key, endpoint, data, from_export)
         self._debt = None
         if data is not None:
-            self.component = data['component']
+            self.component = data.get('component', None)
 
     def __str__(self):
         return f"Issue key '{self.key}'"
