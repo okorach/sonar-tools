@@ -31,10 +31,16 @@ from sonarqube import env, projects
 
 
 _JSON_FIELDS_REMAPPED = (
-    ('pull_request', 'pullRequest')
+    ('pull_request', 'pullRequest'),
+    ('_comments', 'comments')
 )
 
-_JSON_FIELDS_PRIVATE = ('endpoint', '_json', 'changelog', 'component', '_url', 'creation_date', 'modification_date')
+_JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'hash', 'sonarqube',
+    'creation_date', 'modification_date', '_debt', 'component', 'language', 'resolution')
+
+_CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'createdAt', 'updatedAt', 'projectKey', 'projectName',
+            'branch', 'pullRequest', 'file', 'line', 'effort', 'message')
+
 
 class TooManyHotspotsError(Exception):
     def __init__(self, nbr_issues, message):
@@ -49,7 +55,6 @@ class Hotspot(sq.SqObject):
         self._json = None
         self.vulnerabilityProbability = None
         self.securityCategory = None
-        self.file = None
         self.author = None
         self.status = None
         self.rule = None
@@ -76,7 +81,6 @@ class Hotspot(sq.SqObject):
         self.projectKey = jsondata['project']
         self.creation_date = util.string_to_date(jsondata['creationDate'])
         self.modification_date = util.string_to_date(jsondata['updateDate'])
-        self.file = jsondata['component'].split(":")[-1]
         self.hash = jsondata.get('hash', None)
         self.category = jsondata['securityCategory']
         self.vulnerabilityProbability = jsondata['vulnerabilityProbability']
@@ -86,7 +90,6 @@ class Hotspot(sq.SqObject):
         self.projectKey = jsondata['projectKey']
         self.creation_date = util.string_to_date(jsondata['createdAt'])
         self.modification_date = util.string_to_date(jsondata['updatedAt'])
-        self.file = jsondata['path']
 
     def __load_common(self, jsondata):
         self._json = jsondata
@@ -106,35 +109,37 @@ class Hotspot(sq.SqObject):
             branch = f'pullRequest={requests.utils.quote(self.pull_request)}&'
         return f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
 
+    def file(self):
+        if 'component' in self._json:
+            return self._json['component'].split(":")[-1]
+        elif 'path' in self._json:
+            return self._json['path']
+        else:
+            util.logger.warning("Can't find file name for %s", str(self))
+            return None
+
     def to_csv(self, separator=','):
         # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
-        cdate = self.creation_date.strftime(util.SQ_DATE_FORMAT)
-        ctime = self.creation_date.strftime(util.SQ_TIME_FORMAT)
-        mdate = self.modification_date.strftime(util.SQ_DATE_FORMAT)
-        mtime = self.modification_date.strftime(util.SQ_TIME_FORMAT)
-        # Strip timezone
-        mtime = mtime.split('+')[0]
-        msg = self.message.replace('"', '""')
-        line = '-' if self.line is None else self.line
-        return separator.join([str(x) for x in [self.key, self.rule, 'SECURITY_HOTSPOT', self.vulnerabilityProbability,
-                                          self.status, cdate, ctime, mdate, mtime, self.projectKey,
-                                          projects.get(self.projectKey, self.endpoint).name, self.file, line,
-                                          0, f'"{msg}"']])
+        data = self.to_json()
+        for field in _CSV_FIELDS:
+            if data.get(field, None) is None:
+                data[field] = ''
+        data['projectName'] = projects.get(self.projectKey, self.endpoint).name
+        return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
         data = vars(self).copy()
-        for old_name, new_name in ():
+        for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
-        data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
-        data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
+        data['effort'] = ''
         data['url'] = self.url()
-        if data['file'] is None:
-            util.logger.warning("Can't find file path for %s", str(self))
+        data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
+        data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
+        util.logger.debug('Converted date of %s to %s', self.key, data['createdAt'])
+        data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
+        data['file'] = self.file()
         for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
-        for k, v in data.copy().items():
-            if v is None:
-                data.pop(k)
         return data
 
 
