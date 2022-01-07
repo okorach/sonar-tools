@@ -22,11 +22,8 @@
     Abstraction of the SonarQube "finding" concept
 
 '''
-import re
-import datetime
-import json
-import requests.utils
-from sonarqube import env, projects, users
+
+from sonarqube import projects
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 
@@ -111,7 +108,7 @@ class Finding(sq.SqObject):
         self._load_common(jsondata)
         self.projectKey = jsondata['projectKey']
         self.creation_date = util.string_to_date(jsondata['createdAt'])
-        self.modification_date = util.string_to_date(jsondata['updatedAt'])    
+        self.modification_date = util.string_to_date(jsondata['updatedAt'])
 
     def url(self):
         # Must be implemented in sub classes
