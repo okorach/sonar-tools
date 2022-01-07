@@ -27,7 +27,7 @@ import json
 import requests.utils
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
-from sonarqube import env, projects
+from sonarqube import env, projects, findings
 
 
 _JSON_FIELDS_REMAPPED = (
@@ -48,58 +48,19 @@ class TooManyHotspotsError(Exception):
         self.nbr_issues = nbr_issues
         self.message = message
 
-class Hotspot(sq.SqObject):
+class Hotspot(findings.Finding):
 
-    def __init__(self, key, endpoint, data=None, from_findings=False):
-        super().__init__(key, endpoint)
-        self._json = None
+    def __init__(self, key, endpoint, data=None, from_export=False):
+        super().__init__(key, endpoint, data, from_export)
         self.vulnerabilityProbability = None
         self.securityCategory = None
-        self.author = None
-        self.status = None
-        self.rule = None
-        self.projectKey = None
-        self.line = None
-        self.message = None
-        self.creation_date = None
-        self.modification_date = None
-        self.author = None
-        self.branch = None
-        self.pull_request = None
+        self.type = 'SECURITY_HOTSPOT'
         if data is not None:
-            if from_findings:
-                self.__load_finding(data)
-            else:
-                self.__load(data)
+            self.category = data['securityCategory']
+            self.vulnerabilityProbability = data['vulnerabilityProbability']
 
     def __str__(self):
         return f"Hotspot key '{self.key}'"
-
-    def __load(self, jsondata):
-        self.__load_common(jsondata)
-        self.author = jsondata['author']
-        self.projectKey = jsondata['project']
-        self.creation_date = util.string_to_date(jsondata['creationDate'])
-        self.modification_date = util.string_to_date(jsondata['updateDate'])
-        self.hash = jsondata.get('hash', None)
-        self.category = jsondata['securityCategory']
-        self.vulnerabilityProbability = jsondata['vulnerabilityProbability']
-
-    def __load_finding(self, jsondata):
-        self.__load_common(jsondata)
-        self.projectKey = jsondata['projectKey']
-        self.creation_date = util.string_to_date(jsondata['createdAt'])
-        self.modification_date = util.string_to_date(jsondata['updatedAt'])
-
-    def __load_common(self, jsondata):
-        self._json = jsondata
-        self.vulnerabilityProbability = jsondata.get('vulnerabilityProbability', None)
-        self.line = jsondata.get('line', jsondata.get('lineNumber', None))
-        self.rule = jsondata.get('rule', jsondata.get('ruleReference', None))
-        self.message = jsondata.get('message', None)
-        self.status = jsondata['status']
-        self.branch = jsondata.get('branch', None)
-        self.pull_request = jsondata.get('pullrequest', None)
 
     def url(self):
         branch = ''
@@ -109,37 +70,9 @@ class Hotspot(sq.SqObject):
             branch = f'pullRequest={requests.utils.quote(self.pull_request)}&'
         return f'{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}'
 
-    def file(self):
-        if 'component' in self._json:
-            return self._json['component'].split(":")[-1]
-        elif 'path' in self._json:
-            return self._json['path']
-        else:
-            util.logger.warning("Can't find file name for %s", str(self))
-            return None
-
-    def to_csv(self, separator=','):
-        # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
-        data = self.to_json()
-        for field in _CSV_FIELDS:
-            if data.get(field, None) is None:
-                data[field] = ''
-        data['projectName'] = projects.get(self.projectKey, self.endpoint).name
-        return separator.join([str(data[field]) for field in _CSV_FIELDS])
-
     def to_json(self):
-        data = vars(self).copy()
-        for old_name, new_name in _JSON_FIELDS_REMAPPED:
-            data[new_name] = data.pop(old_name, None)
-        data['effort'] = ''
+        data = super().to_json()
         data['url'] = self.url()
-        data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
-        data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
-        util.logger.debug('Converted date of %s to %s', self.key, data['createdAt'])
-        data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
-        data['file'] = self.file()
-        for field in _JSON_FIELDS_PRIVATE:
-            data.pop(field, None)
         return data
 
 

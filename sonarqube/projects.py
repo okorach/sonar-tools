@@ -539,7 +539,7 @@ Is this normal ?", gr['name'], str(self.key))
             if i['type'] == 'SECURITY_HOTSPOT':
                 findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
             else:
-                findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_findings=True)
+                findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_export=True)
         for t in ('SECURITY_HOTSPOT', 'BUG', 'CODE_SMELL', 'VULNERABILITY'):
             if findings_conflicts[t] > 0:
                 util.logger.warning('%d %s findings missed because of JSON conflict', findings_conflicts[t], t)

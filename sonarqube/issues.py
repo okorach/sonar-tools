@@ -26,7 +26,7 @@ import re
 import datetime
 import json
 import requests.utils
-from sonarqube import env, projects, users
+from sonarqube import env, projects, users, findings
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.issue_changelog as changelog
@@ -83,7 +83,7 @@ class IssueComments:
         return util.json_dump(self.json)
 
 
-class Issue(sq.SqObject):
+class Issue(findings.Finding):
     SEARCH_API = 'issues/search'
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
@@ -93,34 +93,11 @@ class Issue(sq.SqObject):
                       'issues', 'languages', 'onComponentOnly', 'p', 'ps', 'resolutions', 'resolved',
                       'rules', 's', 'severities', 'sinceLeakPeriod', 'statuses', 'tags', 'types']
 
-    def __init__(self, key, endpoint, data=None, from_findings=False):
-        super().__init__(key, endpoint)
-        self._json = None
-        self.severity = None
-        self.type = None
-        self.author = None
-        self.assignee = None
-        self.status = None
-        self.resolution = None
-        self.rule = None
-        self.projectKey = None
-        self.language = None
-        self._changelog = None
-        self._comments = []
-        self.line = None
-        self.component = None
-        self.message = None
+    def __init__(self, key, endpoint, data=None, from_export=False):
+        super().__init__(key, endpoint, data, from_export)
         self._debt = None
-        self.creation_date = None
-        self.modification_date = None
-        self.hash = None
-        self.branch = None
-        self.pull_request = None
         if data is not None:
-            if from_findings:
-                self.__load_finding(data)
-            else:
-                self.__load(data)
+            self.component = data['component']
 
     def __str__(self):
         return f"Issue key '{self.key}'"
@@ -140,41 +117,6 @@ class Issue(sq.SqObject):
         elif self.pull_request is not None:
             branch = f'pullRequest={requests.utils.quote(self.pull_request)}&'
         return f'{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}'
-
-    def __load(self, jsondata):
-        self.__load_common(jsondata)
-        self.author = jsondata['author']
-        self.assignee = jsondata.get('assignee', None)
-        self.projectKey = jsondata['project']
-        self.creation_date = util.string_to_date(jsondata['creationDate'])
-        self.modification_date = util.string_to_date(jsondata['updateDate'])
-        self.component = jsondata['component']
-        self.hash = jsondata.get('hash', None)
-
-    def __load_finding(self, jsondata):
-        self.__load_common(jsondata)
-        self.projectKey = jsondata['projectKey']
-        self.creation_date = util.string_to_date(jsondata['createdAt'])
-        self.modification_date = util.string_to_date(jsondata['updatedAt'])
-
-    def __load_common(self, jsondata):
-        self._json = jsondata
-        self.type = jsondata['type']
-        self.severity = jsondata.get('severity', None)
-        self.line = jsondata.get('line', jsondata.get('lineNumber', None))
-        if self.line == "null":
-            self.line = None
-        if self.line is not None:
-            try:
-                self.line = int(self.line)
-            except ValueError:
-                pass
-        self.resolution = jsondata.get('resolution', None)
-        self.rule = jsondata.get('rule', jsondata.get('ruleReference', None))
-        self.message = jsondata.get('message', None)
-        self.status = jsondata['status']
-        self.branch = jsondata.get('branch', None)
-        self.pull_request = jsondata.get('pullRequest', None)
 
     def debt(self):
         if self._debt is not None:
@@ -197,9 +139,15 @@ class Issue(sq.SqObject):
                 self._debt = int(self._json['effort'])
         return self._debt
 
+    def to_json(self):
+        data = super().to_json()
+        data['url'] = self.url()
+        data['effort'] = self.debt()
+        return data
+
     def read(self):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
-        self.__load(resp.issues[0])
+        self._load(resp.issues[0])
 
     def changelog(self, force_api=False):
         if (force_api or self._changelog is None):
@@ -258,15 +206,6 @@ class Issue(sq.SqObject):
     #    if force_api or self._severity is None:
     #        self.read()
     #    return self._severity
-
-    def file(self):
-        if self.component is not None:
-            return self.component.split(":")[-1]
-        elif 'path' in self._json:
-            return self._json['path']
-        else:
-            util.logger.warning("Can't find file name for %s", str(self))
-            return None
 
     def set_severity(self, severity):
         """Sets severity"""
@@ -372,21 +311,6 @@ class Issue(sq.SqObject):
         # Need at least 6 / 8 to match
         return score >= 6
 
-    def is_vulnerability(self):
-        return self.type == 'VULNERABILITY'
-
-    def is_hotspot(self):
-        return self.type == 'SECURITY_HOTSPOT'
-
-    def is_bug(self):
-        return self.type == 'BUG'
-
-    def is_code_smell(self):
-        return self.type == 'CODE_SMELL'
-
-    def is_security_issue(self):
-        return self.is_vulnerability() or self.is_hotspot()
-
     def __do_transition(self, transition):
         return self.post('issues/do_transition', {'issue': self.key, 'transition': transition})
 
@@ -414,30 +338,6 @@ class Issue(sq.SqObject):
 
         util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.key)
         return False
-
-    def to_csv(self, separator=','):
-        # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
-        data = self.to_json()
-        for field in _CSV_FIELDS:
-            if data.get(field, None) is None:
-                data[field] = ''
-        data['projectName'] = projects.get(self.projectKey, self.endpoint).name
-        return separator.join([str(data[field]) for field in _CSV_FIELDS])
-
-    def to_json(self):
-        data = vars(self).copy()
-        for old_name, new_name in _JSON_FIELDS_REMAPPED:
-            data[new_name] = data.pop(old_name, None)
-        data['effort'] = self.debt()
-        data['url'] = self.url()
-        data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
-        data['createdAt'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
-        util.logger.debug('Converted date of %s to %s', self.key, data['createdAt'])
-        data['updatedAt'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
-        data['file'] = self.file()
-        for field in _JSON_FIELDS_PRIVATE:
-            data.pop(field, None)
-        return data
 
     def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
