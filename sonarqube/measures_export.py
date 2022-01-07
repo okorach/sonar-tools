@@ -29,7 +29,6 @@ import re
 from sonarqube import measures, metrics, projects, env, version
 import sonarqube.utilities as util
 
-SEP = ","
 RATINGS = 'letters'
 PERCENTS = 'float'
 DATEFMT = 'datetime'
@@ -68,29 +67,30 @@ def __close_output(file, fd):
         util.logger.info("File '%s' generated", file)
 
 
-def __get_csv_header(wanted_metrics, edition):
+def __get_csv_header(wanted_metrics, edition, **kwargs):
+    sep = kwargs['csvSeparator']
     if edition == 'community':
-        header = f"# Project Key{SEP}Project Name{SEP}Last Analysis{SEP}"
+        header = f"# Project Key{sep}Project Name{sep}Last Analysis{sep}"
     else:
-        header = f"# Project Key{SEP}Project Name{SEP}Branch{SEP}Last Analysis{SEP}"
+        header = f"# Project Key{sep}Project Name{sep}Branch{sep}Last Analysis{sep}"
     for m in re.split(',', wanted_metrics):
-        header += f"{m}{SEP}"
+        header += f"{m}{sep}"
     return header[:-1]
 
 
-def __get_json_project_measures(project, wanted_metrics, endpoint, with_branches=True, with_url=False):
+def __get_json_project_measures(project, wanted_metrics, endpoint, with_branches=True, **kwargs):
     data = []
     if with_branches:
         for branch in project.get_branches():
             branch_measures = __get_json_branch_measures(branch, project, wanted_metrics, endpoint)
-            if with_url:
+            if kwargs['includeURLs']:
                 branch_measures['url'] = branch.url()
             data.append(branch_measures)
     else:
         p_meas = measures.component(project.key, wanted_metrics, endpoint=endpoint)
         prj = {'last_analysis': __last_analysis(project),
                'projectKey': project.key, 'projectName': project.name}
-        if with_url:
+        if kwargs['includeURLs']:
             prj['url'] = project.url()
         for metric in wanted_metrics.split(','):
             if metric in p_meas:
@@ -99,27 +99,27 @@ def __get_json_project_measures(project, wanted_metrics, endpoint, with_branches
     return data
 
 
-def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True, with_url=False):
+def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True, **kwargs):
     if with_branches:
         branch_data = project.get_branches()
         lines = ''
         for branch in branch_data:
-            if with_url:
-                lines += f"{branch.url()}{SEP}"
-            lines += __get_branch_measures(branch, project, wanted_metrics, endpoint) + "\n"
+            if kwargs['includeURLs']:
+                lines += f"{branch.url()}{kwargs['csvSeparator']}"
+            lines += __get_branch_measures(branch, project, wanted_metrics, endpoint, **kwargs) + "\n"
         return lines[:-1]
     else:
         p_meas = measures.component(project.key, wanted_metrics, endpoint=endpoint)
         last_analysis = __last_analysis(project)
         line = ''
-        if with_url:
-            line = f"{project.url()}{SEP}"
-        line += f"{project.key}{SEP}{project.name}{SEP}{last_analysis}"
+        if kwargs['includeURLs']:
+            line = f"{project.url()}{kwargs['csvSeparator']}"
+        line += f"{project.key}{kwargs['csvSeparator']}{project.name}{kwargs['csvSeparator']}{last_analysis}"
         for metric in wanted_metrics.split(','):
             val = "None"
             if metric in p_meas:
-                val = str(measures.convert(metric, p_meas[metric].replace(SEP, '|'), **CONVERT_OPTIONS))
-            line += SEP + val
+                val = str(measures.convert(metric, p_meas[metric].replace(kwargs['csvSeparator'], '|'), **CONVERT_OPTIONS))
+            line += kwargs['csvSeparator'] + val
     return line
 
 
@@ -133,14 +133,15 @@ def __get_json_branch_measures(branch, project, wanted_metrics, endpoint):
     return data
 
 
-def __get_branch_measures(branch, project, wanted_metrics, endpoint):
+def __get_branch_measures(branch, project, wanted_metrics, endpoint, **kwargs):
     p_meas = measures.component(project.key, wanted_metrics, branch=branch.name, endpoint=endpoint)
-    line = f"{project.key}{SEP}{project.name}{SEP}{branch.name}{SEP}{__last_analysis(branch)}"
+    sep = kwargs['csvSeparator']
+    line = f"{project.key}{sep}{project.name}{sep}{branch.name}{sep}{__last_analysis(branch)}"
     for metric in wanted_metrics.split(','):
         if metric in p_meas:
-            line += SEP + str(measures.convert(metric, p_meas[metric].replace(SEP, '|'), **CONVERT_OPTIONS))
+            line += sep + str(measures.convert(metric, p_meas[metric].replace(sep, '|'), **CONVERT_OPTIONS))
         else:
-            line += SEP + "None"
+            line += sep
     return line
 
 
@@ -186,6 +187,9 @@ def __parse_cmd_line():
                         help='Reports timestamps only with date, not time')
     parser.add_argument('--includeURLs', action='store_true', default=False, required=False,
                         help='Add projects/branches URLs in report')
+    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
+                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
+
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
@@ -214,7 +218,7 @@ def main():
     if fmt == 'json':
         print('[', end='', file=fd)
     else:
-        print(__get_csv_header(wanted_metrics, endpoint.edition()), file=fd)
+        print(__get_csv_header(wanted_metrics, endpoint.edition(), **vars(args)), file=fd)
 
     filters = None
     if args.componentKeys is not None:
@@ -227,12 +231,12 @@ def main():
         if fmt == 'json':
             if not is_first:
                 print(',', end='', file=fd)
-            values = __get_json_project_measures(project, wanted_metrics, endpoint, with_branches, args.includeURLs)
+            values = __get_json_project_measures(project, wanted_metrics, endpoint, with_branches, **vars(args))
             json_str = util.json_dump(values)[1:-2]
             print(json_str, end='', file=fd)
             is_first = False
         else:
-            print(__get_project_measures(project, wanted_metrics, endpoint, with_branches, args.includeURLs), file=fd)
+            print(__get_project_measures(project, wanted_metrics, endpoint, with_branches, **vars(args)), file=fd)
         nb_loc += project.ncloc()
         if with_branches:
             nb_branches += len(project.get_branches())

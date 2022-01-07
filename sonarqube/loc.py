@@ -25,8 +25,6 @@ import sys
 from sonarqube import projects, env, version
 import sonarqube.utilities as util
 
-sep = ','
-
 
 def __deduct_format(fmt, file):
     if fmt is not None:
@@ -39,36 +37,36 @@ def __deduct_format(fmt, file):
     return 'csv'
 
 
-def __csv_header_line(with_name=False, with_analysis=False):
+def __csv_header_line(**kwargs):
     line = "# Project Key"
-    if with_name:
-        line += f"{sep}Project Name"
-    line += f"{sep}LoC"
-    if with_analysis:
-        line += f"{sep}Last Analysis"
+    if kwargs['projectName']:
+        line += f"{kwargs['csvSeparator']}Project Name"
+    line += f"{kwargs['csvSeparator']}LoC"
+    if kwargs['lastAnalysis']:
+        line += f"{kwargs['csvSeparator']}Last Analysis"
     return line
 
 
-def __csv_line(project, with_name=False, with_analysis=False):
+def __csv_line(project, **kwargs):
     line = project.key
-    if with_name:
-        line += f"{sep}{project.name}"
-    line += f"{sep}{project.ncloc(include_branches=True)}"
-    if with_analysis:
-        line += f"{sep}{project.last_analysis_date(include_branches=True)}"
+    if kwargs['projectName']:
+        line += f"{kwargs['csvSeparator']}{project.name}"
+    line += f"{kwargs['csvSeparator']}{project.ncloc(include_branches=True)}"
+    if kwargs['lastAnalysis']:
+        line += f"{kwargs['csvSeparator']}{project.last_analysis_date(include_branches=True)}"
     return line
 
 
-def __json_data(project, with_name=False, with_analysis=False):
+def __json_data(project, **kwargs):
     data = {'projectKey': project.key, 'ncloc': project.ncloc(include_branches=True)}
-    if with_name:
+    if kwargs['projectName']:
         data['projectName'] = project.name
-    if with_analysis:
+    if kwargs['lastAnalysis']:
         data['lastAnalysis'] = util.date_to_string(project.last_analysis_date(include_branches=True))
     return data
 
 
-def __dump_loc(project_list, file, file_format, **kwargs):
+def __dump_loc(project_list, file, **kwargs):
     if file is None:
         fd = sys.stdout
         util.logger.info("Dumping LoC report to stdout")
@@ -76,23 +74,21 @@ def __dump_loc(project_list, file, file_format, **kwargs):
         fd = open(file, "w", encoding='utf-8')
         util.logger.info("Dumping LoC report to file '%s'", file)
 
-    with_name = kwargs['projectName']
-    with_last = kwargs['lastAnalysis']
-    if file_format != 'json':
-        print(__csv_header_line(with_name, with_last), file=fd)
+    if kwargs['format'] != 'json':
+        print(__csv_header_line(**kwargs), file=fd)
     nb_loc = 0
     nb_projects = 0
     loc_list = []
     for _, p in project_list.items():
-        if file_format == 'json':
-            loc_list.append(__json_data(p, with_name, with_last))
+        if kwargs['format'] == 'json':
+            loc_list.append(__json_data(p, **kwargs))
         else:
-            print(__csv_line(p, with_name, with_last), file=fd)
+            print(__csv_line(p, **kwargs), file=fd)
         nb_loc += p.ncloc()
         nb_projects += 1
         if nb_projects % 50 == 0:
             util.logger.info("%d PROJECTS and %d LoCs, still counting...", nb_projects, nb_loc)
-    if file_format == 'json':
+    if kwargs['format'] == 'json':
         print(util.json_dump(loc_list), file=fd)
     if file is not None:
         fd.close()
@@ -110,14 +106,15 @@ def main():
                         'Format is automatically deducted from file extension, if extension given')
     parser.add_argument('-f', '--format', required=False,
                         help='Format of output (json, csv), default is csv')
+    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
+                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
     args = util.parse_and_check_token(parser)
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-
     args.format = __deduct_format(args.format, args.outputFile)
     project_list = projects.search(endpoint=endpoint)
-    __dump_loc(project_list, args.outputFile, args.format, **vars(args))
+    __dump_loc(project_list, args.outputFile, **vars(args))
     sys.exit(0)
 
 
