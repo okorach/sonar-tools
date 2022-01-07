@@ -423,7 +423,7 @@ Extracts the history of some given metrics for a given project
 
 # License
 
-Copyright (C) 2019-2021 Olivier Korach
+Copyright (C) 2019-2022 Olivier Korach
 mailto:olivier.korach AT gmail DOT com
 
 This program is free software; you can redistribute it and/or
