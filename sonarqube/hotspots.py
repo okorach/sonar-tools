@@ -41,6 +41,8 @@ _JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'ha
 _CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'createdAt', 'updatedAt', 'projectKey', 'projectName',
             'branch', 'pullRequest', 'file', 'line', 'effort', 'message')
 
+_HOTSPOTS = {}
+
 
 class TooManyHotspotsError(Exception):
     def __init__(self, nbr_issues, message):
@@ -58,6 +60,7 @@ class Hotspot(findings.Finding):
         if data is not None:
             self.category = data['securityCategory']
             self.vulnerabilityProbability = data['vulnerabilityProbability']
+        _HOTSPOTS[self.uuid()] = self
 
     def __str__(self):
         return f"Hotspot key '{self.key}'"
@@ -123,8 +126,14 @@ def search(endpoint=None, page=None, params=None):
                                      'this is more than the max 10000 possible')
 
         for i in data['hotspots']:
-            hotspots[i['key']] = Hotspot(key=i['key'], endpoint=endpoint, data=i)
+            hotspots[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
         if page is not None or p >= nbr_pages:
             break
         p += 1
     return hotspots
+
+
+def get_object(key, data=None, endpoint=None, from_export=False):
+    if key not in _HOTSPOTS:
+        _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
+    return _HOTSPOTS[key]

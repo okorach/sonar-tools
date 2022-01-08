@@ -49,6 +49,8 @@ _JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'ha
 _CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'createdAt', 'updatedAt', 'projectKey', 'projectName',
             'branch', 'pullRequest', 'file', 'line', 'effort', 'message')
 
+_ISSUES = {}
+
 class ApiError(Exception):
     pass
 
@@ -97,6 +99,7 @@ class Issue(findings.Finding):
         self._debt = None
         if data is not None:
             self.component = data.get('component', None)
+        _ISSUES[self.uuid()] = self
 
     def __str__(self):
         return f"Issue key '{self.key}'"
@@ -509,7 +512,7 @@ def _search_all(params, endpoint=None, raise_error=True):
         for i in data['issues']:
             i['branch'] = params.get('branch', None)
             i['pullRequest'] = params.get('pullRequest', None)
-            issue_list[i['key']] = Issue(key=i['key'], endpoint=endpoint, data=i)
+            issue_list[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
         nbr_issues = data['paging']['total']
         #util.logger.info("nbr_issues = %d max = %d raise error = %s", nbr_issues, Issue.MAX_SEARCH, str(raise_error))
         if nbr_issues > Issue.MAX_SEARCH and raise_error:
@@ -572,7 +575,7 @@ def search(endpoint=None, page=None, params=None):
         for i in data['issues']:
             i['branch'] = new_params.get('branch', None)
             i['pullRequest'] = new_params.get('pullRequest', None)
-            issue_list[i['key']] = Issue(key=i['key'], endpoint=endpoint, data=i)
+            issue_list[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
         if page is not None or p >= nbr_pages:
             break
         p += 1
@@ -743,3 +746,9 @@ def __get_issues_search_params(params):
         if params[key] is not None and key in Issue.OPTIONS_SEARCH:
             outparams[key] = params[key]
     return outparams
+
+
+def get_object(key, data=None, endpoint=None, from_export=False):
+    if key not in _ISSUES:
+        _ = Issue(key=key, data=data, endpoint=endpoint, from_export=from_export)
+    return _ISSUES[key]

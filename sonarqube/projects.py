@@ -481,7 +481,7 @@ Is this normal ?", gr['name'], str(self.key))
         if resp.status_code != 200:
             return {'status': f'HTTP_ERROR {resp.status_code}'}
         data = json.loads(resp.text)
-        status = tasks.Task(task_id=data['taskId'], endpoint=self.endpoint, data=data).wait_for_completion(timeout=timeout)
+        status = tasks.Task(data['taskId'], endpoint=self.endpoint, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
             util.logger.error("%s export %s", str(self), status)
             return {'status': status}
@@ -527,7 +527,8 @@ Is this normal ?", gr['name'], str(self.key))
         nbr_findings = {'SECURITY_HOTSPOT': 0, 'BUG': 0, 'CODE_SMELL': 0, 'VULNERABILITY': 0}
         util.logger.debug(util.json_dump(data))
         for i in data:
-            if i['key'] in findings_list:
+            key = i['key']
+            if key in findings_list:
                 util.logger.warning('Finding %s (%s) already in past findings', i['key'], i['type'])
                 findings_conflicts[i['type']] += 1
             # FIXME - Hack for wrong projectKey returned in PR
@@ -537,9 +538,9 @@ Is this normal ?", gr['name'], str(self.key))
             i['pullRequest'] = pr
             nbr_findings[i['type']] += 1
             if i['type'] == 'SECURITY_HOTSPOT':
-                findings_list[i['key']] = hotspots.Hotspot(key=i['key'], endpoint=self.endpoint, data=i, from_export=True)
+                findings_list[key] = hotspots.get_object(key, endpoint=self.endpoint, data=i, from_export=True)
             else:
-                findings_list[i['key']] = issues.Issue(key=i['key'], endpoint=self.endpoint, data=i, from_export=True)
+                findings_list[key] = issues.get_object(key, endpoint=self.endpoint, data=i, from_export=True)
         for t in ('SECURITY_HOTSPOT', 'BUG', 'CODE_SMELL', 'VULNERABILITY'):
             if findings_conflicts[t] > 0:
                 util.logger.warning('%d %s findings missed because of JSON conflict', findings_conflicts[t], t)
