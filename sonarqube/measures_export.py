@@ -105,7 +105,10 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     for metric in util.csv_to_list(wanted_metrics):
         val = ''
         if metric in measures_d:
-            val = str(measures.convert(metric, measures_d[metric].replace(sep, '|'), **CONVERT_OPTIONS))
+            if sep in measures_d[metric]:
+                val = '"' + measures_d[metric] + '"'
+            else:
+                val = str(measures.convert(metric, measures_d[metric], **CONVERT_OPTIONS))
         line += val + sep
     return line[:-len(sep)]
 
