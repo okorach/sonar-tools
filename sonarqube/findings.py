@@ -129,7 +129,7 @@ class Finding(sq.SqObject):
         for field in _CSV_FIELDS:
             if data.get(field, None) is None:
                 data[field] = ''
-        data['projectName'] = projects.get(self.projectKey, self.endpoint).name
+        data['projectName'] = projects.get_object(self.projectKey, self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
