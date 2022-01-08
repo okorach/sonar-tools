@@ -127,5 +127,3 @@ def get_components(component_types, endpoint=None):
 
 def get_subcomponents(component_key, strategy='children', with_issues=False, endpoint=None):
     return Component(component_key, endpoint).get_subcomponents(strategy=strategy, with_issues=with_issues)
-
-
