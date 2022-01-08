@@ -68,13 +68,15 @@ def __close_output(file, fd):
 
 def __get_csv_header(wanted_metrics, edition, **kwargs):
     sep = kwargs['csvSeparator']
-    if edition == 'community':
-        header = f"# Project Key{sep}Project Name{sep}Last Analysis{sep}"
+    if edition == 'community' or not kwargs['withBranches']:
+        header = f"# Project Key{sep}Project Name{sep}Last Analysis"
     else:
-        header = f"# Project Key{sep}Project Name{sep}Branch{sep}Last Analysis{sep}"
+        header = f"# Project Key{sep}Project Name{sep}Branch{sep}Last Analysis"
     for m in util.csv_to_list(wanted_metrics):
-        header += f"{m}{sep}"
-    return header[:-1]
+        header += f"{sep}{m}"
+    if kwargs['includeURLs']:
+        header += f"{sep}URL"
+    return header
 
 
 def __get_object_measures(obj, wanted_metrics):
@@ -85,6 +87,7 @@ def __get_object_measures(obj, wanted_metrics):
     proj = obj
     if not isinstance(obj, projects.Project):
         proj = obj.project
+        measures_d['branch'] = obj.name
     measures_d['projectKey'] = proj.key
     measures_d['projectName'] = proj.name
     return measures_d
@@ -93,16 +96,22 @@ def __get_json_measures(obj, wanted_metrics, **kwargs):
     d = __get_object_measures(obj, wanted_metrics)
     if not kwargs['includeURLs']:
         d.pop('url', None)
+    if not kwargs['withBranches']:
+        d.pop('branch', None)
     return d
 
 def __get_csv_measures(obj, wanted_metrics, **kwargs):
     measures_d = __get_object_measures(obj, wanted_metrics)
-    line = ''
     sep = kwargs['csvSeparator']
-    wanted_metrics = 'projectKey' + sep + 'projectName' + sep + 'lastAnalysis' + sep + wanted_metrics
+    overall_metrics = 'projectKey' + sep + 'projectName'
+    if kwargs['withBranches']:
+        overall_metrics += sep + 'branch'
+    overall_metrics += sep + 'lastAnalysis' + sep + wanted_metrics
     if kwargs['includeURLs']:
-        wanted_metrics = 'url' + sep + 'wanted_metrics'
-    for metric in util.csv_to_list(wanted_metrics):
+        overall_metrics += sep + 'url'
+    line = ''
+    util.logger.debug("CSV for %s dict = %s", overall_metrics, util.json_dump(measures_d))
+    for metric in util.csv_to_list(overall_metrics):
         val = ''
         if metric in measures_d:
             if sep in measures_d[metric]:

@@ -554,7 +554,8 @@ def search(endpoint=None, page=None, params=None):
         new_params = params.copy()
     new_params = __get_issues_search_params(new_params)
     util.logger.debug("Search params = %s", str(new_params))
-    new_params['ps'] = Issue.MAX_PAGE_SIZE
+    if 'ps' not in new_params:
+        new_params['ps'] = Issue.MAX_PAGE_SIZE
     p = 1
     issue_list = {}
     while True:
@@ -565,7 +566,7 @@ def search(endpoint=None, page=None, params=None):
         resp = env.get(Issue.SEARCH_API, params=new_params, ctxt=endpoint)
         data = json.loads(resp.text)
         nbr_issues = data['paging']['total']
-        nbr_pages = (nbr_issues + Issue.MAX_PAGE_SIZE-1) // Issue.MAX_PAGE_SIZE
+        nbr_pages = (nbr_issues + new_params['ps']-1) // new_params['ps']
         util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, new_params['p'], nbr_pages)
         if page is None and nbr_issues > Issue.MAX_SEARCH:
             raise TooManyIssuesError(nbr_issues,
