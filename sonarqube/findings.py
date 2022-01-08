@@ -39,6 +39,8 @@ _JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'ha
 _CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'createdAt', 'updatedAt', 'projectKey', 'projectName',
             'branch', 'pullRequest', 'file', 'line', 'effort', 'message')
 
+_ISSUES = {}
+
 
 class Finding(sq.SqObject):
 
