@@ -184,15 +184,14 @@ def main():
     if args.componentKeys is not None:
         filters = {'projects': args.componentKeys.replace(' ', '')}
     util.logger.info("Getting project list")
-    project_list = projects.search(endpoint=endpoint, params=filters)
+    project_list = projects.search(endpoint=endpoint, params=filters).values()
     is_first = True
     obj_list = []
-
-    if not with_branches:
-        obj_list = project_list.values()
-    for project in project_list.values():
-        if with_branches:
-            obj_list += project.get_branches().values()
+    if with_branches:
+        for project in project_list:
+            obj_list += project.get_branches()
+    else:
+        obj_list = project_list
     nb_branches = len(obj_list)
 
     fd = __open_output(file)
@@ -218,7 +217,7 @@ def main():
 
     util.logger.info("Computing LoCs")
     nb_loc = 0
-    for project in project_list.values():
+    for project in project_list:
         nb_loc += project.ncloc_with_branches()
 
     util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)

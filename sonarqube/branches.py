@@ -27,7 +27,6 @@ import datetime
 import pytz
 import requests.utils
 from sonarqube import projects, measures, components
-import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
@@ -98,6 +97,9 @@ class Branch(components.Component):
         m = measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
         if 'ncloc' in m:
             self._ncloc = int(m['ncloc'])
+            if self.is_main():
+                self.project._ncloc = self._ncloc
+        return m
 
 
     def __audit_last_analysis(self, audit_settings):

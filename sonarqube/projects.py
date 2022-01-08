@@ -129,7 +129,10 @@ class Project(comp.Component):
         return self._ncloc_with_branches
 
     def get_measures(self, metrics_list):
-        return measures.get(self.key, metrics_list, endpoint=self.endpoint)
+        m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
+        if 'ncloc' in m:
+            self._ncloc = int(m['ncloc'])
+        return m
 
     def get_branches(self):
         if self.endpoint.edition() == 'community':
