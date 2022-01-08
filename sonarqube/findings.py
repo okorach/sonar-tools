@@ -36,7 +36,7 @@ _JSON_FIELDS_REMAPPED = (
 _JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'hash', 'sonarqube',
     'creation_date', 'modification_date', '_debt', 'component', 'language', 'resolution')
 
-_CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'createdAt', 'updatedAt', 'projectKey', 'projectName',
+_CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'creationDate', 'updateDate', 'projectKey', 'projectName',
             'branch', 'pullRequest', 'file', 'line', 'effort', 'message')
 
 _ISSUES = {}
@@ -131,6 +131,8 @@ class Finding(sq.SqObject):
         for field in _CSV_FIELDS:
             if data.get(field, None) is None:
                 data[field] = ''
+        if 'message' in data:
+            data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
         data['projectName'] = projects.get_object(self.projectKey, self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
@@ -140,7 +142,6 @@ class Finding(sq.SqObject):
             data[new_name] = data.pop(old_name, None)
         data['effort'] = ''
         data['file'] = self.file()
-        data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
         data['creationDate'] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
         data['updateDate'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         for field in _JSON_FIELDS_PRIVATE:
