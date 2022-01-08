@@ -38,7 +38,7 @@ mkdir -p tmp
 rm -f tmp/*
 
 noExport=0
-if [ $1 == "-noExport" ]; then
+if [ $1 == "--noExport" ]; then
     noExport=1
     shift
 fi
@@ -52,7 +52,7 @@ do
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
     f="tmp/measures-$env-unreleased.csv"
-    sonar-measures-export -b -o $f -m _main
+    sonar-measures-export -b -o $f -m _main --includeURLs
     check $f
     f="tmp/measures-$env-2.csv"
     sonar-measures-export -b -p -r -d -m _all >$f
@@ -129,7 +129,7 @@ for env in $*
 do
     . sqenv $env
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
-    sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main
+    sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main --includeURLs
     sonar-issues-export -o tmp/findings-$env-released.csv
     sonar-audit >tmp/audit-$env-released.csv || echo "OK"
     sonar-loc -n -a >tmp/loc-$env-released.csv 
@@ -143,7 +143,7 @@ do
         echo "==========================" | tee -a $IT_LOG_FILE
         echo $f-$env diff                 | tee -a $IT_LOG_FILE
         echo "==========================" | tee -a $IT_LOG_FILE
-        sort tmp/$f-$env-released.csv >tmp/$f-$env-released.sorted.csv
+        sort tmp/$f-$env-released.csv | sed 's/,None/,/g' >tmp/$f-$env-released.sorted.csv
         mv tmp/$f-$env-released.sorted.csv tmp/$f-$env-released.csv
         sort tmp/$f-$env-unreleased.csv >tmp/$f-$env-unreleased.sorted.csv
         mv tmp/$f-$env-unreleased.sorted.csv tmp/$f-$env-unreleased.csv
