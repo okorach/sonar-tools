@@ -143,7 +143,7 @@ do
         echo "==========================" | tee -a $IT_LOG_FILE
         echo $f-$env diff                 | tee -a $IT_LOG_FILE
         echo "==========================" | tee -a $IT_LOG_FILE
-        sort tmp/$f-$env-released.csv | sed 's/,None/,/g' >tmp/$f-$env-released.sorted.csv
+        sort tmp/$f-$env-released.csv | sed 's/,None/,/g' sed 's/;/,/g' >tmp/$f-$env-released.sorted.csv
         mv tmp/$f-$env-released.sorted.csv tmp/$f-$env-released.csv
         sort tmp/$f-$env-unreleased.csv >tmp/$f-$env-unreleased.sorted.csv
         mv tmp/$f-$env-unreleased.sorted.csv tmp/$f-$env-unreleased.csv
