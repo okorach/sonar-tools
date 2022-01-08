@@ -95,7 +95,9 @@ class Branch(components.Component):
         return []
 
     def get_measures(self, metrics_list):
-        return measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
+        m = measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
+        if 'ncloc' in m:
+            self._ncloc = int(m['ncloc'])
 
 
     def __audit_last_analysis(self, audit_settings):

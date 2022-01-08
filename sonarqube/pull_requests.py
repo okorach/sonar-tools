@@ -68,8 +68,9 @@ class PullRequest(components.Component):
             return today - last_analysis
 
     def get_measures(self, metrics_list):
-        return measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
-
+        m = measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
+        if 'ncloc' in m:
+            self._ncloc = int(m['ncloc'])
 
     def delete(self, api=None, params=None):
         util.logger.info("Deleting %s", str(self))
