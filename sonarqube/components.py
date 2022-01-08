@@ -26,7 +26,7 @@
 import json
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
-from sonarqube import env, measures
+from sonarqube import env
 
 
 class Component(sq.SqObject):
@@ -34,7 +34,6 @@ class Component(sq.SqObject):
     def __init__(self, key, endpoint=None, data=None):
         super().__init__(key, endpoint)
         self._name = None
-        self.id = None
         self.qualifier = None
         self.path = None
         self.language = None
@@ -44,7 +43,6 @@ class Component(sq.SqObject):
             self.__load__(data)
 
     def __load__(self, data):
-        self.id = data.get('id', None)
         self._name = data.get('name', None)
         self.qualifier = data.get('qualifier', None)
         self.path = data.get('path', None)
@@ -108,17 +106,18 @@ class Component(sq.SqObject):
         self.nbr_issues = len(issue_list)
         return issue_list
 
-    def get_measures(self, metric_list, branch=None, pr_id=None):
-        return measures.component(component_key=self.key, metric_keys=','.join(metric_list),
-            endpoint=self.endpoint, branch=branch, pr_id=pr_id)
+    def get_measures(self, metrics_list):
+        # Must be implemented in sub classes
+        return {}
 
-    def get_measure(self, metric, branch=None, pr_id=None, fallback=None):
-        res = self.get_measures(metric_list=[metric], branch=branch, pr_id=pr_id)
-        for k, v in res.items():
-            if k == metric:
-                return v
-        return fallback
+    def get_measure(self, metric, fallback=None):
+        meas = self.get_measures(metric)
+        return meas[metric] if metric in meas else fallback
 
+    def ncloc(self):
+        if self._ncloc is None:
+            self._ncloc = int(self.get_measure('ncloc', fallback=0))
+        return self._ncloc
 
 def get_components(component_types, endpoint=None):
     resp = env.get('projects/search', params={'ps': 500, 'qualifiers': component_types}, ctxt=endpoint)

@@ -32,6 +32,9 @@ class SqObject:
         self.key = key
         self.endpoint = endpoint
 
+    def uuid(self):
+        return self.key
+
     def set_env(self, endpoint):
         self.endpoint = endpoint
 
@@ -71,3 +74,10 @@ def search_objects(api, params, key_field, returned_field, object_class, p=None,
             objects[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
         p += 1
     return objects
+
+
+def key_of(obj_or_key):
+    if isinstance(obj_or_key, str):
+        return obj_or_key
+    else:
+        return obj_or_key.key

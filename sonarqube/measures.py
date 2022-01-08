@@ -72,26 +72,34 @@ class Measure(sq.SqObject):
         return measures
 
 
-def component(component_key, metric_keys, branch=None, pr_id=None, endpoint=None, **kwargs):
-    params = {'component': component_key, 'metricKeys': metric_keys}
+def get(comp_key, metrics_list, endpoint=None, branch=None, pr_key=None, as_list=False, **kwargs):
+    util.logger.debug("For component %s, branch %s, PR %s, getting measures %s",
+        comp_key, branch, pr_key, metrics_list)
+    if not isinstance(metrics_list, str):
+        metrics_list = util.list_to_csv(metrics_list)
+    params = {'component': comp_key, 'metricKeys': metrics_list}
     if branch is not None:
         params['branch'] = branch
-    elif pr_id is not None:
-        params['pullRequest'] = pr_id
+    elif pr_key is not None:
+        params['pullRequest'] = pr_key
 
     resp = env.get(Measure.API_COMPONENT, params={**kwargs, **params}, ctxt=endpoint)
     data = json.loads(resp.text)
-    m_list = {}
+    m_dict, m_list = {}, []
     for m in data['component']['measures']:
         value = m.get('value', '')
         if value == '' and 'periods' in m:
             value = m['periods'][0]['value']
         if metrics.is_a_rating(m['metric']):
-            m_list[m['metric']] = get_rating_letter(value)
+            value = get_rating_letter(value)
+        if not as_list:
+            m_dict[m['metric']] = value
         else:
-            m_list[m['metric']] = value
-    return m_list
-
+            m_list.append(value)
+    if as_list:
+        return m_list
+    else:
+        return m_dict
 
 def get_rating_letter(rating_number_str):
     try:

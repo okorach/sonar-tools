@@ -26,18 +26,17 @@ import datetime
 import re
 import json
 import pytz
-from sonarqube import env, issues, hotspots, tasks, custom_measures, pull_requests
+from sonarqube import env, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures
 import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
-from sonarqube.branches import Branch
 
 import sonarqube.audit_severities as sev
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 import sonarqube.permissions as perms
 
-PROJECTS = {}
+_PROJECTS = {}
 
 MAX_PAGE_SIZE = 500
 PROJECT_SEARCH_API = 'projects/search'
@@ -50,7 +49,6 @@ class Project(comp.Component):
 
     def __init__(self, key, endpoint, data=None):
         super().__init__(key, endpoint)
-        self.id = None
         self.name = None
         self.visibility = None
         self.main_branch_last_analysis_date = 'undefined'
@@ -63,7 +61,8 @@ class Project(comp.Component):
         self._ncloc_with_branches = None
         self._binding = {'has_binding': True, 'binding': None}
         self.__load__(data)
-        PROJECTS[key] = self
+        _PROJECTS[key] = self
+        util.logger.debug("Created object %s", str(self))
 
     def __str__(self):
         return f"project '{self.key}'"
@@ -74,7 +73,6 @@ class Project(comp.Component):
             resp = env.get(PROJECT_SEARCH_API, ctxt=self.endpoint, params={'projects': self.key})
             data = json.loads(resp.text)
             data = data['components'][0]
-        self.id = data.get('id', None)
         self.name = data['name']
         self.visibility = data['visibility']
         if 'lastAnalysisDate' in data:
@@ -120,19 +118,21 @@ class Project(comp.Component):
                 self.all_branches_last_analysis_date = b_ana_date
         return self.all_branches_last_analysis_date
 
-    def ncloc(self, include_branches=True):
-        if self._ncloc is None:
-            self._ncloc = int(self.get_measure('ncloc', fallback=0))
-        if not include_branches:
-            return self._ncloc
+    def ncloc_with_branches(self):
         if self._ncloc_with_branches is not None:
             return self._ncloc_with_branches
-        self._ncloc_with_branches = self._ncloc
+        self._ncloc_with_branches = self.ncloc()
         if not self.endpoint.edition() == 'community':
             for b in self.get_branches() + self.get_pull_requests():
                 if b.ncloc() > self._ncloc_with_branches:
                     self._ncloc_with_branches = b.ncloc()
         return self._ncloc_with_branches
+
+    def get_measures(self, metrics_list):
+        m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
+        if 'ncloc' in m:
+            self._ncloc = int(m['ncloc'])
+        return m
 
     def get_branches(self):
         if self.endpoint.edition() == 'community':
@@ -144,7 +144,7 @@ class Project(comp.Component):
             data = json.loads(resp.text)
             self.branches = []
             for b in data['branches']:
-                self.branches.append(Branch(name=b['name'], project=self, data=b))
+                self.branches.append(branches.get_object(b['name'], self, data=b))
         return self.branches
 
     def get_pull_requests(self):
@@ -583,10 +583,25 @@ def search(endpoint=None, params=None):
         returned_field='components', endpoint=endpoint, object_class=Project, ps=500)
 
 
-def get(key, sqenv=None):
-    if key not in PROJECTS:
-        _ = Project(key=key, endpoint=sqenv)
-    return PROJECTS[key]
+def get_key_list(endpoint=None, params=None):
+    return search(endpoint, params).keys()
+
+
+def get_object_list(endpoint=None, params=None):
+    return search(endpoint, params).values()
+
+
+def key_obj(key_or_obj):
+    if isinstance(key_or_obj, str):
+        return (key_or_obj, get_object(key_or_obj))
+    else:
+        return (key_or_obj.key, key_or_obj)
+
+
+def get_object(key, data=None, endpoint=None):
+    if key not in _PROJECTS:
+        _ = Project(key=key, data=data, endpoint=endpoint)
+    return _PROJECTS[key]
 
 
 def create_project(key, name=None, visibility='private', sqenv=None):
@@ -628,3 +643,14 @@ def audit(audit_settings, endpoint=None):
 
 def exists(key, endpoint):
     return len(search(params={'projects': key}, endpoint=endpoint)) > 0
+
+
+def get_measures(key, metrics_list, branch=None, pull_request=None, endpoint=None):
+    if branch is not None:
+        obj = branches.get_object(key, branch, endpoint=endpoint)
+    elif pull_request is not None:
+        obj = pull_requests.get_object(key, pull_request, endpoint=endpoint)
+    else:
+        obj = get_object(key, endpoint=endpoint)
+
+    return obj.get_measures(metrics_list)

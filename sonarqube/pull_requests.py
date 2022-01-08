@@ -25,35 +25,36 @@
 
 import datetime
 import pytz
-import sonarqube.sqobject as sq
+from sonarqube import projects, measures, components
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 
 _PULL_REQUESTS = {}
 
-class PullRequest(sq.SqObject):
-    def __init__(self, project, key, data=None):
-        super().__init__(key, project.endpoint)
+class PullRequest(components.Component):
+    def __init__(self, project, key, data=None, endpoint=None):
+        if endpoint is not None:
+            super().__init__(key, endpoint)
+        else:
+            super().__init__(key, project.endpoint)
         self.project = project
         self.json = data
         self._last_analysis_date = None
         self._ncloc = None
-        _PULL_REQUESTS[_unique_key(project.key, key)] = self
-        util.logger.debug("Created %s", str(self))
+        _PULL_REQUESTS[self._uuid()] = self
+        util.logger.debug("Created object %s", str(self))
 
     def __str__(self):
         return f"pull request key '{self.key}' of {str(self.project)}"
+
+    def _uuid(self):
+        return _uuid(self.project.key, self.key)
 
     def last_analysis_date(self):
         if self._last_analysis_date is None and 'analysisDate' in self.json:
             self._last_analysis_date = util.string_to_date(self.json['analysisDate'])
         return self._last_analysis_date
-
-    def ncloc(self):
-        if self._ncloc is None:
-            self._ncloc = int(self.project.get_measure('ncloc', pr_id=self.key, fallback=0))
-        return self._ncloc
 
     def last_analysis_age(self, rounded_to_days=True):
         last_analysis = self.last_analysis_date()
@@ -64,6 +65,12 @@ class PullRequest(sq.SqObject):
             return (today - last_analysis).days
         else:
             return today - last_analysis
+
+    def get_measures(self, metrics_list):
+        m = measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
+        if 'ncloc' in m:
+            self._ncloc = int(m['ncloc'])
+        return m
 
     def delete(self, api=None, params=None):
         util.logger.info("Deleting %s", str(self))
@@ -89,11 +96,13 @@ class PullRequest(sq.SqObject):
         return problems
 
 
-def _unique_key(project_key, pull_request_key):
+def _uuid(project_key, pull_request_key):
     return f"{project_key} {pull_request_key}"
 
 
-def get_object(pull_request_key, project, data=None):
-    return _PULL_REQUESTS.get(
-        _unique_key(project.key, pull_request_key),
-        PullRequest(project, pull_request_key, data))
+def get_object(pull_request_key, project_key_or_obj, data=None, endpoint=None):
+    (p_key, p_obj) = projects.key_obj(project_key_or_obj)
+    p_id = _uuid(p_key, pull_request_key)
+    if p_id not in _PULL_REQUESTS:
+        _ = PullRequest(p_obj, pull_request_key, data, endpoint)
+    return _PULL_REQUESTS[p_id]

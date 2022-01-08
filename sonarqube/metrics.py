@@ -51,7 +51,6 @@ class Metric(sq.SqObject):
 
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key, endpoint)
-        self.id = None
         self.type = None
         self.name = None
         self.description = None
@@ -74,7 +73,6 @@ class Metric(sq.SqObject):
         if data is None:
             return False
         util.logger.debug('Loading metric %s', str(data))
-        self.id = data.get('id', None)
         self.type = data['type']
         self.name = data['name']
         self.description = data.get('description', '')
