@@ -23,10 +23,9 @@
 
 '''
 import json
-import re
 import datetime as dt
 import pytz
-import sonarqube.env as env
+from sonarqube import env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.audit_problem as pb
@@ -73,7 +72,7 @@ class User(sq.SqObject):
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
 
-        protected_users = re.split(r'\s*,\s*', settings['audit.tokens.neverExpire'])
+        protected_users = util.csv_to_list(settings['audit.tokens.neverExpire'])
         if self.login in protected_users:
             util.logger.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []

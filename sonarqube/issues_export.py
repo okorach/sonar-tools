@@ -133,12 +133,12 @@ def main():
             project = projects.Project(project_key, sqenv)
             branches = project.get_branches()
         elif branch_str is not None:
-            branches = [b.strip() for b in branch_str.split()]
+            branches = util.csv_to_list(branch_str)
         if pr_str == '*':
             project = projects.Project(project_key, sqenv)
             prs = project.get_pull_requests()
         elif pr_str is not None:
-            prs = [p.strip() for p in pr_str.split()]
+            prs = util.csv_to_list(pr_str)
         if branches or prs:
             for b in branches:
                 all_issues.update(issues.search_by_project(project_key, branch=b.name,

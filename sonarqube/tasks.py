@@ -181,7 +181,7 @@ class Task(sq.SqObject):
             (prop, val) = line.split("=", 1)
             if prop not in ('sonar.exclusions', 'sonar.global.exclusions'):
                 continue
-            for excl in [x.strip() for x in val.split(',')]:
+            for excl in util.csv_to_list(val):
                 util.logger.debug("Pattern = '%s'", excl)
                 problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
         return problems
@@ -222,7 +222,7 @@ def _get_suspicious_exclusions(patterns):
     if __SUSPICIOUS_EXCLUSIONS is not None:
         return __SUSPICIOUS_EXCLUSIONS
     # __SUSPICIOUS_EXCLUSIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
-    __SUSPICIOUS_EXCLUSIONS = [x.strip() for x in patterns.split(',')]
+    __SUSPICIOUS_EXCLUSIONS = util.csv_to_list(patterns)
     return __SUSPICIOUS_EXCLUSIONS
 
 
@@ -231,5 +231,5 @@ def _get_suspicious_exceptions(patterns):
     if __SUSPICIOUS_EXCEPTIONS is not None:
         return __SUSPICIOUS_EXCEPTIONS
 #    __SUSPICIOUS_EXCEPTIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
-    __SUSPICIOUS_EXCEPTIONS = [x.strip() for x in patterns.split(',')]
+    __SUSPICIOUS_EXCEPTIONS = util.csv_to_list(patterns)
     return __SUSPICIOUS_EXCEPTIONS

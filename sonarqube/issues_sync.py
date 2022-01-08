@@ -258,7 +258,7 @@ def main():
                 issues.SYNC_ADD_LINK: not params['nolink'],
                 issues.SYNC_ASSIGN: True,
                 issues.SYNC_IGNORE_COMPONENTS: False,
-                issues.SYNC_SERVICE_ACCOUNTS: [x.strip() for x in args.login.split(',')]}
+                issues.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(args.login)}
     report = []
     try:
         if not projects.exists(source_key, endpoint=source_env):

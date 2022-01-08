@@ -25,7 +25,6 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 '''
 import sys
-import re
 from sonarqube import measures, metrics, projects, env, version
 import sonarqube.utilities as util
 
@@ -73,7 +72,7 @@ def __get_csv_header(wanted_metrics, edition, **kwargs):
         header = f"# Project Key{sep}Project Name{sep}Last Analysis{sep}"
     else:
         header = f"# Project Key{sep}Project Name{sep}Branch{sep}Last Analysis{sep}"
-    for m in re.split(',', wanted_metrics):
+    for m in util.csv_to_list(wanted_metrics):
         header += f"{m}{sep}"
     return header[:-1]
 
@@ -92,7 +91,7 @@ def __get_json_project_measures(project, wanted_metrics, endpoint, with_branches
                'projectKey': project.key, 'projectName': project.name}
         if kwargs['includeURLs']:
             prj['url'] = project.url()
-        for metric in wanted_metrics.split(','):
+        for metric in util.csv_to_list(wanted_metrics):
             if metric in p_meas:
                 prj[metric] = measures.convert(metric, p_meas[metric], **CONVERT_OPTIONS)
         data.append(prj)
@@ -115,7 +114,7 @@ def __get_project_measures(project, wanted_metrics, endpoint, with_branches=True
         if kwargs['includeURLs']:
             line = f"{project.url()}{kwargs['csvSeparator']}"
         line += f"{project.key}{kwargs['csvSeparator']}{project.name}{kwargs['csvSeparator']}{last_analysis}"
-        for metric in wanted_metrics.split(','):
+        for metric in util.csv_to_list(wanted_metrics):
             val = "None"
             if metric in p_meas:
                 val = str(measures.convert(metric, p_meas[metric].replace(kwargs['csvSeparator'], '|'), **CONVERT_OPTIONS))
@@ -127,7 +126,7 @@ def __get_json_branch_measures(branch, project, wanted_metrics, endpoint):
     p_meas = measures.component(project.key, wanted_metrics, branch=branch.name, endpoint=endpoint)
     data = {'last_analysis': __last_analysis(branch),
             'projectKey': project.key, 'projectName': project.name, 'branch': branch.name}
-    for metric in wanted_metrics.split(','):
+    for metric in util.csv_to_list(wanted_metrics):
         if metric in p_meas:
             data[metric] = measures.convert(metric, p_meas[metric], **CONVERT_OPTIONS)
     return data
@@ -137,7 +136,7 @@ def __get_branch_measures(branch, project, wanted_metrics, endpoint, **kwargs):
     p_meas = measures.component(project.key, wanted_metrics, branch=branch.name, endpoint=endpoint)
     sep = kwargs['csvSeparator']
     line = f"{project.key}{sep}{project.name}{sep}{branch.name}{sep}{__last_analysis(branch)}"
-    for metric in wanted_metrics.split(','):
+    for metric in util.csv_to_list(wanted_metrics):
         if metric in p_meas:
             line += sep + str(measures.convert(metric, p_meas[metric].replace(sep, '|'), **CONVERT_OPTIONS))
         else:
@@ -146,11 +145,11 @@ def __get_branch_measures(branch, project, wanted_metrics, endpoint, **kwargs):
 
 
 def __get_wanted_metrics(args, endpoint):
-    main_metrics = ','.join(metrics.Metric.MAIN_METRICS)
+    main_metrics = util.list_to_csv(metrics.Metric.MAIN_METRICS)
     wanted_metrics = args.metricKeys
     if wanted_metrics == '_all':
-        all_metrics = metrics.as_csv(metrics.search(endpoint=endpoint).values()).split(',')
-        wanted_metrics = main_metrics + ',' + ','.join(__diff(all_metrics, metrics.Metric.MAIN_METRICS))
+        all_metrics = util.csv_to_list(metrics.as_csv(metrics.search(endpoint=endpoint).values()))
+        wanted_metrics = main_metrics + ',' + util.list_to_csv(__diff(all_metrics, metrics.Metric.MAIN_METRICS))
     elif wanted_metrics == '_main' or wanted_metrics is None:
         wanted_metrics = main_metrics
     return wanted_metrics

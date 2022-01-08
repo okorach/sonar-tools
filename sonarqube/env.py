@@ -506,7 +506,7 @@ def _audit_maintainability_rating_range(value, range, rating_letter, severity, d
 
 
 def _audit_maintainability_rating_grid(platform_settings, audit_settings):
-    thresholds = platform_settings['sonar.technicalDebt.ratingGrid'].split(',')
+    thresholds = util.csv_to_list(platform_settings['sonar.technicalDebt.ratingGrid'])
     problems = []
     util.logger.debug("Auditing maintainabillity rating grid")
     for key in audit_settings:
@@ -736,7 +736,7 @@ def _get_permissions_count(users_or_groups):
 
 
 def _get_multiple_values(n, setting, severity, domain):
-    values = [x.strip() for x in setting.split(',')]
+    values = util.csv_to_list(setting)
     if len(values) < (n - 2):
         return None
     if len(values) == (n - 2):

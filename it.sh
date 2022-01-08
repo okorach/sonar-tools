@@ -69,16 +69,16 @@ do
 
     echo "IT $env sonar-findings-export" | tee -a $IT_LOG_FILE
     f="tmp/findings-$env-unreleased.csv"
-    sonar-findings-export -o tmp/findings-$env-unreleased.csv
+    sonar-findings-export -v DEBUG -o tmp/findings-$env-unreleased.csv
     check $f
     f="tmp/findings-$env-1.json"
     sonar-findings-export -o $f
     check $f
     f="tmp/findings-$env-2.json"
-    sonar-findings-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools >$f
+    sonar-findings-export -v DEBUG -f json -k okorach_audio-video-tools,okorach_sonarqube-tools >$f
     check $f
     f="tmp/findings-$env-3.json"
-    sonar-findings-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >$f
+    sonar-findings-export -v DEBUG -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >$f
     check $f
     f="tmp/findings-$env-4.csv"
     sonar-findings-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --csvSeparator '+' >$f
