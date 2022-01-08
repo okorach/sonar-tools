@@ -206,4 +206,4 @@ def list_to_csv(array, separator=','):
 
 
 def csv_normalize(string, separator=','):
-    return list_to_csv(csv_to_list(string))
+    return list_to_csv(csv_to_list(string, separator))
