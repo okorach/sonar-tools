@@ -51,14 +51,14 @@ def __csv_line(project, **kwargs):
     line = project.key
     if kwargs['projectName']:
         line += f"{kwargs['csvSeparator']}{project.name}"
-    line += f"{kwargs['csvSeparator']}{project.ncloc(include_branches=True)}"
+    line += f"{kwargs['csvSeparator']}{project.ncloc_with_branches()}"
     if kwargs['lastAnalysis']:
         line += f"{kwargs['csvSeparator']}{project.last_analysis_date(include_branches=True)}"
     return line
 
 
 def __json_data(project, **kwargs):
-    data = {'projectKey': project.key, 'ncloc': project.ncloc(include_branches=True)}
+    data = {'projectKey': project.key, 'ncloc': project.ncloc_with_branches()}
     if kwargs['projectName']:
         data['projectName'] = project.name
     if kwargs['lastAnalysis']:
@@ -79,12 +79,12 @@ def __dump_loc(project_list, file, **kwargs):
     nb_loc = 0
     nb_projects = 0
     loc_list = []
-    for _, p in project_list.items():
+    for p in project_list.values():
         if kwargs['format'] == 'json':
             loc_list.append(__json_data(p, **kwargs))
         else:
             print(__csv_line(p, **kwargs), file=fd)
-        nb_loc += p.ncloc()
+        nb_loc += p.ncloc_with_branches()
         nb_projects += 1
         if nb_projects % 50 == 0:
             util.logger.info("%d PROJECTS and %d LoCs, still counting...", nb_projects, nb_loc)
