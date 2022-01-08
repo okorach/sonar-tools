@@ -101,7 +101,6 @@ class Branch(components.Component):
                 self.project._ncloc = self._ncloc
         return m
 
-
     def __audit_last_analysis(self, audit_settings):
         age = self.last_analysis_age()
         if self.is_main() or age is None:
