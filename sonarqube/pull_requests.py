@@ -25,7 +25,6 @@
 
 import datetime
 import pytz
-import sonarqube.sqobject as sq
 from sonarqube import projects, measures, components
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules

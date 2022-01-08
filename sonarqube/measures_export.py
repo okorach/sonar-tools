@@ -89,7 +89,6 @@ def __get_object_measures(obj, wanted_metrics):
     measures_d['projectName'] = proj.name
     return measures_d
 
-
 def __get_json_measures(obj, wanted_metrics, **kwargs):
     d = __get_object_measures(obj, wanted_metrics)
     if not kwargs['includeURLs']:
