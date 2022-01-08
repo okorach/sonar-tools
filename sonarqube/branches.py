@@ -26,33 +26,39 @@
 import datetime
 import pytz
 import requests.utils
+from sonarqube import projects, measures, components
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
 
+_BRANCHES = {}
 
-class Branch(sq.SqObject):
-    def __init__(self, project, name, data=None):
-        super().__init__(name, project.endpoint)
+
+class Branch(components.Component):
+    def __init__(self, project, name, data=None, endpoint=None):
+        if endpoint is not None:
+            super().__init__(name, endpoint)
+        else:
+            super().__init__(name, project.endpoint)
         self.name = name
         self.project = project
         self.json = data
         self._last_analysis_date = None
         self._ncloc = None
+        _BRANCHES[self.uuid()] = self
+        util.logger.debug("Created object %s", str(self))
 
     def __str__(self):
         return f"branch '{self.name}' of {str(self.project)}"
+
+    def uuid(self):
+        return _uuid(self.project.key, self.name)
 
     def last_analysis_date(self):
         if self._last_analysis_date is None and 'analysisDate' in self.json:
             self._last_analysis_date = util.string_to_date(self.json['analysisDate'])
         return self._last_analysis_date
-
-    def ncloc(self):
-        if self._ncloc is None:
-            self._ncloc = int(self.project.get_measure('ncloc', branch=self.name, fallback=0))
-        return self._ncloc
 
     def last_analysis_age(self, rounded_to_days=True):
         last_analysis = self.last_analysis_date()
@@ -88,6 +94,10 @@ class Branch(sq.SqObject):
                                concerned_object=self)]
         return []
 
+    def get_measures(self, metrics_list):
+        return measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
+
+
     def __audit_last_analysis(self, audit_settings):
         age = self.last_analysis_age()
         if self.is_main() or age is None:
@@ -111,3 +121,15 @@ class Branch(sq.SqObject):
             self.__audit_last_analysis(audit_settings)
             + self.__audit_zero_loc()
         )
+
+
+def _uuid(project_key, branch_name):
+    return f"{project_key} {branch_name}"
+
+
+def get_object(branch, project_key_or_obj, data=None, endpoint=None):
+    (p_key, p_obj) = projects.key_obj(project_key_or_obj)
+    b_id = _uuid(p_key, branch)
+    if b_id not in _BRANCHES:
+        _ = Branch(p_obj, branch, data, endpoint)
+    return _BRANCHES[b_id]
