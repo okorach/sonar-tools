@@ -51,7 +51,7 @@ do
     . sqenv $env
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
-    f="tmp/measures-$env-unreleased.csv"
+    f="tmp/measures-$env-unrel.csv"
     sonar-measures-export -b -o $f -m _main --includeURLs
     check $f
     f="tmp/measures-$env-2.csv"
@@ -68,8 +68,8 @@ do
     check $f
 
     echo "IT $env sonar-findings-export" | tee -a $IT_LOG_FILE
-    f="tmp/findings-$env-unreleased.csv"
-    sonar-findings-export -v DEBUG -o tmp/findings-$env-unreleased.csv
+    f="tmp/findings-$env-unrel.csv"
+    sonar-findings-export -v DEBUG -o tmp/findings-$env-unrel.csv
     check $f
     f="tmp/findings-$env-1.json"
     sonar-findings-export -o $f
@@ -85,7 +85,7 @@ do
     check $f
 
     echo "IT $env sonar-audit" | tee -a $IT_LOG_FILE
-    f="tmp/audit-$env-unreleased.csv"
+    f="tmp/audit-$env-unrel.csv"
     sonar-audit >$f
     check $f
     f="tmp/audit-$env-1.json"
@@ -107,7 +107,7 @@ do
     f="tmp/loc-$env-1.csv"
     sonar-loc >$f
     check $f
-    f="tmp/loc-$env-unreleased.csv"
+    f="tmp/loc-$env-unrel.csv"
     sonar-loc -n -a >$f
     check $f
     f="tmp/loc-$env-2.csv"
@@ -129,10 +129,10 @@ for env in $*
 do
     . sqenv $env
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
-    sonar-measures-export -b -o tmp/measures-$env-released.csv -m _main --includeURLs
-    sonar-issues-export -o tmp/findings-$env-released.csv
-    sonar-audit >tmp/audit-$env-released.csv || echo "OK"
-    sonar-loc -n -a >tmp/loc-$env-released.csv 
+    sonar-measures-export -b -o tmp/measures-$env-rel.csv -m _main --includeURLs
+    sonar-issues-export -o tmp/findings-$env-rel.csv
+    sonar-audit >tmp/audit-$env-rel.csv || echo "OK"
+    sonar-loc -n -a >tmp/loc-$env-rel.csv 
 done
 ./deploy.sh
 for env in $*
@@ -140,14 +140,31 @@ do
     echo "IT compare released and unreleased $env" | tee -a $IT_LOG_FILE
     for f in measures findings audit loc
     do
+        root=tmp/$f-$env
         echo "==========================" | tee -a $IT_LOG_FILE
         echo $f-$env diff                 | tee -a $IT_LOG_FILE
         echo "==========================" | tee -a $IT_LOG_FILE
-        sort tmp/$f-$env-released.csv | sed 's/,None/,/g' sed 's/;/,/g' >tmp/$f-$env-released.sorted.csv
-        mv tmp/$f-$env-released.sorted.csv tmp/$f-$env-released.csv
-        sort tmp/$f-$env-unreleased.csv >tmp/$f-$env-unreleased.sorted.csv
-        mv tmp/$f-$env-unreleased.sorted.csv tmp/$f-$env-unreleased.csv
-        diff tmp/$f-$env-released.csv tmp/$f-$env-unreleased.csv | tee -a $IT_LOG_FILE
+        sort $root-rel.csv | sed -e 's/,None/,/g' -e 's/;/,/g' >$root-rel.sorted.csv
+        sort $root-unrel.csv | sed -e 's/has been analyzed but //' >$root-unrel.sorted.csv
+
+        if [ "$f" == "measures" ]; then
+            cat $root-rel.sorted.csv | cut -d ',' -f 2- >$root-rel.csv
+            cat $root-rel.sorted.csv | cut -d ',' -f 1 >$root-url-rel.csv
+            cat $root-unrel.sorted.csv | cut -d ',' -f 1-29 >$root-unrel.csv
+            cat $root-unrel.sorted.csv | cut -d ',' -f 30 >$root-url-unrel.csv
+            diff $root-url-rel.csv $root-url-unrel.csv || echo "" | tee -a $IT_LOG_FILE
+            rm $root-unrel.sorted.csv
+        elif [ "$f" == "findings" ]; then
+            cat $root-rel.sorted.csv | sed 's/;/,/g' >$root-rel.csv
+            rm $root-rel.sorted.csv
+            cat $root-unrel.sorted.csv | sed 's/\+[12]00//g' >$root-unrel.csv
+            rm $root-unrel.sorted.csv
+        else
+            mv $root-rel.sorted.csv $root-rel.csv
+            mv $root-unrel.sorted.csv $root-unrel.csv
+        fi
+        # mv tmp/$f-$env-unrel.sorted.csv tmp/$f-$env-unrel.csv
+        diff $root-rel.csv $root-unrel.csv || echo "" | tee -a $IT_LOG_FILE
     done
 done
 
