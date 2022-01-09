@@ -111,7 +111,7 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     if kwargs[cmd.INCLUDE_URL]:
         overall_metrics += sep + 'url'
     line = ''
-    util.logger.debug("CSV for %s dict = %s", overall_metrics, util.json_dump(measures_d))
+    measures_d['branch'] = util.quote(measures_d['branch'], sep)
     for metric in util.csv_to_list(overall_metrics):
         val = ''
         if metric in measures_d:

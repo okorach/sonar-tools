@@ -26,7 +26,6 @@
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 
-
 _JSON_FIELDS_REMAPPED = (
     ('pull_request', 'pullRequest'),
     ('_comments', 'comments')
@@ -128,8 +127,8 @@ class Finding(sq.SqObject):
         for field in _CSV_FIELDS:
             if data.get(field, None) is None:
                 data[field] = ''
-        if 'message' in data:
-            data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
+        data['branch'] = util.quote(data['branch'], separator)
+        data['message'] = util.quote(data['message'], separator)
         data['projectName'] = get_object(self.projectKey, endpoint=self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
