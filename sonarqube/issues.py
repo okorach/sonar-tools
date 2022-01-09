@@ -38,18 +38,8 @@ SYNC_COMMENTS = 'sync_comments'
 SYNC_ASSIGN = 'sync_assignments'
 SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
 
-_JSON_FIELDS_REMAPPED = (
-    ('pull_request', 'pullRequest'),
-    ('_comments', 'comments')
-)
-
-_JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'hash', 'sonarqube',
-    'creation_date', 'modification_date', '_debt', 'component', 'language', 'resolution')
-
-_CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'createdAt', 'updatedAt', 'projectKey', 'projectName',
-            'branch', 'pullRequest', 'file', 'line', 'effort', 'message')
-
 _ISSUES = {}
+
 
 class ApiError(Exception):
     pass
@@ -540,7 +530,7 @@ def search_by_project(project_key, endpoint=None, branch=None, pull_request=None
         util.logger.info("Issue search by project %s branch %s", k, str(branch))
         if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ('enterprise', 'datacenter') and search_findings:
             util.logger.info('Using new export findings to speed up issue export')
-            issue_list.update(projects.Project(k, endpoint).get_findings(branch, pull_request))
+            issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(branch, pull_request))
         else:
             util.logger.info('Traditional issue search by project')
             issue_list.update(_search_all_by_project(k, params, endpoint=endpoint))
@@ -735,10 +725,6 @@ def identical_attributes(o1, o2, key_list):
         if o1[key] != o2[key]:
             return False
     return True
-
-
-def to_csv_header(separator=','):
-    return "# " + separator.join(_CSV_FIELDS)
 
 
 def __get_issues_search_params(params):

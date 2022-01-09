@@ -134,5 +134,5 @@ def get_object(branch, project_key_or_obj, data=None, endpoint=None):
     (p_key, p_obj) = projects.key_obj(project_key_or_obj)
     b_id = _uuid(p_key, branch)
     if b_id not in _BRANCHES:
-        _ = Branch(p_obj, branch, data, endpoint)
+        _ = Branch(p_obj, branch, data=data, endpoint=endpoint)
     return _BRANCHES[b_id]

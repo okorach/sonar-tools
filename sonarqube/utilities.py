@@ -207,3 +207,10 @@ def list_to_csv(array, separator=','):
 
 def csv_normalize(string, separator=','):
     return list_to_csv(csv_to_list(string, separator))
+
+def quote(string, sep):
+    if sep in string:
+        string = '"' + string.replace('"', '""') + '"'
+    if "\n" in string:
+        string = string.replace("\n", " ")
+    return string

@@ -33,7 +33,7 @@ import sonarqube.audit_problem as pb
 _PULL_REQUESTS = {}
 
 class PullRequest(components.Component):
-    def __init__(self, project, key, data=None, endpoint=None):
+    def __init__(self, project, key, endpoint=None, data=None):
         if endpoint is not None:
             super().__init__(key, endpoint)
         else:
@@ -67,6 +67,7 @@ class PullRequest(components.Component):
             return today - last_analysis
 
     def get_measures(self, metrics_list):
+        util.logger.debug("self.endpoint = %s", str(self.endpoint))
         m = measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
         if 'ncloc' in m:
             self._ncloc = int(m['ncloc'])
@@ -104,5 +105,5 @@ def get_object(pull_request_key, project_key_or_obj, data=None, endpoint=None):
     (p_key, p_obj) = projects.key_obj(project_key_or_obj)
     p_id = _uuid(p_key, pull_request_key)
     if p_id not in _PULL_REQUESTS:
-        _ = PullRequest(p_obj, pull_request_key, data, endpoint)
+        _ = PullRequest(p_obj, pull_request_key, endpoint=endpoint, data=data)
     return _PULL_REQUESTS[p_id]
