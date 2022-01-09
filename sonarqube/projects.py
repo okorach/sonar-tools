@@ -47,7 +47,7 @@ _BIND_SEP = ":::"
 
 class Project(comp.Component):
 
-    def __init__(self, key, endpoint, data=None):
+    def __init__(self, key, endpoint=None, data=None):
         super().__init__(key, endpoint)
         self.name = None
         self.visibility = None
