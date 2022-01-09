@@ -111,12 +111,11 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     if kwargs[cmd.INCLUDE_URL]:
         overall_metrics += sep + 'url'
     line = ''
-    measures_d['branch'] = util.quote(measures_d['branch'], sep)
     for metric in util.csv_to_list(overall_metrics):
         val = ''
         if metric in measures_d:
             if sep in measures_d[metric]:
-                val = '"' + measures_d[metric] + '"'
+                val = util.quote(measures_d[metric], sep)
             else:
                 val = str(measures.convert(metric, measures_d[metric], **CONVERT_OPTIONS))
         line += val + sep
