@@ -25,6 +25,7 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 '''
 import sys
+import sonarqube.cmdline as cmd
 from sonarqube import measures, metrics, projects, env, version
 import sonarqube.utilities as util
 
@@ -68,13 +69,13 @@ def __close_output(file, fd):
 
 def __get_csv_header(wanted_metrics, edition, **kwargs):
     sep = kwargs['csvSeparator']
-    if edition == 'community' or not kwargs['withBranches']:
+    if edition == 'community' or not kwargs[cmd.INCLUDE_BRANCH]:
         header = f"# Project Key{sep}Project Name{sep}Last Analysis"
     else:
         header = f"# Project Key{sep}Project Name{sep}Branch{sep}Last Analysis"
     for m in util.csv_to_list(wanted_metrics):
         header += f"{sep}{m}"
-    if kwargs['includeURLs']:
+    if kwargs[cmd.INCLUDE_URL]:
         header += f"{sep}URL"
     return header
 
@@ -94,20 +95,20 @@ def __get_object_measures(obj, wanted_metrics):
 
 def __get_json_measures(obj, wanted_metrics, **kwargs):
     d = __get_object_measures(obj, wanted_metrics)
-    if not kwargs['includeURLs']:
+    if not kwargs[cmd.INCLUDE_URL]:
         d.pop('url', None)
-    if not kwargs['withBranches']:
+    if not kwargs[cmd.INCLUDE_BRANCH]:
         d.pop('branch', None)
     return d
 
 def __get_csv_measures(obj, wanted_metrics, **kwargs):
     measures_d = __get_object_measures(obj, wanted_metrics)
-    sep = kwargs['csvSeparator']
+    sep = kwargs[cmd.CSV_SEPARATOR]
     overall_metrics = 'projectKey' + sep + 'projectName'
     if kwargs['withBranches']:
         overall_metrics += sep + 'branch'
     overall_metrics += sep + 'lastAnalysis' + sep + wanted_metrics
-    if kwargs['includeURLs']:
+    if kwargs[cmd.INCLUDE_URL]:
         overall_metrics += sep + 'url'
     line = ''
     util.logger.debug("CSV for %s dict = %s", overall_metrics, util.json_dump(measures_d))
@@ -152,7 +153,7 @@ def __parse_cmd_line():
     parser.add_argument('-f', '--format', required=False, default='csv',
                         help='Format of output (json, csv), default is csv')
     parser.add_argument('-m', '--metricKeys', required=False, help='Comma separated list of metrics or _all or _main')
-    parser.add_argument('-b', '--withBranches', required=False, action='store_true',
+    parser.add_argument('-b', '--' + cmd.INCLUDE_BRANCH, required=False, action='store_true',
                         help='Also extract branches metrics')
     parser.add_argument('--withTags', required=False, action='store_true', help='Also extract project tags')
     parser.set_defaults(withBranches=False, withTags=False)
@@ -162,7 +163,7 @@ def __parse_cmd_line():
                         help='Reports percentages as string xy.z%% instead of float values 0.xyz')
     parser.add_argument('-d', '--datesWithoutTime', action='store_true', default=False, required=False,
                         help='Reports timestamps only with date, not time')
-    parser.add_argument('--includeURLs', action='store_true', default=False, required=False,
+    parser.add_argument('--' + cmd.INCLUDE_URL, action='store_true', default=False, required=False,
                         help='Add projects/branches URLs in report')
     parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
                         help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')

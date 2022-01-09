@@ -34,9 +34,10 @@
     [--tags]
 '''
 import sys
-from sonarqube import env, issues, hotspots, version, projects
+import sonarqube.cmdline as cmd
+from sonarqube import version, env, projects, hotspots, issues
 import sonarqube.utilities as util
-
+from sonarqube.findings import to_csv_header
 
 def parse_args():
     parser = util.set_common_args('SonarQube issues extractor')
@@ -67,13 +68,13 @@ def parse_args():
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
     parser.add_argument('--useFindings', required=False, default=False, action='store_true',
                         help='Use export_findings() whenever possible')
-    parser.add_argument('--includeURLs', required=False, default=False, action='store_true',
+    parser.add_argument('--' + cmd.INCLUDE_URL, required=False, default=False, action='store_true',
                         help='Generate issues URL in the report, false by default')
-    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
+    parser.add_argument('--' + cmd.CSV_SEPARATOR, required=False, default=util.CSV_SEPARATOR,
                         help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
     return util.parse_and_check_token(parser)
 
-def __dump_issues(issues_list, file, file_format, **kwargs):
+def __dump_findings(issues_list, file, file_format, **kwargs):
     if file is None:
         f = sys.stdout
         util.logger.info("Dumping report to stdout")
@@ -83,7 +84,7 @@ def __dump_issues(issues_list, file, file_format, **kwargs):
     if file_format == 'json':
         print("[", file=f)
     else:
-        print(issues.to_csv_header(), file=f)
+        print(to_csv_header(), file=f)
     is_first = True
     url = ''
     sep = kwargs['csvSeparator']
@@ -91,14 +92,14 @@ def __dump_issues(issues_list, file, file_format, **kwargs):
         if file_format == 'json':
             pfx = "" if is_first else ",\n"
             issue_json = issue.to_json()
-            if not kwargs['includeURLs']:
+            if not kwargs[cmd.INCLUDE_URL]:
                 issue_json.pop('url', None)
             print(pfx + util.json_dump(issue_json), file=f, end='')
             is_first = False
         else:
-            if kwargs['includeURLs']:
-                url = f'"{issue.url()}"{sep}'
-            print(f"{url}{issue.to_csv(sep)}", file=f)
+            if kwargs[cmd.INCLUDE_URL]:
+                url = f'{sep}"{issue.url()}"'
+            print(f"{issue.to_csv(sep)}{url}", file=f)
 
     if file_format == 'json':
         print("\n]", file=f)
@@ -130,12 +131,12 @@ def main():
         branches = []
         prs = []
         if branch_str == '*':
-            project = projects.Project(project_key, sqenv)
+            project = projects.Project(project_key, endpoint=sqenv)
             branches = project.get_branches()
         elif branch_str is not None:
             branches = util.csv_to_list(branch_str)
         if pr_str == '*':
-            project = projects.Project(project_key, sqenv)
+            project = projects.Project(project_key, endpoint=sqenv)
             prs = project.get_pull_requests()
         elif pr_str is not None:
             prs = util.csv_to_list(pr_str)
@@ -163,7 +164,7 @@ def main():
         ext = kwargs['outputFile'].split('.')[-1].lower()
         if ext in ('csv', 'json'):
             fmt = ext
-    __dump_issues(all_issues, kwargs.get('outputFile', None), fmt, **kwargs)
+    __dump_findings(all_issues, kwargs.get('outputFile', None), fmt, **kwargs)
     util.logger.info("Returned issues: %d", len(all_issues))
     sys.exit(0)
 
