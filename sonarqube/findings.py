@@ -23,7 +23,6 @@
 
 '''
 
-from sonarqube import projects
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 
@@ -38,8 +37,6 @@ _JSON_FIELDS_PRIVATE = ('endpoint', 'id', '_json', '_changelog', 'assignee', 'ha
 
 _CSV_FIELDS = ('key', 'rule', 'type', 'severity', 'status', 'creationDate', 'updateDate', 'projectKey', 'projectName',
             'branch', 'pullRequest', 'file', 'line', 'effort', 'message')
-
-_ISSUES = {}
 
 
 class Finding(sq.SqObject):
@@ -126,14 +123,14 @@ class Finding(sq.SqObject):
             return None
 
     def to_csv(self, separator=','):
-        # id,project,rule,type,severity,status,creation,modification,project,file,line,debt,message
+        from sonarqube.projects import get_object
         data = self.to_json()
         for field in _CSV_FIELDS:
             if data.get(field, None) is None:
                 data[field] = ''
         if 'message' in data:
             data['message'] = '"' + data['message'].replace('"', '""').replace("\n", " ") + '"'
-        data['projectName'] = projects.get_object(self.projectKey, self.endpoint).name
+        data['projectName'] = get_object(self.projectKey, endpoint=self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
@@ -146,6 +143,7 @@ class Finding(sq.SqObject):
         data['updateDate'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
+        util.logger.debug("TO JSON = %s", util.json_dump(data))
         return data
 
     def is_vulnerability(self):
@@ -162,3 +160,7 @@ class Finding(sq.SqObject):
 
     def is_security_issue(self):
         return self.is_vulnerability() or self.is_hotspot()
+
+
+def to_csv_header(separator=','):
+    return "# " + separator.join(_CSV_FIELDS)
