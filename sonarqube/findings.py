@@ -143,7 +143,6 @@ class Finding(sq.SqObject):
         data['updateDate'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
-        util.logger.debug("TO JSON = %s", util.json_dump(data))
         return data
 
     def is_vulnerability(self):
