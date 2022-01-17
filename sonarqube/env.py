@@ -420,6 +420,7 @@ def __get_memory(setting):
                 return val * 1024
             elif unit == 'K':
                 return val // 1024
+    util.logger.warning("No JVM memory settings specified in %s", setting)
     return None
 
 
@@ -431,6 +432,8 @@ def _get_store_size(setting):
         return float(val)
     elif unit == 'GB':
         return float(val) * 1024
+    elif unit == 'KB':
+        return float(val) / 1024
     return None
 
 
@@ -565,7 +568,10 @@ def _audit_web_settings(sysinfo):
     opts = [x.format('web') for x in _JVM_OPTS]
     web_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     web_ram = __get_memory(web_settings)
-    if web_ram < 1024 or web_ram > 2048:
+    if web_ram is None:
+        rule = rules.get_rule(rules.RuleId.SETTING_WEB_NO_HEAP)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
+    elif web_ram < 1024 or web_ram > 2048:
         rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048)))
     else:
@@ -597,7 +603,10 @@ def _audit_ce_settings(sysinfo):
         util.logger.debug("%d CE workers configured, correct compared to the max %d recommended",
                          ce_workers, MAX_WORKERS)
 
-    if ce_ram < 512 * ce_workers or ce_ram > 2048 * ce_workers:
+    if ce_ram is None:
+        rule = rules.get_rule(rules.RuleId.SETTING_CE_NO_HEAP)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
+    elif ce_ram < 512 * ce_workers or ce_ram > 2048 * ce_workers:
         rule = rules.get_rule(rules.RuleId.SETTING_CE_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers)))
     else:
@@ -651,8 +660,11 @@ def _audit_es_settings(sysinfo):
         index_size = _get_store_size(sysinfo['Search Nodes'][0]['Search State']['Store Size'])
     else:
         index_size = _get_store_size(sysinfo['Search State']['Store Size'])
-    
-    if es_ram < 2 * index_size and es_ram < index_size + 1000:
+
+    if es_ram is None:
+        rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
+    elif es_ram < 2 * index_size and es_ram < index_size + 1000:
         rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
     else:
