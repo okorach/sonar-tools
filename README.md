@@ -141,6 +141,7 @@ sonar-audit --what settings,qg,qp
   - CE background tasks failure rate is more than 1%
   - Background tasks are piling up: More than 100 pending CE background tasks or more than 20 or 10 x Nbr workers
   - Search process heap (`-Xmx`) is less than twice the ES index size (small indexes) or less than ES index size + 1 GB (large indexes)
+  - Web, CE or ES heap (`-Xmx`) not specified
 - Quality Gates: (if `audit.qualityGates = yes`, default `yes`)
   - Unused QG
   - QG with 0 conditions or more than 7 conditions
