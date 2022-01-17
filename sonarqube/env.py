@@ -680,6 +680,9 @@ def _audit_dce_settings(sysinfo):
     if sq_edition != "datacenter":
         util.logger.info('Not a Data Center Edition, skipping DCE checks')
         return problems
+    if 'Application Nodes' not in sysinfo:
+        util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
+        return problems
     # Verify that app nodes have the same plugins installed
     appnodes = sysinfo['Application Nodes']
     ref_plugins = util.json_dump(appnodes[0]['Plugins'])
