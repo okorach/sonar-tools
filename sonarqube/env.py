@@ -526,7 +526,10 @@ def _audit_maintainability_rating_grid(platform_settings, audit_settings):
 
 def _audit_log_level(sysinfo):
     util.logger.debug('Auditing log levels')
-    log_level = sysinfo["Web Logging"]["Logs Level"]
+    if 'Application Nodes' in sysinfo:
+        log_level = sysinfo['Application Nodes'][0]["Web Logging"]["Logs Level"]
+    else:
+        log_level = sysinfo["Web Logging"]["Logs Level"]
     if log_level not in ("DEBUG", "TRACE"):
         return []
     if log_level == "TRACE":
@@ -579,7 +582,12 @@ def _audit_ce_settings(sysinfo):
     opts = [x.format('ce') for x in _JVM_OPTS]
     ce_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     ce_ram = __get_memory(ce_settings)
-    ce_tasks = sysinfo['Compute Engine Tasks']
+    if 'Application Nodes' in sysinfo:
+        ce_tasks = sysinfo['Application Nodes'][0]['Compute Engine Tasks']
+    else:
+        ce_tasks = sysinfo['Compute Engine Tasks']
+
+    util.logger.debug("CE TASKS = %s", util.json_dump(ce_tasks))
     ce_workers = ce_tasks['Worker Count']
     MAX_WORKERS = 4
     if ce_workers > MAX_WORKERS:
@@ -603,7 +611,10 @@ def _audit_ce_settings(sysinfo):
 def _audit_ce_background_tasks(sysinfo):
     util.logger.debug('Auditing CE background tasks')
     problems = []
-    ce_tasks = sysinfo['Compute Engine Tasks']
+    if 'Application Nodes' in sysinfo:
+        ce_tasks = sysinfo['Application Nodes'][0]['Compute Engine Tasks']
+    else:
+        ce_tasks = sysinfo['Compute Engine Tasks']
     ce_workers = ce_tasks['Worker Count']
     ce_success = ce_tasks["Processed With Success"]
     ce_error = ce_tasks["Processed With Error"]
@@ -636,7 +647,11 @@ def _audit_es_settings(sysinfo):
     opts = [x.format('ce') for x in _JVM_OPTS]
     es_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     es_ram = __get_memory(es_settings)
-    index_size = _get_store_size(sysinfo['Search State']['Store Size'])
+    if 'Search Nodes' in sysinfo:
+        index_size = _get_store_size(sysinfo['Search Nodes'][0]['Search State']['Store Size'])
+    else:
+        index_size = _get_store_size(sysinfo['Search State']['Store Size'])
+    
     if es_ram < 2 * index_size and es_ram < index_size + 1000:
         rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
