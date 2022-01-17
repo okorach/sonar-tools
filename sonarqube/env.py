@@ -541,7 +541,15 @@ def _audit_log_level(sysinfo):
 
 
 def __sif_version(sif, digits=3, as_string=False):
-    vers = sif['System']['Version'].split('.')
+    try:
+        if 'Version' in sif['System']:
+            versio = sif['System']['Version']
+        elif "Application Nodes" in sif:
+            versio = sif['Application Nodes'][0]['System']['Version']
+    except KeyError:
+        return None
+
+    vers = versio.split('.')
     if as_string:
         return '.'.join(vers[0:digits])
     else:
