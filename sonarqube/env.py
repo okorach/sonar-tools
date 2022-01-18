@@ -529,10 +529,10 @@ def _audit_maintainability_rating_grid(platform_settings, audit_settings):
 
 def _audit_log_level(sysinfo):
     util.logger.debug('Auditing log levels')
-    if 'Application Nodes' in sysinfo:
-        log_level = sysinfo['Application Nodes'][0]["Web Logging"]["Logs Level"]
-    else:
-        log_level = sysinfo["Web Logging"]["Logs Level"]
+    log_level = __get_field(sysinfo, "Web Logging")
+    if log_level is None:
+        return []
+    log_level = log_level["Logs Level"]
     if log_level not in ("DEBUG", "TRACE"):
         return []
     if log_level == "TRACE":
@@ -546,20 +546,42 @@ def _audit_log_level(sysinfo):
     return []
 
 
+def __get_first_live_node(sif, node_type='Application Nodes'):
+    #til.logger.debug('Searching LIVE node %s in %s', node_type, util.json_dump(sif))
+    if node_type not in sif:
+        return None
+    i = 0
+    for node in sif[node_type]:
+        if node_type == 'Application Nodes' and 'System' in node:
+            return i
+        elif node_type == 'Search Nodes' and 'Search State' in node:
+            return i
+        i += 1
+    return None
+
+
+def __get_field(sif, name, node_type='Application Nodes'):
+    if 'System' in sif and name in sif['System']:
+        return sif['System'][name]
+    elif node_type in sif:
+        for node in sif[node_type]:
+            try:
+                return node['System'][name]
+            except KeyError:
+                pass
+    return None
+
+
 def __sif_version(sif, digits=3, as_string=False):
-    try:
-        if 'Version' in sif['System']:
-            versio = sif['System']['Version']
-        elif "Application Nodes" in sif:
-            versio = sif['Application Nodes'][0]['System']['Version']
-    except KeyError:
+    sif_version = __get_field(sif, 'Version')
+    if sif_version is None:
         return None
 
-    vers = versio.split('.')
+    split_version = sif_version.split('.')
     if as_string:
-        return '.'.join(vers[0:digits])
+        return '.'.join(split_version[0:digits])
     else:
-        return tuple(int(n) for n in vers[0:digits])
+        return tuple(int(n) for n in split_version[0:digits])
 
 
 def _audit_web_settings(sysinfo):
@@ -588,12 +610,9 @@ def _audit_ce_settings(sysinfo):
     opts = [x.format('ce') for x in _JVM_OPTS]
     ce_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     ce_ram = __get_memory(ce_settings)
-    if 'Application Nodes' in sysinfo:
-        ce_tasks = sysinfo['Application Nodes'][0]['Compute Engine Tasks']
-    else:
-        ce_tasks = sysinfo['Compute Engine Tasks']
-
-    util.logger.debug("CE TASKS = %s", util.json_dump(ce_tasks))
+    ce_tasks = __get_field(sysinfo, 'Compute Engine Tasks')
+    if ce_tasks is None:
+        return []
     ce_workers = ce_tasks['Worker Count']
     MAX_WORKERS = 4
     if ce_workers > MAX_WORKERS:
@@ -620,10 +639,9 @@ def _audit_ce_settings(sysinfo):
 def _audit_ce_background_tasks(sysinfo):
     util.logger.debug('Auditing CE background tasks')
     problems = []
-    if 'Application Nodes' in sysinfo:
-        ce_tasks = sysinfo['Application Nodes'][0]['Compute Engine Tasks']
-    else:
-        ce_tasks = sysinfo['Compute Engine Tasks']
+    ce_tasks = __get_field(sysinfo, 'Compute Engine Tasks')
+    if ce_tasks is None:
+        return []
     ce_workers = ce_tasks['Worker Count']
     ce_success = ce_tasks["Processed With Success"]
     ce_error = ce_tasks["Processed With Error"]
@@ -657,7 +675,8 @@ def _audit_es_settings(sysinfo):
     es_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     es_ram = __get_memory(es_settings)
     if 'Search Nodes' in sysinfo:
-        index_size = _get_store_size(sysinfo['Search Nodes'][0]['Search State']['Store Size'])
+        node_id = __get_first_live_node(sysinfo, 'Search Nodes')
+        index_size = _get_store_size(sysinfo['Search Nodes'][node_id]['Search State']['Store Size'])
     else:
         index_size = _get_store_size(sysinfo['Search State']['Store Size'])
 
@@ -720,11 +739,14 @@ def _audit_dce_settings(sysinfo):
         return problems
     # Verify that app nodes have the same plugins installed
     appnodes = sysinfo['Application Nodes']
-    ref_plugins = util.json_dump(appnodes[0]['Plugins'])
-    ref_name = appnodes[0]['Name']
-    ref_version = appnodes[0]['System']['Version']
+    ref_node_id = __get_first_live_node(sysinfo)
+    ref_plugins = util.json_dump(appnodes[ref_node_id]['Plugins'])
+    ref_name = appnodes[ref_node_id]['Name']
+    ref_version = appnodes[ref_node_id]['System']['Version']
     for node in appnodes:
-        node_version = node['System']['Version']
+        node_version = __get_field(node, 'Version')
+        if node_version is None:
+            continue
         if node_version != ref_version:
             rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
