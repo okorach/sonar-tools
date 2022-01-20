@@ -39,7 +39,6 @@ AUTHENTICATION_ERROR_MSG = "Authentication error. Is token valid ?"
 AUTORIZATION_ERROR_MSG = "Insufficient permissions to perform operation"
 HTTP_FATAL_ERROR_MSG = "HTTP fatal error %d - %s"
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
-DEFAULT_URL = 'http://localhost:9000'
 
 _GLOBAL_PERMISSIONS = {
     "admin": "Global Administration",
@@ -52,6 +51,9 @@ _GLOBAL_PERMISSIONS = {
 }
 
 _JVM_OPTS = ('sonar.{}.javaOpts', 'sonar.{}.javaAdditionalOpts')
+
+_MIN_DATE_LOG4SHELL = datetime.datetime(2021, 12, 1)
+
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -600,7 +602,7 @@ def _audit_web_settings(sysinfo):
         util.logger.debug("sonar.web.javaOpts -Xmx memory setting value is %d MB, "
                          "within the recommended range [1024-2048]", web_ram)
 
-    problems += __audit_log4shell(__sif_version(sysinfo), web_settings, rules.RuleId.LOG4SHELL_WEB)
+    problems += __audit_log4shell(sysinfo, web_settings, rules.RuleId.LOG4SHELL_WEB)
     return problems
 
 
@@ -632,7 +634,7 @@ def _audit_ce_settings(sysinfo):
         util.logger.debug("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
                           "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
 
-    problems += __audit_log4shell(__sif_version(sysinfo), ce_settings, rules.RuleId.LOG4SHELL_CE)
+    problems += __audit_log4shell(sysinfo, ce_settings, rules.RuleId.LOG4SHELL_CE)
     return problems
 
 
@@ -688,12 +690,25 @@ def _audit_es_settings(sysinfo):
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
     else:
         util.logger.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
-    problems += __audit_log4shell(__sif_version(sysinfo), es_settings, rules.RuleId.LOG4SHELL_ES)
+    problems += __audit_log4shell(sysinfo, es_settings, rules.RuleId.LOG4SHELL_ES)
     return problems
 
 
-def __audit_log4shell(sq_version, jvm_settings, broken_rule):
+def __eligible_to_log4shell_check(sif):
+    try:
+        st_time = util.string_to_date(sif['Settings']['sonar.core.startTime']).replace(tzinfo=None)
+    except KeyError:
+        return False
+    return st_time > _MIN_DATE_LOG4SHELL
+
+
+def __audit_log4shell(sif, jvm_settings, broken_rule):
+    # If SIF is older than 2022 don't audit for log4shell to avoid noise
+    if not __eligible_to_log4shell_check(sif):
+        return []
+
     util.logger.debug('Auditing log4shell vulnerability fix')
+    sq_version = __sif_version(sif)
     if sq_version < (8, 9, 6) or ((9, 0, 0) <= sq_version < (9, 2, 4)):
         for s in jvm_settings.split(' '):
             if s == '-Dlog4j2.formatMsgNoLookups=true':
