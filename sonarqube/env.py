@@ -42,6 +42,8 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 _APP_NODES = 'Application Nodes'
 _ES_NODES = 'Search Nodes'
 _SYSTEM = 'System'
+_STORE_SIZE = 'Store Size'
+_ES_STATE = 'Search State'
 
 _GLOBAL_PERMISSIONS = {
     "admin": "Global Administration",
@@ -561,7 +563,7 @@ def __get_first_live_node(sif, node_type=_APP_NODES):
     i = 0
     for node in sif[node_type]:
         if (node_type == _APP_NODES and _SYSTEM in node) or \
-           (node_type == _ES_NODES and 'Search State' in node):
+           (node_type == _ES_NODES and _ES_STATE in node):
             return i
         i += 1
     return None
@@ -710,14 +712,14 @@ def _audit_es_settings(sysinfo):
     index_size = None
     if _ES_NODES in sysinfo:
         node_id = __get_first_live_node(sysinfo, _ES_NODES)
-        index_size = _get_store_size(sysinfo[_ES_NODES][node_id]['Search State']['Store Size'])
+        index_size = _get_store_size(sysinfo[_ES_NODES][node_id][_ES_STATE][_STORE_SIZE])
     else:
         try:
-            index_size = _get_store_size(sysinfo['Search State']['Store Size'])
+            index_size = _get_store_size(sysinfo[_ES_STATE][_STORE_SIZE])
         except KeyError:
             for v in sysinfo['Elasticsearch']['Nodes'].values():
-                if 'Store Size' in v:
-                    index_size = _get_store_size(v['Store Size'])
+                if _STORE_SIZE in v:
+                    index_size = _get_store_size(v[_STORE_SIZE])
                     break
 
     if es_ram is None:
