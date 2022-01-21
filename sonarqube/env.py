@@ -39,6 +39,9 @@ AUTHENTICATION_ERROR_MSG = "Authentication error. Is token valid ?"
 AUTORIZATION_ERROR_MSG = "Insufficient permissions to perform operation"
 HTTP_FATAL_ERROR_MSG = "HTTP fatal error %d - %s"
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
+_APP_NODES = 'Application Nodes'
+_ES_NODES = 'Search Nodes'
+_SYSTEM = 'System'
 
 _GLOBAL_PERMISSIONS = {
     "admin": "Global Administration",
@@ -551,29 +554,28 @@ def _audit_log_level(sysinfo):
     return []
 
 
-def __get_first_live_node(sif, node_type='Application Nodes'):
+def __get_first_live_node(sif, node_type=_APP_NODES):
     #til.logger.debug('Searching LIVE node %s in %s', node_type, util.json_dump(sif))
     if node_type not in sif:
         return None
     i = 0
     for node in sif[node_type]:
-        if node_type == 'Application Nodes' and 'System' in node:
-            return i
-        elif node_type == 'Search Nodes' and 'Search State' in node:
+        if (node_type == _APP_NODES and _SYSTEM in node) or \
+           (node_type == _ES_NODES and 'Search State' in node):
             return i
         i += 1
     return None
 
 
-def __sif_get_field(sif, name, node_type='Application Nodes'):
-    if 'System' in sif and name in sif['System']:
-        return sif['System'][name]
+def __sif_get_field(sif, name, node_type=_APP_NODES):
+    if _SYSTEM in sif and name in sif[_SYSTEM]:
+        return sif[_SYSTEM][name]
     elif 'SonarQube' in sif and name in sif['SonarQube']:
         return sif['SonarQube'][name]
     elif node_type in sif:
         for node in sif[node_type]:
             try:
-                return node['System'][name]
+                return node[_SYSTEM][name]
             except KeyError:
                 pass
     return None
@@ -589,7 +591,7 @@ def sif_start_time(sif):
     except KeyError:
         pass
     try:
-        return util.string_to_date(sif['System']['Start Time']).replace(tzinfo=None)
+        return util.string_to_date(sif[_SYSTEM]['Start Time']).replace(tzinfo=None)
     except KeyError:
         return None
 
@@ -706,9 +708,9 @@ def _audit_es_settings(sysinfo):
     es_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     es_ram = __get_memory(es_settings)
     index_size = None
-    if 'Search Nodes' in sysinfo:
-        node_id = __get_first_live_node(sysinfo, 'Search Nodes')
-        index_size = _get_store_size(sysinfo['Search Nodes'][node_id]['Search State']['Store Size'])
+    if _ES_NODES in sysinfo:
+        node_id = __get_first_live_node(sysinfo, _ES_NODES)
+        index_size = _get_store_size(sysinfo[_ES_NODES][node_id]['Search State']['Store Size'])
     else:
         try:
             index_size = _get_store_size(sysinfo['Search State']['Store Size'])
@@ -796,15 +798,15 @@ def _audit_dce_settings(sysinfo):
     if sq_edition != "datacenter":
         util.logger.info('Not a Data Center Edition, skipping DCE checks')
         return problems
-    if 'Application Nodes' not in sysinfo:
+    if _APP_NODES not in sysinfo:
         util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
         return problems
     # Verify that app nodes have the same plugins installed
-    appnodes = sysinfo['Application Nodes']
+    appnodes = sysinfo[_APP_NODES]
     ref_node_id = __get_first_live_node(sysinfo)
     ref_plugins = util.json_dump(appnodes[ref_node_id]['Plugins'])
     ref_name = appnodes[ref_node_id]['Name']
-    ref_version = appnodes[ref_node_id]['System']['Version']
+    ref_version = appnodes[ref_node_id][_SYSTEM]['Version']
     for node in appnodes:
         node_version = __sif_get_field(node, 'Version')
         if node_version is None:
@@ -816,7 +818,7 @@ def _audit_dce_settings(sysinfo):
         if node_plugins != ref_plugins:
             rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
-        if not node['System']['Official Distribution']:
+        if not node[_SYSTEM]['Official Distribution']:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(node['Name'])))
         if node['Health'] != "GREEN":
@@ -826,7 +828,7 @@ def _audit_dce_settings(sysinfo):
 
 
 def is_sysinfo(sysinfo):
-    for key in ('System', 'Database', 'Settings'):
+    for key in (_SYSTEM, 'Database', 'Settings'):
         if key not in sysinfo:
             return False
     return True
