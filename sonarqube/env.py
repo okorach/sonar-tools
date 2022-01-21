@@ -54,6 +54,9 @@ _JVM_OPTS = ('sonar.{}.javaOpts', 'sonar.{}.javaAdditionalOpts')
 
 _MIN_DATE_LOG4SHELL = datetime.datetime(2021, 12, 1)
 
+_MIN_DATE_67 = datetime.datetime(2017, 11, 8)
+_MIN_DATE_79 = datetime.datetime(2019, 7, 1)
+_MIN_DATE_89 = datetime.datetime(2021, 5, 4)
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -531,7 +534,7 @@ def _audit_maintainability_rating_grid(platform_settings, audit_settings):
 
 def _audit_log_level(sysinfo):
     util.logger.debug('Auditing log levels')
-    log_level = __get_field(sysinfo, "Web Logging")
+    log_level = __sif_get_field(sysinfo, "Web Logging")
     if log_level is None:
         return []
     log_level = log_level["Logs Level"]
@@ -562,9 +565,11 @@ def __get_first_live_node(sif, node_type='Application Nodes'):
     return None
 
 
-def __get_field(sif, name, node_type='Application Nodes'):
+def __sif_get_field(sif, name, node_type='Application Nodes'):
     if 'System' in sif and name in sif['System']:
         return sif['System'][name]
+    elif 'SonarQube' in sif and name in sif['SonarQube']:
+        return sif['SonarQube'][name]
     elif node_type in sif:
         for node in sif[node_type]:
             try:
@@ -574,12 +579,35 @@ def __get_field(sif, name, node_type='Application Nodes'):
     return None
 
 
-def __sif_version(sif, digits=3, as_string=False):
-    sif_version = __get_field(sif, 'Version')
-    if sif_version is None:
+def sif_server_id(sif):
+    return __sif_get_field(sif, 'Server ID')
+
+
+def sif_start_time(sif):
+    try:
+        return util.string_to_date(sif['Settings']['sonar.core.startTime']).replace(tzinfo=None)
+    except KeyError:
+        pass
+    try:
+        return util.string_to_date(sif['System']['Start Time']).replace(tzinfo=None)
+    except KeyError:
         return None
 
-    split_version = sif_version.split('.')
+
+def _sif_license(sif):
+    if 'License' not in sif:
+        return None
+    elif 'type' in sif['License']:
+        return sif['License']['type']
+    return None
+
+
+def sif_version(sif, digits=3, as_string=False):
+    sif_v = __sif_get_field(sif, 'Version')
+    if sif_v is None:
+        return None
+
+    split_version = sif_v.split('.')
     if as_string:
         return '.'.join(split_version[0:digits])
     else:
@@ -591,6 +619,7 @@ def _audit_web_settings(sysinfo):
     problems = []
     opts = [x.format('web') for x in _JVM_OPTS]
     web_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
+
     web_ram = __get_memory(web_settings)
     if web_ram is None:
         rule = rules.get_rule(rules.RuleId.SETTING_WEB_NO_HEAP)
@@ -612,7 +641,7 @@ def _audit_ce_settings(sysinfo):
     opts = [x.format('ce') for x in _JVM_OPTS]
     ce_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     ce_ram = __get_memory(ce_settings)
-    ce_tasks = __get_field(sysinfo, 'Compute Engine Tasks')
+    ce_tasks = __sif_get_field(sysinfo, 'Compute Engine Tasks')
     if ce_tasks is None:
         return []
     ce_workers = ce_tasks['Worker Count']
@@ -641,7 +670,7 @@ def _audit_ce_settings(sysinfo):
 def _audit_ce_background_tasks(sysinfo):
     util.logger.debug('Auditing CE background tasks')
     problems = []
-    ce_tasks = __get_field(sysinfo, 'Compute Engine Tasks')
+    ce_tasks = __sif_get_field(sysinfo, 'Compute Engine Tasks')
     if ce_tasks is None:
         return []
     ce_workers = ce_tasks['Worker Count']
@@ -673,19 +702,26 @@ def _audit_ce_background_tasks(sysinfo):
 def _audit_es_settings(sysinfo):
     util.logger.info('Auditing Search Server settings')
     problems = []
-    opts = [x.format('ce') for x in _JVM_OPTS]
+    opts = [x.format('search') for x in _JVM_OPTS]
     es_settings = sysinfo['Settings'][opts[1]] + " " + sysinfo['Settings'][opts[0]]
     es_ram = __get_memory(es_settings)
+    index_size = None
     if 'Search Nodes' in sysinfo:
         node_id = __get_first_live_node(sysinfo, 'Search Nodes')
         index_size = _get_store_size(sysinfo['Search Nodes'][node_id]['Search State']['Store Size'])
     else:
-        index_size = _get_store_size(sysinfo['Search State']['Store Size'])
+        try:
+            index_size = _get_store_size(sysinfo['Search State']['Store Size'])
+        except KeyError:
+            for v in sysinfo['Elasticsearch']['Nodes'].values():
+                if 'Store Size' in v:
+                    index_size = _get_store_size(v['Store Size'])
+                    break
 
     if es_ram is None:
         rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
-    elif es_ram < 2 * index_size and es_ram < index_size + 1000:
+    elif index_size is not None and es_ram < 2 * index_size and es_ram < index_size + 1000:
         rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
     else:
@@ -694,10 +730,19 @@ def _audit_es_settings(sysinfo):
     return problems
 
 
+def _audit_sif_version(sif):
+    st_time = sif_start_time(sif)
+    sq_version = sif_version(sif)
+    if st_time > _MIN_DATE_67 and sq_version < (6, 7, 0) or \
+       st_time > _MIN_DATE_79 and sq_version < (7, 9, 0) or \
+       st_time > _MIN_DATE_89 and sq_version < (8, 9, 0):
+        rule = rules.get_rule(rules.RuleId.BELOW_LTS)
+        return [pb.Problem(rule.type, rule.severity, rule.msg)]
+    return []
+
 def __eligible_to_log4shell_check(sif):
-    try:
-        st_time = util.string_to_date(sif['Settings']['sonar.core.startTime']).replace(tzinfo=None)
-    except KeyError:
+    st_time = sif_start_time(sif)
+    if st_time is None:
         return False
     return st_time > _MIN_DATE_LOG4SHELL
 
@@ -708,7 +753,7 @@ def __audit_log4shell(sif, jvm_settings, broken_rule):
         return []
 
     util.logger.debug('Auditing log4shell vulnerability fix')
-    sq_version = __sif_version(sif)
+    sq_version = sif_version(sif)
     if sq_version < (8, 9, 6) or ((9, 0, 0) <= sq_version < (9, 2, 4)):
         for s in jvm_settings.split(' '):
             if s == '-Dlog4j2.formatMsgNoLookups=true':
@@ -731,8 +776,10 @@ def _audit_jdbc_url(sysinfo):
         rule = rules.get_rule(rules.RuleId.SETTING_JDBC_URL_NOT_SET)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
     elif re.search(r':(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]', jdbc_url):
-        rule = rules.get_rule(rules.RuleId.SETTING_DB_ON_SAME_HOST)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(jdbc_url)))
+        lic = _sif_license(sysinfo)
+        if lic == 'PRODUCTION':
+            rule = rules.get_rule(rules.RuleId.SETTING_DB_ON_SAME_HOST)
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(jdbc_url)))
     return problems
 
 def _audit_dce_settings(sysinfo):
@@ -759,7 +806,7 @@ def _audit_dce_settings(sysinfo):
     ref_name = appnodes[ref_node_id]['Name']
     ref_version = appnodes[ref_node_id]['System']['Version']
     for node in appnodes:
-        node_version = __get_field(node, 'Version')
+        node_version = __sif_get_field(node, 'Version')
         if node_version is None:
             continue
         if node_version != ref_version:
@@ -779,7 +826,7 @@ def _audit_dce_settings(sysinfo):
 
 
 def is_sysinfo(sysinfo):
-    for key in ('Health', 'System', 'Database', 'Settings'):
+    for key in ('System', 'Database', 'Settings'):
         if key not in sysinfo:
             return False
     return True
@@ -797,7 +844,8 @@ def audit_sysinfo(sysinfo):
         _audit_es_settings(sysinfo) +
         _audit_dce_settings(sysinfo) +
         _audit_jdbc_url(sysinfo) +
-        _audit_log_level(sysinfo)
+        _audit_log_level(sysinfo) +
+        _audit_sif_version(sysinfo)
     )
 
 
