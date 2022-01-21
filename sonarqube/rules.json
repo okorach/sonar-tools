@@ -7,7 +7,7 @@
     "BELOW_LTS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
-        "message": "Platform is version is lower than the Long Term Support version"
+        "message": "Platform is version is lower than the Long Term Support version of the given date"
     },
     "BELOW_LATEST": {
         "severity": "LOW",
