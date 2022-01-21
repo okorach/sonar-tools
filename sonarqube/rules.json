@@ -7,7 +7,7 @@
     "BELOW_LTS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
-        "message": "Platform is version is lower than the Long Term Support version"
+        "message": "Platform is version is lower than the Long Term Support version of the given date"
     },
     "BELOW_LATEST": {
         "severity": "LOW",
@@ -90,15 +90,30 @@
         "type": "PERFORMANCE",
         "message": "Web process heap ('sonar.web.javaOpts' -Xmx) memory setting value is {} MB, outside of recommended range [{}-{}]"
     },
+    "SETTING_WEB_NO_HEAP": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Web process heap ('sonar.web.javaOpts' -Xmx) memory setting is not specified"
+    },
     "SETTING_CE_HEAP": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "CE process heap ('sonar.ce.javaOpts' -Xmx) memory setting value is {} MB, outside of recommended range [{}-{}] x {} workers"
     },
+    "SETTING_CE_NO_HEAP": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "CE process heap ('sonar.ce.javaOpts' -Xmx) memory setting is not specified"
+    },
     "SETTING_ES_HEAP": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
+    },
+    "SETTING_ES_NO_HEAP": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting is not specified"
     },
     "SETTING_JDBC_URL_NOT_SET": {
         "severity": "CRITICAL",

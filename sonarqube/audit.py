@@ -44,6 +44,7 @@ def __deduct_format__(fmt, file):
 
 
 def _audit_sif(sif):
+    util.logger.info("Auditing SIF file '%s'", sif)
     try:
         with open(sif, 'r', encoding='utf-8') as f:
             sif = json.loads(f.read())
