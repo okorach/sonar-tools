@@ -385,8 +385,8 @@ class Sif:
             return None
         i = 0
         for node in self.json_sif[node_type]:
-            if (node_type == _APP_NODES and _SYSTEM in node) or \
-            (node_type == _ES_NODES and _ES_STATE in node):
+            if ((node_type == _APP_NODES and _SYSTEM in node) or
+                (node_type == _ES_NODES and _ES_STATE in node)):
                 return i
             i += 1
         return None
