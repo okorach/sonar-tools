@@ -27,8 +27,9 @@ import re
 import datetime
 import json
 import requests
-import sonarqube.utilities as util
+from dateutil.relativedelta import relativedelta
 
+import sonarqube.utilities as util
 import sonarqube.audit_severities as sev
 import sonarqube.audit_types as typ
 import sonarqube.audit_rules as rules
@@ -59,9 +60,9 @@ _JVM_OPTS = ('sonar.{}.javaOpts', 'sonar.{}.javaAdditionalOpts')
 
 _MIN_DATE_LOG4SHELL = datetime.datetime(2021, 12, 1)
 
-_MIN_DATE_67 = datetime.datetime(2017, 11, 8)
-_MIN_DATE_79 = datetime.datetime(2019, 7, 1)
-_MIN_DATE_89 = datetime.datetime(2021, 5, 4)
+_RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
+_RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
+_RELEASE_DATE_8_9 = datetime.datetime(2021, 5, 4) + relativedelta(months=+6)
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -737,9 +738,9 @@ def _audit_es_settings(sysinfo):
 def _audit_sif_version(sif):
     st_time = sif_start_time(sif)
     sq_version = sif_version(sif)
-    if st_time > _MIN_DATE_67 and sq_version < (6, 7, 0) or \
-       st_time > _MIN_DATE_79 and sq_version < (7, 9, 0) or \
-       st_time > _MIN_DATE_89 and sq_version < (8, 9, 0):
+    if st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0) or \
+       st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0) or \
+       st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0):
         rule = rules.get_rule(rules.RuleId.BELOW_LTS)
         return [pb.Problem(rule.type, rule.severity, rule.msg)]
     return []
