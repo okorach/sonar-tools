@@ -101,7 +101,6 @@ class Sif:
         except KeyError:
             return None
 
-
     def store_size(self, node_id=None):
         setting = None
         if node_id is None:
@@ -275,9 +274,9 @@ class Sif:
     def __audit_version(self):
         st_time = self.start_time()
         sq_version = self.version()
-        if st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0) or \
-        st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0) or \
-        st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0):
+        if ((st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0)) or
+            (st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0)) or
+            (st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0))):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
             return [pb.Problem(rule.type, rule.severity, rule.msg)]
         return []
