@@ -46,6 +46,7 @@ setuptools.setup(
         'pytz',
         'argparse',
         'datetime',
+        'dateutil',
         'requests',
         'jprops'
     ],
