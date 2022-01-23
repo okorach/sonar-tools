@@ -179,5 +179,5 @@ def audit(sub_sif, sif):
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(nodes[i]), str(nodes[j]))))
             if nodes[i].plugins() != nodes[j].plugins():
                 rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(nodes[i]), str(nodes[j])))
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(nodes[i]), str(nodes[j]))))
     return problems
