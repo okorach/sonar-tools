@@ -96,7 +96,7 @@ class Branch(components.Component):
     def get_measures(self, metrics_list):
         m = measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
         if 'ncloc' in m:
-            self._ncloc = int(m['ncloc'])
+            self._ncloc = 0 if m['ncloc'] is None else int(m['ncloc'])
             if self.is_main():
                 self.project._ncloc = self._ncloc
         return m

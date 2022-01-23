@@ -131,7 +131,7 @@ class Project(comp.Component):
     def get_measures(self, metrics_list):
         m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
         if 'ncloc' in m:
-            self._ncloc = int(m['ncloc'])
+            self._ncloc = 0 if m['ncloc'] is None else int(m['ncloc'])
         return m
 
     def get_branches(self):

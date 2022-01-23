@@ -114,7 +114,9 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     for metric in util.csv_to_list(overall_metrics):
         val = ''
         if metric in measures_d:
-            if sep in measures_d[metric]:
+            if measures_d[metric] is None:
+                val = ''
+            elif sep in measures_d[metric]:
                 val = util.quote(measures_d[metric], sep)
             else:
                 val = str(measures.convert(metric, measures_d[metric], **CONVERT_OPTIONS))

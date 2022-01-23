@@ -53,7 +53,10 @@ def __csv_line(project, **kwargs):
         line += f"{kwargs['csvSeparator']}{project.name}"
     line += f"{kwargs['csvSeparator']}{project.ncloc_with_branches()}"
     if kwargs['lastAnalysis']:
-        line += f"{kwargs['csvSeparator']}{project.last_analysis_date(include_branches=True)}"
+        last = project.last_analysis_date(include_branches=True)
+        if last is None:
+            last = ''
+        line += f"{kwargs['csvSeparator']}{last}"
     return line
 
 
