@@ -31,7 +31,7 @@ from sonarqube import users, groups, version, env, qualityprofiles, qualitygates
 import sonarqube.utilities as util
 import sonarqube.audit_problem as pb
 import sonarqube.audit_config as conf
-
+from sonarqube import sif
 
 def __deduct_format__(fmt, file):
     if fmt is not None:
@@ -43,21 +43,21 @@ def __deduct_format__(fmt, file):
     return 'csv'
 
 
-def _audit_sif(sif):
-    util.logger.info("Auditing SIF file '%s'", sif)
+def _audit_sif(sysinfo):
+    util.logger.info("Auditing SIF file '%s'", sysinfo)
     try:
-        with open(sif, 'r', encoding='utf-8') as f:
-            sif = json.loads(f.read())
+        with open(sysinfo, 'r', encoding='utf-8') as f:
+            sysinfo = json.loads(f.read())
     except json.decoder.JSONDecodeError:
-        util.logger.critical("File %s does not seem to be a legit JSON file", sif)
+        util.logger.critical("File %s does not seem to be a legit JSON file", sysinfo)
         raise
     except FileNotFoundError:
-        util.logger.critical("File %s does not exist", sif)
+        util.logger.critical("File %s does not exist", sysinfo)
         raise
     except PermissionError:
-        util.logger.critical("No permission to open file %s", sif)
+        util.logger.critical("No permission to open file %s", sysinfo)
         raise
-    return env.audit_sysinfo(sif)
+    return sif.Sif(sysinfo).audit()
 
 
 def _audit_sq(sq, settings, what=None):
@@ -127,7 +127,7 @@ def main():
         except PermissionError:
             print(f"No permissiont to open file {kwargs['sif']}, aborting...")
             sys.exit(5)
-        except env.NotSystemInfo:
+        except sif.NotSystemInfo:
             print(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...")
             sys.exit(6)
     else:
