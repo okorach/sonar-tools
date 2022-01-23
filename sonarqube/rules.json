@@ -170,6 +170,16 @@
         "type": "OPERATIONS",
         "message": "Node '{}' health is {}, it should be GREEN"
     },
+    "DCE_APP_CLUSTER_NOT_HA": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Only 1 app node is running, cluster will go down if this app node goes down"
+    },
+    "DCE_ES_CLUSTER_NOT_HA": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Only 2 search nodes are running, cluster will go down if another search node goes down"
+    },
     "PROJ_LAST_ANALYSIS": {
         "severity": "MEDIUM",
         "type": "PERFORMANCE",
