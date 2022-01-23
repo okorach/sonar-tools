@@ -214,3 +214,18 @@ def quote(string, sep):
     if "\n" in string:
         string = string.replace("\n", " ")
     return string
+
+
+def jvm_heap(cmdline):
+    for s in cmdline.split(' '):
+        if re.match('-Xmx', s):
+            val = int(s[4:-1])
+            unit = s[-1].upper()
+            if unit == 'M':
+                return val
+            elif unit == 'G':
+                return val * 1024
+            elif unit == 'K':
+                return val // 1024
+    logger.warning("No JVM memory settings specified in %s", cmdline)
+    return None
