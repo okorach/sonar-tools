@@ -66,7 +66,6 @@ class SearchNode(dce_nodes.DceNode):
             self.__audit_store_size()
         )
 
-
 def audit(sub_sif, sif):
     nodes = []
     problems = []
