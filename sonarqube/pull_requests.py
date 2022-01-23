@@ -70,7 +70,10 @@ class PullRequest(components.Component):
         util.logger.debug("self.endpoint = %s", str(self.endpoint))
         m = measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
         if 'ncloc' in m:
-            self._ncloc = int(m['ncloc'])
+            if m['ncloc'] is None:
+                self._ncloc = 0
+            else:
+                self._ncloc = int(m['ncloc'])
         return m
 
     def delete(self, api=None, params=None):

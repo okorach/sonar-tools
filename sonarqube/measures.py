@@ -75,9 +75,12 @@ class Measure(sq.SqObject):
 def get(comp_key, metrics_list, endpoint=None, branch=None, pr_key=None, as_list=False, **kwargs):
     util.logger.debug("For component %s, branch %s, PR %s, getting measures %s",
         comp_key, branch, pr_key, metrics_list)
-    if not isinstance(metrics_list, str):
-        metrics_list = util.list_to_csv(metrics_list)
-    params = {'component': comp_key, 'metricKeys': metrics_list}
+    if isinstance(metrics_list, str):
+        metrics_str = metrics_list
+        metrics_list = util.csv_to_list(metrics_str)
+    else:
+        metrics_str = util.list_to_csv(metrics_list)
+    params = {'component': comp_key, 'metricKeys': metrics_str}
     if branch is not None:
         params['branch'] = branch
     elif pr_key is not None:
@@ -86,6 +89,9 @@ def get(comp_key, metrics_list, endpoint=None, branch=None, pr_key=None, as_list
     resp = env.get(Measure.API_COMPONENT, params={**kwargs, **params}, ctxt=endpoint)
     data = json.loads(resp.text)
     m_dict, m_list = {}, []
+    for m in metrics_list:
+        m_dict[m] = None
+        m_list.append(None)
     for m in data['component']['measures']:
         value = m.get('value', '')
         if value == '' and 'periods' in m:
@@ -95,7 +101,11 @@ def get(comp_key, metrics_list, endpoint=None, branch=None, pr_key=None, as_list
         if not as_list:
             m_dict[m['metric']] = value
         else:
-            m_list.append(value)
+            try:
+                m_list[metrics_list.index(m['metric'])] = value
+            except ValueError:
+                pass
+
     if as_list:
         return m_list
     else:

@@ -112,7 +112,10 @@ class Component(sq.SqObject):
 
     def get_measure(self, metric, fallback=None):
         meas = self.get_measures(metric)
-        return meas[metric] if metric in meas else fallback
+        if metric in meas and meas[metric] is not None:
+            return meas[metric]
+        else:
+            return fallback
 
     def ncloc(self):
         if self._ncloc is None:
