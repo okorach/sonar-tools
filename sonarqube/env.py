@@ -176,7 +176,7 @@ class Environment:
             first = False
             if isinstance(params[p], datetime.date):
                 params[p] = util.format_date(params[p])
-            url_prefix += f'{sep}{p}={params[p]}'
+            url_prefix += f'{sep}{p}={requests.utils.quote(str(params[p]))}'
         return url_prefix
 
     def __get_platform_settings(self):
