@@ -31,6 +31,8 @@ import sonarqube.audit_severities as sev
 import sonarqube.audit_types as typ
 import sonarqube.audit_rules as rules
 import sonarqube.audit_problem as pb
+import sonarqube.dce.app_nodes as appnodes
+import sonarqube.dce.search_nodes as searchnodes
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
 _RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
@@ -101,22 +103,15 @@ class Sif:
         except KeyError:
             return None
 
-    def store_size(self, node_id=None):
+    def store_size(self):
         setting = None
-        if node_id is None:
-            if _ES_NODES in self.json_sif:
-                node_id = self.__get_first_live_node(_ES_NODES)
-                setting = self.json_sif[_ES_NODES][node_id][_ES_STATE][_STORE_SIZE]
-            else:
-                try:
-                    setting = self.json_sif[_ES_STATE][_STORE_SIZE]
-                except KeyError:
-                    for v in self.json_sif['Elasticsearch']['Nodes'].values():
-                        if _STORE_SIZE in v:
-                            setting = v[_STORE_SIZE]
-                            break
-        else:
-            setting = self.json_sif[_ES_NODES][node_id][_ES_STATE][_STORE_SIZE]
+        try:
+            setting = self.json_sif[_ES_STATE][_STORE_SIZE]
+        except KeyError:
+            for v in self.json_sif['Elasticsearch']['Nodes'].values():
+                if _STORE_SIZE in v:
+                    setting = v[_STORE_SIZE]
+                    break
         if setting is None:
             return None
 
@@ -131,19 +126,36 @@ class Sif:
             return float(val) / 1024
         return None
 
+    def __nodes(self, node_type):
+        if self.edition() != 'datacenter':
+            return []
+        return self.json_sif[node_type]
+
+    def search_nodes(self):
+        return self.__nodes(_ES_NODES)
+
+    def application_nodes(self):
+        return self.__nodes(_APP_NODES)
+
     def audit(self):
         util.logger.info("Auditing System Info")
-        return (
-            self.__audit_version() +
-            self.__audit_web_settings() +
-            self.__audit_ce_settings() +
-            self.__audit_background_tasks() +
-            self.__audit_es_settings() +
-            self.__audit_dce_settings() +
+        problems = (
             self.__audit_jdbc_url() +
-            self.__audit_log_level() +
-            self.__audit_version()
+            self.__audit_web_settings()
         )
+        if self.edition() == 'datacenter':
+            problems += (
+                self.__audit_dce_settings()
+            )
+        else:
+            problems += (
+                self.__audit_ce_settings() +
+                self.__audit_background_tasks() +
+                self.__audit_es_settings() +
+                self.__audit_log_level() +
+                self.__audit_version()
+            )
+        return problems
 
     def __get_field(self, name, node_type=_APP_NODES):
         if _SYSTEM in self.json_sif and name in self.json_sif[_SYSTEM]:
@@ -158,18 +170,18 @@ class Sif:
                     pass
         return None
 
-    def __process_settings(self, process):
+    def __process_cmdline(self, process):
         opts = [x.format(process) for x in _JVM_OPTS]
         return self.json_sif[_SETTINGS][opts[1]] + " " + self.json_sif[_SETTINGS][opts[0]]
 
-    def __web_settings(self):
-        return self.__process_settings('web')
+    def web_jvm_cmdline(self):
+        return self.__process_cmdline('web')
 
-    def __ce_settings(self):
-        return self.__process_settings('ce')
+    def ce_jvm_cmdline(self):
+        return self.__process_cmdline('ce')
 
-    def __search_settings(self):
-        return self.__process_settings('search')
+    def search_jvm_cmdline(self):
+        return self.__process_cmdline('search')
 
     def __eligible_to_log4shell_check(self):
         st_time = self.start_time()
@@ -225,32 +237,15 @@ class Sif:
         if sq_edition != "datacenter":
             util.logger.info('Not a Data Center Edition, skipping DCE checks')
             return problems
-        if _APP_NODES not in self.json_sif:
+        if _APP_NODES in self.json_sif:
+            problems += appnodes.audit(self.json_sif[_APP_NODES], self)
+        else:
             util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
-            return problems
-        # Verify that app nodes have the same plugins installed
-        appnodes = self.json_sif[_APP_NODES]
-        ref_node_id = self.__get_first_live_node()
-        ref_plugins = util.json_dump(appnodes[ref_node_id]['Plugins'])
-        ref_name = appnodes[ref_node_id]['Name']
-        ref_version = appnodes[ref_node_id][_SYSTEM]['Version']
-        for node in appnodes:
-            node_version = self.__get_field(node, 'Version')
-            if node_version is None:
-                continue
-            if node_version != ref_version:
-                rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
-            node_plugins = util.json_dump(node['Plugins'])
-            if node_plugins != ref_plugins:
-                rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ref_name, node['Name'])))
-            if not node[_SYSTEM]['Official Distribution']:
-                rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(node['Name'])))
-            if node['Health'] != "GREEN":
-                rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_NOT_GREEN)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(node['Name'], node['Health'])))
+
+        if _ES_NODES in self.json_sif:
+            problems += searchnodes.audit(self.json_sif[_ES_NODES], self)
+        else:
+            util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
         return problems
 
     def __audit_log_level(self):
@@ -284,9 +279,9 @@ class Sif:
     def __audit_web_settings(self):
         util.logger.debug('Auditing Web settings')
         problems = []
-        web_settings = self.__web_settings()
+        jvm_cmdline = self.web_jvm_cmdline()
 
-        web_ram = _get_memory(web_settings)
+        web_ram = util.jvm_heap(jvm_cmdline)
         if web_ram is None:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_NO_HEAP)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
@@ -297,14 +292,14 @@ class Sif:
             util.logger.debug("sonar.web.javaOpts -Xmx memory setting value is %d MB, "
                             "within the recommended range [1024-2048]", web_ram)
 
-        problems += self.__audit_log4shell(web_settings, rules.RuleId.LOG4SHELL_WEB)
+        problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_WEB)
         return problems
 
     def __audit_ce_settings(self):
         util.logger.info('Auditing CE settings')
         problems = []
-        ce_settings = self.__ce_settings()
-        ce_ram = _get_memory(ce_settings)
+        ce_cmdline = self.ce_jvm_cmdline()
+        ce_ram = util.jvm_heap(ce_cmdline)
         ce_tasks = self.__get_field('Compute Engine Tasks')
         if ce_tasks is None:
             return []
@@ -327,7 +322,7 @@ class Sif:
             util.logger.debug("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
                             "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
 
-        problems += self.__audit_log4shell(ce_settings, rules.RuleId.LOG4SHELL_CE)
+        problems += self.__audit_log4shell(ce_cmdline, rules.RuleId.LOG4SHELL_CE)
         return problems
 
     def __audit_background_tasks(self):
@@ -336,10 +331,8 @@ class Sif:
         ce_tasks = self.__get_field('Compute Engine Tasks')
         if ce_tasks is None:
             return []
-        ce_workers = ce_tasks['Worker Count']
         ce_success = ce_tasks["Processed With Success"]
         ce_error = ce_tasks["Processed With Error"]
-        ce_pending = ce_tasks["Pending"]
         if ce_success == 0 and ce_error == 0:
             failure_rate = 0
         else:
@@ -351,10 +344,11 @@ class Sif:
             util.logger.debug('Number of failed background tasks (%d), and failure rate %d%% is OK',
                             ce_error, int(failure_rate * 100))
 
+        ce_pending = ce_tasks["Pending"]
         if ce_pending > 100:
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
-        elif ce_pending > 20 and ce_pending > (10*ce_workers):
+        elif ce_pending > 20 and ce_pending > (10*ce_tasks['Worker Count']):
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
         else:
@@ -364,8 +358,8 @@ class Sif:
     def __audit_es_settings(self):
         util.logger.info('Auditing Search Server settings')
         problems = []
-        es_settings = self.__search_settings()
-        es_ram = _get_memory(es_settings)
+        jvm_cmdline = self.search_jvm_cmdline()
+        es_ram = util.jvm_heap(jvm_cmdline)
         index_size = self.store_size()
 
         if es_ram is None:
@@ -376,35 +370,9 @@ class Sif:
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
         else:
             util.logger.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
-        problems += self.__audit_log4shell(es_settings, rules.RuleId.LOG4SHELL_ES)
+        problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_ES)
         return problems
 
-    def __get_first_live_node(self, node_type=_APP_NODES):
-        #til.logger.debug('Searching LIVE node %s in %s', node_type, util.json_dump(sif))
-        if node_type not in self.json_sif:
-            return None
-        i = 0
-        for node in self.json_sif[node_type]:
-            if ((node_type == _APP_NODES and _SYSTEM in node) or
-                (node_type == _ES_NODES and _ES_STATE in node)):
-                return i
-            i += 1
-        return None
-
-
-def _get_memory(setting):
-    for s in setting.split(' '):
-        if re.match('-Xmx', s):
-            val = int(s[4:-1])
-            unit = s[-1].upper()
-            if unit == 'M':
-                return val
-            elif unit == 'G':
-                return val * 1024
-            elif unit == 'K':
-                return val // 1024
-    util.logger.warning("No JVM memory settings specified in %s", setting)
-    return None
 
 def is_sysinfo(sysinfo):
     for key in (_SYSTEM, 'Database', _SETTINGS):
