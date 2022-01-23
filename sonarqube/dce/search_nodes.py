@@ -76,6 +76,6 @@ def audit(sub_sif, sif):
         for j in range(i+1, len(nodes)):
             store_ratio = nodes[i].store_size() / nodes[j].store_size()
             if store_ratio < 0.5 or store_ratio > 2:
-                rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_STORE)
+                rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(nodes[i]), str(nodes[j]))))
     return problems
