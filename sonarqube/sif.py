@@ -126,17 +126,6 @@ class Sif:
             return float(val) / 1024
         return None
 
-    def __nodes(self, node_type):
-        if self.edition() != 'datacenter':
-            return []
-        return self.json_sif[node_type]
-
-    def search_nodes(self):
-        return self.__nodes(_ES_NODES)
-
-    def application_nodes(self):
-        return self.__nodes(_APP_NODES)
-
     def audit(self):
         util.logger.info("Auditing System Info")
         problems = (
