@@ -44,7 +44,7 @@ _SYSTEM = 'System'
 _SETTINGS = 'Settings'
 _STATS = 'Statistics'
 _STORE_SIZE = 'Store Size'
-_ES_STATE = 'Search State'
+_SEARCH_STATE = 'Search State'
 
 _JVM_OPTS = ('sonar.{}.javaOpts', 'sonar.{}.javaAdditionalOpts')
 
@@ -61,22 +61,31 @@ class Sif:
         if not is_sysinfo(json_sif):
             util.logger.critical("Provided JSON does not seem to be a system info")
             raise NotSystemInfo("JSON is not a system info nor a support info")
-        self.json_sif = json_sif
+        self.json = json_sif
+        util.logger.debug("Created SIF = %s", util.json_dump(json_sif))
 
     def edition(self):
-        return self.json_sif[_STATS]['edition']
+        try:
+            ed = self.json[_STATS]['edition']
+        except KeyError:
+            try:
+                ed = self.json['License']['edition']
+            except KeyError:
+                return ''
+        # Old SIFs could return "Enterprise Edition"
+        return ed.split(' ')[0].lower()
 
     def database(self):
-        return self.json_sif[_STATS]['database']['name']
+        return self.json[_STATS]['database']['name']
 
     def plugins(self):
-        return self.json_sif[_STATS]['plugins']
+        return self.json[_STATS]['plugins']
 
     def license_type(self):
-        if 'License' not in self.json_sif:
+        if 'License' not in self.json:
             return None
-        elif 'type' in self.json_sif['License']:
-            return self.json_sif['License']['type']
+        elif 'type' in self.json['License']:
+            return self.json['License']['type']
         return None
 
     def version(self, digits=3, as_string=False):
@@ -95,23 +104,26 @@ class Sif:
 
     def start_time(self):
         try:
-            return util.string_to_date(self.json_sif[_SETTINGS]['sonar.core.startTime']).replace(tzinfo=None)
+            return util.string_to_date(self.json[_SETTINGS]['sonar.core.startTime']).replace(tzinfo=None)
         except KeyError:
             pass
         try:
-            return util.string_to_date(self.json_sif[_SYSTEM]['Start Time']).replace(tzinfo=None)
+            return util.string_to_date(self.json[_SYSTEM]['Start Time']).replace(tzinfo=None)
         except KeyError:
             return None
 
     def store_size(self):
         setting = None
         try:
-            setting = self.json_sif[_ES_STATE][_STORE_SIZE]
+            setting = self.json[_SEARCH_STATE][_STORE_SIZE]
         except KeyError:
-            for v in self.json_sif['Elasticsearch']['Nodes'].values():
-                if _STORE_SIZE in v:
-                    setting = v[_STORE_SIZE]
-                    break
+            try:
+                for v in self.json['Elasticsearch']['Nodes'].values():
+                    if _STORE_SIZE in v:
+                        setting = v[_STORE_SIZE]
+                        break
+            except KeyError:
+                pass
         if setting is None:
             return None
 
@@ -147,12 +159,12 @@ class Sif:
         return problems
 
     def __get_field(self, name, node_type=_APP_NODES):
-        if _SYSTEM in self.json_sif and name in self.json_sif[_SYSTEM]:
-            return self.json_sif[_SYSTEM][name]
-        elif 'SonarQube' in self.json_sif and name in self.json_sif['SonarQube']:
-            return self.json_sif['SonarQube'][name]
-        elif node_type in self.json_sif:
-            for node in self.json_sif[node_type]:
+        if _SYSTEM in self.json and name in self.json[_SYSTEM]:
+            return self.json[_SYSTEM][name]
+        elif 'SonarQube' in self.json and name in self.json['SonarQube']:
+            return self.json['SonarQube'][name]
+        elif node_type in self.json:
+            for node in self.json[node_type]:
                 try:
                     return node[_SYSTEM][name]
                 except KeyError:
@@ -161,7 +173,10 @@ class Sif:
 
     def __process_cmdline(self, process):
         opts = [x.format(process) for x in _JVM_OPTS]
-        return self.json_sif[_SETTINGS][opts[1]] + " " + self.json_sif[_SETTINGS][opts[0]]
+        if _SETTINGS in self.json:
+            return self.json[_SETTINGS][opts[1]] + " " + self.json[_SETTINGS][opts[0]]
+        else:
+            return None
 
     def web_jvm_cmdline(self):
         return self.__process_cmdline('web')
@@ -196,7 +211,7 @@ class Sif:
     def __audit_jdbc_url(self):
         util.logger.info('Auditing JDBC settings')
         problems = []
-        stats = self.json_sif.get(_SETTINGS)
+        stats = self.json.get(_SETTINGS)
         if stats is None:
             util.logger.error("Can't verify Database settings in System Info File, was it corrupted or redacted ?")
             return problems
@@ -215,7 +230,7 @@ class Sif:
     def __audit_dce_settings(self):
         util.logger.info('Auditing DCE settings')
         problems = []
-        stats = self.json_sif.get(_STATS)
+        stats = self.json.get(_STATS)
         if stats is None:
             util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
             return problems
@@ -226,13 +241,13 @@ class Sif:
         if sq_edition != "datacenter":
             util.logger.info('Not a Data Center Edition, skipping DCE checks')
             return problems
-        if _APP_NODES in self.json_sif:
-            problems += appnodes.audit(self.json_sif[_APP_NODES], self)
+        if _APP_NODES in self.json:
+            problems += appnodes.audit(self.json[_APP_NODES], self)
         else:
             util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
 
-        if _ES_NODES in self.json_sif:
-            problems += searchnodes.audit(self.json_sif[_ES_NODES], self)
+        if _ES_NODES in self.json:
+            problems += searchnodes.audit(self.json[_ES_NODES], self)
         else:
             util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
         return problems
@@ -269,7 +284,9 @@ class Sif:
         util.logger.debug('Auditing Web settings')
         problems = []
         jvm_cmdline = self.web_jvm_cmdline()
-
+        if jvm_cmdline is None:
+            util.logger.warning("Can't retrieve web JVM command line, heap and logshell checks skipped")
+            return []
         web_ram = util.jvm_heap(jvm_cmdline)
         if web_ram is None:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_NO_HEAP)
@@ -287,8 +304,11 @@ class Sif:
     def __audit_ce_settings(self):
         util.logger.info('Auditing CE settings')
         problems = []
-        ce_cmdline = self.ce_jvm_cmdline()
-        ce_ram = util.jvm_heap(ce_cmdline)
+        jvm_cmdline = self.ce_jvm_cmdline()
+        if jvm_cmdline is None:
+            util.logger.warning("Can't retrieve CE JVM command line, heap and logshell checks skipped")
+            return []
+        ce_ram = util.jvm_heap(jvm_cmdline)
         ce_tasks = self.__get_field('Compute Engine Tasks')
         if ce_tasks is None:
             return []
@@ -311,7 +331,7 @@ class Sif:
             util.logger.debug("sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
                             "within recommended range ([512-2048] x %d workers)", ce_ram, ce_workers)
 
-        problems += self.__audit_log4shell(ce_cmdline, rules.RuleId.LOG4SHELL_CE)
+        problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_CE)
         return problems
 
     def __audit_background_tasks(self):
@@ -348,6 +368,9 @@ class Sif:
         util.logger.info('Auditing Search Server settings')
         problems = []
         jvm_cmdline = self.search_jvm_cmdline()
+        if jvm_cmdline is None:
+            util.logger.warning("Can't retrieve search JVM command line, heap and logshell checks skipped")
+            return []
         es_ram = util.jvm_heap(jvm_cmdline)
         index_size = self.store_size()
 
@@ -364,7 +387,8 @@ class Sif:
 
 
 def is_sysinfo(sysinfo):
-    for key in (_SYSTEM, 'Database', _SETTINGS):
+    # , _SETTINGS
+    for key in (_SYSTEM, 'Database'):
         if key not in sysinfo:
             return False
     return True
