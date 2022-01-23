@@ -38,11 +38,12 @@ mkdir -p tmp
 rm -f tmp/*
 
 noExport=0
-if [ $1 == "--noExport" ]; then
+if [ "$1" == "--noExport" ]; then
     noExport=1
     shift
 fi
 
+date | tee -a $IT_LOG_FILE
 echo "Install sonar-tools current local version" | tee -a $IT_LOG_FILE
 ./deploy.sh
 for env in $*
@@ -152,19 +153,18 @@ do
             cat $root-rel.sorted.csv | cut -d ',' -f 1 >$root-url-rel.csv
             cat $root-unrel.sorted.csv | cut -d ',' -f 1-29 >$root-unrel.csv
             cat $root-unrel.sorted.csv | cut -d ',' -f 30 >$root-url-unrel.csv
-            diff $root-url-rel.csv $root-url-unrel.csv || echo "" | tee -a $IT_LOG_FILE
-            rm $root-unrel.sorted.csv
+            diff $root-url-rel.csv $root-url-unrel.csv | tee -a $IT_LOG_FILE || echo ""
+            rm -f $root-rel.sorted.csv $root-unrel.sorted.csv
         elif [ "$f" == "findings" ]; then
             cat $root-rel.sorted.csv | sed 's/;/,/g' >$root-rel.csv
-            rm $root-rel.sorted.csv
             cat $root-unrel.sorted.csv | sed 's/\+[12]00//g' >$root-unrel.csv
-            rm $root-unrel.sorted.csv
+            rm -f $root-rel.sorted.csv $root-unrel.sorted.csv
         else
             mv $root-rel.sorted.csv $root-rel.csv
             mv $root-unrel.sorted.csv $root-unrel.csv
         fi
         # mv tmp/$f-$env-unrel.sorted.csv tmp/$f-$env-unrel.csv
-        diff $root-rel.csv $root-unrel.csv || echo "" | tee -a $IT_LOG_FILE
+        diff $root-rel.csv $root-unrel.csv | tee -a $IT_LOG_FILE || echo "" 
     done
 done
 
