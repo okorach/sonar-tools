@@ -45,26 +45,23 @@ class SearchNode(dce_nodes.DceNode):
     def node_type(self):
         return 'SEARCH'
 
-    def __audit_store_size(self):
-        es_ram = self.sif.get_memory(self.node_type())
-        index_size = self.store_size()
-
-        if es_ram is None:
-            rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
-            return [pb.Problem(rule.type, rule.severity, rule.msg)]
-        elif index_size is not None and es_ram < 2 * index_size and es_ram < index_size + 1000:
-            rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size))]
-        else:
-            util.logger.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
-            return []
-
-
     def audit(self):
         util.logger.info("Auditing %s", str(self))
-        return (
-            self.__audit_store_size()
-        )
+        return self.__audit_store_size()
+
+    def __audit_store_size(self):
+        es_heap = util.jvm_heap(self.sif.search_jvm_cmdline())
+        index_size = self.store_size()
+
+        if es_heap is None:
+            rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
+            return [pb.Problem(rule.type, rule.severity, rule.msg)]
+        elif index_size is not None and es_heap < 2 * index_size and es_heap < index_size + 1000:
+            rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(es_heap, index_size))]
+        else:
+            util.logger.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_heap, index_size)
+            return []
 
 def audit(sub_sif, sif):
     nodes = []
