@@ -37,7 +37,7 @@ class SearchNode(dce_nodes.DceNode):
         return f"Search Node '{self.name()}'"
 
     def store_size(self):
-        return self.json[_ES_STATE][_STORE_SIZE]
+        return util.int_memory(self.json[_ES_STATE][_STORE_SIZE])
 
     def name(self):
         return self.json['Name']

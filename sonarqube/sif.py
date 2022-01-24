@@ -126,17 +126,7 @@ class Sif:
                 pass
         if setting is None:
             return None
-
-        (val, unit) = setting.split(' ')
-        # For decimal separator in some countries
-        val = val.replace(',', '.')
-        if unit == 'MB':
-            return float(val)
-        elif unit == 'GB':
-            return float(val) * 1024
-        elif unit == 'KB':
-            return float(val) / 1024
-        return None
+        return util.int_memory(setting)
 
     def audit(self):
         util.logger.info("Auditing System Info")
@@ -272,6 +262,9 @@ class Sif:
 
     def __audit_version(self):
         st_time = self.start_time()
+        if st_time is None:
+            util.logger.warning("SIF date is not available, skipping audit on SonarQube version (aligned with LTS)...")
+            return []
         sq_version = self.version()
         if ((st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0)) or
             (st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0)) or
@@ -285,7 +278,7 @@ class Sif:
         problems = []
         jvm_cmdline = self.web_jvm_cmdline()
         if jvm_cmdline is None:
-            util.logger.warning("Can't retrieve web JVM command line, heap and logshell checks skipped")
+            util.logger.warning("Can't retrieve web JVM command line, skipping heap and log4shell audits...")
             return []
         web_ram = util.jvm_heap(jvm_cmdline)
         if web_ram is None:
@@ -387,8 +380,8 @@ class Sif:
 
 
 def is_sysinfo(sysinfo):
-    # , _SETTINGS
-    for key in (_SYSTEM, 'Database'):
-        if key not in sysinfo:
-            return False
-    return True
+    counter = 0
+    for key in (_SETTINGS, _SYSTEM, 'Database', 'License'):
+        if key in sysinfo:
+            counter += 1
+    return counter >= 2

@@ -229,3 +229,15 @@ def jvm_heap(cmdline):
                 return val // 1024
     logger.warning("No JVM memory settings specified in %s", cmdline)
     return None
+
+def int_memory(string):
+    (val, unit) = string.split(' ')
+    # For decimal separator in some countries
+    val = val.replace(',', '.')
+    if unit == 'MB':
+        return float(val)
+    elif unit == 'GB':
+        return float(val) * 1024
+    elif unit == 'KB':
+        return float(val) / 1024
+    return None

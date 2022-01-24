@@ -46,7 +46,7 @@ class AppNode(dce_nodes.DceNode):
         return f"App Node '{self.name()}'"
 
     def plugins(self):
-        return self.json['plugins']
+        return self.json['Plugins']
 
     def health(self):
         return self.json['Health']
@@ -55,7 +55,10 @@ class AppNode(dce_nodes.DceNode):
         return 'APPLICATION'
 
     def version(self, digits=3, as_string=False):
-        split_version = self.json[_SETTINGS]['Version'].split('.')
+        if _SETTINGS in self.json:
+            split_version = self.json[_SETTINGS]['Version'].split('.')
+        else:
+            split_version = self.json[_SYSTEM]['Version'].split('.')
         if as_string:
             return '.'.join(split_version[0:digits])
         else:
