@@ -62,10 +62,13 @@ class AppNode(dce_nodes.DceNode):
             split_version = self.json[_SYSTEM][_VERSION].split('.')
         else:
             return None
-        if as_string:
-            return '.'.join(split_version[0:digits])
-        else:
-            return tuple(int(n) for n in split_version[0:digits])
+        try:
+            if as_string:
+                return '.'.join(split_version[0:digits])
+            else:
+                return tuple(int(n) for n in split_version[0:digits])
+        except ValueError:
+            return None
 
     def log_level(self):
         if 'Web Logging' in self.json:
