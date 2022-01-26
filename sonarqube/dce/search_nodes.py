@@ -56,7 +56,13 @@ class SearchNode(dce_nodes.DceNode):
         if es_heap is None:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             return [pb.Problem(rule.type, rule.severity, rule.msg)]
-        elif index_size is not None and es_heap < 2 * index_size and es_heap < index_size + 1000:
+        elif index_size is None:
+            util.logger.debug("Search server index size missing, audit of ES index vs heap skipped...")
+            return []
+        elif index_size == 0:
+            rule = rules.get_rule(rules.RuleId.DCE_ES_INDEX_EMPTY)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)))]
+        elif es_heap < 2 * index_size and es_heap < index_size + 1000:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(es_heap, index_size))]
         else:
@@ -73,8 +79,14 @@ def audit(sub_sif, sif):
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format()))
     for i in range(len(nodes)):
         problems += nodes[i].audit()
+        size_i = nodes[i].store_size()
+        if size_i is None:
+            continue
         for j in range(i+1, len(nodes)):
-            store_ratio = nodes[i].store_size() / nodes[j].store_size()
+            size_j = nodes[j].store_size()
+            if size_j is None or size_j == 0:
+                continue
+            store_ratio = size_i / size_j
             if store_ratio < 0.5 or store_ratio > 2:
                 rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(nodes[i]), str(nodes[j]))))

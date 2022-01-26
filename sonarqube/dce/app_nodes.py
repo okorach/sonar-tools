@@ -38,7 +38,7 @@ _RELEASE_DATE_8_9 = datetime.datetime(2021, 5, 4) + relativedelta(months=+6)
 
 _SYSTEM = 'System'
 _SETTINGS = 'Settings'
-_STATS = 'Statistics'
+_VERSION = 'Version'
 
 class AppNode(dce_nodes.DceNode):
 
@@ -46,26 +46,32 @@ class AppNode(dce_nodes.DceNode):
         return f"App Node '{self.name()}'"
 
     def plugins(self):
-        return self.json['Plugins']
+        self.json.get('Plugins', None)
+        
 
     def health(self):
-        return self.json['Health']
+        return self.json.get('Health', 'RED')
 
     def node_type(self):
         return 'APPLICATION'
 
     def version(self, digits=3, as_string=False):
         if _SETTINGS in self.json:
-            split_version = self.json[_SETTINGS]['Version'].split('.')
+            split_version = self.json[_SETTINGS][_VERSION].split('.')
+        elif _SYSTEM in self.json and _VERSION in self.json[_SYSTEM]:
+            split_version = self.json[_SYSTEM][_VERSION].split('.')
         else:
-            split_version = self.json[_SYSTEM]['Version'].split('.')
+            return None
         if as_string:
             return '.'.join(split_version[0:digits])
         else:
             return tuple(int(n) for n in split_version[0:digits])
 
     def log_level(self):
-        return self.json["Web Logging"]["Logs Level"]
+        if 'Web Logging' in self.json:
+            return self.json['Web Logging']['Logs Level']
+        else:
+            return None
 
     def name(self):
         return self.json['Name']
@@ -82,9 +88,13 @@ class AppNode(dce_nodes.DceNode):
         )
 
     def __audit_log_level(self):
-        util.logger.debug('Auditing log levels')
-        log_level = self.json['Web Logging']["Logs Level"]
+        util.logger.debug('Auditing log level')
+        log_level = self.log_level()
+        if log_level is None:
+            util.logger.warning("%s: log level is missing, audit of log level is skipped...", str(self))
+            return []
         if log_level not in ("DEBUG", "TRACE"):
+            util.logger.info("Log level of '%s' is '%s', all good...", str(self), log_level)
             return []
         if log_level == "TRACE":
             return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
@@ -106,7 +116,10 @@ class AppNode(dce_nodes.DceNode):
             return []
 
     def __audit_official(self):
-        if not self.json[_SYSTEM]['Official Distribution']:
+        if _SYSTEM not in self.json:
+            util.logger.warn("%s: Official distribution information missing, audit skipped...", str(self))
+            return []
+        elif not self.json[_SYSTEM]['Official Distribution']:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)))]
         else:
@@ -114,8 +127,11 @@ class AppNode(dce_nodes.DceNode):
             return []
 
     def __audit_version(self):
-        st_time = self.sif.start_time()
         sq_version = self.version()
+        if sq_version is None:
+            util.logger.warning("%s: Version information is missing, audit on node vresion is skipped...")
+            return []
+        st_time = self.sif.start_time()
         if ((st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0)) or
             (st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0)) or
             (st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0))):
@@ -127,7 +143,11 @@ class AppNode(dce_nodes.DceNode):
 
     def __audit_ce_settings(self):
         util.logger.info('Auditing CE settings')
-        ce_workers = self.json['Compute Engine Tasks']['Worker Count']
+        try:
+            ce_workers = self.json['Compute Engine Tasks']['Worker Count']
+        except KeyError:
+            util.logger.warning("%s: CE section missing from SIF, CE workers audit skipped...", str(self))
+            return []
         MAX_WORKERS = 2
         if ce_workers > MAX_WORKERS:
             rule = rules.get_rule(rules.RuleId.SETTING_CE_TOO_MANY_WORKERS)
@@ -140,7 +160,11 @@ class AppNode(dce_nodes.DceNode):
     def __audit_background_tasks(self):
         util.logger.debug('Auditing CE background tasks')
         problems = []
-        ce_tasks = self.json['Compute Engine Tasks']
+        try:
+            ce_tasks = self.json['Compute Engine Tasks']
+        except KeyError:
+            util.logger.warning("%s: CE section missing from SIF, background tasks audit skipped...", str(self))
+            return []
 
         ce_success = ce_tasks["Processed With Success"]
         ce_error = ce_tasks["Processed With Error"]
@@ -173,11 +197,13 @@ def audit(sub_sif, sif):
         nodes.append(AppNode(n, sif))
     if len(nodes) == 1:
         rule = rules.get_rule(rules.RuleId.DCE_APP_CLUSTER_NOT_HA)
-        return problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
+        return [pb.Problem(rule.type, rule.severity, rule.msg)]
     for i in range(len(nodes)):
         problems += nodes[i].audit()
         for j in range(i, len(nodes)):
-            if nodes[i].version() != nodes[j].version():
+            v1 = nodes[i].version()
+            v2 = nodes[j].version()
+            if v1 is not None and v2 is not None and v1 != v2:
                 rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(nodes[i]), str(nodes[j]))))
             if nodes[i].plugins() != nodes[j].plugins():
