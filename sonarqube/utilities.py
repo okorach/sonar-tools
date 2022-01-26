@@ -233,11 +233,13 @@ def jvm_heap(cmdline):
 def int_memory(string):
     (val, unit) = string.split(' ')
     # For decimal separator in some countries
-    val = val.replace(',', '.')
+    val = float(val.replace(',', '.'))
     if unit == 'MB':
-        return float(val)
+        return val
     elif unit == 'GB':
-        return float(val) * 1024
+        return val * 1024
     elif unit == 'KB':
-        return float(val) / 1024
+        return val / 1024
+    elif unit == 'bytes':
+        return val / 1024 / 1024
     return None
