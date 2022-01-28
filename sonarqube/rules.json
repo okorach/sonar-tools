@@ -153,22 +153,42 @@
     "DCE_DIFFERENT_APP_NODES_VERSIONS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
-        "message": "App nodes '{}' and '{}' do not run the same SonarQube versions, this must be corrected ASAP"
+        "message": "{} and {} do not run the same SonarQube versions, this must be corrected ASAP"
     },
     "DCE_DIFFERENT_APP_NODES_PLUGINS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
-        "message": "Some plugins on app nodes '{}' and '{}' are different, this must be corrected ASAP"
+        "message": "Some plugins on {} and {} are different, this must be corrected ASAP"
     },
     "DCE_APP_NODE_UNOFFICIAL_DISTRO": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
-        "message": "App node '{}' does not run an official distribution of SonarQube, this must be corrected ASAP"
+        "message": "{} does not run an official distribution of SonarQube, this must be corrected ASAP"
     },
     "DCE_APP_NODE_NOT_GREEN": {
         "severity": "HIGH",
         "type": "OPERATIONS",
-        "message": "Node '{}' health is {}, it should be GREEN"
+        "message": "{} health is {}, it should be GREEN"
+    },
+    "DCE_APP_CLUSTER_NOT_HA": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Only 1 app node is running, cluster will go down if this app node goes down"
+    },
+    "DCE_ES_CLUSTER_NOT_HA": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Only 2 search nodes are running, cluster will go down if another search node goes down"
+    },
+    "DCE_ES_UNBALANCED_INDEX": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "message": "The search index is oddly balanced between the 3 search nodes"
+    },
+    "DCE_ES_INDEX_EMPTY": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "The search index of '%s' is empty"
     },
     "PROJ_LAST_ANALYSIS": {
         "severity": "MEDIUM",

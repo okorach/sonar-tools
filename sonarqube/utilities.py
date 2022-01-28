@@ -214,3 +214,37 @@ def quote(string, sep):
     if "\n" in string:
         string = string.replace("\n", " ")
     return string
+
+
+def jvm_heap(cmdline):
+    for s in cmdline.split(' '):
+        if not re.match('-Xmx', s):
+            continue
+        try:
+            val = int(s[4:-1])
+            unit = s[-1].upper()
+            if unit == 'M':
+                return val
+            elif unit == 'G':
+                return val * 1024
+            elif unit == 'K':
+                return val // 1024
+        except ValueError:
+            logger.warning("JVM -Xmx heap specified seems invalid in '%s'", cmdline)
+            return None
+    logger.warning("No JVM heap memory settings specified in '%s'", cmdline)
+    return None
+
+def int_memory(string):
+    (val, unit) = string.split(' ')
+    # For decimal separator in some countries
+    val = float(val.replace(',', '.'))
+    if unit == 'MB':
+        return int(val)
+    elif unit == 'GB':
+        return int(val * 1024)
+    elif unit == 'KB':
+        return val / 1024
+    elif unit == 'bytes':
+        return val / 1024 / 1024
+    return None
