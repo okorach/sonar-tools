@@ -62,7 +62,6 @@ class Sif:
             util.logger.critical("Provided JSON does not seem to be a system info")
             raise NotSystemInfo("JSON is not a system info nor a support info")
         self.json = json_sif
-        util.logger.debug("Created SIF = %s", util.json_dump(json_sif))
 
     def edition(self):
         try:
@@ -367,10 +366,12 @@ class Sif:
         es_ram = util.jvm_heap(jvm_cmdline)
         index_size = self.store_size()
 
-        if es_ram is None:
+        if index_size is None:
+            util.logger.warning("Search server index size is missing. Audit of ES heap vs index size is skipped...")
+        elif es_ram is None:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
-        elif index_size is not None and es_ram < 2 * index_size and es_ram < index_size + 1000:
+        elif es_ram < 2 * index_size and es_ram < index_size + 1000:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
         else:
