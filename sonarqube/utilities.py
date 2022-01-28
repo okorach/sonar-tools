@@ -218,7 +218,9 @@ def quote(string, sep):
 
 def jvm_heap(cmdline):
     for s in cmdline.split(' '):
-        if re.match('-Xmx', s):
+        if not re.match('-Xmx', s):
+            continue
+        try:
             val = int(s[4:-1])
             unit = s[-1].upper()
             if unit == 'M':
@@ -227,7 +229,10 @@ def jvm_heap(cmdline):
                 return val * 1024
             elif unit == 'K':
                 return val // 1024
-    logger.warning("No JVM memory settings specified in %s", cmdline)
+        except ValueError:
+            logger.warning("JVM -Xmx heap specified seems invalid in '%s'", cmdline)
+            return None
+    logger.warning("No JVM heap memory settings specified in '%s'", cmdline)
     return None
 
 def int_memory(string):
@@ -235,9 +240,9 @@ def int_memory(string):
     # For decimal separator in some countries
     val = float(val.replace(',', '.'))
     if unit == 'MB':
-        return val
+        return int(val)
     elif unit == 'GB':
-        return val * 1024
+        return int(val * 1024)
     elif unit == 'KB':
         return val / 1024
     elif unit == 'bytes':
