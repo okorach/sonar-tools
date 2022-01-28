@@ -47,7 +47,6 @@ class AppNode(dce_nodes.DceNode):
 
     def plugins(self):
         self.json.get('Plugins', None)
-        
 
     def health(self):
         return self.json.get('Health', 'RED')
