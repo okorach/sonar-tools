@@ -27,6 +27,12 @@ across different SonarQube instances
 
 :warning: Note about `--login` and `-t` and `-T`: It is strongly recommended to run `sonar-issues-sync` with the credentials of a specific service account dedicated to issues synchronization. This will allow to recognize automatic synchronization changes by the author of those changes. So `--login` must correspond to the same user as the token used in the target SonarQube instance (the one that will be written). This token is either the one provided with `-t`when the synchronization is within a same SonarQube instance (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube instances (the `--login <user>` and the `-T <token>` corresponding to a user on the **target** SonarQube instance in that case)
 
+## Required Permissions
+
+To be able to perform the sync, the token provided to `sonar-issues-sync` should have:
+- `Browse` permission on the source project
+- `Browse` and `Administer Issues` permission on the target project. When hotspots will also be synchronized,
+  `Administer Hotspots` permission will also be needed
 
 ## Example
 
@@ -59,6 +65,8 @@ Issues changelog synchronization includes:
 ## Limitations
 
 `sonar-issues-sync` has a couple of limitations:
+- Security Hotspots are not (yet) synchronized
+- Issue tags are not (yet) synchronized
 - Issue comments are not (yet) synchronized
 - The source and target issues are synchronized only:
   - When there is a 100% certainty that the issues are the same. In some rare corner cases it can be impossible to be certain that 2 issues are the same.

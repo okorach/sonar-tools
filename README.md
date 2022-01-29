@@ -61,7 +61,7 @@ See [complete documentation](https://github.com/okorach/sonarqube-tools/blob/mas
 
 # <a name="sonar-issues-sync"></a>sonar-issues-sync
 
-`sonar-issues-sync` allows to synchronizes issue changelog between branches, projects or SonarQube instances.
+`sonar-issues-sync` allows to synchronizes issue changelog (false positives, won't fix, issue severity or type change, tags and comments) between branches, projects or SonarQube instances.
 See [complete documentation](https://github.com/okorach/sonarqube-tools/blob/master/sonar-issues-sync.md) for details
 
 # <a name="sonar-housekeeper"></a>sonar-housekeeper
