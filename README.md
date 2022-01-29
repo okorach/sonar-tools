@@ -21,7 +21,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-loc](#sonar-loc): Computes lines of code per project and in total, as they would be coputed by the license
 - [sonar-measures-export](#sonar-measures-export): Exports measures/metrics of one, several or all projects of the instance in CSV
 - [sonar-findings-export](#sonar-findings-export) (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
-- [sonar-issues-sync](#sonar-issues-sync): Synchronizes issue changelog between branches, projects or even SonarQube instances
+- [sonar-issues-sync](sonar-issues-sync.md): Synchronizes issue changelog between branches, projects or even SonarQube instances
 - [sonar-projects-export](#sonar-projects-export): Exports all projects from a SonarQube instance (EE and higher)
 - [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
 
