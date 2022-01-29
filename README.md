@@ -46,7 +46,7 @@ See: https://github.com/okorach/sonarqube-tools/releases
 All tools accept the following common parameters:
 - `-h` : Displays a help and exits
 - `-u` : URL of the SonarQube server. The default is environment variable `$SONAR_HOST_URL`
-or `http://localhost:9000` if not env variable is not set
+or `http://localhost:9000` by default if the environment variable is not set
 - `-t` : User token to invoke the SonarQube APIs, like `d04d671eaec0272b6c83c056ac363f9b78919b06`.
 The default is environment variable `$SONAR_TOKEN`.
 Using login/password is not possible.
