@@ -82,6 +82,12 @@ branches, pull requests and tokens that would be deleted.
 If `--mode delete` is specified objects
  are actually deleted
 
+## Required Permissions
+
+To be able to delete anything, the token provided to `sonar-housekeeper` should have:
+- The global `Administer System` permission to delete tokens
+- Plus `Browse` and `Administer` permission on all projects to delete (or with branches or PR to delete)
+
 ### :information_source: Limitations
 To avoid bad mistakes (mistakenly deleting too many projects), the tools will refuse to delete projects analyzed in the last 90 days.
 
@@ -102,6 +108,9 @@ Basic Usage: `sonar-loc [-u <url>] [-t <token>] [-a] [-n] >locs.csv`
 - `-n`: Outputs the project name in addition to the project key
 - `-a`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
 
+## Required Permissions
+
+`sonar-loc` needs `Browse` permission on all projects of the SonarQube instance
 
 # <a name="sonar-measures-export"></a>sonar-measures-export
 
@@ -119,6 +128,10 @@ Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] [
 - `-f`: Choose export format between csv (default) and json
 - `-o`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `--includeURLs`: Add project or branch URL in measures export, default is to not include URLs
+
+## Required Permissions
+
+`sonar-measures-export` needs `Browse` permission on all projects of the SonarQube instance
 
 ## Examples
 ```
@@ -142,8 +155,9 @@ Exports a list of issues as CSV  or JSON. The export is sent to standard output 
 Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.  
 :warning: On large SonarQube instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
-## Limitations
-`sonar-findings-export` does not export issues on branches (see [Issue #166](https://github.com/okorach/sonarqube-tools/issues/166))
+## Required Permissions
+
+`sonar-findings-export` needs `Browse` permission on all projects for which findings are exported
 
 ## Examples
 ```
@@ -166,6 +180,29 @@ sonar-findings-export -a 2020-01-01 -b 2020-12-31 -o issues_created_in_2020.csv
 sonar-findings-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.json
 ```
 
+# <a name="sonar-projects-export"></a>sonar-projects-export
+
+Exports all projects of a given SonarQube instance.  
+:warning: This requires a SonarQube Enterprise or Data Center Edition.  
+It sends to the output a CSV with the list of project keys, the export result (`SUCCESS` or `FAIL`), and:
+- If the export was successful, the generated zip file
+- If the export was failed, the failure reason
+
+:information_source: All zip files are generated in the SonarQube instance standard location (under `data/governance/project_dumps/export`). On a DCE, the export may be distributed over all the Application Nodes
+
+The CSV file generated is to be used by the `sonar-projects-import` tool
+
+## Required Permissions
+
+`sonar-projects-export` requires `Administer project` permission on all projects to be exported
+
+## Examples
+```
+export SONAR_HOST_URL=https://sonar.acme-corp.com
+export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
+sonar-projects-export >exported_projects.csv
+```
+
 # <a name="sonar-projects-import"></a>sonar-projects-import
 
 Imports a list of projects previously exported with `sonar-projects-export`.  
@@ -173,6 +210,10 @@ Imports a list of projects previously exported with `sonar-projects-export`.
 It takes as input a CSV file produced by `sonar-projects-export`
 
 :information_source: All exported zip files must be first copied to the right location on the target SonarQube instance for the import to be successful (In `data/governance/project_dumps/import`)
+
+## Required Permissions
+
+`sonar-projects-import` needs the global `Create Projects` permission
 
 ## Examples
 ```

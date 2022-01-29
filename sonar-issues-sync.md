@@ -67,14 +67,18 @@ Issues changelog synchronization includes:
 `sonar-issues-sync` has a couple of limitations:
 - Security Hotspots are not (yet) synchronized
 - Issue tags are not (yet) synchronized
-- Issue comments are not (yet) synchronized
 - The source and target issues are synchronized only:
   - When there is a 100% certainty that the issues are the same. In some rare corner cases it can be impossible to be certain that 2 issues are the same.
-  - When the target issue currently has no changelog (except from the synchronization service account). If a issue
-  has been manually modified both on the source and target issue, the synchronization can't happen anymore
+  - When the target issue has currently no changelog (except from the synchronization service account changes). If a issue
+  has been manually modified by another user on the target issue, the synchronization can't happen anymore
 
-When an issue could not be synchronized for one of the above reasons, this is reported in the `sonar-issues-sync` report.
-Whenever a close enough issue was found it is provided in the report to complete synchronization manually if desired.
+When an issue could not be synchronized because of one of the above reasons, this is reported in the `sonar-issues-sync` report.
+Whenever a close enough issue was found but not sync'ed (because not 100% certain to be identical), the close issue is provided in the report to complete synchronization manually if desired.
+
+
+## Required Permissions
+
+`sonar-issues-sync` needs the global `Create Projects` permission
 
 ## Configurable behaviors
 
