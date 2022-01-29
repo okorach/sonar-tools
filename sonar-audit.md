@@ -13,7 +13,7 @@ The detail of what is audited is listed at the bottom of this page
 
 ## Usage
 
-`sonar-audit [-u <url>] [-t <token>] [--what <auditSelection>] [--sif <SIF>] [-f <file>] [--format [json|csv]] [-h]`
+`sonar-audit [-u <url>] [-t <token>] [--what <auditSelection>] [--sif <SIF>] [-f <file>] [--format [json|csv]] [-h] [-v <debugLevel>]`
 
 `--what` can be followed by a list of comma separated items to audit
 When `--what` is not specified, everything is audited
@@ -35,6 +35,7 @@ When `--what` is not specified, everything is audited
 - `--format [json|csv]`: Generates output in JSON or CSV format (CSV is the default)
 - `--csvSeparator <separator>`: Allows to select the separator character for CSV, `,` is the default
 - `-h`: Displays help and exits
+- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](README.md#common-params)
 
 ## Configuration file
 `sonar-audit` can be configured with a configuration file to select what to audit and some different
@@ -42,7 +43,6 @@ other audit parameters.
 You can create a default config file in the home directory by running `sonar-audit --config`
 
 See [sonar-audit configuration](https://github.com/okorach/sonarqube-tools/blob/master/audit-settings.md) for the details of parameters
-
 
 ## Example
 ```
