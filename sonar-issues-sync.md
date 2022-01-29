@@ -1,6 +1,6 @@
 # <a name="sonar-issues-sync"></a>sonar-issues-sync
 
-`sonar-issues-sync` synchronizes issues changelog between branches, projects with a SonarQube platform or
+`sonar-issues-sync` synchronizes issues changelog between branches, projects within a same SonarQube instance or
 across different SonarQube instances
 
 ## Requirements and Installation
