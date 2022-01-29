@@ -54,6 +54,16 @@ The user corresponding to the token must have enough permissions to achieve the 
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
 
+# <a name="sonar-audit"></a>sonar-audit
+
+`sonar-audit` allows to audit a SonarQube instance and output warning logs for all anomalies found.
+See [complete documentation](https://github.com/okorach/sonarqube-tools/blob/master/sonar-audit.md) for details
+
+# <a name="sonar-issues-sync"></a>sonar-issues-sync
+
+`sonar-issues-sync` allows to synchronizes issue changelog between branches, projects or SonarQube instances.
+See [complete documentation](https://github.com/okorach/sonarqube-tools/blob/master/sonar-issues-sync.md) for details
+
 # <a name="sonar-housekeeper"></a>sonar-housekeeper
 
 Deletes all projects whose last analysis date (on any branch) is older than a given number of days.
