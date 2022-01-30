@@ -185,13 +185,10 @@ class Issue(findings.Finding):
         return bydate
 
     def comments(self):
-        util.json_dump_debug(self._json, "Issue COMCOM = ")
-        util.logger.debug("Comments present = %s",str('comments' in self._json))
         if 'comments' not in self._json:
             self._comments = []
         elif self._comments is None:
             self._comments = []
-            util.json_dump_debug(self._json['comments'], "Issue Comments = ")
             for c in self._json['comments']:
                 self._comments.append({'date': c['createdAt'], 'event': 'comment', 'value': c['markdown'],
                     'user': c['login'], 'userName': c['login']})
