@@ -41,6 +41,8 @@ TGT_KEY = 'targetIssueKey'
 TGT_URL = 'targetIssueUrl'
 TGT_STATUS = 'targetIssueStatus'
 
+_WITH_COMMENTS = {'additionalFields': 'comments'}
+
 def __parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_component_args(parser)
@@ -67,18 +69,18 @@ def __parse_args(desc):
 
 
 def __process_exact_sibling(issue, sibling, settings):
-    if sibling.has_changelog():
+    if sibling.has_changelog_or_comments():
         issue.apply_changelog(sibling, settings)
         msg = 'Source issue changelog applied successfully'
     else:
         msg = 'Source issue has no changelog'
     return {
-        TGT_KEY: issue.key,
-        TGT_URL: issue.url(),
+        SRC_KEY: issue.key,
+        SRC_URL: issue.url(),
         TGT_STATUS: 'synchronized',
         SYNC_MSG: msg,
-        SRC_KEY: sibling.key,
-        SRC_URL: sibling.url()
+        TGT_KEY: sibling.key,
+        TGT_URL: sibling.url()
     }
 
 
@@ -92,8 +94,8 @@ def __get_issues(issue_list):
 def __process_multiple_exact_siblings(issue, siblings):
     util.logger.info('Multiple matches for issue key %s, cannot automatically apply changelog', str(issue))
     return {
-        TGT_KEY: issue.id,
-        TGT_URL: issue.url(),
+        SRC_KEY: issue.key,
+        SRC_URL: issue.url(),
         TGT_STATUS: 'unsynchronized',
         SYNC_MSG: 'Multiple matches',
         SYNC_MATCHES: __get_issues(siblings)
@@ -104,8 +106,8 @@ def __process_approx_siblings(issue, siblings):
     util.logger.info('Found %d approximate siblings for issue %s, cannot automatically apply changelog',
                      len(siblings), str(issue))
     return {
-        TGT_KEY: issue.key,
-        TGT_URL: issue.url(),
+        SRC_KEY: issue.key,
+        SRC_URL: issue.url(),
         TGT_STATUS: 'unsynchronized',
         SYNC_MSG: 'Approximate matches only',
         SYNC_MATCHES: __get_issues(siblings)
@@ -117,25 +119,14 @@ def __process_modified_siblings(issue, siblings):
         'Found %d siblings for issue %s, but they already have a changelog, cannot automatically apply changelog',
         len(siblings), str(issue))
     return {
-        TGT_KEY: issue.key,
-        TGT_URL: issue.url(),
+        SRC_KEY: issue.key,
+        SRC_URL: issue.url(),
+        TGT_KEY: siblings[0].key,
+        TGT_URL: siblings[0].url(),
         TGT_STATUS: 'unsynchronized',
         SYNC_MSG: 'Target issue already has a changelog',
         SYNC_MATCHES: __get_issues(siblings)
     }
-
-
-def __process_no_match(issue):
-    util.logger.info(
-        'Found no match for issue %s', issue.url())
-    return {
-        TGT_KEY: issue.key,
-        TGT_URL: issue.url(),
-        TGT_STATUS: 'unsynchronized',
-        SYNC_MSG: 'No match issue found in source',
-        SYNC_MATCHES: []
-    }
-
 
 def __dump_report(report, file):
     txt = util.json_dump(report)
@@ -148,22 +139,19 @@ def __dump_report(report, file):
             print(txt, file=fh)
 
 def sync_issues_list(src_issues, tgt_issues, settings):
-    counters = {'nb_applies': 0, 'nb_approx_match': 0, 'nb_modified_siblings': 0,
-                'nb_multiple_matches': 0, 'nb_no_match': 0, 'nb_no_changelog': 0}
+    counters = {'nb_to_sync': len(src_issues), 'nb_applies': 0, 'nb_approx_match': 0,
+                'nb_tgt_has_changelog': 0, 'nb_multiple_matches': 0}
     report = []
 
-    util.logger.info("%d issues to sync in target, %d issues in source", len(tgt_issues), len(src_issues))
-    for _, issue in tgt_issues.items():
+    util.logger.info("%d issues to sync, %d issues in target", len(src_issues), len(tgt_issues))
+    for _, issue in src_issues.items():
         util.logger.debug('Searching sibling for issue %s', str(issue))
         (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
-            src_issues, allowed_users=settings[issues.SYNC_SERVICE_ACCOUNTS],
+            tgt_issues, allowed_users=settings[issues.SYNC_SERVICE_ACCOUNTS],
             ignore_component=settings[issues.SYNC_IGNORE_COMPONENTS])
         if len(exact_siblings) == 1:
-            report.append(__process_exact_sibling(issue, exact_siblings[0], settings))
-            if exact_siblings[0].has_changelog():
-                counters['nb_applies'] += 1
-            else:
-                counters['nb_no_changelog'] += 1
+            report.append(__process_exact_sibling(exact_siblings[0], issue, settings))
+            counters['nb_applies'] += 1
         elif len(exact_siblings) > 1:
             report.append(__process_multiple_exact_siblings(issue, exact_siblings))
             counters['nb_multiple_matches'] += 1
@@ -171,30 +159,36 @@ def sync_issues_list(src_issues, tgt_issues, settings):
             report.append(__process_approx_siblings(issue, approx_siblings))
             counters['nb_approx_match'] += 1
         elif modified_siblings:
-            counters['nb_modified_siblings'] += 1
+            counters['nb_tgt_has_changelog'] += 1
             report.append(__process_modified_siblings(issue, modified_siblings))
-        elif not exact_siblings and not approx_siblings and not modified_siblings:
-            counters['nb_no_match'] += 1
-
+#        elif not exact_siblings and not approx_siblings and not modified_siblings:
+#            counters['nb_no_match'] += 1
+    counters['nb_no_match'] = counters['nb_to_sync'] - (
+        counters['nb_applies'] + counters['nb_tgt_has_changelog'] +
+        counters['nb_multiple_matches'] + counters['nb_approx_match']
+    )
     return (report, counters)
 
 
 def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=None, branch2=None):
+    counters = {'nb_to_sync': 0, 'nb_applies': 0, 'nb_approx_match': 0,
+                'nb_tgt_has_changelog': 0, 'nb_multiple_matches': 0}
+    report = []
     util.logger.info("Synchronizing branch %s of project %s and branch %s of project %s", branch1, key1, branch2, key2)
     if key2 is None:
         key2 = key1
     if endpoint2 is None:
         endpoint2 = endpoint1
     src_issues = {}
-    for key, issue in issues.search_by_project(key1, endpoint=endpoint1, branch=branch1).items():
-        if not issue.has_changelog():
+    for key, issue in issues.search_by_project(key1, endpoint=endpoint1, branch=branch1, params=_WITH_COMMENTS).items():
+        if not issue.has_changelog_or_comments():
             continue
         src_issues[key] = issue
     util.logger.info("Found %d issues with manual changes on project %s branch %s", len(src_issues), key1, branch1)
     if len(src_issues) <= 0:
         util.logger.info("No issues with manual changes on project %s branch %s, skipping...", key1, branch1)
-        return {}
-    tgt_issues = issues.search_by_project(key2, endpoint=endpoint2, branch=branch2)
+        return (report, counters)
+    tgt_issues = issues.search_by_project(key2, endpoint=endpoint2, branch=branch2, params=_WITH_COMMENTS)
     util.logger.info("Found %d issues on project %s branch %s", len(tgt_issues), key2, branch2)
     settings[issues.SYNC_IGNORE_COMPONENTS] = (key1 != key2)
     return sync_issues_list(src_issues, tgt_issues, settings)
@@ -279,12 +273,12 @@ def main():
             if not projects.exists(target_key, endpoint=source_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             src_issues = {}
-            for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch).items():
-                if issue.has_changelog():
+            for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch, params=_WITH_COMMENTS).items():
+                if issue.has_changelog_or_comments():
                     src_issues[key] = issue
             util.logger.info("Found %d issues with manual changes on project %s branch %s",
                 len(src_issues), source_key, source_branch)
-            tgt_issues = issues.search_by_project(target_key, endpoint=source_env, branch=target_branch)
+            tgt_issues = issues.search_by_project(target_key, endpoint=source_env, branch=target_branch, params=_WITH_COMMENTS)
             util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
             settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             (report, counters) = sync_issues_list(src_issues, tgt_issues, settings)
@@ -297,11 +291,11 @@ def main():
             settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             if source_branch is not None or target_branch is not None:
                 # sync main 2 branches of 2 projects on different platforms
-                for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch).items():
-                    if issue.has_changelog():
+                for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch, params=_WITH_COMMENTS).items():
+                    if issue.has_changelog_or_comments():
                         src_issues[key] = issue
                 util.logger.info("Found %d issues with manual changes on project %s", len(src_issues), source_key)
-                tgt_issues = issues.search_by_project(target_key, endpoint=target_env, branch=target_branch)
+                tgt_issues = issues.search_by_project(target_key, endpoint=target_env, branch=target_branch, params=_WITH_COMMENTS)
                 util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
                 (report, counters) = sync_issues_list(src_issues, tgt_issues, settings)
             else:
@@ -310,17 +304,16 @@ def main():
                     endpoint=source_env, target_endpoint=target_env, settings=settings)
 
         __dump_report(report, args.file)
-        util.logger.info("%d issues were already in sync since source had no changelog",
-                         counters.get('nb_no_changelog', 0))
+        util.logger.info("%d issues needed to be synchronized", counters.get('nb_to_sync', 0))
         util.logger.info("%d issues were synchronized successfully", counters.get('nb_applies', 0))
-        util.logger.info("%d issues could not be synchronized because no match was found in source",
+        util.logger.info("%d issues could not be synchronized because no match was found in target",
                          counters.get('nb_no_match', 0))
         util.logger.info("%d issues could not be synchronized because there were multiple matches",
                          counters.get('nb_multiple_matches', 0))
         util.logger.info("%d issues could not be synchronized because the match was approximate",
                          counters.get('nb_approx_match', 0))
         util.logger.info("%d issues could not be synchronized because target issue already had a changelog",
-                        counters.get('nb_modified_siblings', 0))
+                        counters.get('nb_tgt_has_changelog', 0))
 
     except env.NonExistingObjectError as e:
         util.logger.critical(e.message)

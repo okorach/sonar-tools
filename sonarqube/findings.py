@@ -53,7 +53,7 @@ class Finding(sq.SqObject):
         self.projectKey = None
         self.language = None
         self._changelog = None
-        self._comments = []
+        self._comments = None
         self.line = None
         self.component = None
         self.message = None
