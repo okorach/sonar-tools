@@ -188,7 +188,7 @@ def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=
     if len(src_issues) <= 0:
         util.logger.info("No issues with manual changes on project %s branch %s, skipping...", key1, branch1)
         return (report, counters)
-    tgt_issues = issues.search_by_project(key2, endpoint=endpoint2, branch=branch2)
+    tgt_issues = issues.search_by_project(key2, endpoint=endpoint2, branch=branch2, params=_WITH_COMMENTS)
     util.logger.info("Found %d issues on project %s branch %s", len(tgt_issues), key2, branch2)
     settings[issues.SYNC_IGNORE_COMPONENTS] = (key1 != key2)
     return sync_issues_list(src_issues, tgt_issues, settings)
@@ -278,7 +278,7 @@ def main():
                     src_issues[key] = issue
             util.logger.info("Found %d issues with manual changes on project %s branch %s",
                 len(src_issues), source_key, source_branch)
-            tgt_issues = issues.search_by_project(target_key, endpoint=source_env, branch=target_branch)
+            tgt_issues = issues.search_by_project(target_key, endpoint=source_env, branch=target_branch, params=_WITH_COMMENTS)
             util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
             settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             (report, counters) = sync_issues_list(src_issues, tgt_issues, settings)
@@ -295,7 +295,7 @@ def main():
                     if issue.has_changelog_or_comments():
                         src_issues[key] = issue
                 util.logger.info("Found %d issues with manual changes on project %s", len(src_issues), source_key)
-                tgt_issues = issues.search_by_project(target_key, endpoint=target_env, branch=target_branch)
+                tgt_issues = issues.search_by_project(target_key, endpoint=target_env, branch=target_branch, params=_WITH_COMMENTS)
                 util.logger.info("Found %d issues on project %s", len(tgt_issues), target_key)
                 (report, counters) = sync_issues_list(src_issues, tgt_issues, settings)
             else:
