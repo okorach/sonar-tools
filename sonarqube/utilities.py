@@ -98,7 +98,7 @@ def set_target_args(parser):
 def get_logging_level(level):
     if level == 'DEBUG':
         lvl = logging.DEBUG
-    elif level == 'WARN' or level == 'WARNING':
+    elif level in ('WARN', 'WARNING'):
         lvl = logging.WARNING
     elif level == 'ERROR':
         lvl = logging.ERROR
