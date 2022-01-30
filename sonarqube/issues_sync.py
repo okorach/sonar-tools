@@ -41,6 +41,8 @@ TGT_KEY = 'targetIssueKey'
 TGT_URL = 'targetIssueUrl'
 TGT_STATUS = 'targetIssueStatus'
 
+_WITH_COMMENTS = {'additionalFields': 'comments'}
+
 def __parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_component_args(parser)
@@ -67,7 +69,7 @@ def __parse_args(desc):
 
 
 def __process_exact_sibling(issue, sibling, settings):
-    if sibling.has_changelog() or sibling.has_comments():
+    if sibling.has_changelog_or_comments():
         issue.apply_changelog(sibling, settings)
         msg = 'Source issue changelog applied successfully'
     else:
@@ -178,8 +180,8 @@ def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=
     if endpoint2 is None:
         endpoint2 = endpoint1
     src_issues = {}
-    for key, issue in issues.search_by_project(key1, endpoint=endpoint1, branch=branch1, params={'additionalFields': 'comments'}).items():
-        if not issue.has_changelog() and not issue.has_comments():
+    for key, issue in issues.search_by_project(key1, endpoint=endpoint1, branch=branch1, params=_WITH_COMMENTS).items():
+        if not issue.has_changelog_or_comments():
             continue
         src_issues[key] = issue
     util.logger.info("Found %d issues with manual changes on project %s branch %s", len(src_issues), key1, branch1)
@@ -271,8 +273,8 @@ def main():
             if not projects.exists(target_key, endpoint=source_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             src_issues = {}
-            for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch, params={'additionalFields': 'comments'}).items():
-                if issue.has_changelog() or issue.has_comments():
+            for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch, params=_WITH_COMMENTS).items():
+                if issue.has_changelog_or_comments():
                     src_issues[key] = issue
             util.logger.info("Found %d issues with manual changes on project %s branch %s",
                 len(src_issues), source_key, source_branch)
@@ -289,8 +291,8 @@ def main():
             settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             if source_branch is not None or target_branch is not None:
                 # sync main 2 branches of 2 projects on different platforms
-                for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch, params={'additionalFields': 'comments'}).items():
-                    if issue.has_changelog() or issue.has_comments():
+                for key, issue in issues.search_by_project(source_key, endpoint=source_env, branch=source_branch, params=_WITH_COMMENTS).items():
+                    if issue.has_changelog_or_comments():
                         src_issues[key] = issue
                 util.logger.info("Found %d issues with manual changes on project %s", len(src_issues), source_key)
                 tgt_issues = issues.search_by_project(target_key, endpoint=target_env, branch=target_branch)
