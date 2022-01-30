@@ -92,7 +92,7 @@ def __get_issues(issue_list):
 def __process_multiple_exact_siblings(issue, siblings):
     util.logger.info('Multiple matches for issue key %s, cannot automatically apply changelog', str(issue))
     return {
-        TGT_KEY: issue.id,
+        TGT_KEY: issue.key,
         TGT_URL: issue.url(),
         TGT_STATUS: 'unsynchronized',
         SYNC_MSG: 'Multiple matches',
