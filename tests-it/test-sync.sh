@@ -4,6 +4,6 @@ do
 	scan.sh $opts
 	for branch in release-1.x hotfix
 	do
-		scan.sh $opts -Dsonar.branch.name=$branch
+		scan.sh $* $opts -Dsonar.branch.name=$branch
 	done
 done
