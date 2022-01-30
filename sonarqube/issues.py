@@ -89,6 +89,7 @@ class Issue(findings.Finding):
         self._debt = None
         if data is not None:
             self.component = data.get('component', None)
+        util.logger.debug("Loaded issue: %s", util.json_dump(data))
         _ISSUES[self.uuid()] = self
 
     def __str__(self):
@@ -184,6 +185,8 @@ class Issue(findings.Finding):
         return bydate
 
     def comments(self):
+        util.json_dump_debug(self._json, "Issue COMCOM = ")
+        util.logger.debug("Comments present = %s",str('comments' in self._json))
         if 'comments' not in self._json:
             self._comments = []
         elif self._comments is None:
@@ -378,7 +381,7 @@ class Issue(findings.Finding):
             self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_comment(event):
             self.add_comment(event['value'])
-            self.add_comment("Above comment {origin}", settings[SYNC_ADD_COMMENTS])
+            self.add_comment(f"Above comment {origin}", settings[SYNC_ADD_COMMENTS])
         else:
             util.logger.error("Event %s can't be applied", str(event))
             return False
