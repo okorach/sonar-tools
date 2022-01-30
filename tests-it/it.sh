@@ -32,10 +32,10 @@ check() {
 
 [ $# -eq 0 ] && echo "Usage: $0 <env1> [... <envN>]" && exit 1
 
-
-IT_LOG_FILE="tmp/it.log"
-mkdir -p tmp
-rm -f tmp/*
+IT_ROOT="../tmp"
+IT_LOG_FILE="$IT_ROOT/it.log"
+mkdir -p $IT_ROOT
+rm -f $IT_ROOT/*
 
 noExport=0
 if [ "$1" == "--noExport" ]; then
@@ -52,66 +52,66 @@ do
     . sqenv $env
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
-    f="tmp/measures-$env-unrel.csv"
+    f="$IT_ROOT/measures-$env-unrel.csv"
     sonar-measures-export -b -o $f -m _main --includeURLs
     check $f
-    f="tmp/measures-$env-2.csv"
+    f="$IT_ROOT/measures-$env-2.csv"
     sonar-measures-export -b -p -r -d -m _all >$f
     check $f
-    f="tmp/measures-$env-1.json"
+    f="$IT_ROOT/measures-$env-1.json"
     sonar-measures-export -b -o $f -m _all
     check $f
-    f="tmp/measures-$env-2.json"
+    f="$IT_ROOT/measures-$env-2.json"
     sonar-measures-export -b -p -r -d -m _all -f json >$f
     check $f
-    f="tmp/measures-$env-3.csv"
+    f="$IT_ROOT/measures-$env-3.csv"
     sonar-measures-export -b -o $f --csvSeparator '+' -m _main
     check $f
 
     echo "IT $env sonar-findings-export" | tee -a $IT_LOG_FILE
-    f="tmp/findings-$env-unrel.csv"
-    sonar-findings-export -v DEBUG -o tmp/findings-$env-unrel.csv
+    f="$IT_ROOT/findings-$env-unrel.csv"
+    sonar-findings-export -v DEBUG -o $IT_ROOT/findings-$env-unrel.csv
     check $f
-    f="tmp/findings-$env-1.json"
+    f="$IT_ROOT/findings-$env-1.json"
     sonar-findings-export -o $f
     check $f
-    f="tmp/findings-$env-2.json"
+    f="$IT_ROOT/findings-$env-2.json"
     sonar-findings-export -v DEBUG -f json -k okorach_audio-video-tools,okorach_sonarqube-tools >$f
     check $f
-    f="tmp/findings-$env-3.json"
+    f="$IT_ROOT/findings-$env-3.json"
     sonar-findings-export -v DEBUG -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >$f
     check $f
-    f="tmp/findings-$env-4.csv"
+    f="$IT_ROOT/findings-$env-4.csv"
     sonar-findings-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --csvSeparator '+' >$f
     check $f
 
     echo "IT $env sonar-audit" | tee -a $IT_LOG_FILE
-    f="tmp/audit-$env-unrel.csv"
+    f="$IT_ROOT/audit-$env-unrel.csv"
     sonar-audit >$f
     check $f
-    f="tmp/audit-$env-1.json"
+    f="$IT_ROOT/audit-$env-1.json"
     sonar-audit -f $f
     check $f
-    f="tmp/audit-$env-2.json"
+    f="$IT_ROOT/audit-$env-2.json"
     sonar-audit --format json --what qp,qg,settings >$f
     check $f
-    f="tmp/audit-$env-3.csv"
+    f="$IT_ROOT/audit-$env-3.csv"
     sonar-audit  --csvSeparator '+' --format csv >$f
     check $f
 
     echo "IT $env sonar-housekeeper" | tee -a $IT_LOG_FILE
-    f="tmp/housekeeper-$env-1.csv"
+    f="$IT_ROOT/housekeeper-$env-1.csv"
     sonar-housekeeper -P 365 -B 90 -T 180 -R 30 >$f
     check $f
 
     echo "IT $env sonar-loc" | tee -a $IT_LOG_FILE
-    f="tmp/loc-$env-1.csv"
+    f="$IT_ROOT/loc-$env-1.csv"
     sonar-loc >$f
     check $f
-    f="tmp/loc-$env-unrel.csv"
+    f="$IT_ROOT/loc-$env-unrel.csv"
     sonar-loc -n -a >$f
     check $f
-    f="tmp/loc-$env-2.csv"
+    f="$IT_ROOT/loc-$env-2.csv"
     sonar-loc -n -a -o $f --csvSeparator ';'
     check $f
 
@@ -130,10 +130,10 @@ for env in $*
 do
     . sqenv $env
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
-    sonar-measures-export -b -o tmp/measures-$env-rel.csv -m _main --includeURLs
-    sonar-issues-export -o tmp/findings-$env-rel.csv
-    sonar-audit >tmp/audit-$env-rel.csv || echo "OK"
-    sonar-loc -n -a >tmp/loc-$env-rel.csv 
+    sonar-measures-export -b -o $IT_ROOT/measures-$env-rel.csv -m _main --includeURLs
+    sonar-issues-export -o $IT_ROOT/findings-$env-rel.csv
+    sonar-audit >$IT_ROOT/audit-$env-rel.csv || echo "OK"
+    sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 
 done
 ./deploy.sh
 for env in $*
@@ -141,7 +141,7 @@ do
     echo "IT compare released and unreleased $env" | tee -a $IT_LOG_FILE
     for f in measures findings audit loc
     do
-        root=tmp/$f-$env
+        root=$IT_ROOT/$f-$env
         echo "==========================" | tee -a $IT_LOG_FILE
         echo $f-$env diff                 | tee -a $IT_LOG_FILE
         echo "==========================" | tee -a $IT_LOG_FILE
@@ -163,7 +163,7 @@ do
             mv $root-rel.sorted.csv $root-rel.csv
             mv $root-unrel.sorted.csv $root-unrel.csv
         fi
-        # mv tmp/$f-$env-unrel.sorted.csv tmp/$f-$env-unrel.csv
+        # mv $IT_ROOT/$f-$env-unrel.sorted.csv $IT_ROOT/$f-$env-unrel.csv
         diff $root-rel.csv $root-unrel.csv | tee -a $IT_LOG_FILE || echo "" 
     done
 done
