@@ -17,19 +17,18 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
 
-    Abstraction of the SonarQube "issue" concept
+"""Abstraction of the SonarQube 'issue' concept"""
 
-'''
-import re
 import datetime
 import json
-import requests.utils
-from sonarqube import env, projects, users, findings
-import sonarqube.utilities as util
-import sonarqube.issue_changelog as changelog
+import re
 
+import requests.utils
+
+import sonarqube.issue_changelog as changelog
+import sonarqube.utilities as util
+from sonarqube import env, findings, projects, users
 
 SYNC_IGNORE_COMPONENTS = 'ignore_components'
 SYNC_ADD_LINK = 'add_link'
@@ -41,40 +40,18 @@ SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
 _ISSUES = {}
 
 
-class ApiError(Exception):
-    pass
-
-
-class UnknownIssueError(ApiError):
-    pass
-
-
 class TooManyIssuesError(Exception):
+    """When a call to api/issues/search returns too many issues."""
+
     def __init__(self, nbr_issues, message):
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
 
 
-class IssueComments:
-    def __init__(self, json_data):
-        self.json = json_data
-
-    def sort(self):
-        sorted_comment = {}
-        for comment in self.json:
-            sorted_comment[comment['createdAt']] = ('comment', comment)
-        return sorted_comment
-
-    def size(self):
-        return len(self.json)
-
-    def __str__(self):
-        """Dumps the object in a string"""
-        return util.json_dump(self.json)
-
-
 class Issue(findings.Finding):
+    """SonarQube Issue."""
+
     SEARCH_API = 'issues/search'
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
@@ -100,7 +77,7 @@ class Issue(findings.Finding):
                f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
 
     def to_string(self):
-        """Dumps the object in a string"""
+        """Dumps the object in a string."""
         return util.json_dump(self._json)
 
     def url(self):
@@ -115,20 +92,24 @@ class Issue(findings.Finding):
         if self._debt is not None:
             return self._debt
         if 'debt' in self._json:
+            kdays, days, hours, minutes = 0, 0, 0, 0
             debt = self._json['debt']
             m = re.search(r'(\d+)kd', debt)
-            kdays = int(m.group(1)) if m else 0
+            if m:
+                kdays = int(m.group(1))
             m = re.search(r'(\d+)d', debt)
-            days = int(m.group(1)) if m else 0
+            if m:
+                days = int(m.group(1))
             m = re.search(r'(\d+)h', debt)
-            hours = int(m.group(1)) if m else 0
+            if m:
+                hours = int(m.group(1))
             m = re.search(r'(\d+)min', debt)
-            minutes = int(m.group(1)) if m else 0
+            if m:
+                minutes = int(m.group(1))
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
         elif 'effort' in self._json:
-            if self._json['effort'] == 'null':
-                self._debt = 0
-            else:
+            self._debt = 0
+            if self._json['effort'] != 'null':
                 self._debt = int(self._json['effort'])
         return self._debt
 
@@ -171,8 +152,8 @@ class Issue(findings.Finding):
                 return False
         return True
 
-    def get_all_events(self, type='changelog'):
-        if type == 'comments':
+    def get_all_events(self, event_type='changelog'):
+        if event_type == 'comments':
             events = self.comments()
             util.logger.debug('Issue %s has %d comments', self.key, len(events))
         else:
@@ -213,31 +194,27 @@ class Issue(findings.Finding):
     #    return self._severity
 
     def set_severity(self, severity):
-        """Sets severity"""
         util.logger.debug("Changing severity of issue %s from %s to %s", self.key, self.severity, severity)
         return self.post('issues/set_severity', {'issue': self.key, 'severity': severity})
 
     def assign(self, assignee):
-        """Sets assignee"""
         util.logger.debug("Assigning issue %s to %s", self.key, assignee)
         return self.post('issues/assign', {'issue': self.key, 'assignee': assignee})
 
     def set_tags(self, tags):
-        """Sets tags"""
         util.logger.debug("Setting tags %s to issue %s", tags, self.key)
         return self.post('issues/set_tags', {'issue': self.key, 'tags': tags})
 
     def set_type(self, new_type):
-        """Sets type"""
         util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         return self.post('issues/set_type', {'issue': self.key, 'type': new_type})
 
     def modifiers(self):
-        '''Returns list of users that modified the issue'''
+        """Returns list of users that modified the issue."""
         return util.unique_dict_field(self.changelog(), 'user')
 
     def commenters(self):
-        '''Returns list of users that commented the issue'''
+        """Returns list of users that commented the issue."""
         return util.unique_dict_field(self.comments(), 'user')
 
     def modifiers_excluding_service_users(self, service_users):
@@ -340,47 +317,46 @@ class Issue(findings.Finding):
             return self.__do_transition('resolveasreviewed')
         elif self.is_vulnerability():
             util.logger.debug("Marking vulnerability %s as won't fix in replacement of 'reviewed'", self.key)
-            ret = self.__do_transition('wontfix')
             self.add_comment("Vulnerability marked as won't fix to replace hotspot 'reviewed' status")
-            return ret
+            return self.__do_transition('wontfix')
 
         util.logger.debug("Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed", self.key)
         return False
 
     def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
-        origin = f"originally by *{event['userName']}* on original branch"
+        # origin = f"originally by *{event['userName']}* on original branch"
         if changelog.is_event_a_severity_change(event):
             self.set_severity(changelog.get_log_new_severity(event))
-            #self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
+            # self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_type_change(event):
             self.set_type(changelog.get_log_new_type(event))
-            #self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
+            # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_reopen(event):
             self.reopen()
-            #self.add_comment(f"Issue re-open {origin}", settings[SYNC_ADD_COMMENTS])
+            # self.add_comment(f"Issue re-open {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_fp(event):
             self.mark_as_false_positive()
-            #self.add_comment(f"False positive {origin}", settings[SYNC_ADD_COMMENTS])
+            # self.add_comment(f"False positive {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_wf(event):
             self.mark_as_wont_fix()
-            #self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
+            # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_reviewed(event):
             self.mark_as_reviewed()
-            #self.add_comment(f"Hotspot review {origin}")
+            # self.add_comment(f"Hotspot review {origin}")
         elif changelog.is_event_an_assignment(event):
             if settings[SYNC_ASSIGN]:
                 u = users.get_login_from_name(event['value'], endpoint=self.endpoint)
                 if u is None:
                     u = settings[SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
-                #self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
+                # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_tag_change(event):
             self.set_tags(event['value'].replace(' ', ','))
-            #self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
+            # self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_comment(event):
             self.add_comment(event['value'])
-            #self.add_comment(f"Above comment {origin}", settings[SYNC_ADD_COMMENTS])
+            # self.add_comment(f"Above comment {origin}", settings[SYNC_ADD_COMMENTS])
         else:
             util.logger.error("Event %s can't be applied", str(event))
             return False
@@ -642,7 +618,7 @@ def _get_facets(project_key, facets='directories', endpoint=None, params=None):
 
 
 def __get_one_issue_date(endpoint=None, asc_sort='false', params=None):
-    ''' Returns the date of one issue found '''
+    """Returns the date of one issue found"""
     if params is None:
         parms = {}
     else:
@@ -661,12 +637,12 @@ def __get_one_issue_date(endpoint=None, asc_sort='false', params=None):
 
 
 def get_oldest_issue(endpoint=None, params=None):
-    ''' Returns the oldest date of all issues found '''
+    """Returns the oldest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort='true', params=params)
 
 
 def get_newest_issue(endpoint=None, params=None):
-    ''' Returns the newest date of all issues found '''
+    """Returns the newest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort='false', params=params)
 
 
@@ -697,7 +673,7 @@ def _search_project_daily_issues(key, day, sqenv=None, **kwargs):
 
 
 def count(endpoint=None, **kwargs):
-    ''' Returns number of issues of a search '''
+    """Returns number of issues of a search"""
     returned_data = search(endpoint=endpoint, params=kwargs.copy().update({'ps': 1}))
     util.logger.debug("Issue search %s would return %d issues", str(kwargs), returned_data['total'])
     return returned_data['total']
