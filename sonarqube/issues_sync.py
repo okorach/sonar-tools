@@ -180,6 +180,9 @@ def sync_issues_list(src_issues, tgt_issues, settings):
 
 
 def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=None, branch2=None):
+    counters = {'nb_applies': 0, 'nb_approx_match': 0, 'nb_modified_siblings': 0,
+                'nb_multiple_matches': 0, 'nb_no_match': 0, 'nb_no_changelog': 0}
+    report = []
     util.logger.info("Synchronizing branch %s of project %s and branch %s of project %s", branch1, key1, branch2, key2)
     if key2 is None:
         key2 = key1
@@ -193,7 +196,7 @@ def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=
     util.logger.info("Found %d issues with manual changes on project %s branch %s", len(src_issues), key1, branch1)
     if len(src_issues) <= 0:
         util.logger.info("No issues with manual changes on project %s branch %s, skipping...", key1, branch1)
-        return {}
+        return (report, counters)
     tgt_issues = issues.search_by_project(key2, endpoint=endpoint2, branch=branch2)
     util.logger.info("Found %d issues on project %s branch %s", len(tgt_issues), key2, branch2)
     settings[issues.SYNC_IGNORE_COMPONENTS] = (key1 != key2)

@@ -169,6 +169,19 @@ class Issue(findings.Finding):
                 return True
         return False
 
+    def get_all_events(self, is_sorted=True):
+        events = self.changelog()
+        util.logger.debug('Get all events: Issue %s has %d changelog', self.key, len(events))
+        comments = self.comments()
+        util.logger.debug('Get all events: Issue %s has %d comments', self.key, len(comments))
+        events += comments
+        if not is_sorted:
+            return events
+        bydate = {}
+        for e in events:
+            bydate[e['date']] = e
+        return bydate
+
     def comments(self):
         if 'comments' not in self._json:
             self._comments = []
