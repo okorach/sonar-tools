@@ -171,14 +171,13 @@ class Issue(findings.Finding):
                 return False
         return True
 
-    def get_all_events(self, is_sorted=True):
-        events = self.changelog()
-        util.logger.debug('Get all events: Issue %s has %d changelog', self.key, len(events))
-        comments = self.comments()
-        util.logger.debug('Get all events: Issue %s has %d comments', self.key, len(comments))
-        events += comments
-        if not is_sorted:
-            return events
+    def get_all_events(self, type='changelog'):
+        if type == 'comments':
+            events = self.comments()
+            util.logger.debug('Issue %s has %d comments', self.key, len(events))
+        else:
+            events = self.changelog()
+            util.logger.debug('Issue %s has %d changelog', self.key, len(events))
         bydate = {}
         for e in events:
             bydate[e['date']] = e
@@ -353,61 +352,74 @@ class Issue(findings.Finding):
         origin = f"originally by *{event['userName']}* on original branch"
         if changelog.is_event_a_severity_change(event):
             self.set_severity(changelog.get_log_new_severity(event))
-            self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
+            #self.add_comment(f"Change of severity {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_type_change(event):
             self.set_type(changelog.get_log_new_type(event))
-            self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
+            #self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_reopen(event):
             self.reopen()
-            self.add_comment(f"Issue re-open {origin}", settings[SYNC_ADD_COMMENTS])
+            #self.add_comment(f"Issue re-open {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_fp(event):
             self.mark_as_false_positive()
-            self.add_comment(f"False positive {origin}", settings[SYNC_ADD_COMMENTS])
+            #self.add_comment(f"False positive {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_wf(event):
             self.mark_as_wont_fix()
-            self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
+            #self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_reviewed(event):
             self.mark_as_reviewed()
-            self.add_comment(f"Hotspot review {origin}")
+            #self.add_comment(f"Hotspot review {origin}")
         elif changelog.is_event_an_assignment(event):
             if settings[SYNC_ASSIGN]:
                 u = users.get_login_from_name(event['value'], endpoint=self.endpoint)
                 if u is None:
                     u = settings[SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
-                self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
+                #self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_tag_change(event):
             self.set_tags(event['value'].replace(' ', ','))
-            self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
+            #self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_comment(event):
             self.add_comment(event['value'])
-            self.add_comment(f"Above comment {origin}", settings[SYNC_ADD_COMMENTS])
+            #self.add_comment(f"Above comment {origin}", settings[SYNC_ADD_COMMENTS])
         else:
             util.logger.error("Event %s can't be applied", str(event))
             return False
         return True
 
     def apply_changelog(self, source_issue, settings):
-        events = source_issue.get_all_events(True)
+        events = source_issue.get_all_events()
         if events is None or not events:
             util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.key)
             return False
 
         change_nbr = 0
-        start_change = len(self.changelog()) + len(self.comments()) + 1
+        start_change = len(self.changelog()) + 1
         util.logger.info("Applying changelog of issue %s to issue %s, from change %d",
                          source_issue.key, self.key, start_change)
-        link_added = False
         for d in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
-                util.logger.debug("Skipping change already appliedin a previous sync: %s", str(events[d]))
+                util.logger.debug("Skipping change already applied in a previous sync: %s", str(events[d]))
                 continue
-            if not link_added:
-                if settings[SYNC_ADD_LINK]:
-                    self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
-                link_added = True
             self.__apply_event(events[d], settings)
+
+        comments = source_issue.get_all_events('comments')
+        if len(self.comments()) == 0 and settings[SYNC_ADD_LINK]:
+            util.logger.info("Target issue has 0 comments")
+            start_change = 1
+            self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
+        else:
+            start_change = len(self.comments())
+            util.logger.info("Target issue already has %d comments", start_change)
+        util.logger.info("Applying comments of issue %s to issue %s, from comment %d",
+                         source_issue.key, self.key, start_change)
+        change_nbr = 0
+        for d in sorted(comments.keys()):
+            change_nbr += 1
+            if change_nbr < start_change:
+                util.logger.debug("Skipping comment already applied in a previous sync: %s", str(comments[d]))
+                continue
+            self.__apply_event(comments[d], settings)
         return True
 
 # ------------------------------- Static methods --------------------------------------
