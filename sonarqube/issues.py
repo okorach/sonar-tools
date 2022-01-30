@@ -293,6 +293,7 @@ class Issue(findings.Finding):
             self.hash == another_issue.hash and
             self.message == another_issue.message and
             self.debt() == another_issue.debt() and
+            self.file() == another_issue.file() and
             (self.component == another_issue.component or ignore_component)
         )
 
@@ -301,6 +302,8 @@ class Issue(findings.Finding):
             return False
         score = 0
         if self.message == another_issue.message or kwargs.get('ignore_message', False):
+            score += 2
+        if self.file() == another_issue.file():
             score += 2
         if self.debt() == another_issue.debt() or kwargs.get('ignore_debt', False):
             score += 1
@@ -314,8 +317,8 @@ class Issue(findings.Finding):
             score += 1
         if self.severity == another_issue.severity or kwargs.get('ignore_severity', False):
             score += 1
-        # Need at least 6 / 8 to match
-        return score >= 6
+        # Need at least 8 / 10 to match
+        return score >= 8
 
     def __do_transition(self, transition):
         return self.post('issues/do_transition', {'issue': self.key, 'transition': transition})
@@ -391,14 +394,14 @@ class Issue(findings.Finding):
             return False
 
         change_nbr = 0
-        start_change = len(self._changelog) + 1
+        start_change = len(self.changelog()) + len(self.comments()) + 1
         util.logger.info("Applying changelog of issue %s to issue %s, from change %d",
                          source_issue.key, self.key, start_change)
         link_added = False
         for d in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
-                util.logger.debug("Skipping change %s", str(events[d]))
+                util.logger.debug("Skipping change already appliedin a previous sync: %s", str(events[d]))
                 continue
             if not link_added:
                 if settings[SYNC_ADD_LINK]:
