@@ -66,7 +66,6 @@ Issues changelog synchronization includes:
 
 `sonar-issues-sync` has a couple of limitations:
 - Security Hotspots are not (yet) synchronized
-- Issue tags are not (yet) synchronized
 - The source and target issues are synchronized only:
   - When there is a 100% certainty that the issues are the same. In some rare corner cases it can be impossible to be certain that 2 issues are the same.
   - When the target issue has currently no changelog (except from the synchronization service account changes). If a issue
