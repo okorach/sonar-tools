@@ -162,6 +162,7 @@ class Issue(findings.Finding):
         return len(self.changelog()) > 0
 
     def __has_sync_breaking_changelog(self, user_list):
+        util.logger.debug("Checking if modifiers %s are different from user %s", str(self.modifiers()), str(user_list))
         if user_list is None:
             return self.has_changelog()
         for c in self.modifiers():
@@ -256,13 +257,13 @@ class Issue(findings.Finding):
                 continue
             if issue.strictly_identical_to(self, ignore_component, **kwargs):
                 util.logger.debug("Issues %s and %s are strictly identical", self.key, key)
-                if self.__has_sync_breaking_changelog(allowed_users):
+                if issue.__has_sync_breaking_changelog(allowed_users):
                     match_but_modified.append(issue)
                 else:
                     exact_matches.append(issue)
             elif issue.almost_identical_to(self, ignore_component, **kwargs):
                 util.logger.debug("Issues %s and %s are almost identical", self.key, key)
-                if self.__has_sync_breaking_changelog(allowed_users):
+                if issue.__has_sync_breaking_changelog(allowed_users):
                     match_but_modified.append(issue)
                 else:
                     approx_matches.append(issue)
