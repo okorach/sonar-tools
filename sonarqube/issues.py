@@ -162,14 +162,14 @@ class Issue(findings.Finding):
         util.logger.debug('Issue %s had %d changelog', self.key, len(self.changelog()))
         return len(self.changelog()) > 0
 
-    def __has_sync_breaking_changelog(self, user_list):
+    def can_be_synced(self, user_list):
         util.logger.debug("Checking if modifiers %s are different from user %s", str(self.modifiers()), str(user_list))
         if user_list is None:
-            return self.has_changelog()
+            return not self.has_changelog()
         for c in self.modifiers():
             if c not in user_list:
-                return True
-        return False
+                return False
+        return True
 
     def get_all_events(self, is_sorted=True):
         events = self.changelog()
@@ -257,16 +257,16 @@ class Issue(findings.Finding):
                 continue
             if issue.strictly_identical_to(self, ignore_component, **kwargs):
                 util.logger.debug("Issues %s and %s are strictly identical", self.key, key)
-                if issue.__has_sync_breaking_changelog(allowed_users):
-                    match_but_modified.append(issue)
-                else:
+                if issue.can_be_synced(allowed_users):
                     exact_matches.append(issue)
+                else:
+                    match_but_modified.append(issue)
             elif issue.almost_identical_to(self, ignore_component, **kwargs):
                 util.logger.debug("Issues %s and %s are almost identical", self.key, key)
-                if issue.__has_sync_breaking_changelog(allowed_users):
-                    match_but_modified.append(issue)
-                else:
+                if issue.can_be_synced(allowed_users):
                     approx_matches.append(issue)
+                else:
+                    match_but_modified.append(issue)
             else:
                 util.logger.debug("Issues %s and %s are not siblings", self.key, key)
         return (exact_matches, approx_matches, match_but_modified)
