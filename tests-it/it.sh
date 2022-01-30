@@ -145,8 +145,8 @@ do
         echo "==========================" | tee -a $IT_LOG_FILE
         echo $f-$env diff                 | tee -a $IT_LOG_FILE
         echo "==========================" | tee -a $IT_LOG_FILE
-        sort $root-rel.csv | sed -e 's/,None/,/g' -e 's/;/,/g' >$root-rel.sorted.csv
-        sort $root-unrel.csv | sed -e 's/has been analyzed but //' >$root-unrel.sorted.csv
+        sort $root-rel.csv >$root-rel.sorted.csv
+        sort $root-unrel.csv >$root-unrel.sorted.csv
 
         # if [ "$f" == "measures" ]; then
         #     cat $root-rel.sorted.csv | cut -d ',' -f 2- >$root-rel.csv
