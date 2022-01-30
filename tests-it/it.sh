@@ -148,21 +148,21 @@ do
         sort $root-rel.csv | sed -e 's/,None/,/g' -e 's/;/,/g' >$root-rel.sorted.csv
         sort $root-unrel.csv | sed -e 's/has been analyzed but //' >$root-unrel.sorted.csv
 
-        if [ "$f" == "measures" ]; then
-            cat $root-rel.sorted.csv | cut -d ',' -f 2- >$root-rel.csv
-            cat $root-rel.sorted.csv | cut -d ',' -f 1 >$root-url-rel.csv
-            cat $root-unrel.sorted.csv | cut -d ',' -f 1-29 >$root-unrel.csv
-            cat $root-unrel.sorted.csv | cut -d ',' -f 30 >$root-url-unrel.csv
-            diff $root-url-rel.csv $root-url-unrel.csv | tee -a $IT_LOG_FILE || echo ""
-            rm -f $root-rel.sorted.csv $root-unrel.sorted.csv
-        elif [ "$f" == "findings" ]; then
-            cat $root-rel.sorted.csv | sed 's/;/,/g' >$root-rel.csv
-            cat $root-unrel.sorted.csv | sed 's/\+[12]00//g' >$root-unrel.csv
-            rm -f $root-rel.sorted.csv $root-unrel.sorted.csv
-        else
-            mv $root-rel.sorted.csv $root-rel.csv
-            mv $root-unrel.sorted.csv $root-unrel.csv
-        fi
+        # if [ "$f" == "measures" ]; then
+        #     cat $root-rel.sorted.csv | cut -d ',' -f 2- >$root-rel.csv
+        #     cat $root-rel.sorted.csv | cut -d ',' -f 1 >$root-url-rel.csv
+        #     cat $root-unrel.sorted.csv | cut -d ',' -f 1-29 >$root-unrel.csv
+        #     cat $root-unrel.sorted.csv | cut -d ',' -f 30 >$root-url-unrel.csv
+        #     diff $root-url-rel.csv $root-url-unrel.csv | tee -a $IT_LOG_FILE || echo ""
+        #     rm -f $root-rel.sorted.csv $root-unrel.sorted.csv
+        # elif [ "$f" == "findings" ]; then
+        #     cat $root-rel.sorted.csv | sed 's/;/,/g' >$root-rel.csv
+        #     cat $root-unrel.sorted.csv | sed 's/\+[12]00//g' >$root-unrel.csv
+        #     rm -f $root-rel.sorted.csv $root-unrel.sorted.csv
+        # else
+        #     mv $root-rel.sorted.csv $root-rel.csv
+        #     mv $root-unrel.sorted.csv $root-unrel.csv
+        # fi
         # mv $IT_ROOT/$f-$env-unrel.sorted.csv $IT_ROOT/$f-$env-unrel.csv
         diff $root-rel.csv $root-unrel.csv | tee -a $IT_LOG_FILE || echo "" 
     done
