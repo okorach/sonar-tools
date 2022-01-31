@@ -184,27 +184,29 @@ def get_event_from_diff(diff):
     util.logger.debug("Diff = %s", str(diff))
     event = None
     dkey = diff['key']
-    if 'newValue' not in diff:
-        return event
+    if 'newValue' not in diff or diff['newValue'] == 'FIXED':
+        return None
     dnewval = diff['newValue']
 
     if dkey in ('severity', 'type', 'tags'):
         event = {'event': dkey, 'value': dnewval}
-    if dkey == 'resolution' and 'newValue' in diff:
+    elif dkey == 'resolution' and 'newValue' in diff:
         event = resolution_diff_to_changelog(dnewval)
-    if dkey == 'status' and 'newValue' in diff and dnewval == 'CONFIRMED':
+    elif dkey == 'status' and 'newValue' in diff and dnewval == 'CONFIRMED':
         event = {'event': 'transition', 'value': 'confirm'}
-    if dkey == 'status' and 'newValue' in diff and dnewval == 'REOPENED':
+    elif dkey == 'status' and 'newValue' in diff and dnewval == 'REOPENED':
         event = reopen_diff_to_changelog(diff['oldValue'])
-    if dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
+    elif dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
         event = {'event': 'transition', 'value': 'reopen'}
-    if dkey == 'assignee':
+    elif dkey == 'status' and 'newValue' in diff and dnewval == 'CLOSED':
+        event = {'event': 'close', 'value': 'close'}
+    elif dkey == 'assignee':
         event = assignee_diff_to_changelog(diff)
-    if dkey == 'from_short_branch':
+    elif dkey == 'from_short_branch':
         event = {'event': 'merge', 'value': f"{diff['oldValue']} -> {dnewval}"}
-    if dkey == 'from_branch':
+    elif dkey == 'from_branch':
         event = {'event': 'fork', 'value': f"{diff['oldValue']} -> {dnewval}"}
-    if dkey == 'effort':
+    elif dkey == 'effort':
         event = {'event': 'effort', 'value': f"{diff['oldValue']} -> {dnewval}"}
 
     return event

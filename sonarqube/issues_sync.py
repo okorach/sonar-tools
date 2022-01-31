@@ -93,6 +93,16 @@ def __get_issues(issue_list):
 
 def __process_multiple_exact_siblings(issue, siblings):
     util.logger.info('Multiple matches for issue key %s, cannot automatically apply changelog', str(issue))
+    for sib in siblings:
+        comment = ''
+        i = 0
+        for sib2 in siblings:
+            if sib.key == sib2.key:
+                continue
+            i += 1
+            comment += f"[issue {i}]({sib2.url()}), "
+        sib.add_comment(f"Sync did not happen due to multiple matches. [This original issue]({issue.url()}) "
+                        f"corresponds to this issue,\nbut also to these other issues: {comment[:-2]}")
     return {
         SRC_KEY: issue.key,
         SRC_URL: issue.url(),
