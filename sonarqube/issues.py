@@ -307,9 +307,25 @@ class Issue(findings.Finding):
         util.logger.debug("Marking %s as false positive", str(self))
         return self.__do_transition('falsepositive')
 
+    def confirm(self):
+        util.logger.debug("Confirming %s", str(self))
+        return self.__do_transition('confirm')
+
+    def unconfirm(self):
+        util.logger.debug("Unconfirming %s", str(self))
+        return self.__do_transition('unconfirm')
+
+    def resolve_as_fixed(self):
+        util.logger.debug("Marking %s as fixed", str(self))
+        return self.__do_transition('resolve')
+
     def mark_as_wont_fix(self):
         util.logger.debug("Marking %s as won't fix", str(self))
         return self.__do_transition('wontfix')
+
+    def close(self):
+        util.logger.debug("Closing %s", str(self))
+        return self.__do_transition('close')
 
     def mark_as_reviewed(self):
         if self.is_hotspot():
@@ -340,6 +356,12 @@ class Issue(findings.Finding):
             # self.add_comment(f"False positive {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_wf(event):
             self.mark_as_wont_fix()
+            # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
+        elif changelog.is_event_a_confirm(event):
+            self.confirm()
+            # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
+        elif changelog.is_event_an_unconfirm(event):
+            self.unconfirm()
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
         elif changelog.is_event_a_resolve_as_reviewed(event):
             self.mark_as_reviewed()

@@ -108,6 +108,22 @@ def is_event_a_resolve_as_wf(event):
     return event['event'] == 'transition' and event['value'] == 'wontfix'
 
 
+def is_event_a_resolve_as_fixed(event):
+    return event['event'] == 'transition' and event['value'] == 'resolve'
+
+
+def is_event_a_confirm(event):
+    return event['event'] == 'transition' and event['value'] == 'confirm'
+
+
+def is_event_a_close(event):
+    return event['event'] == 'transition' and event['value'] == 'close'
+
+
+def is_event_an_unconfirm(event):
+    return event['event'] == 'transition' and event['value'] == 'unconfirm'
+
+
 def is_event_a_resolve_as_reviewed(event):
     return False
 
