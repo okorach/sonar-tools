@@ -75,6 +75,7 @@ class Changelog():
         if self.is_change_severity():
             d = self._json['diffs'][0]
             return d.get('newValue', None)
+        return None
 
     def is_change_type(self):
         d = self._json['diffs'][0]
@@ -84,6 +85,7 @@ class Changelog():
         if self.is_change_type():
             d = self._json['diffs'][0]
             return d.get('newValue', None)
+        return None
 
     def is_technical_change(self):
         d = self._json['diffs'][0]
@@ -119,30 +121,31 @@ class Changelog():
         return d.get('newValue', '').replace(' ', ',')
 
     def changelog_type(self):
+        ctype = (None, None)
         if self.is_assignment():
-            return ('ASSIGN', self.new_assignee())
+            ctype = ('ASSIGN', self.new_assignee())
         elif self.is_reopen():
-            return ('REOPEN', None)
+            ctype = ('REOPEN', None)
         elif self.is_confirm():
-            return ('CONFIRM', None)
+            ctype = ('CONFIRM', None)
         elif self.is_unconfirm():
-            return ('UNCONFIRM', None)
+            ctype = ('UNCONFIRM', None)
         elif self.is_change_severity():
-            return ('SEVERITY', self.new_severity())
+            ctype = ('SEVERITY', self.new_severity())
         elif self.is_change_type():
-            return ('TYPE', self.new_type())
+            ctype = ('TYPE', self.new_type())
         elif self.is_resolve_as_fixed():
-            return ('FIXED', None)
+            ctype = ('FIXED', None)
         elif self.is_resolve_as_fp():
-            return ('FALSE-POSITIVE', None)
+            ctype = ('FALSE-POSITIVE', None)
         elif self.is_resolve_as_wf():
-            return ('WONT-FIX', None)
+            ctype = ('WONT-FIX', None)
         elif self.is_tag():
-            return ('TAG', self.tags())
+            ctype = ('TAG', self.tags())
         elif self.is_closed():
-            return ('INTERNAL', None)
+            ctype = ('INTERNAL', None)
         elif self.is_technical_change():
-            return ('INTERNAL', None)
-
-        util.logger.warning("Could not determine changelog type for %s", str(self))
-        return (None, None)
+            ctype = ('INTERNAL', None)
+        else:
+            util.logger.warning("Could not determine changelog type for %s", str(self))
+        return ctype
