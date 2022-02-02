@@ -356,7 +356,10 @@ class Issue(findings.Finding):
             self.set_type(data)
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == 'REOPEN':
-            self.reopen()
+            if event.previous_state() == 'CLOSED':
+                util.logger.info("Reopen from closed issue won't be applied, issue was never closed")
+            else:
+                self.reopen()
             # self.add_comment(f"Issue re-open {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == 'FALSE-POSITIVE':
             self.mark_as_false_positive()
@@ -374,6 +377,7 @@ class Issue(findings.Finding):
             self.mark_as_reviewed()
             # self.add_comment(f"Hotspot review {origin}")
         elif event_type == 'ASSIGN':
+            issue_is_closed = False
             if settings[SYNC_ASSIGN]:
                 u = users.get_login_from_name(data, endpoint=self.endpoint)
                 if u is None:
@@ -385,6 +389,13 @@ class Issue(findings.Finding):
             # self.add_comment(f"Tag change {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == 'FIXED':
             self.resolve_as_fixed()
+            # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
+        elif event_type == 'CLOSED':
+            util.logger.info("Changelog event is a CLOSE issue, it cannot be applied... %s",
+                             str(event))
+            # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
+        elif event_type == 'INTERNAL':
+            util.logger.info("Changelog %s is internal, it will not be applied...", str(event))
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         else:
             util.logger.error("Event %s can't be applied", str(event))
