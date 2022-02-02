@@ -34,9 +34,9 @@ class Changelog():
         cond1 = False
         cond2 = False
         for diff in self._json['diffs']:
-            if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == 'FIXED':
+            if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == resolve_reason:
                 cond1 = True
-            if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == resolve_reason:
+            if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'RESOLVED':
                 cond2 = True
         return cond1 and cond2
 
@@ -50,22 +50,36 @@ class Changelog():
         return self.__is_resolve_as('WONTFIX')
 
     def is_closed(self):
-        return self.__is_resolve_as('CLOSED')
+        """ {'creationDate': '2022-02-01T19:15:24+0100', 'diffs': [
+            {'key': 'resolution', 'newValue': 'FIXED'},
+            {'key': 'status', 'newValue': 'CLOSED', 'oldValue': 'OPEN'}]} """
+        for diff in self._json['diffs']:
+            if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'CLOSED':
+                return True
+        return False
 
     def __is_status(self, status):
-        d = self._json['diffs'][0]
-        return d.get('key', '') == "status" and d.get('newValue', '') == status
+        for d in self._json['diffs']:
+            if d.get('key', '') == "status" and d.get('newValue', '') == status:
+                return True
+        return False
 
     def is_reopen(self):
-        d = self._json['diffs'][0]
-        return self.__is_status("REOPENED") and d.get('oldVal', '') != "CONFIRMED"
+        for d in self._json['diffs']:
+            if (d.get('key', '') == "status" and d.get('newValue', '') == "REOPENED" and
+                d.get('oldValue', '') != "CONFIRMED"):
+                return True
+        return False
 
     def is_confirm(self):
         return self.__is_status("CONFIRMED")
 
     def is_unconfirm(self):
-        d = self._json['diffs'][0]
-        return self.__is_status("REOPENED") and d.get('oldVal', '') == "CONFIRMED"
+        for d in self._json['diffs']:
+            if (d.get('key', '') == "status" and d.get('newValue', '') == "REOPENED" and
+                d.get('oldValue', '') == "CONFIRMED"):
+                return True
+        return False
 
     def is_change_severity(self):
         d = self._json['diffs'][0]
@@ -103,6 +117,12 @@ class Changelog():
     def old_assignee(self):
         d = self._json['diffs'][0]
         return d.get('oldValue', None)
+
+    def previous_state(self):
+        for d in self._json['diffs']:
+            if d.get('key', '') == "status":
+                return d.get('oldValue', '')
+        return ''
 
     def date(self):
         return self._json['creationDate']
@@ -143,7 +163,7 @@ class Changelog():
         elif self.is_tag():
             ctype = ('TAG', self.tags())
         elif self.is_closed():
-            ctype = ('INTERNAL', None)
+            ctype = ('CLOSED', None)
         elif self.is_technical_change():
             ctype = ('INTERNAL', None)
         else:
