@@ -84,7 +84,7 @@ def __process_exact_sibling(issue, sibling, settings):
     }
 
 
-def __process_no_match(issue, settings):
+def __process_no_match(issue):
     msg = 'Source issue has no match in target project'
     return {
         SRC_KEY: issue.key,
@@ -182,7 +182,7 @@ def sync_issues_list(src_issues, tgt_issues, settings):
             counters['nb_tgt_has_changelog'] += 1
             report.append(__process_modified_siblings(issue, modified_siblings))
         else:   # No match
-            report.append(__process_no_match(issue, settings))
+            report.append(__process_no_match(issue))
     counters['nb_no_match'] = counters['nb_to_sync'] - (
         counters['nb_applies'] + counters['nb_tgt_has_changelog'] +
         counters['nb_multiple_matches'] + counters['nb_approx_match']

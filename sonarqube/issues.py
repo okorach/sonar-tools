@@ -380,7 +380,6 @@ class Issue(findings.Finding):
             self.mark_as_reviewed()
             # self.add_comment(f"Hotspot review {origin}")
         elif event_type == 'ASSIGN':
-            issue_is_closed = False
             if settings[SYNC_ASSIGN]:
                 u = users.get_login_from_name(data, endpoint=self.endpoint)
                 if u is None:

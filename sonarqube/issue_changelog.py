@@ -66,7 +66,7 @@ class Changelog():
 
     def is_reopen(self):
         for d in self._json['diffs']:
-            if (d.get('key', '') == "status" and 
+            if (d.get('key', '') == "status" and
                 ((d.get('newValue', '') == "REOPENED" and d.get('oldValue', '') != "CONFIRMED") or
                  (d.get('newValue', '') == "OPEN" and d.get('oldValue', '') == "CLOSED"))):
                 return True
