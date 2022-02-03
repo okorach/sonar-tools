@@ -21,192 +21,152 @@
 import sonarqube.utilities as util
 
 
-def get_log_date(log):
-    return log['creationDate']
+class Changelog():
 
+    def __init__(self, jsonlog):
+        self._json = jsonlog
+        self._change_type = None
 
-def is_log_a_closed_resolved_as(log, old_value):
-    cond1 = False
-    cond2 = False
+    def __str__(self):
+        return str(self._json)
 
-    for diff in log['diffs']:
-        if (diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == 'FIXED' and
-                'oldValue' in diff and diff['oldValue'] == old_value):
-            cond1 = True
-        if (diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'CLOSED' and
-                'oldValue' in diff and diff['oldValue'] == 'RESOLVED'):
-            cond2 = True
-    return cond1 and cond2
+    def __is_resolve_as(self, resolve_reason):
+        cond1 = False
+        cond2 = False
+        for diff in self._json['diffs']:
+            if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == resolve_reason:
+                cond1 = True
+            if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'RESOLVED':
+                cond2 = True
+        return cond1 and cond2
 
+    def is_resolve_as_fixed(self):
+        return self.__is_resolve_as('FIXED')
 
-def is_log_a_closed_wf(log):
-    return is_log_a_closed_resolved_as(log, 'WONTFIX')
+    def is_resolve_as_fp(self):
+        return self.__is_resolve_as('FALSE-POSITIVE')
 
+    def is_resolve_as_wf(self):
+        return self.__is_resolve_as('WONTFIX')
 
-def is_log_a_comment(log):
-    return True
+    def is_closed(self):
+        """ {'creationDate': '2022-02-01T19:15:24+0100', 'diffs': [
+            {'key': 'resolution', 'newValue': 'FIXED'},
+            {'key': 'status', 'newValue': 'CLOSED', 'oldValue': 'OPEN'}]} """
+        for diff in self._json['diffs']:
+            if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'CLOSED':
+                return True
+        return False
 
+    def __is_status(self, status):
+        for d in self._json['diffs']:
+            if d.get('key', '') == "status" and d.get('newValue', '') == status:
+                return True
+        return False
 
-def is_log_an_assign(log):
-    return False
+    def is_reopen(self):
+        for d in self._json['diffs']:
+            if (d.get('key', '') == "status" and
+                ((d.get('newValue', '') == "REOPENED" and d.get('oldValue', '') != "CONFIRMED") or
+                 (d.get('newValue', '') == "OPEN" and d.get('oldValue', '') == "CLOSED"))):
+                return True
+        return False
 
+    def is_confirm(self):
+        return self.__is_status("CONFIRMED")
 
-def is_log_a_tag(log):
-    return False
+    def is_unconfirm(self):
+        for d in self._json['diffs']:
+            if (d.get('key', '') == "status" and d.get('newValue', '') == "REOPENED" and
+                d.get('oldValue', '') == "CONFIRMED"):
+                return True
+        return False
 
+    def is_change_severity(self):
+        d = self._json['diffs'][0]
+        return d.get('key', '') == "severity"
 
-def is_log_a_closed_fp(log):
-    return is_log_a_closed_resolved_as(log, 'FALSE-POSITIVE')
-
-
-def is_log_a_resolve_as(log, resolve_reason):
-    cond1 = False
-    cond2 = False
-    for diff in log['diffs']:
-        if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == resolve_reason:
-            cond1 = True
-        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'RESOLVED':
-            cond2 = True
-    return cond1 and cond2
-
-
-def is_log_a_reopen(log):
-    cond1 = False
-    cond2 = False
-    for diff in log['diffs']:
-        if diff['key'] == 'resolution':
-            cond1 = True
-        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'REOPENED':
-            cond2 = True
-    return cond1 and cond2
-
-
-def is_log_a_reviewed(log):
-    cond1 = False
-    cond2 = False
-    for diff in log['diffs']:
-        if diff['key'] == 'resolution' and 'newValue' in diff and diff['newValue'] == 'FIXED':
-            cond1 = True
-        if diff['key'] == 'status' and 'newValue' in diff and diff['newValue'] == 'REVIEWED':
-            cond2 = True
-    return cond1 and cond2
-
-
-def is_event_a_comment(event):
-    return event['event'] == 'comment'
-
-
-def is_event_an_assignment(event):
-    return event['event'] == 'assign'
-
-
-def is_event_a_resolve_as_fp(event):
-    return event['event'] == 'transition' and event['value'] == 'falsepositive'
-
-
-def is_event_a_resolve_as_wf(event):
-    return event['event'] == 'transition' and event['value'] == 'wontfix'
-
-
-def is_event_a_resolve_as_reviewed(event):
-    return False
-
-
-def is_event_a_severity_change(event):
-    return event['event'] == 'severity'
-
-
-def is_event_a_reopen(event):
-    return event['event'] == 'transition' and event['value'] == 'reopen'
-
-
-def is_event_a_type_change(event):
-    return event['event'] == 'type'
-
-
-def is_event_an_assignee_change(event):
-    return event['event'] == 'assign'
-
-
-def is_event_a_tag_change(event):
-    return event['event'] == 'tags'
-
-
-def get_log_assignee(event):
-    return event['value']
-
-
-def get_log_new_severity(event):
-    return event['value']
-
-
-def get_log_new_type(event):
-    return event['value']
-
-
-def get_log_new_tag(event):
-    return event['value']
-
-
-def diff_to_changelog(diffs):
-    for d in diffs:
-        event = get_event_from_diff(d)
-        if event is not None:
-            return event
-    return {'event': 'unknown', 'value': None}
-
-
-def resolution_diff_to_changelog(newval):
-    if newval == 'FALSE-POSITIVE':
-        return {'event': 'transition', 'value': 'falsepositive'}
-    elif newval == 'WONTFIX':
-        return {'event': 'transition', 'value': 'wontfix'}
-    elif newval == 'FIXED':
-        # TODO - Handle hotspots
-        return {'event': 'fixed', 'value': None}
-    return {'event': 'unknown', 'value': None}
-
-
-def reopen_diff_to_changelog(oldval):
-    if oldval == 'CONFIRMED':
-        return {'event': 'transition', 'value': 'unconfirm'}
-    return {'event': 'transition', 'value': 'reopen'}
-
-
-def assignee_diff_to_changelog(d):
-    if 'newValue' in d:
-        # FIXME: Unfortunately the 'newValue' field is the potentially non unique user name, not the unique login
-        return {'event': 'assign', 'value': d['newValue']}
-    return {'event': 'unassign', 'value': None}
-
-
-def get_event_from_diff(diff):
-    util.logger.debug("Diff = %s", str(diff))
-    event = None
-    dkey = diff['key']
-    if 'newValue' not in diff or diff['newValue'] == 'FIXED':
+    def new_severity(self):
+        if self.is_change_severity():
+            d = self._json['diffs'][0]
+            return d.get('newValue', None)
         return None
-    dnewval = diff['newValue']
 
-    if dkey in ('severity', 'type', 'tags'):
-        event = {'event': dkey, 'value': dnewval}
-    elif dkey == 'resolution' and 'newValue' in diff:
-        event = resolution_diff_to_changelog(dnewval)
-    elif dkey == 'status' and 'newValue' in diff and dnewval == 'CONFIRMED':
-        event = {'event': 'transition', 'value': 'confirm'}
-    elif dkey == 'status' and 'newValue' in diff and dnewval == 'REOPENED':
-        event = reopen_diff_to_changelog(diff['oldValue'])
-    elif dkey == 'status' and 'newValue' in diff and dnewval == 'OPEN' and diff['oldValue'] == 'CLOSED':
-        event = {'event': 'transition', 'value': 'reopen'}
-    elif dkey == 'status' and 'newValue' in diff and dnewval == 'CLOSED':
-        event = {'event': 'close', 'value': 'close'}
-    elif dkey == 'assignee':
-        event = assignee_diff_to_changelog(diff)
-    elif dkey == 'from_short_branch':
-        event = {'event': 'merge', 'value': f"{diff['oldValue']} -> {dnewval}"}
-    elif dkey == 'from_branch':
-        event = {'event': 'fork', 'value': f"{diff['oldValue']} -> {dnewval}"}
-    elif dkey == 'effort':
-        event = {'event': 'effort', 'value': f"{diff['oldValue']} -> {dnewval}"}
+    def is_change_type(self):
+        d = self._json['diffs'][0]
+        return d.get('key', '') == "type"
 
-    return event
+    def new_type(self):
+        if self.is_change_type():
+            d = self._json['diffs'][0]
+            return d.get('newValue', None)
+        return None
+
+    def is_technical_change(self):
+        d = self._json['diffs'][0]
+        key = d.get('key', '')
+        return key in ('from_short_branch', 'from_branch', 'effort')
+
+    def is_assignment(self):
+        d = self._json['diffs'][0]
+        return d.get('key', '') == "assignee"
+
+    def new_assignee(self):
+        d = self._json['diffs'][0]
+        return d.get('newValue', None)
+
+    def old_assignee(self):
+        d = self._json['diffs'][0]
+        return d.get('oldValue', None)
+
+    def previous_state(self):
+        for d in self._json['diffs']:
+            if d.get('key', '') == "status":
+                return d.get('oldValue', '')
+        return ''
+
+    def date(self):
+        return self._json['creationDate']
+
+    def author(self):
+        return self._json.get('user', None)
+
+    def is_tag(self):
+        d = self._json['diffs'][0]
+        return d.get('key', '') == "tag"
+
+    def tags(self):
+        if not self.is_tag():
+            return None
+        d = self._json['diffs'][0]
+        return d.get('newValue', '').replace(' ', ',')
+
+    def changelog_type(self):
+        ctype = (None, None)
+        if self.is_assignment():
+            ctype = ('ASSIGN', self.new_assignee())
+        elif self.is_reopen():
+            ctype = ('REOPEN', None)
+        elif self.is_confirm():
+            ctype = ('CONFIRM', None)
+        elif self.is_unconfirm():
+            ctype = ('UNCONFIRM', None)
+        elif self.is_change_severity():
+            ctype = ('SEVERITY', self.new_severity())
+        elif self.is_change_type():
+            ctype = ('TYPE', self.new_type())
+        elif self.is_resolve_as_fixed():
+            ctype = ('FIXED', None)
+        elif self.is_resolve_as_fp():
+            ctype = ('FALSE-POSITIVE', None)
+        elif self.is_resolve_as_wf():
+            ctype = ('WONT-FIX', None)
+        elif self.is_tag():
+            ctype = ('TAG', self.tags())
+        elif self.is_closed():
+            ctype = ('CLOSED', None)
+        elif self.is_technical_change():
+            ctype = ('INTERNAL', None)
+        else:
+            util.logger.warning("Could not determine changelog type for %s", str(self))
+        return ctype
