@@ -85,12 +85,11 @@ def __process_exact_sibling(issue, sibling, settings):
 
 
 def __process_no_match(issue):
-    msg = 'Source issue has no match in target project'
     return {
         SRC_KEY: issue.key,
         SRC_URL: issue.url(),
         SYNC_STATUS: 'no match',
-        SYNC_MSG: msg
+        SYNC_MSG: 'Source issue has no match in target project'
     }
 
 
@@ -202,6 +201,9 @@ def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=
     src_issues = {}
     for key, issue in issues.search_by_project(key1, endpoint=endpoint1, branch=branch1, params=_WITH_COMMENTS).items():
         if not issue.has_changelog_or_comments():
+            continue
+        if issue.is_closed():
+            util.logger.info("%s is closed, so it will not be synchronized despite having a changelog", str(issue))
             continue
         src_issues[key] = issue
     util.logger.info("Found %d issues with manual changes on project %s branch %s", len(src_issues), key1, branch1)

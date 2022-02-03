@@ -159,6 +159,8 @@ class Finding(sq.SqObject):
     def is_security_issue(self):
         return self.is_vulnerability() or self.is_hotspot()
 
+    def is_closed(self):
+        return self.status == 'CLOSED'
 
 def to_csv_header(separator=','):
     return "# " + separator.join(_CSV_FIELDS)
