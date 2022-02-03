@@ -144,11 +144,12 @@ class Issue(findings.Finding):
         return len(self.changelog()) > 0
 
     def can_be_synced(self, user_list):
-        util.logger.debug("Checking if modifiers %s are different from user %s", str(self.modifiers()), str(user_list))
+        util.logger.debug("Issue %s: Checking if modifiers %s are different from user %s",
+            str(self), str(self.modifiers()), str(user_list))
         if user_list is None:
             return not self.has_changelog()
-        for c in self.modifiers():
-            if c not in user_list:
+        for u in self.modifiers():
+            if u not in user_list:
                 return False
         return True
 
@@ -216,7 +217,7 @@ class Issue(findings.Finding):
             util.logger.debug("Checking author of changelog %s", str(c))
             author = c.author()
             if author is not None and author not in item_list:
-                item_list.append(c)
+                item_list.append(author)
         return item_list
 
     def commenters(self):
