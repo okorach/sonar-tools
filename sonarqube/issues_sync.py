@@ -39,7 +39,7 @@ SYNC_MSG = 'syncMessage'
 SYNC_MATCHES = 'matches'
 TGT_KEY = 'targetIssueKey'
 TGT_URL = 'targetIssueUrl'
-TGT_STATUS = 'targetIssueStatus'
+SYNC_STATUS = 'syncStatus'
 
 _WITH_COMMENTS = {'additionalFields': 'comments'}
 
@@ -77,10 +77,20 @@ def __process_exact_sibling(issue, sibling, settings):
     return {
         SRC_KEY: issue.key,
         SRC_URL: issue.url(),
-        TGT_STATUS: 'synchronized',
+        SYNC_STATUS: 'synchronized',
         SYNC_MSG: msg,
         TGT_KEY: sibling.key,
         TGT_URL: sibling.url()
+    }
+
+
+def __process_no_match(issue, settings):
+    msg = 'Source issue has no match in target project'
+    return {
+        SRC_KEY: issue.key,
+        SRC_URL: issue.url(),
+        SYNC_STATUS: 'no match',
+        SYNC_MSG: msg
     }
 
 
@@ -106,7 +116,7 @@ def __process_multiple_exact_siblings(issue, siblings):
     return {
         SRC_KEY: issue.key,
         SRC_URL: issue.url(),
-        TGT_STATUS: 'unsynchronized',
+        SYNC_STATUS: 'unsynchronized',
         SYNC_MSG: 'Multiple matches',
         SYNC_MATCHES: __get_issues(siblings)
     }
@@ -118,7 +128,7 @@ def __process_approx_siblings(issue, siblings):
     return {
         SRC_KEY: issue.key,
         SRC_URL: issue.url(),
-        TGT_STATUS: 'unsynchronized',
+        SYNC_STATUS: 'unsynchronized',
         SYNC_MSG: 'Approximate matches only',
         SYNC_MATCHES: __get_issues(siblings)
     }
@@ -133,7 +143,7 @@ def __process_modified_siblings(issue, siblings):
         SRC_URL: issue.url(),
         TGT_KEY: siblings[0].key,
         TGT_URL: siblings[0].url(),
-        TGT_STATUS: 'unsynchronized',
+        SYNC_STATUS: 'unsynchronized',
         SYNC_MSG: 'Target issue already has a changelog',
         SYNC_MATCHES: __get_issues(siblings)
     }
@@ -171,8 +181,8 @@ def sync_issues_list(src_issues, tgt_issues, settings):
         elif modified_siblings:
             counters['nb_tgt_has_changelog'] += 1
             report.append(__process_modified_siblings(issue, modified_siblings))
-#        elif not exact_siblings and not approx_siblings and not modified_siblings:
-#            counters['nb_no_match'] += 1
+        else:   # No match
+            report.append(__process_no_match(issue, settings))
     counters['nb_no_match'] = counters['nb_to_sync'] - (
         counters['nb_applies'] + counters['nb_tgt_has_changelog'] +
         counters['nb_multiple_matches'] + counters['nb_approx_match']
