@@ -23,7 +23,7 @@
 
 '''
 import json
-from sonarqube import env
+from sonarqube import env, measures
 import sonarqube.sqobject as sq
 import sonarqube.aggregations as aggr
 import sonarqube.utilities as util
@@ -64,6 +64,11 @@ class Application(aggr.Aggregation):
             self._audit_empty(audit_settings) + self._audit_singleton(audit_settings)
         )
 
+    def get_measures(self, metrics_list):
+        m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
+        if 'ncloc' in m:
+            self._ncloc = 0 if m['ncloc'] is None else int(m['ncloc'])
+        return m
 
 def count(endpoint=None):
     resp = env.get('api/components/search_projects',
