@@ -80,7 +80,6 @@ def __csv_line_portfolio(portfolio, **kwargs):
     return line
 
 
-
 def __json_data(project, **kwargs):
     data = {'projectKey': project.key, 'ncloc': project.ncloc_with_branches()}
     if kwargs.get('name', None) is not None:
