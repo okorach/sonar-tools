@@ -26,5 +26,7 @@
 WITH_URL = 'withURL'
 WITH_NAME = 'withName'
 WITH_LAST_ANALYSIS = 'withLastAnalysis'
+WITH_BRANCHES = 'withBranches'
+
 CSV_SEPARATOR = 'csvSeparator'
 FORMAT = 'format'

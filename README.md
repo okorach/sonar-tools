@@ -104,9 +104,12 @@ sonar-housekeeper -o 120 -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a
 Exports all projects lines of code as they would be counted by the commercial licences.  
 See `sonar-loc -h` for details
 
-Basic Usage: `sonar-loc [-u <url>] [-t <token>] [-a] [-n] >locs.csv`  
-- `-n`: Outputs the project name in addition to the project key
-- `-a`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
+Basic Usage: `sonar-loc [-u <url>] [-t <token>] [-a] [-n] [--withURL] >locs.csv`  
+- `--portfolios`: Output the LOC of portfolios instead of projects (Enterprise Edition only)
+- `--topLevelOnly`: For portfolios, only output LoCs for top level portfolios (Enterprise Edition only)
+- `-n | --withName`: Outputs the project or portfolio name in addition to the key
+- `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
+- `--withURL`: Outputs the URL of the project or portfolio for each record
 
 ## Required Permissions
 
@@ -118,16 +121,19 @@ Exports one or all projects with all (or some selected) measures in a CSV file.
 The CSV is sent to standard output.  
 Plenty of issue filters can be specified from the command line, type `sonar-measures-export -h` for details
 
-Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] [-p] [-f json|csv] [--includeURLs] [-o <outputFile>]`  
-- `-m`: comma separated list of metrics to export
+Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] [-p] [-d] [-f json|csv] [--includeURLs] [-o <outputFile>]`  
+- `-m | --metricKeys`: comma separated list of metrics to export
   - `-m _main` is a shortcut to list all main metrics. It's the recommended option  
   - `-m _all` is a shortcut to list all metrics, including the most obscure ones
-- `-b`: Exports measures for all project branches (by default only export measures of the main branch)
-- `-r`: Converts ratings as numbers (by default ratings are exported as letters between A and E)
-- `-p`: Converts percentages as strings "xy.z%" (by default percentages are exported as floats between 0 and 1)
+- `-b | --withBranches`: Exports measures for all project branches (by default only export measures of the main branch)
+- `-r | --ratingsAsNumbers`: Converts ratings as numbers (by default ratings are exported as letters between A and E)
+- `-p | --percentsAsString`: Converts percentages as strings "xy.z%" (by default percentages are exported as floats between 0 and 1)
+- `-d | --datesWithoutTime`: Outputs dates without time
 - `-f`: Choose export format between csv (default) and json
 - `-o`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
-- `--includeURLs`: Add project or branch URL in measures export, default is to not include URLs
+- `-n | --withName`: Outputs the project or portfolio name in addition to the key
+- `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
+- `--withURL`: Outputs the URL of the project or portfolio for each record
 
 ## Required Permissions
 
