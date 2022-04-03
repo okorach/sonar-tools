@@ -165,7 +165,7 @@ def __parse_cmd_line():
                         help='Reports timestamps only with date, not time')
     parser.add_argument('--' + options.WITH_URL, action='store_true', default=False, required=False,
                         help='Add projects/branches URLs in report')
-    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
+    parser.add_argument('--' + options.CSV_SEPARATOR, required=False, default=util.CSV_SEPARATOR,
                         help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
 
     args = util.parse_and_check_token(parser)
