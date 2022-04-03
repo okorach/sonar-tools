@@ -48,8 +48,6 @@ _BIND_SEP = ":::"
 class Project(comp.Component):
 
     def __init__(self, key, endpoint=None, data=None):
-        super().__init__(key, endpoint)
-        self.name = None
         self.visibility = None
         self.main_branch_last_analysis_date = 'undefined'
         self.permissions = None
@@ -60,6 +58,7 @@ class Project(comp.Component):
         self.pull_requests = None
         self._ncloc_with_branches = None
         self._binding = {'has_binding': True, 'binding': None}
+        super().__init__(key, endpoint)
         self.__load__(data)
         _PROJECTS[key] = self
         util.logger.debug("Created object %s", str(self))
@@ -550,16 +549,18 @@ Is this normal ?", gr['name'], str(self.key))
 
         return findings_list
 
-    def loc_csv(self, **kwargs):
-        arr = [self.key]
-        if kwargs[options.WITH_NAME]:
-            arr.append(self.name)
-        arr.append(self.ncloc())
-        if kwargs[options.WITH_LAST_ANALYSIS]:
-            arr.append(self.last_analysis())
-        if kwargs[options.WITH_URL]:
-            arr.append("URL")
-        return arr
+    def dump_data(self, **opts):
+        data = {
+            'type': 'project',
+            'key': self.key,
+            'name': self.name,
+            'ncloc': self.ncloc_with_branches(),
+        }
+        if opts.get(options.WITH_URL, False):
+            data['url'] = self.url()
+        if opts.get(options.WITH_LAST_ANALYSIS, False):
+            data['lastAnalysis'] = self.last_analysis()
+        return data
 
 
 def __get_permissions_counts__(entities):
