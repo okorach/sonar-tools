@@ -32,12 +32,8 @@ import sonarqube.audit_problem as pb
 class Aggregation(comp.Component):
 
     def __init__(self, key, endpoint, data=None):
-        super().__init__(key, endpoint)
-        self._id = None
-        self._name = None
-        self._visibility = None
-        self._ncloc = None
         self._nbr_projects = None
+        super().__init__(key, endpoint)
 
     def _load(self, data=None, api=None, key_name='key'):
         ''' Loads an aggregation object with contents of data '''
