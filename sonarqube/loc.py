@@ -81,7 +81,7 @@ def __dump_csv(object_list, fd, **kwargs):
             arr.append(data['url'])
         writer.writerow(arr)
         nb_objects += 1
-        nb_loc += data['ncloc']
+        nb_loc += p.ncloc()
         if nb_objects % 50 == 0:
             util.logger.info("%d %s and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
 
@@ -92,11 +92,16 @@ def __dump_json(object_list, fd, **kwargs):
     nb_loc = 0
     nb_objects = 0
     data = []
+    util.logger.info("%d objects with LoCs to export...", len(object_list))
     for p in object_list.values():
         if nb_objects == 0:
-            obj_type = type(p)
-        data.append(p.to_json(**kwargs))
+            if isinstance(p, portfolios.Portfolio):
+                obj_type = 'portfolio'
+            else:
+                obj_type = 'project'
+        data.append(p.dump_data(**kwargs))
         nb_objects += 1
+        nb_loc += p.ncloc()
         if nb_objects % 50 == 0:
             util.logger.info("%d %s and %d LoCs, still counting...", nb_objects, str(obj_type), nb_loc)
 

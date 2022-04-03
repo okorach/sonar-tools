@@ -99,7 +99,7 @@ class Portfolio(aggregations.Aggregation):
 
     def dump_data(self, **opts):
         data = {
-            'type': 'project',
+            'type': 'portfolio',
             'key': self.key,
             'name': self.name,
             'ncloc': self.ncloc(),
