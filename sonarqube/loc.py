@@ -39,14 +39,6 @@ def __deduct_format(fmt, file):
     return 'csv'
 
 
-def __json_data(project, **kwargs):
-    data = {'projectKey': project.key, 'ncloc': project.ncloc_with_branches()}
-    if kwargs.get('name', None) is not None:
-        data['name'] = project.name
-    if kwargs.get('lastAnalysis', None) is not None:
-        data['lastAnalysis'] = util.date_to_string(project.last_analysis_date(include_branches=True))
-    return data
-
 def __open_file(file):
     if file is None:
         fd = sys.stdout

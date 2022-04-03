@@ -33,6 +33,8 @@ class Aggregation(comp.Component):
 
     def __init__(self, key, endpoint, data=None):
         self._nbr_projects = None
+        self._id = None
+        self._visibility = None
         super().__init__(key, endpoint)
 
     def _load(self, data=None, api=None, key_name='key'):
@@ -41,13 +43,9 @@ class Aggregation(comp.Component):
             resp = env.get(api, ctxt=self.endpoint, params={key_name: self.key})
             data = json.loads(resp.text)
         self._id = self.key
-        self._name = data.get('name', None)
+        self.name = data.get('name', None)
         self._visibility = data.get('visibility', None)
 
-    def name(self):
-        if self._name is None:
-            self._load()
-        return self._name
 
     def visibility(self):
         if self._visibility is None:
