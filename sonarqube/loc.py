@@ -62,10 +62,9 @@ def __dump_csv(object_list, fd, **kwargs):
 
     nb_loc = 0
     nb_objects = 0
-    arr = ['# Key']
+    arr = ['# Key', 'ncloc']
     if kwargs.get(options.WITH_NAME, False):
         arr.append('name')
-    arr.append('ncloc')
     if kwargs.get(options.WITH_LAST_ANALYSIS, False):
         arr.append('lastAnalysis')
     if kwargs.get(options.WITH_URL, False):
@@ -81,10 +80,9 @@ def __dump_csv(object_list, fd, **kwargs):
                 obj_type = 'project'
 
         data = p.dump_data(**kwargs)
-        arr = [data['key']]
+        arr = [data['key'], data['ncloc']]
         if kwargs.get(options.WITH_NAME, False):
             arr.append(data['name'])
-        arr.append(data['ncloc'])
         if kwargs.get(options.WITH_LAST_ANALYSIS, False):
             arr.append(data['lastAnalysis'])
         if kwargs.get(options.WITH_URL, False):
@@ -126,7 +124,7 @@ def __dump_loc(object_list, file, **kwargs):
 def main():
     parser = util.set_common_args('Extract projects lines of code, as computed for the licence')
     parser = util.set_component_args(parser)
-    parser.add_argument('-n', '--projectName', required=False, default=False, action='store_true',
+    parser.add_argument('-n', '--withName', required=False, default=False, action='store_true',
                         help='Also list the project name on top of the project key')
     parser.add_argument('-a', '--' + options.WITH_LAST_ANALYSIS, required=False, default=False, action='store_true',
                         help='Also list the last analysis date on top of nbr of LoC')
