@@ -34,8 +34,7 @@
     [--tags]
 '''
 import sys
-import sonarqube.cmdline as cmd
-from sonarqube import version, env, projects, hotspots, issues
+from sonarqube import version, env, projects, hotspots, issues, options
 import sonarqube.utilities as util
 from sonarqube.findings import to_csv_header
 
@@ -68,9 +67,9 @@ def parse_args():
     parser.add_argument('--tags', help='Comma separated issue tags', required=False)
     parser.add_argument('--useFindings', required=False, default=False, action='store_true',
                         help='Use export_findings() whenever possible')
-    parser.add_argument('--' + cmd.INCLUDE_URL, required=False, default=False, action='store_true',
+    parser.add_argument('--' + options.WITH_URL, required=False, default=False, action='store_true',
                         help='Generate issues URL in the report, false by default')
-    parser.add_argument('--' + cmd.CSV_SEPARATOR, required=False, default=util.CSV_SEPARATOR,
+    parser.add_argument('--' + options.CSV_SEPARATOR, required=False, default=util.CSV_SEPARATOR,
                         help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
     return util.parse_and_check_token(parser)
 
@@ -87,17 +86,17 @@ def __dump_findings(issues_list, file, file_format, **kwargs):
         print(to_csv_header(), file=f)
     is_first = True
     url = ''
-    sep = kwargs['csvSeparator']
+    sep = kwargs[options.CSV_SEPARATOR]
     for _, issue in issues_list.items():
         if file_format == 'json':
             pfx = "" if is_first else ",\n"
             issue_json = issue.to_json()
-            if not kwargs[cmd.INCLUDE_URL]:
+            if not kwargs[options.WITH_URL]:
                 issue_json.pop('url', None)
             print(pfx + util.json_dump(issue_json), file=f, end='')
             is_first = False
         else:
-            if kwargs[cmd.INCLUDE_URL]:
+            if kwargs[options.WITH_URL]:
                 url = f'{sep}"{issue.url()}"'
             print(f"{issue.to_csv(sep)}{url}", file=f)
 
