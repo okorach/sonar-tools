@@ -83,9 +83,9 @@ def __dump_csv(object_list, fd, **kwargs):
         nb_objects += 1
         nb_loc += p.ncloc()
         if nb_objects % 50 == 0:
-            util.logger.info("%d %s and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
+            util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
 
-    util.logger.info("%d %s and %d LoCs in total", len(object_list), obj_type, nb_loc)
+    util.logger.info("%d %ss and %d LoCs in total", len(object_list), obj_type, nb_loc)
 
 
 def __dump_json(object_list, fd, **kwargs):
@@ -103,10 +103,10 @@ def __dump_json(object_list, fd, **kwargs):
         nb_objects += 1
         nb_loc += p.ncloc()
         if nb_objects % 50 == 0:
-            util.logger.info("%d %s and %d LoCs, still counting...", nb_objects, str(obj_type), nb_loc)
+            util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, str(obj_type), nb_loc)
 
     print(util.json_dump(data), file=fd)
-    util.logger.info("%d %s and %d LoCs in total", len(object_list), str(obj_type), nb_loc)
+    util.logger.info("%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc)
 
 
 def __dump_loc(object_list, file, **kwargs):
