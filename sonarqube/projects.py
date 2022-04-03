@@ -26,7 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonarqube import env, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures
+from sonarqube import env, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures, options
 import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
@@ -550,6 +550,18 @@ Is this normal ?", gr['name'], str(self.key))
 
         return findings_list
 
+    def loc_csv(self, **kwargs):
+        arr = [self.key]
+        if kwargs[options.WITH_NAME]:
+            arr.append(self.name)
+        arr.append(self.ncloc())
+        if kwargs[options.WITH_LAST_ANALYSIS]:
+            arr.append(self.last_analysis())
+        if kwargs[options.WITH_URL]:
+            arr.append("URL")
+        return arr
+
+
 def __get_permissions_counts__(entities):
     counts = {}
     counts['overall'] = 0
@@ -655,3 +667,15 @@ def get_measures(key, metrics_list, branch=None, pull_request=None, endpoint=Non
         obj = get_object(key, endpoint=endpoint)
 
     return obj.get_measures(metrics_list)
+
+
+def loc_csv_header(**kwargs):
+    arr = ["# Project Key"]
+    if kwargs[options.WITH_NAME]:
+        arr.append("Project name")
+    arr.append("LoC")
+    if kwargs[options.WITH_LAST_ANALYSIS]:
+        arr.append("Last analysis")
+    if kwargs[options.WITH_URL]:
+        arr.append("URL")
+    return arr
