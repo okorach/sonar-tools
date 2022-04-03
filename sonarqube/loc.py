@@ -113,6 +113,7 @@ def __dump_loc(object_list, file, **kwargs):
     if file is not None:
         fd.close()
 
+
 def main():
     parser = util.set_common_args('Extract projects lines of code, as computed for the licence')
     parser = util.set_component_args(parser)

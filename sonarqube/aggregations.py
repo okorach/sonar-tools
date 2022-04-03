@@ -46,7 +46,6 @@ class Aggregation(comp.Component):
         self.name = data.get('name', None)
         self._visibility = data.get('visibility', None)
 
-
     def visibility(self):
         if self._visibility is None:
             self._load()
