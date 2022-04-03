@@ -23,7 +23,7 @@
 
 '''
 import json
-from sonarqube import aggregations, env, measures
+from sonarqube import aggregations, env, measures, options
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.audit_rules as rules
@@ -52,6 +52,9 @@ class Portfolio(aggregations.Aggregation):
         ''' Loads a portfolio object with contents of data '''
         super()._load(data=data, api=GET_API, key_name='key')
         self._selection_mode = data.get('selectionMode', None)
+
+    def url(self):
+        return f"{self.endpoint.url}/portfolio?id={self.key}"
 
     def selection_mode(self):
         if self._selection_mode is None:
@@ -94,6 +97,19 @@ class Portfolio(aggregations.Aggregation):
             self._ncloc = 0 if m['ncloc'] is None else int(m['ncloc'])
         return m
 
+    def dump_data(self, **opts):
+        data = {
+            'type': 'portfolio',
+            'key': self.key,
+            'name': self.name,
+            'ncloc': self.ncloc(),
+        }
+        if opts.get(options.WITH_URL, False):
+            data['url'] = self.url()
+        if opts.get(options.WITH_LAST_ANALYSIS, False):
+            data['lastAnalysis'] = self.last_analysis()
+        return data
+
 
 def count(endpoint=None):
     return aggregations.count(api=SEARCH_API, endpoint=endpoint)
@@ -127,3 +143,15 @@ def audit(audit_settings, endpoint=None):
     for _, p in plist.items():
         problems += p.audit(audit_settings)
     return problems
+
+
+def loc_csv_header(**kwargs):
+    arr = ["# Portfolio Key"]
+    if kwargs[options.WITH_NAME]:
+        arr.append("Portfolio name")
+    arr.append('LoC')
+    if kwargs[options.WITH_LAST_ANALYSIS]:
+        arr.append("Last Recomputation")
+    if kwargs[options.WITH_URL]:
+        arr.append("URL")
+    return arr

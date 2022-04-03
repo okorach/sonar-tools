@@ -26,7 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonarqube import env, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures
+from sonarqube import env, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures, options
 import sonarqube.sqobject as sq
 import sonarqube.components as comp
 import sonarqube.utilities as util
@@ -48,8 +48,6 @@ _BIND_SEP = ":::"
 class Project(comp.Component):
 
     def __init__(self, key, endpoint=None, data=None):
-        super().__init__(key, endpoint)
-        self.name = None
         self.visibility = None
         self.main_branch_last_analysis_date = 'undefined'
         self.permissions = None
@@ -60,6 +58,7 @@ class Project(comp.Component):
         self.pull_requests = None
         self._ncloc_with_branches = None
         self._binding = {'has_binding': True, 'binding': None}
+        super().__init__(key, endpoint)
         self.__load__(data)
         _PROJECTS[key] = self
         util.logger.debug("Created object %s", str(self))
@@ -550,6 +549,20 @@ Is this normal ?", gr['name'], str(self.key))
 
         return findings_list
 
+    def dump_data(self, **opts):
+        data = {
+            'type': 'project',
+            'key': self.key,
+            'name': self.name,
+            'ncloc': self.ncloc_with_branches(),
+        }
+        if opts.get(options.WITH_URL, False):
+            data['url'] = self.url()
+        if opts.get(options.WITH_LAST_ANALYSIS, False):
+            data['lastAnalysis'] = self.last_analysis()
+        return data
+
+
 def __get_permissions_counts__(entities):
     counts = {}
     counts['overall'] = 0
@@ -655,3 +668,15 @@ def get_measures(key, metrics_list, branch=None, pull_request=None, endpoint=Non
         obj = get_object(key, endpoint=endpoint)
 
     return obj.get_measures(metrics_list)
+
+
+def loc_csv_header(**kwargs):
+    arr = ["# Project Key"]
+    if kwargs[options.WITH_NAME]:
+        arr.append("Project name")
+    arr.append("LoC")
+    if kwargs[options.WITH_LAST_ANALYSIS]:
+        arr.append("Last analysis")
+    if kwargs[options.WITH_URL]:
+        arr.append("URL")
+    return arr

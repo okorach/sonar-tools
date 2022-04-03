@@ -33,17 +33,18 @@ class Component(sq.SqObject):
 
     def __init__(self, key, endpoint=None, data=None):
         super().__init__(key, endpoint)
-        self._name = None
+        self.name = None
         self.qualifier = None
         self.path = None
         self.language = None
         self.nbr_issues = None
         self._ncloc = None
+        self._last_analysis = None
         if data is not None:
             self.__load__(data)
 
     def __load__(self, data):
-        self._name = data.get('name', None)
+        self.name = data.get('name', None)
         self.qualifier = data.get('qualifier', None)
         self.path = data.get('path', None)
         self.language = data.get('language', None)
@@ -121,6 +122,17 @@ class Component(sq.SqObject):
         if self._ncloc is None:
             self._ncloc = int(self.get_measure('ncloc', fallback=0))
         return self._ncloc
+
+    def last_analysis(self):
+        if self._last_analysis is not None:
+            return self._last_analysis
+        resp = self.endpoint.get('navigation/component', params={'component': self.key})
+        self._last_analysis = json.loads(resp.text).get('analysisDate', None)
+        return self._last_analysis
+
+    def url(self):
+        # Must be implemented in sub classes
+        pass
 
 def get_components(component_types, endpoint=None):
     resp = env.get('projects/search', params={'ps': 500, 'qualifiers': component_types}, ctxt=endpoint)
