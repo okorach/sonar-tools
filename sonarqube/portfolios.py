@@ -53,6 +53,9 @@ class Portfolio(aggregations.Aggregation):
         super()._load(data=data, api=GET_API, key_name='key')
         self._selection_mode = data.get('selectionMode', None)
 
+    def url(self):
+        return f"{self.endpoint.url}/portfolio?id={self.key}"
+
     def selection_mode(self):
         if self._selection_mode is None:
             self._load()
@@ -94,16 +97,18 @@ class Portfolio(aggregations.Aggregation):
             self._ncloc = 0 if m['ncloc'] is None else int(m['ncloc'])
         return m
 
-    def loc_csv(self, **kwargs):
-        arr = [self.key]
-        if kwargs[options.WITH_NAME]:
-            arr.append(self.name)
-        arr.append[self.ncloc()]
-        if kwargs[options.WITH_LAST_ANALYSIS]:
-            arr.append(self.last_analysis())
-        if kwargs[options.WITH_URL]:
-            arr.append("URL")
-        return arr
+    def dump_data(self, **opts):
+        data = {
+            'type': 'project',
+            'key': self.key,
+            'name': self.name,
+            'ncloc': self.ncloc(),
+        }
+        if opts.get(options.WITH_URL, False):
+            data['url'] = self.url()
+        if opts.get(options.WITH_LAST_ANALYSIS, False):
+            data['lastAnalysis'] = self.last_analysis()
+        return data
 
 
 def count(endpoint=None):
