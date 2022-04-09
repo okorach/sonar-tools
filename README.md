@@ -15,13 +15,13 @@ Command line tools to help in SonarQube administration tasks.
 **DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company editing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarcloud.io) and [SonarLint](https://sonarlint.org) products
 
 The following utilities are available:
-- [sonar-audit](sonar-audit.md): Audits a SonarQube instance
+- [sonar-audit](#sonar-audit): Audits a SonarQube instance
 - [sonar-housekeeper](#sonar-housekeeper): Deletes projects that have not been analyzed since a certain number of days, or
 deletes tokens created since more than a certain number of days
 - [sonar-loc](#sonar-loc): Computes lines of code per project and in total, as they would be coputed by the license
 - [sonar-measures-export](#sonar-measures-export): Exports measures/metrics of one, several or all projects of the instance in CSV
 - [sonar-findings-export](#sonar-findings-export) (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
-- [sonar-issues-sync](sonar-issues-sync.md): Synchronizes issue changelog between branches, projects or even SonarQube instances
+- [sonar-issues-sync](#sonar-issues-sync): Synchronizes issue changelog between branches, projects or even SonarQube instances
 - [sonar-projects-export](#sonar-projects-export): Exports all projects from a SonarQube instance (EE and higher)
 - [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
 
