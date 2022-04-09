@@ -328,6 +328,12 @@
         "object": "Project",
         "message": "{} has been analyzed but has zero lines of code, please review analysis configuration"
     },
+    "PROJ_SCM_DISABLED": {
+        "severity": "MEDIUM",
+        "type": "GOVERNANCE",
+        "object": "Project",
+        "message": "{} has SCM integration disabled, issue timestamping may not be accurate for those project"
+    },
     "NOT_USING_BRANCH_ANALYSIS": {
         "severity": "LOW",
         "type": "GOVERNANCE",
