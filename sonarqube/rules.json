@@ -328,6 +328,11 @@
         "object": "Project",
         "message": "{} has been analyzed but has zero lines of code, please review analysis configuration"
     },
+    "NOT_USING_BRANCH_ANALYSIS": {
+        "severity": "LOW",
+        "type": "GOVERNANCE",
+        "message": "Running commercial edition without leveraging branch analysis"
+    },
     "QG_NO_COND": {
         "severity": "HIGH",
         "type": "GOVERNANCE",

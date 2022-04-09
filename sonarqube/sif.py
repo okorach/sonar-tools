@@ -143,9 +143,24 @@ class Sif:
                 self.__audit_background_tasks() +
                 self.__audit_es_settings() +
                 self.__audit_log_level() +
-                self.__audit_version()
+                self.__audit_version() +
+                self.__audit_branch_use()
             )
         return problems
+
+    def __audit_branch_use(self):
+        if self.edition() == 'community':
+            return []
+        util.logger.info("Auditing usage of branch analysis")
+        try:
+            use_br = self.json[_STATS]['usingBranches']
+            if use_br:
+                return []
+            rule = rules.get_rule(rules.RuleId.NOT_USING_BRANCH_ANALYSIS)
+            return [pb.Problem(rule.type, rule.severity, rule.msg)]
+        except KeyError:
+            util.logger.info("Branch usage information not in SIF, ignoring audit...")
+            return []
 
     def __get_field(self, name, node_type=_APP_NODES):
         if _SYSTEM in self.json and name in self.json[_SYSTEM]:
