@@ -151,7 +151,6 @@ class Sif:
     def __audit_branch_use(self):
         if self.edition() == 'community':
             return []
-        
         util.logger.info("Auditing usage of branch analysis")
         try:
             use_br = self.json[_STATS]['usingBranches']
