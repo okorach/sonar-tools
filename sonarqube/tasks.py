@@ -172,6 +172,10 @@ class Task(sq.SqObject):
         return problems
 
     def __audit_disabled_scm(self, audit_settings, scan_context):
+        if not audit_settings.get('audit.project.scm.disabled', True):
+            util.logger.info("Auditing disabled SCM integration is turned off, skipping...")
+            return []
+
         if scan_context.get('sonar.scm.disabled', 'false') == 'false':
             return []
         rule = rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED)
