@@ -333,6 +333,11 @@
         "type": "GOVERNANCE",
         "message": "Running commercial edition without leveraging branch analysis"
     },
+    "UNDETECTED_SCM": {
+        "severity": "LOW",
+        "type": "GOVERNANCE",
+        "message": "{} projects with undetected SCM, issue timestamping may not be accurate for those projects"
+    },
     "QG_NO_COND": {
         "severity": "HIGH",
         "type": "GOVERNANCE",

@@ -79,6 +79,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - The instance is not an official distribution
   - The log4shell fix is has not been implemented (either with recent enough SonarQube patch level or the `-Dlog4j2.formatMsgNoLookups=true` option)
   - Commercial edition but not using branch analysis
+  - Projects with undetected SCM
   - DCE: Different plugins are installed on different app nodes
   - DCE: Different version of SonarQube running on different app nodes
   - DCE: Some nodes are not in GREEN status
