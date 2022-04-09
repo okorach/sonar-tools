@@ -144,7 +144,8 @@ class Sif:
                 self.__audit_es_settings() +
                 self.__audit_log_level() +
                 self.__audit_version() +
-                self.__audit_branch_use()
+                self.__audit_branch_use() +
+                self.__audit_undetected_scm()
             )
         return problems
 
@@ -160,6 +161,22 @@ class Sif:
             return [pb.Problem(rule.type, rule.severity, rule.msg)]
         except KeyError:
             util.logger.info("Branch usage information not in SIF, ignoring audit...")
+            return []
+
+    def __audit_undetected_scm(self):
+        util.logger.info("Auditing SCM integration")
+        try:
+            scm_count, undetected_scm_count = 0, 0
+            for scm in self.json[_STATS]['projectCountByScm']:
+                scm_count += scm['count']
+                if scm['scm'] == "undetected":
+                    undetected_scm_count = scm['count']
+            if undetected_scm_count == 0:
+                return []
+            rule = rules.get_rule(rules.RuleId.UNDETECTED_SCM)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(undetected_scm_count))]
+        except KeyError:
+            util.logger.info("SCM information not in SIF, ignoring audit...")
             return []
 
     def __get_field(self, name, node_type=_APP_NODES):
