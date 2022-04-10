@@ -172,5 +172,6 @@ def main():
     util.logger.info("%d tokens older than %d days revoked", revoked_tokens, args.tokens)
     sys.exit(0)
 
+
 if __name__ == "__main__":
     main()
