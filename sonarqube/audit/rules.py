@@ -19,8 +19,8 @@
 #
 import enum
 import json
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
+import sonarqube.audit.severities as sev
+import sonarqube.audit.types as typ
 
 import sonarqube.utilities as util
 
