@@ -78,7 +78,7 @@ class Changelog():
     def is_unconfirm(self):
         for d in self._json['diffs']:
             if (d.get('key', '') == "status" and d.get('newValue', '') == "REOPENED" and
-                d.get('oldValue', '') == "CONFIRMED"):
+                    d.get('oldValue', '') == "CONFIRMED"):
                 return True
         return False
 
