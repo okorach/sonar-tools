@@ -332,7 +332,7 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "Project",
-        "message": "{} has SCM integration disabled, issue timestamping may not be accurate for those project"
+        "message": "{} has SCM integration disabled, issue timestamping may not be accurate for these project"
     },
     "NOT_USING_BRANCH_ANALYSIS": {
         "severity": "LOW",
