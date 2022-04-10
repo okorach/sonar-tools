@@ -25,9 +25,9 @@
     Usage: issuerecoverer.py -r -t <SQ_TOKEN> -u <SQ_URL>
 '''
 
-import sonarqube.env
-import sonarqube.issues
-import sonarqube.utilities as utils
+import sonar.env
+import sonar.issues
+import sonar.utilities as utils
 
 
 def parse_args(desc):
@@ -42,8 +42,8 @@ def parse_args(desc):
 
 
 args = parse_args('Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
-sqenv = sonarqube.env.Environment(some_url=args.url, some_token=args.token)
-sonarqube.env.set_env(args.url, args.token)
+sqenv = sonar.env.Environment(some_url=args.url, some_token=args.token)
+sonar.env.set_env(args.url, args.token)
 
 # Remove unset params from the dict
 params = vars(args)
@@ -57,12 +57,12 @@ params.update({'env': sqenv})
 search_params = params
 search_params['ps'] = 500
 search_params['statuses'] = 'CLOSED'
-closed_issues = sonarqube.issues.search_all_issues(**search_params)
+closed_issues = sonar.issues.search_all_issues(**search_params)
 print("Total number of closed issues: ", len(closed_issues))
 
 # Fetch all open issues
 search_params['statuses'] = 'OPEN,CONFIRMED,REOPENED,RESOLVED'
-non_closed_issues = sonarqube.issues.search(**search_params)
+non_closed_issues = sonar.issues.search(**search_params)
 print("Number of open issues: ", len(non_closed_issues))
 
 # Search for mistakenly closed issues

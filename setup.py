@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 import setuptools
-from sonarqube import version
+from sonar import version
 
 
 with open("README.md", "r", encoding='utf-8') as fh:
@@ -40,7 +40,7 @@ setuptools.setup(
     },
     packages=setuptools.find_packages(),
     package_data={
-        "sonarqube": ["LICENSE", "audit/rules.json", "sonar-audit.properties"]
+        "sonar": ["LICENSE", "audit/rules.json", "sonar-audit.properties"]
     },
     install_requires=[
         'pytz',
@@ -57,16 +57,16 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'sonar-audit = sonarqube.audit.audit:main',
-            'sonar-projects-export = sonarqube.projects_export:main',
-            'sonar-projects-import = sonarqube.projects_import:main',
-            'sonar-measures-export = sonarqube.measures_export:main',
-            'sonar-housekeeper = sonarqube.housekeeper:main',
-            'sonar-issues-sync = sonarqube.issues_sync:main',
-            'sonar-custom-measures = sonarqube.cust_measures:main',
-            'sonar-issues-export = sonarqube.issues_export:main',
-            'sonar-findings-export = sonarqube.issues_export:main',
-            'sonar-loc = sonarqube.loc:main'
+            'sonar-audit = sonar.audit.audit:main',
+            'sonar-projects-export = sonar.projects_export:main',
+            'sonar-projects-import = sonar.projects_import:main',
+            'sonar-measures-export = sonar.measures_export:main',
+            'sonar-housekeeper = sonar.housekeeper:main',
+            'sonar-issues-sync = sonar.issues_sync:main',
+            'sonar-custom-measures = sonar.cust_measures:main',
+            'sonar-issues-export = sonar.issues_export:main',
+            'sonar-findings-export = sonar.issues_export:main',
+            'sonar-loc = sonar.loc:main'
         ]
     },
     python_requires='>=3.6',
