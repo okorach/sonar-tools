@@ -112,7 +112,7 @@ def _parse_arguments():
     return util.parse_and_check_token(parser)
 
 
-def _delete_objects(problems):
+def _delete_objects(problems, mode):
     revoked_token_count = 0
     deleted_projects = {}
     deleted_branch_count = 0
@@ -125,24 +125,20 @@ def _delete_objects(problems):
         if isinstance(obj, projects.Project):
             loc = int(obj.get_measure('ncloc', fallback='0'))
             util.logger.info("Deleting %s, %d LoC", str(obj), loc)
-            if obj.delete():
+            if mode != 'delete' or obj.delete():
                 deleted_projects[obj.key] = obj
                 deleted_loc += loc
         if isinstance(obj, Branch):
             if obj.project.key in deleted_projects:
-                util.logger.info("% deleted, so no need to delete its branch '%s'",
-                    str(obj.project), obj.key)
-            else:
-                obj.delete()
+                util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
+            elif mode != 'delete' or obj.delete():
                 deleted_branch_count += 1
         if isinstance(obj, PullRequest):
             if obj.project.key in deleted_projects:
-                util.logger.info("%s deleted, so no need to delete its PR '%s'",
-                    str(obj.project), obj.key)
-            else:
-                obj.delete()
+                util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
+            elif mode != 'delete' or obj.delete():
                 deleted_pr_count += 1
-        if isinstance(obj, UserToken) and obj.revoke():
+        if isinstance(obj, UserToken) and (mode != 'delete' or obj.revoke()):
             revoked_token_count += 1
     return (len(deleted_projects), deleted_loc, deleted_branch_count, deleted_pr_count, revoked_token_count)
 
@@ -164,16 +160,16 @@ def main():
 
     problem.dump_report(problems, file=None, file_format='csv')
 
-    if mode == 'dry-run':
-        sys.exit(0)
+    op = 'to delete'
+    if mode == 'delete':
+        op = 'deleted'
+    (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
 
-    (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems)
-    util.logger.info("%d projects and %d LoCs deleted", deleted_proj, deleted_loc)
-    util.logger.info("%d branches deleted", deleted_branches)
-    util.logger.info("%d pull requests deleted", deleted_prs)
-    util.logger.info("%d tokens revoked", revoked_tokens)
-    sys.exit(len(problems))
-
+    util.logger.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, args.projects, deleted_loc, op)
+    util.logger.info("%d branches older than %d days %s", deleted_branches, args.branches, op)
+    util.logger.info("%d pull requests older than %d days deleted %s", deleted_prs, args.pullrequests, op)
+    util.logger.info("%d tokens older than %d days revoked", revoked_tokens, args.tokens)
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
