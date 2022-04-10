@@ -26,8 +26,7 @@ import json
 from sonarqube import env
 import sonarqube.components as comp
 import sonarqube.utilities as util
-import sonarqube.audit.rules as rules
-import sonarqube.audit.problem as pb
+from sonarqube.audit import rules, problem
 
 class Aggregation(comp.Component):
 
@@ -68,7 +67,7 @@ class Aggregation(comp.Component):
         if n in sizes:
             rule = rules.get_rule(broken_rule)
             msg = rule.msg.format(str(self))
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
             util.logger.debug("%s has %d projects", str(self), n)
         return problems

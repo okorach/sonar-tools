@@ -28,8 +28,8 @@ import pytz
 import requests.utils
 from sonarqube import projects, measures, components
 import sonarqube.utilities as util
-import sonarqube.audit.rules as rules
-import sonarqube.audit.problem as pb
+
+from sonarqube.audit import rules, problem
 
 _BRANCHES = {}
 
@@ -89,7 +89,7 @@ class Branch(components.Component):
     def __audit_zero_loc(self):
         if self.last_analysis_date() is not None and self.ncloc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)),
+            return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)),
                                concerned_object=self)]
         return []
 
@@ -113,7 +113,7 @@ class Branch(components.Component):
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
             msg = rule.msg.format(str(self), age)
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
             util.logger.debug("%s age is %d days", str(self), age)
         return problems

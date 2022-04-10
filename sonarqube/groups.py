@@ -24,9 +24,8 @@
 '''
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
-import sonarqube.audit.problem as pb
-import sonarqube.audit.rules as rules
 
+from sonarqube.audit import rules, problem
 
 class Group(sq.SqObject):
 
@@ -49,7 +48,7 @@ class Group(sq.SqObject):
         problems = []
         if settings['audit.groups.empty'] and self.members_count == 0:
             rule = rules.get_rule(rules.RuleId.GROUP_EMPTY)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
+            problems.append(problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
         return problems
 
 def search(params=None, endpoint=None):

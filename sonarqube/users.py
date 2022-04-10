@@ -29,8 +29,7 @@ from sonarqube import env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 import sonarqube.user_tokens as tok
-import sonarqube.audit.problem as pb
-import sonarqube.audit.rules as rules
+from sonarqube.audit import rules, problem
 
 
 class User(sq.SqObject):
@@ -85,18 +84,18 @@ class User(sq.SqObject):
             if age > settings['audit.tokens.maxAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
                 msg = rule.msg.format(str(t), age)
-                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
             if t.last_connection_date is None and age > settings['audit.tokens.maxUnusedAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
                 msg = rule.msg.format(str(t), age)
-                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
             if t.last_connection_date is None:
                 continue
             last_cnx_age = abs((today - t.last_connection_date).days)
             if last_cnx_age > settings['audit.tokens.maxUnusedAge']:
                 rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
                 msg = rule.msg.format(str(t), last_cnx_age)
-                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=t))
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
 
         cnx = self.last_login_date()
         if cnx is not None:
@@ -104,7 +103,7 @@ class User(sq.SqObject):
             if age > settings['audit.users.maxLoginAge']:
                 rule = rules.get_rule(rules.RuleId.USER_UNUSED)
                 msg = rule.msg.format(str(self), age)
-                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
 
 def search(params=None, endpoint=None):

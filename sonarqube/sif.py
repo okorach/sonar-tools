@@ -27,10 +27,10 @@ import datetime
 import re
 from dateutil.relativedelta import relativedelta
 import sonarqube.utilities as util
-import sonarqube.audit.severities as sev
-import sonarqube.audit.types as typ
-import sonarqube.audit.rules as rules
+
+from sonarqube.audit import rules, types, severities
 import sonarqube.audit.problem as pb
+
 import sonarqube.dce.app_nodes as appnodes
 import sonarqube.dce.search_nodes as searchnodes
 
@@ -282,11 +282,11 @@ class Sif:
         if log_level not in ("DEBUG", "TRACE"):
             return []
         if log_level == "TRACE":
-            return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
+            return [pb.Problem(types.Type.PERFORMANCE, severities.Severity.CRITICAL,
                 "Log level set to TRACE, this does very negatively affect platform performance, "
                 "reverting to INFO is required")]
         if log_level == "DEBUG":
-            return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.HIGH,
+            return [pb.Problem(types.Type.PERFORMANCE, severities.Severity.HIGH,
                 "Log level is set to DEBUG, this may affect platform performance, "
                 "reverting to INFO is recommended")]
         return []
