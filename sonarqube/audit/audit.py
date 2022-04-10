@@ -29,8 +29,8 @@ import sonarqube.portfolios as pf
 import sonarqube.applications as apps
 from sonarqube import users, groups, version, env, qualityprofiles, qualitygates, projects
 import sonarqube.utilities as util
-import sonarqube.audit.audit_problem as pb
-import sonarqube.audit.audit_config as conf
+import sonarqube.audit.problem as pb
+import sonarqube.audit.config as conf
 from sonarqube import sif
 
 def __deduct_format__(fmt, file):
