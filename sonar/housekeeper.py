@@ -142,6 +142,7 @@ def _delete_objects(problems, mode):
             revoked_token_count += 1
     return (len(deleted_projects), deleted_loc, deleted_branch_count, deleted_pr_count, revoked_token_count)
 
+
 def main():
     args = _parse_arguments()
 
