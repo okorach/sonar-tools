@@ -37,6 +37,8 @@ SYNC_COMMENTS = 'sync_comments'
 SYNC_ASSIGN = 'sync_assignments'
 SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
 
+_TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
+
 _ISSUES = {}
 
 
@@ -190,11 +192,6 @@ class Issue(findings.Finding):
             return self.post('issues/add_comment', {'issue': self.key, 'text': comment})
         else:
             return None
-
-    # def severity(self, force_api=False):
-    #    if force_api or self._severity is None:
-    #        self.read()
-    #    return self._severity
 
     def set_severity(self, severity):
         util.logger.debug("Changing severity of issue %s from %s to %s", self.key, self.severity, severity)
@@ -465,7 +462,7 @@ def __search_all_by_types(params, endpoint=None):
             new_params['types'] = issue_type
             issue_list.update(_search_all(new_params, endpoint))
         except TooManyIssuesError:
-            util.logger.info('Too many issues, recursing')
+            util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(__search_all_by_directories(params=new_params, endpoint=endpoint))
     return issue_list
 
@@ -479,7 +476,7 @@ def __search_all_by_severities(params, endpoint=None):
         try:
             issue_list.update(_search_all(params=new_params, endpoint=endpoint))
         except TooManyIssuesError:
-            util.logger.info('Too many issues, recursing')
+            util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(__search_all_by_types(params=new_params, endpoint=endpoint))
     util.logger.info('Total: %d for %s', len(issue_list), str(params))
     return issue_list
@@ -503,7 +500,7 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
         util.logger.info("Too many issues (%d), splitting time window", e.nbr_issues)
         diff = (date_stop - date_start).days
         if diff == 0:
-            util.logger.info('Too many issues, recursing')
+            util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list = __search_all_by_severities(new_params, endpoint=endpoint)
         elif diff == 1:
             issue_list.update(
@@ -534,7 +531,7 @@ def _search_all_by_project(project_key, params, endpoint=None):
         try:
             issue_list.update(_search_all(params, endpoint))
         except TooManyIssuesError:
-            util.logger.info('Too many issues, recursing')
+            util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(__search_all_by_date(params=params, endpoint=endpoint))
     return issue_list
 

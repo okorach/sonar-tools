@@ -26,9 +26,8 @@ import datetime
 import re
 import json
 import pytz
-from sonar import env, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures, options
+from sonar import env, components, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures, options, rules
 import sonar.sqobject as sq
-import sonar.components as comp
 import sonar.utilities as util
 
 import sonar.audit.severities as sev
@@ -45,7 +44,7 @@ APP_QUALIFIER = 'APP'
 
 _BIND_SEP = ":::"
 
-class Project(comp.Component):
+class Project(components.Component):
 
     def __init__(self, key, endpoint=None, data=None):
         self.visibility = None
