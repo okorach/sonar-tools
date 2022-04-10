@@ -27,8 +27,7 @@ import datetime
 import pytz
 from sonarqube import projects, measures, components
 import sonarqube.utilities as util
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+from sonarqube.audit import rules, problem
 
 _PULL_REQUESTS = {}
 
@@ -90,7 +89,7 @@ class PullRequest(components.Component):
         problems = []
         if age > max_age:
             rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
-            problems.append(pb.Problem(rule.type, rule.severity,
+            problems.append(problem.Problem(rule.type, rule.severity,
                                        rule.msg.format(str(self), age), concerned_object=self))
         else:
             util.logger.debug("%s age is %d days", str(self), age)

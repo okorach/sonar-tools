@@ -29,11 +29,12 @@ import json
 import requests
 
 import sonarqube.utilities as util
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
-import sonarqube.audit_config as conf
+
+from sonarqube.audit import rules, config
+import sonarqube.audit.severities as sev
+import sonarqube.audit.types as typ
+import sonarqube.audit.problem as pb
+
 from sonarqube import sif
 
 AUTHENTICATION_ERROR_MSG = "Authentication error. Is token valid ?"
@@ -226,7 +227,7 @@ class Environment:
             resp = self.get('settings/values', params={'keys': 'projects.default.visibility'})
             visi = json.loads(resp.text)['settings'][0]['value']
         util.logger.info("Project default visibility is '%s'", visi)
-        if conf.get_property('checkDefaultProjectVisibility') and visi != 'private':
+        if config.get_property('checkDefaultProjectVisibility') and visi != 'private':
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msq.format(visi)))
         return problems

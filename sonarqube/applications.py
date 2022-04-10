@@ -27,7 +27,7 @@ from sonarqube import env, measures
 import sonarqube.sqobject as sq
 import sonarqube.aggregations as aggr
 import sonarqube.utilities as util
-import sonarqube.audit_rules as rules
+from sonarqube.audit import rules
 
 _OBJECTS = {}
 

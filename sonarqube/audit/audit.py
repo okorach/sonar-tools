@@ -27,11 +27,9 @@ import sys
 import json
 import sonarqube.portfolios as pf
 import sonarqube.applications as apps
-from sonarqube import users, groups, version, env, qualityprofiles, qualitygates, projects
+from sonarqube import users, groups, version, env, qualityprofiles, qualitygates, projects, sif
 import sonarqube.utilities as util
-import sonarqube.audit_problem as pb
-import sonarqube.audit_config as conf
-from sonarqube import sif
+from sonarqube.audit import problem, config
 
 def __deduct_format__(fmt, file):
     if fmt is not None:
@@ -109,10 +107,10 @@ def main():
 
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-    settings = conf.load('sonar-audit')
+    settings = config.load('sonar-audit')
 
     if kwargs.get('config', False):
-        conf.configure()
+        config.configure()
         sys.exit(0)
 
     if kwargs.get('sif', None) is not None:
@@ -134,7 +132,7 @@ def main():
         problems = _audit_sq(sq, settings, args.what)
 
     args.format = __deduct_format__(args.format, args.file)
-    pb.dump_report(problems, args.file, args.format, args.csvSeparator)
+    problem.dump_report(problems, args.file, args.format, args.csvSeparator)
 
     if problems:
         util.logger.warning("%d issues found during audit", len(problems))

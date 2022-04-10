@@ -26,10 +26,8 @@
 import datetime
 from dateutil.relativedelta import relativedelta
 import sonarqube.utilities as util
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+from sonarqube.audit import rules, severities, types
+import sonarqube.audit.problem as pb
 import sonarqube.dce.nodes as dce_nodes
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
@@ -99,11 +97,11 @@ class AppNode(dce_nodes.DceNode):
             util.logger.info("Log level of '%s' is '%s', all good...", str(self), log_level)
             return []
         if log_level == "TRACE":
-            return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.CRITICAL,
+            return [pb.Problem(types.Type.PERFORMANCE, severities.Severity.CRITICAL,
                 f"Log level of {str(self)} set to TRACE, this does very negatively affect platform performance, "
                 "reverting to INFO is required")]
         if log_level == "DEBUG":
-            return [pb.Problem(typ.Type.PERFORMANCE, sev.Severity.HIGH,
+            return [pb.Problem(types.Type.PERFORMANCE, severities.Severity.HIGH,
                 f"Log level of {str(self)} is set to DEBUG, this may affect platform performance, "
                 "reverting to INFO is recommended")]
         util.logger.debug("%s: Node log level is %s", str(self), log_level)
@@ -119,7 +117,7 @@ class AppNode(dce_nodes.DceNode):
 
     def __audit_official(self):
         if _SYSTEM not in self.json:
-            util.logger.warn("%s: Official distribution information missing, audit skipped...", str(self))
+            util.logger.warning("%s: Official distribution information missing, audit skipped...", str(self))
             return []
         elif not self.json[_SYSTEM]['Official Distribution']:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)

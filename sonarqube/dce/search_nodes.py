@@ -24,14 +24,14 @@
 '''
 
 import sonarqube.utilities as util
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
-import sonarqube.dce.nodes as dce_nodes
+from sonarqube.audit import rules
+import sonarqube.audit.problem as pb
+from sonarqube.dce import nodes
 
 _STORE_SIZE = 'Store Size'
 _ES_STATE = 'Search State'
 
-class SearchNode(dce_nodes.DceNode):
+class SearchNode(nodes.DceNode):
 
     def __str__(self):
         return f"Search Node '{self.name()}'"

@@ -40,7 +40,7 @@ setuptools.setup(
     },
     packages=setuptools.find_packages(),
     package_data={
-        "sonarqube": ["LICENSE", "rules.json", "sonar-audit.properties"]
+        "sonarqube": ["LICENSE", "audit/rules.json", "sonar-audit.properties"]
     },
     install_requires=[
         'pytz',
@@ -57,7 +57,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'sonar-audit = sonarqube.audit:main',
+            'sonar-audit = sonarqube.audit.audit:main',
             'sonar-projects-export = sonarqube.projects_export:main',
             'sonar-projects-import = sonarqube.projects_import:main',
             'sonar-measures-export = sonarqube.measures_export:main',

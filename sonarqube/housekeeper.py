@@ -25,14 +25,12 @@
 
 '''
 import sys
-import sonarqube.audit_config as conf
 from sonarqube import projects, users, groups, env, version
 from sonarqube.branches import Branch
 from sonarqube.pull_requests import PullRequest
 from sonarqube.user_tokens import UserToken
 import sonarqube.utilities as util
-import sonarqube.audit_problem as pb
-
+from sonarqube.audit import config, problem
 
 def get_project_problems(max_days_proj, max_days_branch, max_days_pr, endpoint):
     problems = []
@@ -49,7 +47,7 @@ def get_project_problems(max_days_proj, max_days_branch, max_days_pr, endpoint):
         'audit.projects.visibility': False,
         'audit.projects.permissions': False
     }
-    settings = conf.load(config_name='sonar-audit', settings=settings)
+    settings = config.load(config_name='sonar-audit', settings=settings)
     problems = projects.audit(endpoint=endpoint, audit_settings=settings)
     nb_proj = 0
     total_loc = 0
@@ -71,7 +69,7 @@ def get_user_problems(max_days, endpoint):
         'audit.tokens.maxUnusedAge': 30,
         'audit.groups.empty': True
     }
-    settings = conf.load(config_name='sonar-audit', settings=settings)
+    settings = config.load(config_name='sonar-audit', settings=settings)
     user_problems = users.audit(endpoint=endpoint, audit_settings=settings)
     nb_problems = len(user_problems)
     if nb_problems == 0:
@@ -158,7 +156,7 @@ def main():
     if args.tokens:
         problems += get_user_problems(args.tokens, sq)
 
-    pb.dump_report(problems, file=None, file_format='csv')
+    problem.dump_report(problems, file=None, file_format='csv')
 
     if mode == 'dry-run':
         sys.exit(0)

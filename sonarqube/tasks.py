@@ -28,11 +28,9 @@ import time
 import json
 import re
 from sonarqube import env
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+from sonarqube.audit import rules, problem
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
-
 
 SUCCESS = 'SUCCESS'
 PENDING = 'PENDING'
@@ -167,7 +165,7 @@ class Task(sq.SqObject):
             if not is_exception:
                 rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
                 msg = rule.msg.format(f"project key '{self.component()}'", exclusion_pattern)
-                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
                 break     # Report only on the 1st suspicious match
         return problems
 
@@ -180,7 +178,7 @@ class Task(sq.SqObject):
             return []
         rule = rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED)
         proj = self.component()
-        return [pb.Problem(rule.type, rule.severity, rule.msg.format(f"{str(proj)}'"), concerned_object=proj)]
+        return [problem.Problem(rule.type, rule.severity, rule.msg.format(f"{str(proj)}'"), concerned_object=proj)]
 
     def audit(self, audit_settings):
         if not audit_settings['audit.projects.exclusions']:

@@ -19,9 +19,7 @@
 #
 import enum
 import json
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
-
+from sonarqube.audit import severities, types
 import sonarqube.utilities as util
 
 __RULES = {}
@@ -148,8 +146,8 @@ class RuleConfigError(Exception):
 class Rule:
     def __init__(self, rule_id, severity, rule_type, concerned_object, message):
         self.id = to_id(rule_id)
-        self.severity = sev.to_severity(severity)
-        self.type = typ.to_type(rule_type)
+        self.severity = severities.to_severity(severity)
+        self.type = types.to_type(rule_type)
         self.object = concerned_object
         self.msg = message
 
@@ -173,9 +171,9 @@ def load():
     for rule_id, rule in rules.items():
         if to_id(rule_id) is None:
             raise RuleConfigError(f"Rule '{rule_id}' from rules.json is not a legit ruleId")
-        if typ.to_type(rule.get('type', '')) is None:
+        if types.to_type(rule.get('type', '')) is None:
             raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect type")
-        if sev.to_severity(rule.get('severity', '')) is None:
+        if severities.to_severity(rule.get('severity', '')) is None:
             raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect severity")
         if 'message' not in rule:
             raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no message defined'")

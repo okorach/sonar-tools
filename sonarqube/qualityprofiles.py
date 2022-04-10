@@ -25,13 +25,12 @@
 import datetime
 import json
 import pytz
-from sonarqube import env
+from sonarqube import env, rules
 import sonarqube.sqobject as sq
-import sonarqube.audit_rules as arules
-import sonarqube.rules as rules
-
 import sonarqube.utilities as util
-import sonarqube.audit_problem as pb
+
+import sonarqube.audit.rules as arules
+import sonarqube.audit.problem as pb
 
 
 class QualityProfile(sq.SqObject):
