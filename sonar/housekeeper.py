@@ -21,7 +21,9 @@
 '''
 
     Removes obsolete data from SonarQube platform
-    Currently only projects not analyzed since a given number of days
+    Currently:
+    - projects, branches, PR not analyzed since a given number of days
+    - Tokens not renewed since a given number of days
 
 '''
 import sys
@@ -87,6 +89,10 @@ def get_user_problems(max_days, endpoint):
 
 
 def _parse_arguments():
+    _DEFAULT_PROJECT_OBSOLESCENCE = 365
+    _DEFAULT_BRANCH_OBSOLESCENCE = 90
+    _DEFAULT_PR_OBSOLESCENCE = 30
+    _DEFAULT_TOKEN_OBSOLESCENCE = 365
     util.set_logger('sonar-housekeeper')
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
     parser.add_argument('--mode', required=False, choices=['dry-run', 'delete'],
@@ -95,14 +101,14 @@ def _parse_arguments():
                         If 'dry-run', script only lists objects (projects, branches, PRs or tokens) to delete,
                         If 'delete' it deletes projects or tokens
                         ''')
-    parser.add_argument('-P', '--projects', required=False, type=int, default=0,
-        help='Deletes projects not analyzed since a given number of days')
-    parser.add_argument('-B', '--branches', required=False, type=int, default=0,
-        help='Deletes branches not to be kept and not analyzed since a given number of days')
-    parser.add_argument('-R', '--pullrequests', required=False, type=int, default=0,
-        help='Deletes pull requests not analyzed since a given number of days')
-    parser.add_argument('-T', '--tokens', required=False, type=int, default=0,
-        help='Deletes user tokens older than a certain number of days')
+    parser.add_argument('-P', '--projects', required=False, type=int, default=_DEFAULT_PROJECT_OBSOLESCENCE,
+        help=f'Deletes projects not analyzed since a given number of days, by default {_DEFAULT_PROJECT_OBSOLESCENCE} days')
+    parser.add_argument('-B', '--branches', required=False, type=int, default=_DEFAULT_BRANCH_OBSOLESCENCE,
+        help=f'Deletes branches not to be kept and not analyzed since a given number of days, by default {_DEFAULT_BRANCH_OBSOLESCENCE} days')
+    parser.add_argument('-R', '--pullrequests', required=False, type=int, default=_DEFAULT_BRANCH_OBSOLESCENCE,
+        help=f'Deletes pull requests not analyzed since a given number of days, by default {_DEFAULT_PR_OBSOLESCENCE} days')
+    parser.add_argument('-T', '--tokens', required=False, type=int, default=_DEFAULT_TOKEN_OBSOLESCENCE,
+        help=f'Deletes user tokens older than a certain number of days, by default {_DEFAULT_TOKEN_OBSOLESCENCE} days')
     return util.parse_and_check_token(parser)
 
 
