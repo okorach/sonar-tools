@@ -120,7 +120,7 @@ class Project(components.Component):
         if self._ncloc_with_branches is not None:
             return self._ncloc_with_branches
         self._ncloc_with_branches = self.ncloc()
-        if not self.endpoint.edition() == 'community':
+        if self.endpoint.edition() != 'community':
             for b in self.get_branches() + self.get_pull_requests():
                 if b.ncloc() > self._ncloc_with_branches:
                     self._ncloc_with_branches = b.ncloc()
