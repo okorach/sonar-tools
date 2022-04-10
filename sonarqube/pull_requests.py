@@ -27,8 +27,8 @@ import datetime
 import pytz
 from sonarqube import projects, measures, components
 import sonarqube.utilities as util
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+import sonarqube.audit.rules as rules
+import sonarqube.audit.problem as pb
 
 _PULL_REQUESTS = {}
 

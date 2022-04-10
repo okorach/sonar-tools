@@ -26,10 +26,10 @@
 import datetime
 from dateutil.relativedelta import relativedelta
 import sonarqube.utilities as util
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+import sonarqube.audit.severities as sev
+import sonarqube.audit.types as typ
+import sonarqube.audit.rules as rules
+import sonarqube.audit.problem as pb
 import sonarqube.dce.nodes as dce_nodes
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)

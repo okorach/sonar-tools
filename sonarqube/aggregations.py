@@ -26,8 +26,8 @@ import json
 from sonarqube import env
 import sonarqube.components as comp
 import sonarqube.utilities as util
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+import sonarqube.audit.rules as rules
+import sonarqube.audit.problem as pb
 
 class Aggregation(comp.Component):
 

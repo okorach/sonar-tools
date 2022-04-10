@@ -28,10 +28,10 @@ import sonarqube.sqobject as sq
 import sonarqube.env as env
 import sonarqube.utilities as util
 
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+import sonarqube.audit.severities as sev
+import sonarqube.audit.types as typ
+import sonarqube.audit.rules as rules
+import sonarqube.audit.problem as pb
 
 
 NEW_ISSUES_SHOULD_BE_ZERO = 'Any numeric threshold on new issues should be 0 or should be removed from QG conditions'

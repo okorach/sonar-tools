@@ -28,8 +28,8 @@ import time
 import json
 import re
 from sonarqube import env
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+import sonarqube.audit.rules as rules
+import sonarqube.audit.problem as pb
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
 

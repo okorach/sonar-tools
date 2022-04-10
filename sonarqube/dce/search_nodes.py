@@ -24,8 +24,8 @@
 '''
 
 import sonarqube.utilities as util
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
+import sonarqube.audit.rules as rules
+import sonarqube.audit.problem as pb
 import sonarqube.dce.nodes as dce_nodes
 
 _STORE_SIZE = 'Store Size'

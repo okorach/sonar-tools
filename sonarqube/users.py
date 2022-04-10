@@ -28,9 +28,9 @@ import pytz
 from sonarqube import env
 import sonarqube.sqobject as sq
 import sonarqube.utilities as util
-import sonarqube.audit_problem as pb
 import sonarqube.user_tokens as tok
-import sonarqube.audit_rules as rules
+import sonarqube.audit.problem as pb
+import sonarqube.audit.rules as rules
 
 
 class User(sq.SqObject):

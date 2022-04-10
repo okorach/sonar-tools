@@ -29,11 +29,11 @@ import json
 import requests
 
 import sonarqube.utilities as util
-import sonarqube.audit_severities as sev
-import sonarqube.audit_types as typ
-import sonarqube.audit_rules as rules
-import sonarqube.audit_problem as pb
-import sonarqube.audit_config as conf
+import sonarqube.audit.severities as sev
+import sonarqube.audit.types as typ
+import sonarqube.audit.rules as rules
+import sonarqube.audit.problem as pb
+import sonarqube.audit.config as conf
 from sonarqube import sif
 
 AUTHENTICATION_ERROR_MSG = "Authentication error. Is token valid ?"
