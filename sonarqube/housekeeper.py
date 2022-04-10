@@ -25,13 +25,13 @@
 
 '''
 import sys
-import sonarqube.audit.audit_config as conf
 from sonarqube import projects, users, groups, env, version
 from sonarqube.branches import Branch
 from sonarqube.pull_requests import PullRequest
 from sonarqube.user_tokens import UserToken
 import sonarqube.utilities as util
-import sonarqube.audit.audit_problem as pb
+import sonarqube.audit.config as conf
+import sonarqube.audit.problem as pb
 
 
 def get_project_problems(max_days_proj, max_days_branch, max_days_pr, endpoint):
