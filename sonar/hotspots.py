@@ -25,7 +25,6 @@
 
 import json
 import requests.utils
-import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar import env, projects, findings
 

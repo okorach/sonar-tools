@@ -41,6 +41,9 @@ AUTHENTICATION_ERROR_MSG = "Authentication error. Is token valid ?"
 AUTORIZATION_ERROR_MSG = "Insufficient permissions to perform operation"
 HTTP_FATAL_ERROR_MSG = "HTTP fatal error %d - %s"
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
+
+_NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
+
 _APP_NODES = 'Application Nodes'
 _ES_NODES = 'Search Nodes'
 _SYSTEM = 'System'
@@ -414,7 +417,7 @@ def _audit_setting_value(key, platform_settings, audit_settings):
         util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
     if v[0] not in platform_settings:
-        util.logger.warning("Setting %s does not exist, skipping...", v[0])
+        util.logger.warning(_NON_EXISTING_SETTING_SKIPPED, v[0])
         return []
     util.logger.info("Auditing that setting %s has common/recommended value '%s'", v[0], v[1])
     s = platform_settings.get(v[0], '')
@@ -429,7 +432,7 @@ def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version):
         util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
     if v[0] not in platform_settings:
-        util.logger.warning("Setting %s does not exist, skipping...", v[0])
+        util.logger.warning(_NON_EXISTING_SETTING_SKIPPED, v[0])
         return []
     if v[0] == 'sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches' and \
        sq_version >= (8, 0, 0):
@@ -449,7 +452,7 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings):
         util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
     if key not in platform_settings:
-        util.logger.warning("Setting %s does not exist, skipping...", key)
+        util.logger.warning(_NON_EXISTING_SETTING_SKIPPED, key)
         return []
     util.logger.info("Auditing whether setting %s is set or not", key)
     problems = []

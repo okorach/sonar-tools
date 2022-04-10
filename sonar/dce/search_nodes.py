@@ -70,24 +70,24 @@ class SearchNode(nodes.DceNode):
             return []
 
 def audit(sub_sif, sif):
-    nodes = []
+    searchnodes = []
     problems = []
     for n in sub_sif:
-        nodes.append(SearchNode(n, sif))
-    if len(nodes) < 3:
+        searchnodes.append(SearchNode(n, sif))
+    if len(searchnodes) < 3:
         rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_NOT_HA)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format()))
-    for i in range(len(nodes)):
-        problems += nodes[i].audit()
-        size_i = nodes[i].store_size()
+    for i in range(len(searchnodes)):
+        problems += searchnodes[i].audit()
+        size_i = searchnodes[i].store_size()
         if size_i is None:
             continue
-        for j in range(i+1, len(nodes)):
-            size_j = nodes[j].store_size()
+        for j in range(i+1, len(searchnodes)):
+            size_j = searchnodes[j].store_size()
             if size_j is None or size_j == 0:
                 continue
             store_ratio = size_i / size_j
             if store_ratio < 0.5 or store_ratio > 2:
                 rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(nodes[i]), str(nodes[j]))))
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(searchnodes[i]), str(searchnodes[j]))))
     return problems

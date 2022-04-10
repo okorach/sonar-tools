@@ -25,12 +25,10 @@
 
 import json
 import sonar.sqobject as sq
-import sonar.env as env
+from sonar import env
 import sonar.utilities as util
 
-import sonar.audit.severities as sev
-import sonar.audit.types as typ
-import sonar.audit.rules as rules
+from sonar.audit import rules, severities, types
 import sonar.audit.problem as pb
 
 
@@ -110,7 +108,7 @@ class QualityGate(sq.SqObject):
             util.logger.debug("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
                 msg = f"{str(self)} condition on metric '{m}': {msg}".format(self.name, m, msg)
-                problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.HIGH, msg))
+                problems.append(pb.Problem(types.Type.BAD_PRACTICE, severities.Severity.HIGH, msg))
         return problems
 
     def audit(self, audit_settings=None):
