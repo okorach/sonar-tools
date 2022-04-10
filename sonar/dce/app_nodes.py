@@ -133,8 +133,8 @@ class AppNode(dce_nodes.DceNode):
             return []
         st_time = self.sif.start_time()
         if ((st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0)) or
-            (st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0)) or
-            (st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0))):
+                (st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0)) or
+                (st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0))):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
             return [pb.Problem(rule.type, rule.severity, rule.msg)]
         else:
