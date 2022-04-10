@@ -26,12 +26,11 @@ import datetime
 import re
 import json
 import pytz
-from sonar import env, components, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures, options, rules
+from sonar import env, components, issues, hotspots, tasks, custom_measures, pull_requests, branches, measures, options
 import sonar.sqobject as sq
 import sonar.utilities as util
 
-import sonar.audit.severities as sev
-import sonar.audit.rules as rules
+from sonar.audit import rules, severities
 import sonar.audit.problem as pb
 import sonar.permissions as perms
 
@@ -346,7 +345,7 @@ Is this normal ?", gr['name'], str(self.key))
             util.logger.debug("Auditing of projects with old analysis date is disabled, skipping")
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
-            severity = sev.Severity.HIGH if age > 365 else rule.severity
+            severity = severities.Severity.HIGH if age > 365 else rule.severity
             loc = self.get_measure('ncloc', fallback='0')
             msg = rule.msg.format(str(self), loc, age)
             problems.append(pb.Problem(rule.type, severity, msg, concerned_object=self))
