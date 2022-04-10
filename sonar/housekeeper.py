@@ -21,7 +21,9 @@
 '''
 
     Removes obsolete data from SonarQube platform
-    Currently only projects not analyzed since a given number of days
+    Currently:
+    - projects, branches, PR not analyzed since a given number of days
+    - Tokens not renewed since a given number of days
 
 '''
 import sys
@@ -87,6 +89,10 @@ def get_user_problems(max_days, endpoint):
 
 
 def _parse_arguments():
+    _DEFAULT_PROJECT_OBSOLESCENCE = 365
+    _DEFAULT_BRANCH_OBSOLESCENCE = 90
+    _DEFAULT_PR_OBSOLESCENCE = 30
+    _DEFAULT_TOKEN_OBSOLESCENCE = 365
     util.set_logger('sonar-housekeeper')
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
     parser.add_argument('--mode', required=False, choices=['dry-run', 'delete'],
@@ -95,18 +101,18 @@ def _parse_arguments():
                         If 'dry-run', script only lists objects (projects, branches, PRs or tokens) to delete,
                         If 'delete' it deletes projects or tokens
                         ''')
-    parser.add_argument('-P', '--projects', required=False, type=int, default=0,
-        help='Deletes projects not analyzed since a given number of days')
-    parser.add_argument('-B', '--branches', required=False, type=int, default=0,
-        help='Deletes branches not to be kept and not analyzed since a given number of days')
-    parser.add_argument('-R', '--pullrequests', required=False, type=int, default=0,
-        help='Deletes pull requests not analyzed since a given number of days')
-    parser.add_argument('-T', '--tokens', required=False, type=int, default=0,
-        help='Deletes user tokens older than a certain number of days')
+    parser.add_argument('-P', '--projects', required=False, type=int, default=_DEFAULT_PROJECT_OBSOLESCENCE,
+        help=f'Deletes projects not analyzed since a given number of days, by default {_DEFAULT_PROJECT_OBSOLESCENCE} days')
+    parser.add_argument('-B', '--branches', required=False, type=int, default=_DEFAULT_BRANCH_OBSOLESCENCE,
+        help=f'Deletes branches not to be kept and not analyzed since a given number of days, by default {_DEFAULT_BRANCH_OBSOLESCENCE} days')
+    parser.add_argument('-R', '--pullrequests', required=False, type=int, default=_DEFAULT_BRANCH_OBSOLESCENCE,
+        help=f'Deletes pull requests not analyzed since a given number of days, by default {_DEFAULT_PR_OBSOLESCENCE} days')
+    parser.add_argument('-T', '--tokens', required=False, type=int, default=_DEFAULT_TOKEN_OBSOLESCENCE,
+        help=f'Deletes user tokens older than a certain number of days, by default {_DEFAULT_TOKEN_OBSOLESCENCE} days')
     return util.parse_and_check_token(parser)
 
 
-def _delete_objects(problems):
+def _delete_objects(problems, mode):
     revoked_token_count = 0
     deleted_projects = {}
     deleted_branch_count = 0
@@ -119,26 +125,23 @@ def _delete_objects(problems):
         if isinstance(obj, projects.Project):
             loc = int(obj.get_measure('ncloc', fallback='0'))
             util.logger.info("Deleting %s, %d LoC", str(obj), loc)
-            if obj.delete():
+            if mode != 'delete' or obj.delete():
                 deleted_projects[obj.key] = obj
                 deleted_loc += loc
         if isinstance(obj, Branch):
             if obj.project.key in deleted_projects:
-                util.logger.info("% deleted, so no need to delete its branch '%s'",
-                    str(obj.project), obj.key)
-            else:
-                obj.delete()
+                util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
+            elif mode != 'delete' or obj.delete():
                 deleted_branch_count += 1
         if isinstance(obj, PullRequest):
             if obj.project.key in deleted_projects:
-                util.logger.info("%s deleted, so no need to delete its PR '%s'",
-                    str(obj.project), obj.key)
-            else:
-                obj.delete()
+                util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
+            elif mode != 'delete' or obj.delete():
                 deleted_pr_count += 1
-        if isinstance(obj, UserToken) and obj.revoke():
+        if isinstance(obj, UserToken) and (mode != 'delete' or obj.revoke()):
             revoked_token_count += 1
     return (len(deleted_projects), deleted_loc, deleted_branch_count, deleted_pr_count, revoked_token_count)
+
 
 def main():
     args = _parse_arguments()
@@ -158,15 +161,16 @@ def main():
 
     problem.dump_report(problems, file=None, file_format='csv')
 
-    if mode == 'dry-run':
-        sys.exit(0)
+    op = 'to delete'
+    if mode == 'delete':
+        op = 'deleted'
+    (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
 
-    (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems)
-    util.logger.info("%d projects and %d LoCs deleted", deleted_proj, deleted_loc)
-    util.logger.info("%d branches deleted", deleted_branches)
-    util.logger.info("%d pull requests deleted", deleted_prs)
-    util.logger.info("%d tokens revoked", revoked_tokens)
-    sys.exit(len(problems))
+    util.logger.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, args.projects, deleted_loc, op)
+    util.logger.info("%d branches older than %d days %s", deleted_branches, args.branches, op)
+    util.logger.info("%d pull requests older than %d days deleted %s", deleted_prs, args.pullrequests, op)
+    util.logger.info("%d tokens older than %d days revoked", revoked_tokens, args.tokens)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
