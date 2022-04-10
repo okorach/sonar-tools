@@ -17,11 +17,3 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-import sys
-import sonarqube.audit_rules as rules
-
-try:
-    rules.load()
-except rules.RuleConfigError as e:
-    print(e.message)
-    sys.exit(3)
