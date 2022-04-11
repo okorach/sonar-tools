@@ -28,14 +28,9 @@ import requests.utils
 
 import sonar.issue_changelog as changelog
 import sonar.utilities as util
-from sonar import env, findings, projects, users
+from sonar import env, findings, projects, users, syncer
 
-SYNC_IGNORE_COMPONENTS = 'ignore_components'
-SYNC_ADD_LINK = 'add_link'
-SYNC_ADD_COMMENTS = 'add_comments'
-SYNC_COMMENTS = 'sync_comments'
-SYNC_ASSIGN = 'sync_assignments'
-SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
+
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 
@@ -377,10 +372,10 @@ class Issue(findings.Finding):
             self.mark_as_reviewed()
             # self.add_comment(f"Hotspot review {origin}")
         elif event_type == 'ASSIGN':
-            if settings[SYNC_ASSIGN]:
+            if settings[syncer.SYNC_ASSIGN]:
                 u = users.get_login_from_name(data, endpoint=self.endpoint)
                 if u is None:
-                    u = settings[SYNC_SERVICE_ACCOUNTS][0]
+                    u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == 'TAG':
@@ -420,7 +415,7 @@ class Issue(findings.Finding):
             self.__apply_event(events[key], settings)
 
         comments = source_issue.comments()
-        if len(self.comments()) == 0 and settings[SYNC_ADD_LINK]:
+        if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
             util.logger.info("Target issue has 0 comments")
             start_change = 1
             self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
