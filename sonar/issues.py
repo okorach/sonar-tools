@@ -30,8 +30,6 @@ import sonar.issue_changelog as changelog
 import sonar.utilities as util
 from sonar import env, findings, projects, users, syncer
 
-
-
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 
 _ISSUES = {}

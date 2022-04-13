@@ -584,7 +584,6 @@ Is this normal ?", gr['name'], str(self.key))
         return (report, counters)
 
 
-
 def __add_counters(counts, tmp_counts):
     for k in tmp_counts:
         if k not in counts:

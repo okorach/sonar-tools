@@ -113,7 +113,7 @@ class Branch(components.Component):
         return self.get_issues() + self.get_hotspots()
 
     def sync(self, another_branch):
-        return syncer.sync_lists(self.get_issues(), another_branch.get_issues())
+        return syncer.sync_lists(self.get_issues(), another_branch.get_issues(), name=str(self))
 
     def __audit_last_analysis(self, audit_settings):
         age = self.last_analysis_age()
