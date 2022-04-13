@@ -79,53 +79,6 @@ def __dump_report(report, file):
             print(txt, file=fh)
 
 
-def sync_branches(key1, endpoint1, settings, key2=None, endpoint2=None, branch1=None, branch2=None):
-    if key2 is None:
-        key2 = key1
-    if endpoint2 is None:
-        endpoint2 = endpoint1
-    obj1 = branches.Branch(project=key1, name=branch1, endpoint=endpoint1)
-    obj2 = branches.Branch(project=key2, name=branch2, endpoint=endpoint2)
-    return obj1.sync(obj2)
-
-
-def __add_counters(counts, tmp_counts):
-    for k in tmp_counts:
-        if k not in counts:
-            counts[k] = 0
-        counts[k] += tmp_counts[k]
-    return counts
-
-
-def sync_project_branches_between_platforms(source_key, target_key, settings, endpoint, target_endpoint):
-    src_branches = projects.Project(key=source_key, endpoint=endpoint).get_branches()
-    tgt_branches = projects.Project(key=target_key, endpoint=target_endpoint).get_branches()
-    report = []
-    counters = {}
-    for src_b in src_branches:
-        for tgt_b in tgt_branches:
-            if src_b.name != tgt_b.name:
-                continue
-            (tmp_report, tmp_counts) = src_b.sync(tgt_b)
-            report += tmp_report
-            counters = __add_counters(counters, tmp_counts)
-    return (report, counters)
-
-
-def sync_all_project_branches(key, settings, endpoint):
-    my_branches = projects.Project(key=key, endpoint=endpoint).get_branches()
-    report = []
-    counters = {}
-    for b1 in my_branches:
-        for b2 in my_branches:
-            if b1.name == b2.name:
-                continue
-            (tmp_report, tmp_counts) = b1.sync(b2)
-            report += tmp_report
-            counters = __add_counters(counters, tmp_counts)
-    return (report, counters)
-
-
 def main():
     args = __parse_args('Synchronizes issues changelog of different branches of same or different projects, '
                         'see: https://pypi.org/project/sonar-tools/#sonar-issues-sync')
@@ -151,37 +104,40 @@ def main():
             raise env.NonExistingObjectError(source_key, f"Project key '{source_key}' does not exist")
         if target_url is None and target_key is None and source_branch is None and target_branch is None:
             # Sync all branches of a given project
-            (report, counters) = sync_all_project_branches(source_key, settings, source_env)
+            (report, counters) = projects.get_object(key=source_key, endpoint=source_env).sync_branches()
         elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
             # Sync 2 branches of a given project
             if source_branch != target_branch:
-                (report, counters) = sync_branches(key1=source_key, endpoint1=source_env, settings=settings,
-                                       branch1=source_branch, branch2=target_branch)
+                src_branch = branches.get_object(branch=source_branch, project_key_or_obj=source_key, endpoint=source_env)
+                tgt_branch = branches.get_object(branch=target_branch, project_key_or_obj=source_key, endpoint=source_env)
+                (report, counters) = src_branch.sync(tgt_branch)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
 
         elif target_url is None and target_key is not None:
-            # sync 2 branches of 2 different projects
+            # sync 2 branches of 2 different projects of the same platform
             if not projects.exists(target_key, endpoint=source_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
-            (report, counters) = sync_branches(key1=source_key, endpoint1=source_env, key2=target_key, endpoint2=source_env,
-                                               branch1=source_branch, branch2=target_branch, settings=settings)
+            src_branch = branches.get_object(branch=source_branch, project_key_or_obj=source_key, endpoint=source_env)
+            tgt_branch = branches.get_object(branch=target_branch, project_key_or_obj=target_key, endpoint=source_env)
+            (report, counters) = src_branch.sync(tgt_branch)
 
         elif target_url is not None and target_key is not None:
             target_env = env.Environment(some_url=args.urlTarget, some_token=args.tokenTarget)
             if not projects.exists(target_key, endpoint=target_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
-            src_issues = {}
             settings[syncer.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             if source_branch is not None or target_branch is not None:
                 # sync main 2 branches of 2 projects on different platforms
-                (report, counters) = sync_branches(key1=source_key, endpoint1=source_env, key2=target_key, endpoint2=target_env,
-                                                   branch1=source_branch, branch2=target_branch, settings=settings)
+                src_branch = branches.get_object(branch=source_branch, project_key_or_obj=source_key, endpoint=source_env)
+                tgt_branch = branches.get_object(branch=target_branch, project_key_or_obj=target_key, endpoint=target_env)
+                (report, counters) = src_branch.sync(tgt_branch)
             else:
                 # sync main all branches of 2 projects on different platforms
-                (report, counters) = sync_project_branches_between_platforms(source_key, target_key,
-                    endpoint=source_env, target_endpoint=target_env, settings=settings)
+                src_project = projects.get_object(key=source_key, endpoint=source_env)
+                tgt_project = projects.get_object(key=target_key, endpoint=target_env)
+                (report, counters) = src_project.sync(tgt_project)
 
         __dump_report(report, args.file)
         util.logger.info("%d issues needed to be synchronized", counters.get('nb_to_sync', 0))
@@ -193,7 +149,7 @@ def main():
         util.logger.info("%d issues could not be synchronized because the match was approximate",
                          counters.get('nb_approx_match', 0))
         util.logger.info("%d issues could not be synchronized because target issue already had a changelog",
-                        counters.get('nb_tgt_has_changelog', 0))
+                         counters.get('nb_tgt_has_changelog', 0))
 
     except env.NonExistingObjectError as e:
         util.logger.critical(e.message)
