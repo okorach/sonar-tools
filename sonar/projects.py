@@ -572,6 +572,18 @@ Is this normal ?", gr['name'], str(self.key))
                     counters = __add_counters(counters, tmp_counts)
         return (report, counters)
 
+    def sync_branches(self):
+        my_branches = self.get_branches()
+        report = []
+        counters = {}
+        for b_src in my_branches:
+            for b_tgt in my_branches:
+                (tmp_report, tmp_counts) = b_src.sync(b_tgt)
+                report += tmp_report
+                counters = __add_counters(counters, tmp_counts)
+        return (report, counters)
+
+
 
 def __add_counters(counts, tmp_counts):
     for k in tmp_counts:
