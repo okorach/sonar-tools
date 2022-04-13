@@ -162,9 +162,9 @@ def sync_lists(src_issues, tgt_issues, sync_settings=None, name=''):
             util.logger.info("%s is closed, so it will not be synchronized despite having a changelog", str(issue))
             continue
         interesting_src_issues[key1] = issue
-    util.logger.info("Found %d issues with manual changes %s", len(interesting_src_issues), 'source')
+    util.logger.info("Found %d issues with manual changes in %s", len(interesting_src_issues), 'source')
     if len(interesting_src_issues) <= 0:
-        util.logger.info("No issues with manual changes on %s, skipping...", 'source')
+        util.logger.info("No issues with manual changes in %s, skipping...", 'source')
         return (report, counters)
     util.logger.info("Found %d issues on %s", len(tgt_issues), 'target')
     return sync_issues_list(src_issues, tgt_issues, sync_settings)
