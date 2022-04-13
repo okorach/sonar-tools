@@ -68,37 +68,6 @@ def __parse_args(desc):
     return util.parse_and_check_token(parser)
 
 
-def __process_exact_sibling(issue, sibling, settings):
-    if sibling.has_changelog_or_comments():
-        issue.apply_changelog(sibling, settings)
-        msg = 'Source issue changelog applied successfully'
-    else:
-        msg = 'Source issue has no changelog'
-    return {
-        SRC_KEY: issue.key,
-        SRC_URL: issue.url(),
-        SYNC_STATUS: 'synchronized',
-        SYNC_MSG: msg,
-        TGT_KEY: sibling.key,
-        TGT_URL: sibling.url()
-    }
-
-
-def __process_no_match(issue):
-    return {
-        SRC_KEY: issue.key,
-        SRC_URL: issue.url(),
-        SYNC_STATUS: 'no match',
-        SYNC_MSG: 'Source issue has no match in target project'
-    }
-
-
-def __get_issues(issue_list):
-    iss_list = []
-    for issue in issue_list:
-        iss_list.append({SRC_KEY: issue.key, SRC_URL: issue.url()})
-    return iss_list
-
 def __dump_report(report, file):
     txt = util.json_dump(report)
     if file is None:
