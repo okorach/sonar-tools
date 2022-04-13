@@ -194,7 +194,7 @@ class Task(sq.SqObject):
         susp_exclusions = _get_suspicious_exclusions(audit_settings['audit.projects.suspiciousExclusionsPatterns'])
         susp_exceptions = _get_suspicious_exceptions(audit_settings['audit.projects.suspiciousExclusionsExceptions'])
         for prop in ('sonar.exclusions', 'sonar.global.exclusions'):
-            if context[prop] is None:
+            if context.get(prop, None) is None:
                 continue
             for excl in util.csv_to_list(context[prop]):
                 util.logger.debug("Pattern = '%s'", excl)

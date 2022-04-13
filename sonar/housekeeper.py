@@ -124,7 +124,10 @@ def _delete_objects(problems, mode):
             continue    # BUG
         if isinstance(obj, projects.Project):
             loc = int(obj.get_measure('ncloc', fallback='0'))
-            util.logger.info("Deleting %s, %d LoC", str(obj), loc)
+            if mode == 'delete':
+                util.logger.info("Deleting %s, %d LoC", str(obj), loc)
+            else:
+                util.logger.info("%s, %d LoC should be deleted", str(obj), loc)
             if mode != 'delete' or obj.delete():
                 deleted_projects[obj.key] = obj
                 deleted_loc += loc
