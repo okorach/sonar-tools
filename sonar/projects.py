@@ -560,6 +560,26 @@ Is this normal ?", gr['name'], str(self.key))
             data['lastAnalysis'] = self.last_analysis()
         return data
 
+    def sync(self, another_project):
+        tgt_branches = another_project.get_branches()
+        report = []
+        counters = {}
+        for b_src in self.get_branches():
+            for b_tgt in tgt_branches:
+                if b_src.name == b_tgt.name:
+                    (tmp_report, tmp_counts) = b_src.sync(b_tgt)
+                    report += tmp_report
+                    counters = __add_counters(counters, tmp_counts)
+        return (report, counters)
+
+
+def __add_counters(counts, tmp_counts):
+    for k in tmp_counts:
+        if k not in counts:
+            counts[k] = 0
+        counts[k] += tmp_counts[k]
+    return counts
+
 
 def __get_permissions_counts__(entities):
     counts = {}
