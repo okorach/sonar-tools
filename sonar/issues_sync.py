@@ -30,7 +30,7 @@
 
 
 import sys
-from sonar import env, issues, projects, branches, version
+from sonar import env, projects, branches, version, syncer
 import sonar.utilities as util
 
 SRC_KEY = 'sourceIssueKey'
@@ -171,11 +171,11 @@ def main():
     target_branch = params.get('targetBranch', None)
     target_url = params.get('urlTarget', None)
 
-    settings = {issues.SYNC_ADD_COMMENTS: not params['nocomment'],
-                issues.SYNC_ADD_LINK: not params['nolink'],
-                issues.SYNC_ASSIGN: True,
-                issues.SYNC_IGNORE_COMPONENTS: False,
-                issues.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(args.login)}
+    settings = {syncer.SYNC_ADD_COMMENTS: not params['nocomment'],
+                syncer.SYNC_ADD_LINK: not params['nolink'],
+                syncer.SYNC_ASSIGN: True,
+                syncer.SYNC_IGNORE_COMPONENTS: False,
+                syncer.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(args.login)}
     report = []
     try:
         if not projects.exists(source_key, endpoint=source_env):
@@ -195,7 +195,7 @@ def main():
             # sync 2 branches of 2 different projects
             if not projects.exists(target_key, endpoint=source_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
-            settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
+            settings[syncer.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             (report, counters) = sync_branches(key1=source_key, endpoint1=source_env, key2=target_key, endpoint2=source_env,
                                                branch1=source_branch, branch2=target_branch, settings=settings)
 
@@ -204,7 +204,7 @@ def main():
             if not projects.exists(target_key, endpoint=target_env):
                 raise env.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             src_issues = {}
-            settings[issues.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
+            settings[syncer.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             if source_branch is not None or target_branch is not None:
                 # sync main 2 branches of 2 projects on different platforms
                 (report, counters) = sync_branches(key1=source_key, endpoint1=source_env, key2=target_key, endpoint2=target_env,
