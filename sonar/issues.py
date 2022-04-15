@@ -199,38 +199,13 @@ class Issue(findings.Finding):
                         return True
         return False
 
-    def strictly_identical_to(self, another_issue, ignore_component=False):
-        return (
-            self.rule == another_issue.rule and
-            self.hash == another_issue.hash and
-            self.message == another_issue.message and
-            self.debt() == another_issue.debt() and
-            self.file() == another_issue.file() and
-            (self.component == another_issue.component or ignore_component)
-        )
+    def strictly_identical_to(self, another_finding, ignore_component=False):
+        return (super.strictly_identical_to(another_finding, ignore_component) and
+                (self.debt() == another_finding.debt()))
 
-    def almost_identical_to(self, another_issue, ignore_component=False, **kwargs):
-        if self.rule != another_issue.rule or self.hash != another_issue.hash:
-            return False
-        score = 0
-        if self.message == another_issue.message or kwargs.get('ignore_message', False):
-            score += 2
-        if self.file() == another_issue.file():
-            score += 2
-        if self.debt() == another_issue.debt() or kwargs.get('ignore_debt', False):
-            score += 1
-        if self.line == another_issue.line or kwargs.get('ignore_line', False):
-            score += 1
-        if self.component == another_issue.component or ignore_component:
-            score += 1
-        if self.author == another_issue.author or kwargs.get('ignore_author', False):
-            score += 1
-        if self.type == another_issue.type or kwargs.get('ignore_type', False):
-            score += 1
-        if self.severity == another_issue.severity or kwargs.get('ignore_severity', False):
-            score += 1
-        # Need at least 8 / 10 to match
-        return score >= 8
+    def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
+        return (super.almost_identical_to(another_finding, ignore_component, **kwargs) and
+                (self.debt() == another_finding.debt() or kwargs.get('ignore_debt', False)))
 
     def __do_transition(self, transition):
         return self.post('issues/do_transition', {'issue': self.key, 'transition': transition})

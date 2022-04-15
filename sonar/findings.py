@@ -113,7 +113,7 @@ class Finding(sq.SqObject):
 
     def url(self):
         # Must be implemented in sub classes
-        pass
+        raise NotImplementedError()
 
     def file(self):
         if 'component' in self._json:
@@ -169,11 +169,11 @@ class Finding(sq.SqObject):
 
     def changelog(self):
         # Implemented in subclasses, should not reach this
-        return self._changelog
+        raise NotImplementedError()
 
     def comments(self):
         # Implemented in subclasses, should not reach this
-        return self._comments
+        raise NotImplementedError()
 
     def has_changelog(self):
         util.logger.debug('%s has %d changelogs', str(self), len(self.changelog()))
@@ -223,13 +223,35 @@ class Finding(sq.SqObject):
                 return False
         return True
 
-    def strictly_identical_to(self, another_issue, ignore_component=False):
-        # Implemented in subclasses
-        return False
+    def strictly_identical_to(self, another_finding, ignore_component=False):
+        return (
+            self.rule == another_finding.rule and
+            self.hash == another_finding.hash and
+            self.message == another_finding.message and
+            self.file() == another_finding.file() and
+            (self.component == another_finding.component or ignore_component)
+        )
 
-    def almost_identical_to(self, another_issue, ignore_component=False, **kwargs):
-        # Implemented in subclasses
-        return False
+    def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
+        if self.rule != another_finding.rule or self.hash != another_finding.hash:
+            return False
+        score = 0
+        if self.message == another_finding.message or kwargs.get('ignore_message', False):
+            score += 2
+        if self.file() == another_finding.file():
+            score += 2
+        if self.line == another_finding.line or kwargs.get('ignore_line', False):
+            score += 1
+        if self.component == another_finding.component or ignore_component:
+            score += 1
+        if self.author == another_finding.author or kwargs.get('ignore_author', False):
+            score += 1
+        if self.type == another_finding.type or kwargs.get('ignore_type', False):
+            score += 1
+        if self.severity == another_finding.severity or kwargs.get('ignore_severity', False):
+            score += 1
+        # Need at least 7 / 9 to match
+        return score >= 7
 
     def search_siblings(self, findings_list, allowed_users=None, ignore_component=False, **kwargs):
         exact_matches = []

@@ -222,37 +222,6 @@ class Hotspot(findings.Finding):
                 'value': c['markdown'], 'user': c['login'], 'userName': c['login'], 'commentKey': c['key']}
         return self._comments
 
-    def strictly_identical_to(self, another_issue, ignore_component=False):
-        util.logger.debug("Comparing files %s and %s", self.file(), another_issue.file())
-        return (
-            self.rule == another_issue.rule and
-            self.hash == another_issue.hash and
-            self.message == another_issue.message and
-            self.file() == another_issue.file() and
-            (self.component == another_issue.component or ignore_component)
-        )
-
-    def almost_identical_to(self, another_issue, ignore_component=False, **kwargs):
-        if self.rule != another_issue.rule or self.hash != another_issue.hash:
-            return False
-        score = 0
-        if self.message == another_issue.message or kwargs.get('ignore_message', False):
-            score += 2
-        if self.file() == another_issue.file():
-            score += 2
-        if self.line == another_issue.line or kwargs.get('ignore_line', False):
-            score += 1
-        if self.component == another_issue.component or ignore_component:
-            score += 1
-        if self.author == another_issue.author or kwargs.get('ignore_author', False):
-            score += 1
-        if self.type == another_issue.type or kwargs.get('ignore_type', False):
-            score += 1
-        if self.severity == another_issue.severity or kwargs.get('ignore_severity', False):
-            score += 1
-        # Need at least 7 / 9 to match
-        return score >= 7
-
 
 def search_by_project(project_key, endpoint=None, branch=None, pull_request=None):
     new_params = {}
