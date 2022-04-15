@@ -160,8 +160,7 @@ class Hotspot(findings.Finding):
 
         change_nbr = 0
         start_change = len(self.changelog()) + 1
-        util.logger.debug("%s: Changelog = %s", str(self), str(self.changelog()))
-        util.logger.info("Applying changelog of %s to %s, from change %d", str(source_hotspot), str(self), start_change)
+        util.logger.debug("Applying changelog of %s to %s, from change %d", str(source_hotspot), str(self), start_change)
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
