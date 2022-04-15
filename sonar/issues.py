@@ -170,7 +170,7 @@ class Issue(findings.Finding):
             seq = 0
             for c in self._json['comments']:
                 seq += 1
-                self._comments[f"{c['createdAt']}_{seq}"] = {'date': c['createdAt'], 'event': 'comment',
+                self._comments[f"{c['createdAt']}_{seq:03}"] = {'date': c['createdAt'], 'event': 'comment',
                     'value': c['markdown'], 'user': c['login'], 'userName': c['login']}
         return self._comments
 
