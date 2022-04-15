@@ -103,17 +103,17 @@ class Branch(components.Component):
 
     def get_issues(self):
         return issues.search_all_issues(endpoint=self.endpoint,
-                                        params={'components': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
+                                       params={'componentKeys': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
 
     def get_hotspots(self):
         return hotspots.search(endpoint=self.endpoint,
-                               params={'components': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
+                               params={'projectKey': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
 
     def get_findings(self):
         return self.get_issues() + self.get_hotspots()
 
-    def sync(self, another_branch):
-        return syncer.sync_lists(self.get_issues(), another_branch.get_issues(), name=str(self))
+    def sync(self, another_branch, sync_settings):
+        return syncer.sync_lists(self.get_issues(), another_branch.get_issues(), self, another_branch, sync_settings=sync_settings)
 
     def __audit_last_analysis(self, audit_settings):
         age = self.last_analysis_age()
