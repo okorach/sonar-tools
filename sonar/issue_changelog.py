@@ -90,7 +90,7 @@ class Changelog():
 
     def is_mark_as_to_review(self):
         for d in self._json['diffs']:
-            if (d.get('key', '') == "resolution" and d.get('newValue', '') == "TO_REVIEW"):
+            if (d.get('key', '') == "status" and d.get('newValue', '') == "TO_REVIEW"):
                 return True
         return False
 
