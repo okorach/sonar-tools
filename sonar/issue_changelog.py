@@ -96,13 +96,13 @@ class Changelog():
 
     def is_mark_as_fixed(self):
         for d in self._json['diffs']:
-            if (d.get('key', '') == "status" and d.get('newValue', '') == "FIXED"):
+            if (d.get('key', '') == "resolution" and d.get('newValue', '') == "FIXED"):
                 return True
         return False
 
     def is_mark_as_acknowledged(self):
         for d in self._json['diffs']:
-            if (d.get('key', '') == "status" and d.get('newValue', '') == "ACKNOWLEDGED"):
+            if (d.get('key', '') == "resolution" and d.get('newValue', '') == "ACKNOWLEDGED"):
                 return True
         return False
 
