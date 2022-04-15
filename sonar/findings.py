@@ -23,6 +23,7 @@
 
 '''
 
+import re
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -100,6 +101,8 @@ class Finding(sq.SqObject):
         self.modification_date = util.string_to_date(jsondata['updateDate'])
         self.hash = jsondata.get('hash', None)
         self.branch = jsondata.get('branch', None)
+        if self.branch is not None:
+            self.branch = re.sub("^BRANCH:", "", self.branch)
         self.pull_request = jsondata.get('pullRequest', None)
 
     def _load_from_export(self, jsondata):
@@ -114,7 +117,9 @@ class Finding(sq.SqObject):
 
     def file(self):
         if 'component' in self._json:
-            return self._json['component'].split(":")[-1]
+            # FIXME: Adapt to the ugly component structure on branches and PR
+            # "component": "src:sonar/hot.py:BRANCH:somebranch",
+            return self._json['component'].split(":")[1]
         elif 'path' in self._json:
             return self._json['path']
         else:
@@ -179,6 +184,44 @@ class Finding(sq.SqObject):
 
     def has_changelog_or_comments(self):
         return self.has_changelog() or self.has_comments()
+
+    def modifiers(self):
+        """Returns list of users that modified the finding."""
+        item_list = []
+        for c in self.changelog().values():
+            util.logger.debug("Checking author of changelog %s", str(c))
+            author = c.author()
+            if author is not None and author not in item_list:
+                item_list.append(author)
+        return item_list
+
+    def commenters(self):
+        """Returns list of users that commented the issue."""
+        return util.unique_dict_field(self.comments(), 'user')
+
+    def modifiers_and_commenters(self):
+        modif = self.modifiers()
+        for c in self.commenters():
+            if c not in modif:
+                modif.append(c)
+        return modif
+
+    def modifiers_excluding_service_users(self, service_users):
+        mods = []
+        for u in self.modifiers():
+            if u not in service_users:
+                mods.append(u)
+        return mods
+
+    def can_be_synced(self, user_list):
+        util.logger.debug("Issue %s: Checking if modifiers %s are different from user %s",
+            str(self), str(self.modifiers()), str(user_list))
+        if user_list is None:
+            return not self.has_changelog()
+        for u in self.modifiers():
+            if u not in user_list:
+                return False
+        return True
 
     def strictly_identical_to(self, another_issue, ignore_component=False):
         # Implemented in subclasses
