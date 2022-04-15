@@ -162,6 +162,24 @@ class Finding(sq.SqObject):
     def is_closed(self):
         return self.status == 'CLOSED'
 
+    def changelog(self):
+        # Implemented in subclasses, should not reach this
+        return self._changelog
+
+    def comments(self):
+        # Implemented in subclasses, should not reach this
+        return self._comments
+
+    def has_changelog(self):
+        util.logger.debug('%s has %d changelogs', str(self), len(self.changelog()))
+        return len(self.changelog()) > 0
+
+    def has_comments(self):
+        return len(self.comments()) > 0
+
+    def has_changelog_or_comments(self):
+        return self.has_changelog() or self.has_comments()
+
     def strictly_identical_to(self, another_issue, ignore_component=False):
         # Implemented in subclasses
         return False

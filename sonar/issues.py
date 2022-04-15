@@ -118,8 +118,8 @@ class Issue(findings.Finding):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
         self._load(resp.issues[0])
 
-    def changelog(self, force_api=False):
-        if (force_api or self._changelog is None):
+    def changelog(self):
+        if self._changelog is None:
             resp = self.get('issues/changelog', {'issue': self.key, 'format': 'json'})
             data = json.loads(resp.text)
             util.json_dump_debug(data['changelog'], f"{str(self)} Changelog = ")
@@ -135,10 +135,6 @@ class Issue(findings.Finding):
                 seq += 1
                 self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
-
-    def has_changelog(self):
-        util.logger.debug('Issue %s had %d changelog', self.key, len(self.changelog()))
-        return len(self.changelog()) > 0
 
     def can_be_synced(self, user_list):
         util.logger.debug("Issue %s: Checking if modifiers %s are different from user %s",
@@ -173,13 +169,6 @@ class Issue(findings.Finding):
                 self._comments[f"{c['createdAt']}_{seq:03}"] = {'date': c['createdAt'], 'event': 'comment',
                     'value': c['markdown'], 'user': c['login'], 'userName': c['login']}
         return self._comments
-
-    def has_comments(self):
-        comments = self.comments()
-        return len(comments) > 0
-
-    def has_changelog_or_comments(self):
-        return self.has_changelog() or self.has_comments()
 
     def add_comment(self, comment, really=True):
         util.logger.debug("Adding comment %s to %s", comment, str(self))
