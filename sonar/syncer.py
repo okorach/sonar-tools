@@ -115,7 +115,6 @@ def __process_modified_siblings(issue, siblings):
         TGT_URL: siblings[0].url(),
         SYNC_STATUS: 'unsynchronized',
         SYNC_MSG: 'Target issue already has a changelog',
-        SYNC_MATCHES: __get_issues(siblings)
     }
 
 def __sync_issues_list(src_issues, tgt_issues, settings):
