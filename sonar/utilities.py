@@ -43,9 +43,9 @@ SQ_TIME_FORMAT = "%H:%M:%S"
 
 CSV_SEPARATOR = ','
 
-logger = logging.getLogger('sonarqube-tools')
+logger = logging.getLogger('sonar-tools')
 formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)-7s | %(message)s')
-fh = logging.FileHandler('sonarqube-tools.log')
+fh = logging.FileHandler('sonar-tools.log')
 ch = logging.StreamHandler()
 logger.addHandler(fh)
 logger.addHandler(ch)
@@ -65,7 +65,7 @@ def set_logger(name):
 
 
 def set_common_args(desc):
-    """Parses options common to all sonarqube-tools scripts"""
+    """Parses options common to all sonar-tools scripts"""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument(
         '-t', '--token', required=False,
