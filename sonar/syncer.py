@@ -30,31 +30,31 @@ SYNC_COMMENTS = 'sync_comments'
 SYNC_ASSIGN = 'sync_assignments'
 SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
 
-SRC_KEY = 'sourceIssueKey'
-SRC_URL = 'sourceIssueUrl'
+SRC_KEY = 'sourceFindingKey'
+SRC_URL = 'sourceFindingUrl'
 SYNC_MSG = 'syncMessage'
 SYNC_MATCHES = 'matches'
-TGT_KEY = 'targetIssueKey'
-TGT_URL = 'targetIssueUrl'
+TGT_KEY = 'targetFindingKey'
+TGT_URL = 'targetFindingUrl'
 SYNC_STATUS = 'syncStatus'
 
 
-def __get_issues(issue_list):
-    iss_list = []
-    for issue in issue_list:
-        iss_list.append({SRC_KEY: issue.key, SRC_URL: issue.url()})
-    return iss_list
+def __get_findings(findings_list):
+    find_list = []
+    for finding in findings_list:
+        find_list.append({SRC_KEY: finding.key, SRC_URL: finding.url()})
+    return find_list
 
 
-def __process_exact_sibling(issue, sibling, settings):
-    if issue.has_changelog_or_comments():
-        sibling.apply_changelog(issue, settings)
-        msg = 'Source issue changelog applied successfully'
+def __process_exact_sibling(finding, sibling, settings):
+    if finding.has_changelog_or_comments():
+        sibling.apply_changelog(finding, settings)
+        msg = 'Source finding changelog applied successfully'
     else:
-        msg = 'Source issue has no changelog'
+        msg = 'Source finding has no changelog'
     return {
-        SRC_KEY: issue.key,
-        SRC_URL: issue.url(),
+        SRC_KEY: finding.key,
+        SRC_URL: finding.url(),
         SYNC_STATUS: 'synchronized',
         SYNC_MSG: msg,
         TGT_KEY: sibling.key,
@@ -62,17 +62,17 @@ def __process_exact_sibling(issue, sibling, settings):
     }
 
 
-def __process_no_match(issue):
+def __process_no_match(finding):
     return {
-        SRC_KEY: issue.key,
-        SRC_URL: issue.url(),
+        SRC_KEY: finding.key,
+        SRC_URL: finding.url(),
         SYNC_STATUS: 'no match',
-        SYNC_MSG: 'Source issue has no match in target project'
+        SYNC_MSG: 'Source finding has no match in target project'
     }
 
 
-def __process_multiple_exact_siblings(issue, siblings):
-    util.logger.info('Multiple matches for %s, cannot automatically apply changelog', str(issue))
+def __process_multiple_exact_siblings(finding, siblings):
+    util.logger.info('Multiple matches for %s, cannot automatically apply changelog', str(finding))
     for sib in siblings:
         comment = ''
         i = 0
@@ -80,68 +80,68 @@ def __process_multiple_exact_siblings(issue, siblings):
             if sib.key == sib2.key:
                 continue
             i += 1
-            comment += f"[issue {i}]({sib2.url()}), "
-        sib.add_comment(f"Sync did not happen due to multiple matches. [This original issue]({issue.url()}) "
-                        f"corresponds to this issue,\nbut also to these other issues: {comment[:-2]}")
+            comment += f"[finding {i}]({sib2.url()}), "
+        sib.add_comment(f"Sync did not happen due to multiple matches. [This original finding]({finding.url()}) "
+                        f"corresponds to this finding,\nbut also to these other findings: {comment[:-2]}")
     return {
-        SRC_KEY: issue.key,
-        SRC_URL: issue.url(),
+        SRC_KEY: finding.key,
+        SRC_URL: finding.url(),
         SYNC_STATUS: 'unsynchronized',
         SYNC_MSG: 'Multiple matches',
-        SYNC_MATCHES: __get_issues(siblings)
+        SYNC_MATCHES: __get_findings(siblings)
     }
 
 
-def __process_approx_siblings(issue, siblings):
-    util.logger.info('Found %d approximate siblings for issue %s, cannot automatically apply changelog',
-                     len(siblings), str(issue))
+def __process_approx_siblings(finding, siblings):
+    util.logger.info('Found %d approximate siblings for %s, cannot automatically apply changelog',
+                     len(siblings), str(finding))
     return {
-        SRC_KEY: issue.key,
-        SRC_URL: issue.url(),
+        SRC_KEY: finding.key,
+        SRC_URL: finding.url(),
         SYNC_STATUS: 'unsynchronized',
         SYNC_MSG: 'Approximate matches only',
-        SYNC_MATCHES: __get_issues(siblings)
+        SYNC_MATCHES: __get_findings(siblings)
     }
 
 
-def __process_modified_siblings(issue, siblings):
+def __process_modified_siblings(finding, siblings):
     util.logger.info(
-        'Found %d siblings for issue %s, but they already have a changelog, cannot automatically apply changelog',
-        len(siblings), str(issue))
+        'Found %d siblings for %s, but they already have a changelog, cannot automatically apply changelog',
+        len(siblings), str(finding))
     return {
-        SRC_KEY: issue.key,
-        SRC_URL: issue.url(),
+        SRC_KEY: finding.key,
+        SRC_URL: finding.url(),
         TGT_KEY: siblings[0].key,
         TGT_URL: siblings[0].url(),
         SYNC_STATUS: 'unsynchronized',
-        SYNC_MSG: 'Target issue already has a changelog',
+        SYNC_MSG: 'Target finding already has a changelog',
     }
 
-def __sync_issues_list(src_issues, tgt_issues, settings):
-    counters = {'nb_to_sync': len(src_issues), 'nb_applies': 0, 'nb_approx_match': 0,
+def __sync_findings_list(src_findings, tgt_findings, settings):
+    counters = {'nb_to_sync': len(src_findings), 'nb_applies': 0, 'nb_approx_match': 0,
                 'nb_tgt_has_changelog': 0, 'nb_multiple_matches': 0}
     report = []
 
-    util.logger.info("%d issues to sync, %d issues in target", len(src_issues), len(tgt_issues))
-    for _, issue in src_issues.items():
-        util.logger.debug('Searching sibling for issue %s', str(issue))
-        (exact_siblings, approx_siblings, modified_siblings) = issue.search_siblings(
-            tgt_issues, allowed_users=settings[SYNC_SERVICE_ACCOUNTS],
+    util.logger.info("%d findings to sync, %d findings in target", len(src_findings), len(tgt_findings))
+    for _, finding in src_findings.items():
+        util.logger.debug('Searching sibling for %s', str(finding))
+        (exact_siblings, approx_siblings, modified_siblings) = finding.search_siblings(
+            tgt_findings, allowed_users=settings[SYNC_SERVICE_ACCOUNTS],
             ignore_component=settings[SYNC_IGNORE_COMPONENTS])
         if len(exact_siblings) == 1:
-            report.append(__process_exact_sibling(issue, exact_siblings[0], settings))
+            report.append(__process_exact_sibling(finding, exact_siblings[0], settings))
             counters['nb_applies'] += 1
         elif len(exact_siblings) > 1:
-            report.append(__process_multiple_exact_siblings(issue, exact_siblings))
+            report.append(__process_multiple_exact_siblings(finding, exact_siblings))
             counters['nb_multiple_matches'] += 1
         elif approx_siblings:
-            report.append(__process_approx_siblings(issue, approx_siblings))
+            report.append(__process_approx_siblings(finding, approx_siblings))
             counters['nb_approx_match'] += 1
         elif modified_siblings:
             counters['nb_tgt_has_changelog'] += 1
-            report.append(__process_modified_siblings(issue, modified_siblings))
+            report.append(__process_modified_siblings(finding, modified_siblings))
         else:   # No match
-            report.append(__process_no_match(issue))
+            report.append(__process_no_match(finding))
     counters['nb_no_match'] = counters['nb_to_sync'] - (
         counters['nb_applies'] + counters['nb_tgt_has_changelog'] +
         counters['nb_multiple_matches'] + counters['nb_approx_match']
@@ -150,17 +150,17 @@ def __sync_issues_list(src_issues, tgt_issues, settings):
     return (report, counters)
 
 
-def sync_lists(src_issues, tgt_issues, src_object, tgt_object, sync_settings=None):
-    interesting_src_issues = {}
-    util.logger.info("Syncing %d issues from %s into %d issues from %s", len(src_issues), str(src_object), len(tgt_issues), str(tgt_object))
-    for key1, issue in src_issues.items():
-        if not issue.has_changelog_or_comments():
-            util.logger.debug("%s has no changelog or comments, skipped in sync", str(issue))
+def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings=None):
+    interesting_src_findings = {}
+    util.logger.info("Syncing %d findings from %s into %d findings from %s", len(src_findings), str(src_object), len(tgt_findings), str(tgt_object))
+    for key1, finding in src_findings.items():
+        if not finding.has_changelog_or_comments():
+            util.logger.debug("%s has no changelog or comments, skipped in sync", str(finding))
             continue
-        if issue.is_closed():
-            util.logger.info("%s is closed, so it will not be synchronized despite having a changelog", str(issue))
+        if finding.is_closed():
+            util.logger.info("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
             continue
-        modifiers = issue.modifiers_and_commenters()
+        modifiers = finding.modifiers_and_commenters()
         # TODO - Manage more than 1 sync account - diff the 2 lists
         syncer = sync_settings[SYNC_SERVICE_ACCOUNTS][0]
         if sync_settings is None:
@@ -169,13 +169,13 @@ def sync_lists(src_issues, tgt_issues, src_object, tgt_object, sync_settings=Non
             sync_settings[SYNC_SERVICE_ACCOUNTS] = [syncer]
         if len(modifiers) == 1 and modifiers[0] == syncer:
             util.logger.info("%s is has only been changed by %s, so it will not be synchronized despite having a changelog",
-                str(issue), syncer)
+                str(finding), syncer)
             continue
-        interesting_src_issues[key1] = issue
-    util.logger.info("Found %d issues with manual changes in %s", len(interesting_src_issues), str(src_object))
-    if len(interesting_src_issues) <= 0:
-        util.logger.info("No issues with manual changes in %s, skipping...", str(src_object))
+        interesting_src_findings[key1] = finding
+    util.logger.info("Found %d findings with manual changes in %s", len(interesting_src_findings), str(src_object))
+    if len(interesting_src_findings) <= 0:
+        util.logger.info("No findings with manual changes in %s, skipping...", str(src_object))
         counters = {'nb_to_sync': 0, 'nb_applies': 0, 'nb_approx_match': 0,
             'nb_tgt_has_changelog': 0, 'nb_multiple_matches': 0}
         return ([], counters)
-    return __sync_issues_list(interesting_src_issues, tgt_issues, sync_settings)
+    return __sync_findings_list(interesting_src_findings, tgt_findings, sync_settings)
