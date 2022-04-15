@@ -218,6 +218,13 @@ class Issue(findings.Finding):
         """Returns list of users that commented the issue."""
         return util.unique_dict_field(self.comments(), 'user')
 
+    def modifiers_and_commenters(self):
+        modif = self.modifiers()
+        for c in self.commenters():
+            if c not in modif:
+                modif.append(c)
+        return modif
+
     def modifiers_excluding_service_users(self, service_users):
         mods = []
         for u in self.modifiers():

@@ -161,9 +161,9 @@ def sync_lists(src_issues, tgt_issues, src_object, tgt_object, sync_settings=Non
         if issue.is_closed():
             util.logger.info("%s is closed, so it will not be synchronized despite having a changelog", str(issue))
             continue
-        modifiers = issue.modifiers() + issue.commenters()
+        modifiers = issue.modifiers_and_commenters()
         # TODO - Manage more than 1 sync account - diff the 2 lists
-        syncer = 'syncer'
+        syncer = sync_settings[SYNC_SERVICE_ACCOUNTS][0]
         if sync_settings is None:
             sync_settings = {}
         if sync_settings.get(SYNC_SERVICE_ACCOUNTS, None) is None:
