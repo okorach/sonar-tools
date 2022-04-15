@@ -527,7 +527,7 @@ def search(endpoint=None, page=None, params=None):
 
 
 def search_all_issues(params=None, endpoint=None):
-    util.logger.info('searching issues for %s', str(params))
+    util.logger.debug('searching issues for %s', str(params))
     if params is None:
         params = {}
     params['ps'] = 500
