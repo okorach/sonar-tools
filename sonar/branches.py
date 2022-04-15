@@ -26,7 +26,7 @@
 import datetime
 import pytz
 import requests.utils
-from sonar import projects, measures, components
+from sonar import projects, measures, components, issues, hotspots, syncer
 import sonar.utilities as util
 
 from sonar.audit import rules, problem
@@ -100,6 +100,20 @@ class Branch(components.Component):
             if self.is_main():
                 self.project._ncloc = self._ncloc
         return m
+
+    def get_issues(self):
+        return issues.search_all_issues(endpoint=self.endpoint,
+                                       params={'componentKeys': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
+
+    def get_hotspots(self):
+        return hotspots.search(endpoint=self.endpoint,
+                               params={'projectKey': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
+
+    def get_findings(self):
+        return self.get_issues() + self.get_hotspots()
+
+    def sync(self, another_branch, sync_settings):
+        return syncer.sync_lists(self.get_issues(), another_branch.get_issues(), self, another_branch, sync_settings=sync_settings)
 
     def __audit_last_analysis(self, audit_settings):
         age = self.last_analysis_age()

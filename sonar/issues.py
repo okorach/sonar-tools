@@ -28,14 +28,7 @@ import requests.utils
 
 import sonar.issue_changelog as changelog
 import sonar.utilities as util
-from sonar import env, findings, projects, users
-
-SYNC_IGNORE_COMPONENTS = 'ignore_components'
-SYNC_ADD_LINK = 'add_link'
-SYNC_ADD_COMMENTS = 'add_comments'
-SYNC_COMMENTS = 'sync_comments'
-SYNC_ASSIGN = 'sync_assignments'
-SYNC_SERVICE_ACCOUNTS = 'sync_service_accounts'
+from sonar import env, findings, projects, users, syncer
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 
@@ -174,8 +167,10 @@ class Issue(findings.Finding):
             self._comments = {}
         elif self._comments is None:
             self._comments = {}
+            seq = 0
             for c in self._json['comments']:
-                self._comments[c['createdAt']] = {'date': c['createdAt'], 'event': 'comment',
+                seq += 1
+                self._comments[f"{c['createdAt']}_{seq}"] = {'date': c['createdAt'], 'event': 'comment',
                     'value': c['markdown'], 'user': c['login'], 'userName': c['login']}
         return self._comments
 
@@ -187,7 +182,7 @@ class Issue(findings.Finding):
         return self.has_changelog() or self.has_comments()
 
     def add_comment(self, comment, really=True):
-        util.logger.debug("Adding comment %s to issue %s", comment, self.key)
+        util.logger.debug("Adding comment %s to %s", comment, str(self))
         if really:
             return self.post('issues/add_comment', {'issue': self.key, 'text': comment})
         else:
@@ -222,6 +217,13 @@ class Issue(findings.Finding):
     def commenters(self):
         """Returns list of users that commented the issue."""
         return util.unique_dict_field(self.comments(), 'user')
+
+    def modifiers_and_commenters(self):
+        modif = self.modifiers()
+        for c in self.commenters():
+            if c not in modif:
+                modif.append(c)
+        return modif
 
     def modifiers_excluding_service_users(self, service_users):
         mods = []
@@ -377,10 +379,10 @@ class Issue(findings.Finding):
             self.mark_as_reviewed()
             # self.add_comment(f"Hotspot review {origin}")
         elif event_type == 'ASSIGN':
-            if settings[SYNC_ASSIGN]:
+            if settings[syncer.SYNC_ASSIGN]:
                 u = users.get_login_from_name(data, endpoint=self.endpoint)
                 if u is None:
-                    u = settings[SYNC_SERVICE_ACCOUNTS][0]
+                    u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
                 # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == 'TAG':
@@ -420,22 +422,21 @@ class Issue(findings.Finding):
             self.__apply_event(events[key], settings)
 
         comments = source_issue.comments()
-        if len(self.comments()) == 0 and settings[SYNC_ADD_LINK]:
-            util.logger.info("Target issue has 0 comments")
+        if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
+            util.logger.info("Target %s has 0 comments, adding sync link comment", str(self))
             start_change = 1
             self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
         else:
             start_change = len(self.comments())
-            util.logger.info("Target issue already has %d comments", start_change)
-        util.logger.info("Applying comments of issue %s to issue %s, from comment %d",
-                         source_issue.key, self.key, start_change)
+            util.logger.info("Target %s already has %d comments", str(self), start_change)
+        util.logger.info("Applying comments of %s to %s, from comment %d",
+                         str(source_issue), str(self), start_change)
         change_nbr = 0
         for key in sorted(comments.keys()):
             change_nbr += 1
             if change_nbr < start_change:
                 util.logger.debug("Skipping comment already applied in a previous sync: %s", str(comments[key]))
                 continue
-            util.logger.debug("Applying comment %s", comments[key]['value'])
             # origin = f"originally by *{event['userName']}* on original branch"
             self.add_comment(comments[key]['value'])
         return True
@@ -617,6 +618,8 @@ def search(endpoint=None, page=None, params=None):
         if page is not None or p >= nbr_pages:
             break
         p += 1
+    for k, v in issue_list.items():
+        util.logger.debug("added %s -> %s", k, str(v))
     return issue_list
 
 
@@ -627,13 +630,10 @@ def search_all_issues(params=None, endpoint=None):
     params['ps'] = 500
     page = 1
     nbr_pages = 1
-    issues = []
+    issues = {}
     while page <= nbr_pages and page <= 20:
         params['p'] = page
-        returned_data = search(endpoint=endpoint, params=params)
-        issues = issues + returned_data['issues']
-        page = returned_data['page']
-        nbr_pages = returned_data['pages']
+        issues.update(search(endpoint=endpoint, params=params))
         page = page + 1
     util.logger.debug("Total number of issues: %d", len(issues))
     return issues

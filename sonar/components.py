@@ -134,6 +134,7 @@ class Component(sq.SqObject):
         # Must be implemented in sub classes
         pass
 
+
 def get_components(component_types, endpoint=None):
     resp = env.get('projects/search', params={'ps': 500, 'qualifiers': component_types}, ctxt=endpoint)
     data = json.loads(resp.text)
