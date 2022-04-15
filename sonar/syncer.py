@@ -118,7 +118,7 @@ def __process_modified_siblings(issue, siblings):
         SYNC_MATCHES: __get_issues(siblings)
     }
 
-def sync_issues_list(src_issues, tgt_issues, settings):
+def __sync_issues_list(src_issues, tgt_issues, settings):
     counters = {'nb_to_sync': len(src_issues), 'nb_applies': 0, 'nb_approx_match': 0,
                 'nb_tgt_has_changelog': 0, 'nb_multiple_matches': 0}
     report = []
@@ -147,24 +147,36 @@ def sync_issues_list(src_issues, tgt_issues, settings):
         counters['nb_applies'] + counters['nb_tgt_has_changelog'] +
         counters['nb_multiple_matches'] + counters['nb_approx_match']
     )
+    util.json_dump_debug(counters, "COUNTERS")
     return (report, counters)
 
 
-def sync_lists(src_issues, tgt_issues, sync_settings=None, name='source'):
-    counters = {'nb_to_sync': 0, 'nb_applies': 0, 'nb_approx_match': 0,
-            'nb_tgt_has_changelog': 0, 'nb_multiple_matches': 0}
-    report = []
-    interesting_src_issues = []
+def sync_lists(src_issues, tgt_issues, src_object, tgt_object, sync_settings=None):
+    interesting_src_issues = {}
+    util.logger.info("Syncing %d issues from %s into %d issues from %s", len(src_issues), str(src_object), len(tgt_issues), str(tgt_object))
     for key1, issue in src_issues.items():
         if not issue.has_changelog_or_comments():
+            util.logger.debug("%s has no changelog or comments, skipped in sync", str(issue))
             continue
         if issue.is_closed():
             util.logger.info("%s is closed, so it will not be synchronized despite having a changelog", str(issue))
             continue
+        modifiers = issue.modifiers() + issue.commenters()
+        # TODO - Manage more than 1 sync account - diff the 2 lists
+        syncer = 'syncer'
+        if sync_settings is None:
+            sync_settings = {}
+        if sync_settings.get(SYNC_SERVICE_ACCOUNTS, None) is None:
+            sync_settings[SYNC_SERVICE_ACCOUNTS] = [syncer]
+        if len(modifiers) == 1 and modifiers[0] == syncer:
+            util.logger.info("%s is has only been changed by %s, so it will not be synchronized despite having a changelog",
+                str(issue), syncer)
+            continue
         interesting_src_issues[key1] = issue
-    util.logger.info("Found %d issues with manual changes in %s", len(interesting_src_issues), name)
+    util.logger.info("Found %d issues with manual changes in %s", len(interesting_src_issues), str(src_object))
     if len(interesting_src_issues) <= 0:
-        util.logger.info("No issues with manual changes in %s, skipping...", name)
-        return (report, counters)
-    util.logger.info("Found %d issues on %s", len(tgt_issues), 'target')
-    return sync_issues_list(src_issues, tgt_issues, sync_settings)
+        util.logger.info("No issues with manual changes in %s, skipping...", str(src_object))
+        counters = {'nb_to_sync': 0, 'nb_applies': 0, 'nb_approx_match': 0,
+            'nb_tgt_has_changelog': 0, 'nb_multiple_matches': 0}
+        return ([], counters)
+    return __sync_issues_list(interesting_src_issues, tgt_issues, sync_settings)
