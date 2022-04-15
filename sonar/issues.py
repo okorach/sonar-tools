@@ -136,16 +136,6 @@ class Issue(findings.Finding):
                 self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
 
-    def can_be_synced(self, user_list):
-        util.logger.debug("Issue %s: Checking if modifiers %s are different from user %s",
-            str(self), str(self.modifiers()), str(user_list))
-        if user_list is None:
-            return not self.has_changelog()
-        for u in self.modifiers():
-            if u not in user_list:
-                return False
-        return True
-
     def get_all_events(self, event_type='changelog'):
         if event_type == 'comments':
             events = self.comments()
@@ -192,34 +182,6 @@ class Issue(findings.Finding):
     def set_type(self, new_type):
         util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         return self.post('issues/set_type', {'issue': self.key, 'type': new_type})
-
-    def modifiers(self):
-        """Returns list of users that modified the issue."""
-        item_list = []
-        for c in self.changelog().values():
-            util.logger.debug("Checking author of changelog %s", str(c))
-            author = c.author()
-            if author is not None and author not in item_list:
-                item_list.append(author)
-        return item_list
-
-    def commenters(self):
-        """Returns list of users that commented the issue."""
-        return util.unique_dict_field(self.comments(), 'user')
-
-    def modifiers_and_commenters(self):
-        modif = self.modifiers()
-        for c in self.commenters():
-            if c not in modif:
-                modif.append(c)
-        return modif
-
-    def modifiers_excluding_service_users(self, service_users):
-        mods = []
-        for u in self.modifiers():
-            if u not in service_users:
-                mods.append(u)
-        return mods
 
     def is_wont_fix(self):
         return self.__has_been_marked_as_statuses(["WONTFIX"])
