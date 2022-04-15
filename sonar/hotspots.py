@@ -108,7 +108,7 @@ class Hotspot(findings.Finding):
         return self.post('hotspots/change_status', params={'hotspot': self.key, 'status': 'TO_REVIEW'})
 
     def reopen(self):
-        self.mark_as_to_review()
+        return self.mark_as_to_review()
 
     def add_comment(self, comment):
         params = {'hotspot': self.key, 'comment': comment}
