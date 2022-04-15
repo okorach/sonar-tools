@@ -162,5 +162,29 @@ class Finding(sq.SqObject):
     def is_closed(self):
         return self.status == 'CLOSED'
 
+    def search_siblings(self, findings_list, allowed_users=None, ignore_component=False, **kwargs):
+        exact_matches = []
+        approx_matches = []
+        match_but_modified = []
+        for key, finding in findings_list.items():
+            if key == self.key:
+                continue
+            if finding.strictly_identical_to(self, ignore_component, **kwargs):
+                util.logger.debug("Issues %s and %s are strictly identical", self.key, key)
+                if finding.can_be_synced(allowed_users):
+                    exact_matches.append(finding)
+                else:
+                    match_but_modified.append(finding)
+            elif finding.almost_identical_to(self, ignore_component, **kwargs):
+                util.logger.debug("Issues %s and %s are almost identical", self.key, key)
+                if finding.can_be_synced(allowed_users):
+                    approx_matches.append(finding)
+                else:
+                    match_but_modified.append(finding)
+            else:
+                util.logger.debug("Issues %s and %s are not siblings", self.key, key)
+        return (exact_matches, approx_matches, match_but_modified)
+
+
 def to_csv_header(separator=','):
     return "# " + separator.join(_CSV_FIELDS)
