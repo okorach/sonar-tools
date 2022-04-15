@@ -113,7 +113,12 @@ class Branch(components.Component):
         return self.get_issues() + self.get_hotspots()
 
     def sync(self, another_branch, sync_settings):
-        return syncer.sync_lists(self.get_issues(), another_branch.get_issues(), self, another_branch, sync_settings=sync_settings)
+        report, counters = [], {}
+        (report, counters) = syncer.sync_lists(self.get_issues(), another_branch.get_issues(), self, another_branch, sync_settings=sync_settings)
+        (tmp_report, tmp_counts) = syncer.sync_lists(self.get_hotspots(), another_branch.get_hotspots(), self, another_branch, sync_settings=sync_settings)
+        report += tmp_report
+        counters = util.dict_add(counters, tmp_counts)
+        return (report, counters)
 
     def __audit_last_analysis(self, audit_settings):
         age = self.last_analysis_age()
