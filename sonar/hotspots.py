@@ -20,10 +20,11 @@
 """Abstraction of the SonarQube "hotspot" concept"""
 
 import json
+import re
 import requests.utils
 import sonar.utilities as util
 import sonar.issue_changelog as changelog
-from sonar import env, projects, findings
+from sonar import env, projects, findings, syncer, users
 
 
 _JSON_FIELDS_REMAPPED = (
@@ -57,6 +58,16 @@ class Hotspot(findings.Finding):
         if data is not None:
             self.category = data['securityCategory']
             self.vulnerabilityProbability = data['vulnerabilityProbability']
+        # FIXME: Ugly hack to fix how hotspot branches are managed
+        m = re.match(r"^(.*):BRANCH:(.*)$", self.projectKey)
+        if m:
+            self.projectKey = m.group(1)
+            self.branch = m.group(2)
+        m = re.match(r"^(.*):PULL_REQUEST:(.*)$", self.projectKey)
+        if m:
+            self.projectKey = m.group(1)
+            self.branch = m.group(2)
+        util.logger.debug("HOTSPOT proj = %s branch = %s", self.projectKey, self.branch)
         _HOTSPOTS[self.uuid()] = self
 
     def __str__(self):
@@ -87,12 +98,17 @@ class Hotspot(findings.Finding):
     def mark_as_fixed(self):
         return self.__mark_as('FIXED')
 
+    def mark_as_acknowledged(self):
+        if self.endpoint.version() < (9, 4, 0):
+            util.logger.warning("Platform version is < 9.4, can't acknowledge %s", str(self))
+            return True
+        return self.__mark_as('ACKNOWLEDGED')
+
     def mark_as_to_review(self):
-        params = {'hotspot': self.key, 'status': 'TO_REVIEW'}
-        return self.post('hotspots/change_status', params=params)
+        return self.post('hotspots/change_status', params={'hotspot': self.key, 'status': 'TO_REVIEW'})
 
     def reopen(self):
-        self.mark_as_to_review()
+        return self.mark_as_to_review()
 
     def add_comment(self, comment):
         params = {'hotspot': self.key, 'comment': comment}
@@ -104,10 +120,78 @@ class Hotspot(findings.Finding):
             params['comment'] = comment
         return self.post('hotspots/assign', params=params)
 
-    def changelog(self, cache=True):
-        if self._changelog is not None and cache:
+    def __apply_event(self, event, settings):
+        util.logger.debug("Applying event %s", str(event))
+        # origin = f"originally by *{event['userName']}* on original branch"
+        (event_type, data) = event.changelog_type()
+        if event_type == 'HOTSPOT_SAFE':
+            self.mark_as_safe()
+            # self.add_comment(f"Hotspot review safe {origin}")
+        elif event_type == 'HOTSPOT_FIXED':
+            self.mark_as_fixed()
+            # self.add_comment(f"Hotspot marked as fixed {origin}", settings[SYNC_ADD_COMMENTS])
+        elif event_type == 'HOTSPOT_TO_REVIEW':
+            self.mark_as_to_review()
+            # self.add_comment(f"Hotspot marked as fixed {origin}", settings[SYNC_ADD_COMMENTS])
+        elif event_type == 'HOTSPOT_ACKNOWLEDGED':
+            self.mark_as_acknowledged()
+            # self.add_comment(f"Hotspot marked as acknowledged {origin}", settings[SYNC_ADD_COMMENTS])
+        elif event_type == 'ASSIGN':
+            if settings[syncer.SYNC_ASSIGN]:
+                u = users.get_login_from_name(data, endpoint=self.endpoint)
+                if u is None:
+                    u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
+                self.assign(u)
+                # self.add_comment(f"Hotspot assigned assigned {origin}", settings[SYNC_ADD_COMMENTS])
+
+        elif event_type == 'INTERNAL':
+            util.logger.info("Changelog %s is internal, it will not be applied...", str(event))
+            # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
+        else:
+            util.logger.error("Event %s can't be applied", str(event))
+            return False
+        return True
+
+    def apply_changelog(self, source_hotspot, settings):
+        events = source_hotspot.changelog()
+        if events is None or not events:
+            util.logger.debug("Sibling %s has no changelog, no action taken", str(source_hotspot))
+            return False
+
+        change_nbr = 0
+        start_change = len(self.changelog()) + 1
+        util.logger.debug("Applying changelog of %s to %s, from change %d", str(source_hotspot), str(self), start_change)
+        for key in sorted(events.keys()):
+            change_nbr += 1
+            if change_nbr < start_change:
+                util.logger.debug("Skipping change already applied in a previous sync: %s", str(events[key]))
+                continue
+            self.__apply_event(events[key], settings)
+
+        comments = source_hotspot.comments()
+        if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
+            util.logger.info("Target %s has 0 comments, adding sync link comment", str(self))
+            start_change = 1
+            self.add_comment(f"Automatically synchronized from [this original issue]({source_hotspot.url()})")
+        else:
+            start_change = len(self.comments())
+            util.logger.info("Target %s already has %d comments", str(self), start_change)
+        util.logger.info("Applying comments of %s to %s, from comment %d",
+                         str(source_hotspot), str(self), start_change)
+        change_nbr = 0
+        for key in sorted(comments.keys()):
+            change_nbr += 1
+            if change_nbr < start_change:
+                util.logger.debug("Skipping comment already applied in a previous sync: %s", str(comments[key]))
+                continue
+            # origin = f"originally by *{event['userName']}* on original branch"
+            self.add_comment(comments[key]['value'])
+        return True
+
+    def changelog(self):
+        if self._changelog is not None:
             return self._changelog
-        resp = self.get('hotspots/show', {'issue': self.key, 'format': 'json'})
+        resp = self.get('hotspots/show', {'hotspot': self.key})
         self._details = json.loads(resp.text)
         util.json_dump_debug(self._details, f"{str(self)} Details = ")
         self._changelog = {}
@@ -123,15 +207,17 @@ class Hotspot(findings.Finding):
             self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
 
-    def comments(self, cache=True):
-        if self._comments is not None and cache:
+    def comments(self):
+        if self._comments is not None:
             return self._comments
-        resp = self.get('hotspots/show', {'issue': self.key, 'format': 'json'})
+        resp = self.get('hotspots/show', {'hotspot': self.key})
         self._details = json.loads(resp.text)
         util.json_dump_debug(self._details, f"{str(self)} Details = ")
         self._comments = {}
-        for c in self._details['comments']:
-            self._comments[c['createdAt']] = {'date': c['createdAt'], 'event': 'comment',
+        seq = 0
+        for c in self._details['comment']:
+            seq += 1
+            self._comments[f"{c['createdAt']}_{seq:03d}"] = {'date': c['createdAt'], 'event': 'comment',
                 'value': c['markdown'], 'user': c['login'], 'userName': c['login'], 'commentKey': c['key']}
         return self._comments
 

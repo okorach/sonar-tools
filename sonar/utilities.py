@@ -248,3 +248,10 @@ def int_memory(string):
     elif unit == 'bytes':
         return val / 1024 / 1024
     return None
+
+def dict_add(dict1, dict2):
+    for k in dict2:
+        if k not in dict1:
+            dict1[k] = 0
+        dict1[k] += dict2[k]
+    return dict1

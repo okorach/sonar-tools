@@ -82,6 +82,30 @@ class Changelog():
                 return True
         return False
 
+    def is_mark_as_safe(self):
+        for d in self._json['diffs']:
+            if (d.get('key', '') == "resolution" and d.get('newValue', '') == "SAFE"):
+                return True
+        return False
+
+    def is_mark_as_to_review(self):
+        for d in self._json['diffs']:
+            if (d.get('key', '') == "status" and d.get('newValue', '') == "TO_REVIEW"):
+                return True
+        return False
+
+    def is_mark_as_fixed(self):
+        for d in self._json['diffs']:
+            if (d.get('key', '') == "resolution" and d.get('newValue', '') == "FIXED"):
+                return True
+        return False
+
+    def is_mark_as_acknowledged(self):
+        for d in self._json['diffs']:
+            if (d.get('key', '') == "resolution" and d.get('newValue', '') == "ACKNOWLEDGED"):
+                return True
+        return False
+
     def is_change_severity(self):
         d = self._json['diffs'][0]
         return d.get('key', '') == "severity"
@@ -165,6 +189,14 @@ class Changelog():
             ctype = ('TAG', self.tags())
         elif self.is_closed():
             ctype = ('CLOSED', None)
+        elif self.is_mark_as_safe():
+            ctype = ('HOTSPOT_SAFE', None)
+        elif self.is_mark_as_fixed():
+            ctype = ('HOTSPOT_FIXED', None)
+        elif self.is_mark_as_to_review():
+            ctype = ('HOTSPOT_TO_REVIEW', None)
+        elif self.is_mark_as_acknowledged():
+            ctype = ('HOTSPOT_ACKNOWLEDGED', None)
         elif self.is_technical_change():
             ctype = ('INTERNAL', None)
         else:

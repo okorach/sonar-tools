@@ -118,8 +118,8 @@ class Issue(findings.Finding):
         resp = self.get(Issue.SEARCH_API, params={'issues': self.key, 'additionalFields': '_all'})
         self._load(resp.issues[0])
 
-    def changelog(self, force_api=False):
-        if (force_api or self._changelog is None):
+    def changelog(self):
+        if self._changelog is None:
             resp = self.get('issues/changelog', {'issue': self.key, 'format': 'json'})
             data = json.loads(resp.text)
             util.json_dump_debug(data['changelog'], f"{str(self)} Changelog = ")
@@ -135,20 +135,6 @@ class Issue(findings.Finding):
                 seq += 1
                 self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
-
-    def has_changelog(self):
-        util.logger.debug('Issue %s had %d changelog', self.key, len(self.changelog()))
-        return len(self.changelog()) > 0
-
-    def can_be_synced(self, user_list):
-        util.logger.debug("Issue %s: Checking if modifiers %s are different from user %s",
-            str(self), str(self.modifiers()), str(user_list))
-        if user_list is None:
-            return not self.has_changelog()
-        for u in self.modifiers():
-            if u not in user_list:
-                return False
-        return True
 
     def get_all_events(self, event_type='changelog'):
         if event_type == 'comments':
@@ -170,16 +156,9 @@ class Issue(findings.Finding):
             seq = 0
             for c in self._json['comments']:
                 seq += 1
-                self._comments[f"{c['createdAt']}_{seq}"] = {'date': c['createdAt'], 'event': 'comment',
+                self._comments[f"{c['createdAt']}_{seq:03}"] = {'date': c['createdAt'], 'event': 'comment',
                     'value': c['markdown'], 'user': c['login'], 'userName': c['login']}
         return self._comments
-
-    def has_comments(self):
-        comments = self.comments()
-        return len(comments) > 0
-
-    def has_changelog_or_comments(self):
-        return self.has_changelog() or self.has_comments()
 
     def add_comment(self, comment, really=True):
         util.logger.debug("Adding comment %s to %s", comment, str(self))
@@ -204,57 +183,6 @@ class Issue(findings.Finding):
         util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         return self.post('issues/set_type', {'issue': self.key, 'type': new_type})
 
-    def modifiers(self):
-        """Returns list of users that modified the issue."""
-        item_list = []
-        for c in self.changelog().values():
-            util.logger.debug("Checking author of changelog %s", str(c))
-            author = c.author()
-            if author is not None and author not in item_list:
-                item_list.append(author)
-        return item_list
-
-    def commenters(self):
-        """Returns list of users that commented the issue."""
-        return util.unique_dict_field(self.comments(), 'user')
-
-    def modifiers_and_commenters(self):
-        modif = self.modifiers()
-        for c in self.commenters():
-            if c not in modif:
-                modif.append(c)
-        return modif
-
-    def modifiers_excluding_service_users(self, service_users):
-        mods = []
-        for u in self.modifiers():
-            if u not in service_users:
-                mods.append(u)
-        return mods
-
-    def search_siblings(self, issue_list, allowed_users=None, ignore_component=False, **kwargs):
-        exact_matches = []
-        approx_matches = []
-        match_but_modified = []
-        for key, issue in issue_list.items():
-            if key == self.key:
-                continue
-            if issue.strictly_identical_to(self, ignore_component, **kwargs):
-                util.logger.debug("Issues %s and %s are strictly identical", self.key, key)
-                if issue.can_be_synced(allowed_users):
-                    exact_matches.append(issue)
-                else:
-                    match_but_modified.append(issue)
-            elif issue.almost_identical_to(self, ignore_component, **kwargs):
-                util.logger.debug("Issues %s and %s are almost identical", self.key, key)
-                if issue.can_be_synced(allowed_users):
-                    approx_matches.append(issue)
-                else:
-                    match_but_modified.append(issue)
-            else:
-                util.logger.debug("Issues %s and %s are not siblings", self.key, key)
-        return (exact_matches, approx_matches, match_but_modified)
-
     def is_wont_fix(self):
         return self.__has_been_marked_as_statuses(["WONTFIX"])
 
@@ -271,38 +199,13 @@ class Issue(findings.Finding):
                         return True
         return False
 
-    def strictly_identical_to(self, another_issue, ignore_component=False):
-        return (
-            self.rule == another_issue.rule and
-            self.hash == another_issue.hash and
-            self.message == another_issue.message and
-            self.debt() == another_issue.debt() and
-            self.file() == another_issue.file() and
-            (self.component == another_issue.component or ignore_component)
-        )
+    def strictly_identical_to(self, another_finding, ignore_component=False):
+        return (super.strictly_identical_to(another_finding, ignore_component) and
+                (self.debt() == another_finding.debt()))
 
-    def almost_identical_to(self, another_issue, ignore_component=False, **kwargs):
-        if self.rule != another_issue.rule or self.hash != another_issue.hash:
-            return False
-        score = 0
-        if self.message == another_issue.message or kwargs.get('ignore_message', False):
-            score += 2
-        if self.file() == another_issue.file():
-            score += 2
-        if self.debt() == another_issue.debt() or kwargs.get('ignore_debt', False):
-            score += 1
-        if self.line == another_issue.line or kwargs.get('ignore_line', False):
-            score += 1
-        if self.component == another_issue.component or ignore_component:
-            score += 1
-        if self.author == another_issue.author or kwargs.get('ignore_author', False):
-            score += 1
-        if self.type == another_issue.type or kwargs.get('ignore_type', False):
-            score += 1
-        if self.severity == another_issue.severity or kwargs.get('ignore_severity', False):
-            score += 1
-        # Need at least 8 / 10 to match
-        return score >= 8
+    def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
+        return (super.almost_identical_to(another_finding, ignore_component, **kwargs) and
+                (self.debt() == another_finding.debt() or kwargs.get('ignore_debt', False)))
 
     def __do_transition(self, transition):
         return self.post('issues/do_transition', {'issue': self.key, 'transition': transition})
@@ -624,7 +527,7 @@ def search(endpoint=None, page=None, params=None):
 
 
 def search_all_issues(params=None, endpoint=None):
-    util.logger.info('searching issues for %s', str(params))
+    util.logger.debug('searching issues for %s', str(params))
     if params is None:
         params = {}
     params['ps'] = 500
