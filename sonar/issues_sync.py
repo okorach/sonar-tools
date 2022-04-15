@@ -33,14 +33,6 @@ import sys
 from sonar import env, projects, branches, version, syncer
 import sonar.utilities as util
 
-SRC_KEY = 'sourceIssueKey'
-SRC_URL = 'sourceIssueUrl'
-SYNC_MSG = 'syncMessage'
-SYNC_MATCHES = 'matches'
-TGT_KEY = 'targetIssueKey'
-TGT_URL = 'targetIssueUrl'
-SYNC_STATUS = 'syncStatus'
-
 _WITH_COMMENTS = {'additionalFields': 'comments'}
 
 def __parse_args(desc):
@@ -104,13 +96,13 @@ def main():
             raise env.NonExistingObjectError(source_key, f"Project key '{source_key}' does not exist")
         if target_url is None and target_key is None and source_branch is None and target_branch is None:
             # Sync all branches of a given project
-            (report, counters) = projects.get_object(key=source_key, endpoint=source_env).sync_branches()
+            (report, counters) = projects.get_object(key=source_key, endpoint=source_env).sync_branches(sync_settings=settings)
         elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
             # Sync 2 branches of a given project
             if source_branch != target_branch:
                 src_branch = branches.get_object(branch=source_branch, project_key_or_obj=source_key, endpoint=source_env)
                 tgt_branch = branches.get_object(branch=target_branch, project_key_or_obj=source_key, endpoint=source_env)
-                (report, counters) = src_branch.sync(tgt_branch)
+                (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
 
@@ -121,7 +113,7 @@ def main():
             settings[syncer.SYNC_IGNORE_COMPONENTS] = (target_key != source_key)
             src_branch = branches.get_object(branch=source_branch, project_key_or_obj=source_key, endpoint=source_env)
             tgt_branch = branches.get_object(branch=target_branch, project_key_or_obj=target_key, endpoint=source_env)
-            (report, counters) = src_branch.sync(tgt_branch)
+            (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
 
         elif target_url is not None and target_key is not None:
             target_env = env.Environment(some_url=args.urlTarget, some_token=args.tokenTarget)
@@ -132,12 +124,12 @@ def main():
                 # sync main 2 branches of 2 projects on different platforms
                 src_branch = branches.get_object(branch=source_branch, project_key_or_obj=source_key, endpoint=source_env)
                 tgt_branch = branches.get_object(branch=target_branch, project_key_or_obj=target_key, endpoint=target_env)
-                (report, counters) = src_branch.sync(tgt_branch)
+                (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 # sync main all branches of 2 projects on different platforms
                 src_project = projects.get_object(key=source_key, endpoint=source_env)
                 tgt_project = projects.get_object(key=target_key, endpoint=target_env)
-                (report, counters) = src_project.sync(tgt_project)
+                (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
 
         __dump_report(report, args.file)
         util.logger.info("%d issues needed to be synchronized", counters.get('nb_to_sync', 0))
