@@ -162,6 +162,14 @@ class Finding(sq.SqObject):
     def is_closed(self):
         return self.status == 'CLOSED'
 
+    def strictly_identical_to(self, another_issue, ignore_component=False):
+        # Implemented in subclasses
+        return False
+
+    def almost_identical_to(self, another_issue, ignore_component=False, **kwargs):
+        # Implemented in subclasses
+        return False
+
     def search_siblings(self, findings_list, allowed_users=None, ignore_component=False, **kwargs):
         exact_matches = []
         approx_matches = []
