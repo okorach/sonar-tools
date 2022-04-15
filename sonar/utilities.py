@@ -172,8 +172,8 @@ def convert_to_type(value):
 
 def unique_dict_field(data, field):
     item_list = []
-    for d in data:
-        element = d.get(field, None)
+    for k, v in data.items():
+        element = v.get(field, None)
         if element is not None and element not in item_list:
             item_list.append(element)
     return item_list
