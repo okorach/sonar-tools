@@ -47,8 +47,8 @@ def __get_issues(issue_list):
 
 
 def __process_exact_sibling(issue, sibling, settings):
-    if sibling.has_changelog_or_comments():
-        issue.apply_changelog(sibling, settings)
+    if issue.has_changelog_or_comments():
+        sibling.apply_changelog(issue, settings)
         msg = 'Source issue changelog applied successfully'
     else:
         msg = 'Source issue has no changelog'
@@ -130,7 +130,7 @@ def __sync_issues_list(src_issues, tgt_issues, settings):
             tgt_issues, allowed_users=settings[SYNC_SERVICE_ACCOUNTS],
             ignore_component=settings[SYNC_IGNORE_COMPONENTS])
         if len(exact_siblings) == 1:
-            report.append(__process_exact_sibling(exact_siblings[0], issue, settings))
+            report.append(__process_exact_sibling(issue, exact_siblings[0], settings))
             counters['nb_applies'] += 1
         elif len(exact_siblings) > 1:
             report.append(__process_multiple_exact_siblings(issue, exact_siblings))
