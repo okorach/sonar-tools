@@ -20,6 +20,7 @@
 """Abstraction of the SonarQube "hotspot" concept"""
 
 import json
+import re
 import requests.utils
 import sonar.utilities as util
 import sonar.issue_changelog as changelog
@@ -57,6 +58,16 @@ class Hotspot(findings.Finding):
         if data is not None:
             self.category = data['securityCategory']
             self.vulnerabilityProbability = data['vulnerabilityProbability']
+        # FIXME: Ugly hack to fix how hotspot branches are managed
+        m = re.match(r"^(.*):BRANCH:(.*)$", self.projectKey)
+        if m:
+            self.projectKey = m.group(1)
+            self.branch = m.group(2)
+        m = re.match(r"^(.*):PULL_REQUEST:(.*)$", self.projectKey)
+        if m:
+            self.projectKey = m.group(1)
+            self.branch = m.group(2)
+        util.logger.debug("HOTSPOT proj = %s branch = %s", self.projectKey, self.branch)
         _HOTSPOTS[self.uuid()] = self
 
     def __str__(self):
@@ -104,10 +115,10 @@ class Hotspot(findings.Finding):
             params['comment'] = comment
         return self.post('hotspots/assign', params=params)
 
-    def changelog(self, cache=True):
-        if self._changelog is not None and cache:
+    def changelog(self):
+        if self._changelog is not None:
             return self._changelog
-        resp = self.get('hotspots/show', {'issue': self.key, 'format': 'json'})
+        resp = self.get('hotspots/show', {'hotspot': self.key})
         self._details = json.loads(resp.text)
         util.json_dump_debug(self._details, f"{str(self)} Details = ")
         self._changelog = {}
@@ -123,49 +134,22 @@ class Hotspot(findings.Finding):
             self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
 
-    def comments(self, cache=True):
-        if self._comments is not None and cache:
+    def comments(self):
+        if self._comments is not None:
             return self._comments
-        resp = self.get('hotspots/show', {'issue': self.key, 'format': 'json'})
+        resp = self.get('hotspots/show', {'hotspot': self.key})
         self._details = json.loads(resp.text)
         util.json_dump_debug(self._details, f"{str(self)} Details = ")
         self._comments = {}
         seq = 0
-        for c in self._details['comments']:
+        for c in self._details['comment']:
             seq += 1
             self._comments[f"{c['createdAt']}_{seq:03d}"] = {'date': c['createdAt'], 'event': 'comment',
                 'value': c['markdown'], 'user': c['login'], 'userName': c['login'], 'commentKey': c['key']}
         return self._comments
 
-    def modifiers(self):
-        """Returns list of users that modified the issue."""
-        item_list = []
-        for c in self.changelog().values():
-            util.logger.debug("Checking author of changelog %s", str(c))
-            author = c.author()
-            if author is not None and author not in item_list:
-                item_list.append(author)
-        return item_list
-
-    def commenters(self):
-        """Returns list of users that commented the issue."""
-        return util.unique_dict_field(self.comments(), 'user')
-
-    def modifiers_and_commenters(self):
-        modif = self.modifiers()
-        for c in self.commenters():
-            if c not in modif:
-                modif.append(c)
-        return modif
-
-    def modifiers_excluding_service_users(self, service_users):
-        mods = []
-        for u in self.modifiers():
-            if u not in service_users:
-                mods.append(u)
-        return mods
-
     def strictly_identical_to(self, another_issue, ignore_component=False):
+        util.logger.debug("Comparing files %s and %s", self.file(), another_issue.file())
         return (
             self.rule == another_issue.rule and
             self.hash == another_issue.hash and
