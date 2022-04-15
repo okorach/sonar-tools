@@ -44,7 +44,7 @@ def __parse_args(desc):
                         tags, severity and type change can be recovered too''')
     parser.add_argument('-b', '--sourceBranch', required=False, help='Name of the source branch')
     parser.add_argument('-B', '--targetBranch', required=False, help='Name of the target branch')
-    parser.add_argument('-K', '--targetComponentKeys', required=False,
+    parser.add_argument('-K', '--targetProjectKey', required=False,
                         help='''key of the target project when synchronizing 2 projects
                         or 2 branches on a same platform''')
     parser.add_argument('--login', required=True,
