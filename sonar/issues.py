@@ -21,7 +21,6 @@
 """Abstraction of the SonarQube 'issue' concept"""
 
 import datetime
-from imp import SEARCH_ERROR
 import json
 import re
 
@@ -33,7 +32,7 @@ from sonar import env, findings, projects, users, syncer
 
 SEARCH_CRITERIAS = (
     'componentKeys', 'types', 'severities', 'createdAfter', 'createdBefore', 'createdInLast', 'createdAt',
-    'branch', 'pullRequest', 'statuses', 'tags', 
+    'branch', 'pullRequest', 'statuses', 'tags',
     'inNewCodePeriod', 'sinceLeakPeriod',
     'p', 'page', 'facets', 'onComponentOnly', 's', 'timeZone',
     'cwe', 'owaspTop10', 'owaspTop10-21', 'sansTop25', 'sonarsourceSecurity',
@@ -465,13 +464,13 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
         key_list = util.csv_to_list(project_key)
     issue_list = {}
     for k in key_list:
-        util.logger.info("Issue search by project %s, with params %s", k, str(params))
+        util.logger.debug("Issue search by project %s, with params %s", k, str(params))
         if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ('enterprise', 'datacenter') and search_findings:
             util.logger.info('Using new export findings to speed up issue export')
             issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(params['branch'], params['pullRequest']))
         else:
-            util.logger.info('Traditional issue search by project')
             issue_list.update(_search_all_by_project(k, params=params, endpoint=endpoint))
+    util.logger.info("Search by project %s returned %d issues", str(project_key), len(issue_list))
     return issue_list
 
 def search_all(endpoint, params=None):
@@ -603,7 +602,6 @@ def get_object(key, data=None, endpoint=None, from_export=False):
 
 def get_search_criteria(params):
     '''Returns the filtered list of params that are allowed for api/issue/search '''
-    util.logger.info("Filtering %s", str(params))
     criterias = {}
     for p in params:
         if p not in SEARCH_CRITERIAS:
@@ -611,5 +609,4 @@ def get_search_criteria(params):
         if p not in params or params[p] is None:
             continue
         criterias[p] = params[p]
-    util.logger.info("Return %s", str(criterias))
     return criterias
