@@ -188,7 +188,11 @@ def remove_nones(d):
 
 def dict_subset(d, subset_list):
     '''Returns the subset of dict only with subset_list keys'''
-    return {key: d[key] for key in subset_list}
+    return {key: d[key] for key in subset_list if key in d}
+
+
+def allowed_values_string(original_str, allowed_values):
+    return list_to_csv([v for v in csv_to_list(original_str) if v in allowed_values])
 
 
 def json_dump(jsondata):
