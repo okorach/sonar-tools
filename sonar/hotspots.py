@@ -249,13 +249,26 @@ def search_by_project(project_key, endpoint=None, params=None):
 
 
 def search(endpoint=None, page=None, params=None):
+    hotspots_list = {}
     if params is None:
         new_params = {}
     else:
         new_params = params.copy()
+    r_list = util.csv_to_list(params.get('resolution', None))
+    s_list = util.csv_to_list(params.get('status', None))
+    if len(r_list) > 1:
+        for r in r_list:
+            new_params['resolution'] = r
+            hotspots_list.update(search(endpoint, params=new_params))
+        return hotspots_list
+    elif len(s_list) > 1:
+        for s in s_list:
+            new_params['status'] = s
+            hotspots_list.update(search(endpoint, params=new_params))
+        return hotspots_list
+
     new_params['ps'] = 500
     p = 1
-    hotspots = {}
     while True:
         if page is None:
             new_params['p'] = p
@@ -272,11 +285,11 @@ def search(endpoint=None, page=None, params=None):
                                      'this is more than the max 10000 possible')
 
         for i in data['hotspots']:
-            hotspots[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
+            hotspots_list[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
         if page is not None or p >= nbr_pages:
             break
         p += 1
-    return hotspots
+    return hotspots_list
 
 
 def get_object(key, data=None, endpoint=None, from_export=False):
@@ -291,8 +304,10 @@ def get_search_criteria(params):
     for old, new in {'resolutions': 'resolution', 'componentsKey': 'projectKey', 'statuses': 'status'}.items():
         if old in params:
             criterias[new] = params[old]
-    if criterias.get('resolution', None) is not None:
-        criterias['resolution'] = util.allowed_values_string(criterias['resolution'], RESOLUTIONS)
     if criterias.get('status', None) is not None:
         criterias['status'] = util.allowed_values_string(criterias['status'], STATUSES)
+    if criterias.get('resolution', None) is not None:
+        criterias['resolution'] = util.allowed_values_string(criterias['resolution'], RESOLUTIONS)
+        util.logger.error("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
+        criterias['status'] = 'REVIEWED'
     return util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
