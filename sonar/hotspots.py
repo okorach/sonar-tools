@@ -26,6 +26,11 @@ import sonar.utilities as util
 import sonar.issue_changelog as changelog
 from sonar import env, projects, findings, syncer, users
 
+SEARCH_CRITERIAS = (
+    'branch', 'cwe', 'files', 'hotspots', 'onlyMine', 'owaspTop10', 'owaspTop10-2021', 'p', 'ps',
+    'projectKey', 'pullRequest', 'resolution', 'sansTop25', 'sinceLeakPeriod', 'sonarsourceSecurity',
+    'status'
+)
 
 _JSON_FIELDS_REMAPPED = (
     ('pull_request', 'pullRequest'),
@@ -275,3 +280,8 @@ def get_object(key, data=None, endpoint=None, from_export=False):
     if key not in _HOTSPOTS:
         _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return _HOTSPOTS[key]
+
+
+def get_search_criteria(params):
+    '''Returns the filtered list of params that are allowed for api/issue/search '''
+    return util.dict_subset(util.remove_nones(params), SEARCH_CRITERIAS)

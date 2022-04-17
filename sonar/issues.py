@@ -602,11 +602,4 @@ def get_object(key, data=None, endpoint=None, from_export=False):
 
 def get_search_criteria(params):
     '''Returns the filtered list of params that are allowed for api/issue/search '''
-    criterias = {}
-    for p in params:
-        if p not in SEARCH_CRITERIAS:
-            continue
-        if p not in params or params[p] is None:
-            continue
-        criterias[p] = params[p]
-    return criterias
+    return util.dict_subset(util.remove_nones(params), SEARCH_CRITERIAS)

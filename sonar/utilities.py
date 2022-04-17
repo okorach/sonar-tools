@@ -186,6 +186,11 @@ def remove_nones(d):
         return d
 
 
+def dict_subset(d, subset_list):
+    '''Returns the subset of dict only with subset_list keys'''
+    return {key: d[key] for key in subset_list}
+
+
 def json_dump(jsondata):
     return json.dumps(remove_nones(jsondata), indent=3, sort_keys=True, separators=(',', ': '))
 
