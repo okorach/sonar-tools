@@ -207,6 +207,8 @@ def str_none(v):
 
 
 def csv_to_list(string, separator=','):
+    if string is None:
+        return []
     return [s.strip() for s in string.split(separator)]
 
 
