@@ -32,6 +32,9 @@ SEARCH_CRITERIAS = (
     'status'
 )
 
+RESOLUTIONS = ('SAFE', 'ACKNOWLEDGED', 'FIXED')
+STATUSES = ('TO_REVIEW', 'REVIEWED')
+
 _JSON_FIELDS_REMAPPED = (
     ('pull_request', 'pullRequest'),
     ('_comments', 'comments')
@@ -283,5 +286,13 @@ def get_object(key, data=None, endpoint=None, from_export=False):
 
 
 def get_search_criteria(params):
-    '''Returns the filtered list of params that are allowed for api/issue/search '''
-    return util.dict_subset(util.remove_nones(params), SEARCH_CRITERIAS)
+    '''Returns the filtered list of params that are allowed for api/issue/search'''
+    criterias = params.copy()
+    for old, new in {'resolutions': 'resolution', 'componentsKey': 'projectKey', 'statuses': 'status'}.items():
+        if old in params:
+            criterias[new] = params[old]
+    if criterias.get('resolution', None) is not None:
+        criterias['resolution'] = util.allowed_values_string(criterias['resolution'], RESOLUTIONS)
+    if criterias.get('status', None) is not None:
+        criterias['status'] = util.allowed_values_string(criterias['status'], STATUSES)
+    return util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
