@@ -40,6 +40,10 @@ SEARCH_CRITERIAS = (
     'resolved', 'rules', 'scopes'
 )
 
+SEARCH_TYPES = ('BUG', 'VULNERABILITY', 'CODE_SMELL')
+SEARCH_SEVERITIES = ('BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO')
+SEARCH_STATUSES = ('OPEN', 'CONFIRMED', 'REOPENED', 'RESOLVED', 'CLOSED')
+
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 _ISSUES = {}
 
@@ -70,7 +74,7 @@ class Issue(findings.Finding):
         self._debt = None
         if data is not None:
             self.component = data.get('component', None)
-        util.logger.debug("Loaded issue: %s", util.json_dump(data))
+        # util.logger.debug("Loaded issue: %s", util.json_dump(data))
         _ISSUES[self.uuid()] = self
 
     def __str__(self):
@@ -602,4 +606,12 @@ def get_object(key, data=None, endpoint=None, from_export=False):
 
 def get_search_criteria(params):
     '''Returns the filtered list of params that are allowed for api/issue/search '''
-    return util.dict_subset(util.remove_nones(params), SEARCH_CRITERIAS)
+    criterias = params.copy()
+    if criterias.get('types', None) is not None:
+        criterias['types'] = util.allowed_values_string(criterias['types'], SEARCH_TYPES)
+    if criterias.get('severities', None) is not None:
+        criterias['severities'] = util.allowed_values_string(criterias['severities'], SEARCH_SEVERITIES)
+    if criterias.get('statuses', None) is not None:
+        criterias['statuses'] = util.allowed_values_string(criterias['statuses'], SEARCH_STATUSES)
+    criterias = util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
+    return criterias
