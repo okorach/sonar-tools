@@ -222,25 +222,21 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(project_key, endpoint=None, branch=None, pull_request=None):
-    new_params = {}
+def search_by_project(project_key, endpoint=None, params=None):
+    if params is None:
+        new_params = {}
+    else:
+        new_params = params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
         key_list = util.csv_to_list(project_key)
     hotspots = {}
-    if branch is not None:
-        new_params['branch'] = branch
-        key_list = [key_list[0]]
-    elif pull_request is not None:
-        new_params['pullRequest'] = pull_request
-        key_list = [key_list[0]]
-
     for k in key_list:
-        util.logger.info("Hotspots search by project %s branch %s PR %s", k, branch, pull_request)
         new_params['projectKey'] = k
+        util.logger.debug("Hotspots search by project %s with params %s", k, str(params))
         project_hotspots = search(endpoint=endpoint, params=new_params)
-        util.logger.info("Project %s branch %s has %d hotspots", k, str(branch), len(project_hotspots))
+        util.logger.info("Project %s has %d hotspots", k, len(project_hotspots))
         hotspots.update(project_hotspots)
     return hotspots
 
