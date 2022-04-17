@@ -21,6 +21,7 @@
 """Abstraction of the SonarQube 'issue' concept"""
 
 import datetime
+from imp import SEARCH_ERROR
 import json
 import re
 
@@ -30,8 +31,17 @@ import sonar.issue_changelog as changelog
 import sonar.utilities as util
 from sonar import env, findings, projects, users, syncer
 
-_TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
+SEARCH_CRITERIAS = (
+    'componentKeys', 'types', 'severities', 'createdAfter', 'createdBefore', 'createdInLast', 'createdAt',
+    'branch', 'pullRequest', 'statuses', 'tags', 
+    'inNewCodePeriod', 'sinceLeakPeriod',
+    'p', 'page', 'facets', 'onComponentOnly', 's', 'timeZone',
+    'cwe', 'owaspTop10', 'owaspTop10-21', 'sansTop25', 'sonarsourceSecurity',
+    'additionalFields', 'asc', 'assigned', 'assignees', 'author', 'issues', 'languages', 'resolutions',
+    'resolved', 'rules', 'scopes'
+)
 
+_TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 _ISSUES = {}
 
 
@@ -469,7 +479,7 @@ def search_all(endpoint, params=None):
         new_params = {}
     else:
         new_params = params.copy()
-    util.logger.info('Traditional issue search by project')
+    util.logger.info('Issue search all with %s', str(params))
     issue_list = {}
     try:
         issue_list = search(endpoint=endpoint, params=params)
@@ -589,3 +599,17 @@ def get_object(key, data=None, endpoint=None, from_export=False):
     if key not in _ISSUES:
         _ = Issue(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return _ISSUES[key]
+
+
+def get_search_criteria(params):
+    '''Returns the filtered list of params that are allowed for api/issue/search '''
+    util.logger.info("Filtering %s", str(params))
+    criterias = {}
+    for p in params:
+        if p not in SEARCH_CRITERIAS:
+            continue
+        if p not in params or params[p] is None:
+            continue
+        criterias[p] = params[p]
+    util.logger.info("Return %s", str(criterias))
+    return criterias
