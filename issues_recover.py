@@ -57,7 +57,7 @@ params.update({'env': sqenv})
 search_params = params
 search_params['ps'] = 500
 search_params['statuses'] = 'CLOSED'
-closed_issues = sonar.issues.search_all_issues(**search_params)
+closed_issues = sonar.issues.search_all(endpoint=sqenv, params=search_params)
 print("Total number of closed issues: ", len(closed_issues))
 
 # Fetch all open issues

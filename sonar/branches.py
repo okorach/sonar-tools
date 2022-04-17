@@ -102,8 +102,8 @@ class Branch(components.Component):
         return m
 
     def get_issues(self):
-        return issues.search_all_issues(endpoint=self.endpoint,
-                                       params={'componentKeys': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
+        return issues.search_all(endpoint=self.endpoint,
+                                 params={'componentKeys': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
 
     def get_hotspots(self):
         return hotspots.search(endpoint=self.endpoint,

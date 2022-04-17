@@ -106,58 +106,83 @@ def __dump_findings(issues_list, file, file_format, **kwargs):
         f.close()
 
 
+def __get_list(project, list_str, list_type):
+    if list_str == '*':
+        if list_type == 'branch':
+            list_array = project.get_branches()
+        else:
+            project.get_pull_requests()
+    elif list_str is not None:
+        list_array = util.csv_to_list(list_str)
+    else:
+        list_array = []
+    return list_array
+
+
+def __get_project_issues(key, params, endpoint, search_findings):
+    issue_list = issues.search_by_project(key, params=issues.get_search_criteria(params),
+                                          endpoint=endpoint, search_findings=search_findings)
+    if search_findings:
+        return issue_list
+    pval = params.get('types', None)
+    if pval is not None and 'SECURITY_HOTSPOT' not in util.csv_to_list(pval):
+        return issue_list
+    pval = params.get('statuses', None)
+    s_list = util.csv_to_list(pval)
+    if pval is not None and ('REVIEWED' not in s_list and 'TO_REVIEW' not in s_list):
+        return issue_list
+    pval = params.get('resolutions', None)
+    s_list = util.csv_to_list(pval)
+    if pval is not None and ('SAFE' not in s_list and 'ACKNOWLEDGED' not in s_list and 'FIXED' not in s_list):
+        return issue_list
+    issue_list.update(hotspots.search_by_project(key, endpoint=endpoint,
+                                                 params=hotspots.get_search_criteria(params)))
+    return issue_list
+
+
 def main():
-    args = parse_args()
-    sqenv = env.Environment(some_url=args.url, some_token=args.token)
-    sqenv.set_env(args.url, args.token)
-    kwargs = vars(args)
+    kwargs = vars(parse_args())
+    sqenv = env.Environment(some_url=kwargs['url'], some_token=kwargs['token'])
+    del kwargs['token']
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
-    # Remove unset params from the dict
-    params = vars(args)
-    for p in params.copy():
-        if params[p] is None:
-            del params[p]
+    search_findings = kwargs['useFindings']
 
-    # Add SQ environment
-    params.update({'env': sqenv})
-    all_issues = {}
     project_key = kwargs.get('componentKeys', None)
-    branch_str = kwargs.get('branches', None)
-    pr_str = kwargs.get('pullRequests', None)
-    if project_key is not None:
-        branches = []
-        prs = []
-        if branch_str == '*':
-            project = projects.Project(project_key, endpoint=sqenv)
-            branches = project.get_branches()
-        elif branch_str is not None:
-            branches = util.csv_to_list(branch_str)
-        if pr_str == '*':
-            project = projects.Project(project_key, endpoint=sqenv)
-            prs = project.get_pull_requests()
-        elif pr_str is not None:
-            prs = util.csv_to_list(pr_str)
-        if branches or prs:
-            for b in branches:
-                all_issues.update(issues.search_by_project(project_key, branch=b.name,
-                                  endpoint=sqenv, search_findings=kwargs['useFindings']))
-                if not kwargs['useFindings']:
-                    all_issues.update(hotspots.search_by_project(project_key, sqenv, branch=b.name))
-            for p in prs:
-                all_issues.update(issues.search_by_project(project_key, pull_request=p.key,
-                                  endpoint=sqenv, search_findings=kwargs['useFindings']))
-                if not kwargs['useFindings']:
-                    all_issues.update(hotspots.search_by_project(project_key, sqenv, pull_request=p.key))
-        else:
-            all_issues = issues.search_by_project(project_key, sqenv, search_findings=kwargs['useFindings'])
-            if not kwargs['useFindings']:
-                all_issues.update(hotspots.search_by_project(project_key, sqenv))
+    if project_key is None:
+        search_findings = False
+    params = kwargs.copy()
+    for p in ('statuses', 'createdAfter', 'createdBefore', 'resolutions', 'severities', 'types', 'tags'):
+        if params.get(p, None) is not None:
+            search_findings = False
+    project_list = []
+    if project_key is None:
+        project_list = projects.get_key_list(endpoint=sqenv)
     else:
-        all_issues = issues.search_by_project(project_key, sqenv, search_findings=kwargs['useFindings'])
-        if not kwargs['useFindings']:
-            all_issues.update(hotspots.search_by_project(project_key, sqenv))
+        for key in util.csv_to_list(project_key):
+            project_list.append(projects.get_object(key, endpoint=sqenv).key)
+
+    util.logger.info("Exporting issues for %d projects with params %s", len(project_list), str(params))
+    all_issues = {}
+    for project_key in project_list:
+        branches = __get_list(project_key, kwargs.get('branches', None), 'branch')
+        prs = __get_list(project_key, kwargs.get('pullRequests', None), 'pullrequest')
+        if branches:
+            for b in branches:
+                params['branch'] = b.name
+                all_issues.update(__get_project_issues(project_key, params=params,
+                                  endpoint=sqenv, search_findings=search_findings))
+        params.pop('branch', None)
+        if prs:
+            for p in prs:
+                params['pullRequest'] = p.key
+                all_issues.update(__get_project_issues(project_key, params=params,
+                                  endpoint=sqenv, search_findings=search_findings))
+        params.pop('pullRequest', None)
+        if not (branches or prs):
+            all_issues.update(__get_project_issues(project_key, params=params,
+                              endpoint=sqenv, search_findings=search_findings))
     fmt = kwargs['format']
     if kwargs.get('outputFile', None) is not None:
         ext = kwargs['outputFile'].split('.')[-1].lower()

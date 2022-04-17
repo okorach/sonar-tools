@@ -186,6 +186,15 @@ def remove_nones(d):
         return d
 
 
+def dict_subset(d, subset_list):
+    '''Returns the subset of dict only with subset_list keys'''
+    return {key: d[key] for key in subset_list if key in d}
+
+
+def allowed_values_string(original_str, allowed_values):
+    return list_to_csv([v for v in csv_to_list(original_str) if v in allowed_values])
+
+
 def json_dump(jsondata):
     return json.dumps(remove_nones(jsondata), indent=3, sort_keys=True, separators=(',', ': '))
 
@@ -198,6 +207,8 @@ def str_none(v):
 
 
 def csv_to_list(string, separator=','):
+    if string is None:
+        return []
     return [s.strip() for s in string.split(separator)]
 
 

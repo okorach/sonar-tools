@@ -26,6 +26,14 @@ import sonar.utilities as util
 import sonar.issue_changelog as changelog
 from sonar import env, projects, findings, syncer, users
 
+SEARCH_CRITERIAS = (
+    'branch', 'cwe', 'files', 'hotspots', 'onlyMine', 'owaspTop10', 'owaspTop10-2021', 'p', 'ps',
+    'projectKey', 'pullRequest', 'resolution', 'sansTop25', 'sinceLeakPeriod', 'sonarsourceSecurity',
+    'status'
+)
+
+RESOLUTIONS = ('SAFE', 'ACKNOWLEDGED', 'FIXED')
+STATUSES = ('TO_REVIEW', 'REVIEWED')
 
 _JSON_FIELDS_REMAPPED = (
     ('pull_request', 'pullRequest'),
@@ -67,7 +75,6 @@ class Hotspot(findings.Finding):
         if m:
             self.projectKey = m.group(1)
             self.branch = m.group(2)
-        util.logger.debug("HOTSPOT proj = %s branch = %s", self.projectKey, self.branch)
         _HOTSPOTS[self.uuid()] = self
 
     def __str__(self):
@@ -222,37 +229,46 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(project_key, endpoint=None, branch=None, pull_request=None):
-    new_params = {}
+def search_by_project(project_key, endpoint=None, params=None):
+    if params is None:
+        new_params = {}
+    else:
+        new_params = params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
         key_list = util.csv_to_list(project_key)
     hotspots = {}
-    if branch is not None:
-        new_params['branch'] = branch
-        key_list = [key_list[0]]
-    elif pull_request is not None:
-        new_params['pullRequest'] = pull_request
-        key_list = [key_list[0]]
-
     for k in key_list:
-        util.logger.info("Hotspots search by project %s branch %s PR %s", k, branch, pull_request)
         new_params['projectKey'] = k
+        util.logger.debug("Hotspots search by project %s with params %s", k, str(params))
         project_hotspots = search(endpoint=endpoint, params=new_params)
-        util.logger.info("Project %s branch %s has %d hotspots", k, str(branch), len(project_hotspots))
+        util.logger.info("Project %s has %d hotspots", k, len(project_hotspots))
         hotspots.update(project_hotspots)
     return hotspots
 
 
 def search(endpoint=None, page=None, params=None):
+    hotspots_list = {}
     if params is None:
         new_params = {}
     else:
         new_params = params.copy()
+    r_list = util.csv_to_list(params.get('resolution', None))
+    s_list = util.csv_to_list(params.get('status', None))
+    if len(r_list) > 1:
+        for r in r_list:
+            new_params['resolution'] = r
+            hotspots_list.update(search(endpoint, params=new_params))
+        return hotspots_list
+    elif len(s_list) > 1:
+        for s in s_list:
+            new_params['status'] = s
+            hotspots_list.update(search(endpoint, params=new_params))
+        return hotspots_list
+
     new_params['ps'] = 500
     p = 1
-    hotspots = {}
     while True:
         if page is None:
             new_params['p'] = p
@@ -269,14 +285,29 @@ def search(endpoint=None, page=None, params=None):
                                      'this is more than the max 10000 possible')
 
         for i in data['hotspots']:
-            hotspots[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
+            hotspots_list[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
         if page is not None or p >= nbr_pages:
             break
         p += 1
-    return hotspots
+    return hotspots_list
 
 
 def get_object(key, data=None, endpoint=None, from_export=False):
     if key not in _HOTSPOTS:
         _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return _HOTSPOTS[key]
+
+
+def get_search_criteria(params):
+    '''Returns the filtered list of params that are allowed for api/issue/search'''
+    criterias = params.copy()
+    for old, new in {'resolutions': 'resolution', 'componentsKey': 'projectKey', 'statuses': 'status'}.items():
+        if old in params:
+            criterias[new] = params[old]
+    if criterias.get('status', None) is not None:
+        criterias['status'] = util.allowed_values_string(criterias['status'], STATUSES)
+    if criterias.get('resolution', None) is not None:
+        criterias['resolution'] = util.allowed_values_string(criterias['resolution'], RESOLUTIONS)
+        util.logger.error("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
+        criterias['status'] = 'REVIEWED'
+    return util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
