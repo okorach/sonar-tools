@@ -141,24 +141,20 @@ def __get_project_issues(key, params, endpoint, search_findings):
 
 
 def main():
-    args = parse_args()
-    sqenv = env.Environment(some_url=args.url, some_token=args.token)
-    kwargs = vars(args)
+    kwargs = vars(parse_args())
+    sqenv = env.Environment(some_url=kwargs['url'], some_token=kwargs['token'])
+    del kwargs['token']
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
-    all_issues = {}
     search_findings = kwargs['useFindings']
 
     project_key = kwargs.get('componentKeys', None)
     if project_key is None:
         search_findings = False
-    branch_str = kwargs.get('branches', None)
-    pr_str = kwargs.get('pullRequests', None)
     params = kwargs.copy()
-    del params['token']
     for p in ('statuses', 'createdAfter', 'createdBefore', 'resolutions', 'severities', 'types', 'tags'):
-        if kwargs.get(p, None) is not None:
+        if params.get(p, None) is not None:
             search_findings = False
     project_list = []
     if project_key is None:
@@ -170,8 +166,8 @@ def main():
     util.logger.info("Exporting issues for %d projects with params %s", len(project_list), str(params))
     all_issues = {}
     for project_key in project_list:
-        branches = __get_list(project_key, branch_str, 'branch')
-        prs  = __get_list(project_key, pr_str, 'pullrequest')
+        branches = __get_list(project_key, kwargs.get('branches', None), 'branch')
+        prs = __get_list(project_key, kwargs.get('pullRequests', None), 'pullrequest')
         if branches:
             for b in branches:
                 params['branch'] = b.name
