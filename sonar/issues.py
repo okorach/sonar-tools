@@ -40,9 +40,10 @@ SEARCH_CRITERIAS = (
     'resolved', 'rules', 'scopes'
 )
 
-SEARCH_TYPES = ('BUG', 'VULNERABILITY', 'CODE_SMELL')
-SEARCH_SEVERITIES = ('BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO')
-SEARCH_STATUSES = ('OPEN', 'CONFIRMED', 'REOPENED', 'RESOLVED', 'CLOSED')
+TYPES = ('BUG', 'VULNERABILITY', 'CODE_SMELL')
+SEVERITIES = ('BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'INFO')
+STATUSES = ('OPEN', 'CONFIRMED', 'REOPENED', 'RESOLVED', 'CLOSED')
+RESOLUTIONS = ('FALSE-POSITIVE', 'WONTFIX', 'FIXED', 'REMOVED')
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 _ISSUES = {}
@@ -608,10 +609,12 @@ def get_search_criteria(params):
     '''Returns the filtered list of params that are allowed for api/issue/search '''
     criterias = params.copy()
     if criterias.get('types', None) is not None:
-        criterias['types'] = util.allowed_values_string(criterias['types'], SEARCH_TYPES)
+        criterias['types'] = util.allowed_values_string(criterias['types'], TYPES)
     if criterias.get('severities', None) is not None:
-        criterias['severities'] = util.allowed_values_string(criterias['severities'], SEARCH_SEVERITIES)
+        criterias['severities'] = util.allowed_values_string(criterias['severities'], SEVERITIES)
     if criterias.get('statuses', None) is not None:
-        criterias['statuses'] = util.allowed_values_string(criterias['statuses'], SEARCH_STATUSES)
+        criterias['statuses'] = util.allowed_values_string(criterias['statuses'], STATUSES)
+    if criterias.get('resolutions', None) is not None:
+        criterias['resolutions'] = util.allowed_values_string(criterias['resolutions'], RESOLUTIONS)
     criterias = util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
     return criterias
