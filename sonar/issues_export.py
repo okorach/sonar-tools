@@ -120,10 +120,23 @@ def __get_list(project, list_str, list_type):
 
 
 def __get_project_issues(key, params, endpoint, search_findings):
-    issue_list = issues.search_by_project(key, params=params,
-                                         endpoint=endpoint, search_findings=search_findings)
-    if not search_findings:
-        issue_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=params))
+    issue_list = issues.search_by_project(key, params=issues.get_search_criteria(params),
+                                          endpoint=endpoint, search_findings=search_findings)
+    if search_findings:
+        return issue_list
+    pval = params.get('types', None)
+    if pval is not None and 'SECURITY_HOTSPOT' not in util.csv_to_list(pval):
+        return issue_list
+    pval = params.get('statuses', None)
+    s_list = util.csv_to_list(pval)
+    if pval is not None and ('REVIEWED' not in s_list and 'TO_REVIEW' not in s_list):
+        return issue_list
+    pval = params.get('resolutions', None)
+    s_list = util.csv_to_list(pval)
+    if pval is not None and ('SAFE' not in s_list and 'ACKNOWLEDGED' not in s_list and 'FIXED' not in s_list):
+        return issue_list
+    issue_list.update(hotspots.search_by_project(key, endpoint=endpoint,
+                                                 params=hotspots.get_search_criteria(params)))
     return issue_list
 
 
@@ -142,7 +155,8 @@ def main():
         search_findings = False
     branch_str = kwargs.get('branches', None)
     pr_str = kwargs.get('pullRequests', None)
-    params = issues.get_search_criteria(kwargs)
+    params = kwargs.copy()
+    del params['token']
     for p in ('statuses', 'createdAfter', 'createdBefore', 'resolutions', 'severities', 'types', 'tags'):
         if kwargs.get(p, None) is not None:
             search_findings = False
