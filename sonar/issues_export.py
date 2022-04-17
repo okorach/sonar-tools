@@ -126,7 +126,6 @@ def main():
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
-    params = {}
     all_issues = {}
     search_findings = kwargs['useFindings']
 
@@ -135,9 +134,9 @@ def main():
         search_findings = False
     branch_str = kwargs.get('branches', None)
     pr_str = kwargs.get('pullRequests', None)
+    params = issues.get_search_criteria(kwargs)
     for p in ('statuses', 'createdAfter', 'createdBefore', 'resolutions', 'severities', 'types', 'tags'):
         if kwargs.get(p, None) is not None:
-            params[p] = kwargs[p]
             search_findings = False
     project_list = []
     if project_key is None:
@@ -146,7 +145,7 @@ def main():
         for key in util.csv_to_list(project_key):
             project_list.append(projects.get_object(key, endpoint=sqenv))
 
-    util.logger.info("Exporting issues for %d projects", len(project_list))
+    util.logger.info("Exporting issues for %d projects with params %s", len(project_list), str(params))
     all_issues = {}
     for project_key in project_list:
         branches = __get_list(project_key, branch_str, 'branch')
@@ -166,7 +165,7 @@ def main():
                 if not search_findings:
                     all_issues.update(hotspots.search_by_project(project_key, sqenv, pull_request=p.key))
         else:
-            all_issues.update(issues.search_by_project(project_key, endpoint=sqenv, search_findings=search_findings))
+            all_issues.update(issues.search_by_project(project_key, endpoint=sqenv, params=params, search_findings=search_findings))
             if not search_findings:
                 all_issues.update(hotspots.search_by_project(project_key, sqenv))
     fmt = kwargs['format']
