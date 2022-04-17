@@ -472,7 +472,8 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
         util.logger.debug("Issue search by project %s, with params %s", k, str(params))
         if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ('enterprise', 'datacenter') and search_findings:
             util.logger.info('Using new export findings to speed up issue export')
-            issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(params['branch'], params['pullRequest']))
+            issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(
+                params.get('branch', None), params.get('pullRequest', None)))
         else:
             issue_list.update(_search_all_by_project(k, params=params, endpoint=endpoint))
     util.logger.info("Search by project %s returned %d issues", str(project_key), len(issue_list))

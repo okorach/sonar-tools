@@ -53,7 +53,7 @@ do
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
     f="$IT_ROOT/measures-$env-unrel.csv"
-    sonar-measures-export -b -o $f -m _main --includeURLs
+    sonar-measures-export -b -o $f -m _main --withURL
     check $f
     f="$IT_ROOT/measures-$env-2.csv"
     sonar-measures-export -b -p -r -d -m _all >$f
