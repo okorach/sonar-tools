@@ -119,6 +119,14 @@ def __get_list(project, list_str, list_type):
     return list_array
 
 
+def __get_project_issues(key, params, endpoint, search_findings):
+    issue_list = issues.search_by_project(key, params=params,
+                                         endpoint=endpoint, search_findings=search_findings)
+    if not search_findings:
+        issue_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=params))
+    return issue_list
+
+
 def main():
     args = parse_args()
     sqenv = env.Environment(some_url=args.url, some_token=args.token)
@@ -143,31 +151,28 @@ def main():
         project_list = projects.get_key_list(endpoint=sqenv)
     else:
         for key in util.csv_to_list(project_key):
-            project_list.append(projects.get_object(key, endpoint=sqenv))
+            project_list.append(projects.get_object(key, endpoint=sqenv).key)
 
     util.logger.info("Exporting issues for %d projects with params %s", len(project_list), str(params))
     all_issues = {}
     for project_key in project_list:
         branches = __get_list(project_key, branch_str, 'branch')
         prs  = __get_list(project_key, pr_str, 'pullrequest')
-        if branches or prs:
+        if branches:
             for b in branches:
-                params['branch'] = b
-                all_issues.update(issues.search_by_project(project_key, params=params,
+                params['branch'] = b.name
+                all_issues.update(__get_project_issues(project_key, params=params,
                                   endpoint=sqenv, search_findings=search_findings))
-                if not search_findings:
-                    all_issues.update(hotspots.search_by_project(project_key, sqenv, branch=b.name))
-            del params['branch']
+        params.pop('branch', None)
+        if prs:
             for p in prs:
-                params['pullRequest'] = p
-                all_issues.update(issues.search_by_project(project_key, params=params,
+                params['pullRequest'] = p.key
+                all_issues.update(__get_project_issues(project_key, params=params,
                                   endpoint=sqenv, search_findings=search_findings))
-                if not search_findings:
-                    all_issues.update(hotspots.search_by_project(project_key, sqenv, pull_request=p.key))
-        else:
-            all_issues.update(issues.search_by_project(project_key, endpoint=sqenv, params=params, search_findings=search_findings))
-            if not search_findings:
-                all_issues.update(hotspots.search_by_project(project_key, sqenv))
+        params.pop('pullRequest', None)
+        if not (branches or prs):
+            all_issues.update(__get_project_issues(project_key, params=params,
+                              endpoint=sqenv, search_findings=search_findings))
     fmt = kwargs['format']
     if kwargs.get('outputFile', None) is not None:
         ext = kwargs['outputFile'].split('.')[-1].lower()
