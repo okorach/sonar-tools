@@ -67,7 +67,6 @@ class Hotspot(findings.Finding):
         if m:
             self.projectKey = m.group(1)
             self.branch = m.group(2)
-        util.logger.debug("HOTSPOT proj = %s branch = %s", self.projectKey, self.branch)
         _HOTSPOTS[self.uuid()] = self
 
     def __str__(self):
