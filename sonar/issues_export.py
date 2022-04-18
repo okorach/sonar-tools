@@ -66,8 +66,6 @@ def parse_args(desc):
                         help='Use export_findings() whenever possible')
     parser.add_argument('--' + options.WITH_URL, required=False, default=False, action='store_true',
                         help='Generate issues URL in the report, false by default')
-    parser.add_argument('--' + options.CSV_SEPARATOR, required=False, default=util.CSV_SEPARATOR,
-                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
     return util.parse_and_check_token(parser)
 
 def __dump_findings(issues_list, file, file_format, **kwargs):
@@ -146,7 +144,7 @@ def main():
 
     search_findings = kwargs['useFindings']
 
-    project_key = kwargs.get('componentKeys', None)
+    project_key = kwargs.get('projectKeys', None)
     if project_key is None:
         search_findings = False
     params = kwargs.copy()
@@ -181,11 +179,11 @@ def main():
             all_issues.update(__get_project_issues(project_key, params=params,
                               endpoint=sqenv, search_findings=search_findings))
     fmt = kwargs['format']
-    if kwargs.get('outputFile', None) is not None:
-        ext = kwargs['outputFile'].split('.')[-1].lower()
+    if kwargs.get('file', None) is not None:
+        ext = kwargs['file'].split('.')[-1].lower()
         if ext in ('csv', 'json'):
             fmt = ext
-    __dump_findings(all_issues, kwargs.get('outputFile', None), fmt, **kwargs)
+    __dump_findings(all_issues, kwargs.pop('file', None), fmt, **kwargs)
     util.logger.info("Returned issues: %d", len(all_issues))
     sys.exit(0)
 
