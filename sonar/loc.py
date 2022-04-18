@@ -122,6 +122,7 @@ def __dump_loc(object_list, file, **kwargs):
 def __parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_project_args(parser)
+    parser = util.set_output_file_args(parser)
     parser.add_argument('-n', '--withName', required=False, default=False, action='store_true',
                         help='Also list the project name on top of the project key')
     parser.add_argument('-a', '--' + options.WITH_LAST_ANALYSIS, required=False, default=False, action='store_true',
@@ -137,9 +138,11 @@ def __parse_args(desc):
 def main():
     args = __parse_args('Extract projects or portfolios lines of code, as computed for the licence')
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
-    util.check_environment(vars(args))
+    kwargs = vars(args)
+    util.check_environment(kwargs)
+    file = kwargs.pop('file', None)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
-    args.format = __deduct_format(args.format, args.outputFile)
+    args.format = __deduct_format(args.format, file)
 
     if args.portfolios:
         params = {}
@@ -148,7 +151,7 @@ def main():
         objects_list = portfolios.search(endpoint=endpoint, params=params)
     else:
         objects_list = projects.search(endpoint=endpoint)
-    __dump_loc(objects_list, args.outputFile, **vars(args))
+    __dump_loc(objects_list, file, **vars(args))
     sys.exit(0)
 
 

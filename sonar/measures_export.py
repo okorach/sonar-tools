@@ -137,7 +137,7 @@ def __get_wanted_metrics(args, endpoint):
 def __get_fmt_and_file(args):
     kwargs = vars(args)
     fmt = kwargs['format']
-    file = kwargs.get('outputFile', None)
+    file = kwargs.get('file', None)
     if file is not None:
         ext = file.split('.')[-1].lower()
         if ext in ('csv', 'json'):
@@ -188,8 +188,8 @@ def main():
     (fmt, file) = __get_fmt_and_file(args)
 
     filters = None
-    if args.componentKeys is not None:
-        filters = {'projects': args.componentKeys.replace(' ', '')}
+    if args.projectKeys is not None:
+        filters = {'projects': args.projectKeys.replace(' ', '')}
     util.logger.info("Getting project list")
     project_list = projects.search(endpoint=endpoint, params=filters).values()
     is_first = True
