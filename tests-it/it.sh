@@ -70,7 +70,7 @@ do
 
     echo "IT $env sonar-findings-export" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/findings-$env-unrel.csv"
-    sonar-findings-export -v DEBUG -o $IT_ROOT/findings-$env-unrel.csv
+    sonar-findings-export -v DEBUG -o $IT_ROOT/findings-$env-unrel.csv --withURL
     check $f
     f="$IT_ROOT/findings-$env-1.json"
     sonar-findings-export -o $f
@@ -130,8 +130,8 @@ for env in $*
 do
     . sqenv $env
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
-    sonar-measures-export -b -o $IT_ROOT/measures-$env-rel.csv -m _main --includeURLs
-    sonar-issues-export -o $IT_ROOT/findings-$env-rel.csv
+    sonar-measures-export -b -o $IT_ROOT/measures-$env-rel.csv -m _main --withURL
+    sonar-findings-export -o $IT_ROOT/findings-$env-rel.csv --withURL
     sonar-audit >$IT_ROOT/audit-$env-rel.csv || echo "OK"
     sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 
 done
