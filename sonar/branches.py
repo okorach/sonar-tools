@@ -26,7 +26,8 @@
 import datetime
 import pytz
 import requests.utils
-from sonar import projects, measures, components, issues, hotspots, syncer
+from sonar import projects, measures, components, syncer
+from sonar.findings import issues, hotspots
 import sonar.utilities as util
 
 from sonar.audit import rules, problem
