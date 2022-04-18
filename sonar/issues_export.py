@@ -38,13 +38,10 @@ from sonar import version, env, projects, hotspots, issues, options
 import sonar.utilities as util
 from sonar.findings import to_csv_header
 
-def parse_args():
-    parser = util.set_common_args('SonarQube issues extractor')
-    parser = util.set_component_args(parser)
-    parser.add_argument('-o', '--outputFile', required=False, help='File to generate the report, default is stdout'
-                        'Format is automatically deducted from file extension, if extension given')
-    parser.add_argument('-f', '--format', required=False, default='csv',
-                        help='Format of output (json, csv), default is csv')
+def parse_args(desc):
+    parser = util.set_common_args(desc)
+    parser = util.set_project_args(parser)
+    parser = util.set_output_file_args(parser)
     parser.add_argument('-b', '--branches', required=False, default=None,
                         help='Comma separated list of branches to export. Use * to export findings from all branches. '
                              'If not specified, only findings of the main branch will be exported')
@@ -141,7 +138,7 @@ def __get_project_issues(key, params, endpoint, search_findings):
 
 
 def main():
-    kwargs = vars(parse_args())
+    kwargs = vars(parse_args('Sonar issues extractor'))
     sqenv = env.Environment(some_url=kwargs['url'], some_token=kwargs['token'])
     del kwargs['token']
     util.check_environment(kwargs)

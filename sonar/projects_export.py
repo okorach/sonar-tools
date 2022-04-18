@@ -32,11 +32,10 @@ import sonar.utilities as util
 def main():
     parser = util.set_common_args('Exports all projects of a SonarQube platform')
     parser.add_argument('--exportTimeout', required=False, type=int, default=180, help='Maximum wait time for export')
-
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
-
     sq = env.Environment(some_url=args.url, some_token=args.token)
+
     if (sq.edition() in ('community', 'developer') and sq.version(digits=2) < (9, 2)):
         util.logger.critical("Can't export projects on Community and Developer Edition before 9.2, aborting...")
         print("Can't export project on Community and Developer Edition before 9.2, aborting...")

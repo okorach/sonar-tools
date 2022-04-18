@@ -145,13 +145,10 @@ def __get_fmt_and_file(args):
     return (fmt, file)
 
 
-def __parse_cmd_line():
-    parser = util.set_common_args('Extract measures of projects')
-    parser = util.set_component_args(parser)
-    parser.add_argument('-o', '--outputFile', required=False, help='File to generate the report, default is stdout'
-                        'Format is automatically deducted from file extension, if extension given')
-    parser.add_argument('-f', '--format', required=False, default='csv',
-                        help='Format of output (json, csv), default is csv')
+def __parse_args(desc):
+    parser = util.set_common_args(desc)
+    parser = util.set_project_args(parser)
+    parser = util.set_output_file_args(parser)
     parser.add_argument('-m', '--metricKeys', required=False, help='Comma separated list of metrics or _all or _main')
     parser.add_argument('-b', '--' + options.WITH_BRANCHES, required=False, action='store_true',
                         help='Also extract branches metrics')
@@ -165,8 +162,6 @@ def __parse_cmd_line():
                         help='Reports timestamps only with date, not time')
     parser.add_argument('--' + options.WITH_URL, action='store_true', default=False, required=False,
                         help='Add projects/branches URLs in report')
-    parser.add_argument('--' + options.CSV_SEPARATOR, required=False, default=util.CSV_SEPARATOR,
-                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
 
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
@@ -182,7 +177,7 @@ def __parse_cmd_line():
 
 
 def main():
-    args = __parse_cmd_line()
+    args = __parse_args('Extract measures of projects')
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
 
     with_branches = args.withBranches

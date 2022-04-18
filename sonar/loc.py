@@ -119,9 +119,9 @@ def __dump_loc(object_list, file, **kwargs):
         fd.close()
 
 
-def main():
-    parser = util.set_common_args('Extract projects lines of code, as computed for the licence')
-    parser = util.set_component_args(parser)
+def __parse_args(desc):
+    parser = util.set_common_args(desc)
+    parser = util.set_project_args(parser)
     parser.add_argument('-n', '--withName', required=False, default=False, action='store_true',
                         help='Also list the project name on top of the project key')
     parser.add_argument('-a', '--' + options.WITH_LAST_ANALYSIS, required=False, default=False, action='store_true',
@@ -132,13 +132,10 @@ def main():
                         help='Export portfolios LoCs instead of projects')
     parser.add_argument('--topLevelOnly', required=False, default=False, action='store_true',
                         help='Extracts only toplevel portfolios LoCs, not sub-portfolios')
-    parser.add_argument('-o', '--outputFile', required=False, help='File to generate the report, default is stdout'
-                        'Format is automatically deducted from file extension, if extension given')
-    parser.add_argument('-f', '--' + options.FORMAT, required=False, default='csv',
-                        help='Format of output (json, csv), default is csv')
-    parser.add_argument('--' + options.CSV_SEPARATOR, required=False, default=util.CSV_SEPARATOR,
-                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
-    args = util.parse_and_check_token(parser)
+    return util.parse_and_check_token(parser)
+
+def main():
+    args = __parse_args('Extract projects or portfolios lines of code, as computed for the licence')
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)

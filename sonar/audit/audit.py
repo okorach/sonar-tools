@@ -82,29 +82,27 @@ def _audit_sq(sq, settings, what=None):
     return problems
 
 
-def main():
+def __parser_args(desc):
     util.set_logger('sonar-audit')
     parser = util.set_common_args('Audits a SonarQube platform or a SIF (Support Info File or System Info File)')
+    parser = util.set_output_file_args(parser)
     parser.add_argument('-w', '--what', required=False,
                         help='What to audit (qp,qg,settings,projects,users,groups,portfolios,apps) '
                         'comma separated, everything by default')
-    parser.add_argument('--format', choices=['csv', 'json'], required=False,
-                        help="Output format for audit report.\nIf not specified, "
-                             "it is the output file extension if json or csv, then csv by default")
     parser.add_argument('--sif', required=False, help='SIF file to audit when auditing SIF')
     parser.add_argument('--config', required=False, dest='config', action='store_true',
                         help='Creates the $HOME/.sonar-audit.properties configuration file, if not already present'
                         'or outputs to stdout if it already exist')
-    parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
-    parser.add_argument('--csvSeparator', required=False, default=util.CSV_SEPARATOR,
-                        help=f'CSV separator (for CSV output), default {util.CSV_SEPARATOR}')
     args = parser.parse_args()
-    kwargs = vars(args)
     if args.sif is None and args.config is None and args.token is None:
         util.logger.critical("Token is missing (Argument -t/--token) when not analyzing local SIF")
         sys.exit(4)
-    sq = env.Environment(some_url=args.url, some_token=args.token)
+    return args
 
+def main():
+    args = __parser_args("Audits a Sonar platform")
+    kwargs = vars(args)
+    sq = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     settings = config.load('sonar-audit')

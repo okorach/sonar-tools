@@ -37,8 +37,9 @@ _WITH_COMMENTS = {'additionalFields': 'comments'}
 
 def __parse_args(desc):
     parser = util.set_common_args(desc)
-    parser = util.set_component_args(parser)
-    parser = util.set_target_args(parser)
+    parser = util.set_project_args(parser)
+    parser = util.set_output_file_args(parser)
+    parser = util.set_target_sonar_args(parser)
     parser.add_argument('-r', '--recover', required=False,
                         help='''What information to replicate. Default is FP and WF, but issue assignment,
                         tags, severity and type change can be recovered too''')
@@ -55,7 +56,6 @@ def __parse_args(desc):
     #                    help="If specified, will not apply issue assignment in the target issue")
     parser.add_argument('--nolink', required=False, default=False, action='store_true',
                         help="If specified, will not add a link to source issue in the target issue comments")
-    parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
 
     return util.parse_and_check_token(parser)
 
