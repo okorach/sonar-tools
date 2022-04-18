@@ -84,7 +84,7 @@ def _audit_sq(sq, settings, what=None):
 
 def __parser_args(desc):
     util.set_logger('sonar-audit')
-    parser = util.set_common_args('Audits a SonarQube platform or a SIF (Support Info File or System Info File)')
+    parser = util.set_common_args(desc)
     parser = util.set_output_file_args(parser)
     parser.add_argument('-w', '--what', required=False,
                         help='What to audit (qp,qg,settings,projects,users,groups,portfolios,apps) '
@@ -100,7 +100,7 @@ def __parser_args(desc):
     return args
 
 def main():
-    args = __parser_args("Audits a Sonar platform")
+    args = __parser_args('Audits a SonarQube platform or a SIF (Support Info File or System Info File)')
     kwargs = vars(args)
     sq = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(kwargs)
