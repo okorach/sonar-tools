@@ -34,9 +34,9 @@
     [--tags]
 '''
 import sys
-from sonar import version, env, projects, hotspots, issues, options
+from sonar import version, env, projects, options
 import sonar.utilities as util
-from sonar.findings import to_csv_header
+from sonar.findings import findings, issues, hotspots
 
 def parse_args(desc):
     parser = util.set_common_args(desc)
@@ -78,7 +78,7 @@ def __dump_findings(issues_list, file, file_format, **kwargs):
     if file_format == 'json':
         print("[", file=f)
     else:
-        print(to_csv_header(), file=f)
+        print(findings.to_csv_header(), file=f)
     is_first = True
     url = ''
     sep = kwargs[options.CSV_SEPARATOR]
