@@ -32,7 +32,7 @@ import sonar.utilities as utils
 
 def parse_args(desc):
     parser = utils.set_common_args(desc)
-    parser = utils.set_component_args(parser)
+    parser = utils.set_project_args(parser)
     parser.add_argument('-r', '--recover', required=False,
                         help='''What information to recover. Default is FP and WF, but issue assignment,
                         tags, severity and type change can be recovered too''')
@@ -43,7 +43,6 @@ def parse_args(desc):
 
 args = parse_args('Search for unexpectedly closed issues and recover their history in a corresponding new issue.')
 sqenv = sonar.env.Environment(some_url=args.url, some_token=args.token)
-sonar.env.set_env(args.url, args.token)
 
 # Remove unset params from the dict
 params = vars(args)

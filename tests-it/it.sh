@@ -53,36 +53,36 @@ do
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
     f="$IT_ROOT/measures-$env-unrel.csv"
-    sonar-measures-export -b -o $f -m _main --withURL
+    sonar-measures-export -b -f $f -m _main --withURL
     check $f
     f="$IT_ROOT/measures-$env-2.csv"
     sonar-measures-export -b -p -r -d -m _all >$f
     check $f
     f="$IT_ROOT/measures-$env-1.json"
-    sonar-measures-export -b -o $f -m _all
+    sonar-measures-export -b -f $f -m _all
     check $f
     f="$IT_ROOT/measures-$env-2.json"
-    sonar-measures-export -b -p -r -d -m _all -f json >$f
+    sonar-measures-export -b -p -r -d -m _all --format json >$f
     check $f
     f="$IT_ROOT/measures-$env-3.csv"
-    sonar-measures-export -b -o $f --csvSeparator '+' -m _main
+    sonar-measures-export -b -f $f --csvSeparator '+' -m _main
     check $f
 
     echo "IT $env sonar-findings-export" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/findings-$env-unrel.csv"
-    sonar-findings-export -v DEBUG -o $IT_ROOT/findings-$env-unrel.csv
+    sonar-findings-export -v DEBUG -f $IT_ROOT/findings-$env-unrel.csv
     check $f
     f="$IT_ROOT/findings-$env-1.json"
-    sonar-findings-export -o $f
+    sonar-findings-export -f $f
     check $f
     f="$IT_ROOT/findings-$env-2.json"
-    sonar-findings-export -v DEBUG -f json -k okorach_audio-video-tools,okorach_sonarqube-tools >$f
+    sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonarqube-tools >$f
     check $f
     f="$IT_ROOT/findings-$env-3.json"
-    sonar-findings-export -v DEBUG -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >$f
+    sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >$f
     check $f
     f="$IT_ROOT/findings-$env-4.csv"
-    sonar-findings-export -f json -k okorach_audio-video-tools,okorach_sonarqube-tools --csvSeparator '+' >$f
+    sonar-findings-export --format json -k okorach_audio-video-tools,okorach_sonarqube-tools --csvSeparator '+' >$f
     check $f
 
     echo "IT $env sonar-audit" | tee -a $IT_LOG_FILE
@@ -112,7 +112,7 @@ do
     sonar-loc -n -a >$f
     check $f
     f="$IT_ROOT/loc-$env-2.csv"
-    sonar-loc -n -a -o $f --csvSeparator ';'
+    sonar-loc -n -a -f $f --csvSeparator ';'
     check $f
 
     if [ $noExport -eq 1 ]; then
@@ -130,7 +130,7 @@ for env in $*
 do
     . sqenv $env
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
-    sonar-measures-export -b -o $IT_ROOT/measures-$env-rel.csv -m _main --includeURLs
+    sonar-measures-export -b -o $IT_ROOT/measures-$env-rel.csv -m _main --withURL
     sonar-issues-export -o $IT_ROOT/findings-$env-rel.csv
     sonar-audit >$IT_ROOT/audit-$env-rel.csv || echo "OK"
     sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 

@@ -29,6 +29,7 @@ import logging
 import argparse
 import json
 import datetime
+from sonar import options
 
 OPT_VERBOSE = 'verbosity'
 OPT_MODE = 'mode'
@@ -82,18 +83,27 @@ def set_common_args(desc):
     return parser
 
 
-def set_component_args(parser):
-    parser.add_argument('-k', '--componentKeys', '--projectKey', '--projectKeys', required=False,
+def set_project_args(parser):
+    parser.add_argument('-k', '--projectKeys', '--componentKeys', '--projectKey', required=False,
                         help='Commas separated key of the components')
     return parser
 
 
-def set_target_args(parser):
+def set_target_sonar_args(parser):
     parser.add_argument('-U', '--urlTarget', required=False, help='Root URL of the target SonarQube server')
     parser.add_argument('-T', '--tokenTarget', required=False,
                         help='Token to authenticate to target SonarQube - Unauthenticated usage is not possible')
     return parser
 
+def set_output_file_args(parser):
+    parser.add_argument('-f', '--file', required=False, help='Output file for the report, stdout by default')
+    parser.add_argument('--' + options.FORMAT, choices=['csv', 'json'], required=False,
+                        help="Output format for generated report.\nIf not specified, "
+                             "it is the output file extension if json or csv, then csv by default")
+    parser.add_argument('--' + options.CSV_SEPARATOR, required=False, default=CSV_SEPARATOR,
+                        help=f'CSV separator (for CSV output), default {CSV_SEPARATOR}')
+
+    return parser
 
 def get_logging_level(level):
     if level == 'DEBUG':

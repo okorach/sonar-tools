@@ -39,7 +39,7 @@ See: https://github.com/okorach/sonarqube-tools/releases
   - Download the `.whl` file from https://pypi.org/project/sonar-tools or attached to the release at https://github.com/okorach/sonarqube-tools/releases. The file should be something like. **sonar_tools-\<VERSION\>-py3-none-any.whl**
   - Copy the downloaded file on the install machine
   - On the install machine, run `python3 -m pip install sonar_tools-<VERSION>-py3-none-any.whl`
-  - Note: The package is dependent upon `pytz`, `argparse`, `datetime`, `requests` and `jprops` python packages. If they are not already installed, you would need to install those packages before installing `sonar-tools`
+  - Note: The package is dependent upon `pytz`, `argparse`, `datetime`, `python-dateutil`, `requests` and `jprops` python packages that are automatically installed when installing `sonar-tools`
 
 # Common command line parameters
 
@@ -53,6 +53,7 @@ Using login/password is not possible.
 The user corresponding to the token must have enough permissions to achieve the tool tasks
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
+- 
 
 # <a name="sonar-audit"></a>sonar-audit
 
@@ -72,7 +73,7 @@ Deletes obsolete/outdated data from SonarQube:
 - Inactive branches (Branches not analyzed for a given number of days), excepted branches marked as "keep when inactive"
 - Inactive pull requests (PRs not analyzed for a given number of days)
 
-Usage: `sonar-housekeeper [-u <url>] [-t <token>] [-P <days>] [-B <days>] [-R <days>] [-T <days>] [--mode delete] [-h]`
+Usage: `sonar-housekeeper [-P <days>] [-B <days>] [-R <days>] [-T <days>] [--mode delete] [-h]`
 
 - `-P <days>`: Will search for projects not analyzed since more than `<days>` days.
 To avoid deleting too recent projects it is denied to specify less than 90 days
@@ -106,7 +107,9 @@ sonar-housekeeper -o 120 -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a
 Exports all projects lines of code as they would be counted by the commercial licences.  
 See `sonar-loc -h` for details
 
-Basic Usage: `sonar-loc [-u <url>] [-t <token>] [-a] [-n] [--withURL] >locs.csv`  
+Basic Usage: `sonar-loc [-f <file>] [--format json|csv] [-a] [-n] [--withURL] [--portfolios] [--topLevelOnly]`  
+- `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
+- `--format`: Choose export format between csv (default) and json
 - `--portfolios`: Output the LOC of portfolios instead of projects (Enterprise Edition only)
 - `--topLevelOnly`: For portfolios, only output LoCs for top level portfolios (Enterprise Edition only)
 - `-n | --withName`: Outputs the project or portfolio name in addition to the key
@@ -123,16 +126,16 @@ Exports one or all projects with all (or some selected) measures in a CSV file.
 The CSV is sent to standard output.  
 Plenty of issue filters can be specified from the command line, type `sonar-measures-export -h` for details
 
-Basic Usage: `sonar-measures-export [-u <url>] [-t <token>] -m _main [-b] [-r] [-p] [-d] [-f json|csv] [--includeURLs] [-o <outputFile>]`  
+Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format json|csv] [-b] [-r] [-p] [-d] [-d] [-n] [-a] [--withURL]`  
 - `-m | --metricKeys`: comma separated list of metrics to export
   - `-m _main` is a shortcut to list all main metrics. It's the recommended option  
   - `-m _all` is a shortcut to list all metrics, including the most obscure ones
+- `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
+- `--format`: Choose export format between csv (default) and json
 - `-b | --withBranches`: Exports measures for all project branches (by default only export measures of the main branch)
 - `-r | --ratingsAsNumbers`: Converts ratings as numbers (by default ratings are exported as letters between A and E)
 - `-p | --percentsAsString`: Converts percentages as strings "xy.z%" (by default percentages are exported as floats between 0 and 1)
 - `-d | --datesWithoutTime`: Outputs dates without time
-- `-f`: Choose export format between csv (default) and json
-- `-o`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `-n | --withName`: Outputs the project or portfolio name in addition to the key
 - `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
 - `--withURL`: Outputs the URL of the project or portfolio for each record
@@ -196,6 +199,11 @@ It sends to the output a CSV with the list of project keys, the export result (`
 - If the export was successful, the generated zip file
 - If the export was failed, the failure reason
 
+Basic Usage: `sonar-projects-export [--exportTimeout <timeout>] >exported_projects.csv`  
+- `--exportTimeout`: Defines timeout to export a single project in seconds,
+                     by default 180 s (large projects can take time to export)
+- `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
+
 :information_source: All zip files are generated in the SonarQube instance standard location (under `data/governance/project_dumps/export`). On a DCE, the export may be distributed over all the Application Nodes
 
 The CSV file generated is to be used by the `sonar-projects-import` tool
@@ -216,6 +224,9 @@ sonar-projects-export >exported_projects.csv
 Imports a list of projects previously exported with `sonar-projects-export`.  
 :warning: This requires a SonarQube Enterprise or Data Center Edition.  
 It takes as input a CSV file produced by `sonar-projects-export`
+
+Basic Usage: `sonar-projects-import -f <file.csv>`  
+- `-f`: Define input file for project import, result of a `sonar-projects-export` command
 
 :information_source: All exported zip files must be first copied to the right location on the target SonarQube instance for the import to be successful (In `data/governance/project_dumps/import`)
 
