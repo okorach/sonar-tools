@@ -26,9 +26,9 @@ import re
 
 import requests.utils
 
-import sonar.issue_changelog as changelog
+from sonar import env, projects, users, syncer
+from sonar.findings import findings, changelog
 import sonar.utilities as util
-from sonar import env, findings, projects, users, syncer
 
 SEARCH_CRITERIAS = (
     'componentKeys', 'types', 'severities', 'createdAfter', 'createdBefore', 'createdInLast', 'createdAt',

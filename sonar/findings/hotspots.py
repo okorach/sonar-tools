@@ -23,8 +23,8 @@ import json
 import re
 import requests.utils
 import sonar.utilities as util
-import sonar.issue_changelog as changelog
-from sonar import env, projects, findings, syncer, users
+from sonar import env, projects, syncer, users
+from sonar.findings import findings, changelog
 
 SEARCH_CRITERIAS = (
     'branch', 'cwe', 'files', 'hotspots', 'onlyMine', 'owaspTop10', 'owaspTop10-2021', 'p', 'ps',

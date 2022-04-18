@@ -62,10 +62,11 @@ setuptools.setup(
             'sonar-projects-import = sonar.projects_import:main',
             'sonar-measures-export = sonar.measures_export:main',
             'sonar-housekeeper = sonar.housekeeper:main',
-            'sonar-issues-sync = sonar.issues_sync:main',
+            'sonar-issues-sync = sonar.findings.sync:main',
+            'sonar-findings-sync = sonar.findings.sync:main',
             'sonar-custom-measures = sonar.cust_measures:main',
-            'sonar-issues-export = sonar.issues_export:main',
-            'sonar-findings-export = sonar.issues_export:main',
+            'sonar-issues-export = sonar.findings.export:main',
+            'sonar-findings-export = sonar.findings.export:main',
             'sonar-loc = sonar.loc:main'
         ]
     },

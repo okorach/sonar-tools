@@ -79,7 +79,7 @@ class Component(sq.SqObject):
         return comp_list
 
     def get_number_of_filtered_issues(self, params):
-        from sonar import issues
+        from sonar.findings import issues
         params['componentKey'] = self.key
         params['ps'] = 1
         returned_data = issues.search(endpoint=self.endpoint, params=params)
@@ -93,16 +93,16 @@ class Component(sq.SqObject):
 
     def get_oldest_issue_date(self):
         ''' Returns the oldest date of all issues found '''
-        from sonar import issues
+        from sonar.findings import issues
         return issues.get_oldest_issue(endpoint=self.endpoint, params={'componentKeys': self.key})
 
     def get_newest_issue_date(self):
         ''' Returns the newest date of all issues found '''
-        from sonar import issues
+        from sonar.findings import issues
         return issues.get_newest_issue(endpoint=self.endpoint, params={'componentKeys': self.key})
 
     def get_issues(self):
-        from sonar import issues
+        from sonar.findings import issues
         issue_list = issues.search(endpoint=self.endpoint, params={'componentKeys': self.key})
         self.nbr_issues = len(issue_list)
         return issue_list
