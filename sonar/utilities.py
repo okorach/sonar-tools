@@ -229,6 +229,19 @@ def list_to_csv(array, separator=','):
 def csv_normalize(string, separator=','):
     return list_to_csv(csv_to_list(string, separator))
 
+
+def intersection(list1, list2):
+    return [value for value in list1 if value in list2]
+
+
+def union(list1, list2):
+    return list1 + [value for value in list2 if value not in list1]
+
+
+def difference(list1, list2):
+    return [value for value in list1 if value not in list2]
+
+
 def quote(string, sep):
     if sep in string:
         string = '"' + string.replace('"', '""') + '"'
