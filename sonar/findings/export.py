@@ -103,6 +103,8 @@ def __dump_compact(finding_list, file, **kwargs):
     new_dict = {}
     for finding in finding_list.values():
         f_json = finding.to_json()
+        if not kwargs[options.WITH_URL]:
+            f_json.pop('url', None)
         pkey = f_json.pop('projectKey')
         ftype = f_json.pop('type')
         if pkey in new_dict:
@@ -173,16 +175,16 @@ def __get_project_findings(key, params, endpoint, search_findings):
     hotspot_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
 
     findings_list = {}
-    if ((issues_statuses or not status_list) and (issues_resols or not resol_list) and 
-        (issues_types or not type_list) and (issues_sevs or not sev_list)):
+    if (    (issues_statuses or not status_list) and (issues_resols or not resol_list) and 
+            (issues_types or not type_list) and (issues_sevs or not sev_list)):
         findings_list = issues.search_by_project(key, params=issues.get_search_criteria(params),
                                             endpoint=endpoint)
     else:
         util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s",
             str(issues_statuses), str(issues_types), str(issues_resols), str(issues_sevs))
         util.logger.info('Selected types, severities, resolutions or statuses disables issue search')
-    if ((hotspot_statuses or not status_list) and (hotspot_resols or not resol_list) and
-        (hotspot_types or not type_list) and (hotspot_sevs or not sev_list)):
+    if (    (hotspot_statuses or not status_list) and (hotspot_resols or not resol_list) and
+            (hotspot_types or not type_list) and (hotspot_sevs or not sev_list)):
         findings_list.update(hotspots.search_by_project(key, endpoint=endpoint,
                                                         params=hotspots.get_search_criteria(params)))
     else:
