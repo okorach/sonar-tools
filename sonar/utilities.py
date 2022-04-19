@@ -205,8 +205,8 @@ def allowed_values_string(original_str, allowed_values):
     return list_to_csv([v for v in csv_to_list(original_str) if v in allowed_values])
 
 
-def json_dump(jsondata):
-    return json.dumps(remove_nones(jsondata), indent=3, sort_keys=True, separators=(',', ': '))
+def json_dump(jsondata, indent=3):
+    return json.dumps(remove_nones(jsondata), indent=indent, sort_keys=True, separators=(',', ': '))
 
 
 def str_none(v):
