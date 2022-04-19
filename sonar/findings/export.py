@@ -154,13 +154,9 @@ def __verify_inputs(params):
     return True
 
 
-def __get_project_findings(key, params, endpoint, search_findings):
+def __get_project_findings(key, params, endpoint):
 
-    if search_findings:
-        findings_list = issues.search_by_project(key, params=issues.get_search_criteria(params),
-                                            endpoint=endpoint, search_findings=search_findings)
-        return findings_list
-
+    search_findings = params['useFindings']
     status_list = util.csv_to_list(params.get('statuses', None))
     issues_statuses = util.intersection(status_list, issues.STATUSES)
     hotspot_statuses = util.intersection(status_list, hotspots.STATUSES)
@@ -174,8 +170,16 @@ def __get_project_findings(key, params, endpoint, search_findings):
     issues_sevs = util.intersection(sev_list, issues.SEVERITIES)
     hotspot_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
 
+    if status_list or resol_list or type_list or sev_list:
+        search_findings = False
+
+    if search_findings:
+        findings_list = issues.search_by_project(key, params=issues.get_search_criteria(params),
+                                            endpoint=endpoint, search_findings=search_findings)
+        return findings_list
+
     findings_list = {}
-    if (    (issues_statuses or not status_list) and (issues_resols or not resol_list) and 
+    if (    (issues_statuses or not status_list) and (issues_resols or not resol_list) and
             (issues_types or not type_list) and (issues_sevs or not sev_list)):
         findings_list = issues.search_by_project(key, params=issues.get_search_criteria(params),
                                             endpoint=endpoint)
@@ -201,21 +205,20 @@ def main():
     util.check_environment(kwargs)
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
 
-    search_findings = kwargs['useFindings']
-
     project_key = kwargs.get('projectKeys', None)
-    if project_key is None:
-        search_findings = False
     params = util.remove_nones(kwargs.copy())
     if not __verify_inputs(params):
         sys.exit(2)
     for p in ('statuses', 'createdAfter', 'createdBefore', 'resolutions', 'severities', 'types', 'tags'):
         if params.get(p, None) is not None:
-            search_findings = False
-    project_list = []
+            if params['useFindings']:
+                util.logger.warning("Selected search criteria %s will disable --useFindings", params[p])
+            params['useFindings'] = False
+            break
     if project_key is None:
         project_list = projects.get_key_list(endpoint=sqenv)
     else:
+        project_list = []
         for key in util.csv_to_list(project_key):
             project_list.append(projects.get_object(key, endpoint=sqenv).key)
 
@@ -227,18 +230,15 @@ def main():
         if branches:
             for b in branches:
                 params['branch'] = b.name
-                all_findings.update(__get_project_findings(project_key, params=params,
-                                  endpoint=sqenv, search_findings=search_findings))
+                all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
         params.pop('branch', None)
         if prs:
             for p in prs:
                 params['pullRequest'] = p.key
-                all_findings.update(__get_project_findings(project_key, params=params,
-                                  endpoint=sqenv, search_findings=search_findings))
+                all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
         params.pop('pullRequest', None)
         if not (branches or prs):
-            all_findings.update(__get_project_findings(project_key, params=params,
-                              endpoint=sqenv, search_findings=search_findings))
+            all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
     fmt = kwargs['format']
     if kwargs.get('file', None) is not None:
         ext = kwargs['file'].split('.')[-1].lower()
