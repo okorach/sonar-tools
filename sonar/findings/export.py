@@ -179,7 +179,7 @@ def __get_project_findings(key, params, endpoint):
         return findings_list
 
     findings_list = {}
-    if (    (issues_statuses or not status_list) and (issues_resols or not resol_list) and
+    if ((issues_statuses or not status_list) and (issues_resols or not resol_list) and
             (issues_types or not type_list) and (issues_sevs or not sev_list)):
         findings_list = issues.search_by_project(key, params=issues.get_search_criteria(params),
                                             endpoint=endpoint)
@@ -187,7 +187,7 @@ def __get_project_findings(key, params, endpoint):
         util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s",
             str(issues_statuses), str(issues_types), str(issues_resols), str(issues_sevs))
         util.logger.info('Selected types, severities, resolutions or statuses disables issue search')
-    if (    (hotspot_statuses or not status_list) and (hotspot_resols or not resol_list) and
+    if ((hotspot_statuses or not status_list) and (hotspot_resols or not resol_list) and
             (hotspot_types or not type_list) and (hotspot_sevs or not sev_list)):
         findings_list.update(hotspots.search_by_project(key, endpoint=endpoint,
                                                         params=hotspots.get_search_criteria(params)))
