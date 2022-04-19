@@ -205,8 +205,8 @@ def allowed_values_string(original_str, allowed_values):
     return list_to_csv([v for v in csv_to_list(original_str) if v in allowed_values])
 
 
-def json_dump(jsondata):
-    return json.dumps(remove_nones(jsondata), indent=3, sort_keys=True, separators=(',', ': '))
+def json_dump(jsondata, indent=3):
+    return json.dumps(remove_nones(jsondata), indent=indent, sort_keys=True, separators=(',', ': '))
 
 
 def str_none(v):
@@ -228,6 +228,19 @@ def list_to_csv(array, separator=','):
 
 def csv_normalize(string, separator=','):
     return list_to_csv(csv_to_list(string, separator))
+
+
+def intersection(list1, list2):
+    return [value for value in list1 if value in list2]
+
+
+def union(list1, list2):
+    return list1 + [value for value in list2 if value not in list1]
+
+
+def difference(list1, list2):
+    return [value for value in list1 if value not in list2]
+
 
 def quote(string, sep):
     if sep in string:

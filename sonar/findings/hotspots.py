@@ -32,8 +32,10 @@ SEARCH_CRITERIAS = (
     'status'
 )
 
+TYPES = ('SECURITY_HOTSPOT', '')
 RESOLUTIONS = ('SAFE', 'ACKNOWLEDGED', 'FIXED')
 STATUSES = ('TO_REVIEW', 'REVIEWED')
+SEVERITIES = ()
 
 _JSON_FIELDS_REMAPPED = (
     ('pull_request', 'pullRequest'),

@@ -368,7 +368,7 @@ def __search_all_by_directories(params, endpoint=None):
         util.logger.info('Search by directory %s', d['val'])
         new_params['directories'] = d['val']
         issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=False))
-    util.logger.info('Total: %d issues for %s', len(issue_list), str(params))
+    util.logger.info('Search by directory ALL: %d issues found', len(issue_list))
     return issue_list
 
 
@@ -383,7 +383,7 @@ def __search_all_by_types(params, endpoint=None):
         except TooManyIssuesError:
             util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(__search_all_by_directories(params=new_params, endpoint=endpoint))
-    util.logger.info('Total: %d issues for %s', len(issue_list), str(params))
+    util.logger.info('Search by type ALL: %d issues found', len(issue_list))
     return issue_list
 
 
@@ -398,7 +398,7 @@ def __search_all_by_severities(params, endpoint=None):
         except TooManyIssuesError:
             util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(__search_all_by_types(params=new_params, endpoint=endpoint))
-    util.logger.info('Total: %d issues for %s', len(issue_list), str(params))
+    util.logger.info('Search by severity ALL: %d issues found', len(issue_list))
     return issue_list
 
 
