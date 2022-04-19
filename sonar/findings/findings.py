@@ -128,14 +128,13 @@ class Finding(sq.SqObject):
             return None
 
     def to_csv(self, separator=','):
-        from sonar.projects import get_object
         data = self.to_json()
         for field in _CSV_FIELDS:
             if data.get(field, None) is None:
                 data[field] = ''
         data['branch'] = util.quote(data['branch'], separator)
         data['message'] = util.quote(data['message'], separator)
-        data['projectName'] = get_object(self.projectKey, endpoint=self.endpoint).name
+        data['projectName'] = projects.get_object(self.projectKey, endpoint=self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
@@ -148,6 +147,9 @@ class Finding(sq.SqObject):
         data['updateDate'] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
         for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
+        for k in data.copy():
+            if data[k] is None or data[k] == "":
+                data.pop(k)
         return data
 
     def is_vulnerability(self):
