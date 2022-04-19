@@ -88,7 +88,7 @@ def __dump_findings(issues_list, file, file_format, **kwargs):
             issue_json = issue.to_json()
             if not kwargs[options.WITH_URL]:
                 issue_json.pop('url', None)
-            print(pfx + util.json_dump(issue_json), file=f, end='')
+            print(pfx + util.json_dump(issue_json, indent=1), file=f, end='')
             is_first = False
         else:
             if kwargs[options.WITH_URL]:
@@ -99,6 +99,26 @@ def __dump_findings(issues_list, file, file_format, **kwargs):
         print("\n]", file=f)
     if file is not None:
         f.close()
+
+
+def __dump_compact(finding_list, file, **kwargs):
+    new_dict = {}
+    for finding in finding_list.values():
+        f_json = finding.to_json()
+        pkey = f_json.pop('projectKey')
+        ftype = f_json.pop('type')
+        if pkey in new_dict:
+            if ftype in new_dict[pkey]:
+                new_dict[pkey][ftype].append(f_json)
+            else:
+                new_dict[pkey].update({ftype: [f_json]})
+        else:
+            new_dict[pkey] = {ftype: [f_json]}
+    if file is None:
+        print(util.json_dump(new_dict, indent=1))
+    else:
+        with open(file=file, mode='w', encoding='utf-8') as fd:
+            print(util.json_dump(new_dict, indent=1), file=fd)
 
 
 def __get_list(project, list_str, list_type):
