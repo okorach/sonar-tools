@@ -146,6 +146,7 @@ def __get_fmt_and_file(args):
 
 
 def __parse_args(desc):
+    util.set_logger('sonar-measures')
     parser = util.set_common_args(desc)
     parser = util.set_project_args(parser)
     parser = util.set_output_file_args(parser)
