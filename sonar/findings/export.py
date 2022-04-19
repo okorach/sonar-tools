@@ -39,7 +39,6 @@ import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
 
 def parse_args(desc):
-    util.set_logger('sonar-findings')
     parser = util.set_common_args(desc)
     parser = util.set_project_args(parser)
     parser = util.set_output_file_args(parser)

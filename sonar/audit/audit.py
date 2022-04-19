@@ -83,7 +83,6 @@ def _audit_sq(sq, settings, what=None):
 
 
 def __parser_args(desc):
-    util.set_logger('sonar-audit')
     parser = util.set_common_args(desc)
     parser = util.set_output_file_args(parser)
     parser.add_argument('-w', '--what', required=False,

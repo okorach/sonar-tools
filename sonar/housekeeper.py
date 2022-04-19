@@ -93,7 +93,6 @@ def _parse_arguments():
     _DEFAULT_BRANCH_OBSOLESCENCE = 90
     _DEFAULT_PR_OBSOLESCENCE = 30
     _DEFAULT_TOKEN_OBSOLESCENCE = 365
-    util.set_logger('sonar-housekeeper')
     parser = util.set_common_args('Deletes projects not analyzed since a given numbr of days')
     parser.add_argument('--mode', required=False, choices=['dry-run', 'delete'],
                         default='dry-run',
