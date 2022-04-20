@@ -34,6 +34,9 @@
     [--tags]
 '''
 import sys
+import os
+import contextlib
+
 from sonar import version, env, projects, options
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
@@ -66,37 +69,57 @@ def parse_args(desc):
                         help='Generate finding URL in the report, false by default')
     return util.parse_and_check_token(parser)
 
-def __dump_findings(findings_list, file, file_format, **kwargs):
+@contextlib.contextmanager
+def __open_file(file=None):
+    if file and file != '-':
+        fh = open(file, 'a', encoding='utf-8')
+    else:
+        fh = sys.stdout
+    try:
+        yield fh
+    finally:
+        if fh is not sys.stdout:
+            fh.close()
+
+
+def __write_header(file, format):
     if file is None:
-        f = sys.stdout
         util.logger.info("Dumping report to stdout")
     else:
-        f = open(file, "w", encoding='utf-8')
         util.logger.info("Dumping report to file '%s'", file)
-    if file_format == 'json':
-        print("[", file=f)
-    else:
-        print(findings.to_csv_header(), file=f)
-    is_first = True
-    url = ''
-    sep = kwargs[options.CSV_SEPARATOR]
-    for _, finding in findings_list.items():
-        if file_format == 'json':
-            pfx = "" if is_first else ",\n"
-            finding_json = finding.to_json()
-            if not kwargs[options.WITH_URL]:
-                finding_json.pop('url', None)
-            print(pfx + util.json_dump(finding_json, indent=1), file=f, end='')
-            is_first = False
+    with __open_file(file) as f:
+        if format == 'json':
+            print("[", file=f)
         else:
-            if kwargs[options.WITH_URL]:
-                url = f'{sep}"{finding.url()}"'
-            print(f"{finding.to_csv(sep)}{url}", file=f)
+            print(findings.to_csv_header(), file=f)
 
-    if file_format == 'json':
-        print("\n]", file=f)
-    if file is not None:
-        f.close()
+
+def __write_footer(file, format):
+    if format != 'json':
+        return
+    with __open_file(file) as f:
+        print("]\n", file=f)
+
+
+def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
+    with __open_file(file) as f:
+        url = ''
+        sep = kwargs[options.CSV_SEPARATOR]
+        i = len(findings_list)
+        comma = ','
+        for _, finding in findings_list.items():
+            i -= 1
+            if file_format == 'json':
+                finding_json = finding.to_json()
+                if not kwargs[options.WITH_URL]:
+                    finding_json.pop('url', None)
+                if is_last and i == 0:
+                    comma = ''
+                print(f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end='')
+            else:
+                if kwargs[options.WITH_URL]:
+                    url = f'{sep}"{finding.url()}"'
+                print(f"{finding.to_csv(sep)}{url}", file=f)
 
 
 def __dump_compact(finding_list, file, **kwargs):
@@ -117,7 +140,7 @@ def __dump_compact(finding_list, file, **kwargs):
     if file is None:
         print(util.json_dump(new_dict, indent=1))
     else:
-        with open(file=file, mode='w', encoding='utf-8') as fd:
+        with open(file=file, mode='a', encoding='utf-8') as fd:
             print(util.json_dump(new_dict, indent=1), file=fd)
 
 
@@ -222,9 +245,20 @@ def main():
         for key in util.csv_to_list(project_key):
             project_list.append(projects.get_object(key, endpoint=sqenv).key)
 
+    fmt = kwargs['format']
+    file = kwargs.pop('file', None)
+    if file is not None:
+        ext = file.split('.')[-1].lower()
+        if os.path.exists(file):
+            os.remove(file)
+        if ext in ('csv', 'json'):
+            fmt = ext
+
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
-    all_findings = {}
+    nbr_findings = 0
+    __write_header(file, fmt)
     for project_key in project_list:
+        all_findings = {}
         branches = __get_list(project_key, kwargs.get('branches', None), 'branch')
         prs = __get_list(project_key, kwargs.get('pullRequests', None), 'pullrequest')
         if branches:
@@ -239,13 +273,11 @@ def main():
         params.pop('pullRequest', None)
         if not (branches or prs):
             all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
-    fmt = kwargs['format']
-    if kwargs.get('file', None) is not None:
-        ext = kwargs['file'].split('.')[-1].lower()
-        if ext in ('csv', 'json'):
-            fmt = ext
-    __dump_findings(all_findings, kwargs.pop('file', None), fmt, **kwargs)
-    util.logger.info("Returned findings: %d", len(all_findings))
+
+        __dump_findings(all_findings, file, fmt, **kwargs)
+        nbr_findings += len(all_findings)
+    __write_footer(file, fmt)
+    util.logger.info("Returned findings: %d", nbr_findings)
     sys.exit(0)
 
 
