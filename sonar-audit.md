@@ -47,7 +47,7 @@ To be able to audit everything, the token provided to `sonar-audit` should have 
 other audit parameters.
 You can create a default config file in the home directory by running `sonar-audit --config`
 
-See [sonar-audit configuration](https://github.com/okorach/sonarqube-tools/blob/master/audit-settings.md) for the details of parameters
+See [sonar-audit configuration](https://github.com/okorach/sonar-tools/blob/master/audit-settings.md) for the details of parameters
 
 ## Example
 ```

@@ -29,10 +29,11 @@ Collections of utilities for SonarQube:
   commercial licenses (ie taking the largest branch or PR)
 - sonar-measures-export: Exports measures/metrics of one, several or all projects of the platform in CSV or JSON
 - sonar-findings-export: Exports findings (potentially filtered) from the platform in CSV or JSON
-  (also available as sonar-issues-export for backward compatibility)
-- sonar-issues-sync: Synchronizes issues between 2 branches of a same project, a whole project
-  branches of 2 different projects (potentially on different platforms)
+  (also available as sonar-issues-export for backward compatibility, but deprecated)
+- sonar-findings-sync: Synchronizes issues between 2 branches of a same project, a whole project
+  branches of 2 different projects (potentially on different platforms).
+  (also available as sonar-issues-sync for backward compatibility, but deprecated)
 - sonar-projects-export: Exports all projects from a platform (EE and higher)
 - sonar-projects-import: Imports a list of projects into a platform (EE and higher)
-See tools built-in -h help and https://github.com/okorach/sonarqube-tools for more documentation
+See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation
 ''')
