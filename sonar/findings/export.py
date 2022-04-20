@@ -242,8 +242,13 @@ def main():
         project_list = projects.get_key_list(endpoint=sqenv)
     else:
         project_list = []
-        for key in util.csv_to_list(project_key):
-            project_list.append(projects.get_object(key, endpoint=sqenv).key)
+        try:
+            for key in util.csv_to_list(project_key):
+                project_list.append(projects.get_object(key, endpoint=sqenv).key)
+        except env.NonExistingObjectError as e:
+            util.logger.fatal("Project key %s does not exist, aborting...", e.key)
+            print(f"FATAL: Project key {e.key} does not exist, aborting...")
+            sys.exit(2)
 
     fmt = kwargs['format']
     file = kwargs.pop('file', None)

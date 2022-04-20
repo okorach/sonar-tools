@@ -70,6 +70,8 @@ class Project(components.Component):
         if data is None:
             resp = env.get(PROJECT_SEARCH_API, ctxt=self.endpoint, params={'projects': self.key})
             data = json.loads(resp.text)
+            if not data['components']:
+                raise env.NonExistingObjectError(self.key, "Project key does not exist")
             data = data['components'][0]
         self.name = data['name']
         self.visibility = data['visibility']
