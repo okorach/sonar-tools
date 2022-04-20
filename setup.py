@@ -32,11 +32,11 @@ setuptools.setup(
     description="A collection of utility scripts for SonarQube",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/okorach/sonarqube-tools",
+    url="https://github.com/okorach/sonar-tools",
     project_urls={
-        "Bug Tracker": "https://github.com/okorach/sonarqube-tools/issues",
-        "Documentation": "https://github.com/okorach/sonarqube-tools/README.md",
-        "Source Code": "https://github.com/okorach/sonarqube-tools",
+        "Bug Tracker": "https://github.com/okorach/sonar-tools/issues",
+        "Documentation": "https://github.com/okorach/sonar-tools/README.md",
+        "Source Code": "https://github.com/okorach/sonar-tools",
     },
     packages=setuptools.find_packages(),
     package_data={

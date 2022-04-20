@@ -76,13 +76,13 @@ do
     sonar-findings-export -f $f
     check $f
     f="$IT_ROOT/findings-$env-2.json"
-    sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonarqube-tools >$f
+    sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools >$f
     check $f
     f="$IT_ROOT/findings-$env-3.json"
-    sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonarqube-tools --useFindings >$f
+    sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools --useFindings >$f
     check $f
     f="$IT_ROOT/findings-$env-4.csv"
-    sonar-findings-export --format json -k okorach_audio-video-tools,okorach_sonarqube-tools --csvSeparator '+' >$f
+    sonar-findings-export --format json -k okorach_audio-video-tools,okorach_sonar-tools --csvSeparator '+' >$f
     check $f
 
     echo "IT $env sonar-audit" | tee -a $IT_LOG_FILE

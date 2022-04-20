@@ -4,13 +4,13 @@ Command line tools to help in SonarQube administration tasks.
 ![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
 ![Python-Versions](https://img.shields.io/pypi/pyversions/sonar-tools)
 ![License](https://img.shields.io/pypi/l/sonar-tools?color=informational)
-![Issues](https://img.shields.io/github/issues/okorach/sonarqube-tools)
-![Stars](https://img.shields.io/github/stars/okorach/sonarqube-tools?style=social)
+![Issues](https://img.shields.io/github/issues/okorach/sonar-tools)
+![Stars](https://img.shields.io/github/stars/okorach/sonar-tools?style=social)
 
-[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=okorach_sonarqube-tools)](https://sonarcloud.io/dashboard?id=okorach_sonarqube-tools)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonarqube-tools&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=okorach_sonarqube-tools)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonarqube-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach_sonarqube-tools)
-[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonarqube-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach_sonarqube-tools)
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=okorach_sonar-tools)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 
 **DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company editing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarcloud.io) and [SonarLint](https://sonarlint.org) products
 
@@ -28,7 +28,7 @@ deletes tokens created since more than a certain number of days
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 8.9.x) and LATEST versions**
 
 # Release notes
-See: https://github.com/okorach/sonarqube-tools/releases
+See: https://github.com/okorach/sonar-tools/releases
 
 # Requirements and Installation
 - `sonar-tools` requires python 3.6 or higher
@@ -36,7 +36,7 @@ See: https://github.com/okorach/sonarqube-tools/releases
 - Online installation.
   - Run: `python3 -m pip install sonar-tools`
 - Offline installation: If you have no access to the internet on the install machine, you can:
-  - Download the `.whl` file from https://pypi.org/project/sonar-tools or attached to the release at https://github.com/okorach/sonarqube-tools/releases. The file should be something like. **sonar_tools-\<VERSION\>-py3-none-any.whl**
+  - Download the `.whl` file from https://pypi.org/project/sonar-tools or attached to the release at https://github.com/okorach/sonar-tools/releases. The file should be something like. **sonar_tools-\<VERSION\>-py3-none-any.whl**
   - Copy the downloaded file on the install machine
   - On the install machine, run `python3 -m pip install sonar_tools-<VERSION>-py3-none-any.whl`
   - Note: The package is dependent upon `pytz`, `argparse`, `datetime`, `python-dateutil`, `requests` and `jprops` python packages that are automatically installed when installing `sonar-tools`
@@ -58,12 +58,12 @@ The user corresponding to the token must have enough permissions to achieve the 
 # <a name="sonar-audit"></a>sonar-audit
 
 `sonar-audit` allows to audit a SonarQube instance and output warning logs for all anomalies found.
-See [complete documentation](https://github.com/okorach/sonarqube-tools/blob/master/sonar-audit.md) for details
+See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/sonar-audit.md) for details
 
 # <a name="sonar-issues-sync"></a>sonar-issues-sync
 
 `sonar-issues-sync` allows to synchronizes issue changelog (false positives, won't fix, issue severity or type change, tags and comments) between branches, projects or SonarQube instances.
-See [complete documentation](https://github.com/okorach/sonarqube-tools/blob/master/sonar-issues-sync.md) for details
+See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/sonar-issues-sync.md) for details
 
 # <a name="sonar-housekeeper"></a>sonar-housekeeper
 
