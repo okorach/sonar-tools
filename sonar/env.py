@@ -29,7 +29,7 @@ import json
 import requests
 
 import sonar.utilities as util
-
+from sonar import options
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -37,9 +37,6 @@ import sonar.audit.problem as pb
 
 from sonar import sif
 
-AUTHENTICATION_ERROR_MSG = "Authentication error. Is token valid ?"
-AUTORIZATION_ERROR_MSG = "Insufficient permissions to perform operation"
-HTTP_FATAL_ERROR_MSG = "HTTP fatal error %d - %s"
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
@@ -131,10 +128,9 @@ class Environment:
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
             if exit_on_error:
-                _log_and_exit(r.status_code, errh)
+                _log_and_exit(r.status_code)
         except requests.RequestException as e:
-            util.logger.error(str(e))
-            raise SystemExit(e) from e
+            util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
 
     def post(self, api, params=None):
@@ -147,10 +143,9 @@ class Environment:
                 r = requests.post(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            _log_and_exit(r.status_code, errh)
+            _log_and_exit(r.status_code)
         except requests.RequestException as e:
-            util.logger.error(str(e))
-            raise SystemExit(e) from e
+            util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
 
     def delete(self, api, params=None):
@@ -163,10 +158,9 @@ class Environment:
                 r = requests.delete(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError as errh:
-            _log_and_exit(r.status_code, errh)
+            _log_and_exit(r.status_code)
         except requests.RequestException as e:
-            util.logger.error(str(e))
-            raise SystemExit(e) from e
+            util.exit_fatal(str(e), options.ERR_SONAR_API)
 
     def urlstring(self, api, params):
         first = True
@@ -247,9 +241,7 @@ class Environment:
             else:
                 util.logger.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
-            util.logger.error("HTTP request exception for %s/%s: %s", self.url,
-                              'api/authentication/validate', str(e))
-            raise
+            util.exit_fatal(str(e), options.ERR_SONAR_API)
         return problems
 
     def __get_permissions(self, perm_type):
@@ -371,16 +363,13 @@ def _normalize_api(api):
     return api
 
 
-def _log_and_exit(code, err):
+def _log_and_exit(code):
     if code == 401:
-        util.logger.fatal(AUTHENTICATION_ERROR_MSG)
-        raise SystemExit(err)
+        util.exit_fatal(f"HTTP error {code} - Authentication error. Is token valid ?", options.ERR_SONAR_API_AUTHENTICATION)
     if code == 403:
-        util.logger.fatal(AUTORIZATION_ERROR_MSG)
-        raise SystemExit(err)
+        util.exit_fatal(f"HTTP error {code} - Insufficient permissions to perform operation", options.ERR_SONAR_API_AUTHORIZATION)
     if (code // 100) != 2:
-        util.logger.fatal(HTTP_FATAL_ERROR_MSG, code, err)
-        raise SystemExit(err)
+        util.exit_fatal(f"HTTP error {code} - Exiting", options.ERR_SONAR_API)
 
 
 def get(api, params=None, ctxt=None, exit_on_error=True):

@@ -631,6 +631,20 @@ def get_object_list(endpoint=None, params=None):
     return search(endpoint, params).values()
 
 
+def get_projects_list(str_key_list, endpoint):
+    if str_key_list is None:
+        util.logger.info("Getting project list")
+        project_list = search(endpoint=endpoint).values()
+    else:
+        project_list = []
+        try:
+            for key in util.csv_to_list(str_key_list):
+                project_list.append(get_object(key, endpoint=endpoint).key)
+        except env.NonExistingObjectError as e:
+            util.exit_fatal(f"Project key '{e.key}' does not exist, aborting...", options.ERR_NO_SUCH_PROJECT_KEY)
+    return project_list
+
+
 def key_obj(key_or_obj):
     if isinstance(key_or_obj, str):
         return (key_or_obj, get_object(key_or_obj))
