@@ -131,8 +131,7 @@ def check_environment(kwargs):
 def parse_and_check_token(parser):
     args = parser.parse_args()
     if args.token is None:
-        logger.critical("Token is missing (Argument -t/--token)")
-        sys.exit(4)
+        exit_fatal("Token is missing (Argument -t/--token)", options.ERR_SONAR_API_AUTHENTICATION)
     return args
 
 

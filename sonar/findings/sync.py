@@ -28,9 +28,7 @@
     Only issues with a 100% match are synchronized. When there's a doubt, nothing is done
 '''
 
-
-import sys
-from sonar import env, projects, branches, version, syncer
+from sonar import env, projects, branches, version, syncer, options
 import sonar.utilities as util
 
 _WITH_COMMENTS = {'additionalFields': 'comments'}
@@ -144,8 +142,7 @@ def main():
                          counters.get('nb_tgt_has_changelog', 0))
 
     except env.NonExistingObjectError as e:
-        util.logger.critical(e.message)
-        sys.exit(1)
+        util.exit_fatal(e.message, options.ERR_NO_SUCH_PROJECT_KEY)
 
 
 if __name__ == '__main__':

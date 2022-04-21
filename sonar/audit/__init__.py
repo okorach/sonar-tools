@@ -19,9 +19,9 @@
 #
 import sys
 from sonar.audit import rules
+from sonar import utilities, options
 
 try:
     rules.load()
 except rules.RuleConfigError as e:
-    print(e.message)
-    sys.exit(3)
+    utilities.exit_fatal(e.message, options.ERR_RULES_LOADING_FAILED)

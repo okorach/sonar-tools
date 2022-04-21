@@ -25,9 +25,10 @@
 '''
 import sys
 import json
+
 import sonar.portfolios as pf
 import sonar.applications as apps
-from sonar import users, groups, version, env, qualityprofiles, qualitygates, projects, sif
+from sonar import users, groups, version, env, qualityprofiles, qualitygates, projects, sif, options
 import sonar.utilities as util
 from sonar.audit import problem, config
 
@@ -94,8 +95,7 @@ def __parser_args(desc):
                         'or outputs to stdout if it already exist')
     args = parser.parse_args()
     if args.sif is None and args.config is None and args.token is None:
-        util.logger.critical("Token is missing (Argument -t/--token) when not analyzing local SIF")
-        sys.exit(4)
+        util.exit_fatal("Token is missing (Argument -t/--token) when not analyzing local SIF", options.ERR_TOKEN_MISSING)
     return args
 
 def main():
@@ -114,17 +114,13 @@ def main():
         try:
             problems = _audit_sif(kwargs['sif'])
         except json.decoder.JSONDecodeError:
-            print(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...")
-            sys.exit(3)
+            util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", options.ERR_SIF_AUDIT_ERROR)
         except FileNotFoundError:
-            print(f"File {kwargs['sif']} does not exist, aborting...")
-            sys.exit(4)
+            util.exit_fatal(f"File {kwargs['sif']} does not exist, aborting...", options.ERR_SIF_AUDIT_ERROR)
         except PermissionError:
-            print(f"No permissiont to open file {kwargs['sif']}, aborting...")
-            sys.exit(5)
+            util.exit_fatal(f"No permissiont to open file {kwargs['sif']}, aborting...", options.ERR_SIF_AUDIT_ERROR)
         except sif.NotSystemInfo:
-            print(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...")
-            sys.exit(6)
+            util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", options.ERR_SIF_AUDIT_ERROR)
     else:
         problems = _audit_sq(sq, settings, args.what)
 

@@ -221,8 +221,7 @@ class Project(components.Component):
                 self._binding['has_binding'] = True
                 self._binding['binding'] = json.loads(resp.text)
             else:
-                util.logger.fatal("alm_settings/get_binding returning status code %d, exiting", resp.status_code)
-                raise SystemExit(1)
+                util.exit_fatal(f"alm_settings/get_binding returning status code {resp.status_code}, exiting", options.ERR_SONAR_API)
         return self._binding['binding']
 
     def is_part_of_monorepo(self):
@@ -444,8 +443,8 @@ Is this normal ?", gr['name'], str(self.key))
             rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         else:
-            util.logger.fatal("alm_settings/validate_binding returning status code %d, exiting", resp.status_code)
-            raise SystemExit(1)
+            util.exit_fatal(f"alm_settings/get_binding returning status code {resp.status_code}, exiting", options.ERR_SONAR_API)
+
 
     def audit(self, audit_settings):
         util.logger.debug("Auditing %s", str(self))

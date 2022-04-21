@@ -25,7 +25,7 @@
 '''
 import sys
 import os
-from sonar import env, projects
+from sonar import env, projects, options
 import sonar.utilities as util
 
 
@@ -37,9 +37,7 @@ def main():
     sq = env.Environment(some_url=args.url, some_token=args.token)
 
     if (sq.edition() in ('community', 'developer') and sq.version(digits=2) < (9, 2)):
-        util.logger.critical("Can't export projects on Community and Developer Edition before 9.2, aborting...")
-        print("Can't export project on Community and Developer Edition before 9.2, aborting...")
-        sys.exit(1)
+        util.exit_fatal("Can't export projects on Community and Developer Edition before 9.2, aborting...", options.ERR_UNSUPPORTED_OPERATION)
 
     project_list = projects.search(endpoint=sq)
     nb_projects = len(project_list)
@@ -51,9 +49,8 @@ def main():
         try:
             dump = p.export(timeout=args.exportTimeout)
         except env.UnsupportedOperation as e:
-            util.logger.critical("%s", e.message)
-            print(f"{e.message}")
-            sys.exit(1)
+            util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+
         status = dump['status']
         if status in statuses:
             statuses[status] += 1
