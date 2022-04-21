@@ -445,7 +445,6 @@ Is this normal ?", gr['name'], str(self.key))
         else:
             util.exit_fatal(f"alm_settings/get_binding returning status code {resp.status_code}, exiting", options.ERR_SONAR_API)
 
-
     def audit(self, audit_settings):
         util.logger.debug("Auditing %s", str(self))
         return (

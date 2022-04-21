@@ -126,7 +126,7 @@ class Environment:
             else:
                 r = requests.get(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
-        except requests.exceptions.HTTPError as errh:
+        except requests.exceptions.HTTPError:
             if exit_on_error:
                 _log_and_exit(r.status_code)
         except requests.RequestException as e:
@@ -142,7 +142,7 @@ class Environment:
             else:
                 r = requests.post(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
-        except requests.exceptions.HTTPError as errh:
+        except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
@@ -157,7 +157,7 @@ class Environment:
             else:
                 r = requests.delete(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
-        except requests.exceptions.HTTPError as errh:
+        except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
