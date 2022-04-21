@@ -53,7 +53,8 @@ Using login/password is not possible.
 The user corresponding to the token must have enough permissions to achieve the tool tasks
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
-- 
+
+See common [error exit codes](#exit-codes) at the bottom of this page
 
 # <a name="sonar-audit"></a>sonar-audit
 
@@ -243,16 +244,19 @@ export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 sonar-projects-import -f exported_projects.csv
 ```
 
-# Tools coming soon
+# <a name="exit-codes"></a>Exit codes
 
-## sonar-issues-recover
+When tools complete successfully they return exit code 0. En case of fatal error the following exit codes may be returned:
+- Code 1: Authentication error (Incorrect token provided)
+- Code 2: Authorization error (provided token has insufficient permissions)
+- Code 3: Other general Sonar API HTTP error
+- Code 4: No token provided
+- Code 5: Non existing project key provided
+- Code 6: Incorrect finding search criteria provided
+- Code 7: Unsupported operation requested (because of SonarQube edition or configuration)
+- Code 8: Audit rule loading failed (at startup)
+- Code 9: SIF audit error (file not found, can't open file, not a legit JSON file, ...)
 
-Tries to recover issues that were mistakenly closed following a scan with incorrect parameters. This tool is only useful for SonarQube instances in version 7.9.x and lower since this feature is built-in with SonarQube 8.x and higher
-
-Issue recovery means:
-- Reapplying all transitions to the issue to reach its final state before close (Usually *False positive* or *Won't Fix*)
-- Reapplying all manual comments
-- Reapplying all severity or issue type change
 
 ### :information_source: Limitations
 - The script has to be run before the closed issue purge period (SonarQube parameter `sonar.dbcleaner.daysBeforeDeletingClosedIssues` whose default value is **30 days**)

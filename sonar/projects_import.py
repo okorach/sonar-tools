@@ -25,15 +25,13 @@
 '''
 import sys
 import json
-from sonar import projects, env
+from sonar import projects, env, options
 import sonar.utilities as util
 
 def _check_sq_environments(import_sq, export_sq):
     version = import_sq.version(digits=2, as_string=True)
     if version != export_sq['version']:
-        util.logger.error("Export was not performed with same SonarQube version, aborting...")
-        print("Export was not performed with same SonarQube version, aborting...")
-        sys.exit(1)
+        util.exit_fatal("Export was not performed with same SonarQube version, aborting...", options.ERR_UNSUPPORTED_OPERATION)
     for export_plugin in export_sq['plugins']:
         e_name = export_plugin['name']
         e_vers = export_plugin['version']
@@ -43,12 +41,8 @@ def _check_sq_environments(import_sq, export_sq):
                 found = True
                 break
         if not found:
-            util.logger.critical(
-                'Plugin %s version %s was not found or not in same version on import platform, aborting...',
-                e_name, e_vers)
-            print(f'Plugin {e_name} version {e_vers} was not found or '
-                  'not in same version on import platform, aborting...')
-            sys.exit(2)
+            util.exit_fatal(f"Plugin '{e_name}' version '{e_vers}' was not found or not in same version on import platform, aborting...",
+                            options.ERR_UNSUPPORTED_OPERATION)
 
 def main():
     parser = util.set_common_args('Imports a list of projects in a SonarQube platform')

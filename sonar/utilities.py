@@ -131,8 +131,7 @@ def check_environment(kwargs):
 def parse_and_check_token(parser):
     args = parser.parse_args()
     if args.token is None:
-        logger.critical("Token is missing (Argument -t/--token)")
-        sys.exit(4)
+        exit_fatal("Token is missing (Argument -t/--token)", options.ERR_SONAR_API_AUTHENTICATION)
     return args
 
 
@@ -289,3 +288,9 @@ def dict_add(dict1, dict2):
             dict1[k] = 0
         dict1[k] += dict2[k]
     return dict1
+
+
+def exit_fatal(err_msg, exit_code):
+    logger.fatal(err_msg)
+    print(f"FATAL: {err_msg}")
+    sys.exit(exit_code)

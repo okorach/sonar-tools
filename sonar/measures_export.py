@@ -187,11 +187,8 @@ def main():
     wanted_metrics = __get_wanted_metrics(args, endpoint)
     (fmt, file) = __get_fmt_and_file(args)
 
-    filters = None
-    if args.projectKeys is not None:
-        filters = {'projects': args.projectKeys.replace(' ', '')}
-    util.logger.info("Getting project list")
-    project_list = projects.search(endpoint=endpoint, params=filters).values()
+    project_list = projects.get_projects_list(args.projectKeys, endpoint)
+
     is_first = True
     obj_list = []
     if with_branches:

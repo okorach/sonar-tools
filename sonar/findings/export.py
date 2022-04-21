@@ -160,20 +160,20 @@ def __get_list(project, list_str, list_type):
 def __verify_inputs(params):
     diff = util.difference(util.csv_to_list(params.get('resolutions', None)), issues.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
-        util.logger.fatal("Resolutions %s are not legit status", str(diff))
-        return False
+        util.exit_fatal(f"Resolutions {str(diff)} are not legit resolutions", options.ERR_WRONG_SEARCH_CRITERIA)
+
     diff = util.difference(util.csv_to_list(params.get('statuses', None)), issues.STATUSES + hotspots.STATUSES)
     if diff:
-        util.logger.fatal("Status %s are not legit status", str(diff))
-        return False
+        util.exit_fatal(f"Statuses {str(diff)} are not legit statuses", options.ERR_WRONG_SEARCH_CRITERIA)
+
     diff = util.difference(util.csv_to_list(params.get('severities', None)), issues.SEVERITIES + hotspots.SEVERITIES)
     if diff:
-        util.logger.fatal("Severities %s are not legit severities", str(diff))
-        return False
+        util.exit_fatal(f"Severities {str(diff)} are not legit severities", options.ERR_WRONG_SEARCH_CRITERIA)
+
     diff = util.difference(util.csv_to_list(params.get('types', None)), issues.TYPES + hotspots.TYPES)
     if diff:
-        util.logger.fatal("Types %s are not legit types", str(diff))
-        return False
+        util.exit_fatal(f"Types {str(diff)} are not legit types", options.ERR_WRONG_SEARCH_CRITERIA)
+
     return True
 
 
@@ -230,20 +230,15 @@ def main():
 
     project_key = kwargs.get('projectKeys', None)
     params = util.remove_nones(kwargs.copy())
-    if not __verify_inputs(params):
-        sys.exit(2)
+    __verify_inputs(params)
+
     for p in ('statuses', 'createdAfter', 'createdBefore', 'resolutions', 'severities', 'types', 'tags'):
         if params.get(p, None) is not None:
             if params['useFindings']:
                 util.logger.warning("Selected search criteria %s will disable --useFindings", params[p])
             params['useFindings'] = False
             break
-    if project_key is None:
-        project_list = projects.get_key_list(endpoint=sqenv)
-    else:
-        project_list = []
-        for key in util.csv_to_list(project_key):
-            project_list.append(projects.get_object(key, endpoint=sqenv).key)
+    project_list = projects.get_projects_list(project_key, sqenv)
 
     fmt = kwargs['format']
     file = kwargs.pop('file', None)
