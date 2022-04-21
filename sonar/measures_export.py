@@ -187,11 +187,20 @@ def main():
     wanted_metrics = __get_wanted_metrics(args, endpoint)
     (fmt, file) = __get_fmt_and_file(args)
 
-    filters = None
-    if args.projectKeys is not None:
-        filters = {'projects': args.projectKeys.replace(' ', '')}
-    util.logger.info("Getting project list")
-    project_list = projects.search(endpoint=endpoint, params=filters).values()
+    if args.projectKeys is None:
+        util.logger.info("Getting project list")
+        project_list = projects.search(endpoint=endpoint).values()
+    else:
+        project_list = []
+        try:
+            for key in util.csv_to_list(args.projectKeys):
+                project_list.append(projects.get_object(key, endpoint=endpoint).key)
+        except env.NonExistingObjectError as e:
+            util.logger.fatal("Project key '%s' does not exist, aborting...", e.key)
+            print(f"FATAL: Project key '{e.key}' does not exist, aborting...")
+            sys.exit(2)
+
+    
     is_first = True
     obj_list = []
     if with_branches:
