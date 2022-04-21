@@ -289,3 +289,9 @@ def dict_add(dict1, dict2):
             dict1[k] = 0
         dict1[k] += dict2[k]
     return dict1
+
+
+def exit_fatal(err_msg, exit_code):
+    logger.fatal(err_msg)
+    print(f"FATAL: {err_msg}")
+    sys.exit(exit_code)
