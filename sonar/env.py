@@ -29,7 +29,7 @@ import json
 import requests
 
 import sonar.utilities as util
-from sonar import options
+from sonar import options, settings
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -176,6 +176,16 @@ class Environment:
                 params[p] = util.format_date(params[p])
             url_prefix += f'{sep}{p}={requests.utils.quote(str(params[p]))}'
         return url_prefix
+
+    def settings(self, settings_list=None, format='json'):
+        settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list)
+        if format is not None and format.lower() == 'json':
+            json_data = {}
+            for s in settings_dict.values():
+                json_data.update(s.to_json())
+            return json_data
+        else:
+            return settings_dict
 
     def __get_platform_settings(self):
         resp = self.get('settings/values')
