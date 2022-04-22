@@ -43,7 +43,6 @@ class Setting(sqobject.SqObject):
     def __init__(self, key, endpoint, project=None, data=None):
         super().__init__(key, endpoint)
         self.project = project
-        self.inherited = None
         self.value = None
         if data is None:
             params = {'keys': key}
@@ -57,6 +56,8 @@ class Setting(sqobject.SqObject):
                 self.inherited = data['inherited']
             elif 'parentValues' in data or 'parentValue' in data:
                 self.inherited = False
+        if project is None:
+            self.inherited = True
         util.logger.debug("Created %s", str(self))
         _SETTINGS[self.uuid()] = self
 
