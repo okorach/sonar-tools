@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 '''
 import sys
-from sonar import env, version, options
+from sonar import env, version
 import sonar.utilities as util
 
 """
