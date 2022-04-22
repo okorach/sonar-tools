@@ -22,10 +22,10 @@
     Exports SonarQube platform configuration as JSON
 '''
 import sys
-from sonar import measures, metrics, projects, env, version, options
+from sonar import env, version, options
 import sonar.utilities as util
 
-
+"""
 def __open_output(file):
     if file is None:
         fd = sys.stdout
@@ -40,16 +40,12 @@ def __close_output(file, fd):
     if file is not None:
         fd.close()
         util.logger.info("File '%s' generated", file)
-
-
+"""
 
 def __parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_project_args(parser)
     parser = util.set_output_file_args(parser)
-    parser.add_argument('--' + options.WITH_URL, action='store_true', default=False, required=False,
-                        help='Add projects/branches URLs in report')
-
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
