@@ -38,6 +38,7 @@ class Setting(sqobject.SqObject):
             resp = self.get('api/settings/values', params=params)
             data = json.loads(resp.text)['settings']
         if data is not None:
+            self.value = data.get('value', data.get('values', None))
             if 'inherited' in data:
                 self.inherited = data['inherited']
             elif 'parentValues' in data or 'parentValue' in data:
@@ -58,6 +59,13 @@ class Setting(sqobject.SqObject):
         if self.project:
             params['component'] = self.project.key
         return self.post('api/settings/set', params=params)
+
+    def to_json(self):
+        data = {'key': self.key, 'value': self.value}
+        if self.project is not None:
+            data['projectKey'] = self.project.key
+        data['inherited'] = self.inherited
+        return data
 
 
 def get_object(key, endpoint=None, data=None, project=None):
