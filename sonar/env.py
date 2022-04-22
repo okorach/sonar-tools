@@ -180,9 +180,9 @@ class Environment:
     def settings(self, settings_list=None, format='json'):
         settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list)
         if format is not None and format.lower() == 'json':
-            json_data = []
-            for s in settings_dict:
-                json_data.append(s.to_json())
+            json_data = {}
+            for s in settings_dict.values():
+                json_data.update(s.to_json())
             return json_data
         else:
             return settings_dict
