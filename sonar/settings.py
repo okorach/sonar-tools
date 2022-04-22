@@ -51,21 +51,7 @@ class Setting(sqobject.SqObject):
             resp = self.get('api/settings/values', params=params)
             data = json.loads(resp.text)['settings']
         if data is not None:
-            value = data.get('value', data.get('values', None))
-            if isinstance(value, str):
-                if value.lower() in ('yes', 'true', 'on'):
-                    value = True
-                elif value.lower() in ('no', 'false', 'off'):
-                    value = False
-                else:
-                    try:
-                        value = int(value)
-                    except ValueError:
-                        try:
-                            value = float(value)
-                        except ValueError:
-                            pass
-            self.value = value
+            self.value = util.convert_string(data.get('value', data.get('values', None)))
             if 'inherited' in data:
                 self.inherited = data['inherited']
             elif 'parentValues' in data or 'parentValue' in data:
