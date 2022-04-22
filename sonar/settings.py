@@ -21,6 +21,7 @@
     Abstraction of the SonarQube setting concept
 """
 
+import re
 import json
 from sonar import sqobject
 import sonar.utilities as util
@@ -28,6 +29,14 @@ import sonar.utilities as util
 _SETTINGS = {}
 
 _PRIVATE_SETTINGS = ('sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent', 'sonar.core')
+_INLINE_SETTINGS = (
+    r'^.*\.file\.suffixes$',
+    r'^.*\.reportPaths$',
+    r'^sonar\.[a-z]+\.exclusions$',
+    r'^sonar\.javascript\.(globals|environments)$',
+    r'^sonar\.dbcleaner\.branchesToKeepWhenInactive$',
+    r'^sonar.rpg.suffixes$'
+)
 
 class Setting(sqobject.SqObject):
 
@@ -67,7 +76,13 @@ class Setting(sqobject.SqObject):
         return self.post('api/settings/set', params=params)
 
     def to_json(self):
-        subval = { 'value': self.value }
+        val = self.value
+        for reg in _INLINE_SETTINGS:
+            if re.match(reg, self.key):
+                util.logger.debug("Match %s and %s", reg, self.key)
+                val = ', '.join(self.value)
+                break
+        subval = {'value': val}
         multi = False
         if self.project is not None:
             subval['projectKey'] = self.project.key
@@ -78,7 +93,7 @@ class Setting(sqobject.SqObject):
         if multi:
             return {self.key: subval}
         else:
-            return {self.key: self.value}
+            return {self.key: val}
 
 
 def get_object(key, endpoint=None, data=None, project=None):
