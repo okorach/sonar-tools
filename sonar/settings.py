@@ -22,15 +22,20 @@
 """
 
 import json
-from sonar import sqobject, utilities
+from sonar import sqobject
+import sonar.utilities as util
 
-__SETTINGS = {}
+_SETTINGS = {}
+
+_PRIVATE_SETTINGS = ('sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent', 'sonar.core')
 
 class Setting(sqobject.SqObject):
 
     def __init__(self, key, endpoint, project=None, data=None):
         super().__init__(key, endpoint)
         self.project = project
+        self.inherited = None
+        self.value = None
         if data is None:
             params = {'keys': key}
             if project:
@@ -43,7 +48,8 @@ class Setting(sqobject.SqObject):
                 self.inherited = data['inherited']
             elif 'parentValues' in data or 'parentValue' in data:
                 self.inherited = False
-        __SETTINGS[self.uuid()] = self
+        util.logger.debug("Created %s", str(self))
+        _SETTINGS[self.uuid()] = self
 
     def uuid(self):
         return _uuid_p(self.key, self.project)
@@ -61,31 +67,48 @@ class Setting(sqobject.SqObject):
         return self.post('api/settings/set', params=params)
 
     def to_json(self):
-        data = {'key': self.key, 'value': self.value}
+        subval = { 'value': self.value }
+        multi = False
         if self.project is not None:
-            data['projectKey'] = self.project.key
-        data['inherited'] = self.inherited
-        return data
+            subval['projectKey'] = self.project.key
+            multi = True
+        if self.inherited is not None and not self.inherited:
+            subval['inherited'] = self.inherited
+            multi = True
+        if multi:
+            return {self.key: subval}
+        else:
+            return {self.key: self.value}
 
 
 def get_object(key, endpoint=None, data=None, project=None):
-    if key not in __SETTINGS:
+    if key not in _SETTINGS:
         _ = Setting(key=key, endpoint=endpoint, data=data, project=project)
-    return __SETTINGS[_uuid_p(key, project)]
+    return _SETTINGS[_uuid_p(key, project)]
 
 
 def get_bulk(endpoint, settings_list=None, project=None):
     """Gets several settings as bulk (returns a dict)"""
-    if isinstance(settings_list, list):
-        params = {'keys': utilities.list_to_csv(settings_list)}
+    if settings_list is None:
+        params = {}
+    elif isinstance(settings_list, list):
+        params = {'keys': util.list_to_csv(settings_list)}
     else:
-        params = {'keys': utilities.csv_normalize(settings_list)}
+        params = {'keys': util.csv_normalize(settings_list)}
     if project:
         params['component'] = project.key
     resp = endpoint.get('api/settings/values', params=params)
     data = json.loads(resp.text)
+    util.json_dump_debug(data, 'SETTINGS')
     settings_dict = {}
     for s in data['settings']:
+        skip = False
+        for priv in _PRIVATE_SETTINGS:
+            if s['key'].startswith(priv):
+                skip = True
+                break
+        if skip:
+            continue
         o = Setting(s['key'], endpoint=endpoint, data=s, project=project)
         settings_dict[o.uuid()] = o
     return settings_dict
