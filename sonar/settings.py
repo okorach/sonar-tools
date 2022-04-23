@@ -56,8 +56,10 @@ class Setting(sqobject.SqObject):
                 params['component'] = project.key
             resp = self.get('api/settings/values', params=params)
             data = json.loads(resp.text)['settings']
-
-        self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
+        if self.key.startswith('sonar.issue'):
+            self.value = data.get('fieldValues', None)
+        else:
+            self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
         if 'inherited' in data:
             self.inherited = data['inherited']
         elif 'parentValues' in data or 'parentValue' in data:
