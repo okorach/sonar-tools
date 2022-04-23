@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 '''
 import sys
-from sonar import env, version
+from sonar import env, version, settings
 import sonar.utilities as util
 
 """
@@ -56,9 +56,13 @@ def main():
     args = __parse_args('Extract SonarQube platform configuration')
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
 
-    platform_settings = endpoint.settings()
+    platform_settings = endpoint.settings(include_not_set=True)
     print(util.json_dump(platform_settings))
-    util.logger.info("Exported %s settings", len(platform_settings))
+    nbr_settings = len(platform_settings)
+    for categ in settings.CATEGORIES:
+        if categ in platform_settings:
+            nbr_settings += len(platform_settings[categ]) - 1
+    util.logger.info("Exported %s settings", nbr_settings)
     sys.exit(0)
 
 

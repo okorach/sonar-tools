@@ -26,9 +26,15 @@ import json
 from sonar import sqobject
 import sonar.utilities as util
 
+CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authentication', 'sast')
+
 _SETTINGS = {}
 
-_PRIVATE_SETTINGS = ('sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent', 'sonar.core')
+_PRIVATE_SETTINGS = (
+    'sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent',
+    'sonar.core.id', 'sonar.core.startTime', 'sonar.plsql.jdbc.driver.class'
+)
+
 _INLINE_SETTINGS = (
     r'^.*\.file\.suffixes$',
     r'^.*\.reportPaths$',
@@ -50,16 +56,18 @@ class Setting(sqobject.SqObject):
                 params['component'] = project.key
             resp = self.get('api/settings/values', params=params)
             data = json.loads(resp.text)['settings']
-        if data is not None:
-            self.value = util.convert_string(data.get('value', data.get('values', None)))
-            if 'inherited' in data:
-                self.inherited = data['inherited']
-            elif 'parentValues' in data or 'parentValue' in data:
-                self.inherited = False
+
+        self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
+        if 'inherited' in data:
+            self.inherited = data['inherited']
+        elif 'parentValues' in data or 'parentValue' in data:
+            self.inherited = False
+        elif 'category' in data:
+            self.inherited = True
 
         if project is None:
             self.inherited = True
-        util.logger.debug("Created %s", str(self))
+        util.logger.debug("Created %s value %s", str(self), str(self.value))
         _SETTINGS[self.uuid()] = self
 
     def uuid(self):
@@ -80,9 +88,8 @@ class Setting(sqobject.SqObject):
     def to_json(self):
         val = self.value
         for reg in _INLINE_SETTINGS:
-            if re.match(reg, self.key):
-                util.logger.debug("Match %s and %s", reg, self.key)
-                val = ', '.join(self.value)
+            if re.match(reg, self.key) and isinstance(self.value, list):
+                val = ', '.join([v.strip() for v in self.value])
                 break
         subval = {'value': val}
         multi = False
@@ -97,6 +104,31 @@ class Setting(sqobject.SqObject):
         else:
             return {self.key: val}
 
+    def category(self):
+        if re.match(r'^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$', self.key):
+            return ('linters', None)
+        if re.match(r'^.*(\.reports?Paths?$|unit\..*$|cov.*$)', self.key):
+            return ('tests', None)
+        if re.match(r'^sonar\.security\.config\..+$', self.key):
+            return ('sast', None)
+        if re.match(r'^.*\.(exclusions$|inclusions$|issue\..+)$', self.key):
+            return('scope', None)
+        m = re.match(r'^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|'
+                     r'javascript|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|'
+                     r'typescript|vb|vbnet|xml|yaml)\.', self.key)
+        if m:
+            lang = m.group(2)
+            if lang in ('c', 'cpp', 'objc', 'cfamily'):
+                lang = 'cfamily'
+            return ('languages', lang)
+        m = re.match(r'^sonar\.(auth\.|authenticator\.downcase).*$', self.key)
+        if m:
+            return ('authentication', m.group(1))
+        m = re.match(r'^sonar\.forceAuthentication$', self.key)
+        if m:
+            return ('authentication', None)
+        return ('general', None)
+
 
 def get_object(key, endpoint=None, data=None, project=None):
     if key not in _SETTINGS:
@@ -104,10 +136,20 @@ def get_object(key, endpoint=None, data=None, project=None):
     return _SETTINGS[_uuid_p(key, project)]
 
 
-def get_bulk(endpoint, settings_list=None, project=None):
+def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
     """Gets several settings as bulk (returns a dict)"""
+    settings_dict = {}
     if settings_list is None:
         params = {}
+    if include_not_set:
+        resp = endpoint.get('api/settings/list_definitions', params=params)
+        data = json.loads(resp.text)
+        settings_dict = {}
+        for s in data['definitions']:
+            if s['key'].endswith('coverage.reportPath') or s['key'] == 'languageSpecificParameters':
+                continue
+            o = Setting(s['key'], endpoint=endpoint, data=s, project=project)
+            settings_dict[o.uuid()] = o
     elif isinstance(settings_list, list):
         params = {'keys': util.list_to_csv(settings_list)}
     else:
@@ -116,8 +158,6 @@ def get_bulk(endpoint, settings_list=None, project=None):
         params['component'] = project.key
     resp = endpoint.get('api/settings/values', params=params)
     data = json.loads(resp.text)
-    util.json_dump_debug(data, 'SETTINGS')
-    settings_dict = {}
     for s in data['settings']:
         skip = False
         for priv in _PRIVATE_SETTINGS:
@@ -125,10 +165,16 @@ def get_bulk(endpoint, settings_list=None, project=None):
                 skip = True
                 break
         if skip:
+            util.logger.debug('Skipping private setting %s', s['key'])
             continue
         o = Setting(s['key'], endpoint=endpoint, data=s, project=project)
         settings_dict[o.uuid()] = o
     return settings_dict
+
+
+def get_all(endpoint, project=None):
+    return get_bulk(endpoint, project=project, include_not_set=True)
+
 
 def uuid(key, project_key=None):
     """Computes uuid for a setting"""
