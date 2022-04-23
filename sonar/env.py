@@ -41,12 +41,6 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
-_APP_NODES = 'Application Nodes'
-_ES_NODES = 'Search Nodes'
-_SYSTEM = 'System'
-_STORE_SIZE = 'Store Size'
-_ES_STATE = 'Search State'
-
 _GLOBAL_PERMISSIONS = {
     "admin": "Global Administration",
     "gateadmin": "Administer Quality Gates",
