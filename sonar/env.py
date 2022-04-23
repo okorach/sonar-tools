@@ -171,12 +171,19 @@ class Environment:
             url_prefix += f'{sep}{p}={requests.utils.quote(str(params[p]))}'
         return url_prefix
 
-    def settings(self, settings_list=None, format='json'):
-        settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list)
+    def settings(self, settings_list=None, include_not_set=False, format='json'):
+        settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
         if format is not None and format.lower() == 'json':
             json_data = {}
             for s in settings_dict.values():
-                json_data.update(s.to_json())
+                if s.category() is None:
+                    json_data.update(s.to_json())
+                else:
+                    (categ, _) = s.category()
+                    if categ not in json_data:
+                        json_data[categ] = s.to_json()
+                    else:
+                        json_data[categ].update(s.to_json())
             return json_data
         else:
             return settings_dict
