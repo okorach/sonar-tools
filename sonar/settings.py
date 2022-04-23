@@ -30,7 +30,11 @@ CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authenticati
 
 _SETTINGS = {}
 
-_PRIVATE_SETTINGS = ('sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent', 'sonar.core.id', 'sonar.core.startTime', 'sonar.plsql.jdbc.driver.class')
+_PRIVATE_SETTINGS = (
+    'sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent',
+    'sonar.core.id', 'sonar.core.startTime', 'sonar.plsql.jdbc.driver.class'
+)
+
 _INLINE_SETTINGS = (
     r'^.*\.file\.suffixes$',
     r'^.*\.reportPaths$',
@@ -52,14 +56,14 @@ class Setting(sqobject.SqObject):
                 params['component'] = project.key
             resp = self.get('api/settings/values', params=params)
             data = json.loads(resp.text)['settings']
-        else:
-            self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
-            if 'inherited' in data:
-                self.inherited = data['inherited']
-            elif 'parentValues' in data or 'parentValue' in data:
-                self.inherited = False
-            elif 'category' in data:
-                self.inherited = True
+
+        self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
+        if 'inherited' in data:
+            self.inherited = data['inherited']
+        elif 'parentValues' in data or 'parentValue' in data:
+            self.inherited = False
+        elif 'category' in data:
+            self.inherited = True
 
         if project is None:
             self.inherited = True
@@ -109,7 +113,9 @@ class Setting(sqobject.SqObject):
             return ('sast', None)
         if re.match(r'^.*\.(exclusions$|inclusions$|issue\..+)$', self.key):
             return('scope', None)
-        m = re.match(r'^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|javascript|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|typescript|vb|vbnet|xml|yaml)\.', self.key)
+        m = re.match(r'^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|'
+                     r'javascript|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|'
+                     r'typescript|vb|vbnet|xml|yaml)\.', self.key)
         if m:
             lang = m.group(2)
             if lang in ('c', 'cpp', 'objc', 'cfamily'):
