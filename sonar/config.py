@@ -59,7 +59,7 @@ def main():
     platform_settings = endpoint.settings(include_not_set=True)
     print(util.json_dump(platform_settings))
     nbr_settings = len(platform_settings)
-    for categ in ('languages', 'auth', 'tests'):
+    for categ in ('languages', 'auth', 'tests', 'scope'):
         if categ in platform_settings:
             nbr_settings += len(platform_settings[categ]) - 1
     util.logger.info("Exported %s settings", nbr_settings)

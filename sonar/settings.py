@@ -28,7 +28,7 @@ import sonar.utilities as util
 
 _SETTINGS = {}
 
-_PRIVATE_SETTINGS = ('sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent', 'sonar.core')
+_PRIVATE_SETTINGS = ('sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent', 'sonar.core.id', 'sonar.core.startTime', 'sonar.plsql.jdbc.driver.class')
 _INLINE_SETTINGS = (
     r'^.*\.file\.suffixes$',
     r'^.*\.reportPaths$',
@@ -61,7 +61,7 @@ class Setting(sqobject.SqObject):
 
         if project is None:
             self.inherited = True
-        util.logger.debug("Created %s", str(self))
+        util.logger.debug("Created %s value %s", str(self), str(self.value))
         _SETTINGS[self.uuid()] = self
 
     def uuid(self):
@@ -99,8 +99,10 @@ class Setting(sqobject.SqObject):
             return {self.key: val}
 
     def category(self):
-        if re.match(r'^.*\.reports?Paths?$', self.key):
+        if re.match(r'^.*(\.reports?Paths?$|unit\..*$)', self.key):
             return ('tests', None)
+        if re.match(r'^.*\.(exclusions|inclusions)$', self.key):
+            return('scope', None)
         m = re.match(r'^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|javascript|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|typescript|vb|vbnet|xml|yaml)\.', self.key)
         if m:
             lang = m.group(2)
@@ -131,7 +133,7 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
         data = json.loads(resp.text)
         settings_dict = {}
         for s in data['definitions']:
-            if s['key'].endswith('coverage.reportPath'):
+            if s['key'].endswith('coverage.reportPath') or s['key'] == 'languageSpecificParameters':
                 continue
             o = Setting(s['key'], endpoint=endpoint, data=s, project=project)
             settings_dict[o.uuid()] = o
