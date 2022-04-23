@@ -26,6 +26,8 @@ import json
 from sonar import sqobject
 import sonar.utilities as util
 
+CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authentication', 'sast')
+
 _SETTINGS = {}
 
 _PRIVATE_SETTINGS = ('sonaranalyzer', 'sonar.updatecenter', 'sonar.plugins.risk.consent', 'sonar.core.id', 'sonar.core.startTime', 'sonar.plsql.jdbc.driver.class')
@@ -83,7 +85,7 @@ class Setting(sqobject.SqObject):
         val = self.value
         for reg in _INLINE_SETTINGS:
             if re.match(reg, self.key) and isinstance(self.value, list):
-                val = ', '.join(self.value)
+                val = ', '.join([v.strip() for v in self.value])
                 break
         subval = {'value': val}
         multi = False
@@ -99,9 +101,13 @@ class Setting(sqobject.SqObject):
             return {self.key: val}
 
     def category(self):
-        if re.match(r'^.*(\.reports?Paths?$|unit\..*$)', self.key):
+        if re.match(r'^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$', self.key):
+            return ('linters', None)
+        if re.match(r'^.*(\.reports?Paths?$|unit\..*$|cov.*$)', self.key):
             return ('tests', None)
-        if re.match(r'^.*\.(exclusions|inclusions)$', self.key):
+        if re.match(r'^sonar\.security\.config\..+$', self.key):
+            return ('sast', None)
+        if re.match(r'^.*\.(exclusions$|inclusions$|issue\..+)$', self.key):
             return('scope', None)
         m = re.match(r'^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|javascript|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|typescript|vb|vbnet|xml|yaml)\.', self.key)
         if m:
@@ -109,12 +115,13 @@ class Setting(sqobject.SqObject):
             if lang in ('c', 'cpp', 'objc', 'cfamily'):
                 lang = 'cfamily'
             return ('languages', lang)
-        m = re.match(r'^sonar\.auth\.([^.]+).*$', self.key)
+        m = re.match(r'^sonar\.(auth\.|authenticator\.downcase).*$', self.key)
         if m:
-            return ('auth', m.group(1))
+            return ('authentication', m.group(1))
         m = re.match(r'^sonar\.forceAuthentication$', self.key)
         if m:
-            return ('auth', None)
+            return ('authentication', None)
+        return ('general', None)
 
 
 def get_object(key, endpoint=None, data=None, project=None):
