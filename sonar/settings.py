@@ -26,7 +26,7 @@ import json
 from sonar import sqobject
 import sonar.utilities as util
 
-CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authentication', 'sast')
+CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authentication', 'sast', 'thrid-party')
 
 NEW_CODE = 'sonar_.newCodePeriod'
 
@@ -137,10 +137,14 @@ class Setting(sqobject.SqObject):
             return ('languages', lang)
         m = re.match(r'^sonar\.(auth\.|authenticator\.downcase).*$', self.key)
         if m:
-            return ('authentication', m.group(1))
+            return ('authentication', None)
         m = re.match(r'^sonar\.forceAuthentication$', self.key)
         if m:
             return ('authentication', None)
+        if not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|sonar\.cpd|sonar\.dbcleaner|'
+                        r'sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|sonar\.portfolios|'
+                        r'sonar\.qualitygate|sonar\.scm\.disabled|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
+            return ('third-party', None)
         return ('general', None)
 
 
