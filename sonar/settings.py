@@ -119,14 +119,6 @@ class Setting(sqobject.SqObject):
             return {self.key: val}
 
     def category(self):
-        if re.match(r'^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$', self.key):
-            return ('linters', None)
-        if re.match(r'^.*(\.reports?Paths?$|unit\..*$|cov.*$)', self.key):
-            return ('tests', None)
-        if re.match(r'^sonar\.security\.config\..+$', self.key):
-            return ('sast', None)
-        if re.match(r'^.*\.(exclusions$|inclusions$|issue\..+)$', self.key):
-            return('scope', None)
         m = re.match(r'^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|'
                      r'javascript|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|'
                      r'typescript|vb|vbnet|xml|yaml)\.', self.key)
@@ -135,15 +127,24 @@ class Setting(sqobject.SqObject):
             if lang in ('c', 'cpp', 'objc', 'cfamily'):
                 lang = 'cfamily'
             return ('languages', lang)
+        if re.match(r'^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$', self.key):
+            return ('linters', None)
+        if re.match(r'^sonar\.security\.config\..+$', self.key):
+            return ('sast', None)
+        if re.match(r'^.*\.(exclusions$|inclusions$|issue\..+)$', self.key):
+            return('scope', None)
+
+        if re.match(r'^.*(\.reports?Paths?$|unit\..*$|cov.*$)', self.key):
+            return ('tests', None)
         m = re.match(r'^sonar\.(auth\.|authenticator\.downcase).*$', self.key)
         if m:
             return ('authentication', None)
         m = re.match(r'^sonar\.forceAuthentication$', self.key)
         if m:
             return ('authentication', None)
-        if not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|sonar\.cpd|sonar\.dbcleaner|'
-                        r'sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|sonar\.portfolios|'
-                        r'sonar\.qualitygate|sonar\.scm\.disabled|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
+        if self.key != NEW_CODE and not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|'
+                r'sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|'
+                r'sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
             return ('third-party', None)
         return ('general', None)
 

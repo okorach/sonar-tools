@@ -173,20 +173,24 @@ class Environment:
 
     def settings(self, settings_list=None, include_not_set=False, format='json'):
         settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
-        if format is not None and format.lower() == 'json':
-            json_data = {}
-            for s in settings_dict.values():
-                if s.category() is None:
-                    json_data.update(s.to_json())
-                else:
-                    (categ, _) = s.category()
-                    if categ not in json_data:
-                        json_data[categ] = s.to_json()
-                    else:
-                        json_data[categ].update(s.to_json())
-            return json_data
-        else:
+        if format is None or format.lower() != 'json':
             return settings_dict
+        json_data = {}
+        for s in settings_dict.values():
+            (categ, subcateg) = s.category()
+            if categ not in json_data:
+                if subcateg is None:
+                    json_data[categ] = s.to_json()
+                else:
+                    json_data[categ] = {subcateg: s.to_json()}
+            elif subcateg is not None:
+                if subcateg in json_data[categ]:
+                    json_data[categ][subcateg].update(s.to_json())
+                else:
+                    json_data[categ][subcateg] = s.to_json()
+            else:
+                json_data[categ].update(s.to_json())
+        return json_data
 
     def __get_platform_settings(self):
         resp = self.get('settings/values')
