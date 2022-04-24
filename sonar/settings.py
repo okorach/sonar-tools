@@ -28,6 +28,8 @@ import sonar.utilities as util
 
 CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authentication', 'sast')
 
+NEW_CODE = 'sonar_.newCodePeriod'
+
 _SETTINGS = {}
 
 _PRIVATE_SETTINGS = (
@@ -51,12 +53,25 @@ class Setting(sqobject.SqObject):
         self.project = project
         self.value = None
         if data is None:
-            params = {'keys': key}
-            if project:
-                params['component'] = project.key
-            resp = self.get('api/settings/values', params=params)
-            data = json.loads(resp.text)['settings']
-        if self.key.startswith('sonar.issue'):
+            if key == NEW_CODE:
+                data = json.loads(self.get('new_code_periods/show').text)
+            else:
+                params = {'keys': key}
+                if project:
+                    params['component'] = project.key
+                resp = self.get('api/settings/values', params=params)
+                data = json.loads(resp.text)['settings']
+        self.__load(data)
+        util.logger.debug("Created %s value %s", str(self), str(self.value))
+        _SETTINGS[self.uuid()] = self
+
+    def __load(self, data):
+        if self.key == NEW_CODE:
+            if data['type'] == 'NUMBER_OF_DAYS':
+                self.value = int(data['value'])
+            else:
+                self.value = 'PREVIOUS_VERSION'
+        elif self.key.startswith('sonar.issue'):
             self.value = data.get('fieldValues', None)
         else:
             self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
@@ -66,11 +81,8 @@ class Setting(sqobject.SqObject):
             self.inherited = False
         elif 'category' in data:
             self.inherited = True
-
-        if project is None:
+        if self.project is None:
             self.inherited = True
-        util.logger.debug("Created %s value %s", str(self), str(self.value))
-        _SETTINGS[self.uuid()] = self
 
     def uuid(self):
         return _uuid_p(self.key, self.project)
@@ -171,11 +183,17 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
             continue
         o = Setting(s['key'], endpoint=endpoint, data=s, project=project)
         settings_dict[o.uuid()] = o
+    o = get_new_code_period(endpoint)
+    settings_dict[o.uuid()] = o
     return settings_dict
 
 
 def get_all(endpoint, project=None):
     return get_bulk(endpoint, project=project, include_not_set=True)
+
+
+def get_new_code_period(endpoint):
+    return get_object(key=NEW_CODE, endpoint=endpoint)
 
 
 def uuid(key, project_key=None):
