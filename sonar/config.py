@@ -58,7 +58,7 @@ def main():
 
     platform_settings = endpoint.settings(include_not_set=True)
     platform_settings['devops-platforms'] = list(devops.settings(endpoint).values())
-    print(util.json_dump(platform_settings))
+    print(util.json_dump({'platform': platform_settings}))
     nbr_settings = len(platform_settings)
     for categ in settings.CATEGORIES:
         if categ in platform_settings:
