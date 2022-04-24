@@ -142,9 +142,9 @@ class Setting(sqobject.SqObject):
         m = re.match(r'^sonar\.forceAuthentication$', self.key)
         if m:
             return ('authentication', None)
-        if not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|sonar\.cpd|sonar\.dbcleaner|'
-                        r'sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|sonar\.portfolios|'
-                        r'sonar\.qualitygate|sonar\.scm\.disabled|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
+        if self.key != NEW_CODE and not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|'
+                r'sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|'
+                r'sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
             return ('third-party', None)
         return ('general', None)
 
