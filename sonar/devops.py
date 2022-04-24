@@ -29,7 +29,7 @@ _DEVOPS_PLATFORM_TYPES = ('github', 'azure', 'bitbucket', 'bitbucketcloud', 'git
 
 class DevopsPlatform(sqobject.SqObject):
 
-    def __init__(self, key, platform_type, endpoint, project=None, data=None):
+    def __init__(self, key, platform_type, endpoint, data=None):
         super().__init__(key, endpoint)
         self.type = platform_type
         self.json = data
