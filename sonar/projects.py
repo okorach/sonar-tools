@@ -459,17 +459,6 @@ Is this normal ?", gr['name'], str(self.key))
             + self.__audit_zero_loc(audit_settings)
         )
 
-    def delete_if_obsolete(self, days=180):
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        mindate = today - datetime.timedelta(days=days)
-        last_analysis = self.last_analysis_date(include_branches=True)
-        loc = int(self.get_measure('ncloc'))
-        # print(f"{str(self)} - {loc} LoCs - Not analysed for {(today - last_analysis).days} days")
-        util.logger.debug("%s - %d LoCs - Not analysed for %d days", str(self), loc, (today - last_analysis).days)
-        if last_analysis < mindate:
-            return self.delete()
-        return False
-
     def export(self, timeout=180):
         util.logger.info('Exporting %s (synchronously)', str(self))
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in ['enterprise', 'datacenter']:
