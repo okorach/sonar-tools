@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 '''
 import sys
-from sonar import env, version, settings
+from sonar import env, version, settings, devops
 import sonar.utilities as util
 
 """
@@ -57,6 +57,7 @@ def main():
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
 
     platform_settings = endpoint.settings(include_not_set=True)
+    platform_settings['devops-platforms'] = list(devops.settings(endpoint).values())
     print(util.json_dump(platform_settings))
     nbr_settings = len(platform_settings)
     for categ in settings.CATEGORIES:
