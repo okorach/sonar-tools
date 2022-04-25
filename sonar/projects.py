@@ -26,7 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonar import env, components, tasks, custom_measures, pull_requests, branches, measures, options
+from sonar import env, components, tasks, custom_measures, pull_requests, branches, measures, options, settings
 from sonar.findings import issues, hotspots
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -575,6 +575,30 @@ Is this normal ?", gr['name'], str(self.key))
                 counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
+    def settings(self, settings_list=None, format='json', include_inherited=False):
+        settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
+        if format is None or format.lower() != 'json':
+            return settings_dict
+        json_data = {}
+        for s in settings_dict.values():
+            util.logger.debug("Treating %s", str(s))
+            if not include_inherited and s.inherited:
+                continue
+            (categ, subcateg) = s.category()
+            if categ not in json_data:
+                if subcateg is None:
+                    json_data[categ] = s.to_json()
+                else:
+                    json_data[categ] = {subcateg: s.to_json()}
+            elif subcateg is not None:
+                if subcateg in json_data[categ]:
+                    json_data[categ][subcateg].update(s.to_json())
+                else:
+                    json_data[categ][subcateg] = s.to_json()
+            else:
+                json_data[categ].update(s.to_json())
+        util.json_dump_debug(json_data, f"PROJECT {self.key}:")
+        return json_data
 
 def __get_permissions_counts__(entities):
     counts = {}
