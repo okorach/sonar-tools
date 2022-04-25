@@ -52,9 +52,14 @@ class Setting(sqobject.SqObject):
         super().__init__(key, endpoint)
         self.project = project
         self.value = None
+        self.inherited = None
         if data is None:
             if key == NEW_CODE:
-                data = json.loads(self.get('new_code_periods/show').text)
+                params = {}
+                if project:
+                    params['project'] = project.key
+                resp = self.get(api='new_code_periods/show', params=params)
+                data = json.loads(resp.text)
             else:
                 params = {'keys': key}
                 if project:
@@ -62,7 +67,7 @@ class Setting(sqobject.SqObject):
                 resp = self.get('api/settings/values', params=params)
                 data = json.loads(resp.text)['settings']
         self.__load(data)
-        util.logger.debug("Created %s value %s", str(self), str(self.value))
+        util.logger.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
         _SETTINGS[self.uuid()] = self
 
     def __load(self, data):
@@ -70,16 +75,20 @@ class Setting(sqobject.SqObject):
             if data['type'] == 'NUMBER_OF_DAYS':
                 self.value = int(data['value'])
             else:
-                self.value = 'PREVIOUS_VERSION'
+                self.value = data['type']
         elif self.key.startswith('sonar.issue'):
             self.value = data.get('fieldValues', None)
         else:
             self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
         if 'inherited' in data:
             self.inherited = data['inherited']
-        elif 'parentValues' in data or 'parentValue' in data:
+        elif self.key == NEW_CODE:
+            self.inherited = False
+        elif 'parentValues' in data or 'parentValue' in data or 'parentFieldValues' in data:
             self.inherited = False
         elif 'category' in data:
+            self.inherited = True
+        else:
             self.inherited = True
         if self.project is None:
             self.inherited = True
@@ -105,18 +114,7 @@ class Setting(sqobject.SqObject):
             if re.match(reg, self.key) and isinstance(self.value, list):
                 val = ', '.join([v.strip() for v in self.value])
                 break
-        subval = {'value': val}
-        multi = False
-        if self.project is not None:
-            subval['projectKey'] = self.project.key
-            multi = True
-        if self.inherited is not None and not self.inherited:
-            subval['inherited'] = self.inherited
-            multi = True
-        if multi:
-            return {self.key: subval}
-        else:
-            return {self.key: val}
+        return {self.key: val}
 
     def category(self):
         m = re.match(r'^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|'
@@ -150,16 +148,18 @@ class Setting(sqobject.SqObject):
 
 
 def get_object(key, endpoint=None, data=None, project=None):
-    if key not in _SETTINGS:
+    uu = _uuid_p(key, project)
+    if uu not in _SETTINGS:
         _ = Setting(key=key, endpoint=endpoint, data=data, project=project)
-    return _SETTINGS[_uuid_p(key, project)]
+    return _SETTINGS[uu]
 
 
 def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
-    if settings_list is None:
-        params = {}
+    params = {}
+    if project:
+        params['component'] = project.key
     if include_not_set:
         resp = endpoint.get('api/settings/list_definitions', params=params)
         data = json.loads(resp.text)
@@ -169,12 +169,12 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
                 continue
             o = Setting(s['key'], endpoint=endpoint, data=s, project=project)
             settings_dict[o.uuid()] = o
+    if settings_list is None:
+        pass
     elif isinstance(settings_list, list):
-        params = {'keys': util.list_to_csv(settings_list)}
+        params['keys'] = util.list_to_csv(settings_list)
     else:
-        params = {'keys': util.csv_normalize(settings_list)}
-    if project:
-        params['component'] = project.key
+        params['keys'] = util.csv_normalize(settings_list)
     resp = endpoint.get('api/settings/values', params=params)
     data = json.loads(resp.text)
     for s in data['settings']:
@@ -187,9 +187,9 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
             util.logger.debug('Skipping private setting %s', s['key'])
             continue
         o = Setting(s['key'], endpoint=endpoint, data=s, project=project)
-        settings_dict[o.uuid()] = o
-    o = get_new_code_period(endpoint)
-    settings_dict[o.uuid()] = o
+        settings_dict[o.key] = o
+    o = get_new_code_period(endpoint, project)
+    settings_dict[o.key] = o
     return settings_dict
 
 
@@ -197,8 +197,8 @@ def get_all(endpoint, project=None):
     return get_bulk(endpoint, project=project, include_not_set=True)
 
 
-def get_new_code_period(endpoint):
-    return get_object(key=NEW_CODE, endpoint=endpoint)
+def get_new_code_period(endpoint, project):
+    return get_object(key=NEW_CODE, endpoint=endpoint, project=project)
 
 
 def uuid(key, project_key=None):

@@ -178,18 +178,7 @@ class Environment:
         json_data = {}
         for s in settings_dict.values():
             (categ, subcateg) = s.category()
-            if categ not in json_data:
-                if subcateg is None:
-                    json_data[categ] = s.to_json()
-                else:
-                    json_data[categ] = {subcateg: s.to_json()}
-            elif subcateg is not None:
-                if subcateg in json_data[categ]:
-                    json_data[categ][subcateg].update(s.to_json())
-                else:
-                    json_data[categ][subcateg] = s.to_json()
-            else:
-                json_data[categ].update(s.to_json())
+            util.update_json(json_data, categ, subcateg, s.to_json())
         return json_data
 
     def __get_platform_settings(self):

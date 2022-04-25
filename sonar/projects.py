@@ -26,7 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonar import env, components, tasks, custom_measures, pull_requests, branches, measures, options
+from sonar import env, components, tasks, custom_measures, pull_requests, branches, measures, options, settings
 from sonar.findings import issues, hotspots
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -459,17 +459,6 @@ Is this normal ?", gr['name'], str(self.key))
             + self.__audit_zero_loc(audit_settings)
         )
 
-    def delete_if_obsolete(self, days=180):
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        mindate = today - datetime.timedelta(days=days)
-        last_analysis = self.last_analysis_date(include_branches=True)
-        loc = int(self.get_measure('ncloc'))
-        # print(f"{str(self)} - {loc} LoCs - Not analysed for {(today - last_analysis).days} days")
-        util.logger.debug("%s - %d LoCs - Not analysed for %d days", str(self), loc, (today - last_analysis).days)
-        if last_analysis < mindate:
-            return self.delete()
-        return False
-
     def export(self, timeout=180):
         util.logger.info('Exporting %s (synchronously)', str(self))
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in ['enterprise', 'datacenter']:
@@ -586,6 +575,19 @@ Is this normal ?", gr['name'], str(self.key))
                 counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
+    def settings(self, settings_list=None, format='json', include_inherited=False):
+        settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
+        if format is None or format.lower() != 'json':
+            return settings_dict
+        json_data = {}
+        for s in settings_dict.values():
+            util.logger.debug("Treating %s", str(s))
+            if not include_inherited and s.inherited:
+                continue
+            (categ, subcateg) = s.category()
+            util.update_json(json_data, categ, subcateg, s.to_json())
+        util.json_dump_debug(json_data, f"PROJECT {self.key}:")
+        return json_data
 
 def __get_permissions_counts__(entities):
     counts = {}
