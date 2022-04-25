@@ -312,3 +312,19 @@ def convert_string(value):
             except ValueError:
                 pass
     return value
+
+
+def update_json(json_data, categ, subcateg, value):
+    if categ not in json_data:
+        if subcateg is None:
+            json_data[categ] = value
+        else:
+            json_data[categ] = {subcateg: value}
+    elif subcateg is not None:
+        if subcateg in json_data[categ]:
+            json_data[categ][subcateg].update(value)
+        else:
+            json_data[categ][subcateg] = value
+    else:
+        json_data[categ].update(value)
+    return json_data

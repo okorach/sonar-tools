@@ -585,18 +585,7 @@ Is this normal ?", gr['name'], str(self.key))
             if not include_inherited and s.inherited:
                 continue
             (categ, subcateg) = s.category()
-            if categ not in json_data:
-                if subcateg is None:
-                    json_data[categ] = s.to_json()
-                else:
-                    json_data[categ] = {subcateg: s.to_json()}
-            elif subcateg is not None:
-                if subcateg in json_data[categ]:
-                    json_data[categ][subcateg].update(s.to_json())
-                else:
-                    json_data[categ][subcateg] = s.to_json()
-            else:
-                json_data[categ].update(s.to_json())
+            util.update_json(json_data, categ, subcateg, s.to_json())
         util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
 
