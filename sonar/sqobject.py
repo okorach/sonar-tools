@@ -42,7 +42,7 @@ class SqObject:
         return self.endpoint
 
     def get(self, api, params=None):
-        return env.get(api, params, self.endpoint)
+        return self.endpoint.get(api=api, params=params)
 
     def post(self, api, params=None):
         return env.post(api, params, self.endpoint)
