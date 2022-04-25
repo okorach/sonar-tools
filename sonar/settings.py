@@ -114,15 +114,7 @@ class Setting(sqobject.SqObject):
             if re.match(reg, self.key) and isinstance(self.value, list):
                 val = ', '.join([v.strip() for v in self.value])
                 break
-        subval = {'value': val}
-        multi = False
-        # if self.inherited is not None and not self.inherited:
-        #     subval['inherited'] = self.inherited
-        #     multi = True
-        if multi:
-            return {self.key: subval}
-        else:
-            return {self.key: val}
+        return {self.key: val}
 
     def category(self):
         m = re.match(r'^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|'
