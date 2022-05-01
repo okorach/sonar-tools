@@ -581,13 +581,33 @@ Is this normal ?", gr['name'], str(self.key))
             return settings_dict
         json_data = {}
         for s in settings_dict.values():
-            util.logger.debug("Treating %s", str(s))
             if not include_inherited and s.inherited:
                 continue
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
+        nc = self.new_code_periods()
+        if nc:
+            json_data['general'] = {settings.NEW_CODE_PERIOD: nc}
         util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
+
+    def new_code_periods(self):
+        nc = {}
+        data = json.loads(self.get(api='new_code_periods/show', params={'project': self.key}).text)
+        util.json_dump_debug(data, 'data1')
+        new_code = settings.new_code_to_string(data)
+        if new_code is None:
+            return None
+        nc['_default'] = new_code
+        data = json.loads(self.get(api='new_code_periods/list', params={'project': self.key}).text)
+        util.json_dump_debug(data, "DATA2")
+        for b in data['newCodePeriods']:
+            new_code = settings.new_code_to_string(b)
+            if new_code is None:
+                continue
+            nc[b['branchKey']] = new_code
+        return nc
+
 
 def __get_permissions_counts__(entities):
     counts = {}
