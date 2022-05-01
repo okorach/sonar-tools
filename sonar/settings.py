@@ -28,7 +28,7 @@ import sonar.utilities as util
 
 CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authentication', 'sast', 'thrid-party')
 
-NEW_CODE = 'sonar_.newCodePeriod'
+NEW_CODE_PERIOD = 'newCodePeriod'
 
 _SETTINGS = {}
 
@@ -54,7 +54,7 @@ class Setting(sqobject.SqObject):
         self.value = None
         self.inherited = None
         if data is None:
-            if key == NEW_CODE:
+            if key == NEW_CODE_PERIOD:
                 params = {}
                 if project:
                     params['project'] = project.key
@@ -71,7 +71,7 @@ class Setting(sqobject.SqObject):
         _SETTINGS[self.uuid()] = self
 
     def __load(self, data):
-        if self.key == NEW_CODE:
+        if self.key == NEW_CODE_PERIOD:
             if data['type'] == 'NUMBER_OF_DAYS':
                 self.value = int(data['value'])
             else:
@@ -82,7 +82,7 @@ class Setting(sqobject.SqObject):
             self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
         if 'inherited' in data:
             self.inherited = data['inherited']
-        elif self.key == NEW_CODE:
+        elif self.key == NEW_CODE_PERIOD:
             self.inherited = False
         elif 'parentValues' in data or 'parentValue' in data or 'parentFieldValues' in data:
             self.inherited = False
@@ -140,7 +140,7 @@ class Setting(sqobject.SqObject):
         m = re.match(r'^sonar\.forceAuthentication$', self.key)
         if m:
             return ('authentication', None)
-        if self.key != NEW_CODE and not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|'
+        if self.key != NEW_CODE_PERIOD and not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|'
                 r'sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|'
                 r'sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
             return ('third-party', None)
@@ -198,7 +198,7 @@ def get_all(endpoint, project=None):
 
 
 def get_new_code_period(endpoint, project):
-    return get_object(key=NEW_CODE, endpoint=endpoint, project=project)
+    return get_object(key=NEW_CODE_PERIOD, endpoint=endpoint, project=project)
 
 
 def uuid(key, project_key=None):
@@ -212,3 +212,14 @@ def _uuid_p(key, project):
     """Computes uuid for a setting"""
     pk = None if project is None else project.key
     return uuid(key, pk)
+
+
+def new_code_to_string(data):
+    if data.get('inherited', False):
+        return None
+    if data['type'] == 'PREVIOUS_VERSION':
+        return data['type']
+    elif data['type'] == 'SPECIFIC_ANALYSIS':
+        return f"{data['type']} = {data['effectiveValue']}"
+    else:
+        return f"{data['type']} = {data['value']}"
