@@ -287,6 +287,10 @@ def search(endpoint=None, page=None, params=None):
                                      'this is more than the max 10000 possible')
 
         for i in data['hotspots']:
+            if 'branch' in params:
+                i['branch'] = params['branch']
+            if 'pullRequest' in params:
+                i['pullRequest'] = params['pullRequest']
             hotspots_list[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
         if page is not None or p >= nbr_pages:
             break
