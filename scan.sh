@@ -59,7 +59,7 @@ if [ "$dolint" != "false" ]; then
   ./run_linters.sh
 fi
 
-version=$(grep PACKAGE_VERSION mediatools/version.py | cut -d "=" -f 2 | cut -d "'" -f 2)
+version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | cut -d "'" -f 2)
 
 pr_branch=""
 for o in $scanOpts
