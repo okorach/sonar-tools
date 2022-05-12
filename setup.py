@@ -67,7 +67,8 @@ setuptools.setup(
             'sonar-custom-measures = sonar.cust_measures:main',
             'sonar-issues-export = sonar.findings.export:main',
             'sonar-findings-export = sonar.findings.export:main',
-            'sonar-loc = sonar.loc:main'
+            'sonar-loc = sonar.loc:main',
+            'sonar-config = sonar.config:main'
         ]
     },
     python_requires='>=3.6',

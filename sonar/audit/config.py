@@ -50,24 +50,7 @@ def load(config_name=None, settings=None):
     _CONFIG_SETTINGS = {**default_conf, **home_conf, **local_conf, **settings}
 
     for key, value in _CONFIG_SETTINGS.items():
-        if not isinstance(value, str):
-            continue
-        value = value.lower()
-        if value in ('yes', 'true', 'on'):
-            _CONFIG_SETTINGS[key] = True
-            continue
-        if value in ('no', 'false', 'off'):
-            _CONFIG_SETTINGS[key] = False
-            continue
-        try:
-            intval = int(value)
-            _CONFIG_SETTINGS[key] = intval
-        except ValueError:
-            try:
-                floatval = float(value)
-                _CONFIG_SETTINGS[key] = floatval
-            except ValueError:
-                pass
+        _CONFIG_SETTINGS[key] = util.convert_string(value)
 
     util.logger.debug("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
     return _CONFIG_SETTINGS

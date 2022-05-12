@@ -59,7 +59,7 @@ jobs:
       #    restore-keys: ${{ runner.os }}-sonar-cache
       - name: Patch project version
         run: |
-          version=$(grep VERSION sonarqube/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
+          version=$(grep VERSION sonar/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
           echo "sonar.projectVersion=$version" >> sonar-project.properties
       - name: SonarCloud scan
         uses: SonarSource/sonarcloud-github-action@master

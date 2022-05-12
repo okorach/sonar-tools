@@ -294,3 +294,37 @@ def exit_fatal(err_msg, exit_code):
     logger.fatal(err_msg)
     print(f"FATAL: {err_msg}")
     sys.exit(exit_code)
+
+
+def convert_string(value):
+    if not isinstance(value, str):
+        return value
+    if value.lower() in ('yes', 'true', 'on'):
+        value = True
+    elif value.lower() in ('no', 'false', 'off'):
+        value = False
+    else:
+        try:
+            value = int(value)
+        except ValueError:
+            try:
+                value = float(value)
+            except ValueError:
+                pass
+    return value
+
+
+def update_json(json_data, categ, subcateg, value):
+    if categ not in json_data:
+        if subcateg is None:
+            json_data[categ] = value
+        else:
+            json_data[categ] = {subcateg: value}
+    elif subcateg is not None:
+        if subcateg in json_data[categ]:
+            json_data[categ][subcateg].update(value)
+        else:
+            json_data[categ][subcateg] = value
+    else:
+        json_data[categ].update(value)
+    return json_data

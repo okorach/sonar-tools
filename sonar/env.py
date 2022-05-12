@@ -29,7 +29,7 @@ import json
 import requests
 
 import sonar.utilities as util
-from sonar import options
+from sonar import options, settings
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -40,12 +40,6 @@ from sonar import sif
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
-
-_APP_NODES = 'Application Nodes'
-_ES_NODES = 'Search Nodes'
-_SYSTEM = 'System'
-_STORE_SIZE = 'Store Size'
-_ES_STATE = 'Search State'
 
 _GLOBAL_PERMISSIONS = {
     "admin": "Global Administration",
@@ -176,6 +170,16 @@ class Environment:
                 params[p] = util.format_date(params[p])
             url_prefix += f'{sep}{p}={requests.utils.quote(str(params[p]))}'
         return url_prefix
+
+    def settings(self, settings_list=None, include_not_set=False, format='json'):
+        settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
+        if format is None or format.lower() != 'json':
+            return settings_dict
+        json_data = {}
+        for s in settings_dict.values():
+            (categ, subcateg) = s.category()
+            util.update_json(json_data, categ, subcateg, s.to_json())
+        return json_data
 
     def __get_platform_settings(self):
         resp = self.get('settings/values')
