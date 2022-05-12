@@ -476,7 +476,7 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
                 params.get('branch', None), params.get('pullRequest', None)))
         else:
             issue_list.update(_search_all_by_project(k, params=params, endpoint=endpoint))
-    util.logger.info("Search by project %s returned %d issues", str(project_key), len(issue_list))
+    util.logger.info("Search by project %s params %s returned %d issues", project_key, str(params), len(issue_list))
     return issue_list
 
 def search_all(endpoint, params=None):

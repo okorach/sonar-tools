@@ -81,7 +81,8 @@ def __dump_csv(object_list, fd, **kwargs):
             arr.append(data['url'])
         writer.writerow(arr)
         nb_objects += 1
-        nb_loc += p.ncloc()
+        nb_loc += p.ncloc_with_branches()
+
         if nb_objects % 50 == 0:
             util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
 

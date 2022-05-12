@@ -144,8 +144,9 @@ def __dump_compact(finding_list, file, **kwargs):
             print(util.json_dump(new_dict, indent=1), file=fd)
 
 
-def __get_list(project, list_str, list_type):
+def __get_list(project_key, list_str, list_type):
     if list_str == '*':
+        project = projects.get_object(project_key)
         if list_type == 'branch':
             list_array = project.get_branches()
         else:

@@ -245,7 +245,7 @@ def search_by_project(project_key, endpoint=None, params=None):
         new_params['projectKey'] = k
         util.logger.debug("Hotspots search by project %s with params %s", k, str(params))
         project_hotspots = search(endpoint=endpoint, params=new_params)
-        util.logger.info("Project %s has %d hotspots", k, len(project_hotspots))
+        util.logger.info("Project %s params %s has %d hotspots", k, str(params), len(project_hotspots))
         hotspots.update(project_hotspots)
     return hotspots
 
@@ -287,6 +287,10 @@ def search(endpoint=None, page=None, params=None):
                                      'this is more than the max 10000 possible')
 
         for i in data['hotspots']:
+            if 'branch' in params:
+                i['branch'] = params['branch']
+            if 'pullRequest' in params:
+                i['pullRequest'] = params['pullRequest']
             hotspots_list[i['key']] = get_object(i['key'], endpoint=endpoint, data=i)
         if page is not None or p >= nbr_pages:
             break
