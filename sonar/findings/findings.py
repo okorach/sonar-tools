@@ -118,9 +118,16 @@ class Finding(sq.SqObject):
 
     def file(self):
         if 'component' in self._json:
-            # FIXME: Adapt to the ugly component structure on branches and PR
-            # "component": "src:sonar/hot.py:BRANCH:somebranch",
-            return self._json['component'].split(":")[1]
+            comp = self._json['component']
+            # Fix to adapt to the ugly component structure on branches and PR
+            # "component": "src:sonar/hot.py:BRANCH:somebranch"
+            m = re.search("(^.*):BRANCH:", comp)
+            if m:
+                comp = m.group(1)
+            m = re.search("(^.*):PULL_REQUEST:", comp)
+            if m:
+                comp = m.group(1)
+            return comp.split(":")[-1]
         elif 'path' in self._json:
             return self._json['path']
         else:

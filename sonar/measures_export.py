@@ -192,10 +192,10 @@ def main():
     is_first = True
     obj_list = []
     if with_branches:
-        for project in project_list:
+        for project in project_list.values():
             obj_list += project.get_branches()
     else:
-        obj_list = project_list
+        obj_list = project_list.values()
     nb_branches = len(obj_list)
 
     fd = __open_output(file)
@@ -221,7 +221,7 @@ def main():
 
     util.logger.info("Computing LoCs")
     nb_loc = 0
-    for project in project_list:
+    for project in project_list.values():
         nb_loc += project.ncloc_with_branches()
 
     util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)
