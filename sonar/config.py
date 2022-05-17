@@ -59,7 +59,7 @@ def main():
     platform_settings = endpoint.settings(include_not_set=True)
     platform_settings['devops-platforms'] = list(devops.settings(endpoint).values())
     project_settings = {}
-    for p in projects.get_projects_list(str_key_list=None, endpoint=endpoint):
+    for p in projects.get_projects_list(str_key_list=None, endpoint=endpoint).values():
         project_settings[p.key] = p.settings()
     print(util.json_dump({'platform': platform_settings, 'projects': project_settings}))
     nbr_settings = len(platform_settings)
