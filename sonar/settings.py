@@ -29,6 +29,8 @@ import sonar.utilities as util
 CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authentication', 'sast', 'thrid-party')
 
 NEW_CODE_PERIOD = 'newCodePeriod'
+BINDING = 'devopsBinding'
+DEFAULT_SETTING = '__sonar_default__'
 
 _SETTINGS = {}
 

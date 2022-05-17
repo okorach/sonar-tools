@@ -213,7 +213,6 @@ class Project(components.Component):
         if self._binding['has_binding'] and self._binding['binding'] is None:
             resp = env.get('alm_settings/get_binding', ctxt=self.endpoint,
                            params={'project': self.key}, exit_on_error=False)
-            util.logger.debug('resp = %s', str(resp))
             # 8.9 returns 404, 9.x returns 400
             if resp.status_code in (400, 404):
                 self._binding['has_binding'] = False
@@ -588,26 +587,31 @@ Is this normal ?", gr['name'], str(self.key))
         nc = self.new_code_periods()
         if nc:
             json_data['general'] = {settings.NEW_CODE_PERIOD: nc}
+        binding = self.binding()
+        if binding:
+            # Remove redundant fields
+            binding.pop('alm', None)
+            binding.pop('url', None)
+            if not binding['monorepo']:
+                binding.pop('monorepo')
+            json_data['general'] = {settings.BINDING: binding}
         util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
 
     def new_code_periods(self):
         nc = {}
         data = json.loads(self.get(api='new_code_periods/show', params={'project': self.key}).text)
-        util.json_dump_debug(data, 'data1')
         new_code = settings.new_code_to_string(data)
         if new_code is None:
             return None
-        nc['_default'] = new_code
+        nc[settings.DEFAULT_SETTING] = new_code
         data = json.loads(self.get(api='new_code_periods/list', params={'project': self.key}).text)
-        util.json_dump_debug(data, "DATA2")
         for b in data['newCodePeriods']:
             new_code = settings.new_code_to_string(b)
             if new_code is None:
                 continue
             nc[b['branchKey']] = new_code
         return nc
-
 
 def __get_permissions_counts__(entities):
     counts = {}
