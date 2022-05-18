@@ -17,6 +17,9 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+import json
+
 GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
     "gateadmin": "Administer Quality Gates",
@@ -35,3 +38,35 @@ PROJECT_PERMISSIONS = {
     "scan": "Execute Analysis",
     "admin": "Administer Project"
 }
+
+def get(endpoint, perm_type, **kwargs):
+    if perm_type not in ('users', 'groups'):
+        return None
+    kwargs['ps'] = 100
+    data = json.loads(endpoint.get(f'permissions/{perm_type}', params=kwargs).text)
+    active_perms = []
+    for item in data.get(perm_type, []):
+        if item['permissions']:
+            active_perms.append(item)
+    return active_perms
+
+
+def counts(some_perms, perms_dict):
+    perm_counts = {k: 0 for k in perms_dict}
+    # counts = dict(zip(perms_dict.keys(), [0, 0, 0, 0, 0, 0, 0]))
+    perm_counts['overall'] = 0
+    for p in some_perms:
+        if not p['permissions']:
+            continue
+        perm_counts['overall'] += 1
+        for perm in PROJECT_PERMISSIONS:
+            if perm in p['permissions']:
+                perm_counts[perm] += 1
+    return perm_counts
+
+
+def simplify(perms_array):
+    permiss = {}
+    for p in perms_array:
+        permiss[p['name']] = ', '.join(p['permissions'])
+    return permiss
