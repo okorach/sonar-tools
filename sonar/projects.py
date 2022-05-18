@@ -598,7 +598,9 @@ Is this normal ?", gr['name'], str(self.key))
             util.update_json(json_data, categ, subcateg, s.to_json())
         nc = self.new_code_periods()
         if nc:
-            json_data['general'] = {settings.NEW_CODE_PERIOD: nc}
+            if 'general' not in json_data:
+                json_data['general'] = {}
+            json_data['general'].update({settings.NEW_CODE_PERIOD: nc})
         binding = self.binding()
         if binding:
             # Remove redundant fields
@@ -606,7 +608,9 @@ Is this normal ?", gr['name'], str(self.key))
             binding.pop('url', None)
             if not binding['monorepo']:
                 binding.pop('monorepo')
-            json_data['general'] = {settings.BINDING: binding}
+            if 'general' not in json_data:
+                json_data['general'] = {}
+            json_data['general'].update({settings.BINDING: binding})
         qp_json = {}
         for qp in self.quality_profiles().values():
             qp_json[qp.language] = f"{qp.key} {qp.name}"
