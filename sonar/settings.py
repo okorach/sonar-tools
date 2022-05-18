@@ -114,8 +114,11 @@ class Setting(sqobject.SqObject):
         val = self.value
         for reg in _INLINE_SETTINGS:
             if re.match(reg, self.key) and isinstance(self.value, list):
+                # TODO: Support case where branch pattern contains a comma
                 val = ', '.join([v.strip() for v in self.value])
                 break
+            if val is None:
+                val = ""
         return {self.key: val}
 
     def category(self):
