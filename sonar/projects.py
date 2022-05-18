@@ -631,7 +631,6 @@ Is this normal ?", gr['name'], str(self.key))
         if p_links is not None:
             json_data['links'] = p_links
 
-
     def __get_permissions(self, perm_type):
         resp = self.get(f'permissions/{perm_type}', params={'ps': 100, 'projectKey': self.key})
         data = json.loads(resp.text)
