@@ -610,7 +610,7 @@ Is this normal ?", gr['name'], str(self.key))
         if nc:
             if settings.GENERAL_SETTINGS not in json_data:
                 json_data[settings.GENERAL_SETTINGS] = {}
-            json_data['general'].update({settings.NEW_CODE_PERIOD: nc})
+            json_data[settings.GENERAL_SETTINGS].update({settings.NEW_CODE_PERIOD: nc})
         binding = self.binding()
         if binding:
             # Remove redundant fields
