@@ -19,6 +19,7 @@
 #
 
 import json
+from sonar import utilities, options
 
 GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
@@ -70,3 +71,22 @@ def simplify(perms_array):
     for p in perms_array:
         permiss[p['name']] = ', '.join(p['permissions'])
     return permiss
+
+
+def __get_perms(endpoint, req, perm_type, pfield, params, exit_on_error):
+    perms = []
+    resp = endpoint.get(req, params=params, exit_on_error=exit_on_error)
+    if (resp.status_code // 100) == 2:
+        for u in json.loads(resp.text)[perm_type]:
+            perms.append(u[pfield])
+    elif resp.status_code not in (400, 404):
+        utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+    return perms
+
+def get_qg(endpoint, qg_name, perm_type, pfield):
+    perms = __get_perms(endpoint, f'qualitygates/search_{perm_type}', perm_type, pfield, {'gateName': qg_name}, exit_on_error=False)
+    return perms if len(perms) > 0 else None
+
+def get_qp(endpoint, qp_name, qp_language, perm_type, pfield):
+    perms = __get_perms(endpoint, f'qualityprofiles/search_{perm_type}', perm_type, pfield, {'qualityProfile': qp_name, 'language': qp_language}, exit_on_error=False)
+    return perms if len(perms) > 0 else None
