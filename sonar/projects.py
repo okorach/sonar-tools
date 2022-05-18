@@ -584,9 +584,10 @@ Is this normal ?", gr['name'], str(self.key))
 
     def quality_gate(self):
         data = json.loads(self.get(api='qualitygates/get_by_project', params={'project': self.key}).text)
-        return data['qualityGate']['name']
+        return (data['qualityGate']['name'], data['qualityGate']['default'])
 
     def settings(self, settings_list=None, format='json', include_inherited=False):
+        util.logger.info("Exporting settings for %s", str(self))
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
         if format is None or format.lower() != 'json':
             return settings_dict
@@ -608,15 +609,15 @@ Is this normal ?", gr['name'], str(self.key))
             binding.pop('url', None)
             if not binding['monorepo']:
                 binding.pop('monorepo')
-            if 'general' not in json_data:
-                json_data['general'] = {}
-            json_data['general'].update({settings.BINDING: binding})
+            json_data[settings.DEVOPS_INTEGRATION] = binding
         qp_json = {}
         for qp in self.quality_profiles().values():
             qp_json[qp.language] = f"{qp.key} {qp.name}"
         if len(qp_json) > 0:
             json_data['qualityProfiles'] = qp_json
-        json_data['qualityGate'] = self.quality_gate()
+        (json_data['qualityGate'], is_default) = self.quality_gate()
+        if is_default:
+            json_data.pop('qualityGate')
         util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
 

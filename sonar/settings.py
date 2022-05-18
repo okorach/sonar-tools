@@ -26,10 +26,24 @@ import json
 from sonar import sqobject
 import sonar.utilities as util
 
-CATEGORIES = ('general', 'languages', 'analysisScope', 'tests', 'linters', 'authentication', 'sastConfig', 'thirdParty')
+DEVOPS_INTEGRATION = 'devopsIntegration'
+GENERAL_SETTINGS = 'generalSettings'
+LANGUAGES_SETTINGS = 'languages'
+AUTH_SETTINGS = 'authentication'
+LINTER_SETTINGS = 'linters'
+THIRD_PARTY_SETTINGS = 'thirdParty'
+ANALYSIS_SCOPE_SETTINGS = 'analysisScope'
+SAST_CONFIG_SETTINGS = 'sastConfig'
+TEST_SETTINGS = 'tests'
+UNIVERSAL_SEPARATOR = ':'
+
+CATEGORIES = (
+    GENERAL_SETTINGS, LANGUAGES_SETTINGS, ANALYSIS_SCOPE_SETTINGS, TEST_SETTINGS,
+    LINTER_SETTINGS, AUTH_SETTINGS, SAST_CONFIG_SETTINGS, THIRD_PARTY_SETTINGS
+)
 
 NEW_CODE_PERIOD = 'newCodePeriod'
-BINDING = 'devopsBinding'
+
 DEFAULT_SETTING = '__sonar_default__'
 
 _SETTINGS = {}
@@ -131,27 +145,27 @@ class Setting(sqobject.SqObject):
             lang = m.group(2)
             if lang in ('c', 'cpp', 'objc', 'cfamily'):
                 lang = 'cfamily'
-            return ('languages', lang)
+            return (LANGUAGES_SETTINGS, lang)
         if re.match(r'^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$', self.key):
-            return ('linters', None)
+            return (LINTER_SETTINGS, None)
         if re.match(r'^sonar\.security\.config\..+$', self.key):
-            return ('sastConfig', None)
+            return (SAST_CONFIG_SETTINGS, None)
         if re.match(r'^.*\.(exclusions$|inclusions$|issue\..+)$', self.key):
-            return('analysisScope', None)
+            return(ANALYSIS_SCOPE_SETTINGS, None)
 
         if re.match(r'^.*(\.reports?Paths?$|unit\..*$|cov.*$)', self.key):
-            return ('tests', None)
+            return (TEST_SETTINGS, None)
         m = re.match(r'^sonar\.(auth\.|authenticator\.downcase).*$', self.key)
         if m:
-            return ('authentication', None)
+            return (AUTH_SETTINGS, None)
         m = re.match(r'^sonar\.forceAuthentication$', self.key)
         if m:
-            return ('authentication', None)
+            return (AUTH_SETTINGS, None)
         if self.key != NEW_CODE_PERIOD and not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|'
                 r'sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|'
                 r'sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
             return ('thirdParty', None)
-        return ('general', None)
+        return (GENERAL_SETTINGS, None)
 
 
 def get_object(key, endpoint=None, data=None, project=None):
