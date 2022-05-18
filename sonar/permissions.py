@@ -83,9 +83,11 @@ def __get_perms(endpoint, url, perm_type, pfield, params, exit_on_error):
         utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
     return perms
 
+
 def get_qg(endpoint, qg_name, perm_type, pfield):
     perms = __get_perms(endpoint, f'qualitygates/search_{perm_type}', perm_type, pfield, {'gateName': qg_name}, False)
     return perms if len(perms) > 0 else None
+
 
 def get_qp(endpoint, qp_name, qp_language, perm_type, pfield):
     perms = __get_perms(endpoint, f'qualityprofiles/search_{perm_type}', perm_type, pfield,
