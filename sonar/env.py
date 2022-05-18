@@ -42,7 +42,6 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
 
-
 class UnsupportedOperation(Exception):
     def __init__(self, message):
         super().__init__()
