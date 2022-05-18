@@ -582,6 +582,10 @@ Is this normal ?", gr['name'], str(self.key))
                 projects_qp[qp.key] = qp
         return projects_qp
 
+    def quality_gate(self):
+        data = json.loads(self.get(api='qualitygates/get_by_project', params={'project': self.key}).text)
+        return data['qualityGate']['name']
+
     def settings(self, settings_list=None, format='json', include_inherited=False):
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
         if format is None or format.lower() != 'json':
@@ -608,7 +612,7 @@ Is this normal ?", gr['name'], str(self.key))
             qp_json[qp.language] = qp.key
         if len(qp_json) > 0:
             json_data['qualityProfiles'] = qp_json
-
+        json_data['qualityGate'] = self.quality_gate()
         util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
 
