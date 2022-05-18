@@ -84,9 +84,10 @@ def __get_perms(endpoint, req, perm_type, pfield, params, exit_on_error):
     return perms
 
 def get_qg(endpoint, qg_name, perm_type, pfield):
-    perms = __get_perms(endpoint, f'qualitygates/search_{perm_type}', perm_type, pfield, {'gateName': qg_name}, exit_on_error=False)
+    perms = __get_perms(endpoint, f'qualitygates/search_{perm_type}', perm_type, pfield, {'gateName': qg_name}, False)
     return perms if len(perms) > 0 else None
 
 def get_qp(endpoint, qp_name, qp_language, perm_type, pfield):
-    perms = __get_perms(endpoint, f'qualityprofiles/search_{perm_type}', perm_type, pfield, {'qualityProfile': qp_name, 'language': qp_language}, exit_on_error=False)
+    perms = __get_perms(endpoint, f'qualityprofiles/search_{perm_type}', perm_type, pfield, 
+                        {'qualityProfile': qp_name, 'language': qp_language}, False)
     return perms if len(perms) > 0 else None

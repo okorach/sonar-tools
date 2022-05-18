@@ -28,7 +28,7 @@ import sonar.sqobject as sq
 from sonar import env, permissions
 import sonar.utilities as util
 
-from sonar.audit import rules, severities, types, options
+from sonar.audit import rules, severities, types
 import sonar.audit.problem as pb
 
 
