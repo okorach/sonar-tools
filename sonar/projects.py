@@ -608,8 +608,8 @@ Is this normal ?", gr['name'], str(self.key))
             util.update_json(json_data, categ, subcateg, s.to_json())
         nc = self.new_code_periods()
         if nc:
-            if 'general' not in json_data:
-                json_data['general'] = {}
+            if settings.GENERAL_SETTINGS not in json_data:
+                json_data[settings.GENERAL_SETTINGS] = {}
             json_data['general'].update({settings.NEW_CODE_PERIOD: nc})
         binding = self.binding()
         if binding:
