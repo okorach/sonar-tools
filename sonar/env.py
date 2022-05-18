@@ -181,6 +181,13 @@ class Environment:
             url_prefix += f'{sep}{p}={requests.utils.quote(str(params[p]))}'
         return url_prefix
 
+    def webhooks(self):
+        data = json.loads(self.get('webhooks/list').text)
+        if len(data.get('webhooks', [])) > 0:
+            return data['webhooks']
+        else:
+            return None
+
     def settings(self, settings_list=None, include_not_set=False, format='json'):
         util.logger.info("Exporting global settings")
         settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
@@ -190,6 +197,13 @@ class Environment:
         for s in settings_dict.values():
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
+
+        whooks = self.webhooks()
+        if whooks is not None:
+            for wh in whooks:
+                wh.pop('key', None)
+                wh.pop('latestDelivery', None)
+        json_data[settings.GENERAL_SETTINGS].update({'webhooks': whooks})
         json_data['version'] = self.version(as_string=True)
         json_data['edition'] = self.edition()
         json_data['serverId'] = self.server_id()
