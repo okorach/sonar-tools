@@ -609,7 +609,7 @@ Is this normal ?", gr['name'], str(self.key))
             json_data['general'] = {settings.BINDING: binding}
         qp_json = {}
         for qp in self.quality_profiles().values():
-            qp_json[qp.language] = qp.key
+            qp_json[qp.language] = f"{qp.key} {qp.name}"
         if len(qp_json) > 0:
             json_data['qualityProfiles'] = qp_json
         json_data['qualityGate'] = self.quality_gate()
