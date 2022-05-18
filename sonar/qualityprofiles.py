@@ -25,7 +25,7 @@
 import datetime
 import json
 import pytz
-from sonar import env, rules, options
+from sonar import env, rules, options, settings
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -275,8 +275,12 @@ def get_list(endpoint=None, include_rules=False):
     if not include_rules:
         return _QUALITY_PROFILES
     qp_list = {}
-    for key, qp in _QUALITY_PROFILES.items():
-        qp_list[key] = qp.to_json(include_rules=True)
+    util.logger.info("Exporting quality profiles")
+    for qp in _QUALITY_PROFILES.values():
+        json_data = qp.to_json(include_rules=True)
+        json_data.pop('language')
+        json_data.pop('name')
+        qp_list[f"{qp.language}{settings.UNIVERSAL_SEPARATOR}{qp.name}"] = json_data
     return qp_list
 
 
