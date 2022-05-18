@@ -26,7 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonar import env, components, tasks, custom_measures, pull_requests, branches, measures, options, settings
+from sonar import env, components, qualityprofiles, tasks, custom_measures, pull_requests, branches, measures, options, settings
 from sonar.findings import issues, hotspots
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -574,6 +574,14 @@ Is this normal ?", gr['name'], str(self.key))
                 counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
+    def quality_profiles(self):
+        qp_list = qualityprofiles.get_list(self.endpoint)
+        projects_qp = {}
+        for qp in qp_list.values():
+            if qp.selected_for_project(self.key):
+                projects_qp[qp.key] = qp
+        return projects_qp
+
     def settings(self, settings_list=None, format='json', include_inherited=False):
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
         if format is None or format.lower() != 'json':
@@ -595,6 +603,12 @@ Is this normal ?", gr['name'], str(self.key))
             if not binding['monorepo']:
                 binding.pop('monorepo')
             json_data['general'] = {settings.BINDING: binding}
+        qp_json = {}
+        for qp in self.quality_profiles().values():
+            qp_json[qp.language] = qp.key
+        if len(qp_json) > 0:
+            json_data['qualityProfiles'] = qp_json
+
         util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
 

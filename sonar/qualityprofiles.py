@@ -32,6 +32,7 @@ import sonar.utilities as util
 import sonar.audit.rules as arules
 import sonar.audit.problem as pb
 
+_QUALITY_PROFILES = {}
 
 class QualityProfile(sq.SqObject):
 
@@ -50,9 +51,12 @@ class QualityProfile(sq.SqObject):
             self.project_count = data.get('projectCount', None)
             self.is_built_in = data['isBuiltIn']
             self.nbr_rules = int(data['activeRuleCount'])
+            self._rules = None
+            self._projects = None
             self.nbr_deprecated_rules = int(data['activeDeprecatedRuleCount'])
             self.parent_key = data.get('parentKey', None)
             self.parent_name = data.get('parentName', None)
+        _QUALITY_PROFILES[key] = self
 
     def __str__(self):
         return f"quality profile '{self.name}' of language '{self.language_name}'"
@@ -104,6 +108,41 @@ class QualityProfile(sq.SqObject):
 
     def has_deprecated_rules(self):
         return self.nbr_deprecated_rules > 0
+
+    def rules(self):
+        if self._rules is not None:
+            # Assume nobody changed QP during execution
+            return self._rules
+        self._rules = []
+        page, nb_pages = 1, 1
+        params = {'activation': True, 'qprofile': self.key, 's': 'key', 'ps': 500}
+        while page <= nb_pages:
+            params['p'] = page
+            data = json.loads(self.get('rules/search', params=params))
+            self._rules += data['rule']
+            nb_pages = (data['total'] + 499) // 500
+        return self._rules
+
+    def projects(self):
+        if self._projects is not None:
+            # Assume nobody changed QP during execution
+            return self._projects
+        self._projects = []
+        params = {'key': self.key, 'ps': 500}
+        page, nb_pages = 1, 1
+        more = True
+        while more:
+            params['p'] = page
+            data = json.loads(self.get('qualityprofiles/projects', params=params).text)
+            self._projects += data['results']
+            more = data['more']
+        return self._projects
+
+    def selected_for_project(self, key):
+        for p in self.projects():
+            if key == p['key']:
+                return True
+        return False
 
     def audit(self, audit_settings=None):
         util.logger.debug("Auditing %s", str(self))
@@ -168,3 +207,15 @@ def audit(endpoint=None, audit_settings=None):
             rule = arules.get_rule(arules.RuleId.QP_TOO_MANY_QP)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5)))
     return problems
+
+
+def get_list(endpoint=None):
+    if endpoint is not None:
+        search(endpoint=endpoint)
+    return _QUALITY_PROFILES
+
+
+def get_object(key, data=None, endpoint=None):
+    if key not in _QUALITY_PROFILES:
+        _ = QualityProfile(key=key, data=data, endpoint=endpoint)
+    return _QUALITY_PROFILES[key]
