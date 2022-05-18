@@ -69,6 +69,7 @@ class Environment:
         self.token = some_token
         self._version = None
         self._sys_info = None
+        self._server_id = None
 
     def __str__(self):
         return f"{util.redacted_token(self.token)}@{self.url}"
@@ -95,6 +96,15 @@ class Environment:
             return '.'.join(self._version[0:digits])
         else:
             return tuple(int(n) for n in self._version[0:digits])
+
+    def server_id(self):
+        if self._server_id is not None:
+            return self._server_id
+        if self._sys_info is not None and 'Server ID' in self._sys_info['System']:
+            self._server_id = self._sys_info['System']['Server ID']
+        else:
+            self._server_id = json.loads(self.get('system/status').text)['id']
+        return self._server_id
 
     def sys_info(self):
         if self._sys_info is None:
@@ -179,6 +189,9 @@ class Environment:
         for s in settings_dict.values():
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
+        json_data['version'] = self.version(as_string=True)
+        json_data['edition'] = self.edition()
+        json_data['serverId'] = self.server_id()
         return json_data
 
     def __get_platform_settings(self):
