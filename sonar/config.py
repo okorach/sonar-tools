@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 '''
 import sys
-from sonar import env, version, settings, devops, projects, qualityprofiles
+from sonar import env, version, settings, devops, projects, qualityprofiles, qualitygates
 import sonar.utilities as util
 
 """
@@ -59,6 +59,7 @@ def main():
     platform_settings = endpoint.settings(include_not_set=True)
     platform_settings['devopsPlatforms'] = list(devops.settings(endpoint).values())
     platform_settings['qualityProfiles'] = list(qualityprofiles.get_list(endpoint, include_rules=True).values())
+    platform_settings['qualityGates'] = qualitygates.get_list(endpoint, as_json=True)
     project_settings = {}
     for p in projects.get_projects_list(str_key_list=None, endpoint=endpoint).values():
         project_settings[p.key] = p.settings()

@@ -181,30 +181,43 @@ class QualityGate(sq.SqObject):
                     prj_list[prj['id']] = prj
         return prj_list
 
+    def to_json(self):
+        return {
+            'isDefault': self.is_default,
+            'isBuiltIn': self.is_built_in,
+            'conditions': _simplified_conditions(self.conditions)
+        }
 
-def list_qg(endpoint=None):
-    resp = env.get('qualitygates/list', ctxt=endpoint)
-    data = json.loads(resp.text)
-    qg_list = []
-
+def get_list(endpoint, as_json=False):
+    data = json.loads(env.get('qualitygates/list', ctxt=endpoint).text)
+    qg_list = {}
     for qg in data['qualitygates']:
         qg_obj = QualityGate(key=qg['id'], endpoint=endpoint, data=qg)
         if endpoint.version() < (7, 9, 0) and 'default' in data and data['default'] == qg['id']:
             qg_obj.is_default = True
-        qg_list.append(qg_obj)
+        if as_json:
+            qg_list[qg_obj.name] = qg_obj.to_json()
+        else:
+            qg_list[qg_obj.name] = qg_obj
     return qg_list
 
 
 def audit(endpoint=None, audit_settings=None):
     util.logger.info("--- Auditing quality gates ---")
     problems = []
-    quality_gates_list = list_qg(endpoint)
+    quality_gates_list = get_list(endpoint)
     max_qg = util.get_setting(audit_settings, 'audit.qualitygates.maxNumber', 5)
     nb_qg = len(quality_gates_list)
     util.logger.debug("Auditing that there are no more than %s quality gates", str(max_qg))
     if nb_qg > max_qg:
         rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_GATES)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qg, 5)))
-    for qg in quality_gates_list:
+    for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
     return problems
+
+def _simplified_conditions(conds):
+    simple_conds = []
+    for c in conds:
+        simple_conds.append(f"{c['metric']} {c['op']} {c['error']}")
+    return simple_conds
