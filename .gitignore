@@ -1,9 +1,7 @@
 .idea
 .scannerwork
-sonarqube/*.pyc
 *.xlsx
-*.csv
-*.pyc
+**/*.pyc
 .vscode/
 **/*.csv
 **/*.gz
@@ -14,3 +12,4 @@ dist/
 *.egg-info/
 tmp/
 .coverage
+*.json

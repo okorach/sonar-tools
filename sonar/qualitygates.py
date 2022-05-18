@@ -25,10 +25,10 @@
 
 import json
 import sonar.sqobject as sq
-from sonar import env
+from sonar import env, permissions
 import sonar.utilities as util
 
-from sonar.audit import rules, severities, types, options
+from sonar.audit import rules, severities, types
 import sonar.audit.problem as pb
 
 
@@ -190,19 +190,8 @@ class QualityGate(sq.SqObject):
             json_data['isBuiltIn'] = True
         perms = self.permissions()
         if perms is not None and len(perms) > 0:
-            json_data['permissions'] = perms
+            json_data['permissions'] = util.remove_nones(perms)
         return json_data
-
-    def __get_permissions(self, ptype, pfield):
-        resp = self.get(f'qualitygates/search_{ptype}', params={'gateName': self.name}, exit_on_error=False)
-        if (resp.status_code // 100) == 2:
-            for u in json.loads(resp.text)[ptype]:
-                if ptype not in self._permissions:
-                    self._permissions[ptype] = []
-                self._permissions[ptype].append(u[pfield])
-        elif resp.status_code not in (400, 404):
-            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
-        return self._permissions.get(ptype, None)
 
     def permissions(self):
         if self.endpoint.version() < (9, 2, 0):
@@ -210,8 +199,12 @@ class QualityGate(sq.SqObject):
         if self._permissions is not None:
             return self._permissions
         self._permissions = {}
-        self.__get_permissions('users', 'login')
-        self.__get_permissions('groups', 'name')
+        perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, 'users', 'login'))
+        if perms is not None:
+            self._permissions['users'] = perms
+        perms = permissions.get_qg(self.endpoint, self.name, 'groups', 'name')
+        if perms is not None:
+            self._permissions['groups'] = perms
         return self._permissions
 
 def get_list(endpoint, as_json=False):

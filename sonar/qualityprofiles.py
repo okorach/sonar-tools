@@ -25,7 +25,7 @@
 import datetime
 import json
 import pytz
-from sonar import env, rules, options, settings
+from sonar import env, rules, settings, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -61,20 +61,6 @@ class QualityProfile(sq.SqObject):
 
     def __str__(self):
         return f"quality profile '{self.name}' of language '{self.language_name}'"
-
-    def get_permissions(self, perm_type):
-        resp = env.get(f'permissions/{perm_type}', ctxt=self.endpoint, params={'projectKey': self.key, 'ps': 1})
-        data = json.loads(resp.text)
-        nb_perms = int(data['paging']['total'])
-        nb_pages = (nb_perms + 99) // 100
-        perms = []
-        for page in range(nb_pages):
-            resp = env.get(f'permissions/{perm_type}', ctxt=self.endpoint,
-                           params={'projectKey': self.key, 'ps': 100, 'p': page + 1})
-            data = json.loads(resp.text)
-            for p in data[perm_type]:
-                perms.append(p)
-        return perms
 
     def last_use(self, as_days=False):
         if self.last_used is None:
@@ -156,7 +142,7 @@ class QualityProfile(sq.SqObject):
         if self.parent_key is not None:
             json_data['parentName'] = self.parent_name
             json_data['parentKey'] = self.parent_key
-        perms = self.permissions()
+        perms = util.remove_nones(self.permissions())
         if perms is not None and len(perms) > 0:
             json_data['permissions'] = perms
         if include_rules:
@@ -184,25 +170,14 @@ class QualityProfile(sq.SqObject):
                 return True
         return False
 
-    def __get_permissions(self, ptype, pfield):
-        resp = self.get(f'qualityprofiles/search_{ptype}', params={'qualityProfile': self.name, 'language': self.language}, exit_on_error=False)
-        if (resp.status_code // 100) == 2:
-            for u in json.loads(resp.text)[ptype]:
-                if ptype not in self._permissions:
-                    self._permissions[ptype] = []
-                self._permissions[ptype].append(u[pfield])
-        elif resp.status_code not in (400, 404):
-            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
-        return self._permissions.get(ptype, None)
-
     def permissions(self):
         if self.endpoint.version() < (9, 2, 0):
             return None
         if self._permissions is not None:
             return self._permissions
         self._permissions = {}
-        self.__get_permissions('users', 'login')
-        self.__get_permissions('groups', 'name')
+        self._permissions['users'] = permissions.get_qp(self.endpoint, self.name, self.language, 'users', 'login')
+        self._permissions['groups'] = permissions.get_qp(self.endpoint, self.name, self.language, 'groups', 'name')
         return self._permissions
 
     def audit(self, audit_settings=None):
