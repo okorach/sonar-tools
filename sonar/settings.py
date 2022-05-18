@@ -26,7 +26,7 @@ import json
 from sonar import sqobject
 import sonar.utilities as util
 
-CATEGORIES = ('general', 'languages', 'scope', 'tests', 'linters', 'authentication', 'sast', 'thrid-party')
+CATEGORIES = ('general', 'languages', 'analysisScope', 'tests', 'linters', 'authentication', 'sastConfig', 'thirdParty')
 
 NEW_CODE_PERIOD = 'newCodePeriod'
 BINDING = 'devopsBinding'
@@ -90,6 +90,8 @@ class Setting(sqobject.SqObject):
             self.inherited = False
         elif 'category' in data:
             self.inherited = True
+        elif self.project is not None:
+            self.inherited = False
         else:
             self.inherited = True
         if self.project is None:
@@ -135,7 +137,7 @@ class Setting(sqobject.SqObject):
         if re.match(r'^sonar\.security\.config\..+$', self.key):
             return ('sastConfig', None)
         if re.match(r'^.*\.(exclusions$|inclusions$|issue\..+)$', self.key):
-            return('scope', None)
+            return('analysisScope', None)
 
         if re.match(r'^.*(\.reports?Paths?$|unit\..*$|cov.*$)', self.key):
             return ('tests', None)
@@ -147,7 +149,7 @@ class Setting(sqobject.SqObject):
             return ('authentication', None)
         if self.key != NEW_CODE_PERIOD and not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|'
                 r'sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|'
-                r'sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
+                r'sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
             return ('thirdParty', None)
         return ('general', None)
 
