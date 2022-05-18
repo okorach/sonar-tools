@@ -109,19 +109,54 @@ class QualityProfile(sq.SqObject):
     def has_deprecated_rules(self):
         return self.nbr_deprecated_rules > 0
 
-    def rules(self):
+    def rules(self, full_specs=False):
         if self._rules is not None:
             # Assume nobody changed QP during execution
             return self._rules
         self._rules = []
         page, nb_pages = 1, 1
-        params = {'activation': True, 'qprofile': self.key, 's': 'key', 'ps': 500}
+        params = {'activation': 'true', 'qprofile': self.key, 's': 'key', 'ps': 500}
         while page <= nb_pages:
             params['p'] = page
-            data = json.loads(self.get('rules/search', params=params))
-            self._rules += data['rule']
+            data = json.loads(self.get('rules/search', params=params).text)
+            if full_specs:
+                self._rules += data['rules']
+            else:
+                for r in data['rules']:
+                    d = {}
+                    for k in ('key', 'name', 'severity', 'lang', 'type'):
+                        d[k] = r[k]
+                    if len(r['params']) > 0:
+                        d['params'] = r['params']
+                    if r['isTemplate']:
+                        d['isTemplate'] = True
+                    self._rules.append(d)
             nb_pages = (data['total'] + 499) // 500
+            page += 1
         return self._rules
+
+    def to_json(self, full_specs=False, include_rules=False):
+        json_data = {
+            'key': self.key,
+            'name': self.name,
+            'language': self.language,
+            'languageName': self.language_name
+        }
+        if full_specs:
+            json_data.update({
+                'lastUpdated': self.last_updated,
+                'isDefault': self.is_default,
+                'isBuiltIn': self.is_built_in,
+                'rulesCount': self.nbr_rules,
+                'projectsCount': self.project_count,
+                'deprecatedRulesCount': self.nbr_deprecated_rules,
+                'lastUsed': self.last_used,
+                'parentProfileKey': self.parent_key,
+                'parentProfileName': self.parent_name
+            })
+        if include_rules:
+            json_data['rules'] = self.rules(full_specs=full_specs)
+        return util.remove_nones(json_data)
 
     def projects(self):
         if self._projects is not None:
@@ -209,10 +244,15 @@ def audit(endpoint=None, audit_settings=None):
     return problems
 
 
-def get_list(endpoint=None):
+def get_list(endpoint=None, include_rules=False):
     if endpoint is not None:
         search(endpoint=endpoint)
-    return _QUALITY_PROFILES
+    if not include_rules:
+        return _QUALITY_PROFILES
+    qp_list = {}
+    for key, qp in _QUALITY_PROFILES.items():
+        qp_list[key] = qp.to_json(include_rules=True)
+    return qp_list
 
 
 def get_object(key, data=None, endpoint=None):
