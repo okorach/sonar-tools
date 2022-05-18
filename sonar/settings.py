@@ -133,7 +133,7 @@ class Setting(sqobject.SqObject):
         if re.match(r'^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$', self.key):
             return ('linters', None)
         if re.match(r'^sonar\.security\.config\..+$', self.key):
-            return ('sast', None)
+            return ('sastConfig', None)
         if re.match(r'^.*\.(exclusions$|inclusions$|issue\..+)$', self.key):
             return('scope', None)
 
@@ -148,7 +148,7 @@ class Setting(sqobject.SqObject):
         if self.key != NEW_CODE_PERIOD and not re.match(r'^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|'
                 r'sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|'
                 r'sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.technicalDebt|sonar\.validateWebhooks).*$', self.key):
-            return ('third-party', None)
+            return ('thirdParty', None)
         return ('general', None)
 
 
