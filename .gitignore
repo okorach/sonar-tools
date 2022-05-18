@@ -1,9 +1,7 @@
 .idea
 .scannerwork
-sonarqube/*.pyc
 *.xlsx
-*.csv
-*.pyc
+**/*.pyc
 .vscode/
 **/*.csv
 **/*.gz
