@@ -183,14 +183,19 @@ class QualityGate(sq.SqObject):
         return prj_list
 
     def to_json(self):
-        return {
-            'isDefault': self.is_default,
-            'isBuiltIn': self.is_built_in,
-            'conditions': _simplified_conditions(self.conditions),
-            'permissions': self.permissions()
-        }
+        json_data = {'conditions': _simplified_conditions(self.conditions)}
+        if self.is_default:
+            json_data['isDefault'] = True
+        if self.is_built_in:
+            json_data['isBuiltIn'] = True
+        perms = self.permissions()
+        if perms is not None and len(perms) > 0:
+            json_data['permissions'] = perms
+        return json_data
 
     def permissions(self):
+        if self.endpoint.version() < (9, 2, 0):
+            return None
         if self._permissions is not None:
             return self._permissions
         self._permissions = {}
