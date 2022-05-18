@@ -28,7 +28,7 @@ import sonar.sqobject as sq
 from sonar import env
 import sonar.utilities as util
 
-from sonar.audit import rules, severities, types
+from sonar.audit import rules, severities, types, options
 import sonar.audit.problem as pb
 
 
@@ -75,6 +75,7 @@ class QualityGate(sq.SqObject):
         self.name = data['name']
         self.is_default = data.get('isDefault', False)
         self.is_built_in = data.get('isBuiltIn', False)
+        self._permissions = None
         resp = env.get('qualitygates/show', ctxt=self.endpoint, params={'id': self.key})
         data = json.loads(resp.text)
         self.conditions = []
@@ -185,8 +186,37 @@ class QualityGate(sq.SqObject):
         return {
             'isDefault': self.is_default,
             'isBuiltIn': self.is_built_in,
-            'conditions': _simplified_conditions(self.conditions)
+            'conditions': _simplified_conditions(self.conditions),
+            'permissions': self.permissions()
         }
+
+    def permissions(self):
+        if self._permissions is not None:
+            return self._permissions
+        self._permissions = {}
+        resp = self.get('qualitygates/search_users', params={'gateName': self.name}, exit_on_error=False)
+        if resp.status_code in (400, 404):
+            pass
+        elif (resp.status_code // 100) != 2:
+            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+        else:
+            for u in json.loads(resp.text)['users']:
+                if 'users' not in self._permissions:
+                    self._permissions['users'] = []
+                self._permissions['users'].append(u['login'])
+
+        resp = self.get('qualitygates/search_groups', params={'gateName': self.name}, exit_on_error=False)
+        if resp.status_code in (400, 404):
+            pass
+        elif (resp.status_code // 100) != 2:
+            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+        else:
+            data = json.loads(resp.text)
+            for g in data['groups']:
+                if 'groups' not in self._permissions:
+                    self._permissions['groups'] = []
+                self._permissions['groups'].append(g['name'])
+        return self._permissions
 
 def get_list(endpoint, as_json=False):
     data = json.loads(env.get('qualitygates/list', ctxt=endpoint).text)

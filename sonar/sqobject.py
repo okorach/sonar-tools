@@ -41,8 +41,8 @@ class SqObject:
     def get_env(self):
         return self.endpoint
 
-    def get(self, api, params=None):
-        return self.endpoint.get(api=api, params=params)
+    def get(self, api, params=None, exit_on_error=True):
+        return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error)
 
     def post(self, api, params=None):
         return env.post(api, params, self.endpoint)
