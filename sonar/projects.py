@@ -26,14 +26,13 @@ import datetime
 import re
 import json
 import pytz
-from sonar import env, components, qualityprofiles, tasks, custom_measures, pull_requests, branches, measures, options, settings
+from sonar import env, components, qualityprofiles, tasks, custom_measures, pull_requests, branches, measures, options, settings, permissions
 from sonar.findings import issues, hotspots
 import sonar.sqobject as sq
 import sonar.utilities as util
 
 from sonar.audit import rules, severities
 import sonar.audit.problem as pb
-import sonar.permissions as perms
 
 _PROJECTS = {}
 
@@ -171,7 +170,7 @@ class Project(components.Component):
         data = json.loads(resp.text)
         nb_perms = int(data['paging']['total'])
         nb_pages = (nb_perms + MAX_PERMISSION_PAGE_SIZE - 1) // MAX_PERMISSION_PAGE_SIZE
-        permissions = []
+        perms = []
 
         for page in range(nb_pages):
             resp = env.get(f'permissions/{perm_type}', ctxt=self.endpoint,
@@ -185,16 +184,16 @@ class Project(components.Component):
                     no_perms_count = no_perms_count + 1
                 else:
                     no_perms_count = 0
-                permissions.append(p)
+                perms.append(p)
                 if no_perms_count >= 5:
                     break
             if no_perms_count >= 5:
                 break
         if perm_type == 'group':
-            self.group_permissions = permissions
+            self.group_permissions = perms
         else:
-            self.user_permissions = permissions
-        return permissions
+            self.user_permissions = perms
+        return perms
 
     def delete(self, api='projects/delete', params=None):
         loc = int(self.get_measure('ncloc', fallback='0'))
@@ -246,8 +245,7 @@ class Project(components.Component):
 
     def __audit_user_permissions__(self, audit_settings):
         problems = []
-        counts = __get_permissions_counts__(self.get_permissions('users'))
-
+        counts = permissions.counts(self.get_permissions('users'), permissions.PROJECT_PERMISSIONS)
         max_users = audit_settings['audit.projects.permissions.maxUsers']
         if counts['overall'] > max_users:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
@@ -265,7 +263,6 @@ class Project(components.Component):
     def __audit_group_permissions__(self, audit_settings):
         problems = []
         groups = self.get_permissions('groups')
-        counts = __get_permissions_counts__(groups)
         for gr in groups:
             p = gr['permissions']
             if not p:
@@ -284,6 +281,7 @@ class Project(components.Component):
                 util.logger.info("Group '%s' has browse permissions on %s. \
 Is this normal ?", gr['name'], str(self.key))
 
+        counts = permissions.counts(groups, permissions.PROJECT_PERMISSIONS)
         max_perms = audit_settings['audit.projects.permissions.maxGroups']
         if counts['overall'] > max_perms:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
@@ -631,21 +629,10 @@ Is this normal ?", gr['name'], str(self.key))
         if p_links is not None:
             json_data['links'] = p_links
 
-    def __get_permissions(self, perm_type):
-        resp = self.get(f'permissions/{perm_type}', params={'ps': 100, 'projectKey': self.key})
-        data = json.loads(resp.text)
-        active_perms = []
-        for item in data.get(perm_type, []):
-            if item['permissions']:
-                active_perms.append(item)
-        return active_perms
-
     def __settings_add_permissions(self, json_data):
         json_data['permissions'] = {}
         for ptype in ('users', 'groups'):
-            permiss = {}
-            for p in self.__get_permissions(ptype):
-                permiss[p['name']] = ', '.join(p['permissions'])
+            permiss = permissions.simplify(permissions.get(self.endpoint, ptype, projectKey=self.key))
             if len(permiss) > 0:
                 json_data['permissions'][ptype] = permiss
 
@@ -696,21 +683,6 @@ Is this normal ?", gr['name'], str(self.key))
                 continue
             nc[b['branchKey']] = new_code
         return nc
-
-def __get_permissions_counts__(entities):
-    counts = {}
-    counts['overall'] = 0
-    for permission in perms.PROJECT_PERMISSIONS:
-        counts[permission] = 0
-    for gr in entities:
-        p = gr['permissions']
-        if not p:
-            continue
-        counts['overall'] += 1
-        for perm in perms.PROJECT_PERMISSIONS:
-            if perm in p:
-                counts[perm] += 1
-    return counts
 
 
 def count(endpoint=None, params=None):

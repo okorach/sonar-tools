@@ -29,7 +29,7 @@ import json
 import requests
 
 import sonar.utilities as util
-from sonar import options, settings
+from sonar import options, settings, permissions
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -41,15 +41,6 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
-_GLOBAL_PERMISSIONS = {
-    "admin": "Global Administration",
-    "gateadmin": "Administer Quality Gates",
-    "profileadmin": "Administer Quality Profiles",
-    "provisioning": "Create Projects",
-    "portfoliocreator": "Create Portfolios",
-    "applicationcreator": "Create Applications",
-    "scan": "Run Analysis"
-}
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -209,9 +200,7 @@ class Environment:
         json_data['serverId'] = self.server_id()
         json_data['permissions'] = {}
         for ptype in ('users', 'groups'):
-            perms = {}
-            for p in self.__get_permissions(ptype):
-                perms[p['name']] = ', '.join(p['permissions'])
+            perms = permissions.simplify(permissions.get(self, ptype))
             if len(perms) > 0:
                 json_data['permissions'][ptype] = perms
         return json_data
@@ -283,19 +272,10 @@ class Environment:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return problems
 
-    def __get_permissions(self, perm_type):
-        resp = self.get(f'permissions/{perm_type}', params={'ps': 100})
-        data = json.loads(resp.text)
-        active_perms = []
-        for item in data.get(perm_type, []):
-            if item['permissions']:
-                active_perms.append(item)
-        return active_perms
-
     def __audit_group_permissions(self):
         util.logger.info('Auditing group global permissions')
         problems = []
-        groups = self.__get_permissions('groups')
+        groups = permissions.get(self, 'groups')
         if len(groups) > 10:
             problems.append(
                 pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
@@ -310,9 +290,9 @@ class Environment:
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
 
-        perm_counts = _get_permissions_count(groups)
+        perm_counts = permissions.counts(groups, permissions.GLOBAL_PERMISSIONS)
         maxis = {'admin': 2, 'gateadmin': 2, 'profileadmin': 2, 'scan': 2, 'provisioning': 3}
-        for key, name in _GLOBAL_PERMISSIONS.items():
+        for key, name in permissions.GLOBAL_PERMISSIONS.items():
             if key in maxis and perm_counts[key] > maxis[key]:
                 problems.append(
                     pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
@@ -323,21 +303,21 @@ class Environment:
     def __audit_user_permissions(self):
         util.logger.info('Auditing users global permissions')
         problems = []
-        users = self.__get_permissions('users')
+        users = permissions.get(self, 'users')
         if len(users) > 10:
             problems.append(
                 pb.Problem(
                     typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
                     f'Too many ({len(users)}) users with direct global permissions, use groups instead'))
 
-        perm_counts = _get_permissions_count(users)
+        counts = permissions.counts(users, permissions.GLOBAL_PERMISSIONS)
         maxis = {'admin': 3, 'gateadmin': 3, 'profileadmin': 3, 'scan': 3, 'provisioning': 3}
-        for key, name in _GLOBAL_PERMISSIONS.items():
-            if key in maxis and perm_counts[key] > maxis[key]:
+        for key, name in permissions.GLOBAL_PERMISSIONS.items():
+            if key in maxis and counts[key] > maxis[key]:
                 problems.append(
                     pb.Problem(
                         typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM,
-                        f'Too many ({perm_counts[key]}) users with permission {name}, use groups instead'))
+                        f'Too many ({counts[key]}) users with permission {name}, use groups instead'))
         return problems
 
     def _audit_global_permissions(self):
@@ -527,15 +507,6 @@ def _audit_maintainability_rating_grid(platform_settings, audit_settings):
             continue
         problems += _audit_maintainability_rating_range(value, (float(v[0]), float(v[1])), letter, v[2], v[3])
     return problems
-
-
-def _get_permissions_count(users_or_groups):
-    perm_counts = dict(zip(_GLOBAL_PERMISSIONS.keys(), [0, 0, 0, 0, 0, 0, 0]))
-    for user_or_group in users_or_groups:
-        for perm in _GLOBAL_PERMISSIONS:
-            if perm in user_or_group['permissions']:
-                perm_counts[perm] += 1
-    return perm_counts
 
 
 def _get_multiple_values(n, setting, severity, domain):
