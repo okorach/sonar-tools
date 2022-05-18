@@ -78,7 +78,7 @@ class Setting(sqobject.SqObject):
                 self.value = int(data['value'])
             else:
                 self.value = data['type']
-        elif self.key.startswith('sonar.issue'):
+        elif self.key.startswith('sonar.issue.'):
             self.value = data.get('fieldValues', None)
         else:
             self.value = util.convert_string(data.get('value', data.get('values', data.get('defaultValue', ''))))
