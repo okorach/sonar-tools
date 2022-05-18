@@ -245,7 +245,7 @@ def audit(endpoint=None, audit_settings=None):
 
 
 def get_list(endpoint=None, include_rules=False):
-    if endpoint is not None:
+    if endpoint is not None and len(_QUALITY_PROFILES) == 0:
         search(endpoint=endpoint)
     if not include_rules:
         return _QUALITY_PROFILES
