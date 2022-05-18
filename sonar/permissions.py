@@ -73,12 +73,12 @@ def simplify(perms_array):
     return permiss
 
 
-def __get_perms(endpoint, req, perm_type, pfield, params, exit_on_error):
+def __get_perms(endpoint, url, perm_type, pfield, params, exit_on_error):
     perms = []
-    resp = endpoint.get(req, params=params, exit_on_error=exit_on_error)
+    resp = endpoint.get(url, params=params, exit_on_error=exit_on_error)
     if (resp.status_code // 100) == 2:
-        for u in json.loads(resp.text)[perm_type]:
-            perms.append(u[pfield])
+        for p in json.loads(resp.text)[perm_type]:
+            perms.append(p[pfield])
     elif resp.status_code not in (400, 404):
         utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
     return perms
