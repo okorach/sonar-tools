@@ -602,6 +602,35 @@ Is this normal ?", gr['name'], str(self.key))
         else:
             return None
 
+    def __settings_add_new_code(self, json_data):
+        nc = self.new_code_periods()
+        if nc:
+            if settings.GENERAL_SETTINGS not in json_data:
+                json_data[settings.GENERAL_SETTINGS] = {}
+            json_data[settings.GENERAL_SETTINGS].update({settings.NEW_CODE_PERIOD: nc})
+
+    def __settings_add_binding(self, json_data):
+        binding = self.binding()
+        if binding:
+            # Remove redundant fields
+            binding.pop('alm', None)
+            binding.pop('url', None)
+            if not binding['monorepo']:
+                binding.pop('monorepo')
+            json_data[settings.DEVOPS_INTEGRATION] = binding
+
+    def __settings_add_qp(self, json_data):
+        qp_json = {}
+        for qp in self.quality_profiles().values():
+            qp_json[qp.language] = f"{qp.key} {qp.name}"
+        if len(qp_json) > 0:
+            json_data['qualityProfiles'] = qp_json
+
+    def __settings_add_links(self, json_data):
+        p_links = self.links()
+        if p_links is not None:
+            json_data['links'] = p_links
+
     def settings(self, settings_list=None, format='json', include_inherited=False):
         util.logger.info("Exporting settings for %s", str(self))
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
@@ -613,30 +642,16 @@ Is this normal ?", gr['name'], str(self.key))
                 continue
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
-        nc = self.new_code_periods()
-        if nc:
-            if settings.GENERAL_SETTINGS not in json_data:
-                json_data[settings.GENERAL_SETTINGS] = {}
-            json_data[settings.GENERAL_SETTINGS].update({settings.NEW_CODE_PERIOD: nc})
-        binding = self.binding()
-        if binding:
-            # Remove redundant fields
-            binding.pop('alm', None)
-            binding.pop('url', None)
-            if not binding['monorepo']:
-                binding.pop('monorepo')
-            json_data[settings.DEVOPS_INTEGRATION] = binding
-        qp_json = {}
-        for qp in self.quality_profiles().values():
-            qp_json[qp.language] = f"{qp.key} {qp.name}"
-        if len(qp_json) > 0:
-            json_data['qualityProfiles'] = qp_json
+
+        self.__settings_add_binding(json_data)
+        self.__settings_add_new_code(json_data)
+        self.__settings_add_qp(json_data)
+        self.__settings_add_links(json_data)
+
         (json_data['qualityGate'], is_default) = self.quality_gate()
         if is_default:
             json_data.pop('qualityGate')
-        p_links = self.links()
-        if p_links is not None:
-            json_data['links'] = p_links
+
         whooks = self.webhooks()
         if whooks is not None:
             for wh in whooks:
