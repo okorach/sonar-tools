@@ -200,27 +200,24 @@ class QualityGate(sq.SqObject):
             return self._permissions
         self._permissions = {}
         resp = self.get('qualitygates/search_users', params={'gateName': self.name}, exit_on_error=False)
-        if resp.status_code in (400, 404):
-            pass
-        elif (resp.status_code // 100) != 2:
-            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
-        else:
+        if (resp.status_code // 100) == 2:
             for u in json.loads(resp.text)['users']:
                 if 'users' not in self._permissions:
                     self._permissions['users'] = []
                 self._permissions['users'].append(u['login'])
+        elif resp.status_code not in (400, 404):
+            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
 
         resp = self.get('qualitygates/search_groups', params={'gateName': self.name}, exit_on_error=False)
-        if resp.status_code in (400, 404):
-            pass
-        elif (resp.status_code // 100) != 2:
-            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
-        else:
+        if (resp.status_code // 100) == 2:
             data = json.loads(resp.text)
             for g in data['groups']:
                 if 'groups' not in self._permissions:
                     self._permissions['groups'] = []
                 self._permissions['groups'].append(g['name'])
+        elif resp.status_code not in (400, 404):
+            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+
         return self._permissions
 
 def get_list(endpoint, as_json=False):
