@@ -207,6 +207,13 @@ class Environment:
         json_data['version'] = self.version(as_string=True)
         json_data['edition'] = self.edition()
         json_data['serverId'] = self.server_id()
+        json_data['permissions'] = {}
+        for ptype in ('users', 'groups'):
+            perms = {}
+            for p in self.__get_permissions(ptype):
+                perms[p['name']] = ', '.join(p['permissions'])
+            if len(perms) > 0:
+                json_data['permissions'][ptype] = perms
         return json_data
 
     def __get_platform_settings(self):

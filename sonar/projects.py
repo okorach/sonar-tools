@@ -631,6 +631,24 @@ Is this normal ?", gr['name'], str(self.key))
         if p_links is not None:
             json_data['links'] = p_links
 
+    def __get_permissions(self, perm_type):
+        resp = self.get(f'permissions/{perm_type}', params={'ps': 100, 'projectKey': self.key})
+        data = json.loads(resp.text)
+        active_perms = []
+        for item in data.get(perm_type, []):
+            if item['permissions']:
+                active_perms.append(item)
+        return active_perms
+
+    def __settings_add_permissions(self, json_data):
+        json_data['permissions'] = {}
+        for ptype in ('users', 'groups'):
+            permiss = {}
+            for p in self.__get_permissions(ptype):
+                permiss[p['name']] = ', '.join(p['permissions'])
+            if len(permiss) > 0:
+                json_data['permissions'][ptype] = permiss
+
     def settings(self, settings_list=None, format='json', include_inherited=False):
         util.logger.info("Exporting settings for %s", str(self))
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
@@ -647,6 +665,7 @@ Is this normal ?", gr['name'], str(self.key))
         self.__settings_add_new_code(json_data)
         self.__settings_add_qp(json_data)
         self.__settings_add_links(json_data)
+        self.__settings_add_permissions(json_data)
 
         (json_data['qualityGate'], is_default) = self.quality_gate()
         if is_default:
