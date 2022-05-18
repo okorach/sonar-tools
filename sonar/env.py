@@ -182,6 +182,7 @@ class Environment:
         return url_prefix
 
     def settings(self, settings_list=None, include_not_set=False, format='json'):
+        util.logger.info("Exporting global settings")
         settings_dict = settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
         if format is None or format.lower() != 'json':
             return settings_dict

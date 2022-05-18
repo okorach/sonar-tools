@@ -215,6 +215,7 @@ class QualityGate(sq.SqObject):
         return self._permissions
 
 def get_list(endpoint, as_json=False):
+    util.logger.info("Exporting quality gates")
     data = json.loads(env.get('qualitygates/list', ctxt=endpoint).text)
     qg_list = {}
     for qg in data['qualitygates']:
