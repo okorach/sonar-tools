@@ -25,7 +25,7 @@
 import datetime
 import json
 import pytz
-from sonar import env, rules
+from sonar import env, rules, options
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -53,6 +53,7 @@ class QualityProfile(sq.SqObject):
             self.nbr_rules = int(data['activeRuleCount'])
             self._rules = None
             self._projects = None
+            self._permissions = None
             self.nbr_deprecated_rules = int(data['activeDeprecatedRuleCount'])
             self.parent_key = data.get('parentKey', None)
             self.parent_name = data.get('parentName', None)
@@ -154,6 +155,9 @@ class QualityProfile(sq.SqObject):
                 'parentProfileKey': self.parent_key,
                 'parentProfileName': self.parent_name
             })
+        perms = self.permissions()
+        if perms is not None and len(perms) > 0:
+            json_data['permissions'] = perms
         if include_rules:
             json_data['rules'] = self.rules(full_specs=full_specs)
         return util.remove_nones(json_data)
@@ -178,6 +182,27 @@ class QualityProfile(sq.SqObject):
             if key == p['key']:
                 return True
         return False
+
+    def __get_permissions(self, ptype, pfield):
+        resp = self.get(f'qualityprofiles/search_{ptype}', params={'qualityProfile': self.name, 'language': self.language}, exit_on_error=False)
+        if (resp.status_code // 100) == 2:
+            for u in json.loads(resp.text)[ptype]:
+                if ptype not in self._permissions:
+                    self._permissions[ptype] = []
+                self._permissions[ptype].append(u[pfield])
+        elif resp.status_code not in (400, 404):
+            util.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+        return self._permissions.get(ptype, None)
+
+    def permissions(self):
+        if self.endpoint.version() < (9, 2, 0):
+            return None
+        if self._permissions is not None:
+            return self._permissions
+        self._permissions = {}
+        self.__get_permissions('users', 'login')
+        self.__get_permissions('groups', 'name')
+        return self._permissions
 
     def audit(self, audit_settings=None):
         util.logger.debug("Auditing %s", str(self))
