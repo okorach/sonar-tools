@@ -586,6 +586,15 @@ Is this normal ?", gr['name'], str(self.key))
         data = json.loads(self.get(api='qualitygates/get_by_project', params={'project': self.key}).text)
         return (data['qualityGate']['name'], data['qualityGate']['default'])
 
+    def links(self):
+        data = json.loads(self.get(api='project_links/search', params={'projectKey': self.key}).text)
+        link_list = None
+        for link in data['links']:
+            if link_list is None:
+                link_list = []
+            link_list.append({'type': link['type'], 'url': link['url']})
+        return link_list
+
     def settings(self, settings_list=None, format='json', include_inherited=False):
         util.logger.info("Exporting settings for %s", str(self))
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
@@ -618,6 +627,9 @@ Is this normal ?", gr['name'], str(self.key))
         (json_data['qualityGate'], is_default) = self.quality_gate()
         if is_default:
             json_data.pop('qualityGate')
+        p_links = self.links()
+        if p_links is not None:
+            json_data['links'] = p_links
         util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
 
