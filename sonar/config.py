@@ -57,8 +57,8 @@ def main():
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
 
     platform_settings = endpoint.settings(include_not_set=True)
-    platform_settings['devopsPlatforms'] = list(devops.settings(endpoint).values())
-    platform_settings['qualityProfiles'] = list(qualityprofiles.get_list(endpoint, include_rules=True).values())
+    platform_settings[settings.DEVOPS_INTEGRATION] = list(devops.settings(endpoint).values())
+    platform_settings['qualityProfiles'] = qualityprofiles.get_list(endpoint, include_rules=True)
     platform_settings['qualityGates'] = qualitygates.get_list(endpoint, as_json=True)
     project_settings = {}
     for p in projects.get_projects_list(str_key_list=None, endpoint=endpoint).values():
