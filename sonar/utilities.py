@@ -328,3 +328,7 @@ def update_json(json_data, categ, subcateg, value):
     else:
         json_data[categ].update(value)
     return json_data
+
+
+def int_div_ceil(number, divider):
+    return (number + divider - 1) // divider
