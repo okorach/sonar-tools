@@ -118,7 +118,7 @@ class QualityProfile(sq.SqObject):
                     if r['isTemplate']:
                         d['isTemplate'] = True
                     self._rules.append(d)
-            nb_pages = (data['total'] + 499) // 500
+            nb_pages = util.nbr_pages(data)
             page += 1
         return self._rules
 

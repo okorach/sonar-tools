@@ -441,10 +441,7 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
 
 
 def _search_all_by_project(project_key, params, endpoint=None):
-    if params is None:
-        new_params = {}
-    else:
-        new_params = params.copy()
+    new_params = {} if params is None else params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
@@ -480,10 +477,7 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
     return issue_list
 
 def search_all(endpoint, params=None):
-    if params is None:
-        new_params = {}
-    else:
-        new_params = params.copy()
+    new_params = {} if params is None else params.copy()
     util.logger.info('Issue search all with %s', str(params))
     issue_list = {}
     try:
@@ -496,10 +490,7 @@ def search_all(endpoint, params=None):
 
 
 def search(endpoint=None, params=None, raise_error=True):
-    if params is None:
-        new_params = {}
-    else:
-        new_params = params.copy()
+    new_params = {} if params is None else params.copy()
     util.logger.debug("Search params = %s", str(new_params))
     if 'ps' not in new_params:
         new_params['ps'] = Issue.MAX_PAGE_SIZE
@@ -530,15 +521,10 @@ def search(endpoint=None, params=None, raise_error=True):
 
 
 def _get_facets(project_key, facets='directories', endpoint=None, params=None):
-    if params is None:
-        parms = {}
-    else:
-        parms = params.copy()
-    parms['componentKeys'] = project_key
-    parms['facets'] = facets
-    parms['ps'] = 500
-    parms = __get_issues_search_params(parms)
-    resp = env.get(Issue.SEARCH_API, params=parms, ctxt=endpoint)
+    new_params = {} if params is None else params.copy()
+    new_params.update({'componentKeys': project_key, 'facets': facets, 'ps': 500})
+    new_params = __get_issues_search_params(new_params)
+    resp = env.get(Issue.SEARCH_API, params=new_params, ctxt=endpoint)
     data = json.loads(resp.text)
     util.json_dump_debug(data['facets'], 'FACETS = ')
     l = {}
@@ -551,14 +537,11 @@ def _get_facets(project_key, facets='directories', endpoint=None, params=None):
 
 def __get_one_issue_date(endpoint=None, asc_sort='false', params=None):
     """Returns the date of one issue found"""
-    if params is None:
-        parms = {}
-    else:
-        parms = params.copy()
-    parms['s'] = 'CREATION_DATE'
-    parms['asc'] = asc_sort
-    parms['ps'] = 1
-    issue_list = search(endpoint=endpoint, params=parms, raise_error=False)
+    new_params = {} if params is None else params.copy()
+    new_params['s'] = 'CREATION_DATE'
+    new_params['asc'] = asc_sort
+    new_params['ps'] = 1
+    issue_list = search(endpoint=endpoint, params=new_params, raise_error=False)
     if not issue_list:
         return None
     for _, i in issue_list.items():

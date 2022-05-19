@@ -22,8 +22,9 @@
     Abstraction of the SonarQube general object concept
 
 '''
+
 import json
-from sonar import env
+from sonar import env, utilities
 
 
 class SqObject:
@@ -51,29 +52,21 @@ class SqObject:
         resp = env.delete(api, params, self.endpoint)
         return (resp.status_code // 100) == 2
 
-def search_objects(api, params, key_field, returned_field, object_class, p=None, ps=500, endpoint=None):
-    if params is None:
-        params = {}
-    params['ps'] = ps
-    resp = env.get(api, params=params, ctxt=endpoint)
-    data = json.loads(resp.text)
-    objects = {}
-    for obj in data[returned_field]:
-        objects[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
-    if p is not None:
-        return objects
-
-    nb_pages = (data['paging']['total'] + ps - 1) // ps
-    p = 2
-    while p <= nb_pages:
-        params['p'] = p
-        resp = env.get(api, params, endpoint)
-        data = json.loads(resp.text)
-        nb_pages = (data['paging']['total'] + ps - 1) // ps
+def search_objects(api, endpoint, key_field, returned_field, object_class, params):
+    __MAX_SEARCH = 500
+    new_params = {} if params is None else params.copy()
+    if 'ps' not in new_params:
+        new_params['ps'] = __MAX_SEARCH
+    page, nb_pages = 1, 1
+    objects_list = {}
+    while page <= nb_pages:
+        new_params['p'] = page
+        data = json.loads(env.get(api, params=new_params, ctxt=endpoint).text)
         for obj in data[returned_field]:
-            objects[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
-        p += 1
-    return objects
+            objects_list[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
+        nb_pages = utilities.nbr_pages(data)
+        page += 1
+    return objects_list
 
 
 def key_of(obj_or_key):

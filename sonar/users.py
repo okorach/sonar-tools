@@ -107,8 +107,6 @@ class User(sq.SqObject):
         return problems
 
 def search(params=None, endpoint=None):
-    if params is None:
-        params = {}
     return sq.search_objects(
         api=User.API_SEARCH, params=params,
         returned_field='users', key_field='login', object_class=User, endpoint=endpoint)

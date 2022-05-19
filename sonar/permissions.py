@@ -40,16 +40,33 @@ PROJECT_PERMISSIONS = {
     "admin": "Administer Project"
 }
 
+__MAX_PERMS = 100
+__MAX_QG_PERMS = 25
+
 def get(endpoint, perm_type, **kwargs):
     if perm_type not in ('users', 'groups'):
         return None
-    kwargs['ps'] = 100
-    data = json.loads(endpoint.get(f'permissions/{perm_type}', params=kwargs).text)
-    active_perms = []
-    for item in data.get(perm_type, []):
-        if item['permissions']:
-            active_perms.append(item)
-    return active_perms
+    params = kwargs.copy()
+    params['ps'] = 100
+    perms = []
+    page, nbr_pages = 1, 1
+    while page <= nbr_pages:
+        params['p'] = page
+        data = json.loads(endpoint.get(f'permissions/{perm_type}', params=params).text)
+        # Workaround for SQ 7.9+, all groups/users even w/o permissions are returned
+        # Stop collecting permissions as soon as 5 groups with no permissions are encountered
+        no_perms_count = 0
+        for item in data.get(perm_type, []):
+            no_perms_count = 0 if item['permissions'] else no_perms_count + 1
+            if item['permissions']:
+                perms.append(item)
+            if no_perms_count >= 5:
+                break
+        if no_perms_count >= 5:
+            break
+        nbr_pages = utilities.nbr_pages(data)
+        page += 1
+    return perms
 
 
 def counts(some_perms, perms_dict):
@@ -75,12 +92,22 @@ def simplify(perms_array):
 
 def __get_perms(endpoint, url, perm_type, pfield, params, exit_on_error):
     perms = []
-    resp = endpoint.get(url, params=params, exit_on_error=exit_on_error)
-    if (resp.status_code // 100) == 2:
-        for p in json.loads(resp.text)[perm_type]:
-            perms.append(p[pfield])
-    elif resp.status_code not in (400, 404):
-        utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+    new_params = {} if params is None else params.copy()
+    new_params['ps'] = __MAX_QG_PERMS
+    page, nbr_pages = 1, 1
+    while page <= nbr_pages:
+        new_params['p'] = page
+        resp = endpoint.get(url, params=new_params, exit_on_error=exit_on_error)
+        if (resp.status_code // 100) == 2:
+            data = json.loads(resp.text)
+            for p in data[perm_type]:
+                perms.append(p[pfield])
+            nbr_pages = utilities.int_div_ceil(data['paging']['total'], __MAX_QG_PERMS)
+            page += 1
+        elif resp.status_code not in (400, 404):
+            utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+        else:
+            break
     return perms
 
 

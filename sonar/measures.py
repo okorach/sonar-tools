@@ -55,20 +55,20 @@ class Measure(sq.SqObject):
         data = json.loads(resp.text)
         return data['paging']['total']
 
-    def search_history(self, project_key, params=None, page=0):
-        MAX_PAGE_SIZE = 1000
+    def search_history(self, project_key, params=None):
+        __MAX_PAGE_SIZE = 1000
         measures = {}
-        if page != 0:
-            if params is None:
-                params = {}
-            resp = self.get(Measure.API_HISTORY, {'component': project_key, 'metrics': self.key, 'ps': 1000})
-            data = json.loads(resp.text)
+        new_params = {} if params is None else params.copy()
+        new_params.update({'metrics': self.key, 'component': project_key})
+        if 'ps' not in new_params:
+            new_params['ps'] = __MAX_PAGE_SIZE
+        page, nbr_pages = 1, 1
+        while page <= nbr_pages:
+            data = json.loads(self.get(Measure.API_HISTORY, params=new_params))
             for m in data['measures'][0]['history']:
                 measures[m['date']] = m['value']
-            return measures
-        nb_pages = (self.count_history(project_key, params=params) + MAX_PAGE_SIZE - 1) // MAX_PAGE_SIZE
-        for p in range(nb_pages):
-            measures.update(self.search_history(project_key=project_key, params=params, page=p + 1))
+            nbr_pages = util.nbr_pages(data)
+            page += 1
         return measures
 
 
