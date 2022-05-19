@@ -131,7 +131,7 @@ do
     . sqenv $env
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
     sonar-measures-export -b -f $IT_ROOT/measures-$env-rel.csv -m _main --withURL
-    sonar-issues-export -f $IT_ROOT/findings-$env-rel.csv
+    sonar-findings-export -f $IT_ROOT/findings-$env-rel.csv
     sonar-audit >$IT_ROOT/audit-$env-rel.csv || echo "OK"
     sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 
 done
