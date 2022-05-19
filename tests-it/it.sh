@@ -115,6 +115,10 @@ do
     sonar-loc -n -a -f $f --csvSeparator ';'
     check $f
 
+    echo "IT $env sonar-config" | tee -a $IT_LOG_FILE
+    f="$IT_ROOT/config-$env-unrel.csv"
+    sonar-config >$f
+
     if [ $noExport -eq 1 ]; then
         echo "IT $env sonar-projects-export test skipped" | tee -a $IT_LOG_FILE
     else
@@ -131,15 +135,16 @@ do
     . sqenv $env
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
     sonar-measures-export -b -f $IT_ROOT/measures-$env-rel.csv -m _main --withURL
-    sonar-issues-export -f $IT_ROOT/findings-$env-rel.csv
+    sonar-findings-export -f $IT_ROOT/findings-$env-rel.csv
     sonar-audit >$IT_ROOT/audit-$env-rel.csv || echo "OK"
     sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 
+    sonar-config >$IT_ROOT/config-$env-rel.csv 
 done
 ./deploy.sh
 for env in $*
 do
     echo "IT compare released and unreleased $env" | tee -a $IT_LOG_FILE
-    for f in measures findings audit loc
+    for f in measures findings audit loc config
     do
         root=$IT_ROOT/$f-$env
         echo "==========================" | tee -a $IT_LOG_FILE
@@ -147,23 +152,6 @@ do
         echo "==========================" | tee -a $IT_LOG_FILE
         sort $root-rel.csv >$root-rel.sorted.csv
         sort $root-unrel.csv >$root-unrel.sorted.csv
-
-        # if [ "$f" == "measures" ]; then
-        #     cat $root-rel.sorted.csv | cut -d ',' -f 2- >$root-rel.csv
-        #     cat $root-rel.sorted.csv | cut -d ',' -f 1 >$root-url-rel.csv
-        #     cat $root-unrel.sorted.csv | cut -d ',' -f 1-29 >$root-unrel.csv
-        #     cat $root-unrel.sorted.csv | cut -d ',' -f 30 >$root-url-unrel.csv
-        #     diff $root-url-rel.csv $root-url-unrel.csv | tee -a $IT_LOG_FILE || echo ""
-        #     rm -f $root-rel.sorted.csv $root-unrel.sorted.csv
-        # elif [ "$f" == "findings" ]; then
-        #     cat $root-rel.sorted.csv | sed 's/;/,/g' >$root-rel.csv
-        #     cat $root-unrel.sorted.csv | sed 's/\+[12]00//g' >$root-unrel.csv
-        #     rm -f $root-rel.sorted.csv $root-unrel.sorted.csv
-        # else
-        #     mv $root-rel.sorted.csv $root-rel.csv
-        #     mv $root-unrel.sorted.csv $root-unrel.csv
-        # fi
-        # mv $IT_ROOT/$f-$env-unrel.sorted.csv $IT_ROOT/$f-$env-unrel.csv
         diff $root-rel.csv $root-unrel.csv | tee -a $IT_LOG_FILE || echo "" 
     done
 done
