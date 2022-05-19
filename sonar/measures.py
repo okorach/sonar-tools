@@ -55,7 +55,7 @@ class Measure(sq.SqObject):
         data = json.loads(resp.text)
         return data['paging']['total']
 
-    def search_history(self, project_key, params=None, page=0):
+    def search_history(self, project_key, params=None):
         __MAX_PAGE_SIZE = 1000
         measures = {}
         new_params = {} if params is None else params.copy()
