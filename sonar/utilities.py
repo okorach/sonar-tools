@@ -332,3 +332,7 @@ def update_json(json_data, categ, subcateg, value):
 
 def int_div_ceil(number, divider):
     return (number + divider - 1) // divider
+
+
+def nbr_pages(sonar_api_json):
+    return int_div_ceil(sonar_api_json['paging']['total'], sonar_api_json['paging']['pageSize'])
