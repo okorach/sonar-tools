@@ -24,7 +24,7 @@
 '''
 import json
 import sonar.sqobject as sq
-from sonar import env
+from sonar import env, utilities
 
 API_RULES_SEARCH = 'rules/search'
 
@@ -58,33 +58,22 @@ def get_facet(facet, endpoint=None):
 
 
 def count(endpoint=None, params=None):
-    if params is None:
-        params = {}
-    params['ps'] = 1
-    params['p'] = 1
-    resp = env.get(API_RULES_SEARCH, ctxt=endpoint, params=params)
-    data = json.loads(resp.text)
+    new_params = {} if params is None else params.copy()
+    new_params.update({'ps': 1, 'p': 1})
+    data = json.loads(env.get(API_RULES_SEARCH, ctxt=endpoint, params=new_params).text)
     return data['total']
 
 
-def search(endpoint=None, params=None):
-    resp = env.get(API_RULES_SEARCH, ctxt=endpoint, params=params)
-    data = json.loads(resp.text)
-    rule_list = []
-    for rule in data['rules']:
-        rule_list.append(Rule(rule['key'], endpoint=endpoint, data=rule))
-    return rule_list
-
-
-def search_all(endpoint=None, params=None):
-    params['is_template'] = 'false'
-    params['include_external'] = 'true'
-    nb_rules = count(endpoint=endpoint, params=params)
-    nb_pages = ((nb_rules - 1) // 500) + 1
-    params['ps'] = 500
+def get_list(endpoint, params=None):
+    new_params = {} if params is None else params.copy()
+    new_params.update({'is_template': 'false', 'include_external': 'true', 'ps': 500})
+    page, nb_pages = 1, 1
     rule_list = {}
-    for page in range(nb_pages):
-        params['p'] = page + 1
-        for r in search(endpoint=endpoint, params=params):
-            rule_list[r['key']] = r
+    while page <= nb_pages:
+        params['p'] = page
+        data = json.loads(env.get(API_RULES_SEARCH, ctxt=endpoint, params=new_params).text)
+        for r in data['rules']:
+            rule_list[r['key']] = Rule(r['key'], endpoint=endpoint, data=r)
+        nb_pages = utilities.int_div_ceil(data['total'], data['ps'])
+        page += 1
     return rule_list

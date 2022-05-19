@@ -26,10 +26,11 @@ import datetime
 import re
 import json
 import pytz
-from sonar import env, components, qualityprofiles, tasks, custom_measures, pull_requests, branches, measures, options, settings, permissions
+from sonar import env, components, qualityprofiles, tasks, custom_measures, pull_requests, branches, measures, options, settings
 from sonar.findings import issues, hotspots
 import sonar.sqobject as sq
 import sonar.utilities as util
+import sonar.permissions as perms
 
 from sonar.audit import rules, severities
 import sonar.audit.problem as pb
@@ -48,10 +49,9 @@ class Project(components.Component):
     def __init__(self, key, endpoint=None, data=None):
         self.visibility = None
         self.main_branch_last_analysis_date = 'undefined'
-        self.permissions = None
         self.all_branches_last_analysis_date = 'undefined'
-        self.user_permissions = None
-        self.group_permissions = None
+        self._user_permissions = None
+        self._group_permissions = None
         self.branches = None
         self.pull_requests = None
         self._ncloc_with_branches = None
@@ -159,41 +159,13 @@ class Project(components.Component):
                 self.pull_requests.append(pull_requests.get_object(p['key'], self, p))
         return self.pull_requests
 
-    def get_permissions(self, perm_type):
-        MAX_PERMISSION_PAGE_SIZE = 100
-        if perm_type == 'user' and self.user_permissions is not None:
-            return self.user_permissions
-        if perm_type == 'group' and self.group_permissions is not None:
-            return self.group_permissions
-
-        resp = env.get(f'permissions/{perm_type}', ctxt=self.endpoint, params={'projectKey': self.key, 'ps': 1})
-        data = json.loads(resp.text)
-        nb_perms = int(data['paging']['total'])
-        nb_pages = (nb_perms + MAX_PERMISSION_PAGE_SIZE - 1) // MAX_PERMISSION_PAGE_SIZE
-        perms = []
-
-        for page in range(nb_pages):
-            resp = env.get(f'permissions/{perm_type}', ctxt=self.endpoint,
-                           params={'projectKey': self.key, 'ps': MAX_PERMISSION_PAGE_SIZE, 'p': page + 1})
-            data = json.loads(resp.text)
-            # Workaround for SQ 7.9+, all groups/users even w/o permissions are returned
-            # Stop collecting permissions as soon as 5 groups with no permissions are encountered
-            no_perms_count = 0
-            for p in data[perm_type]:
-                if not p['permissions']:
-                    no_perms_count = no_perms_count + 1
-                else:
-                    no_perms_count = 0
-                perms.append(p)
-                if no_perms_count >= 5:
-                    break
-            if no_perms_count >= 5:
-                break
-        if perm_type == 'group':
-            self.group_permissions = perms
+    def permissions(self, perm_type):
+        p = perms.get(self.endpoint, perm_type)
+        if perm_type == 'groups':
+            self._group_permissions = p
         else:
-            self.user_permissions = perms
-        return perms
+            self._user_permissions = p
+        return p
 
     def delete(self, api='projects/delete', params=None):
         loc = int(self.get_measure('ncloc', fallback='0'))
@@ -245,7 +217,7 @@ class Project(components.Component):
 
     def __audit_user_permissions__(self, audit_settings):
         problems = []
-        counts = permissions.counts(self.get_permissions('users'), permissions.PROJECT_PERMISSIONS)
+        counts = perms.counts(self.permissions('users'), perms.PROJECT_PERMISSIONS)
         max_users = audit_settings['audit.projects.permissions.maxUsers']
         if counts['overall'] > max_users:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
@@ -262,7 +234,7 @@ class Project(components.Component):
 
     def __audit_group_permissions__(self, audit_settings):
         problems = []
-        groups = self.get_permissions('groups')
+        groups = self.permissions('groups')
         for gr in groups:
             p = gr['permissions']
             if not p:
@@ -281,7 +253,7 @@ class Project(components.Component):
                 util.logger.info("Group '%s' has browse permissions on %s. \
 Is this normal ?", gr['name'], str(self.key))
 
-        counts = permissions.counts(groups, permissions.PROJECT_PERMISSIONS)
+        counts = perms.counts(groups, perms.PROJECT_PERMISSIONS)
         max_perms = audit_settings['audit.projects.permissions.maxGroups']
         if counts['overall'] > max_perms:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
@@ -632,7 +604,7 @@ Is this normal ?", gr['name'], str(self.key))
     def __settings_add_permissions(self, json_data):
         json_data['permissions'] = {}
         for ptype in ('users', 'groups'):
-            permiss = permissions.simplify(permissions.get(self.endpoint, ptype, projectKey=self.key))
+            permiss = perms.simplify(perms.get(self.endpoint, ptype, projectKey=self.key))
             if len(permiss) > 0:
                 json_data['permissions'][ptype] = permiss
 
@@ -696,11 +668,10 @@ def count(endpoint=None, params=None):
 
 
 def search(endpoint=None, params=None):
-    if params is None:
-        params = {}
-    params['qualifiers'] = 'TRK'
-    return sq.search_objects(api='projects/search', params=params, key_field='key',
-        returned_field='components', endpoint=endpoint, object_class=Project, ps=500)
+    new_params = {} if params is None else params.copy()
+    new_params['qualifiers'] = 'TRK'
+    return sq.search_objects(api='projects/search', params=new_params, key_field='key',
+        returned_field='components', endpoint=endpoint, object_class=Project)
 
 
 def get_key_list(endpoint=None, params=None):

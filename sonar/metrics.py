@@ -28,11 +28,11 @@ from sonar import env
 import sonar.sqobject as sq
 import sonar.utilities as util
 
+__MAX_PAGE_SIZE = 500
 
 class Metric(sq.SqObject):
     Count = None
     Inventory = {}
-    MAX_PAGE_SIZE = 500
     SEARCH_API = 'metrics/search'
     MAIN_METRICS = (
         'bugs', 'vulnerabilities', 'code_smells', 'security_hotspots',
@@ -94,26 +94,24 @@ def count(endpoint):
     return Metric.Count
 
 
-def search(endpoint=None, page=None, skip_hidden_metrics=True):
+def search(endpoint, skip_hidden_metrics=True):
     if not Metric.Inventory:
         m_list = {}
-        if page is not None:
-            resp = env.get(Metric.SEARCH_API, params={'ps': 500, 'p': page}, ctxt=endpoint)
-            data = json.loads(resp.text)
+        page, nb_pages = 1, 1
+        while page <= nb_pages:
+            data = json.loads(env.get(Metric.SEARCH_API, params={'ps': __MAX_PAGE_SIZE, 'p': page}, ctxt=endpoint).text)
             for m in data['metrics']:
                 m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
-            return m_list
-        else:
-            nb_metrics = count(endpoint)
-            nb_pages = (nb_metrics + Metric.MAX_PAGE_SIZE - 1) // Metric.MAX_PAGE_SIZE
-            for p in range(nb_pages):
-                m_list.update(search(endpoint=endpoint, page=p + 1))
-            Metric.Inventory = m_list
-    final_list = {}
-    for k, v in Metric.Inventory.items():
-        if skip_hidden_metrics and v.hidden:
-            continue
-        final_list[k] = v
+            nb_pages = util.nbr_pages(data)
+            page += 1
+        Metric.Inventory = m_list
+
+    if not skip_hidden_metrics:
+        return m_list
+    final_list = m_list.copy()
+    for k, v in m_list.items():
+        if v.hidden:
+            final_list.pop(k)
     return final_list
 
 

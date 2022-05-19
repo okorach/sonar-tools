@@ -25,7 +25,7 @@
 
 import json
 import sonar.sqobject as sq
-from sonar import env, permissions
+from sonar import env, permissions, options
 import sonar.utilities as util
 
 from sonar.audit import rules, severities, types
@@ -79,21 +79,38 @@ class QualityGate(sq.SqObject):
         resp = env.get('qualitygates/show', ctxt=self.endpoint, params={'id': self.key})
         data = json.loads(resp.text)
         self.conditions = []
-        self.projects = None
+        self._projects = None
         for c in data.get('conditions', []):
             self.conditions.append(c)
 
     def __str__(self):
         return f"quality gate '{self.name}'"
 
-    def get_projects(self):
-        if self.projects is None:
-            self.projects = self.search()
-        return self.projects
+    def projects(self):
+        if self._projects is not None:
+            return self._projects
+        params = {'ps': 500}
+        page, nb_pages = 1, 1
+        self._projects = {}
+        while page <= nb_pages:
+            params['p'] = page
+            resp = self.get('qualitygates/search', params=params, exit_on_error=False)
+            if resp.status_code // 100 == 2:
+                data = json.loads(resp.text)
+                for prj in data:
+                    if 'key' in prj:
+                        self._projects[prj['key']] = prj
+                    else:
+                        self._projects[prj['id']] = prj
+                nb_pages = util.nbr_pages(data)
+            elif resp.status_code not in (400, 404):
+                # For no projects, 8.9 returns 404, 9.x returns 400
+                util.exit_fatal(f"alm_settings/get_binding returning status code {resp.status_code}, exiting", options.ERR_SONAR_API)
+            page += 1
+        return self._projects
 
     def count_projects(self):
-        _ = self.get_projects()
-        return len(self.projects)
+        return len(self.projects())
 
     def __audit_conditions__(self):
         problems = []
@@ -131,56 +148,11 @@ class QualityGate(sq.SqObject):
             problems.append(pb.Problem(rule.type, rule.severity, msg))
         problems += self.__audit_conditions__()
         util.logger.debug("Auditing that %s has some assigned projects", my_name)
-        if not self.is_default and not self.get_projects():
+        if not self.is_default and not self.projects():
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
             msg = rule.msg.format(my_name)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
         return problems
-
-    def count(self, params=None):
-        if params is None:
-            params = {}
-        params['gateId'] = self.key
-        page = 1
-        if self.endpoint.version() < (7, 9, 0):
-            params['ps'] = 100
-            params['p'] = page
-        else:
-            params['ps'] = 1
-        more = True
-        count = 0
-        while more:
-            resp = env.get('qualitygates/search', ctxt=self.endpoint, params=params)
-            data = json.loads(resp.text)
-            if self.endpoint.version() >= (7, 9, 0):
-                count = data['paging']['total']
-                more = False
-            else:
-                count += len(data['results'])
-                more = data['more']
-        return count
-
-    def search(self, page=0, params=None):
-        if params is None:
-            params = {}
-        params['ps'] = 500
-        if page != 0:
-            params['p'] = page
-            resp = env.get('qualitygates/search', ctxt=self.endpoint, params=params)
-            data = json.loads(resp.text)
-            return data['results']
-
-        nb_proj = self.count(params=params)
-        nb_pages = (nb_proj + 499) // 500
-        prj_list = {}
-        for p in range(nb_pages):
-            params['p'] = p + 1
-            for prj in self.search(page=p + 1, params=params):
-                if 'key' in prj:
-                    prj_list[prj['key']] = prj
-                else:
-                    prj_list[prj['id']] = prj
-        return prj_list
 
     def to_json(self):
         json_data = {'conditions': _simplified_conditions(self.conditions)}
@@ -202,24 +174,10 @@ class QualityGate(sq.SqObject):
         perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, 'users', 'login'))
         if perms is not None:
             self._permissions['users'] = perms
-        perms = permissions.get_qg(self.endpoint, self.name, 'groups', 'name')
+        perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, 'groups', 'name'))
         if perms is not None:
             self._permissions['groups'] = perms
         return self._permissions
-
-def get_list(endpoint, as_json=False):
-    util.logger.info("Exporting quality gates")
-    data = json.loads(env.get('qualitygates/list', ctxt=endpoint).text)
-    qg_list = {}
-    for qg in data['qualitygates']:
-        qg_obj = QualityGate(key=qg['id'], endpoint=endpoint, data=qg)
-        if endpoint.version() < (7, 9, 0) and 'default' in data and data['default'] == qg['id']:
-            qg_obj.is_default = True
-        if as_json:
-            qg_list[qg_obj.name] = qg_obj.to_json()
-        else:
-            qg_list[qg_obj.name] = qg_obj
-    return qg_list
 
 
 def audit(endpoint=None, audit_settings=None):
@@ -235,6 +193,23 @@ def audit(endpoint=None, audit_settings=None):
     for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
     return problems
+
+
+def get_list(endpoint, as_json=False):
+    util.logger.info("Getting quality gates")
+    data = json.loads(env.get('qualitygates/list', ctxt=endpoint).text)
+    qg_list = {}
+    for qg in data['qualitygates']:
+        qg_obj = QualityGate(key=qg['id'], endpoint=endpoint, data=qg)
+        if endpoint.version() < (7, 9, 0) and 'default' in data and data['default'] == qg['id']:
+            qg_obj.is_default = True
+        qg_list[qg_obj.name] = qg_obj.to_json() if as_json else qg_obj
+    return qg_list
+
+
+def count(endpoint):
+    return len(get_list(endpoint))
+
 
 def _simplified_conditions(conds):
     simple_conds = []

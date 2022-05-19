@@ -232,10 +232,7 @@ class Hotspot(findings.Finding):
 
 
 def search_by_project(project_key, endpoint=None, params=None):
-    if params is None:
-        new_params = {}
-    else:
-        new_params = params.copy()
+    new_params = {} if params is None else params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
@@ -252,10 +249,7 @@ def search_by_project(project_key, endpoint=None, params=None):
 
 def search(endpoint=None, page=None, params=None):
     hotspots_list = {}
-    if params is None:
-        new_params = {}
-    else:
-        new_params = params.copy()
+    new_params = {} if params is None else params.copy()
     r_list = util.csv_to_list(params.get('resolution', None))
     s_list = util.csv_to_list(params.get('status', None))
     if len(r_list) > 1:
@@ -306,7 +300,7 @@ def get_object(key, data=None, endpoint=None, from_export=False):
 
 def get_search_criteria(params):
     '''Returns the filtered list of params that are allowed for api/issue/search'''
-    criterias = params.copy()
+    criterias = {} if params is None else params.copy()
     for old, new in {'resolutions': 'resolution', 'componentsKey': 'projectKey', 'statuses': 'status'}.items():
         if old in params:
             criterias[new] = params[old]

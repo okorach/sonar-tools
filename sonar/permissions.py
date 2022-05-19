@@ -53,10 +53,18 @@ def get(endpoint, perm_type, **kwargs):
     while page <= nbr_pages:
         params['p'] = page
         data = json.loads(endpoint.get(f'permissions/{perm_type}', params=params).text)
+        # Workaround for SQ 7.9+, all groups/users even w/o permissions are returned
+        # Stop collecting permissions as soon as 5 groups with no permissions are encountered
+        no_perms_count = 0
         for item in data.get(perm_type, []):
+            no_perms_count = 0 if item['permissions'] else no_perms_count + 1
             if item['permissions']:
                 perms.append(item)
-        nbr_pages = utilities.int_div_ceil(data['paging']['total'], __MAX_PERMS)
+            if no_perms_count >= 5:
+                break
+        if no_perms_count >= 5:
+            break
+        nbr_pages = utilities.nbr_pages(data)
         page += 1
     return perms
 
@@ -84,7 +92,7 @@ def simplify(perms_array):
 
 def __get_perms(endpoint, url, perm_type, pfield, params, exit_on_error):
     perms = []
-    new_params = params.copy()
+    new_params = {} if params is None else params.copy()
     new_params['ps'] = __MAX_QG_PERMS
     page, nbr_pages = 1, 1
     while page <= nbr_pages:

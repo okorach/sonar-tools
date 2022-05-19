@@ -335,4 +335,7 @@ def int_div_ceil(number, divider):
 
 
 def nbr_pages(sonar_api_json):
-    return int_div_ceil(sonar_api_json['paging']['total'], sonar_api_json['paging']['pageSize'])
+    if 'total' in sonar_api_json:
+        return int_div_ceil(sonar_api_json['total'], sonar_api_json['ps'])
+    else:
+        return int_div_ceil(sonar_api_json['paging']['total'], sonar_api_json['paging']['pageSize'])
