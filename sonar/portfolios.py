@@ -63,7 +63,7 @@ class Portfolio(aggregations.Aggregation):
         super()._load(data=data, api=GET_API, key_name='key')
         self._selection_mode = self._json.get('selectionMode', None)
         self._projects = self.projects()
-        self._regexp =  self._json.get('regexp', None)
+        self._regexp = self._json.get('regexp', None)
         self._description = self._json.get('desc', None)
         self._qualifier = self._json.get('qualifier', None)
 
