@@ -30,17 +30,47 @@ import sonar.utilities as util
 from sonar.audit import rules
 
 _OBJECTS = {}
+_GET_API = 'applications/show'
 
 class Application(aggr.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
         super().__init__(key, endpoint)
-        self._nbr_projects = None
+        self._branches = None
+        self._projects = None
+        self._description = None
         self._load(data)
         _OBJECTS[key] = self
 
     def __str__(self):
         return f"Application key '{self.key}'"
+
+    def _load(self, data=None, api=None, key_name='application'):
+        ''' Loads an object with contents of data '''
+        super()._load(data=data, api=_GET_API, key_name='key')
+
+    def _load_full(self):
+        data = json.loads(env.get(_GET_API, ctxt=self.endpoint, params={'application': self.key}).text)
+        self._json = data['application']
+        self._description = self._json.get('description', None)
+
+    def projects(self):
+        if self._projects is not None:
+            return self._projects
+        self._projects = []
+        if 'projects' not in self._json:
+            self._load_full()
+        for p in self._json['projects']:
+            self._projects.append({'key': p['key'], 'branch': p['branch']})
+        return self._projects
+
+    def branches(self):
+        if self._branches is not None:
+            return self._branches
+        if 'branches' not in self._json:
+            self._load_full()
+        self._branches = self._json['branches']
+        return self._branches
 
     def delete(self, api='applications/delete', params=None):
         _ = env.post('applications/delete', ctxt=self.endpoint, params={'application': self.key})
@@ -70,9 +100,21 @@ class Application(aggr.Aggregation):
             self._ncloc = 0 if m['ncloc'] is None else int(m['ncloc'])
         return m
 
+    def settings(self):
+        self._load_full()
+        json_data = {
+            'key': self.key,
+            'name': self.name,
+            'description': self._description,
+            'visibility': self.visibility(),
+            'projects': self.projects(),
+            'branches': self.branches()
+        }
+        return util.remove_nones(json_data)
+
 def count(endpoint=None):
     resp = env.get('api/components/search_projects',
-        params={'ps': 1, 'filter': 'qualifier%20=%20APP'}, ctxt=endpoint)
+        params={'ps': 1, 'filter': 'qualifier = APP'}, ctxt=endpoint)
     data = json.loads(resp.text)
     return data['paging']['total']
 

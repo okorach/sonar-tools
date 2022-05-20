@@ -62,7 +62,6 @@ class Portfolio(aggregations.Aggregation):
         ''' Loads a portfolio object with contents of data '''
         super()._load(data=data, api=GET_API, key_name='key')
         self._selection_mode = self._json.get('selectionMode', None)
-        self._projects = self.projects()
         self._regexp = self._json.get('regexp', None)
         self._description = self._json.get('desc', None)
         self._qualifier = self._json.get('qualifier', None)
@@ -84,6 +83,8 @@ class Portfolio(aggregations.Aggregation):
         if self._selection_mode != SELECTION_MODE_MANUAL:
             self._projects = None
         elif self._projects is None:
+            if 'projects' not in self._json:
+                self._load_full()
             self._projects = self._json['projects']
         return self._projects
 
