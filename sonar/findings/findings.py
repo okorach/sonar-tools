@@ -44,7 +44,6 @@ class Finding(sq.SqObject):
 
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint)
-        self._json = None
         self.severity = None
         self.type = None
         self.author = None

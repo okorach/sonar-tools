@@ -32,6 +32,7 @@ class SqObject:
     def __init__(self, key, endpoint):
         self.key = key
         self.endpoint = endpoint
+        self._json = None
 
     def uuid(self):
         return self.key
