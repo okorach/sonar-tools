@@ -38,12 +38,13 @@ class Aggregation(comp.Component):
 
     def _load(self, data=None, api=None, key_name='key'):
         ''' Loads an aggregation object with contents of data '''
-        if data is None:
-            resp = env.get(api, ctxt=self.endpoint, params={key_name: self.key})
-            data = json.loads(resp.text)
+        if self._json is None and data is not None:
+            self._json = data
+        if self._json is None:
+            self._json = json.loads(env.get(api, ctxt=self.endpoint, params={key_name: self.key}).text)
         self._id = self.key
-        self.name = data.get('name', None)
-        self._visibility = data.get('visibility', None)
+        self.name = self._json.get('name', None)
+        self._visibility = self._json.get('visibility', None)
 
     def visibility(self):
         if self._visibility is None:

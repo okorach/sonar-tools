@@ -36,12 +36,22 @@ GET_API = 'views/show'
 MAX_PAGE_SIZE = 500
 PORTFOLIO_QUALIFIER = 'VW'
 
+SELECTION_MODE_MANUAL = 'MANUAL'
+SELECTION_MODE_REGEXP = 'REGEXP'
+SELECTION_MODE_TAGS = 'TAGS'
+SELECTION_MODE_OTHERS = 'REST'
+SELECTION_MODE_NONE = 'NONE'
 
 class Portfolio(aggregations.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
         super().__init__(key, endpoint)
         self._selection_mode = None
+        self._qualifier = None
+        self._projects = None
+        self._tags = None
+        self._regexp = None
+        self._sub_portfolios = None
         self._load(data)
         _OBJECTS[key] = self
 
@@ -51,7 +61,16 @@ class Portfolio(aggregations.Aggregation):
     def _load(self, data=None, api=None, key_name='key'):
         ''' Loads a portfolio object with contents of data '''
         super()._load(data=data, api=GET_API, key_name='key')
-        self._selection_mode = data.get('selectionMode', None)
+        self._selection_mode = self._json.get('selectionMode', None)
+        self._projects = self.projects()
+        self._regexp = self._json.get('regexp', None)
+        self._description = self._json.get('desc', None)
+        self._qualifier = self._json.get('qualifier', None)
+
+    def _load_full(self):
+        if self._qualifier == 'VW':
+            self._json = None
+            self._load(data=None)
 
     def url(self):
         return f"{self.endpoint.url}/portfolio?id={self.key}"
@@ -60,6 +79,49 @@ class Portfolio(aggregations.Aggregation):
         if self._selection_mode is None:
             self._load()
         return self._selection_mode
+
+    def projects(self):
+        if self._selection_mode != SELECTION_MODE_MANUAL:
+            self._projects = None
+        elif self._projects is None:
+            self._projects = self._json['projects']
+        return self._projects
+
+    def sub_portfolios(self):
+        self._sub_portfolios = None
+        if 'subViews' in self._json:
+            self._sub_portfolios = None
+            for p in self._json['subViews']:
+                new_p = p.copy()
+                new_p.pop('subViews', None)
+                new_p.pop('referencedBy', None)
+                qual = new_p.pop('qualifier')
+                new_p['byReference'] = False
+                if qual == 'VW':
+                    new_p['byReference'] = True
+                    new_p.pop('visibility', None)
+                    new_p.pop('desc', None)
+                    new_p.pop('qualifier', None)
+                    new_p.pop('name', None)
+                    new_p['key'] = new_p.pop('originalKey')
+                if self._sub_portfolios is None:
+                    self._sub_portfolios = []
+                self._sub_portfolios.append(new_p)
+        return self._sub_portfolios
+
+    def regexp(self):
+        if self.selection_mode() != SELECTION_MODE_REGEXP:
+            self._regexp = None
+        elif self._regexp is None:
+            self._regexp = self._json['regexp']
+        return self._regexp
+
+    def tags(self):
+        if self.selection_mode() != SELECTION_MODE_TAGS:
+            self._tags = None
+        elif self._tags is None:
+            self._tags = ', '.join(self._json['tags'])
+        return self._tags
 
     def get_components(self):
         resp = env.get('measures/component_tree', ctxt=self.endpoint,
@@ -98,6 +160,7 @@ class Portfolio(aggregations.Aggregation):
         return m
 
     def dump_data(self, **opts):
+        self._load_full()
         data = {
             'type': 'portfolio',
             'key': self.key,
@@ -110,6 +173,20 @@ class Portfolio(aggregations.Aggregation):
             data['lastAnalysis'] = self.last_analysis()
         return data
 
+    def settings(self):
+        self._load_full()
+        json_data = {
+            'key': self.key,
+            'name': self.name,
+            'description': self._description,
+            'selectionMode': self.selection_mode(),
+            'visibility': self.visibility(),
+            'projects': self.projects(),
+            'regexp': self.regexp(),
+            'tags': self.tags(),
+            'subPortfolios': self.sub_portfolios()
+        }
+        return util.remove_nones(json_data)
 
 def count(endpoint=None):
     return aggregations.count(api=SEARCH_API, endpoint=endpoint)

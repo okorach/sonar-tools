@@ -39,6 +39,7 @@ class Component(sq.SqObject):
         self.language = None
         self.nbr_issues = None
         self._ncloc = None
+        self._description = None
         self._last_analysis = None
         if data is not None:
             self.__load__(data)
