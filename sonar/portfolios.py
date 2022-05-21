@@ -83,9 +83,18 @@ class Portfolio(aggregations.Aggregation):
         if self._selection_mode != SELECTION_MODE_MANUAL:
             self._projects = None
         elif self._projects is None:
-            if 'projects' not in self._json:
+            if 'selectedProjects' not in self._json:
                 self._load_full()
-            self._projects = self._json['projects']
+            self._projects = {}
+            if self.endpoint.version() >= (9, 3, 0):
+                for p in self._json['selectedProjects']:
+                    if 'selectedBranches' in p:
+                        self._projects[p['projectKey']] = ', '.join(p['selectedBranches'])
+                    else:
+                        self._projects[p['projectKey']] = options.DEFAULT
+            else:
+                for p in self._json['projects']:
+                    self._projects[p] = options.DEFAULT
         return self._projects
 
     def sub_portfolios(self):
@@ -93,21 +102,18 @@ class Portfolio(aggregations.Aggregation):
         if 'subViews' in self._json:
             self._sub_portfolios = None
             for p in self._json['subViews']:
-                new_p = p.copy()
-                new_p.pop('subViews', None)
-                new_p.pop('referencedBy', None)
-                qual = new_p.pop('qualifier')
-                new_p['byReference'] = False
+                p.pop('subViews', None)
+                p.pop('referencedBy', None)
+                qual = p.pop('qualifier', 'SVW')
+                p['byReference'] = False
                 if qual == 'VW':
-                    new_p['byReference'] = True
-                    new_p.pop('visibility', None)
-                    new_p.pop('desc', None)
-                    new_p.pop('qualifier', None)
-                    new_p.pop('name', None)
-                    new_p['key'] = new_p.pop('originalKey')
+                    p['byReference'] = True
+                    for k in ('visibility', 'desc', 'qualifier', 'name', 'branch'):
+                        p.pop(k, None)
+                    p['key'] = p.pop('originalKey')
                 if self._sub_portfolios is None:
                     self._sub_portfolios = []
-                self._sub_portfolios.append(new_p)
+                self._sub_portfolios.append(p)
         return self._sub_portfolios
 
     def regexp(self):
@@ -187,6 +193,9 @@ class Portfolio(aggregations.Aggregation):
             'tags': self.tags(),
             'subPortfolios': self.sub_portfolios()
         }
+        if self.selection_mode() != 'MANUAL':
+            json_data['branch'] = self._json.get('branch', None)
+
         return util.remove_nones(json_data)
 
 def count(endpoint=None):
