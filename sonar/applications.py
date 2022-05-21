@@ -73,16 +73,13 @@ class Application(aggr.Aggregation):
         self._branches = {}
 
         for br in self._json['branches']:
-            # br = b.copy()
             if not br['isMain']:
                 br.pop('isMain')
             b_name = br.pop('name')
             params['branch'] = b_name
             data = json.loads(self.get(_GET_API, params=params).text)
             br['projects'] = []
-            for pr in data['application']['projects']:
-                # util.json_dump_debug(br, "App brnahc")
-                proj = pr.copy()
+            for proj in data['application']['projects']:
                 proj['projectKey'] = proj.pop('key')
                 for k in ('selected', 'name', 'enabled', 'isMain'):
                     proj.pop(k, None)
