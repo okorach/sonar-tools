@@ -42,6 +42,10 @@ SELECTION_MODE_TAGS = 'TAGS'
 SELECTION_MODE_OTHERS = 'REST'
 SELECTION_MODE_NONE = 'NONE'
 
+_PROJECT_SELECTION_MODE = 'projectSelectionMode'
+_PROJECT_SELECTION_REGEXP = 'projectSelectionRegexp'
+_PROJECT_SELECTION_TAGS = 'projectSelectionTags'
+
 class Portfolio(aggregations.Aggregation):
 
     def __init__(self, key, endpoint, data=None):
@@ -98,22 +102,7 @@ class Portfolio(aggregations.Aggregation):
         return self._projects
 
     def sub_portfolios(self):
-        self._sub_portfolios = None
-        if 'subViews' in self._json:
-            self._sub_portfolios = None
-            for p in self._json['subViews']:
-                p.pop('subViews', None)
-                p.pop('referencedBy', None)
-                qual = p.pop('qualifier', 'SVW')
-                p['byReference'] = False
-                if qual == 'VW':
-                    p['byReference'] = True
-                    for k in ('visibility', 'desc', 'qualifier', 'name', 'branch'):
-                        p.pop(k, None)
-                    p['key'] = p.pop('originalKey')
-                if self._sub_portfolios is None:
-                    self._sub_portfolios = []
-                self._sub_portfolios.append(p)
+        self._sub_portfolios = _sub_portfolios(self._json, self.endpoint.version())
         return self._sub_portfolios
 
     def regexp(self):
@@ -186,13 +175,13 @@ class Portfolio(aggregations.Aggregation):
             'key': self.key,
             'name': self.name,
             'description': self._description,
-            'selectionMode': self.selection_mode(),
+            _PROJECT_SELECTION_MODE: self.selection_mode(),
             'visibility': self.visibility(),
-            'projects': self.projects(),
-            'regexp': self.regexp(),
-            'tags': self.tags(),
-            'subPortfolios': self.sub_portfolios()
+            # 'projects': self.projects(),
+            _PROJECT_SELECTION_REGEXP: self.regexp(),
+            _PROJECT_SELECTION_TAGS: self.tags(),
         }
+        json_data.update(self.sub_portfolios())
         if self.selection_mode() != 'MANUAL':
             json_data['branch'] = self._json.get('branch', None)
 
@@ -208,6 +197,8 @@ def search(endpoint=None, params=None):
     if edition not in ('enterprise', 'datacenter'):
         util.logger.info("No portfolios in %s edition", edition)
     else:
+        if params is None:
+            params = {'qualifiers': 'VW'}
         portfolio_list = sq.search_objects(
             api='views/search', params=params,
             returned_field='components', key_field='key', object_class=Portfolio, endpoint=endpoint)
@@ -242,3 +233,51 @@ def loc_csv_header(**kwargs):
     if kwargs[options.WITH_URL]:
         arr.append("URL")
     return arr
+
+def __cleanup_portfolio_json(p):
+    for k in ('visibility', 'qualifier', 'branch', 'referencedBy', 'subViews', 'selectedProjects'):
+        p.pop(k, None)
+    if 'branch' in p:
+        p['projectBranch'] = p.pop('branch')
+    if 'selectionMode' in p:
+        if p['selectionMode'] == SELECTION_MODE_REGEXP:
+            p[_PROJECT_SELECTION_REGEXP] = p.pop('regexp')
+        elif p['selectionMode'] == SELECTION_MODE_TAGS:
+            p[_PROJECT_SELECTION_REGEXP] = ', '.join(p.pop('tags'))
+        p[_PROJECT_SELECTION_MODE] = p.pop('selectionMode')
+
+def _sub_portfolios(json_data, version):
+    subport = []
+    if 'subViews' in json_data and len(json_data['subViews']) > 0:
+        for p in json_data['subViews']:
+            qual = p.pop('qualifier', 'SVW')
+            p['byReference'] = qual == 'VW'
+            if qual == 'VW':
+                p['key'] = p.pop('originalKey')
+                for k in ('name', 'desc'):
+                    p.pop(k, None)
+            p.update(_sub_portfolios(p, version))
+            __cleanup_portfolio_json(p)
+            subport.append(p)
+    projects = _projects(json_data, version)
+    ret = {}
+    if projects is not None and len(projects) > 0:
+        ret['projects'] = projects
+    if len(subport) > 0:
+        ret['subPortfolios'] = subport
+    return ret
+
+def _projects(json_data, version):
+    if 'selectionMode' not in json_data or json_data['selectionMode'] != SELECTION_MODE_MANUAL:
+        return None
+    projects = {}
+    if version >= (9, 3, 0):
+        for p in json_data['selectedProjects']:
+            if 'selectedBranches' in p:
+                projects[p['projectKey']] = ', '.join(p['selectedBranches'])
+            else:
+                projects[p['projectKey']] = options.DEFAULT
+    else:
+        for p in json_data['projects']:
+            projects[p] = options.DEFAULT
+    return projects
