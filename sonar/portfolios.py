@@ -86,7 +86,7 @@ class Portfolio(aggregations.Aggregation):
             if 'selectedProjects' not in self._json:
                 self._load_full()
             self._projects = {}
-            if self.endpoint.version() >= (9, 4, 0):
+            if self.endpoint.version() >= (9, 3, 0):
                 for p in self._json['selectedProjects']:
                     if 'selectedBranches' in p:
                         self._projects[p['projectKey']] = ', '.join(p['selectedBranches'])
