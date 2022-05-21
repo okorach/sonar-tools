@@ -193,7 +193,7 @@ class Portfolio(aggregations.Aggregation):
             'tags': self.tags(),
             'subPortfolios': self.sub_portfolios()
         }
-        if self.selection_mode() is not 'MANUAL':
+        if self.selection_mode() != 'MANUAL':
             json_data['branch'] = self._json.get('branch', None)
 
         return util.remove_nones(json_data)
