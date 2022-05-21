@@ -234,6 +234,18 @@ def loc_csv_header(**kwargs):
         arr.append("URL")
     return arr
 
+def __cleanup_portfolio_json(p):
+    for k in ('visibility', 'qualifier', 'branch', 'referencedBy', 'subViews', 'selectedProjects'):
+        p.pop(k, None)
+    if 'branch' in p:
+        p['projectBranch'] = p.pop('branch')
+    if 'selectionMode' in p:
+        if p['selectionMode'] == SELECTION_MODE_REGEXP:
+            p[_PROJECT_SELECTION_REGEXP] = p.pop('regexp')
+        elif p['selectionMode'] == SELECTION_MODE_TAGS:
+            p[_PROJECT_SELECTION_REGEXP] = ', '.join(p.pop('tags'))
+        p[_PROJECT_SELECTION_MODE] = p.pop('selectionMode')
+
 def _sub_portfolios(json_data, version):
     subport = []
     if 'subViews' in json_data and len(json_data['subViews']) > 0:
@@ -244,23 +256,14 @@ def _sub_portfolios(json_data, version):
                 p['key'] = p.pop('originalKey')
                 for k in ('name', 'desc'):
                     p.pop(k, None)
-            p.update( _sub_portfolios(p, version))
-            for k in ('visibility', 'qualifier', 'branch', 'referencedBy', 'subViews', 'selectedProjects'):
-                p.pop(k, None)
-            if 'branch' in p:
-                p['projectBranch'] = p.pop('branch')
-            if 'selectionMode' in p:
-                if p['selectionMode'] == SELECTION_MODE_REGEXP:
-                    p[_PROJECT_SELECTION_REGEXP] = p.pop('regexp')
-                elif p['selectionMode'] == SELECTION_MODE_TAGS:
-                    p[_PROJECT_SELECTION_REGEXP] = ', '.join(p.pop('tags'))
-                p[_PROJECT_SELECTION_MODE] = p.pop('selectionMode')
+            p.update(_sub_portfolios(p, version))
+            __cleanup_portfolio_json(p)
             subport.append(p)
     projects = _projects(json_data, version)
     ret = {}
     if projects is not None and len(projects) > 0:
         ret['projects'] = projects
-    if subport is not None and len(subport) > 0:
+    if len(subport) > 0:
         ret['subPortfolios'] = subport
     return ret
 
