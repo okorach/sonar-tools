@@ -69,7 +69,12 @@ class Application(aggr.Aggregation):
             return self._branches
         if 'branches' not in self._json:
             self._load_full()
-        self._branches = self._json['branches']
+        params = {'application': self.key}
+        self._branches = {}
+        for b in self._json['branches']:
+            params['branch'] = b['name']
+            data = json.loads(self.get(_GET_API, params=params).text)
+            self._branches[b['name']] = data['application']['projects']
         return self._branches
 
     def delete(self, api='applications/delete', params=None):
