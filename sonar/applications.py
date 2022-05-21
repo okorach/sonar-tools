@@ -69,7 +69,24 @@ class Application(aggr.Aggregation):
             return self._branches
         if 'branches' not in self._json:
             self._load_full()
-        self._branches = self._json['branches']
+        params = {'application': self.key}
+        self._branches = {}
+
+        for br in self._json['branches']:
+            if not br['isMain']:
+                br.pop('isMain')
+            b_name = br.pop('name')
+            params['branch'] = b_name
+            data = json.loads(self.get(_GET_API, params=params).text)
+            br['projects'] = []
+            for proj in data['application']['projects']:
+                proj['projectKey'] = proj.pop('key')
+                for k in ('selected', 'name', 'enabled', 'isMain'):
+                    proj.pop(k, None)
+                br['projects'].append(proj)
+
+            self._branches[b_name] = br
+
         return self._branches
 
     def delete(self, api='applications/delete', params=None):
@@ -107,7 +124,7 @@ class Application(aggr.Aggregation):
             'name': self.name,
             'description': self._description,
             'visibility': self.visibility(),
-            'projects': self.projects(),
+            # 'projects': self.projects(),
             'branches': self.branches()
         }
         return util.remove_nones(json_data)
