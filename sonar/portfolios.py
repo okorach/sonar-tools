@@ -83,14 +83,18 @@ class Portfolio(aggregations.Aggregation):
         if self._selection_mode != SELECTION_MODE_MANUAL:
             self._projects = None
         elif self._projects is None:
-            if 'selectProjects' not in self._json:
+            if 'selectedProjects' not in self._json:
                 self._load_full()
             self._projects = {}
-            for p in self._json['selectedProjects']:
-                if 'selectedBranches' in p:
-                    self._projects[p['projectKey']] = ', '.join(p['selectedBranches'])
-                else:
-                    self._projects[p['projectKey']] = options.DEFAULT
+            if self.endpoint.version() >= (9, 4, 0):
+                for p in self._json['selectedProjects']:
+                    if 'selectedBranches' in p:
+                        self._projects[p['projectKey']] = ', '.join(p['selectedBranches'])
+                    else:
+                        self._projects[p['projectKey']] = options.DEFAULT
+            else:
+                for p in self._json['projects']:
+                    self._projects[p] = options.DEFAULT
         return self._projects
 
     def sub_portfolios(self):
@@ -100,7 +104,7 @@ class Portfolio(aggregations.Aggregation):
             for p in self._json['subViews']:
                 p.pop('subViews', None)
                 p.pop('referencedBy', None)
-                qual = p.pop('qualifier')
+                qual = p.pop('qualifier', 'SVW')
                 p['byReference'] = False
                 if qual == 'VW':
                     p['byReference'] = True
