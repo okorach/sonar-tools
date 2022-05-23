@@ -112,6 +112,9 @@ class QualityProfile(sq.SqObject):
                 for r in data['rules']:
                     d = {'severity': r['severity']}
                     if len(r['params']) > 0:
+                        if not full_specs:
+                            for p in r['params']:
+                                p.pop('htmlDesc', None)
                         d['params'] = r['params']
                     if r['isTemplate']:
                         d['isTemplate'] = True
