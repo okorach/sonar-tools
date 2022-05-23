@@ -58,8 +58,8 @@ def main():
 
     platform_settings = endpoint.settings(include_not_set=True)
     platform_settings[settings.DEVOPS_INTEGRATION] = list(devops.settings(endpoint).values())
-    platform_settings['qualityProfiles'] = qualityprofiles.get_list(endpoint, include_rules=True)
-    platform_settings['qualityGates'] = qualitygates.get_list(endpoint, as_json=True)
+    qp_settings = qualityprofiles.get_list(endpoint, include_rules=True)
+    qg_settings = qualitygates.get_list(endpoint, as_json=True)
     project_settings = {}
     for p in projects.get_projects_list(str_key_list=None, endpoint=endpoint).values():
         project_settings[p.key] = p.settings()
@@ -70,6 +70,7 @@ def main():
     for k, app in applications.search(endpoint=endpoint).items():
         apps_settings[k] = app.settings()
     print(util.json_dump({'platform': platform_settings, 'projects': project_settings,
+                         'qualityProfiles': qp_settings, 'qualityGates': qg_settings,
                          'portfolios': portfolio_settings, 'applications': apps_settings}))
     nbr_settings = len(platform_settings)
     for categ in settings.CATEGORIES:
