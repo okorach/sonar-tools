@@ -100,7 +100,7 @@ class QualityProfile(sq.SqObject):
         if self._rules is not None:
             # Assume nobody changed QP during execution
             return self._rules
-        self._rules = []
+        self._rules = {}
         page, nb_pages = 1, 1
         params = {'activation': 'true', 'qprofile': self.key, 's': 'key', 'ps': 500}
         while page <= nb_pages:
@@ -110,14 +110,14 @@ class QualityProfile(sq.SqObject):
                 self._rules += data['rules']
             else:
                 for r in data['rules']:
-                    d = {}
-                    for k in ('key', 'name', 'severity', 'lang', 'type'):
-                        d[k] = r[k]
+                    d = {'severity': r['severity']}
                     if len(r['params']) > 0:
                         d['params'] = r['params']
                     if r['isTemplate']:
                         d['isTemplate'] = True
-                    self._rules.append(d)
+                    if r['lang'] != self.language:
+                        d['language'] = r['lang']
+                    self._rules[r['key']] = d
             nb_pages = util.nbr_pages(data)
             page += 1
         return self._rules
@@ -254,8 +254,11 @@ def get_list(endpoint=None, include_rules=False):
     util.logger.info("Exporting quality profiles")
     for qp in _QUALITY_PROFILES.values():
         json_data = qp.to_json(include_rules=True)
-        json_data.pop('name')
-        qp_list[f"{qp.language}{settings.UNIVERSAL_SEPARATOR}{qp.name}"] = json_data
+        lang = json_data.pop('language')
+        name = json_data.pop('name')
+        if lang not in qp_list:
+            qp_list[lang] = {}
+        qp_list[lang][name] = json_data
     return qp_list
 
 
