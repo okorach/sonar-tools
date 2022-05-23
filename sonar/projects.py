@@ -609,7 +609,7 @@ Is this normal ?", gr['name'], str(self.key))
                 json_data['permissions'][ptype] = permiss
 
     def settings(self, settings_list=None, format='json', include_inherited=False):
-        util.logger.info("Exporting settings for %s", str(self))
+        util.logger.info("Exporting %s", str(self))
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
         if format is None or format.lower() != 'json':
             return settings_dict
