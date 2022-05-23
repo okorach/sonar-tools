@@ -25,7 +25,7 @@
 import datetime
 import json
 import pytz
-from sonar import env, rules, settings, permissions
+from sonar import env, rules, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -100,7 +100,7 @@ class QualityProfile(sq.SqObject):
         if self._rules is not None:
             # Assume nobody changed QP during execution
             return self._rules
-        self._rules = []
+        self._rules = {}
         page, nb_pages = 1, 1
         params = {'activation': 'true', 'qprofile': self.key, 's': 'key', 'ps': 500}
         while page <= nb_pages:
@@ -110,27 +110,19 @@ class QualityProfile(sq.SqObject):
                 self._rules += data['rules']
             else:
                 for r in data['rules']:
-                    d = {}
-                    for k in ('key', 'name', 'severity', 'lang', 'type'):
-                        d[k] = r[k]
-                    if len(r['params']) > 0:
-                        d['params'] = r['params']
-                    if r['isTemplate']:
-                        d['isTemplate'] = True
-                    self._rules.append(d)
+                    self._rules[r['key']] = _convert_rule(r, self.language, full_specs)
             nb_pages = util.nbr_pages(data)
             page += 1
         return self._rules
 
     def to_json(self, full_specs=False, include_rules=False):
         json_data = {
-            'key': self.key,
             'name': self.name,
             'language': self.language,
-            'languageName': self.language_name
         }
         if full_specs:
             json_data.update({
+                'key': self.key,
                 'lastUpdated': self.last_updated,
                 'isDefault': self.is_default,
                 'isBuiltIn': self.is_built_in,
@@ -138,10 +130,12 @@ class QualityProfile(sq.SqObject):
                 'projectsCount': self.project_count,
                 'deprecatedRulesCount': self.nbr_deprecated_rules,
                 'lastUsed': self.last_used,
+                'languageName': self.language_name
             })
         if self.parent_key is not None:
             json_data['parentName'] = self.parent_name
-            json_data['parentKey'] = self.parent_key
+            if full_specs:
+                json_data['parentKey'] = self.parent_key
         perms = util.remove_nones(self.permissions())
         if perms is not None and len(perms) > 0:
             json_data['permissions'] = perms
@@ -253,9 +247,13 @@ def get_list(endpoint=None, include_rules=False):
     qp_list = {}
     util.logger.info("Exporting quality profiles")
     for qp in _QUALITY_PROFILES.values():
+        util.logger.info("Exporting %s", str(qp))
         json_data = qp.to_json(include_rules=True)
-        json_data.pop('name')
-        qp_list[f"{qp.language}{settings.UNIVERSAL_SEPARATOR}{qp.name}"] = json_data
+        lang = json_data.pop('language')
+        name = json_data.pop('name')
+        if lang not in qp_list:
+            qp_list[lang] = {}
+        qp_list[lang][name] = json_data
     return qp_list
 
 
@@ -263,3 +261,17 @@ def get_object(key, data=None, endpoint=None):
     if key not in _QUALITY_PROFILES:
         _ = QualityProfile(key=key, data=data, endpoint=endpoint)
     return _QUALITY_PROFILES[key]
+
+
+def _convert_rule(rule, qp_lang, full_specs=False):
+    d = {'severity': rule['severity']}
+    if len(rule['params']) > 0:
+        if not full_specs:
+            for p in rule['params']:
+                p.pop('htmlDesc', None)
+        d['params'] = rule['params']
+    if rule['isTemplate']:
+        d['isTemplate'] = True
+    if rule['lang'] != qp_lang:
+        d['language'] = rule['lang']
+    return d
