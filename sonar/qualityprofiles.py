@@ -127,13 +127,13 @@ class QualityProfile(sq.SqObject):
 
     def to_json(self, full_specs=False, include_rules=False):
         json_data = {
-            'key': self.key,
             'name': self.name,
             'language': self.language,
             'languageName': self.language_name
         }
         if full_specs:
             json_data.update({
+                'key': self.key,
                 'lastUpdated': self.last_updated,
                 'isDefault': self.is_default,
                 'isBuiltIn': self.is_built_in,
