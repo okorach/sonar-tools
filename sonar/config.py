@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 '''
 import sys
-from sonar import env, version, settings, devops, projects, qualityprofiles, qualitygates, portfolios, applications
+from sonar import env, version, settings, devops, projects, qualityprofiles, qualitygates, portfolios, applications, permissions
 import sonar.utilities as util
 
 """
@@ -83,6 +83,7 @@ def main():
     if 'settings' in what:
         sq_settings[__SETTINGS] = endpoint.settings(include_not_set=True)
         sq_settings[__SETTINGS][settings.DEVOPS_INTEGRATION] = list(devops.settings(endpoint).values())
+        sq_settings[__SETTINGS]['permissions'] = permissions.export(endpoint)
     if 'qp' in what:
         sq_settings[__QP] = qualityprofiles.get_list(endpoint, include_rules=True)
     if 'qg' in what:
