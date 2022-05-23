@@ -69,10 +69,10 @@ def get(endpoint, perm_type, **kwargs):
     return perms
 
 
-def export(endpoint, project_key=None):
+def export(endpoint, component_key=None):
     exp = {}
     for perm_type in ('users', 'groups'):
-        exp[perm_type] = simplify(get(endpoint, perm_type, projectKey=project_key))
+        exp[perm_type] = simplify(get(endpoint, perm_type, projectKey=component_key))
         if len(exp[perm_type]) == 0:
             exp.pop(perm_type)
     return exp

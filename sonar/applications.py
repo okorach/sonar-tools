@@ -23,7 +23,7 @@
 
 '''
 import json
-from sonar import env, measures
+from sonar import env, measures, permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
@@ -43,7 +43,7 @@ class Application(aggr.Aggregation):
         _OBJECTS[key] = self
 
     def __str__(self):
-        return f"Application key '{self.key}'"
+        return f"application key '{self.key}'"
 
     def _load(self, data=None, api=None, key_name='application'):
         ''' Loads an object with contents of data '''
@@ -118,6 +118,7 @@ class Application(aggr.Aggregation):
         return m
 
     def settings(self):
+        util.logger.info("Exporting %s", str(self))
         self._load_full()
         json_data = {
             'key': self.key,
@@ -125,7 +126,8 @@ class Application(aggr.Aggregation):
             'description': self._description,
             'visibility': self.visibility(),
             # 'projects': self.projects(),
-            'branches': self.branches()
+            'branches': self.branches(),
+            'permissions': permissions.export(self.endpoint, self.key)
         }
         return util.remove_nones(json_data)
 
