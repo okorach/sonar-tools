@@ -23,7 +23,7 @@
 
 '''
 import json
-from sonar import aggregations, env, measures, options
+from sonar import aggregations, env, measures, options, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules
@@ -60,7 +60,7 @@ class Portfolio(aggregations.Aggregation):
         _OBJECTS[key] = self
 
     def __str__(self):
-        return f"Portfolio key '{self.key}'"
+        return f"portfolio '{self.key}'"
 
     def _load(self, data=None, api=None, key_name='key'):
         ''' Loads a portfolio object with contents of data '''
@@ -170,6 +170,7 @@ class Portfolio(aggregations.Aggregation):
         return data
 
     def settings(self):
+        util.logger.info("Exporting %s", str(self))
         self._load_full()
         json_data = {
             'key': self.key,
@@ -180,6 +181,7 @@ class Portfolio(aggregations.Aggregation):
             # 'projects': self.projects(),
             _PROJECT_SELECTION_REGEXP: self.regexp(),
             _PROJECT_SELECTION_TAGS: self.tags(),
+            'permissions': permissions.export(self.endpoint, self.key)
         }
         json_data.update(self.sub_portfolios())
         if self.selection_mode() != 'MANUAL':
