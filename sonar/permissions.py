@@ -47,7 +47,7 @@ def get(endpoint, perm_type, **kwargs):
     if perm_type not in ('users', 'groups'):
         return None
     params = kwargs.copy()
-    params['ps'] = 100
+    params['ps'] = __MAX_PERMS
     perms = []
     page, nbr_pages = 1, 1
     while page <= nbr_pages:
@@ -67,6 +67,15 @@ def get(endpoint, perm_type, **kwargs):
         nbr_pages = utilities.nbr_pages(data)
         page += 1
     return perms
+
+
+def export(endpoint, project_key=None):
+    exp = {}
+    for perm_type in ('users', 'groups'):
+        exp[perm_type] = simplify(get(endpoint, perm_type, projectKey=project_key))
+        if len(exp[perm_type]) == 0:
+            exp.pop(perm_type)
+    return exp
 
 
 def counts(some_perms, perms_dict):
