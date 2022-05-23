@@ -25,7 +25,7 @@
 import datetime
 import json
 import pytz
-from sonar import env, rules, settings, permissions
+from sonar import env, rules, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -110,17 +110,7 @@ class QualityProfile(sq.SqObject):
                 self._rules += data['rules']
             else:
                 for r in data['rules']:
-                    d = {'severity': r['severity']}
-                    if len(r['params']) > 0:
-                        if not full_specs:
-                            for p in r['params']:
-                                p.pop('htmlDesc', None)
-                        d['params'] = r['params']
-                    if r['isTemplate']:
-                        d['isTemplate'] = True
-                    if r['lang'] != self.language:
-                        d['language'] = r['lang']
-                    self._rules[r['key']] = d
+                    self._rules[r['key']] = _convert_rule(r, self.language, full_specs)
             nb_pages = util.nbr_pages(data)
             page += 1
         return self._rules
@@ -257,6 +247,7 @@ def get_list(endpoint=None, include_rules=False):
     qp_list = {}
     util.logger.info("Exporting quality profiles")
     for qp in _QUALITY_PROFILES.values():
+        util.logger.info("Exporting %s", str(qp))
         json_data = qp.to_json(include_rules=True)
         lang = json_data.pop('language')
         name = json_data.pop('name')
@@ -270,3 +261,17 @@ def get_object(key, data=None, endpoint=None):
     if key not in _QUALITY_PROFILES:
         _ = QualityProfile(key=key, data=data, endpoint=endpoint)
     return _QUALITY_PROFILES[key]
+
+
+def _convert_rule(rule, qp_lang, full_specs=False):
+    d = {'severity': rule['severity']}
+    if len(rule['params']) > 0:
+        if not full_specs:
+            for p in rule['params']:
+                p.pop('htmlDesc', None)
+        d['params'] = rule['params']
+    if rule['isTemplate']:
+        d['isTemplate'] = True
+    if rule['lang'] != qp_lang:
+        d['language'] = rule['lang']
+    return d
