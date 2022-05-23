@@ -613,7 +613,7 @@ Is this normal ?", gr['name'], str(self.key))
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
         if format is None or format.lower() != 'json':
             return settings_dict
-        json_data = {}
+        json_data = {'name': self.name}
         for s in settings_dict.values():
             if not include_inherited and s.inherited:
                 continue
