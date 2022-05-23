@@ -129,7 +129,6 @@ class QualityProfile(sq.SqObject):
         json_data = {
             'name': self.name,
             'language': self.language,
-            'languageName': self.language_name
         }
         if full_specs:
             json_data.update({
@@ -141,6 +140,7 @@ class QualityProfile(sq.SqObject):
                 'projectsCount': self.project_count,
                 'deprecatedRulesCount': self.nbr_deprecated_rules,
                 'lastUsed': self.last_used,
+                'languageName': self.language_name
             })
         if self.parent_key is not None:
             json_data['parentName'] = self.parent_name
