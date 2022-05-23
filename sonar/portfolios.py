@@ -60,7 +60,7 @@ class Portfolio(aggregations.Aggregation):
         _OBJECTS[key] = self
 
     def __str__(self):
-        return f"portfolio '{self.key}'"
+        return f"portfolio key '{self.key}'"
 
     def _load(self, data=None, api=None, key_name='key'):
         ''' Loads a portfolio object with contents of data '''
