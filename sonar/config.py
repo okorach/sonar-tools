@@ -42,41 +42,75 @@ def __close_output(file, fd):
         util.logger.info("File '%s' generated", file)
 """
 
+_EVERYTHING = "settings,qp,qg,projects,users,groups,portfolios,apps"
+
+__SETTINGS = "globalSettings"
+__QP = "qualityProfiles"
+__QG = "qualityGates"
+__APPS = "applications"
+
+def __map(k):
+    mapping = {
+        'settings': __SETTINGS,
+        'qp': __QP,
+        'qg': __QG,
+        'apps': __APPS
+    }
+    return mapping.get(k, k)
+
+
 def __parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_project_args(parser)
     parser = util.set_output_file_args(parser)
+    parser.add_argument('-w', '--what', required=False, default="",
+                        help='What to export (settings,qp,qg,projects,users,groups,portfolios,apps)')
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     return args
 
-
 def main():
     args = __parse_args('Extract SonarQube platform configuration')
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
 
-    platform_settings = endpoint.settings(include_not_set=True)
-    platform_settings[settings.DEVOPS_INTEGRATION] = list(devops.settings(endpoint).values())
-    qp_settings = qualityprofiles.get_list(endpoint, include_rules=True)
-    qg_settings = qualitygates.get_list(endpoint, as_json=True)
-    project_settings = {}
-    for p in projects.get_projects_list(str_key_list=None, endpoint=endpoint).values():
-        project_settings[p.key] = p.settings()
-    portfolio_settings = {}
-    for k, p in portfolios.search(endpoint=endpoint).items():
-        portfolio_settings[k] = p.settings()
-    apps_settings = {}
-    for k, app in applications.search(endpoint=endpoint).items():
-        apps_settings[k] = app.settings()
-    print(util.json_dump({'platform': platform_settings, 'projects': project_settings,
-                         'qualityProfiles': qp_settings, 'qualityGates': qg_settings,
-                         'portfolios': portfolio_settings, 'applications': apps_settings}))
-    nbr_settings = len(platform_settings)
-    for categ in settings.CATEGORIES:
-        if categ in platform_settings:
-            nbr_settings += len(platform_settings[categ]) - 1
-    util.logger.info("Exported %s settings", nbr_settings)
+    what = args.what
+    if args.what == "":
+        what = _EVERYTHING
+    what = util.csv_to_list(what)
+
+    sq_settings = {}
+    if 'settings' in what:
+        sq_settings[__SETTINGS] = endpoint.settings(include_not_set=True)
+        sq_settings[__SETTINGS][settings.DEVOPS_INTEGRATION] = list(devops.settings(endpoint).values())
+    if 'qp' in what:
+        sq_settings[__QP] = qualityprofiles.get_list(endpoint, include_rules=True)
+    if 'qg' in what:
+        sq_settings[__QG] = qualitygates.get_list(endpoint, as_json=True)
+    if 'projects' in what:
+        project_settings = {}
+        for p in projects.get_projects_list(str_key_list=None, endpoint=endpoint).values():
+            project_settings[p.key] = p.settings()
+        sq_settings['projects'] = project_settings
+    if 'portfolios' in what:
+        portfolios_settings = {}
+        for k, p in portfolios.search(endpoint=endpoint).items():
+            portfolios_settings[k] = p.settings()
+        sq_settings['portfolios'] = portfolios_settings
+    if 'apps' in what:
+        apps_settings = {}
+        for k, app in applications.search(endpoint=endpoint).items():
+            apps_settings[k] = app.settings()
+        sq_settings[__APPS] = apps_settings
+    print(util.json_dump(sq_settings))
+    nbr_settings = 0
+    for s in what:
+        nbr_settings += len(sq_settings.get(__map(s), {}))
+    if 'settings' in what:
+        for categ in settings.CATEGORIES:
+            if categ in sq_settings[__SETTINGS]:
+                nbr_settings += len(sq_settings[__SETTINGS][categ]) - 1
+    util.logger.info("Exported %s items", nbr_settings)
     sys.exit(0)
 
 
