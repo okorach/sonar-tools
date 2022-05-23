@@ -144,7 +144,8 @@ class QualityProfile(sq.SqObject):
             })
         if self.parent_key is not None:
             json_data['parentName'] = self.parent_name
-            json_data['parentKey'] = self.parent_key
+            if full_specs:
+                json_data['parentKey'] = self.parent_key
         perms = util.remove_nones(self.permissions())
         if perms is not None and len(perms) > 0:
             json_data['permissions'] = perms
