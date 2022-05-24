@@ -106,11 +106,34 @@ class User(sq.SqObject):
                 problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
 
+    def to_json(self, full_specs=False):
+        if full_specs:
+            json_data = self.jsondata
+        else:
+            json_data = {
+                'login': self.login,
+                'name': self.name,
+                'scmAccounts': self.scmAccounts,
+                'email': self.email,
+                'groups': self.groups
+            }
+            if self.is_local:
+                json_data['local'] = True
+            if not self.jsondata['active']:
+                json_data['active'] = False
+        return util.remove_nones(json_data)
+
 def search(params=None, endpoint=None):
     return sq.search_objects(
         api=User.API_SEARCH, params=params,
         returned_field='users', key_field='login', object_class=User, endpoint=endpoint)
 
+def get_list(endpoint, params=None, as_json=False, full_specs=False):
+    u_list = search(params=params, endpoint=endpoint)
+    if as_json:
+        for u_name, u_obj in u_list.copy().items():
+            u_list[u_name] = u_obj.to_json(full_specs=full_specs)
+    return u_list
 
 def create(name, login=None, endpoint=None):
     resp = env.post(User.API_CREATE, {'name': name, 'login': login}, endpoint)
