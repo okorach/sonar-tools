@@ -195,15 +195,19 @@ class Environment:
                 wh.pop('key', None)
                 wh.pop('latestDelivery', None)
         json_data[settings.GENERAL_SETTINGS].update({'webhooks': whooks})
-        json_data['version'] = self.version(as_string=True)
-        json_data['edition'] = self.edition()
-        json_data['serverId'] = self.server_id()
         json_data['permissions'] = {}
         for ptype in ('users', 'groups'):
             perms = permissions.simplify(permissions.get(self, ptype))
             if len(perms) > 0:
                 json_data['permissions'][ptype] = perms
         return json_data
+
+    def basics(self):
+        return {
+            'version': self.version(as_string=True),
+            'edition': self.edition(),
+            'serverId': self.server_id()
+        }
 
     def __get_platform_settings(self):
         resp = self.get('settings/values')

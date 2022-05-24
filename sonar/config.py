@@ -92,6 +92,7 @@ def main():
     what = util.csv_to_list(what)
 
     sq_settings = {}
+    sq_settings['platform'] = endpoint.basics()
     if 'settings' in what:
         sq_settings[__SETTINGS] = endpoint.settings(include_not_set=True)
         sq_settings[__SETTINGS][settings.DEVOPS_INTEGRATION] = list(devops.settings(endpoint).values())
