@@ -270,6 +270,8 @@ def _convert_rule(rule, qp_lang, full_specs=False):
             for p in rule['params']:
                 p.pop('htmlDesc', None)
         d['params'] = rule['params']
+    if 'templateKey' in rule:
+        d['templateKey'] = rule['templateKey']
     if rule['isTemplate']:
         d['isTemplate'] = True
     if rule['lang'] != qp_lang:
