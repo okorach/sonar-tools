@@ -129,6 +129,7 @@ def search(params=None, endpoint=None):
         returned_field='users', key_field='login', object_class=User, endpoint=endpoint)
 
 def get_list(endpoint, params=None, as_json=False, full_specs=False):
+    util.logger.info("Listing users")
     u_list = search(params=params, endpoint=endpoint)
     if as_json:
         for u_name, u_obj in u_list.copy().items():
