@@ -32,6 +32,7 @@ class Group(sq.SqObject):
     def __init__(self, id, name=None, endpoint=None, data=None):
         super().__init__(id, endpoint)
         self.name = name
+        self._json = data
         if data is None:
             return
         if name is None:
@@ -51,10 +52,31 @@ class Group(sq.SqObject):
             problems.append(problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
         return problems
 
+    def to_json(self, full_specs=False):
+        if full_specs:
+            json_data = {self.name: self._json}
+        else:
+            json_data = {'name': self.name}
+            if self.description != "":
+                json_data['description'] = self.description
+            if self.is_default:
+                json_data['default'] = True
+        return util.remove_nones(json_data)
+
+
 def search(params=None, endpoint=None):
-    return sq.search_objects(api='user_groups/search', params=params, key_field='id',
+    return sq.search_objects(api='user_groups/search', params=params, key_field='name',
         returned_field='groups', endpoint=endpoint, object_class=Group)
 
+
+def get_list(endpoint, params=None, as_json=False, full_specs=False):
+    util.logger.info("Listing groups")
+    g_list = search(params=params, endpoint=endpoint)
+    if as_json:
+        for g_name, g_obj in g_list.copy().items():
+            g_list[g_name] = g_obj.to_json(full_specs=full_specs)
+            g_list[g_name].pop('name')
+    return g_list
 
 def audit(audit_settings, endpoint=None):
     if not audit_settings['audit.groups']:
