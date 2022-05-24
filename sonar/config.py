@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 '''
 import sys
-from sonar import env, version, settings, devops, projects, qualityprofiles, qualitygates, portfolios, applications, permissions
+from sonar import env, version, settings, devops, projects, qualityprofiles, qualitygates, portfolios, applications, permissions, users, groups
 import sonar.utilities as util
 
 """
@@ -70,6 +70,18 @@ def __parse_args(desc):
     util.logger.info('sonar-tools version %s', version.PACKAGE_VERSION)
     return args
 
+
+def __count_settings(what, sq_settings):
+    nbr_settings = 0
+    for s in what:
+        nbr_settings += len(sq_settings.get(__map(s), {}))
+    if 'settings' in what:
+        for categ in settings.CATEGORIES:
+            if categ in sq_settings[__SETTINGS]:
+                nbr_settings += len(sq_settings[__SETTINGS][categ]) - 1
+    return nbr_settings
+
+
 def main():
     args = __parse_args('Extract SonarQube platform configuration')
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
@@ -103,15 +115,12 @@ def main():
         for k, app in applications.search(endpoint=endpoint).items():
             apps_settings[k] = app.settings()
         sq_settings[__APPS] = apps_settings
+    if 'users' in what:
+        sq_settings['users'] = users.get_list(endpoint, as_json=True)
+    if 'groups' in what:
+        sq_settings['groups'] = groups.get_list(endpoint, as_json=True)
     print(util.json_dump(sq_settings))
-    nbr_settings = 0
-    for s in what:
-        nbr_settings += len(sq_settings.get(__map(s), {}))
-    if 'settings' in what:
-        for categ in settings.CATEGORIES:
-            if categ in sq_settings[__SETTINGS]:
-                nbr_settings += len(sq_settings[__SETTINGS][categ]) - 1
-    util.logger.info("Exported %s items", nbr_settings)
+    util.logger.info("Exported %d items", __count_settings(what, sq_settings))
     sys.exit(0)
 
 
