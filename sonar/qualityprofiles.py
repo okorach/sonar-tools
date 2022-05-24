@@ -247,6 +247,7 @@ def hierarchize(qp_list):
                     qp_list[lang][qp_value['parentName']]['childrens'] = {}
                 qp_list[lang][qp_value['parentName']]['childrens'][qp_name] = qp_value
                 qp_list[lang].pop(qp_name)
+                qp_value.pop('parentName')
     return qp_list
 
 def get_list(endpoint=None, include_rules=False, in_hierarchy=False):
