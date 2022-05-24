@@ -85,7 +85,7 @@ def main():
         sq_settings[__SETTINGS][settings.DEVOPS_INTEGRATION] = list(devops.settings(endpoint).values())
         sq_settings[__SETTINGS]['permissions'] = permissions.export(endpoint)
     if 'qp' in what:
-        sq_settings[__QP] = qualityprofiles.get_list(endpoint, include_rules=True)
+        sq_settings[__QP] = qualityprofiles.get_list(endpoint, include_rules=True, in_hierarchy=True)
     if 'qg' in what:
         sq_settings[__QG] = qualitygates.get_list(endpoint, as_json=True)
     if 'projects' in what:
