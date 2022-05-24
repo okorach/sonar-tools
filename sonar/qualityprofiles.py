@@ -239,7 +239,17 @@ def audit(endpoint=None, audit_settings=None):
     return problems
 
 
-def get_list(endpoint=None, include_rules=False):
+def hierarchize(qp_list):
+    for lang, qpl in qp_list.copy().items():
+        for qp_name, qp_value in qpl.copy().items():
+            if 'parentName' in qp_value:
+                if 'childrens' not in qp_list[lang][qp_value['parentName']]:
+                    qp_list[lang][qp_value['parentName']]['childrens'] = {}
+                qp_list[lang][qp_value['parentName']]['childrens'][qp_name] = qp_value
+                qp_list[lang].pop(qp_name)
+    return qp_list
+
+def get_list(endpoint=None, include_rules=False, in_hierarchy=False):
     if endpoint is not None and len(_QUALITY_PROFILES) == 0:
         search(endpoint=endpoint)
     if not include_rules:
@@ -254,6 +264,9 @@ def get_list(endpoint=None, include_rules=False):
         if lang not in qp_list:
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
+    if in_hierarchy:
+        qp_list = hierarchize(qp_list)
+
     return qp_list
 
 
