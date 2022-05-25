@@ -17,11 +17,11 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Abstraction of the SonarQube "metric" concept
 
-'''
+"""
 import re
 import json
 from sonar import env
@@ -30,24 +30,49 @@ import sonar.utilities as util
 
 __MAX_PAGE_SIZE = 500
 
+
 class Metric(sq.SqObject):
     Count = None
     Inventory = {}
-    SEARCH_API = 'metrics/search'
+    SEARCH_API = "metrics/search"
     MAIN_METRICS = (
-        'bugs', 'vulnerabilities', 'code_smells', 'security_hotspots',
-        'reliability_rating', 'security_rating', 'sqale_rating', 'security_review_rating',
-        'sqale_debt_ratio', 'coverage', 'duplicated_lines_density', 'security_hotspots_reviewed',
-        'new_bugs', 'new_vulnerabilities', 'new_code_smells', 'new_security_hotspots',
-        'new_reliability_rating', 'new_security_rating', 'new_maintainability_rating', 'new_security_review_rating',
-        'new_sqale_debt_ratio', 'new_coverage', 'new_duplicated_lines_density', 'new_security_hotspots_reviewed',
-        'ncloc'
+        "bugs",
+        "vulnerabilities",
+        "code_smells",
+        "security_hotspots",
+        "reliability_rating",
+        "security_rating",
+        "sqale_rating",
+        "security_review_rating",
+        "sqale_debt_ratio",
+        "coverage",
+        "duplicated_lines_density",
+        "security_hotspots_reviewed",
+        "new_bugs",
+        "new_vulnerabilities",
+        "new_code_smells",
+        "new_security_hotspots",
+        "new_reliability_rating",
+        "new_security_rating",
+        "new_maintainability_rating",
+        "new_security_review_rating",
+        "new_sqale_debt_ratio",
+        "new_coverage",
+        "new_duplicated_lines_density",
+        "new_security_hotspots_reviewed",
+        "ncloc",
     )
 
-    RATING_METRICS = ('sqale_rating', 'new_maintainability_rating',
-                      'security_rating', 'new_security_rating',
-                      'reliability_rating', 'new_reliability_rating',
-                      'security_review_rating', 'new_security_review_rating')
+    RATING_METRICS = (
+        "sqale_rating",
+        "new_maintainability_rating",
+        "security_rating",
+        "new_security_rating",
+        "reliability_rating",
+        "new_reliability_rating",
+        "security_review_rating",
+        "new_security_review_rating",
+    )
 
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key, endpoint)
@@ -64,33 +89,36 @@ class Metric(sq.SqObject):
     def __load__(self, data):
         if data is None:
             # TODO handle pagination
-            resp = env.get(Metric.SEARCH_API, params={'ps': 500}, ctxt=self.endpoint)
+            resp = env.get(Metric.SEARCH_API, params={"ps": 500}, ctxt=self.endpoint)
             data_json = json.loads(resp.text)
-            for m in data_json['metrics']:
-                if self.key == m['key']:
+            for m in data_json["metrics"]:
+                if self.key == m["key"]:
                     data = m
                     break
         if data is None:
             return False
-        util.logger.debug('Loading metric %s', str(data))
-        self.type = data['type']
-        self.name = data['name']
-        self.description = data.get('description', '')
-        self.domain = data.get('domain', '')
-        self.qualitative = data['qualitative']
-        self.hidden = data['hidden']
-        self.custom = data.get('custom', None)
+        util.logger.debug("Loading metric %s", str(data))
+        self.type = data["type"]
+        self.name = data["name"]
+        self.description = data.get("description", "")
+        self.domain = data.get("domain", "")
+        self.qualitative = data["qualitative"]
+        self.hidden = data["hidden"]
+        self.custom = data.get("custom", None)
         return True
 
     def is_a_rating(self):
-        return re.match(r"^(new_)?(security|security_review|reliability|maintainability)_rating$", self.key)
+        return re.match(
+            r"^(new_)?(security|security_review|reliability|maintainability)_rating$",
+            self.key,
+        )
 
 
 def count(endpoint):
     if Metric.Count is None:
-        resp = env.get(Metric.SEARCH_API, params={'ps': 1}, ctxt=endpoint)
+        resp = env.get(Metric.SEARCH_API, params={"ps": 1}, ctxt=endpoint)
         data = json.loads(resp.text)
-        Metric.Count = data['total']
+        Metric.Count = data["total"]
     return Metric.Count
 
 
@@ -99,9 +127,15 @@ def search(endpoint, skip_hidden_metrics=True):
         m_list = {}
         page, nb_pages = 1, 1
         while page <= nb_pages:
-            data = json.loads(env.get(Metric.SEARCH_API, params={'ps': __MAX_PAGE_SIZE, 'p': page}, ctxt=endpoint).text)
-            for m in data['metrics']:
-                m_list[m['key']] = Metric(key=m['key'], endpoint=endpoint, data=m)
+            data = json.loads(
+                env.get(
+                    Metric.SEARCH_API,
+                    params={"ps": __MAX_PAGE_SIZE, "p": page},
+                    ctxt=endpoint,
+                ).text
+            )
+            for m in data["metrics"]:
+                m_list[m["key"]] = Metric(key=m["key"], endpoint=endpoint, data=m)
             nb_pages = util.nbr_pages(data)
             page += 1
         Metric.Inventory = m_list
@@ -115,10 +149,10 @@ def search(endpoint, skip_hidden_metrics=True):
     return final_list
 
 
-def as_csv(metric_list, separator=','):
-    csv = ''
+def as_csv(metric_list, separator=","):
+    csv = ""
     for metric in metric_list:
-        if metric.key == 'new_development_cost':
+        if metric.key == "new_development_cost":
             # Skip new_development_cost metric to work around a SonarQube 7.9 bug
             continue
         csv = csv + f"{metric.key}{separator}"
@@ -126,4 +160,7 @@ def as_csv(metric_list, separator=','):
 
 
 def is_a_rating(metric):
-    return re.match(r"^(new_)?(security|security_review|reliability|maintainability)_rating$", metric)
+    return re.match(
+        r"^(new_)?(security|security_review|reliability|maintainability)_rating$",
+        metric,
+    )

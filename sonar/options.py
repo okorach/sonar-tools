@@ -17,21 +17,21 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Cmd line options
 
-'''
+"""
 
-WITH_URL = 'withURL'
-WITH_NAME = 'withName'
-WITH_LAST_ANALYSIS = 'withLastAnalysis'
-WITH_BRANCHES = 'withBranches'
+WITH_URL = "withURL"
+WITH_NAME = "withName"
+WITH_LAST_ANALYSIS = "withLastAnalysis"
+WITH_BRANCHES = "withBranches"
 
-CSV_SEPARATOR = 'csvSeparator'
-FORMAT = 'format'
+CSV_SEPARATOR = "csvSeparator"
+FORMAT = "format"
 
-DEFAULT = '__default__'
+DEFAULT = "__default__"
 
 ERR_SONAR_API_AUTHENTICATION = 1
 ERR_SONAR_API_AUTHORIZATION = 2

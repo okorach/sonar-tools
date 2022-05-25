@@ -21,12 +21,12 @@ import setuptools
 from sonar import version
 
 
-with open("README.md", "r", encoding='utf-8') as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 setuptools.setup(
-    name='sonar-tools',
+    name="sonar-tools",
     version=version.PACKAGE_VERSION,
-    scripts=['sonar-tools'],
+    scripts=["sonar-tools"],
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",
     description="A collection of utility scripts for SonarQube",
@@ -39,16 +39,14 @@ setuptools.setup(
         "Source Code": "https://github.com/okorach/sonar-tools",
     },
     packages=setuptools.find_packages(),
-    package_data={
-        "sonar": ["LICENSE", "audit/rules.json", "sonar-audit.properties"]
-    },
+    package_data={"sonar": ["LICENSE", "audit/rules.json", "sonar-audit.properties"]},
     install_requires=[
-        'pytz',
-        'argparse',
-        'datetime',
-        'python-dateutil',
-        'requests',
-        'jprops'
+        "pytz",
+        "argparse",
+        "datetime",
+        "python-dateutil",
+        "requests",
+        "jprops",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -56,20 +54,20 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     entry_points={
-        'console_scripts': [
-            'sonar-audit = sonar.audit.audit:main',
-            'sonar-projects-export = sonar.projects_export:main',
-            'sonar-projects-import = sonar.projects_import:main',
-            'sonar-measures-export = sonar.measures_export:main',
-            'sonar-housekeeper = sonar.housekeeper:main',
-            'sonar-issues-sync = sonar.findings.sync:main',
-            'sonar-findings-sync = sonar.findings.sync:main',
-            'sonar-custom-measures = sonar.cust_measures:main',
-            'sonar-issues-export = sonar.findings.export:main',
-            'sonar-findings-export = sonar.findings.export:main',
-            'sonar-loc = sonar.loc:main',
-            'sonar-config = sonar.config:main'
+        "console_scripts": [
+            "sonar-audit = sonar.audit.audit:main",
+            "sonar-projects-export = sonar.projects_export:main",
+            "sonar-projects-import = sonar.projects_import:main",
+            "sonar-measures-export = sonar.measures_export:main",
+            "sonar-housekeeper = sonar.housekeeper:main",
+            "sonar-issues-sync = sonar.findings.sync:main",
+            "sonar-findings-sync = sonar.findings.sync:main",
+            "sonar-custom-measures = sonar.cust_measures:main",
+            "sonar-issues-export = sonar.findings.export:main",
+            "sonar-findings-export = sonar.findings.export:main",
+            "sonar-loc = sonar.loc:main",
+            "sonar-config = sonar.config:main",
         ]
     },
-    python_requires='>=3.6',
+    python_requires=">=3.6",
 )

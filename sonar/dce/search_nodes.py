@@ -17,22 +17,22 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Abstraction of the Search Node concept
 
-'''
+"""
 
 import sonar.utilities as util
 from sonar.audit import rules
 import sonar.audit.problem as pb
 from sonar.dce import nodes
 
-_STORE_SIZE = 'Store Size'
-_ES_STATE = 'Search State'
+_STORE_SIZE = "Store Size"
+_ES_STATE = "Search State"
+
 
 class SearchNode(nodes.DceNode):
-
     def __str__(self):
         return f"Search Node '{self.name()}'"
 
@@ -40,10 +40,10 @@ class SearchNode(nodes.DceNode):
         return util.int_memory(self.json[_ES_STATE][_STORE_SIZE])
 
     def name(self):
-        return self.json['Name']
+        return self.json["Name"]
 
     def node_type(self):
-        return 'SEARCH'
+        return "SEARCH"
 
     def audit(self):
         util.logger.info("Auditing %s", str(self))
@@ -57,17 +57,28 @@ class SearchNode(nodes.DceNode):
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             return [pb.Problem(rule.type, rule.severity, rule.msg)]
         elif index_size is None:
-            util.logger.debug("Search server index size missing, audit of ES index vs heap skipped...")
+            util.logger.debug(
+                "Search server index size missing, audit of ES index vs heap skipped..."
+            )
             return []
         elif index_size == 0:
             rule = rules.get_rule(rules.RuleId.DCE_ES_INDEX_EMPTY)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)))]
         elif es_heap < 2 * index_size and es_heap < index_size + 1000:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(es_heap, index_size))]
+            return [
+                pb.Problem(
+                    rule.type, rule.severity, rule.msg.format(es_heap, index_size)
+                )
+            ]
         else:
-            util.logger.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_heap, index_size)
+            util.logger.debug(
+                "Search server memory %d MB is correct wrt to index size of %d MB",
+                es_heap,
+                index_size,
+            )
             return []
+
 
 def audit(sub_sif, sif):
     searchnodes = []
@@ -82,12 +93,18 @@ def audit(sub_sif, sif):
         size_i = searchnodes[i].store_size()
         if size_i is None:
             continue
-        for j in range(i+1, len(searchnodes)):
+        for j in range(i + 1, len(searchnodes)):
             size_j = searchnodes[j].store_size()
             if size_j is None or size_j == 0:
                 continue
             store_ratio = size_i / size_j
             if store_ratio < 0.5 or store_ratio > 2:
                 rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(searchnodes[i]), str(searchnodes[j]))))
+                problems.append(
+                    pb.Problem(
+                        rule.type,
+                        rule.severity,
+                        rule.msg.format(str(searchnodes[i]), str(searchnodes[j])),
+                    )
+                )
     return problems

@@ -25,18 +25,18 @@ import json
 from sonar import sqobject
 import sonar.utilities as util
 
-_DEVOPS_PLATFORM_TYPES = ('github', 'azure', 'bitbucket', 'bitbucketcloud', 'gitlab')
+_DEVOPS_PLATFORM_TYPES = ("github", "azure", "bitbucket", "bitbucketcloud", "gitlab")
+
 
 class DevopsPlatform(sqobject.SqObject):
-
     def __init__(self, key, platform_type, endpoint, data=None):
         super().__init__(key, endpoint)
         self.type = platform_type
         self.json = data
-        if platform_type == 'bitbucketcloud':
-            self.url = 'https://bitbucket.org'
+        if platform_type == "bitbucketcloud":
+            self.url = "https://bitbucket.org"
         else:
-            self.url = data['url']
+            self.url = data["url"]
         util.logger.debug("Created %s", str(self))
 
     def uuid(self):
@@ -44,32 +44,33 @@ class DevopsPlatform(sqobject.SqObject):
 
     def __str__(self):
         string = f"devops platform '{self.key}'"
-        if self.type == 'bitbucketcloud':
+        if self.type == "bitbucketcloud":
             string += f" workspace '{self.json['workspace']}'"
         return string
 
     def to_json(self):
         json_data = self.json.copy()
-        json_data.pop('url', None)
-        json_data.pop('key', None)
-        json_data.update({'key': self.key, 'type': self.type, 'url': self.url})
+        json_data.pop("url", None)
+        json_data.pop("key", None)
+        json_data.update({"key": self.key, "type": self.type, "url": self.url})
         return json_data
 
 
 def get_all(endpoint):
     """Gets several settings as bulk (returns a dict)"""
     object_list = {}
-    resp = endpoint.get('api/alm_settings/list_definitions')
+    resp = endpoint.get("api/alm_settings/list_definitions")
     data = json.loads(resp.text)
     for t in _DEVOPS_PLATFORM_TYPES:
         for d in data[t]:
-            o = DevopsPlatform(d['key'], endpoint=endpoint, platform_type=t, data=d)
+            o = DevopsPlatform(d["key"], endpoint=endpoint, platform_type=t, data=d)
         object_list[o.uuid()] = o
     return object_list
 
-def settings(endpoint, format='json'):
+
+def settings(endpoint, format="json"):
     object_dict = get_all(endpoint)
-    if format is not None and format.lower() == 'json':
+    if format is not None and format.lower() == "json":
         json_data = {}
         for s in object_dict.values():
             json_data[s.uuid()] = s.to_json()

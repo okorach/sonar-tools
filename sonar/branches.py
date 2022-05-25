@@ -17,11 +17,11 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Abstraction of the SonarQube "branch" concept
 
-'''
+"""
 
 import datetime
 import pytz
@@ -56,8 +56,8 @@ class Branch(components.Component):
         return _uuid(self.project.key, self.name)
 
     def last_analysis_date(self):
-        if self._last_analysis_date is None and 'analysisDate' in self.json:
-            self._last_analysis_date = util.string_to_date(self.json['analysisDate'])
+        if self._last_analysis_date is None and "analysisDate" in self.json:
+            self._last_analysis_date = util.string_to_date(self.json["analysisDate"])
         return self._last_analysis_date
 
     def last_analysis_age(self, rounded_to_days=True):
@@ -71,14 +71,17 @@ class Branch(components.Component):
             return today - last_analysis
 
     def is_purgeable(self):
-        return self.json.get('excludedFromPurge', False)
+        return self.json.get("excludedFromPurge", False)
 
     def is_main(self):
-        return self.json.get('isMain', False)
+        return self.json.get("isMain", False)
 
     def delete(self, api=None, params=None):
         util.logger.info("Deleting %s", str(self))
-        if not self.post('api/project_branches/delete', params={'branch': self.name, 'project': self.project.key}):
+        if not self.post(
+            "api/project_branches/delete",
+            params={"branch": self.name, "project": self.project.key},
+        ):
             util.logger.error("%s: deletion failed", str(self))
             return False
         util.logger.info("%s: Successfully deleted", str(self))
@@ -90,34 +93,65 @@ class Branch(components.Component):
     def __audit_zero_loc(self):
         if self.last_analysis_date() is not None and self.ncloc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
-            return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)),
-                               concerned_object=self)]
+            return [
+                problem.Problem(
+                    rule.type,
+                    rule.severity,
+                    rule.msg.format(str(self)),
+                    concerned_object=self,
+                )
+            ]
         return []
 
     def get_measures(self, metrics_list):
-        m = measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
-        if 'ncloc' in m:
-            self._ncloc = 0 if m['ncloc'] is None else int(m['ncloc'])
+        m = measures.get(
+            self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint
+        )
+        if "ncloc" in m:
+            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
             if self.is_main():
                 self.project._ncloc = self._ncloc
         return m
 
     def get_issues(self):
-        return issues.search_all(endpoint=self.endpoint,
-                                 params={'componentKeys': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
+        return issues.search_all(
+            endpoint=self.endpoint,
+            params={
+                "componentKeys": self.project.key,
+                "branch": self.name,
+                "additionalFields": "comments",
+            },
+        )
 
     def get_hotspots(self):
-        return hotspots.search(endpoint=self.endpoint,
-                               params={'projectKey': self.project.key, 'branch': self.name, 'additionalFields': 'comments'})
+        return hotspots.search(
+            endpoint=self.endpoint,
+            params={
+                "projectKey": self.project.key,
+                "branch": self.name,
+                "additionalFields": "comments",
+            },
+        )
 
     def get_findings(self):
         return self.get_issues() + self.get_hotspots()
 
     def sync(self, another_branch, sync_settings):
         report, counters = [], {}
-        (report, counters) = syncer.sync_lists(self.get_issues(), another_branch.get_issues(), self, another_branch, sync_settings=sync_settings)
-        (tmp_report, tmp_counts) = syncer.sync_lists(self.get_hotspots(), another_branch.get_hotspots(), self, another_branch,
-                                                     sync_settings=sync_settings)
+        (report, counters) = syncer.sync_lists(
+            self.get_issues(),
+            another_branch.get_issues(),
+            self,
+            another_branch,
+            sync_settings=sync_settings,
+        )
+        (tmp_report, tmp_counts) = syncer.sync_lists(
+            self.get_hotspots(),
+            another_branch.get_hotspots(),
+            self,
+            another_branch,
+            sync_settings=sync_settings,
+        )
         report += tmp_report
         counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
@@ -127,24 +161,23 @@ class Branch(components.Component):
         if self.is_main() or age is None:
             # Main branch (not purgeable) or branch not analyzed yet
             return []
-        max_age = audit_settings['audit.projects.branches.maxLastAnalysisAge']
+        max_age = audit_settings["audit.projects.branches.maxLastAnalysisAge"]
         problems = []
         if not self.is_purgeable():
             util.logger.debug("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
             msg = rule.msg.format(str(self), age)
-            problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(
+                problem.Problem(rule.type, rule.severity, msg, concerned_object=self)
+            )
         else:
             util.logger.debug("%s age is %d days", str(self), age)
         return problems
 
     def audit(self, audit_settings):
         util.logger.debug("Auditing %s", str(self))
-        return (
-            self.__audit_last_analysis(audit_settings)
-            + self.__audit_zero_loc()
-        )
+        return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc()
 
 
 def _uuid(project_key, branch_name):

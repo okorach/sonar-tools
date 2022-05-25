@@ -28,14 +28,18 @@ _CONFIG_SETTINGS = None
 def _load_properties_file(file):
     settings = {}
     try:
-        with open(file, 'r', encoding="utf-8") as fp:
+        with open(file, "r", encoding="utf-8") as fp:
             util.logger.info("Loading config file %s", file)
             settings = jprops.load_properties(fp)
     except FileNotFoundError:
         pass
     except PermissionError:
-        util.logger.warning("Insufficient permissions to open file %s, configuration will be skipped", file)
+        util.logger.warning(
+            "Insufficient permissions to open file %s, configuration will be skipped",
+            file,
+        )
     return settings
+
 
 def load(config_name=None, settings=None):
     global _CONFIG_SETTINGS
@@ -43,8 +47,12 @@ def load(config_name=None, settings=None):
     if settings is None:
         settings = {}
 
-    default_conf = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
-    home_conf = _load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties")
+    default_conf = _load_properties_file(
+        pathlib.Path(__file__).parent / f"{config_name}.properties"
+    )
+    home_conf = _load_properties_file(
+        f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties"
+    )
     local_conf = _load_properties_file(f"{os.getcwd()}{os.sep}{config_name}.properties")
 
     _CONFIG_SETTINGS = {**default_conf, **home_conf, **local_conf, **settings}
@@ -59,18 +67,22 @@ def load(config_name=None, settings=None):
 def get_property(name, settings=None):
     if settings is None:
         settings = _CONFIG_SETTINGS
-    return settings.get(name, '')
+    return settings.get(name, "")
+
 
 def configure():
-    template_file = pathlib.Path(__file__).parent / 'sonar-audit.properties'
-    with open(template_file, 'r', encoding="utf-8") as fh:
+    template_file = pathlib.Path(__file__).parent / "sonar-audit.properties"
+    with open(template_file, "r", encoding="utf-8") as fh:
         text = fh.read()
 
     config_file = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
     if os.path.isfile(config_file):
-        util.logger.info("Config file '%s' already exists, sending configuration to stdout", config_file)
+        util.logger.info(
+            "Config file '%s' already exists, sending configuration to stdout",
+            config_file,
+        )
         print(text)
     else:
         util.logger.info("Creating file '%s'", config_file)
-        with open(config_file, "r", encoding='utf-8') as fh:
+        with open(config_file, "r", encoding="utf-8") as fh:
             print(text, file=fh)

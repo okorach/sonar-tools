@@ -17,18 +17,18 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Abstraction of the DCE Node concept
 
-'''
+"""
 
-HEALTH_GREEN = 'GREEN'
-HEALTH_YELLOW = 'YELLOW'
-HEALTH_RED = 'RED'
+HEALTH_GREEN = "GREEN"
+HEALTH_YELLOW = "YELLOW"
+HEALTH_RED = "RED"
+
 
 class DceNode:
-
     def __init__(self, data, sif):
         self.json = data
         self.sif = sif

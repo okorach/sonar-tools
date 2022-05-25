@@ -18,50 +18,59 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Imports a list of projects to a SonarQube platform
 
-'''
+"""
 import sys
 import json
 from sonar import projects, env, options
 import sonar.utilities as util
 
+
 def _check_sq_environments(import_sq, export_sq):
     version = import_sq.version(digits=2, as_string=True)
-    if version != export_sq['version']:
-        util.exit_fatal("Export was not performed with same SonarQube version, aborting...", options.ERR_UNSUPPORTED_OPERATION)
-    for export_plugin in export_sq['plugins']:
-        e_name = export_plugin['name']
-        e_vers = export_plugin['version']
+    if version != export_sq["version"]:
+        util.exit_fatal(
+            "Export was not performed with same SonarQube version, aborting...",
+            options.ERR_UNSUPPORTED_OPERATION,
+        )
+    for export_plugin in export_sq["plugins"]:
+        e_name = export_plugin["name"]
+        e_vers = export_plugin["version"]
         found = False
         for import_plugin in import_sq.plugins():
-            if import_plugin['name'] == e_name and import_plugin['version'] == e_vers:
+            if import_plugin["name"] == e_name and import_plugin["version"] == e_vers:
                 found = True
                 break
         if not found:
-            util.exit_fatal(f"Plugin '{e_name}' version '{e_vers}' was not found or not in same version on import platform, aborting...",
-                            options.ERR_UNSUPPORTED_OPERATION)
+            util.exit_fatal(
+                f"Plugin '{e_name}' version '{e_vers}' was not found or not in same version on import platform, aborting...",
+                options.ERR_UNSUPPORTED_OPERATION,
+            )
+
 
 def main():
-    parser = util.set_common_args('Imports a list of projects in a SonarQube platform')
-    parser.add_argument('-f', '--projectsFile', required=True, help='File with the list of projects')
+    parser = util.set_common_args("Imports a list of projects in a SonarQube platform")
+    parser.add_argument(
+        "-f", "--projectsFile", required=True, help="File with the list of projects"
+    )
     args = util.parse_and_check_token(parser)
     sq = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
 
-    with open(args.projectsFile, "r", encoding='utf-8') as file:
+    with open(args.projectsFile, "r", encoding="utf-8") as file:
         data = json.load(file)
-    project_list = data['project_exports']
-    _check_sq_environments(sq, data['sonarqube_environment'])
+    project_list = data["project_exports"]
+    _check_sq_environments(sq, data["sonarqube_environment"])
 
     nb_projects = len(project_list)
     util.logger.info("%d projects to import", nb_projects)
     i = 0
     statuses = {}
     for project in project_list:
-        status = projects.create_project(key=project['key'], sqenv=sq)
+        status = projects.create_project(key=project["key"], sqenv=sq)
         if status != 200:
             s = f"CREATE {status}"
             if s in statuses:
@@ -69,16 +78,22 @@ def main():
             else:
                 statuses[s] = 1
         else:
-            status = projects.Project(project['key'], endpoint=sq).importproject()
+            status = projects.Project(project["key"], endpoint=sq).importproject()
             s = f"IMPORT {status}"
             if s in statuses:
                 statuses[s] += 1
             else:
                 statuses[s] = 1
         i += 1
-        util.logger.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects,
-                         int(i * 100 / nb_projects), project['key'], status)
-        summary = ''
+        util.logger.info(
+            "%d/%d exports (%d%%) - Latest: %s - %s",
+            i,
+            nb_projects,
+            int(i * 100 / nb_projects),
+            project["key"],
+            status,
+        )
+        summary = ""
         for k, v in statuses.items():
             summary += f"{k}:{v}, "
         util.logger.info("%s", summary[:-2])

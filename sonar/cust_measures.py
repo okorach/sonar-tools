@@ -18,12 +18,12 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
     This script manipulates custom measures. You may:
 
     Update a custom measure value:
         Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
-'''
+"""
 
 from sonar import env
 import sonar.custom_measures as cust_measures
@@ -33,14 +33,20 @@ import sonar.utilities as utils
 def parse_args(desc):
     parser = utils.set_common_args(desc)
     parser = utils.set_project_args(parser)
-    parser.add_argument('-m', '--metricKey', required=True, help='What custom metric to work on')
-    parser.add_argument('--value', required=False, help='Updates the value of the metric')
-    parser.add_argument('--description', required=False, help='Updates the description of the metric')
+    parser.add_argument(
+        "-m", "--metricKey", required=True, help="What custom metric to work on"
+    )
+    parser.add_argument(
+        "--value", required=False, help="Updates the value of the metric"
+    )
+    parser.add_argument(
+        "--description", required=False, help="Updates the description of the metric"
+    )
     return utils.parse_and_check_token(parser)
 
 
 def main():
-    args = parse_args('Manipulate custom metrics')
+    args = parse_args("Manipulate custom metrics")
     sqenv = env.Environment(some_url=args.url, some_token=args.token)
     env.set_env(args.url, args.token)
 
@@ -50,12 +56,16 @@ def main():
         if params[key] is None:
             del params[key]
     # Add SQ environment
-    params.update({'env': sqenv})
+    params.update({"env": sqenv})
 
-    if params.get('value', None) is not None:
-        cust_measures.update(project_key=params['componentKeys'], metric_key=params['metricKey'],
-            value=params['value'], description=params.get('description', None))
+    if params.get("value", None) is not None:
+        cust_measures.update(
+            project_key=params["componentKeys"],
+            metric_key=params["metricKey"],
+            value=params["value"],
+            description=params.get("description", None),
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

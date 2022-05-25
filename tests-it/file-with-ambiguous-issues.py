@@ -21,6 +21,7 @@
 
 import sys
 
+
 def do_something(value):
     # FIXME: Pass value from cmd line
     new_val = value + 1
@@ -34,10 +35,6 @@ def main():
     sys.exit(0)
 
 
-
-
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     # FIXME: Pass value from cmd line
     main()

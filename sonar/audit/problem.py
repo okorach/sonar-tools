@@ -19,10 +19,11 @@
 #
 import sys
 import sonar.utilities as util
+
 # Using enum class create enumerations
 
 
-class Problem():
+class Problem:
     def __init__(self, problem_type, severity, msg, concerned_object=None):
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
@@ -36,36 +37,36 @@ class Problem():
 
     def to_json(self):
         d = vars(self)
-        d['type'] = str(self.type)
-        d['severity'] = str(self.severity)
-        d['concerned_object'] = str(d['concerned_object'])
+        d["type"] = str(self.type)
+        d["severity"] = str(self.severity)
+        d["concerned_object"] = str(d["concerned_object"])
         return util.json_dump(d)
 
-    def to_csv(self, separator=','):
+    def to_csv(self, separator=","):
         return f'{self.severity}{separator}{self.type}{separator}"{self.message}"'
 
 
-def dump_report(problems, file, file_format, separator=','):
+def dump_report(problems, file, file_format, separator=","):
     if file is None:
         f = sys.stdout
         util.logger.info("Dumping report to stdout")
     else:
-        f = open(file, "w", encoding='utf-8')
+        f = open(file, "w", encoding="utf-8")
         util.logger.info("Dumping report to file '%s'", file)
-    if file_format == 'json':
+    if file_format == "json":
         print("[", file=f)
     is_first = True
     for p in problems:
-        if file_format is not None and file_format == 'json':
+        if file_format is not None and file_format == "json":
             pfx = "" if is_first else ",\n"
             p_dump = pfx + p.to_json()
-            print(p_dump, file=f, end='')
+            print(p_dump, file=f, end="")
             is_first = False
         else:
             p_dump = p.to_csv(separator)
             print(p_dump, file=f)
 
-    if file_format == 'json':
+    if file_format == "json":
         print("\n]", file=f)
     if file is not None:
         f.close()
