@@ -17,18 +17,17 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Abstraction of the SonarQube general object concept
 
-'''
+"""
 
 import json
 from sonar import env, utilities
 
 
 class SqObject:
-
     def __init__(self, key, endpoint):
         self.key = key
         self.endpoint = endpoint
@@ -53,18 +52,21 @@ class SqObject:
         resp = env.delete(api, params, self.endpoint)
         return (resp.status_code // 100) == 2
 
+
 def search_objects(api, endpoint, key_field, returned_field, object_class, params):
     __MAX_SEARCH = 500
     new_params = {} if params is None else params.copy()
-    if 'ps' not in new_params:
-        new_params['ps'] = __MAX_SEARCH
+    if "ps" not in new_params:
+        new_params["ps"] = __MAX_SEARCH
     page, nb_pages = 1, 1
     objects_list = {}
     while page <= nb_pages:
-        new_params['p'] = page
+        new_params["p"] = page
         data = json.loads(env.get(api, params=new_params, ctxt=endpoint).text)
         for obj in data[returned_field]:
-            objects_list[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
+            objects_list[obj[key_field]] = object_class(
+                obj[key_field], endpoint=endpoint, data=obj
+            )
         nb_pages = utilities.nbr_pages(data)
         page += 1
     return objects_list

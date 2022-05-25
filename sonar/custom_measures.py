@@ -17,20 +17,28 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Abstraction of the SonarQube "custom measure" concept
 
-'''
+"""
 import json
 from sonar import env
 import sonar.sqobject as sq
 
 
 class CustomMeasure(sq.SqObject):
-    API_ROOT = 'api/custom_measures/'
+    API_ROOT = "api/custom_measures/"
 
-    def __init__(self, key=None, endpoint=None, uuid=None, project_key=None, value=None, description=None):
+    def __init__(
+        self,
+        key=None,
+        endpoint=None,
+        uuid=None,
+        project_key=None,
+        value=None,
+        description=None,
+    ):
         super().__init__(key, endpoint)
         self.uuid = uuid
         self.projectKey = project_key
@@ -38,26 +46,48 @@ class CustomMeasure(sq.SqObject):
         self.description = description
 
     def create(self, project_key, metric_key, value, description=None):
-        return self.post(CustomMeasure.API_ROOT + 'create',
-            {'component': project_key, 'metricKeys': metric_key, 'value': value, 'description': description})
+        return self.post(
+            CustomMeasure.API_ROOT + "create",
+            {
+                "component": project_key,
+                "metricKeys": metric_key,
+                "value": value,
+                "description": description,
+            },
+        )
 
     def update(self, value, description=None):
-        return self.post(CustomMeasure.API_ROOT + 'update',
-            {'id': self.uuid, 'value': value, 'description': description})
+        return self.post(
+            CustomMeasure.API_ROOT + "update",
+            {"id": self.uuid, "value": value, "description": description},
+        )
 
     def delete(self, api=None, params=None):
-        return self.post(CustomMeasure.API_ROOT + 'delete', {'id': self.uuid})
+        return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid})
 
 
 def search(project_key, endpoint=None):
-    resp = env.get(CustomMeasure.API_ROOT + 'search', {'projectKey': project_key, 'ps': 500}, ctxt=endpoint)
+    resp = env.get(
+        CustomMeasure.API_ROOT + "search",
+        {"projectKey": project_key, "ps": 500},
+        ctxt=endpoint,
+    )
     data = json.loads(resp.text)
     # nbr_measures = data['total'] if > 500, we're screwed...
     measures = []
-    for m in data['customMeasures']:
-        measures.append(CustomMeasure(uuid=m['id'], key=m['metric']['key'], project_key=m['projectKey'],
-            value=m['value'], description=m['description'], endpoint=endpoint))
+    for m in data["customMeasures"]:
+        measures.append(
+            CustomMeasure(
+                uuid=m["id"],
+                key=m["metric"]["key"],
+                project_key=m["projectKey"],
+                value=m["value"],
+                description=m["description"],
+                endpoint=endpoint,
+            )
+        )
     return measures
+
 
 def update(project_key, metric_key, value, description=None, endpoint=None):
     for m in search(project_key, endpoint=endpoint):
@@ -65,5 +95,6 @@ def update(project_key, metric_key, value, description=None, endpoint=None):
             m.update(value, description)
             break
 
+
 def delete(id, endpoint=None):
-    return env.post(CustomMeasure.API_ROOT + 'delete', {'id': id}, ctxt=endpoint)
+    return env.post(CustomMeasure.API_ROOT + "delete", {"id": id}, ctxt=endpoint)

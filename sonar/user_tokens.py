@@ -17,11 +17,11 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Abstraction of the SonarQube "user_token" concept
 
-'''
+"""
 import json
 from sonar import env
 import sonar.sqobject as sq
@@ -29,12 +29,20 @@ import sonar.utilities as util
 
 
 class UserToken(sq.SqObject):
-    API_ROOT = 'user_tokens'
-    API_REVOKE = API_ROOT + '/revoke'
-    API_SEARCH = API_ROOT + '/search'
-    API_GENERATE = API_ROOT + '/generate'
+    API_ROOT = "user_tokens"
+    API_REVOKE = API_ROOT + "/revoke"
+    API_SEARCH = API_ROOT + "/search"
+    API_GENERATE = API_ROOT + "/generate"
 
-    def __init__(self, login, name=None, json_data=None, created_at=None, token=None, endpoint=None):
+    def __init__(
+        self,
+        login,
+        name=None,
+        json_data=None,
+        created_at=None,
+        token=None,
+        endpoint=None,
+    ):
         super().__init__(login, endpoint)
         self.login = login
         if isinstance(created_at, str):
@@ -42,13 +50,15 @@ class UserToken(sq.SqObject):
         else:
             self.created_at = created_at
         self.name = name
-        if self.name is None and 'name' in json_data:
-            self.name = json_data['name']
-        if self.created_at is None and 'createdAt' in json_data:
-            self.created_at = util.string_to_date(json_data['createdAt'])
+        if self.name is None and "name" in json_data:
+            self.name = json_data["name"]
+        if self.created_at is None and "createdAt" in json_data:
+            self.created_at = util.string_to_date(json_data["createdAt"])
         self.last_connection_date = None
-        if 'lastConnectionDate' in json_data:
-            self.last_connection_date = util.string_to_date(json_data['lastConnectionDate'])
+        if "lastConnectionDate" in json_data:
+            self.last_connection_date = util.string_to_date(
+                json_data["lastConnectionDate"]
+            )
         self.token = token
         util.logger.debug("Created token '%s'", str(self))
 
@@ -58,23 +68,35 @@ class UserToken(sq.SqObject):
     def revoke(self):
         if self.name is None:
             return False
-        util.logger.info("Revoking token '%s' of user login '%s'", self.name, self.login)
-        env.post(UserToken.API_REVOKE, {'name': self.name, 'login': self.login}, self.endpoint)
+        util.logger.info(
+            "Revoking token '%s' of user login '%s'", self.name, self.login
+        )
+        env.post(
+            UserToken.API_REVOKE,
+            {"name": self.name, "login": self.login},
+            self.endpoint,
+        )
         return True
 
 
 def search(login, endpoint=None):
-    resp = env.get(UserToken.API_SEARCH, {'login': login}, endpoint)
+    resp = env.get(UserToken.API_SEARCH, {"login": login}, endpoint)
     token_list = []
     data = json.loads(resp.text)
-    for tk in data['userTokens']:
-        token_list.append(UserToken(
-            login=data['login'], json_data=tk, endpoint=endpoint))
+    for tk in data["userTokens"]:
+        token_list.append(
+            UserToken(login=data["login"], json_data=tk, endpoint=endpoint)
+        )
     return token_list
 
 
 def generate(name, login=None, endpoint=None):
-    resp = env.post(UserToken.API_GENERATE, {'name': name, 'login': login}, endpoint)
+    resp = env.post(UserToken.API_GENERATE, {"name": name, "login": login}, endpoint)
     data = json.loads(resp.text)
-    return UserToken(login=data['login'], name=data['name'],
-                     created_at=data['createdAt'], token=data['token'], endpoint=endpoint)
+    return UserToken(
+        login=data["login"],
+        name=data["name"],
+        created_at=data["createdAt"],
+        token=data["token"],
+        endpoint=endpoint,
+    )

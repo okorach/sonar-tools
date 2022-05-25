@@ -18,11 +18,11 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-'''
+"""
 
     Abstraction of the SonarQube "background task" concept
 
-'''
+"""
 
 import time
 import json
@@ -32,21 +32,21 @@ from sonar.audit import rules, problem
 import sonar.sqobject as sq
 import sonar.utilities as util
 
-SUCCESS = 'SUCCESS'
-PENDING = 'PENDING'
-IN_PROGRESS = 'IN_PROGRESS'
-FAILED = 'FAILED'
-CANCELED = 'CANCELED'
+SUCCESS = "SUCCESS"
+PENDING = "PENDING"
+IN_PROGRESS = "IN_PROGRESS"
+FAILED = "FAILED"
+CANCELED = "CANCELED"
 
-TIMEOUT = 'TIMEOUT'
+TIMEOUT = "TIMEOUT"
 
 STATUSES = (SUCCESS, PENDING, IN_PROGRESS, FAILED, CANCELED)
 
 __SUSPICIOUS_EXCLUSIONS = None
 __SUSPICIOUS_EXCEPTIONS = None
 
-class Task(sq.SqObject):
 
+class Task(sq.SqObject):
     def __init__(self, task_id, endpoint, data=None):
         super().__init__(task_id, endpoint)
         self._json = data
@@ -65,12 +65,16 @@ class Task(sq.SqObject):
         self.__load_context()
 
     def __load_context(self, force=False):
-        if not force and self._json is not None and ('scannerContext' in self._json or not self.has_scanner_context()):
+        if (
+            not force
+            and self._json is not None
+            and ("scannerContext" in self._json or not self.has_scanner_context())
+        ):
             # Context already retrieved or not available
             return
-        params = {'id': self.key, 'additionalFields': 'scannerContext,stacktrace'}
-        resp = env.get('ce/task', params=params, ctxt=self.endpoint)
-        self._json.update(json.loads(resp.text)['task'])
+        params = {"id": self.key, "additionalFields": "scannerContext,stacktrace"}
+        resp = env.get("ce/task", params=params, ctxt=self.endpoint)
+        self._json.update(json.loads(resp.text)["task"])
 
     def id(self):
         return self.key
@@ -82,46 +86,46 @@ class Task(sq.SqObject):
         return self._json[field]
 
     def type(self):
-        return self.__json_field('type')
+        return self.__json_field("type")
 
     def status(self):
-        return self.__json_field('status')
+        return self.__json_field("status")
 
     def component(self):
-        return self.__json_field('componentKey')
+        return self.__json_field("componentKey")
 
     def execution_time(self):
-        return self.__json_field('executionTimeMs')
+        return self.__json_field("executionTimeMs")
 
     def submitter(self):
         self.__load()
-        return self._json.get('submitterLogin', 'anonymous')
+        return self._json.get("submitterLogin", "anonymous")
 
     def has_scanner_context(self):
         self.__load()
-        return self._json.get('hasScannerContext', False)
+        return self._json.get("hasScannerContext", False)
 
     def warning_count(self):
-        return self.__json_field('warningCount')
+        return self.__json_field("warningCount")
 
     def wait_for_completion(self, timeout=180):
         wait_time = 0
         sleep_time = 0.5
-        params = {'status': ','.join(STATUSES), 'type': self.type()}
+        params = {"status": ",".join(STATUSES), "type": self.type()}
         if self.endpoint.version() >= (8, 0, 0):
-            params['component'] = self.component()
+            params["component"] = self.component()
         else:
-            params['q'] = self.component()
+            params["q"] = self.component()
         status = PENDING
         while status not in (SUCCESS, FAILED, CANCELED, TIMEOUT):
             time.sleep(sleep_time)
             wait_time += sleep_time
             sleep_time *= 2
-            resp = env.get('ce/activity', params=params, ctxt=self.endpoint)
-            for t in json.loads(resp.text)['tasks']:
-                if t['id'] != self.key:
+            resp = env.get("ce/activity", params=params, ctxt=self.endpoint)
+            for t in json.loads(resp.text)["tasks"]:
+                if t["id"] != self.key:
                     continue
-                status = t['status']
+                status = t["status"]
             if wait_time >= timeout and status not in (SUCCESS, FAILED, CANCELED):
                 status = TIMEOUT
             util.logger.debug("%s is '%s'", str(self), status)
@@ -131,12 +135,12 @@ class Task(sq.SqObject):
         if not self.has_scanner_context():
             return None
         self.__load_context()
-        context_line = self._json.get('scannerContext', None)
+        context_line = self._json.get("scannerContext", None)
         if context_line is None:
             return None
         context = {}
         for line in context_line.split("\n  - "):
-            if not line.startswith('sonar'):
+            if not line.startswith("sonar"):
                 continue
             (prop, val) = line.split("=", 1)
             context[prop] = val
@@ -144,11 +148,14 @@ class Task(sq.SqObject):
 
     def error_details(self):
         self.__load_context()
-        return (self._json.get('errorMessage', None), self._json.get('errorStacktrace', None))
+        return (
+            self._json.get("errorMessage", None),
+            self._json.get("errorStacktrace", None),
+        )
 
     def error_message(self):
         self.__load_context()
-        return self._json.get('errorMessage', None)
+        return self._json.get("errorMessage", None)
 
     def __audit_exclusions(self, exclusion_pattern, susp_exclusions, susp_exceptions):
         problems = []
@@ -158,62 +165,88 @@ class Task(sq.SqObject):
             is_exception = False
             for exception in susp_exceptions:
                 if re.search(rf"{exception}", exclusion_pattern):
-                    util.logger.debug("Exclusion %s matches exception %s, no audit problem will be raised",
-                                      exclusion_pattern, exception)
+                    util.logger.debug(
+                        "Exclusion %s matches exception %s, no audit problem will be raised",
+                        exclusion_pattern,
+                        exception,
+                    )
                     is_exception = True
                     break
             if not is_exception:
                 rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
-                msg = rule.msg.format(f"project key '{self.component()}'", exclusion_pattern)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
-                break     # Report only on the 1st suspicious match
+                msg = rule.msg.format(
+                    f"project key '{self.component()}'", exclusion_pattern
+                )
+                problems.append(
+                    problem.Problem(
+                        rule.type, rule.severity, msg, concerned_object=self
+                    )
+                )
+                break  # Report only on the 1st suspicious match
         return problems
 
     def __audit_disabled_scm(self, audit_settings, scan_context):
-        if not audit_settings.get('audit.project.scm.disabled', True):
-            util.logger.info("Auditing disabled SCM integration is turned off, skipping...")
+        if not audit_settings.get("audit.project.scm.disabled", True):
+            util.logger.info(
+                "Auditing disabled SCM integration is turned off, skipping..."
+            )
             return []
 
-        if scan_context.get('sonar.scm.disabled', 'false') == 'false':
+        if scan_context.get("sonar.scm.disabled", "false") == "false":
             return []
         rule = rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED)
         proj = self.component()
-        return [problem.Problem(rule.type, rule.severity, rule.msg.format(f"{str(proj)}'"), concerned_object=proj)]
+        return [
+            problem.Problem(
+                rule.type,
+                rule.severity,
+                rule.msg.format(f"{str(proj)}'"),
+                concerned_object=proj,
+            )
+        ]
 
     def audit(self, audit_settings):
-        if not audit_settings['audit.projects.exclusions']:
-            util.logger.info('Project exclusions auditing disabled, skipping...')
+        if not audit_settings["audit.projects.exclusions"]:
+            util.logger.info("Project exclusions auditing disabled, skipping...")
             return []
-        util.logger.debug('Auditing %s', str(self))
+        util.logger.debug("Auditing %s", str(self))
         if not self.has_scanner_context():
-            util.logger.info("Last background task of project key '%s' has no scanner context, can't audit scanner context",
-                             self.component())
+            util.logger.info(
+                "Last background task of project key '%s' has no scanner context, can't audit scanner context",
+                self.component(),
+            )
             return []
         problems = []
         context = self.scanner_context()
-        susp_exclusions = _get_suspicious_exclusions(audit_settings['audit.projects.suspiciousExclusionsPatterns'])
-        susp_exceptions = _get_suspicious_exceptions(audit_settings['audit.projects.suspiciousExclusionsExceptions'])
-        for prop in ('sonar.exclusions', 'sonar.global.exclusions'):
+        susp_exclusions = _get_suspicious_exclusions(
+            audit_settings["audit.projects.suspiciousExclusionsPatterns"]
+        )
+        susp_exceptions = _get_suspicious_exceptions(
+            audit_settings["audit.projects.suspiciousExclusionsExceptions"]
+        )
+        for prop in ("sonar.exclusions", "sonar.global.exclusions"):
             if context.get(prop, None) is None:
                 continue
             for excl in util.csv_to_list(context[prop]):
                 util.logger.debug("Pattern = '%s'", excl)
-                problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
+                problems += self.__audit_exclusions(
+                    excl, susp_exclusions, susp_exceptions
+                )
         problems += self.__audit_disabled_scm(audit_settings, context)
         return problems
 
 
 def search(only_current=False, component_key=None, endpoint=None):
-    params = {'status': ','.join(STATUSES)}
+    params = {"status": ",".join(STATUSES)}
     if only_current:
-        params['onlyCurrents'] = 'true'
+        params["onlyCurrents"] = "true"
     if component_key is not None:
-        params['component'] = component_key
-    resp = env.get('ce/activity', params=params, ctxt=endpoint)
+        params["component"] = component_key
+    resp = env.get("ce/activity", params=params, ctxt=endpoint)
     data = json.loads(resp.text)
     task_list = []
-    for t in data['tasks']:
-        task_list.append(Task(t['id'], endpoint, data=t))
+    for t in data["tasks"]:
+        task_list.append(Task(t["id"], endpoint, data=t))
     return task_list
 
 
@@ -246,6 +279,6 @@ def _get_suspicious_exceptions(patterns):
     global __SUSPICIOUS_EXCEPTIONS
     if __SUSPICIOUS_EXCEPTIONS is not None:
         return __SUSPICIOUS_EXCEPTIONS
-#    __SUSPICIOUS_EXCEPTIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
+    #    __SUSPICIOUS_EXCEPTIONS = [x.strip().replace('*', '\\*').replace('.', '\\.').replace('?', '\\?')
     __SUSPICIOUS_EXCEPTIONS = util.csv_to_list(patterns)
     return __SUSPICIOUS_EXCEPTIONS

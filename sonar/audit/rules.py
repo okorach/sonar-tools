@@ -162,28 +162,44 @@ def to_id(val):
 def load():
     global __RULES
     import pathlib
+
     util.logger.info("Loading audit rules")
     path = pathlib.Path(__file__).parent
-    with open(path / 'rules.json', 'r', encoding='utf-8') as rulefile:
+    with open(path / "rules.json", "r", encoding="utf-8") as rulefile:
         rules = json.loads(rulefile.read())
     rulefile.close()
     __RULES = {}
     for rule_id, rule in rules.items():
         if to_id(rule_id) is None:
-            raise RuleConfigError(f"Rule '{rule_id}' from rules.json is not a legit ruleId")
-        if types.to_type(rule.get('type', '')) is None:
-            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect type")
-        if severities.to_severity(rule.get('severity', '')) is None:
-            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect severity")
-        if 'message' not in rule:
-            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no message defined'")
+            raise RuleConfigError(
+                f"Rule '{rule_id}' from rules.json is not a legit ruleId"
+            )
+        if types.to_type(rule.get("type", "")) is None:
+            raise RuleConfigError(
+                f"Rule '{rule_id}' from rules.json has no or incorrect type"
+            )
+        if severities.to_severity(rule.get("severity", "")) is None:
+            raise RuleConfigError(
+                f"Rule '{rule_id}' from rules.json has no or incorrect severity"
+            )
+        if "message" not in rule:
+            raise RuleConfigError(
+                f"Rule '{rule_id}' from rules.json has no message defined'"
+            )
         __RULES[to_id(rule_id)] = Rule(
-            rule_id, rule['severity'], rule['type'], rule.get('object', ''), rule['message'])
+            rule_id,
+            rule["severity"],
+            rule["type"],
+            rule.get("object", ""),
+            rule["message"],
+        )
 
     # Cross check that all rule Ids are defined in the JSON
     for rule in RuleId:
         if rule not in __RULES:
-            raise RuleConfigError(f"Rule {rule} has no configuration defined in 'rules.json'")
+            raise RuleConfigError(
+                f"Rule {rule} has no configuration defined in 'rules.json'"
+            )
 
 
 def get_rule(rule_id):

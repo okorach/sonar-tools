@@ -17,11 +17,11 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-'''
+"""
 
     Abstraction of the SonarQube "pull request" concept
 
-'''
+"""
 
 import datetime
 import pytz
@@ -30,6 +30,7 @@ import sonar.utilities as util
 from sonar.audit import rules, problem
 
 _PULL_REQUESTS = {}
+
 
 class PullRequest(components.Component):
     def __init__(self, project, key, endpoint=None, data=None):
@@ -51,8 +52,8 @@ class PullRequest(components.Component):
         return _uuid(self.project.key, self.key)
 
     def last_analysis_date(self):
-        if self._last_analysis_date is None and 'analysisDate' in self.json:
-            self._last_analysis_date = util.string_to_date(self.json['analysisDate'])
+        if self._last_analysis_date is None and "analysisDate" in self.json:
+            self._last_analysis_date = util.string_to_date(self.json["analysisDate"])
         return self._last_analysis_date
 
     def last_analysis_age(self, rounded_to_days=True):
@@ -67,15 +68,19 @@ class PullRequest(components.Component):
 
     def get_measures(self, metrics_list):
         util.logger.debug("self.endpoint = %s", str(self.endpoint))
-        m = measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
-        if 'ncloc' in m:
-            self._ncloc = 0 if m['ncloc'] is None else int(m['ncloc'])
+        m = measures.get(
+            self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key
+        )
+        if "ncloc" in m:
+            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
     def delete(self, api=None, params=None):
         util.logger.info("Deleting %s", str(self))
-        if not self.post('api/project_pull_requests/delete',
-                         params={'pullRequest': self.key, 'project': self.project.key}):
+        if not self.post(
+            "api/project_pull_requests/delete",
+            params={"pullRequest": self.key, "project": self.project.key},
+        ):
             util.logger.error("%s: deletion failed", str(self))
             return False
         util.logger.info("%s: Successfully deleted", str(self))
@@ -83,14 +88,20 @@ class PullRequest(components.Component):
 
     def audit(self, audit_settings):
         age = self.last_analysis_age()
-        if age is None:    # Main branch not analyzed yet
+        if age is None:  # Main branch not analyzed yet
             return []
-        max_age = audit_settings['audit.projects.pullRequests.maxLastAnalysisAge']
+        max_age = audit_settings["audit.projects.pullRequests.maxLastAnalysisAge"]
         problems = []
         if age > max_age:
             rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
-            problems.append(problem.Problem(rule.type, rule.severity,
-                                       rule.msg.format(str(self), age), concerned_object=self))
+            problems.append(
+                problem.Problem(
+                    rule.type,
+                    rule.severity,
+                    rule.msg.format(str(self), age),
+                    concerned_object=self,
+                )
+            )
         else:
             util.logger.debug("%s age is %d days", str(self), age)
         return problems
