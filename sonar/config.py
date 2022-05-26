@@ -35,6 +35,7 @@ from sonar import (
     permissions,
     users,
     groups,
+    options,
 )
 import sonar.utilities as util
 
@@ -62,6 +63,20 @@ def __parse_args(desc):
         default="",
         help="What to export (settings,qp,qg,projects,users,groups,portfolios,apps)",
     )
+    parser.add_argument(
+        "--export",
+        required=False,
+        default=False,
+        action='store_true',
+        help="to export configuration (exclusive of --import)",
+    )
+    parser.add_argument(
+        "--import",
+        required=False,
+        default=False,
+        action='store_true',
+        help="to import configuration (exclusive of --export)",
+    )
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
@@ -79,15 +94,13 @@ def __count_settings(what, sq_settings):
     return nbr_settings
 
 
-def main():
-    args = __parse_args("Extract SonarQube platform configuration")
+def __export_config(args):
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
 
     what = args.what
     if args.what == "":
         what = _EVERYTHING
     what = util.csv_to_list(what)
-
     sq_settings = {}
     sq_settings["platform"] = endpoint.basics()
     if "settings" in what:
@@ -127,6 +140,20 @@ def main():
         print(util.json_dump(sq_settings), file=fd)
 
     util.logger.info("Exported %d items", __count_settings(what, sq_settings))
+
+def main():
+    args = __parse_args("Extract SonarQube platform configuration")
+    kwargs = vars(args)
+    if not kwargs["export"] and not kwargs["import"]:
+        util.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
+    if kwargs["export"] and kwargs["import"]:
+        util.exit_fatal("--export or --import options are exclusive of each other", exit_code=options.ERR_ARGS_ERROR)
+    if kwargs["import"]:
+        util.exit_fatal("--import option not yet supported", exit_code=options.ERR_UNSUPPORTED_OPERATION)
+
+    if kwargs["export"]:
+        __export_config(args)
+
     sys.exit(0)
 
 
