@@ -155,12 +155,16 @@ def search(params=None, endpoint=None):
     )
 
 
-def get_list(endpoint, params=None, as_json=False, full_specs=False):
+def get_list(endpoint, params=None):
     util.logger.info("Listing users")
-    u_list = search(params=params, endpoint=endpoint)
-    if as_json:
-        for u_name, u_obj in u_list.copy().items():
-            u_list[u_name] = u_obj.to_json(full_specs=full_specs)
+    return search(params=params, endpoint=endpoint)
+
+
+def export(endpoint, full_specs=False):
+    util.logger.info("Exporting users")
+    u_list = {}
+    for u_name, u_obj in search(endpoint=endpoint).items():
+        u_list[u_name] = u_obj.to_json(full_specs=full_specs)
     return u_list
 
 

@@ -137,7 +137,7 @@ def __export_config(args):
             apps_settings[k].pop("key")
         sq_settings[__APPS] = apps_settings
     if "users" in what:
-        sq_settings["users"] = users.get_list(endpoint, as_json=True)
+        sq_settings["users"] = users.export(endpoint)
     if "groups" in what:
         sq_settings["groups"] = groups.get_list(endpoint, as_json=True)
     with util.open_file(args.file) as fd:
