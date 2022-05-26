@@ -71,7 +71,7 @@ def __map(k):
 def __parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_project_args(parser)
-    parser = util.set_output_file_args(parser)
+    parser = util.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
     parser.add_argument(
         "-w",
         "--what",
