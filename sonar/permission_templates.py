@@ -71,6 +71,10 @@ class PermissionTemplate(sqobject.SqObject):
             "pattern": self.project_key_pattern,
             "permissions": self.permissions()
         }
+        for t in ("users", "groups"):
+            if len(json_data["permissions"][t]) == 0:
+                json_data["permissions"].pop(t)
+
         defaults = []
         if self.is_projects_default():
             defaults.append("projects")
