@@ -167,14 +167,15 @@ class QualityProfile(sq.SqObject):
     def diff(self, another_qp):
         comp = self.compare(another_qp)
         diff_rules = {}
+        util.json_dump_debug(comp, "COMPARING ")
         for r in comp["inLeft"]:
             diff_rules[r["key"]] = r
             r.pop("key")
         for r in comp["modified"]:
             diff_rules[r["key"]] = {"modified": True}
             if r["left"]["severity"] != r["right"]["severity"]:
-                diff_rules[r["key"]] = {"severity": r["left"]["severity"]}
-            if "params" in r["left"]:
+                diff_rules[r["key"]]["severity"] = r["left"]["severity"]
+            if "params" in r["left"] and len(r["left"]["params"]) > 0:
                 diff_rules[r["key"]]["params"] = r["left"]["params"]
         return diff_rules
 
@@ -335,17 +336,21 @@ def get_object(key=None, name=None, lang=None, data=None, endpoint=None):
 
 def _convert_rule(rule, qp_lang, full_specs=False):
     d = {"severity": rule["severity"]}
+    # util.json_dump_debug(rule, "CONVERTING RULE ")
     if len(rule["params"]) > 0:
         if not full_specs:
+            d["params"] = {}
             for p in rule["params"]:
-                p.pop("htmlDesc", None)
-        d["params"] = rule["params"]
+                d["params"][p["key"]] =  p.get("defaultValue", "")
+        else:
+            d["params"] = rule["params"]
     if "templateKey" in rule:
         d["templateKey"] = rule["templateKey"]
     if rule["isTemplate"]:
         d["isTemplate"] = True
     if rule["lang"] != qp_lang:
         d["language"] = rule["lang"]
+    # util.json_dump_debug(d, "CONVERTED RULE ")
     return d
 
 
