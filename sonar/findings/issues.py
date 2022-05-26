@@ -637,7 +637,7 @@ def search(endpoint=None, params=None, raise_error=True):
         if nbr_issues > Issue.MAX_SEARCH and raise_error:
             raise TooManyIssuesError(
                 nbr_issues,
-                f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, " f"this is more than the max {Issue.MAX_SEARCH} possible",
+                f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, this is more than the max {Issue.MAX_SEARCH} possible",
             )
         # TODO Add critical log when no raise error
 

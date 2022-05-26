@@ -458,7 +458,7 @@ Is this normal ?",
             or not self.has_binding()
         ):
             util.logger.info(
-                "Community edition, binding validation disabled or %s has no binding, " "skipping binding validation...",
+                "Community edition, binding validation disabled or %s has no binding, skipping binding validation...",
                 str(self),
             )
             return []
@@ -504,12 +504,9 @@ Is this normal ?",
 
     def export_zip(self, timeout=180):
         util.logger.info("Exporting %s (synchronously)", str(self))
-        if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in [
-            "enterprise",
-            "datacenter",
-        ]:
+        if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in ("enterprise", "datacenter"):
             raise env.UnsupportedOperation(
-                "Project export is only available with Enterprise and Datacenter Edition," " or with SonarQube 9.2 or higher for any Edition"
+                "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
             )
         resp = env.post("project_dump/export", params={"key": self.key}, ctxt=self.endpoint)
         if resp.status_code != 200:

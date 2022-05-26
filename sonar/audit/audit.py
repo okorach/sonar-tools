@@ -101,7 +101,7 @@ def __parser_args(desc):
         "-w",
         "--what",
         required=False,
-        help="What to audit (qp,qg,settings,projects,users,groups,portfolios,apps) " "comma separated, everything by default",
+        help="What to audit (qp,qg,settings,projects,users,groups,portfolios,apps) comma separated, everything by default",
     )
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
     parser.add_argument(
@@ -109,7 +109,7 @@ def __parser_args(desc):
         required=False,
         dest="config",
         action="store_true",
-        help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present" "or outputs to stdout if it already exist",
+        help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
     )
     args = parser.parse_args()
     if args.sif is None and args.config is None and args.token is None:

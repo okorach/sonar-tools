@@ -180,7 +180,7 @@ class Environment:
         else:
             return None
 
-    def settings(self, settings_list=None, include_not_set=False, format="json"):
+    def settings(self, settings_list=None, include_not_set=False):
         util.logger.info("getting global settings")
         return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
 
@@ -323,7 +323,7 @@ class Environment:
                     pb.Problem(
                         typ.Type.BAD_PRACTICE,
                         sev.Severity.MEDIUM,
-                        f"Too many ({perm_counts[key]}) groups with permission {name}, " f"{maxis[key]} max recommended",
+                        f"Too many ({perm_counts[key]}) groups with permission {name}, {maxis[key]} max recommended",
                     )
                 )
         return problems
@@ -548,7 +548,7 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings):
 
 def _audit_maintainability_rating_range(value, range, rating_letter, severity, domain):
     util.logger.debug(
-        "Checking that maintainability rating threshold %3.0f%% for '%s' is " "within recommended range [%3.0f%%-%3.0f%%]",
+        "Checking that maintainability rating threshold %3.0f%% for '%s' is within recommended range [%3.0f%%-%3.0f%%]",
         value * 100,
         rating_letter,
         range[0] * 100,

@@ -24,12 +24,13 @@ from sonar import sqobject, utilities, permissions
 _PERMISSION_TEMPLATES = {}
 _DEFAULT_TEMPLATES = {}
 
+_SEARCH_API = "permissions/search_templates"
 
 class PermissionTemplate(sqobject.SqObject):
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key, endpoint)
         if data is None:
-            data = json.loads(self.get("permissions/search_templates").text)
+            data = json.loads(self.get(_SEARCH_API).text)
             for p in data["permissionTemplates"]:
                 if p["id"] == key:
                     perm_temp = p
@@ -106,7 +107,7 @@ def get_object(key, data=None, endpoint=None):
 def search(endpoint, params=None):
     new_params = {} if params is None else params.copy()
     objects_list = {}
-    data = json.loads(endpoint.get("permissions/search_templates", params=new_params).text)
+    data = json.loads(endpoint.get(_SEARCH_API, params=new_params).text)
 
     for obj in data["permissionTemplates"]:
         objects_list[obj["id"]] = PermissionTemplate(obj["id"], endpoint=endpoint, data=obj)
@@ -120,7 +121,7 @@ def get_list(endpoint):
 
 def _load_default_templates(data=None, endpoint=None):
     if data is None:
-        data = json.loads(endpoint.get("permissions/search_templates").text)
+        data = json.loads(endpoint.get(_SEARCH_API).text)
     for d in data["defaultTemplates"]:
         _DEFAULT_TEMPLATES[d["qualifier"]] = d["templateId"]
 

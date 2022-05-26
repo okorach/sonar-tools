@@ -136,7 +136,7 @@ def set_output_file_args(parser, json_fmt=True, csv_fmt=True):
             "--" + options.FORMAT,
             choices=["csv", "json"],
             required=False,
-            help="Output format for generated report.\nIf not specified, " "it is the output file extension if json or csv, then csv by default",
+            help="Output format for generated report.\nIf not specified, it is the output file extension if json or csv, then csv by default",
         )
     if csv_fmt:
         parser.add_argument(
