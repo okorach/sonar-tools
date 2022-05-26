@@ -65,8 +65,7 @@ def parse_args(desc):
     parser.add_argument(
         "--statuses",
         required=False,
-        help="comma separated status among "
-        + util.list_to_csv(issues.STATUSES + hotspots.STATUSES),
+        help="comma separated status among " + util.list_to_csv(issues.STATUSES + hotspots.STATUSES),
     )
     parser.add_argument(
         "--createdAfter",
@@ -81,20 +80,17 @@ def parse_args(desc):
     parser.add_argument(
         "--resolutions",
         required=False,
-        help="Comma separated resolution of the findings among "
-        + util.list_to_csv(issues.RESOLUTIONS + hotspots.RESOLUTIONS),
+        help="Comma separated resolution of the findings among " + util.list_to_csv(issues.RESOLUTIONS + hotspots.RESOLUTIONS),
     )
     parser.add_argument(
         "--severities",
         required=False,
-        help="Comma separated severities among"
-        + util.list_to_csv(issues.SEVERITIES + hotspots.SEVERITIES),
+        help="Comma separated severities among" + util.list_to_csv(issues.SEVERITIES + hotspots.SEVERITIES),
     )
     parser.add_argument(
         "--types",
         required=False,
-        help="Comma separated types among "
-        + util.list_to_csv(issues.TYPES + hotspots.TYPES),
+        help="Comma separated types among " + util.list_to_csv(issues.TYPES + hotspots.TYPES),
     )
     parser.add_argument("--tags", help="Comma separated findings tags", required=False)
     parser.add_argument(
@@ -147,9 +143,7 @@ def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
                     finding_json.pop("url", None)
                 if is_last and i == 0:
                     comma = ""
-                print(
-                    f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end=""
-                )
+                print(f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end="")
             else:
                 if kwargs[options.WITH_URL]:
                     url = f'{sep}"{finding.url()}"'
@@ -220,13 +214,9 @@ def __verify_inputs(params):
             options.ERR_WRONG_SEARCH_CRITERIA,
         )
 
-    diff = util.difference(
-        util.csv_to_list(params.get("types", None)), issues.TYPES + hotspots.TYPES
-    )
+    diff = util.difference(util.csv_to_list(params.get("types", None)), issues.TYPES + hotspots.TYPES)
     if diff:
-        util.exit_fatal(
-            f"Types {str(diff)} are not legit types", options.ERR_WRONG_SEARCH_CRITERIA
-        )
+        util.exit_fatal(f"Types {str(diff)} are not legit types", options.ERR_WRONG_SEARCH_CRITERIA)
 
     return True
 
@@ -266,9 +256,7 @@ def __get_project_findings(key, params, endpoint):
         and (issues_types or not type_list)
         and (issues_sevs or not sev_list)
     ):
-        findings_list = issues.search_by_project(
-            key, params=issues.get_search_criteria(params), endpoint=endpoint
-        )
+        findings_list = issues.search_by_project(key, params=issues.get_search_criteria(params), endpoint=endpoint)
     else:
         util.logger.debug(
             "Status = %s, Types = %s, Resol = %s, Sev = %s",
@@ -277,20 +265,14 @@ def __get_project_findings(key, params, endpoint):
             str(issues_resols),
             str(issues_sevs),
         )
-        util.logger.info(
-            "Selected types, severities, resolutions or statuses disables issue search"
-        )
+        util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
     if (
         (hotspot_statuses or not status_list)
         and (hotspot_resols or not resol_list)
         and (hotspot_types or not type_list)
         and (hotspot_sevs or not sev_list)
     ):
-        findings_list.update(
-            hotspots.search_by_project(
-                key, endpoint=endpoint, params=hotspots.get_search_criteria(params)
-            )
-        )
+        findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=hotspots.get_search_criteria(params)))
     else:
         util.logger.debug(
             "Status = %s, Types = %s, Resol = %s, Sev = %s",
@@ -299,9 +281,7 @@ def __get_project_findings(key, params, endpoint):
             str(hotspot_resols),
             str(hotspot_sevs),
         )
-        util.logger.info(
-            "Selected types, severities, resolutions or statuses disables issue search"
-        )
+        util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
     return findings_list
 
 
@@ -327,9 +307,7 @@ def main():
     ):
         if params.get(p, None) is not None:
             if params["useFindings"]:
-                util.logger.warning(
-                    "Selected search criteria %s will disable --useFindings", params[p]
-                )
+                util.logger.warning("Selected search criteria %s will disable --useFindings", params[p])
             params["useFindings"] = False
             break
     project_list = projects.get_projects_list(project_key, sqenv)
@@ -357,21 +335,15 @@ def main():
         if branches:
             for b in branches:
                 params["branch"] = b.name
-                all_findings.update(
-                    __get_project_findings(project_key, params=params, endpoint=sqenv)
-                )
+                all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
         params.pop("branch", None)
         if prs:
             for p in prs:
                 params["pullRequest"] = p.key
-                all_findings.update(
-                    __get_project_findings(project_key, params=params, endpoint=sqenv)
-                )
+                all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
         params.pop("pullRequest", None)
         if not (branches or prs):
-            all_findings.update(
-                __get_project_findings(project_key, params=params, endpoint=sqenv)
-            )
+            all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
 
         __dump_findings(all_findings, file, fmt, **kwargs)
         nbr_findings += len(all_findings)

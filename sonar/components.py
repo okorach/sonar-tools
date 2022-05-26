@@ -75,9 +75,7 @@ class Component(sq.SqObject):
                 for m in d["measures"]:
                     nbr_issues += int(m["value"])
                 if with_issues and nbr_issues == 0:
-                    util.logger.debug(
-                        "Subcomponent %s has 0 issues, skipping", d["key"]
-                    )
+                    util.logger.debug("Subcomponent %s has 0 issues, skipping", d["key"])
                     continue
                 comp_list[d["key"]] = Component(d["key"], self.endpoint, data=d)
                 comp_list[d["key"]].nbr_issues = nbr_issues
@@ -95,33 +93,25 @@ class Component(sq.SqObject):
     def get_number_of_issues(self):
         """Returns number of issues of a component"""
         if self.nbr_issues is None:
-            self.nbr_issues = self.get_number_of_filtered_issues(
-                {"componentKey": self.key}
-            )
+            self.nbr_issues = self.get_number_of_filtered_issues({"componentKey": self.key})
         return self.nbr_issues
 
     def get_oldest_issue_date(self):
         """Returns the oldest date of all issues found"""
         from sonar.findings import issues
 
-        return issues.get_oldest_issue(
-            endpoint=self.endpoint, params={"componentKeys": self.key}
-        )
+        return issues.get_oldest_issue(endpoint=self.endpoint, params={"componentKeys": self.key})
 
     def get_newest_issue_date(self):
         """Returns the newest date of all issues found"""
         from sonar.findings import issues
 
-        return issues.get_newest_issue(
-            endpoint=self.endpoint, params={"componentKeys": self.key}
-        )
+        return issues.get_newest_issue(endpoint=self.endpoint, params={"componentKeys": self.key})
 
     def get_issues(self):
         from sonar.findings import issues
 
-        issue_list = issues.search(
-            endpoint=self.endpoint, params={"componentKeys": self.key}
-        )
+        issue_list = issues.search(endpoint=self.endpoint, params={"componentKeys": self.key})
         self.nbr_issues = len(issue_list)
         return issue_list
 
@@ -163,9 +153,5 @@ def get_components(component_types, endpoint=None):
     return data["components"]
 
 
-def get_subcomponents(
-    component_key, strategy="children", with_issues=False, endpoint=None
-):
-    return Component(component_key, endpoint).get_subcomponents(
-        strategy=strategy, with_issues=with_issues
-    )
+def get_subcomponents(component_key, strategy="children", with_issues=False, endpoint=None):
+    return Component(component_key, endpoint).get_subcomponents(strategy=strategy, with_issues=with_issues)

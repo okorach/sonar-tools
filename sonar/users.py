@@ -55,9 +55,7 @@ class User(sq.SqObject):
         return f"user '{self.login}'"
 
     def deactivate(self):
-        env.post(
-            User.API_DEACTIVATE, {"name": self.name, "login": self.login}, self.endpoint
-        )
+        env.post(User.API_DEACTIVATE, {"name": self.name, "login": self.login}, self.endpoint)
         return True
 
     def tokens(self):
@@ -67,9 +65,7 @@ class User(sq.SqObject):
 
     def last_login_date(self):
         if self._last_login_date is None and "lastConnectionDate" in self.jsondata:
-            self._last_login_date = util.string_to_date(
-                self.jsondata["lastConnectionDate"]
-            )
+            self._last_login_date = util.string_to_date(self.jsondata["lastConnectionDate"])
         return self._last_login_date
 
     def audit(self, settings=None):
@@ -91,27 +87,18 @@ class User(sq.SqObject):
             if age > settings["audit.tokens.maxAge"]:
                 rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
                 msg = rule.msg.format(str(t), age)
-                problems.append(
-                    problem.Problem(rule.type, rule.severity, msg, concerned_object=t)
-                )
-            if (
-                t.last_connection_date is None
-                and age > settings["audit.tokens.maxUnusedAge"]
-            ):
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
+            if t.last_connection_date is None and age > settings["audit.tokens.maxUnusedAge"]:
                 rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
                 msg = rule.msg.format(str(t), age)
-                problems.append(
-                    problem.Problem(rule.type, rule.severity, msg, concerned_object=t)
-                )
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
             if t.last_connection_date is None:
                 continue
             last_cnx_age = abs((today - t.last_connection_date).days)
             if last_cnx_age > settings["audit.tokens.maxUnusedAge"]:
                 rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
                 msg = rule.msg.format(str(t), last_cnx_age)
-                problems.append(
-                    problem.Problem(rule.type, rule.severity, msg, concerned_object=t)
-                )
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
 
         cnx = self.last_login_date()
         if cnx is not None:
@@ -119,11 +106,7 @@ class User(sq.SqObject):
             if age > settings["audit.users.maxLoginAge"]:
                 rule = rules.get_rule(rules.RuleId.USER_UNUSED)
                 msg = rule.msg.format(str(self), age)
-                problems.append(
-                    problem.Problem(
-                        rule.type, rule.severity, msg, concerned_object=self
-                    )
-                )
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
 
     def to_json(self, full_specs=False):
@@ -190,7 +173,5 @@ def get_login_from_name(name, endpoint):
     if not u_list:
         return None
     if len(u_list) > 1:
-        util.logger.warning(
-            "More than 1 user with name '%s', will return the 1st one", name
-        )
+        util.logger.warning("More than 1 user with name '%s', will return the 1st one", name)
     return list(u_list.keys()).pop(0)

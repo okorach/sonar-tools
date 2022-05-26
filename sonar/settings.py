@@ -93,9 +93,7 @@ class Setting(sqobject.SqObject):
                 resp = self.get("api/settings/values", params=params)
                 data = json.loads(resp.text)["settings"]
         self.__load(data)
-        util.logger.debug(
-            "Created %s uuid %s value %s", str(self), self.uuid(), str(self.value)
-        )
+        util.logger.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
         _SETTINGS[self.uuid()] = self
 
     def __load(self, data):
@@ -107,18 +105,12 @@ class Setting(sqobject.SqObject):
         elif self.key.startswith("sonar.issue."):
             self.value = data.get("fieldValues", None)
         else:
-            self.value = util.convert_string(
-                data.get("value", data.get("values", data.get("defaultValue", "")))
-            )
+            self.value = util.convert_string(data.get("value", data.get("values", data.get("defaultValue", ""))))
         if "inherited" in data:
             self.inherited = data["inherited"]
         elif self.key == NEW_CODE_PERIOD:
             self.inherited = False
-        elif (
-            "parentValues" in data
-            or "parentValue" in data
-            or "parentFieldValues" in data
-        ):
+        elif "parentValues" in data or "parentValue" in data or "parentFieldValues" in data:
             self.inherited = False
         elif "category" in data:
             self.inherited = True
@@ -213,10 +205,7 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
         data = json.loads(resp.text)
         settings_dict = {}
         for s in data["definitions"]:
-            if (
-                s["key"].endswith("coverage.reportPath")
-                or s["key"] == "languageSpecificParameters"
-            ):
+            if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
             o = Setting(s["key"], endpoint=endpoint, data=s, project=project)
             settings_dict[o.uuid()] = o

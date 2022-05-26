@@ -57,20 +57,14 @@ class SearchNode(nodes.DceNode):
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             return [pb.Problem(rule.type, rule.severity, rule.msg)]
         elif index_size is None:
-            util.logger.debug(
-                "Search server index size missing, audit of ES index vs heap skipped..."
-            )
+            util.logger.debug("Search server index size missing, audit of ES index vs heap skipped...")
             return []
         elif index_size == 0:
             rule = rules.get_rule(rules.RuleId.DCE_ES_INDEX_EMPTY)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)))]
         elif es_heap < 2 * index_size and es_heap < index_size + 1000:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
-            return [
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(es_heap, index_size)
-                )
-            ]
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(es_heap, index_size))]
         else:
             util.logger.debug(
                 "Search server memory %d MB is correct wrt to index size of %d MB",

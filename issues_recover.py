@@ -49,9 +49,7 @@ def parse_args(desc):
     return utils.parse_and_check_token(parser)
 
 
-args = parse_args(
-    "Search for unexpectedly closed issues and recover their history in a corresponding new issue."
-)
+args = parse_args("Search for unexpectedly closed issues and recover their history in a corresponding new issue.")
 sqenv = sonar.env.Environment(some_url=args.url, some_token=args.token)
 
 # Remove unset params from the dict
@@ -85,16 +83,12 @@ print("Number of mistakenly closed issues: ", len(mistakenly_closed_issues))
 
 for issue in mistakenly_closed_issues:
     print("Searching sibling for issue key: ", issue.id)
-    (siblings, approx_siblings, modified_siblings) = issue.search_siblings(
-        non_closed_issues
-    )
+    (siblings, approx_siblings, modified_siblings) = issue.search_siblings(non_closed_issues)
     nb_siblings = len(siblings)
     if nb_siblings == 1:
         print("   Automatically applying changelog")
         siblings[0].apply_changelog(issue)
     elif nb_siblings > 1:
-        print(
-            "   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below"
-        )
+        print("   Ambiguity for issue, cannot automatically apply changelog, candidate issue keys below")
         for sibling in siblings:
             print(sibling.id + ", ")

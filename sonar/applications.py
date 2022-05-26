@@ -50,9 +50,7 @@ class Application(aggr.Aggregation):
         super()._load(data=data, api=_GET_API, key_name="key")
 
     def _load_full(self):
-        data = json.loads(
-            env.get(_GET_API, ctxt=self.endpoint, params={"application": self.key}).text
-        )
+        data = json.loads(env.get(_GET_API, ctxt=self.endpoint, params={"application": self.key}).text)
         self._json = data["application"]
         self._description = self._json.get("description", None)
 
@@ -92,28 +90,20 @@ class Application(aggr.Aggregation):
         return self._branches
 
     def delete(self, api="applications/delete", params=None):
-        _ = env.post(
-            "applications/delete", ctxt=self.endpoint, params={"application": self.key}
-        )
+        _ = env.post("applications/delete", ctxt=self.endpoint, params={"application": self.key})
         return True
 
     def _audit_empty(self, audit_settings):
         if not audit_settings["audit.applications.empty"]:
             util.logger.debug("Auditing empty applications is disabled, skipping...")
             return []
-        return super()._audit_empty_aggregation(
-            broken_rule=rules.RuleId.APPLICATION_EMPTY
-        )
+        return super()._audit_empty_aggregation(broken_rule=rules.RuleId.APPLICATION_EMPTY)
 
     def _audit_singleton(self, audit_settings):
         if not audit_settings["audit.applications.singleton"]:
-            util.logger.debug(
-                "Auditing singleton applications is disabled, skipping..."
-            )
+            util.logger.debug("Auditing singleton applications is disabled, skipping...")
             return []
-        return super()._audit_singleton_aggregation(
-            broken_rule=rules.RuleId.APPLICATION_SINGLETON
-        )
+        return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
 
     def audit(self, audit_settings):
         util.logger.info("Auditing %s", str(self))

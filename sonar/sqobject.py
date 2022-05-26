@@ -64,9 +64,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         new_params["p"] = page
         data = json.loads(env.get(api, params=new_params, ctxt=endpoint).text)
         for obj in data[returned_field]:
-            objects_list[obj[key_field]] = object_class(
-                obj[key_field], endpoint=endpoint, data=obj
-            )
+            objects_list[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
         nb_pages = utilities.nbr_pages(data)
         page += 1
     return objects_list

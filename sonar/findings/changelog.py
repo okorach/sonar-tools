@@ -33,17 +33,9 @@ class Changelog:
         cond1 = False
         cond2 = False
         for diff in self._json["diffs"]:
-            if (
-                diff["key"] == "resolution"
-                and "newValue" in diff
-                and diff["newValue"] == resolve_reason
-            ):
+            if diff["key"] == "resolution" and "newValue" in diff and diff["newValue"] == resolve_reason:
                 cond1 = True
-            if (
-                diff["key"] == "status"
-                and "newValue" in diff
-                and diff["newValue"] == "RESOLVED"
-            ):
+            if diff["key"] == "status" and "newValue" in diff and diff["newValue"] == "RESOLVED":
                 cond2 = True
         return cond1 and cond2
 
@@ -61,11 +53,7 @@ class Changelog:
         {'key': 'resolution', 'newValue': 'FIXED'},
         {'key': 'status', 'newValue': 'CLOSED', 'oldValue': 'OPEN'}]}"""
         for diff in self._json["diffs"]:
-            if (
-                diff["key"] == "status"
-                and "newValue" in diff
-                and diff["newValue"] == "CLOSED"
-            ):
+            if diff["key"] == "status" and "newValue" in diff and diff["newValue"] == "CLOSED":
                 return True
         return False
 
@@ -78,14 +66,8 @@ class Changelog:
     def is_reopen(self):
         for d in self._json["diffs"]:
             if d.get("key", "") == "status" and (
-                (
-                    d.get("newValue", "") == "REOPENED"
-                    and d.get("oldValue", "") != "CONFIRMED"
-                )
-                or (
-                    d.get("newValue", "") == "OPEN"
-                    and d.get("oldValue", "") == "CLOSED"
-                )
+                (d.get("newValue", "") == "REOPENED" and d.get("oldValue", "") != "CONFIRMED")
+                or (d.get("newValue", "") == "OPEN" and d.get("oldValue", "") == "CLOSED")
             ):
                 return True
         return False
@@ -95,11 +77,7 @@ class Changelog:
 
     def is_unconfirm(self):
         for d in self._json["diffs"]:
-            if (
-                d.get("key", "") == "status"
-                and d.get("newValue", "") == "REOPENED"
-                and d.get("oldValue", "") == "CONFIRMED"
-            ):
+            if d.get("key", "") == "status" and d.get("newValue", "") == "REOPENED" and d.get("oldValue", "") == "CONFIRMED":
                 return True
         return False
 
@@ -123,10 +101,7 @@ class Changelog:
 
     def is_mark_as_acknowledged(self):
         for d in self._json["diffs"]:
-            if (
-                d.get("key", "") == "resolution"
-                and d.get("newValue", "") == "ACKNOWLEDGED"
-            ):
+            if d.get("key", "") == "resolution" and d.get("newValue", "") == "ACKNOWLEDGED":
                 return True
         return False
 

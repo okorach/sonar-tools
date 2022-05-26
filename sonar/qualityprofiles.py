@@ -40,9 +40,7 @@ class QualityProfile(sq.SqObject):
     def __init__(self, key, endpoint, data=None):
         super().__init__(key, endpoint)
         if data is None:
-            data = json.loads(
-                self.get("qualityprofiles/show", params={"key": key}).text
-            )
+            data = json.loads(self.get("qualityprofiles/show", params={"key": key}).text)
         self._json = data
         self.name = data["name"]
         if "lastUsed" in data:
@@ -99,9 +97,7 @@ class QualityProfile(sq.SqObject):
         parent = self.parent_name
         if parent is None:
             return None
-        parent_qp = search(
-            self.endpoint, {"language": self.language, "qualityProfile": parent}
-        )[0]
+        parent_qp = search(self.endpoint, {"language": self.language, "qualityProfile": parent})[0]
         return parent_qp.get_built_in_parent()
 
     def has_deprecated_rules(self):
@@ -209,12 +205,8 @@ class QualityProfile(sq.SqObject):
         if self._permissions is not None:
             return self._permissions
         self._permissions = {}
-        self._permissions["users"] = permissions.get_qp(
-            self.endpoint, self.name, self.language, "users", "login"
-        )
-        self._permissions["groups"] = permissions.get_qp(
-            self.endpoint, self.name, self.language, "groups", "name"
-        )
+        self._permissions["users"] = permissions.get_qp(self.endpoint, self.name, self.language, "users", "login")
+        self._permissions["groups"] = permissions.get_qp(self.endpoint, self.name, self.language, "groups", "name")
         return self._permissions
 
     def audit(self, audit_settings=None):
@@ -231,12 +223,8 @@ class QualityProfile(sq.SqObject):
             msg = rule.msg.format(str(self), age)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
-        total_rules = rules.count(
-            endpoint=self.endpoint, params={"languages": self.language}
-        )
-        if self.nbr_rules < int(
-            total_rules * audit_settings["audit.qualityProfiles.minNumberOfRules"]
-        ):
+        total_rules = rules.count(endpoint=self.endpoint, params={"languages": self.language})
+        if self.nbr_rules < int(total_rules * audit_settings["audit.qualityProfiles.minNumberOfRules"]):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
             msg = rule.msg.format(str(self), self.nbr_rules, total_rules)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
@@ -282,9 +270,7 @@ def audit(endpoint=None, audit_settings=None):
     for lang, nb_qp in langs.items():
         if nb_qp > 5:
             rule = arules.get_rule(arules.RuleId.QP_TOO_MANY_QP)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5))
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5)))
     return problems
 
 
@@ -294,9 +280,7 @@ def hierarchize(qp_list, strip_rules=True):
         for qp_name, qp_value in qpl.copy().items():
             if "parentName" not in qp_value:
                 continue
-            util.logger.debug(
-                "QP name %s has parent %s", qp_name, qp_value["parentName"]
-            )
+            util.logger.debug("QP name %s has parent %s", qp_name, qp_value["parentName"])
             if "childrens" not in qp_list[lang][qp_value["parentName"]]:
                 qp_list[lang][qp_value["parentName"]]["childrens"] = {}
             if strip_rules:

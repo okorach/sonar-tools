@@ -151,12 +151,8 @@ class QualityGate(sq.SqObject):
                 maxi,
             )
             if val < mini or val > maxi:
-                msg = f"{str(self)} condition on metric '{m}': {msg}".format(
-                    self.name, m, msg
-                )
-                problems.append(
-                    pb.Problem(types.Type.BAD_PRACTICE, severities.Severity.HIGH, msg)
-                )
+                msg = f"{str(self)} condition on metric '{m}': {msg}".format(self.name, m, msg)
+                problems.append(pb.Problem(types.Type.BAD_PRACTICE, severities.Severity.HIGH, msg))
         return problems
 
     def audit(self, audit_settings=None):
@@ -165,13 +161,9 @@ class QualityGate(sq.SqObject):
         problems = []
         if self.is_built_in:
             return problems
-        max_cond = int(
-            util.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8)
-        )
+        max_cond = int(util.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8))
         nb_conditions = len(self.conditions)
-        util.logger.debug(
-            "Auditing %s number of conditions (%d) is OK", my_name, nb_conditions
-        )
+        util.logger.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
         if nb_conditions == 0:
             rule = rules.get_rule(rules.RuleId.QG_NO_COND)
             msg = rule.msg.format(my_name)
@@ -205,14 +197,10 @@ class QualityGate(sq.SqObject):
         if self._permissions is not None:
             return self._permissions
         self._permissions = {}
-        perms = util.remove_nones(
-            permissions.get_qg(self.endpoint, self.name, "users", "login")
-        )
+        perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, "users", "login"))
         if perms is not None:
             self._permissions["users"] = perms
-        perms = util.remove_nones(
-            permissions.get_qg(self.endpoint, self.name, "groups", "name")
-        )
+        perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, "groups", "name"))
         if perms is not None:
             self._permissions["groups"] = perms
         return self._permissions
@@ -224,9 +212,7 @@ def audit(endpoint=None, audit_settings=None):
     quality_gates_list = get_list(endpoint)
     max_qg = util.get_setting(audit_settings, "audit.qualitygates.maxNumber", 5)
     nb_qg = len(quality_gates_list)
-    util.logger.debug(
-        "Auditing that there are no more than %s quality gates", str(max_qg)
-    )
+    util.logger.debug("Auditing that there are no more than %s quality gates", str(max_qg))
     if nb_qg > max_qg:
         rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_GATES)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qg, 5)))
@@ -241,11 +227,7 @@ def get_list(endpoint):
     qg_list = {}
     for qg in data["qualitygates"]:
         qg_obj = QualityGate(key=qg["id"], endpoint=endpoint, data=qg)
-        if (
-            endpoint.version() < (7, 9, 0)
-            and "default" in data
-            and data["default"] == qg["id"]
-        ):
+        if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
             qg_obj.is_default = True
         qg_list[qg_obj.name] = qg_obj
     return qg_list

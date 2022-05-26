@@ -104,15 +104,11 @@ class Sif:
 
     def start_time(self):
         try:
-            return util.string_to_date(
-                self.json[_SETTINGS]["sonar.core.startTime"]
-            ).replace(tzinfo=None)
+            return util.string_to_date(self.json[_SETTINGS]["sonar.core.startTime"]).replace(tzinfo=None)
         except KeyError:
             pass
         try:
-            return util.string_to_date(self.json[_SYSTEM]["Start Time"]).replace(
-                tzinfo=None
-            )
+            return util.string_to_date(self.json[_SYSTEM]["Start Time"]).replace(tzinfo=None)
         except KeyError:
             return None
 
@@ -174,11 +170,7 @@ class Sif:
             if undetected_scm_count == 0:
                 return []
             rule = rules.get_rule(rules.RuleId.UNDETECTED_SCM)
-            return [
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(undetected_scm_count)
-                )
-            ]
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(undetected_scm_count))]
         except KeyError:
             util.logger.info("SCM information not in SIF, ignoring audit...")
             return []
@@ -238,9 +230,7 @@ class Sif:
         problems = []
         stats = self.json.get(_SETTINGS)
         if stats is None:
-            util.logger.error(
-                "Can't verify Database settings in System Info File, was it corrupted or redacted ?"
-            )
+            util.logger.error("Can't verify Database settings in System Info File, was it corrupted or redacted ?")
             return problems
         jdbc_url = stats.get("sonar.jdbc.url", None)
         util.logger.debug("JDBC URL = %s", str(jdbc_url))
@@ -254,9 +244,7 @@ class Sif:
             lic = self.license_type()
             if lic == "PRODUCTION":
                 rule = rules.get_rule(rules.RuleId.SETTING_DB_ON_SAME_HOST)
-                problems.append(
-                    pb.Problem(rule.type, rule.severity, rule.msg.format(jdbc_url))
-                )
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(jdbc_url)))
         return problems
 
     def __audit_dce_settings(self):
@@ -264,15 +252,11 @@ class Sif:
         problems = []
         stats = self.json.get(_STATS)
         if stats is None:
-            util.logger.error(
-                "Can't verify edition in System Info File, was it corrupted or redacted ?"
-            )
+            util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
             return problems
         sq_edition = stats.get("edition", None)
         if sq_edition is None:
-            util.logger.error(
-                "Can't verify edition in System Info File, was it corrupted or redacted ?"
-            )
+            util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
             return problems
         if sq_edition != "datacenter":
             util.logger.info("Not a Data Center Edition, skipping DCE checks")
@@ -301,8 +285,7 @@ class Sif:
                 pb.Problem(
                     types.Type.PERFORMANCE,
                     severities.Severity.CRITICAL,
-                    "Log level set to TRACE, this does very negatively affect platform performance, "
-                    "reverting to INFO is required",
+                    "Log level set to TRACE, this does very negatively affect platform performance, " "reverting to INFO is required",
                 )
             ]
         if log_level == "DEBUG":
@@ -310,8 +293,7 @@ class Sif:
                 pb.Problem(
                     types.Type.PERFORMANCE,
                     severities.Severity.HIGH,
-                    "Log level is set to DEBUG, this may affect platform performance, "
-                    "reverting to INFO is recommended",
+                    "Log level is set to DEBUG, this may affect platform performance, " "reverting to INFO is recommended",
                 )
             ]
         return []
@@ -319,9 +301,7 @@ class Sif:
     def __audit_version(self):
         st_time = self.start_time()
         if st_time is None:
-            util.logger.warning(
-                "SIF date is not available, skipping audit on SonarQube version (aligned with LTS)..."
-            )
+            util.logger.warning("SIF date is not available, skipping audit on SonarQube version (aligned with LTS)...")
             return []
         sq_version = self.version()
         if (
@@ -338,9 +318,7 @@ class Sif:
         problems = []
         jvm_cmdline = self.web_jvm_cmdline()
         if jvm_cmdline is None:
-            util.logger.warning(
-                "Can't retrieve web JVM command line, skipping heap and log4shell audits..."
-            )
+            util.logger.warning("Can't retrieve web JVM command line, skipping heap and log4shell audits...")
             return []
         web_ram = util.jvm_heap(jvm_cmdline)
         if web_ram is None:
@@ -348,15 +326,10 @@ class Sif:
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
         elif web_ram < 1024 or web_ram > 2048:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
-            problems.append(
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048)
-                )
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048)))
         else:
             util.logger.debug(
-                "sonar.web.javaOpts -Xmx memory setting value is %d MB, "
-                "within the recommended range [1024-2048]",
+                "sonar.web.javaOpts -Xmx memory setting value is %d MB, " "within the recommended range [1024-2048]",
                 web_ram,
             )
 
@@ -368,9 +341,7 @@ class Sif:
         problems = []
         jvm_cmdline = self.ce_jvm_cmdline()
         if jvm_cmdline is None:
-            util.logger.warning(
-                "Can't retrieve CE JVM command line, heap and logshell checks skipped"
-            )
+            util.logger.warning("Can't retrieve CE JVM command line, heap and logshell checks skipped")
             return []
         ce_ram = util.jvm_heap(jvm_cmdline)
         ce_tasks = self.__get_field("Compute Engine Tasks")
@@ -380,11 +351,7 @@ class Sif:
         MAX_WORKERS = 4
         if ce_workers > MAX_WORKERS:
             rule = rules.get_rule(rules.RuleId.SETTING_CE_TOO_MANY_WORKERS)
-            problems.append(
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(ce_workers, MAX_WORKERS)
-                )
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_workers, MAX_WORKERS)))
         else:
             util.logger.debug(
                 "%d CE workers configured, correct compared to the max %d recommended",
@@ -406,8 +373,7 @@ class Sif:
             )
         else:
             util.logger.debug(
-                "sonar.ce.javaOpts -Xmx memory setting value is %d MB, "
-                "within recommended range ([512-2048] x %d workers)",
+                "sonar.ce.javaOpts -Xmx memory setting value is %d MB, " "within recommended range ([512-2048] x %d workers)",
                 ce_ram,
                 ce_workers,
             )
@@ -429,11 +395,7 @@ class Sif:
             failure_rate = ce_error / (ce_success + ce_error)
         if ce_error > 10 and failure_rate > 0.01:
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
-            problems.append(
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(int(failure_rate * 100))
-                )
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(int(failure_rate * 100))))
         else:
             util.logger.debug(
                 "Number of failed background tasks (%d), and failure rate %d%% is OK",
@@ -444,18 +406,12 @@ class Sif:
         ce_pending = ce_tasks["Pending"]
         if ce_pending > 100:
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending))
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
         elif ce_pending > 20 and ce_pending > (10 * ce_tasks["Worker Count"]):
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending))
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
         else:
-            util.logger.debug(
-                "Number of pending background tasks (%d) is OK", ce_pending
-            )
+            util.logger.debug("Number of pending background tasks (%d) is OK", ce_pending)
         return problems
 
     def __audit_es_settings(self):
@@ -463,27 +419,19 @@ class Sif:
         problems = []
         jvm_cmdline = self.search_jvm_cmdline()
         if jvm_cmdline is None:
-            util.logger.warning(
-                "Can't retrieve search JVM command line, heap and logshell checks skipped"
-            )
+            util.logger.warning("Can't retrieve search JVM command line, heap and logshell checks skipped")
             return []
         es_ram = util.jvm_heap(jvm_cmdline)
         index_size = self.store_size()
 
         if index_size is None:
-            util.logger.warning(
-                "Search server index size is missing. Audit of ES heap vs index size is skipped..."
-            )
+            util.logger.warning("Search server index size is missing. Audit of ES heap vs index size is skipped...")
         elif es_ram is None:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
         elif es_ram < 2 * index_size and es_ram < index_size + 1000:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
-            problems.append(
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(es_ram, index_size)
-                )
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(es_ram, index_size)))
         else:
             util.logger.debug(
                 "Search server memory %d MB is correct wrt to index size of %d MB",

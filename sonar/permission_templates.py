@@ -45,10 +45,7 @@ class PermissionTemplate(sqobject.SqObject):
         self._permissions = None
 
     def is_default_for(self, qualifier):
-        return (
-            qualifier in _DEFAULT_TEMPLATES
-            and _DEFAULT_TEMPLATES[qualifier] == self.key
-        )
+        return qualifier in _DEFAULT_TEMPLATES and _DEFAULT_TEMPLATES[qualifier] == self.key
 
     def is_projects_default(self):
         return self.is_default_for("TRK")
@@ -109,14 +106,10 @@ def get_object(key, data=None, endpoint=None):
 def search(endpoint, params=None):
     new_params = {} if params is None else params.copy()
     objects_list = {}
-    data = json.loads(
-        endpoint.get("permissions/search_templates", params=new_params).text
-    )
+    data = json.loads(endpoint.get("permissions/search_templates", params=new_params).text)
 
     for obj in data["permissionTemplates"]:
-        objects_list[obj["id"]] = PermissionTemplate(
-            obj["id"], endpoint=endpoint, data=obj
-        )
+        objects_list[obj["id"]] = PermissionTemplate(obj["id"], endpoint=endpoint, data=obj)
     _load_default_templates(data=data)
     return objects_list
 

@@ -38,9 +38,7 @@ from sonar.audit import config, problem
 def get_project_problems(max_days_proj, max_days_branch, max_days_pr, endpoint):
     problems = []
     if max_days_proj < 90:
-        util.logger.error(
-            "As a safety measure, can't delete projects more recent than 90 days"
-        )
+        util.logger.error("As a safety measure, can't delete projects more recent than 90 days")
         return problems
 
     settings = {
@@ -57,16 +55,12 @@ def get_project_problems(max_days_proj, max_days_branch, max_days_pr, endpoint):
     nb_proj = 0
     total_loc = 0
     for p in problems:
-        if p.concerned_object is not None and isinstance(
-            p.concerned_object, projects.Project
-        ):
+        if p.concerned_object is not None and isinstance(p.concerned_object, projects.Project):
             nb_proj += 1
             total_loc += int(p.concerned_object.get_measure("ncloc", fallback="0"))
 
     if nb_proj == 0:
-        util.logger.info(
-            "%d projects older than %d days found during audit", nb_proj, max_days_proj
-        )
+        util.logger.info("%d projects older than %d days found during audit", nb_proj, max_days_proj)
     else:
         util.logger.warning(
             "%d projects older than %d days for a total of %d LoC found during audit",
@@ -113,9 +107,7 @@ def _parse_arguments():
     _DEFAULT_BRANCH_OBSOLESCENCE = 90
     _DEFAULT_PR_OBSOLESCENCE = 30
     _DEFAULT_TOKEN_OBSOLESCENCE = 365
-    parser = util.set_common_args(
-        "Deletes projects not analyzed since a given numbr of days"
-    )
+    parser = util.set_common_args("Deletes projects not analyzed since a given numbr of days")
     parser.add_argument(
         "--mode",
         required=False,
@@ -182,16 +174,12 @@ def _delete_objects(problems, mode):
                 deleted_loc += loc
         if isinstance(obj, Branch):
             if obj.project.key in deleted_projects:
-                util.logger.info(
-                    "%s deleted, so no need to delete %s", str(obj.project), str(obj)
-                )
+                util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
             elif mode != "delete" or obj.delete():
                 deleted_branch_count += 1
         if isinstance(obj, PullRequest):
             if obj.project.key in deleted_projects:
-                util.logger.info(
-                    "%s deleted, so no need to delete %s", str(obj.project), str(obj)
-                )
+                util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
             elif mode != "delete" or obj.delete():
                 deleted_pr_count += 1
         if isinstance(obj, UserToken) and (mode != "delete" or obj.revoke()):
@@ -216,9 +204,7 @@ def main():
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     problems = []
     if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:
-        problems = get_project_problems(
-            args.projects, args.branches, args.pullrequests, sq
-        )
+        problems = get_project_problems(args.projects, args.branches, args.pullrequests, sq)
 
     if args.tokens:
         problems += get_user_problems(args.tokens, sq)
@@ -243,18 +229,14 @@ def main():
         deleted_loc,
         op,
     )
-    util.logger.info(
-        "%d branches older than %d days %s", deleted_branches, args.branches, op
-    )
+    util.logger.info("%d branches older than %d days %s", deleted_branches, args.branches, op)
     util.logger.info(
         "%d pull requests older than %d days deleted %s",
         deleted_prs,
         args.pullrequests,
         op,
     )
-    util.logger.info(
-        "%d tokens older than %d days revoked", revoked_tokens, args.tokens
-    )
+    util.logger.info("%d tokens older than %d days revoked", revoked_tokens, args.tokens)
     sys.exit(0)
 
 

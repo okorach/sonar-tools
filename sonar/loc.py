@@ -74,9 +74,7 @@ def __dump_csv(object_list, fd, **kwargs):
         nb_loc += p.ncloc_with_branches()
 
         if nb_objects % 50 == 0:
-            util.logger.info(
-                "%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc
-            )
+            util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
 
     util.logger.info("%d %ss and %d LoCs in total", len(object_list), obj_type, nb_loc)
 
@@ -104,9 +102,7 @@ def __dump_json(object_list, fd, **kwargs):
             )
 
     print(util.json_dump(data), file=fd)
-    util.logger.info(
-        "%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc
-    )
+    util.logger.info("%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc)
 
 
 def __dump_loc(object_list, file, **kwargs):
@@ -162,9 +158,7 @@ def __parse_args(desc):
 
 
 def main():
-    args = __parse_args(
-        "Extract projects or portfolios lines of code, as computed for the licence"
-    )
+    args = __parse_args("Extract projects or portfolios lines of code, as computed for the licence")
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     kwargs = vars(args)
     util.check_environment(kwargs)

@@ -78,9 +78,7 @@ class Project(components.Component):
     def __load__(self, data=None):
         """Loads a project object with contents of an api/projects/search call"""
         if data is None:
-            resp = env.get(
-                PROJECT_SEARCH_API, ctxt=self.endpoint, params={"projects": self.key}
-            )
+            resp = env.get(PROJECT_SEARCH_API, ctxt=self.endpoint, params={"projects": self.key})
             data = json.loads(resp.text)
             if not data["components"]:
                 raise env.NonExistingObjectError(self.key, "Project key does not exist")
@@ -88,9 +86,7 @@ class Project(components.Component):
         self.name = data["name"]
         self.visibility = data["visibility"]
         if "lastAnalysisDate" in data:
-            self.main_branch_last_analysis_date = util.string_to_date(
-                data["lastAnalysisDate"]
-            )
+            self.main_branch_last_analysis_date = util.string_to_date(data["lastAnalysisDate"])
         else:
             self.main_branch_last_analysis_date = None
         self.revision = data.get("revision", None)
@@ -128,10 +124,7 @@ class Project(components.Component):
             if b.last_analysis_date() is None:
                 continue
             b_ana_date = b.last_analysis_date()
-            if (
-                self.all_branches_last_analysis_date is None
-                or b_ana_date > self.all_branches_last_analysis_date
-            ):
+            if self.all_branches_last_analysis_date is None or b_ana_date > self.all_branches_last_analysis_date:
                 self.all_branches_last_analysis_date = b_ana_date
         return self.all_branches_last_analysis_date
 
@@ -195,9 +188,7 @@ class Project(components.Component):
 
     def delete(self, api="projects/delete", params=None):
         loc = int(self.get_measure("ncloc", fallback="0"))
-        util.logger.info(
-            "Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc
-        )
+        util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
         if not super().post("projects/delete", params={"project": self.key}):
             util.logger.error("%s deletion failed", str(self))
             return False
@@ -257,17 +248,13 @@ class Project(components.Component):
         if counts["overall"] > max_users:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
             msg = rule.msg.format(str(self), counts["overall"])
-            problems.append(
-                pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_admins = audit_settings["audit.projects.permissions.maxAdminUsers"]
         if counts["admin"] > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_USERS)
             msg = rule.msg.format(str(self), counts["admin"], max_admins)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         return problems
 
@@ -281,22 +268,13 @@ class Project(components.Component):
             # -- Checks for Anyone, sonar-user
             if gr["name"] != "Anyone" and gr["id"] != 2:
                 continue
-            if (
-                "issueadmin" in p
-                or "scan" in p
-                or "securityhotspotadmin" in p
-                or "admin" in p
-            ):
+            if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
                 if gr["name"] == "Anyone":
                     rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
                 else:
-                    rule = rules.get_rule(
-                        rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS
-                    )
+                    rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 msg = rule.msg.format(gr["name"], str(self))
-                problems.append(
-                    pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-                )
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
             else:
                 util.logger.info(
                     "Group '%s' has browse permissions on %s. \
@@ -310,37 +288,25 @@ Is this normal ?",
         if counts["overall"] > max_perms:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
             msg = rule.msg.format(str(self), counts["overall"], max_perms)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_scan = audit_settings["audit.projects.permissions.maxScanGroups"]
         if counts["scan"] > max_scan:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_SCAN_GROUPS)
             msg = rule.msg.format(str(self), counts["scan"], max_scan)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_issue_adm = audit_settings["audit.projects.permissions.maxIssueAdminGroups"]
         if counts["issueadmin"] > max_issue_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
             msg = rule.msg.format(str(self), counts["issueadmin"], max_issue_adm)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        max_spots_adm = audit_settings[
-            "audit.projects.permissions.maxHotspotAdminGroups"
-        ]
+        max_spots_adm = audit_settings["audit.projects.permissions.maxHotspotAdminGroups"]
         if counts["securityhotspotadmin"] > max_spots_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_HOTSPOT_ADM_GROUPS)
-            msg = rule.msg.format(
-                str(self), counts["securityhotspotadmin"], max_spots_adm
-            )
-            problems.append(
-                pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            msg = rule.msg.format(str(self), counts["securityhotspotadmin"], max_spots_adm)
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_admins = audit_settings["audit.projects.permissions.maxAdminGroups"]
         if counts["admin"] > max_admins:
@@ -357,14 +323,10 @@ Is this normal ?",
 
     def __audit_permissions__(self, audit_settings):
         if not audit_settings["audit.projects.permissions"]:
-            util.logger.debug(
-                "Auditing project permissions is disabled by configuration, skipping"
-            )
+            util.logger.debug("Auditing project permissions is disabled by configuration, skipping")
             return []
         util.logger.debug("Auditing %s permissions", str(self))
-        problems = self.__audit_user_permissions__(
-            audit_settings
-        ) + self.__audit_group_permissions__(audit_settings)
+        problems = self.__audit_user_permissions__(audit_settings) + self.__audit_group_permissions__(audit_settings)
         if not problems:
             util.logger.debug("No issue found in %s permissions", str(self))
         return problems
@@ -375,22 +337,16 @@ Is this normal ?",
         age = self.age_of_last_analysis()
         if age is None:
             if not audit_settings["audit.projects.neverAnalyzed"]:
-                util.logger.debug(
-                    "Auditing of never analyzed projects is disabled, skipping"
-                )
+                util.logger.debug("Auditing of never analyzed projects is disabled, skipping")
             else:
                 rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
                 msg = rule.msg.format(str(self))
-                problems.append(
-                    pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-                )
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
             return problems
 
         max_age = audit_settings["audit.projects.maxLastAnalysisAge"]
         if max_age == 0:
-            util.logger.debug(
-                "Auditing of projects with old analysis date is disabled, skipping"
-            )
+            util.logger.debug("Auditing of projects with old analysis date is disabled, skipping")
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.PROJ_LAST_ANALYSIS)
             severity = severities.Severity.HIGH if age > 365 else rule.severity
@@ -414,9 +370,7 @@ Is this normal ?",
     def __audit_pull_requests(self, audit_settings):
         max_age = audit_settings["audit.projects.pullRequests.maxLastAnalysisAge"]
         if max_age == 0:
-            util.logger.debug(
-                "Auditing of pull request last analysis age is disabled, skipping..."
-            )
+            util.logger.debug("Auditing of pull request last analysis age is disabled, skipping...")
             return []
         problems = []
         for pr in self.get_pull_requests():
@@ -425,14 +379,10 @@ Is this normal ?",
 
     def __audit_visibility__(self, audit_settings):
         if not audit_settings.get("audit.projects.visibility", True):
-            util.logger.debug(
-                "Project visibility audit is disabled by configuration, skipping..."
-            )
+            util.logger.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
         util.logger.debug("Auditing %s visibility", str(self))
-        resp = env.get(
-            "navigation/component", ctxt=self.endpoint, params={"component": self.key}
-        )
+        resp = env.get("navigation/component", ctxt=self.endpoint, params={"component": self.key})
         data = json.loads(resp.text)
         visi = data["visibility"]
         if visi != "private":
@@ -451,9 +401,7 @@ Is this normal ?",
 
     def __audit_languages__(self, audit_settings):
         if not audit_settings.get("audit.xmlLoc.suspicious", False):
-            util.logger.debug(
-                "XML LoCs count audit disabled by configuration, skipping"
-            )
+            util.logger.debug("XML LoCs count audit disabled by configuration, skipping")
             return []
         util.logger.debug("Auditing %s suspicious XML LoC count", str(self))
 
@@ -466,11 +414,7 @@ Is this normal ?",
             (lang, ncloc) = lang.split("=")
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
-        if (
-            total_locs > 100000
-            and "xml" in languages
-            and (languages["xml"] / total_locs) > 0.5
-        ):
+        if total_locs > 100000 and "xml" in languages and (languages["xml"] / total_locs) > 0.5:
             rule = rules.get_rule(rules.RuleId.PROJ_XML_LOCS)
             return [
                 pb.Problem(
@@ -491,10 +435,7 @@ Is this normal ?",
 
     def __audit_zero_loc(self, audit_settings):
         if (
-            (
-                not audit_settings["audit.projects.branches"]
-                or self.endpoint.edition() == "community"
-            )
+            (not audit_settings["audit.projects.branches"] or self.endpoint.edition() == "community")
             and self.last_analysis_date() is not None
             and self.ncloc() == 0
         ):
@@ -517,8 +458,7 @@ Is this normal ?",
             or not self.has_binding()
         ):
             util.logger.info(
-                "Community edition, binding validation disabled or %s has no binding, "
-                "skipping binding validation...",
+                "Community edition, binding validation disabled or %s has no binding, " "skipping binding validation...",
                 str(self),
             )
             return []
@@ -569,24 +509,17 @@ Is this normal ?",
             "datacenter",
         ]:
             raise env.UnsupportedOperation(
-                "Project export is only available with Enterprise and Datacenter Edition,"
-                " or with SonarQube 9.2 or higher for any Edition"
+                "Project export is only available with Enterprise and Datacenter Edition," " or with SonarQube 9.2 or higher for any Edition"
             )
-        resp = env.post(
-            "project_dump/export", params={"key": self.key}, ctxt=self.endpoint
-        )
+        resp = env.post("project_dump/export", params={"key": self.key}, ctxt=self.endpoint)
         if resp.status_code != 200:
             return {"status": f"HTTP_ERROR {resp.status_code}"}
         data = json.loads(resp.text)
-        status = tasks.Task(
-            data["taskId"], endpoint=self.endpoint, data=data
-        ).wait_for_completion(timeout=timeout)
+        status = tasks.Task(data["taskId"], endpoint=self.endpoint, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
             util.logger.error("%s export %s", str(self), status)
             return {"status": status}
-        resp = env.get(
-            "project_dump/status", params={"key": self.key}, ctxt=self.endpoint
-        )
+        resp = env.get("project_dump/status", params={"key": self.key}, ctxt=self.endpoint)
         data = json.loads(resp.text)
         dump_file = data["exportedDump"]
         util.logger.debug("%s export %s, dump file %s", str(self), status, dump_file)
@@ -594,9 +527,7 @@ Is this normal ?",
 
     def export_async(self):
         util.logger.info("Exporting %s (asynchronously)", str(self))
-        resp = env.post(
-            "project_dump/export", params={"key": self.key}, ctxt=self.endpoint
-        )
+        resp = env.post("project_dump/export", params={"key": self.key}, ctxt=self.endpoint)
         if resp.status_code != 200:
             return None
         data = json.loads(resp.text)
@@ -605,12 +536,8 @@ Is this normal ?",
     def import_zip(self):
         util.logger.info("Importing %s (asynchronously)", str(self))
         if self.endpoint.edition() not in ["enterprise", "datacenter"]:
-            raise env.UnsupportedOperation(
-                "Project import is only available with Enterprise and Datacenter Edition"
-            )
-        resp = env.post(
-            "project_dump/import", params={"key": self.key}, ctxt=self.endpoint
-        )
+            raise env.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
+        resp = env.post("project_dump/import", params={"key": self.key}, ctxt=self.endpoint)
         return resp.status_code
 
     def search_custom_measures(self):
@@ -649,9 +576,7 @@ Is this normal ?",
         for i in data:
             key = i["key"]
             if key in findings_list:
-                util.logger.warning(
-                    "Finding %s (%s) already in past findings", i["key"], i["type"]
-                )
+                util.logger.warning("Finding %s (%s) already in past findings", i["key"], i["type"])
                 findings_conflicts[i["type"]] += 1
             # FIXME - Hack for wrong projectKey returned in PR
             # m = re.search(r"(\w+):PULL_REQUEST:(\w+)", i['projectKey'])
@@ -660,13 +585,9 @@ Is this normal ?",
             i["pullRequest"] = pr
             nbr_findings[i["type"]] += 1
             if i["type"] == "SECURITY_HOTSPOT":
-                findings_list[key] = hotspots.get_object(
-                    key, endpoint=self.endpoint, data=i, from_export=True
-                )
+                findings_list[key] = hotspots.get_object(key, endpoint=self.endpoint, data=i, from_export=True)
             else:
-                findings_list[key] = issues.get_object(
-                    key, endpoint=self.endpoint, data=i, from_export=True
-                )
+                findings_list[key] = issues.get_object(key, endpoint=self.endpoint, data=i, from_export=True)
         for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
             if findings_conflicts[t] > 0:
                 util.logger.warning(
@@ -706,9 +627,7 @@ Is this normal ?",
         for b_src in self.get_branches():
             for b_tgt in tgt_branches:
                 if b_src.name == b_tgt.name:
-                    (tmp_report, tmp_counts) = b_src.sync(
-                        b_tgt, sync_settings=sync_settings
-                    )
+                    (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
                     report += tmp_report
                     counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
@@ -721,9 +640,7 @@ Is this normal ?",
             for b_tgt in my_branches:
                 if b_src.name == b_tgt.name:
                     continue
-                (tmp_report, tmp_counts) = b_src.sync(
-                    b_tgt, sync_settings=sync_settings
-                )
+                (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
                 report += tmp_report
                 counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
@@ -737,17 +654,11 @@ Is this normal ?",
         return projects_qp
 
     def quality_gate(self):
-        data = json.loads(
-            self.get(
-                api="qualitygates/get_by_project", params={"project": self.key}
-            ).text
-        )
+        data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
         return (data["qualityGate"]["name"], data["qualityGate"]["default"])
 
     def links(self):
-        data = json.loads(
-            self.get(api="project_links/search", params={"projectKey": self.key}).text
-        )
+        data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         link_list = None
         for link in data["links"]:
             if link_list is None:
@@ -794,9 +705,7 @@ Is this normal ?",
     def __settings_add_permissions(self, json_data):
         json_data["permissions"] = {}
         for ptype in ("users", "groups"):
-            permiss = perms.simplify(
-                perms.get(self.endpoint, ptype, projectKey=self.key)
-            )
+            permiss = perms.simplify(perms.get(self.endpoint, ptype, projectKey=self.key))
             if len(permiss) > 0:
                 json_data["permissions"][ptype] = permiss
 
@@ -837,16 +746,12 @@ Is this normal ?",
 
     def new_code_periods(self):
         nc = {}
-        data = json.loads(
-            self.get(api="new_code_periods/show", params={"project": self.key}).text
-        )
+        data = json.loads(self.get(api="new_code_periods/show", params={"project": self.key}).text)
         new_code = settings.new_code_to_string(data)
         if new_code is None:
             return None
         nc[settings.DEFAULT_SETTING] = new_code
-        data = json.loads(
-            self.get(api="new_code_periods/list", params={"project": self.key}).text
-        )
+        data = json.loads(self.get(api="new_code_periods/list", params={"project": self.key}).text)
         for b in data["newCodePeriods"]:
             new_code = settings.new_code_to_string(b)
             if new_code is None:
@@ -935,11 +840,7 @@ def audit(audit_settings, endpoint=None):
     bindings = {}
     for key, p in plist.items():
         problems += p.audit(audit_settings)
-        if (
-            not is_community
-            and audit_settings["audit.projects.bindings"]
-            and not p.is_part_of_monorepo()
-        ):
+        if not is_community and audit_settings["audit.projects.bindings"] and not p.is_part_of_monorepo():
             bindkey = p.binding_key()
             if bindkey is not None and bindkey in bindings:
                 rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE_BINDING)

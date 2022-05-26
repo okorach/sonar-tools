@@ -68,9 +68,7 @@ class PullRequest(components.Component):
 
     def get_measures(self, metrics_list):
         util.logger.debug("self.endpoint = %s", str(self.endpoint))
-        m = measures.get(
-            self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key
-        )
+        m = measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
         if "ncloc" in m:
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m

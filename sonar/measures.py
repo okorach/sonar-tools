@@ -43,9 +43,7 @@ class Measure(sq.SqObject):
         self.history = None
 
     def read(self, project_key, metric_key):
-        resp = self.get(
-            Measure.API_COMPONENT, {"component": project_key, "metricKeys": metric_key}
-        )
+        resp = self.get(Measure.API_COMPONENT, {"component": project_key, "metricKeys": metric_key})
         data = json.loads(resp.text)
         return data["component"]["measures"]
 
@@ -74,15 +72,7 @@ class Measure(sq.SqObject):
         return measures
 
 
-def get(
-    comp_key,
-    metrics_list,
-    endpoint=None,
-    branch=None,
-    pr_key=None,
-    as_list=False,
-    **kwargs
-):
+def get(comp_key, metrics_list, endpoint=None, branch=None, pr_key=None, as_list=False, **kwargs):
     util.logger.debug(
         "For component %s, branch %s, PR %s, getting measures %s",
         comp_key,

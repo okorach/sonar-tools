@@ -164,9 +164,7 @@ class Finding(sq.SqObject):
                 data[field] = ""
         data["branch"] = util.quote(data["branch"], separator)
         data["message"] = util.quote(data["message"], separator)
-        data["projectName"] = projects.get_object(
-            self.projectKey, endpoint=self.endpoint
-        ).name
+        data["projectName"] = projects.get_object(self.projectKey, endpoint=self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
@@ -275,9 +273,7 @@ class Finding(sq.SqObject):
         if self.rule != another_finding.rule or self.hash != another_finding.hash:
             return False
         score = 0
-        if self.message == another_finding.message or kwargs.get(
-            "ignore_message", False
-        ):
+        if self.message == another_finding.message or kwargs.get("ignore_message", False):
             score += 2
         if self.file() == another_finding.file():
             score += 2
@@ -289,16 +285,12 @@ class Finding(sq.SqObject):
             score += 1
         if self.type == another_finding.type or kwargs.get("ignore_type", False):
             score += 1
-        if self.severity == another_finding.severity or kwargs.get(
-            "ignore_severity", False
-        ):
+        if self.severity == another_finding.severity or kwargs.get("ignore_severity", False):
             score += 1
         # Need at least 7 / 9 to match
         return score >= 7
 
-    def search_siblings(
-        self, findings_list, allowed_users=None, ignore_component=False, **kwargs
-    ):
+    def search_siblings(self, findings_list, allowed_users=None, ignore_component=False, **kwargs):
         exact_matches = []
         approx_matches = []
         match_but_modified = []
@@ -306,17 +298,13 @@ class Finding(sq.SqObject):
             if key == self.key:
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
-                util.logger.debug(
-                    "Issues %s and %s are strictly identical", self.key, key
-                )
+                util.logger.debug("Issues %s and %s are strictly identical", self.key, key)
                 if finding.can_be_synced(allowed_users):
                     exact_matches.append(finding)
                 else:
                     match_but_modified.append(finding)
             elif finding.almost_identical_to(self, ignore_component, **kwargs):
-                util.logger.debug(
-                    "Issues %s and %s are almost identical", self.key, key
-                )
+                util.logger.debug("Issues %s and %s are almost identical", self.key, key)
                 if finding.can_be_synced(allowed_users):
                     approx_matches.append(finding)
                 else:
