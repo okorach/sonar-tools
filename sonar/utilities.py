@@ -24,6 +24,7 @@
 """
 import sys
 import os
+import contextlib
 import re
 import logging
 import argparse
@@ -399,17 +400,16 @@ def nbr_pages(sonar_api_json):
         )
 
 
-def open_output(file):
-    if file is None:
-        fd = sys.stdout
-        logger.info("Dumping report to stdout")
+@contextlib.contextmanager
+def open_file(file=None):
+    if file and file != "-":
+        logger.info("Opening file '%s'", file)
+        fd = open(file, "a", encoding="utf-8", newline="")
     else:
-        fd = open(file, "w", encoding='utf-8')
-        logger.info("Dumping report to file '%s'", file)
-    return fd
-
-
-def close_output(file, fd):
-    if file is not None:
-        fd.close()
-        logger.info("File '%s' generated", file)
+        logger.info("Writing to stdout")
+        fd = sys.stdout
+    try:
+        yield fd
+    finally:
+        if fd is not sys.stdout:
+            fd.close()
