@@ -397,3 +397,19 @@ def nbr_pages(sonar_api_json):
         return int_div_ceil(
             sonar_api_json["paging"]["total"], sonar_api_json["paging"]["pageSize"]
         )
+
+
+def open_output(file):
+    if file is None:
+        fd = sys.stdout
+        logger.info("Dumping report to stdout")
+    else:
+        fd = open(file, "w", encoding='utf-8')
+        logger.info("Dumping report to file '%s'", file)
+    return fd
+
+
+def close_output(file, fd):
+    if file is not None:
+        fd.close()
+        logger.info("File '%s' generated", file)
