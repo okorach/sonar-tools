@@ -404,7 +404,7 @@ def nbr_pages(sonar_api_json):
 def open_file(file=None, mode="w"):
     if file and file != "-":
         logger.info("Opening file '%s'", file)
-        fd = open(file, mode, encoding="utf-8", newline="")
+        fd = open(file=file, mode=mode, encoding="utf-8", newline="")
     else:
         logger.info("Writing to stdout")
         fd = sys.stdout
