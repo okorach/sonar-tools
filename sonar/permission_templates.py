@@ -26,6 +26,7 @@ _DEFAULT_TEMPLATES = {}
 
 _SEARCH_API = "permissions/search_templates"
 
+
 class PermissionTemplate(sqobject.SqObject):
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key, endpoint)
