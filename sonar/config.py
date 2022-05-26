@@ -113,9 +113,7 @@ def __export_config(args):
         sq_settings[__SETTINGS]["permissions"] = permissions.export(endpoint)
         sq_settings[__SETTINGS]["permissionTemplates"] = permission_templates.export(endpoint)
     if "qp" in what:
-        sq_settings[__QP] = qualityprofiles.get_list(
-            endpoint, include_rules=True, in_hierarchy=True
-        )
+        sq_settings[__QP] = qualityprofiles.export(endpoint)
     if "qg" in what:
         sq_settings[__QG] = qualitygates.get_list(endpoint, as_json=True)
     if "projects" in what:

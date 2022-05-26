@@ -287,6 +287,7 @@ def audit(endpoint=None, audit_settings=None):
 
 
 def hierarchize(qp_list, strip_rules=True):
+    """Organize a flat list of QP in hierarchical (inheritance) fashion"""
     for lang, qpl in qp_list.copy().items():
         for qp_name, qp_value in qpl.copy().items():
             if "parentName" not in qp_value:
@@ -304,14 +305,16 @@ def hierarchize(qp_list, strip_rules=True):
     return qp_list
 
 
-def get_list(endpoint=None, include_rules=False, in_hierarchy=False):
+def get_list(endpoint=None):
     if endpoint is not None and len(_QUALITY_PROFILES) == 0:
         search(endpoint=endpoint)
-    if not include_rules:
-        return _QUALITY_PROFILES
-    qp_list = {}
+    return _QUALITY_PROFILES
+
+
+def export(endpoint, in_hierarchy=True):
     util.logger.info("Exporting quality profiles")
-    for qp in _QUALITY_PROFILES.values():
+    qp_list = {}
+    for qp in get_list(endpoint=endpoint).values():
         util.logger.info("Exporting %s", str(qp))
         json_data = qp.to_json(include_rules=True)
         lang = json_data.pop("language")
@@ -321,7 +324,6 @@ def get_list(endpoint=None, include_rules=False, in_hierarchy=False):
         qp_list[lang][name] = json_data
     if in_hierarchy:
         qp_list = hierarchize(qp_list)
-
     return qp_list
 
 
