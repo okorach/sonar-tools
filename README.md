@@ -24,6 +24,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-issues-sync](#sonar-issues-sync): Synchronizes issue changelog between branches, projects or even SonarQube instances
 - [sonar-projects-export](#sonar-projects-export): Exports all projects from a SonarQube instance (EE and higher)
 - [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
+- [sonar-config](#sonar-config): Exports a SonarQube platform as configuration as code (JSON file). Will soon allow to import the JSON to reconfigure a platform
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 8.9.x) and LATEST versions**
 
@@ -244,6 +245,31 @@ export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 sonar-projects-import -f exported_projects.csv
 ```
 
+# <a name="sonar-config"></a>sonar-config
+
+Exports all or part of a SOnarQube platform configuration.
+Importing the configuration will come in later release
+
+Basic Usage: `sonar-config --export -f <file.json>`  
+- `-f`: Define the output file, if not specified
+- `-e` or `--export`: Specify the export operation
+- `-w` or `--what`: Specify what to export (everything by default). You can specify what to export as a commad separated list containing any of "settings,qp,qg,projects,users,groups,portfolios,apps"
+
+## Required Permissions
+
+`sonar-config` needs the global `Administer system` permission to export global settings, users, groups and permissions, as well as `Browse` permission on projects, apps and portfolios if export on these objects is requested
+
+## Examples
+```
+export SONAR_HOST_URL=https://sonar.acme-corp.com
+export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
+
+# Exports all platform configuration from https://sonar.acme-corp.com
+sonar-config -e >config.json
+# Exports QG, QP, portfolios, users and groups from platform configuration https://sonar.foobar-corp.com
+sonar-config -u https://sonar.foobar-corp.com -t 15ee09df11fb9b8237b7a13333c5fce2e4e93d999 --export --what "qp,qg,portfolios,users,groups" -f partial_export.json
+```
+
 # <a name="exit-codes"></a>Exit codes
 
 When tools complete successfully they return exit code 0. En case of fatal error the following exit codes may be returned:
@@ -256,7 +282,7 @@ When tools complete successfully they return exit code 0. En case of fatal error
 - Code 7: Unsupported operation requested (because of SonarQube edition or configuration)
 - Code 8: Audit rule loading failed (at startup)
 - Code 9: SIF audit error (file not found, can't open file, not a legit JSON file, ...)
-
+- Code 10: Incorrect command line arguments
 
 ### :information_source: Limitations
 - The script has to be run before the closed issue purge period (SonarQube parameter `sonar.dbcleaner.daysBeforeDeletingClosedIssues` whose default value is **30 days**)
