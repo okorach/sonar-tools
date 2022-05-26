@@ -51,22 +51,6 @@ def __last_analysis(project_or_branch):
     return last_analysis
 
 
-def __open_output(file):
-    if file is None:
-        fd = sys.stdout
-        util.logger.info("Dumping report to stdout")
-    else:
-        fd = open(file, "w", encoding="utf-8")
-        util.logger.info("Dumping report to file '%s'", file)
-    return fd
-
-
-def __close_output(file, fd):
-    if file is not None:
-        fd.close()
-        util.logger.info("File '%s' generated", file)
-
-
 def __get_csv_header(wanted_metrics, edition, **kwargs):
     sep = kwargs["csvSeparator"]
     if edition == "community" or not kwargs[options.WITH_BRANCHES]:
@@ -247,28 +231,27 @@ def main():
         obj_list = project_list.values()
     nb_branches = len(obj_list)
 
-    fd = __open_output(file)
-    if fmt == "json":
-        print("[", end="", file=fd)
-    else:
-        print(
-            __get_csv_header(wanted_metrics, endpoint.edition(), **vars(args)), file=fd
-        )
-
-    for obj in obj_list:
+    with util.open_file(file) as fd:
         if fmt == "json":
-            if not is_first:
-                print(",", end="", file=fd)
-            values = __get_json_measures(obj, wanted_metrics, **vars(args))
-            json_str = util.json_dump(values)
-            print(json_str, file=fd)
-            is_first = False
+            print("[", end="", file=fd)
         else:
-            print(__get_csv_measures(obj, wanted_metrics, **vars(args)), file=fd)
+            print(
+                __get_csv_header(wanted_metrics, endpoint.edition(), **vars(args)), file=fd
+            )
 
-    if fmt == "json":
-        print("\n]\n", file=fd)
-    __close_output(file, fd)
+        for obj in obj_list:
+            if fmt == "json":
+                if not is_first:
+                    print(",", end="", file=fd)
+                values = __get_json_measures(obj, wanted_metrics, **vars(args))
+                json_str = util.json_dump(values)
+                print(json_str, file=fd)
+                is_first = False
+            else:
+                print(__get_csv_measures(obj, wanted_metrics, **vars(args)), file=fd)
+
+        if fmt == "json":
+            print("\n]\n", file=fd)
 
     util.logger.info("Computing LoCs")
     nb_loc = 0

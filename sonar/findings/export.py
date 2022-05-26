@@ -35,7 +35,7 @@
 """
 import sys
 import os
-import contextlib
+
 
 from sonar import version, env, projects, options
 import sonar.utilities as util
@@ -114,25 +114,12 @@ def parse_args(desc):
     return util.parse_and_check_token(parser)
 
 
-@contextlib.contextmanager
-def __open_file(file=None):
-    if file and file != "-":
-        fh = open(file, "a", encoding="utf-8")
-    else:
-        fh = sys.stdout
-    try:
-        yield fh
-    finally:
-        if fh is not sys.stdout:
-            fh.close()
-
-
 def __write_header(file, format):
     if file is None:
         util.logger.info("Dumping report to stdout")
     else:
         util.logger.info("Dumping report to file '%s'", file)
-    with __open_file(file) as f:
+    with util.open_file(file) as f:
         if format == "json":
             print("[", file=f)
         else:
@@ -142,12 +129,12 @@ def __write_header(file, format):
 def __write_footer(file, format):
     if format != "json":
         return
-    with __open_file(file) as f:
+    with util.open_file(file, mode="a") as f:
         print("]\n", file=f)
 
 
 def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
-    with __open_file(file) as f:
+    with util.open_file(file, mode="a") as f:
         url = ""
         sep = kwargs[options.CSV_SEPARATOR]
         i = len(findings_list)
@@ -184,11 +171,8 @@ def __dump_compact(finding_list, file, **kwargs):
                 new_dict[pkey].update({ftype: [f_json]})
         else:
             new_dict[pkey] = {ftype: [f_json]}
-    if file is None:
-        print(util.json_dump(new_dict, indent=1))
-    else:
-        with open(file=file, mode="a", encoding="utf-8") as fd:
-            print(util.json_dump(new_dict, indent=1), file=fd)
+    with util.open_file(file) as f:
+        print(util.json_dump(new_dict, indent=1), file=f)
 
 
 def __get_list(project_key, list_str, list_type):

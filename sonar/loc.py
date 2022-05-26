@@ -39,16 +39,6 @@ def __deduct_format(fmt, file):
     return "csv"
 
 
-def __open_file(file):
-    if file is None:
-        fd = sys.stdout
-        util.logger.info("Dumping LoC report to stdout")
-    else:
-        fd = open(file, "w", encoding="utf-8", newline="")
-        util.logger.info("Dumping LoC report to file '%s'", file)
-    return fd
-
-
 def __dump_csv(object_list, fd, **kwargs):
     writer = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
 
@@ -120,13 +110,11 @@ def __dump_json(object_list, fd, **kwargs):
 
 
 def __dump_loc(object_list, file, **kwargs):
-    fd = __open_file(file)
-    if kwargs[options.FORMAT] == "json":
-        __dump_json(object_list, fd, **kwargs)
-    else:
-        __dump_csv(object_list, fd, **kwargs)
-    if file is not None:
-        fd.close()
+    with util.open_file(file) as fd:
+        if kwargs[options.FORMAT] == "json":
+            __dump_json(object_list, fd, **kwargs)
+        else:
+            __dump_csv(object_list, fd, **kwargs)
 
 
 def __parse_args(desc):

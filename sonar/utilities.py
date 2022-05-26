@@ -24,6 +24,7 @@
 """
 import sys
 import os
+import contextlib
 import re
 import logging
 import argparse
@@ -123,26 +124,28 @@ def set_target_sonar_args(parser):
     return parser
 
 
-def set_output_file_args(parser):
+def set_output_file_args(parser, json_fmt=True, csv_fmt=True):
     parser.add_argument(
         "-f",
         "--file",
         required=False,
         help="Output file for the report, stdout by default",
     )
-    parser.add_argument(
-        "--" + options.FORMAT,
-        choices=["csv", "json"],
-        required=False,
-        help="Output format for generated report.\nIf not specified, "
-        "it is the output file extension if json or csv, then csv by default",
-    )
-    parser.add_argument(
-        "--" + options.CSV_SEPARATOR,
-        required=False,
-        default=CSV_SEPARATOR,
-        help=f"CSV separator (for CSV output), default {CSV_SEPARATOR}",
-    )
+    if json_fmt and csv_fmt:
+        parser.add_argument(
+            "--" + options.FORMAT,
+            choices=["csv", "json"],
+            required=False,
+            help="Output format for generated report.\nIf not specified, "
+            "it is the output file extension if json or csv, then csv by default",
+        )
+    if csv_fmt:
+        parser.add_argument(
+            "--" + options.CSV_SEPARATOR,
+            required=False,
+            default=CSV_SEPARATOR,
+            help=f"CSV separator (for CSV output), default {CSV_SEPARATOR}",
+        )
 
     return parser
 
@@ -395,3 +398,18 @@ def nbr_pages(sonar_api_json):
         return int_div_ceil(
             sonar_api_json["paging"]["total"], sonar_api_json["paging"]["pageSize"]
         )
+
+
+@contextlib.contextmanager
+def open_file(file=None, mode="w"):
+    if file and file != "-":
+        logger.info("Opening file '%s'", file)
+        fd = open(file=file, mode=mode, encoding="utf-8", newline="")
+    else:
+        logger.info("Writing to stdout")
+        fd = sys.stdout
+    try:
+        yield fd
+    finally:
+        if fd is not sys.stdout:
+            fd.close()
