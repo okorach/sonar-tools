@@ -26,7 +26,6 @@ from sonar import (
     env,
     version,
     settings,
-    devops,
     projects,
     qualityprofiles,
     qualitygates,
