@@ -131,7 +131,7 @@ def __export_config(args):
     if "apps" in what:
         apps_settings = {}
         for k, app in applications.search(endpoint=endpoint).items():
-            apps_settings[k] = app.settings()
+            apps_settings[k] = app.export()
         sq_settings[__APPS] = apps_settings
     if "users" in what:
         sq_settings["users"] = users.get_list(endpoint, as_json=True)

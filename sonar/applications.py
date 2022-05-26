@@ -125,7 +125,7 @@ class Application(aggr.Aggregation):
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
-    def settings(self):
+    def export(self):
         util.logger.info("Exporting %s", str(self))
         self._load_full()
         json_data = {
