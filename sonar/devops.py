@@ -50,8 +50,6 @@ class DevopsPlatform(sqobject.SqObject):
 
     def to_json(self):
         json_data = self.json.copy()
-        json_data.pop("url", None)
-        json_data.pop("key", None)
         json_data.update({"key": self.key, "type": self.type, "url": self.url})
         return json_data
 
@@ -68,10 +66,14 @@ def get_all(endpoint):
     return object_list
 
 
-def settings(endpoint, format="json"):
-    object_dict = get_all(endpoint)
-    if format is not None and format.lower() == "json":
-        json_data = {}
-        for s in object_dict.values():
-            json_data[s.uuid()] = s.to_json()
+def settings(endpoint):
+    return get_all(endpoint)
+
+
+def export(endpoint):
+    util.logger.info("Exporting DevOps integration settings")
+    json_data = {}
+    for s in settings(endpoint).values():
+        json_data[s.uuid()] = s.to_json()
+        json_data[s.uuid()].pop("key")
     return json_data
