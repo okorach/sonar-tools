@@ -41,9 +41,7 @@ class Aggregation(comp.Component):
         if self._json is None and data is not None:
             self._json = data
         if self._json is None:
-            self._json = json.loads(
-                env.get(api, ctxt=self.endpoint, params={key_name: self.key}).text
-            )
+            self._json = json.loads(env.get(api, ctxt=self.endpoint, params={key_name: self.key}).text)
         self._id = self.key
         self.name = self._json.get("name", None)
         self._visibility = self._json.get("visibility", None)
@@ -75,9 +73,7 @@ class Aggregation(comp.Component):
         if n in sizes:
             rule = rules.get_rule(broken_rule)
             msg = rule.msg.format(str(self))
-            problems.append(
-                problem.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
             util.logger.debug("%s has %d projects", str(self), n)
         return problems

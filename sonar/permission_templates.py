@@ -24,12 +24,14 @@ from sonar import sqobject, utilities, permissions
 _PERMISSION_TEMPLATES = {}
 _DEFAULT_TEMPLATES = {}
 
-class PermissionTemplate(sqobject.SqObject):
+_SEARCH_API = "permissions/search_templates"
 
+
+class PermissionTemplate(sqobject.SqObject):
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key, endpoint)
         if data is None:
-            data = json.loads(self.get('permissions/search_templates').text)
+            data = json.loads(self.get(_SEARCH_API).text)
             for p in data["permissionTemplates"]:
                 if p["id"] == key:
                     perm_temp = p
@@ -60,7 +62,13 @@ class PermissionTemplate(sqobject.SqObject):
         if self._permissions is None:
             self._permissions = {}
             for t in ("users", "groups"):
-                self._permissions[t] = permissions.simplify(permissions.get(endpoint=self.endpoint, perm_type=f"template_{t}", templateId=self.key))
+                self._permissions[t] = permissions.simplify(
+                    permissions.get(
+                        endpoint=self.endpoint,
+                        perm_type=f"template_{t}",
+                        templateId=self.key,
+                    )
+                )
         return self._permissions
 
     def to_json(self, full_specs=False):
@@ -69,8 +77,12 @@ class PermissionTemplate(sqobject.SqObject):
             "name": self.name,
             "description": self.description,
             "pattern": self.project_key_pattern,
-            "permissions": self.permissions()
+            "permissions": self.permissions(),
         }
+        for t in ("users", "groups"):
+            if len(json_data["permissions"][t]) == 0:
+                json_data["permissions"].pop(t)
+
         defaults = []
         if self.is_projects_default():
             defaults.append("projects")
@@ -96,14 +108,13 @@ def get_object(key, data=None, endpoint=None):
 def search(endpoint, params=None):
     new_params = {} if params is None else params.copy()
     objects_list = {}
-    data = json.loads(endpoint.get("permissions/search_templates", params=new_params).text)
+    data = json.loads(endpoint.get(_SEARCH_API, params=new_params).text)
 
     for obj in data["permissionTemplates"]:
-        objects_list[obj["id"]] = PermissionTemplate(
-            obj["id"], endpoint=endpoint, data=obj
-        )
+        objects_list[obj["id"]] = PermissionTemplate(obj["id"], endpoint=endpoint, data=obj)
     _load_default_templates(data=data)
     return objects_list
+
 
 def get_list(endpoint):
     return search(endpoint, None)
@@ -111,9 +122,10 @@ def get_list(endpoint):
 
 def _load_default_templates(data=None, endpoint=None):
     if data is None:
-        data = json.loads(endpoint.get("permissions/search_templates").text)
+        data = json.loads(endpoint.get(_SEARCH_API).text)
     for d in data["defaultTemplates"]:
         _DEFAULT_TEMPLATES[d["qualifier"]] = d["templateId"]
+
 
 def export(endpoint, full_specs=False):
     utilities.logger.info("Exporting permission templates")

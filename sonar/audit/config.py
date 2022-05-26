@@ -47,12 +47,8 @@ def load(config_name=None, settings=None):
     if settings is None:
         settings = {}
 
-    default_conf = _load_properties_file(
-        pathlib.Path(__file__).parent / f"{config_name}.properties"
-    )
-    home_conf = _load_properties_file(
-        f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties"
-    )
+    default_conf = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
+    home_conf = _load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties")
     local_conf = _load_properties_file(f"{os.getcwd()}{os.sep}{config_name}.properties")
 
     _CONFIG_SETTINGS = {**default_conf, **home_conf, **local_conf, **settings}

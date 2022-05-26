@@ -56,9 +56,7 @@ class UserToken(sq.SqObject):
             self.created_at = util.string_to_date(json_data["createdAt"])
         self.last_connection_date = None
         if "lastConnectionDate" in json_data:
-            self.last_connection_date = util.string_to_date(
-                json_data["lastConnectionDate"]
-            )
+            self.last_connection_date = util.string_to_date(json_data["lastConnectionDate"])
         self.token = token
         util.logger.debug("Created token '%s'", str(self))
 
@@ -68,9 +66,7 @@ class UserToken(sq.SqObject):
     def revoke(self):
         if self.name is None:
             return False
-        util.logger.info(
-            "Revoking token '%s' of user login '%s'", self.name, self.login
-        )
+        util.logger.info("Revoking token '%s' of user login '%s'", self.name, self.login)
         env.post(
             UserToken.API_REVOKE,
             {"name": self.name, "login": self.login},
@@ -84,9 +80,7 @@ def search(login, endpoint=None):
     token_list = []
     data = json.loads(resp.text)
     for tk in data["userTokens"]:
-        token_list.append(
-            UserToken(login=data["login"], json_data=tk, endpoint=endpoint)
-        )
+        token_list.append(UserToken(login=data["login"], json_data=tk, endpoint=endpoint))
     return token_list
 
 

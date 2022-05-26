@@ -76,9 +76,7 @@ def __process_no_match(finding):
 
 
 def __process_multiple_exact_siblings(finding, siblings):
-    util.logger.info(
-        "Multiple matches for %s, cannot automatically apply changelog", str(finding)
-    )
+    util.logger.info("Multiple matches for %s, cannot automatically apply changelog", str(finding))
     name = __name(finding)
     for sib in siblings:
         comment = ""
@@ -171,10 +169,7 @@ def __sync_findings_list(src_findings, tgt_findings, settings):
         else:  # No match
             report.append(__process_no_match(finding))
     counters["nb_no_match"] = counters["nb_to_sync"] - (
-        counters["nb_applies"]
-        + counters["nb_tgt_has_changelog"]
-        + counters["nb_multiple_matches"]
-        + counters["nb_approx_match"]
+        counters["nb_applies"] + counters["nb_tgt_has_changelog"] + counters["nb_multiple_matches"] + counters["nb_approx_match"]
     )
     util.json_dump_debug(counters, "COUNTERS")
     return (report, counters)
@@ -194,9 +189,7 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
     )
     for key1, finding in src_findings.items():
         if not finding.has_changelog_or_comments():
-            util.logger.debug(
-                "%s has no changelog or comments, skipped in sync", str(finding)
-            )
+            util.logger.debug("%s has no changelog or comments, skipped in sync", str(finding))
             continue
         if finding.is_closed():
             util.logger.info(
@@ -226,9 +219,7 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
         str(src_object),
     )
     if len(interesting_src_findings) <= 0:
-        util.logger.info(
-            "No %ss with manual changes in %s, skipping...", name, str(src_object)
-        )
+        util.logger.info("No %ss with manual changes in %s, skipping...", name, str(src_object))
         counters = {
             "nb_to_sync": 0,
             "nb_applies": 0,

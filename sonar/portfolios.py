@@ -93,9 +93,7 @@ class Portfolio(aggregations.Aggregation):
             if self.endpoint.version() >= (9, 3, 0):
                 for p in self._json["selectedProjects"]:
                     if "selectedBranches" in p:
-                        self._projects[p["projectKey"]] = ", ".join(
-                            p["selectedBranches"]
-                        )
+                        self._projects[p["projectKey"]] = ", ".join(p["selectedBranches"])
                     else:
                         self._projects[p["projectKey"]] = options.DEFAULT
             else:
@@ -151,9 +149,7 @@ class Portfolio(aggregations.Aggregation):
         if not audit_settings["audit.portfolios.singleton"]:
             util.logger.debug("Auditing singleton portfolios is disabled, skipping...")
             return []
-        return self._audit_singleton_aggregation(
-            broken_rule=rules.RuleId.PORTFOLIO_SINGLETON
-        )
+        return self._audit_singleton_aggregation(broken_rule=rules.RuleId.PORTFOLIO_SINGLETON)
 
     def audit(self, audit_settings):
         util.logger.info("Auditing %s", str(self))
@@ -179,7 +175,7 @@ class Portfolio(aggregations.Aggregation):
             data["lastAnalysis"] = self.last_analysis()
         return data
 
-    def settings(self):
+    def export(self):
         util.logger.info("Exporting %s", str(self))
         self._load_full()
         json_data = {
@@ -296,10 +292,7 @@ def _sub_portfolios(json_data, version):
 
 
 def _projects(json_data, version):
-    if (
-        "selectionMode" not in json_data
-        or json_data["selectionMode"] != SELECTION_MODE_MANUAL
-    ):
+    if "selectionMode" not in json_data or json_data["selectionMode"] != SELECTION_MODE_MANUAL:
         return None
     projects = {}
     if version >= (9, 3, 0):

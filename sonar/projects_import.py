@@ -53,9 +53,7 @@ def _check_sq_environments(import_sq, export_sq):
 
 def main():
     parser = util.set_common_args("Imports a list of projects in a SonarQube platform")
-    parser.add_argument(
-        "-f", "--projectsFile", required=True, help="File with the list of projects"
-    )
+    parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
     args = util.parse_and_check_token(parser)
     sq = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(vars(args))
@@ -78,7 +76,7 @@ def main():
             else:
                 statuses[s] = 1
         else:
-            status = projects.Project(project["key"], endpoint=sq).importproject()
+            status = projects.Project(project["key"], endpoint=sq).import_zip()
             s = f"IMPORT {status}"
             if s in statuses:
                 statuses[s] += 1

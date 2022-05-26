@@ -186,9 +186,7 @@ class Issue(findings.Finding):
         return data
 
     def read(self):
-        resp = self.get(
-            Issue.SEARCH_API, params={"issues": self.key, "additionalFields": "_all"}
-        )
+        resp = self.get(Issue.SEARCH_API, params={"issues": self.key, "additionalFields": "_all"})
         self._load(resp.issues[0])
 
     def changelog(self):
@@ -252,9 +250,7 @@ class Issue(findings.Finding):
             self.severity,
             severity,
         )
-        return self.post(
-            "issues/set_severity", {"issue": self.key, "severity": severity}
-        )
+        return self.post("issues/set_severity", {"issue": self.key, "severity": severity})
 
     def assign(self, assignee):
         util.logger.debug("Assigning issue %s to %s", self.key, assignee)
@@ -265,9 +261,7 @@ class Issue(findings.Finding):
         return self.post("issues/set_tags", {"issue": self.key, "tags": tags})
 
     def set_type(self, new_type):
-        util.logger.debug(
-            "Changing type of issue %s from %s to %s", self.key, self.type, new_type
-        )
+        util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         return self.post("issues/set_type", {"issue": self.key, "type": new_type})
 
     def is_wont_fix(self):
@@ -287,21 +281,15 @@ class Issue(findings.Finding):
         return False
 
     def strictly_identical_to(self, another_finding, ignore_component=False):
-        return super.strictly_identical_to(another_finding, ignore_component) and (
-            self.debt() == another_finding.debt()
-        )
+        return super.strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
     def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
-        return super.almost_identical_to(
-            another_finding, ignore_component, **kwargs
-        ) and (
+        return super.almost_identical_to(another_finding, ignore_component, **kwargs) and (
             self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False)
         )
 
     def __do_transition(self, transition):
-        return self.post(
-            "issues/do_transition", {"issue": self.key, "transition": transition}
-        )
+        return self.post("issues/do_transition", {"issue": self.key, "transition": transition})
 
     def reopen(self):
         util.logger.debug("Reopening %s", str(self))
@@ -340,9 +328,7 @@ class Issue(findings.Finding):
                 "Marking vulnerability %s as won't fix in replacement of 'reviewed'",
                 self.key,
             )
-            self.add_comment(
-                "Vulnerability marked as won't fix to replace hotspot 'reviewed' status"
-            )
+            self.add_comment("Vulnerability marked as won't fix to replace hotspot 'reviewed' status")
             return self.__do_transition("wontfix")
 
         util.logger.debug(
@@ -363,9 +349,7 @@ class Issue(findings.Finding):
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "REOPEN":
             if event.previous_state() == "CLOSED":
-                util.logger.info(
-                    "Reopen from closed issue won't be applied, issue was never closed"
-                )
+                util.logger.info("Reopen from closed issue won't be applied, issue was never closed")
             else:
                 self.reopen()
             # self.add_comment(f"Issue re-open {origin}", settings[SYNC_ADD_COMMENTS])
@@ -404,9 +388,7 @@ class Issue(findings.Finding):
             )
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "INTERNAL":
-            util.logger.info(
-                "Changelog %s is internal, it will not be applied...", str(event)
-            )
+            util.logger.info("Changelog %s is internal, it will not be applied...", str(event))
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         else:
             util.logger.error("Event %s can't be applied", str(event))
@@ -416,9 +398,7 @@ class Issue(findings.Finding):
     def apply_changelog(self, source_issue, settings):
         events = source_issue.changelog()
         if events is None or not events:
-            util.logger.debug(
-                "Sibling %s has no changelog, no action taken", source_issue.key
-            )
+            util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.key)
             return False
 
         change_nbr = 0
@@ -442,18 +422,12 @@ class Issue(findings.Finding):
 
         comments = source_issue.comments()
         if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
-            util.logger.info(
-                "Target %s has 0 comments, adding sync link comment", str(self)
-            )
+            util.logger.info("Target %s has 0 comments, adding sync link comment", str(self))
             start_change = 1
-            self.add_comment(
-                f"Automatically synchronized from [this original issue]({source_issue.url()})"
-            )
+            self.add_comment(f"Automatically synchronized from [this original issue]({source_issue.url()})")
         else:
             start_change = len(self.comments())
-            util.logger.info(
-                "Target %s already has %d comments", str(self), start_change
-            )
+            util.logger.info("Target %s already has %d comments", str(self), start_change)
         util.logger.info(
             "Applying comments of %s to %s, from comment %d",
             str(source_issue),
@@ -489,9 +463,7 @@ def __search_all_by_directories(params, endpoint=None):
     for d in facets["directories"]:
         util.logger.info("Search by directory %s", d["val"])
         new_params["directories"] = d["val"]
-        issue_list.update(
-            search(endpoint=endpoint, params=new_params, raise_error=False)
-        )
+        issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=False))
     util.logger.info("Search by directory ALL: %d issues found", len(issue_list))
     return issue_list
 
@@ -506,9 +478,7 @@ def __search_all_by_types(params, endpoint=None):
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             util.logger.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(
-                __search_all_by_directories(params=new_params, endpoint=endpoint)
-            )
+            issue_list.update(__search_all_by_directories(params=new_params, endpoint=endpoint))
     util.logger.info("Search by type ALL: %d issues found", len(issue_list))
     return issue_list
 
@@ -523,9 +493,7 @@ def __search_all_by_severities(params, endpoint=None):
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             util.logger.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(
-                __search_all_by_types(params=new_params, endpoint=endpoint)
-            )
+            issue_list.update(__search_all_by_types(params=new_params, endpoint=endpoint))
     util.logger.info("Search by severity ALL: %d issues found", len(issue_list))
     return issue_list
 
@@ -533,13 +501,9 @@ def __search_all_by_severities(params, endpoint=None):
 def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None):
     new_params = params.copy()
     if date_start is None:
-        date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
     if date_stop is None:
-        date_stop = get_newest_issue(endpoint=endpoint, params=new_params).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        date_stop = get_newest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
     util.logger.info(
         "Search by date between [%s - %s]",
         util.date_to_string(date_start, False),
@@ -615,9 +579,7 @@ def _search_all_by_project(project_key, params, endpoint=None):
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             util.logger.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(
-                __search_all_by_date(params=new_params, endpoint=endpoint)
-            )
+            issue_list.update(__search_all_by_date(params=new_params, endpoint=endpoint))
     return issue_list
 
 
@@ -631,21 +593,11 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
     issue_list = {}
     for k in key_list:
         util.logger.debug("Issue search by project %s, with params %s", k, str(params))
-        if (
-            endpoint.version() >= (9, 1, 0)
-            and endpoint.edition() in ("enterprise", "datacenter")
-            and search_findings
-        ):
+        if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ("enterprise", "datacenter") and search_findings:
             util.logger.info("Using new export findings to speed up issue export")
-            issue_list.update(
-                projects.Project(k, endpoint=endpoint).get_findings(
-                    params.get("branch", None), params.get("pullRequest", None)
-                )
-            )
+            issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(params.get("branch", None), params.get("pullRequest", None)))
         else:
-            issue_list.update(
-                _search_all_by_project(k, params=params, endpoint=endpoint)
-            )
+            issue_list.update(_search_all_by_project(k, params=params, endpoint=endpoint))
     util.logger.info(
         "Search by project %s params %s returned %d issues",
         project_key,
@@ -664,9 +616,7 @@ def search_all(endpoint, params=None):
     except TooManyIssuesError:
         util.logger.info(_TOO_MANY_ISSUES_MSG)
         for k in projects.search(endpoint):
-            issue_list.update(
-                _search_all_by_project(k, params=new_params, endpoint=endpoint)
-            )
+            issue_list.update(_search_all_by_project(k, params=new_params, endpoint=endpoint))
     return issue_list
 
 
@@ -683,14 +633,11 @@ def search(endpoint=None, params=None, raise_error=True):
         data = json.loads(resp.text)
         nbr_issues = data["paging"]["total"]
         nbr_pages = min(20, (nbr_issues + new_params["ps"] - 1) // new_params["ps"])
-        util.logger.debug(
-            "Number of issues: %d - Page: %d/%d", nbr_issues, new_params["p"], nbr_pages
-        )
+        util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, new_params["p"], nbr_pages)
         if nbr_issues > Issue.MAX_SEARCH and raise_error:
             raise TooManyIssuesError(
                 nbr_issues,
-                f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, "
-                f"this is more than the max {Issue.MAX_SEARCH} possible",
+                f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, this is more than the max {Issue.MAX_SEARCH} possible",
             )
         # TODO Add critical log when no raise error
 
@@ -749,9 +696,7 @@ def get_newest_issue(endpoint=None, params=None):
 def count(endpoint=None, **kwargs):
     """Returns number of issues of a search"""
     returned_data = search(endpoint=endpoint, params=kwargs.copy().update({"ps": 1}))
-    util.logger.debug(
-        "Issue search %s would return %d issues", str(kwargs), returned_data["total"]
-    )
+    util.logger.debug("Issue search %s would return %d issues", str(kwargs), returned_data["total"])
     return returned_data["total"]
 
 
@@ -782,16 +727,10 @@ def get_search_criteria(params):
     if criterias.get("types", None) is not None:
         criterias["types"] = util.allowed_values_string(criterias["types"], TYPES)
     if criterias.get("severities", None) is not None:
-        criterias["severities"] = util.allowed_values_string(
-            criterias["severities"], SEVERITIES
-        )
+        criterias["severities"] = util.allowed_values_string(criterias["severities"], SEVERITIES)
     if criterias.get("statuses", None) is not None:
-        criterias["statuses"] = util.allowed_values_string(
-            criterias["statuses"], STATUSES
-        )
+        criterias["statuses"] = util.allowed_values_string(criterias["statuses"], STATUSES)
     if criterias.get("resolutions", None) is not None:
-        criterias["resolutions"] = util.allowed_values_string(
-            criterias["resolutions"], RESOLUTIONS
-        )
+        criterias["resolutions"] = util.allowed_values_string(criterias["resolutions"], RESOLUTIONS)
     criterias = util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
     return criterias

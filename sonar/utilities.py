@@ -136,8 +136,7 @@ def set_output_file_args(parser, json_fmt=True, csv_fmt=True):
             "--" + options.FORMAT,
             choices=["csv", "json"],
             required=False,
-            help="Output format for generated report.\nIf not specified, "
-            "it is the output file extension if json or csv, then csv by default",
+            help="Output format for generated report.\nIf not specified, it is the output file extension if json or csv, then csv by default",
         )
     if csv_fmt:
         parser.add_argument(
@@ -258,9 +257,7 @@ def allowed_values_string(original_str, allowed_values):
 
 
 def json_dump(jsondata, indent=3):
-    return json.dumps(
-        remove_nones(jsondata), indent=indent, sort_keys=True, separators=(",", ": ")
-    )
+    return json.dumps(remove_nones(jsondata), indent=indent, sort_keys=True, separators=(",", ": "))
 
 
 def str_none(v):
@@ -395,9 +392,7 @@ def nbr_pages(sonar_api_json):
     if "total" in sonar_api_json:
         return int_div_ceil(sonar_api_json["total"], sonar_api_json["ps"])
     else:
-        return int_div_ceil(
-            sonar_api_json["paging"]["total"], sonar_api_json["paging"]["pageSize"]
-        )
+        return int_div_ceil(sonar_api_json["paging"]["total"], sonar_api_json["paging"]["pageSize"])
 
 
 @contextlib.contextmanager

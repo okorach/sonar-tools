@@ -147,9 +147,7 @@ class Hotspot(findings.Finding):
 
     def mark_as_acknowledged(self):
         if self.endpoint.version() < (9, 4, 0):
-            util.logger.warning(
-                "Platform version is < 9.4, can't acknowledge %s", str(self)
-            )
+            util.logger.warning("Platform version is < 9.4, can't acknowledge %s", str(self))
             return True
         return self.__mark_as("ACKNOWLEDGED")
 
@@ -197,9 +195,7 @@ class Hotspot(findings.Finding):
                 # self.add_comment(f"Hotspot assigned assigned {origin}", settings[SYNC_ADD_COMMENTS])
 
         elif event_type == "INTERNAL":
-            util.logger.info(
-                "Changelog %s is internal, it will not be applied...", str(event)
-            )
+            util.logger.info("Changelog %s is internal, it will not be applied...", str(event))
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         else:
             util.logger.error("Event %s can't be applied", str(event))
@@ -209,9 +205,7 @@ class Hotspot(findings.Finding):
     def apply_changelog(self, source_hotspot, settings):
         events = source_hotspot.changelog()
         if events is None or not events:
-            util.logger.debug(
-                "Sibling %s has no changelog, no action taken", str(source_hotspot)
-            )
+            util.logger.debug("Sibling %s has no changelog, no action taken", str(source_hotspot))
             return False
 
         change_nbr = 0
@@ -234,18 +228,12 @@ class Hotspot(findings.Finding):
 
         comments = source_hotspot.comments()
         if len(self.comments()) == 0 and settings[syncer.SYNC_ADD_LINK]:
-            util.logger.info(
-                "Target %s has 0 comments, adding sync link comment", str(self)
-            )
+            util.logger.info("Target %s has 0 comments, adding sync link comment", str(self))
             start_change = 1
-            self.add_comment(
-                f"Automatically synchronized from [this original issue]({source_hotspot.url()})"
-            )
+            self.add_comment(f"Automatically synchronized from [this original issue]({source_hotspot.url()})")
         else:
             start_change = len(self.comments())
-            util.logger.info(
-                "Target %s already has %d comments", str(self), start_change
-            )
+            util.logger.info("Target %s already has %d comments", str(self), start_change)
         util.logger.info(
             "Applying comments of %s to %s, from comment %d",
             str(source_hotspot),
@@ -314,9 +302,7 @@ def search_by_project(project_key, endpoint=None, params=None):
     hotspots = {}
     for k in key_list:
         new_params["projectKey"] = k
-        util.logger.debug(
-            "Hotspots search by project %s with params %s", k, str(params)
-        )
+        util.logger.debug("Hotspots search by project %s with params %s", k, str(params))
         project_hotspots = search(endpoint=endpoint, params=new_params)
         util.logger.info(
             "Project %s params %s has %d hotspots",
@@ -364,8 +350,7 @@ def search(endpoint=None, page=None, params=None):
         if page is None and nbr_hotspots > 10000:
             raise TooManyHotspotsError(
                 nbr_hotspots,
-                f"{nbr_hotspots} hotpots returned by api/hotspots/search, "
-                "this is more than the max 10000 possible",
+                f"{nbr_hotspots} hotpots returned by api/hotspots/search, " "this is more than the max 10000 possible",
             )
 
         for i in data["hotspots"]:
@@ -399,11 +384,7 @@ def get_search_criteria(params):
     if criterias.get("status", None) is not None:
         criterias["status"] = util.allowed_values_string(criterias["status"], STATUSES)
     if criterias.get("resolution", None) is not None:
-        criterias["resolution"] = util.allowed_values_string(
-            criterias["resolution"], RESOLUTIONS
-        )
-        util.logger.error(
-            "hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'"
-        )
+        criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
+        util.logger.error("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
         criterias["status"] = "REVIEWED"
     return util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)

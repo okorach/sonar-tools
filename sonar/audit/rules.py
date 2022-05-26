@@ -171,21 +171,13 @@ def load():
     __RULES = {}
     for rule_id, rule in rules.items():
         if to_id(rule_id) is None:
-            raise RuleConfigError(
-                f"Rule '{rule_id}' from rules.json is not a legit ruleId"
-            )
+            raise RuleConfigError(f"Rule '{rule_id}' from rules.json is not a legit ruleId")
         if types.to_type(rule.get("type", "")) is None:
-            raise RuleConfigError(
-                f"Rule '{rule_id}' from rules.json has no or incorrect type"
-            )
+            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect type")
         if severities.to_severity(rule.get("severity", "")) is None:
-            raise RuleConfigError(
-                f"Rule '{rule_id}' from rules.json has no or incorrect severity"
-            )
+            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no or incorrect severity")
         if "message" not in rule:
-            raise RuleConfigError(
-                f"Rule '{rule_id}' from rules.json has no message defined'"
-            )
+            raise RuleConfigError(f"Rule '{rule_id}' from rules.json has no message defined'")
         __RULES[to_id(rule_id)] = Rule(
             rule_id,
             rule["severity"],
@@ -197,9 +189,7 @@ def load():
     # Cross check that all rule Ids are defined in the JSON
     for rule in RuleId:
         if rule not in __RULES:
-            raise RuleConfigError(
-                f"Rule {rule} has no configuration defined in 'rules.json'"
-            )
+            raise RuleConfigError(f"Rule {rule} has no configuration defined in 'rules.json'")
 
 
 def get_rule(rule_id):

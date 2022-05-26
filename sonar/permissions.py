@@ -116,9 +116,7 @@ def __get_perms(endpoint, url, perm_type, pfield, params, exit_on_error):
             nbr_pages = utilities.int_div_ceil(data["paging"]["total"], __MAX_QG_PERMS)
             page += 1
         elif resp.status_code not in (400, 404):
-            utilities.exit_fatal(
-                f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API
-            )
+            utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
         else:
             break
     return perms

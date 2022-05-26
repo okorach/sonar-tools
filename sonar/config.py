@@ -26,14 +26,11 @@ from sonar import (
     env,
     version,
     settings,
-    devops,
     projects,
     qualityprofiles,
     qualitygates,
     portfolios,
     applications,
-    permissions,
-    permission_templates,
     users,
     groups,
     options,
@@ -69,14 +66,14 @@ def __parse_args(desc):
         "--export",
         required=False,
         default=False,
-        action='store_true',
+        action="store_true",
         help="to export configuration (exclusive of --import)",
     )
     parser.add_argument(
         "--import",
         required=False,
         default=False,
-        action='store_true',
+        action="store_true",
         help="to import configuration (exclusive of --export)",
     )
     args = util.parse_and_check_token(parser)
@@ -106,53 +103,57 @@ def __export_config(args):
     sq_settings = {}
     sq_settings["platform"] = endpoint.basics()
     if "settings" in what:
-        sq_settings[__SETTINGS] = endpoint.settings(include_not_set=True)
-        sq_settings[__SETTINGS][settings.DEVOPS_INTEGRATION] = list(
-            devops.settings(endpoint).values()
-        )
-        sq_settings[__SETTINGS]["permissions"] = permissions.export(endpoint)
-        sq_settings[__SETTINGS]["permissionTemplates"] = permission_templates.export(endpoint)
+        sq_settings[__SETTINGS] = endpoint.export()
     if "qp" in what:
-        sq_settings[__QP] = qualityprofiles.get_list(
-            endpoint, include_rules=True, in_hierarchy=True
-        )
+        sq_settings[__QP] = qualityprofiles.export(endpoint)
     if "qg" in what:
-        sq_settings[__QG] = qualitygates.get_list(endpoint, as_json=True)
+        sq_settings[__QG] = qualitygates.export(endpoint)
     if "projects" in what:
         project_settings = {}
-        for p in projects.get_projects_list(
-            str_key_list=args.projectKeys, endpoint=endpoint
-        ).values():
-            project_settings[p.key] = p.settings()
+        for k, p in projects.get_projects_list(str_key_list=args.projectKeys, endpoint=endpoint).items():
+            project_settings[k] = p.export()
+            project_settings[k].pop("key")
         sq_settings["projects"] = project_settings
     if "portfolios" in what:
         portfolios_settings = {}
         for k, p in portfolios.search(endpoint=endpoint).items():
-            portfolios_settings[k] = p.settings()
+            portfolios_settings[k] = p.export()
+            portfolios_settings[k].pop("key")
         sq_settings["portfolios"] = portfolios_settings
     if "apps" in what:
         apps_settings = {}
         for k, app in applications.search(endpoint=endpoint).items():
-            apps_settings[k] = app.settings()
+            apps_settings[k] = app.export()
+            apps_settings[k].pop("key")
         sq_settings[__APPS] = apps_settings
     if "users" in what:
-        sq_settings["users"] = users.get_list(endpoint, as_json=True)
+        sq_settings["users"] = users.export(endpoint)
     if "groups" in what:
-        sq_settings["groups"] = groups.get_list(endpoint, as_json=True)
+        sq_settings["groups"] = groups.export(endpoint)
     with util.open_file(args.file) as fd:
         print(util.json_dump(sq_settings), file=fd)
 
     util.logger.info("Exported %d items", __count_settings(what, sq_settings))
 
+
 def main():
     args = __parse_args("Extract SonarQube platform configuration")
     kwargs = vars(args)
     if not kwargs["export"] and not kwargs["import"]:
-        util.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
+        util.exit_fatal(
+            "One of --export or --import option must be chosen",
+            exit_code=options.ERR_ARGS_ERROR,
+        )
     if kwargs["export"] and kwargs["import"]:
-        util.exit_fatal("--export or --import options are exclusive of each other", exit_code=options.ERR_ARGS_ERROR)
+        util.exit_fatal(
+            "--export or --import options are exclusive of each other",
+            exit_code=options.ERR_ARGS_ERROR,
+        )
     if kwargs["import"]:
-        util.exit_fatal("--import option not yet supported", exit_code=options.ERR_UNSUPPORTED_OPERATION)
+        util.exit_fatal(
+            "--import option not yet supported",
+            exit_code=options.ERR_UNSUPPORTED_OPERATION,
+        )
 
     if kwargs["export"]:
         __export_config(args)

@@ -29,7 +29,7 @@ import json
 import requests
 
 import sonar.utilities as util
-from sonar import options, settings, permissions
+from sonar import options, settings, permissions, permission_templates, devops
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -120,9 +120,7 @@ class Environment:
             if params is None:
                 r = requests.get(url=self.url + api, auth=self.credentials())
             else:
-                r = requests.get(
-                    url=self.url + api, auth=self.credentials(), params=params
-                )
+                r = requests.get(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -138,9 +136,7 @@ class Environment:
             if params is None:
                 r = requests.post(url=self.url + api, auth=self.credentials())
             else:
-                r = requests.post(
-                    url=self.url + api, auth=self.credentials(), params=params
-                )
+                r = requests.post(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -155,9 +151,7 @@ class Environment:
             if params is None:
                 r = requests.delete(url=self.url + api, auth=self.credentials())
             else:
-                r = requests.delete(
-                    url=self.url + api, auth=self.credentials(), params=params
-                )
+                r = requests.delete(url=self.url + api, auth=self.credentials(), params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -186,15 +180,14 @@ class Environment:
         else:
             return None
 
-    def settings(self, settings_list=None, include_not_set=False, format="json"):
-        util.logger.info("Exporting global settings")
-        settings_dict = settings.get_bulk(
-            endpoint=self, settings_list=settings_list, include_not_set=include_not_set
-        )
-        if format is None or format.lower() != "json":
-            return settings_dict
+    def settings(self, settings_list=None, include_not_set=False):
+        util.logger.info("getting global settings")
+        return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
+
+    def export(self):
+        util.logger.info("Exporting platform global settings")
         json_data = {}
-        for s in settings_dict.values():
+        for s in self.settings(include_not_set=True).values():
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
 
@@ -204,11 +197,9 @@ class Environment:
                 wh.pop("key", None)
                 wh.pop("latestDelivery", None)
         json_data[settings.GENERAL_SETTINGS].update({"webhooks": whooks})
-        json_data["permissions"] = {}
-        for ptype in ("users", "groups"):
-            perms = permissions.simplify(permissions.get(self, ptype))
-            if len(perms) > 0:
-                json_data["permissions"][ptype] = perms
+        json_data["permissions"] = permissions.export(self)
+        json_data["permissionTemplates"] = permission_templates.export(self)
+        json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
         return json_data
 
     def basics(self):
@@ -237,19 +228,13 @@ class Environment:
         platform_settings = self.__get_platform_settings()
         for key in audit_settings:
             if key.startswith("audit.globalSettings.range"):
-                problems += _audit_setting_in_range(
-                    key, platform_settings, audit_settings, self.version()
-                )
+                problems += _audit_setting_in_range(key, platform_settings, audit_settings, self.version())
             elif key.startswith("audit.globalSettings.value"):
                 problems += _audit_setting_value(key, platform_settings, audit_settings)
             elif key.startswith("audit.globalSettings.isSet"):
-                problems += _audit_setting_set(
-                    key, True, platform_settings, audit_settings
-                )
+                problems += _audit_setting_set(key, True, platform_settings, audit_settings)
             elif key.startswith("audit.globalSettings.isNotSet"):
-                problems += _audit_setting_set(
-                    key, False, platform_settings, audit_settings
-                )
+                problems += _audit_setting_set(key, False, platform_settings, audit_settings)
 
         problems += (
             _audit_maintainability_rating_grid(platform_settings, audit_settings)
@@ -271,9 +256,7 @@ class Environment:
             )
             visi = json.loads(resp.text)["organization"]["projectVisibility"]
         else:
-            resp = self.get(
-                "settings/values", params={"keys": "projects.default.visibility"}
-            )
+            resp = self.get("settings/values", params={"keys": "projects.default.visibility"})
             visi = json.loads(resp.text)["settings"][0]["value"]
         util.logger.info("Project default visibility is '%s'", visi)
         if config.get_property("checkDefaultProjectVisibility") and visi != "private":
@@ -285,9 +268,7 @@ class Environment:
         util.logger.info("Auditing admin password")
         problems = []
         try:
-            r = requests.get(
-                url=self.url + "/api/authentication/validate", auth=("admin", "admin")
-            )
+            r = requests.get(url=self.url + "/api/authentication/validate", auth=("admin", "admin"))
             data = json.loads(r.text)
             if data.get("valid", False):
                 rule = rules.get_rule(rules.RuleId.DEFAULT_ADMIN_PASSWORD)
@@ -342,8 +323,7 @@ class Environment:
                     pb.Problem(
                         typ.Type.BAD_PRACTICE,
                         sev.Severity.MEDIUM,
-                        f"Too many ({perm_counts[key]}) groups with permission {name}, "
-                        f"{maxis[key]} max recommended",
+                        f"Too many ({perm_counts[key]}) groups with permission {name}, {maxis[key]} max recommended",
                     )
                 )
         return problems
@@ -390,15 +370,11 @@ class Environment:
         if vers < (8, 9, 0):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
             msg = rule.msg.format(str(self))
-            problems.append(
-                pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         elif vers < (9, 2, 0):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
             msg = rule.msg.format(str(self))
-            problems.append(
-                pb.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
 
 
@@ -410,9 +386,7 @@ this.context = Environment("http://localhost:9000", "")
 
 def set_env(some_url, some_token):
     this.context = Environment(some_url, some_token)
-    util.logger.debug(
-        "Setting GLOBAL environment: %s@%s", util.redacted_token(some_token), some_url
-    )
+    util.logger.debug("Setting GLOBAL environment: %s@%s", util.redacted_token(some_token), some_url)
 
 
 def set_token(some_token):
@@ -501,9 +475,7 @@ def _audit_setting_value(key, platform_settings, audit_settings):
     if v[0] not in platform_settings:
         util.logger.warning(_NON_EXISTING_SETTING_SKIPPED, v[0])
         return []
-    util.logger.info(
-        "Auditing that setting %s has common/recommended value '%s'", v[0], v[1]
-    )
+    util.logger.info("Auditing that setting %s has common/recommended value '%s'", v[0], v[1])
     s = platform_settings.get(v[0], "")
     if s == v[1]:
         return []
@@ -524,16 +496,12 @@ def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version):
     if v[0] not in platform_settings:
         util.logger.warning(_NON_EXISTING_SETTING_SKIPPED, v[0])
         return []
-    if v[
-        0
-    ] == "sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches" and sq_version >= (
+    if v[0] == "sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches" and sq_version >= (
         8,
         0,
         0,
     ):
-        util.logger.error(
-            "Setting %s is ineffective on SonaQube 8.0+, skipping audit", v[0]
-        )
+        util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit", v[0])
         return []
     value, min_v, max_v = float(platform_settings[v[0]]), float(v[1]), float(v[2])
     util.logger.info(
@@ -571,23 +539,16 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings):
             util.logger.info("Setting %s is not set", key)
     else:
         if not check_is_set:
-            util.logger.info(
-                "Setting %s is set with value %s", key, platform_settings[key]
-            )
+            util.logger.info("Setting %s is set with value %s", key, platform_settings[key])
         else:
-            problems = [
-                pb.Problem(
-                    v[1], v[2], f"Setting {key} is set, although it should probably not"
-                )
-            ]
+            problems = [pb.Problem(v[1], v[2], f"Setting {key} is set, although it should probably not")]
 
     return problems
 
 
 def _audit_maintainability_rating_range(value, range, rating_letter, severity, domain):
     util.logger.debug(
-        "Checking that maintainability rating threshold %3.0f%% for '%s' is "
-        "within recommended range [%3.0f%%-%3.0f%%]",
+        "Checking that maintainability rating threshold %3.0f%% for '%s' is within recommended range [%3.0f%%-%3.0f%%]",
         value * 100,
         rating_letter,
         range[0] * 100,
@@ -614,19 +575,13 @@ def _audit_maintainability_rating_grid(platform_settings, audit_settings):
             continue
         (_, _, _, letter, _, _) = key.split(".")
         if letter not in ["A", "B", "C", "D"]:
-            util.logger.error(
-                "Incorrect audit configuration setting %s, skipping audit", key
-            )
+            util.logger.error("Incorrect audit configuration setting %s, skipping audit", key)
             continue
         value = float(thresholds[ord(letter.upper()) - 65])
-        v = _get_multiple_values(
-            4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION
-        )
+        v = _get_multiple_values(4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
         if v is None:
             continue
-        problems += _audit_maintainability_rating_range(
-            value, (float(v[0]), float(v[1])), letter, v[2], v[3]
-        )
+        problems += _audit_maintainability_rating_range(value, (float(v[0]), float(v[1])), letter, v[2], v[3])
     return problems
 
 

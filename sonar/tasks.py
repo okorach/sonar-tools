@@ -65,11 +65,7 @@ class Task(sq.SqObject):
         self.__load_context()
 
     def __load_context(self, force=False):
-        if (
-            not force
-            and self._json is not None
-            and ("scannerContext" in self._json or not self.has_scanner_context())
-        ):
+        if not force and self._json is not None and ("scannerContext" in self._json or not self.has_scanner_context()):
             # Context already retrieved or not available
             return
         params = {"id": self.key, "additionalFields": "scannerContext,stacktrace"}
@@ -174,22 +170,14 @@ class Task(sq.SqObject):
                     break
             if not is_exception:
                 rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
-                msg = rule.msg.format(
-                    f"project key '{self.component()}'", exclusion_pattern
-                )
-                problems.append(
-                    problem.Problem(
-                        rule.type, rule.severity, msg, concerned_object=self
-                    )
-                )
+                msg = rule.msg.format(f"project key '{self.component()}'", exclusion_pattern)
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
                 break  # Report only on the 1st suspicious match
         return problems
 
     def __audit_disabled_scm(self, audit_settings, scan_context):
         if not audit_settings.get("audit.project.scm.disabled", True):
-            util.logger.info(
-                "Auditing disabled SCM integration is turned off, skipping..."
-            )
+            util.logger.info("Auditing disabled SCM integration is turned off, skipping...")
             return []
 
         if scan_context.get("sonar.scm.disabled", "false") == "false":
@@ -218,20 +206,14 @@ class Task(sq.SqObject):
             return []
         problems = []
         context = self.scanner_context()
-        susp_exclusions = _get_suspicious_exclusions(
-            audit_settings["audit.projects.suspiciousExclusionsPatterns"]
-        )
-        susp_exceptions = _get_suspicious_exceptions(
-            audit_settings["audit.projects.suspiciousExclusionsExceptions"]
-        )
+        susp_exclusions = _get_suspicious_exclusions(audit_settings["audit.projects.suspiciousExclusionsPatterns"])
+        susp_exceptions = _get_suspicious_exceptions(audit_settings["audit.projects.suspiciousExclusionsExceptions"])
         for prop in ("sonar.exclusions", "sonar.global.exclusions"):
             if context.get(prop, None) is None:
                 continue
             for excl in util.csv_to_list(context[prop]):
                 util.logger.debug("Pattern = '%s'", excl)
-                problems += self.__audit_exclusions(
-                    excl, susp_exclusions, susp_exceptions
-                )
+                problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
         problems += self.__audit_disabled_scm(audit_settings, context)
         return problems
 

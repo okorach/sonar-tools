@@ -104,9 +104,7 @@ class Branch(components.Component):
         return []
 
     def get_measures(self, metrics_list):
-        m = measures.get(
-            self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint
-        )
+        m = measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
         if "ncloc" in m:
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
             if self.is_main():
@@ -168,9 +166,7 @@ class Branch(components.Component):
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
             msg = rule.msg.format(str(self), age)
-            problems.append(
-                problem.Problem(rule.type, rule.severity, msg, concerned_object=self)
-            )
+            problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
             util.logger.debug("%s age is %d days", str(self), age)
         return problems

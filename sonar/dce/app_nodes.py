@@ -91,22 +91,17 @@ class AppNode(dce_nodes.DceNode):
         util.logger.debug("Auditing log level")
         log_level = self.log_level()
         if log_level is None:
-            util.logger.warning(
-                "%s: log level is missing, audit of log level is skipped...", str(self)
-            )
+            util.logger.warning("%s: log level is missing, audit of log level is skipped...", str(self))
             return []
         if log_level not in ("DEBUG", "TRACE"):
-            util.logger.info(
-                "Log level of '%s' is '%s', all good...", str(self), log_level
-            )
+            util.logger.info("Log level of '%s' is '%s', all good...", str(self), log_level)
             return []
         if log_level == "TRACE":
             return [
                 pb.Problem(
                     types.Type.PERFORMANCE,
                     severities.Severity.CRITICAL,
-                    f"Log level of {str(self)} set to TRACE, this does very negatively affect platform performance, "
-                    "reverting to INFO is required",
+                    f"Log level of {str(self)} set to TRACE, this does very negatively affect platform performance, " "reverting to INFO is required",
                 )
             ]
         if log_level == "DEBUG":
@@ -114,8 +109,7 @@ class AppNode(dce_nodes.DceNode):
                 pb.Problem(
                     types.Type.PERFORMANCE,
                     severities.Severity.HIGH,
-                    f"Log level of {str(self)} is set to DEBUG, this may affect platform performance, "
-                    "reverting to INFO is recommended",
+                    f"Log level of {str(self)} is set to DEBUG, this may affect platform performance, " "reverting to INFO is recommended",
                 )
             ]
         util.logger.debug("%s: Node log level is %s", str(self), log_level)
@@ -124,15 +118,9 @@ class AppNode(dce_nodes.DceNode):
     def __audit_health(self):
         if self.health() != dce_nodes.HEALTH_GREEN:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_NOT_GREEN)
-            return [
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(str(self), self.health())
-                )
-            ]
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), self.health()))]
         else:
-            util.logger.debug(
-                "%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN
-            )
+            util.logger.debug("%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN)
             return []
 
     def __audit_official(self):
@@ -152,9 +140,7 @@ class AppNode(dce_nodes.DceNode):
     def __audit_version(self):
         sq_version = self.version()
         if sq_version is None:
-            util.logger.warning(
-                "%s: Version information is missing, audit on node vresion is skipped..."
-            )
+            util.logger.warning("%s: Version information is missing, audit on node vresion is skipped...")
             return []
         st_time = self.sif.start_time()
         if (
@@ -185,11 +171,7 @@ class AppNode(dce_nodes.DceNode):
         MAX_WORKERS = 2
         if ce_workers > MAX_WORKERS:
             rule = rules.get_rule(rules.RuleId.SETTING_CE_TOO_MANY_WORKERS)
-            return [
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(ce_workers, MAX_WORKERS)
-                )
-            ]
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(ce_workers, MAX_WORKERS))]
         else:
             util.logger.debug(
                 "%s: %d CE workers configured, correct compared to the max %d recommended",
@@ -218,11 +200,7 @@ class AppNode(dce_nodes.DceNode):
             failure_rate = ce_error / (ce_success + ce_error)
         if ce_error > 10 and failure_rate > 0.01:
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
-            problems.append(
-                pb.Problem(
-                    rule.type, rule.severity, rule.msg.format(int(failure_rate * 100))
-                )
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(int(failure_rate * 100))))
         else:
             util.logger.debug(
                 "Number of failed background tasks (%d), and failure rate %d%% is OK",
@@ -233,18 +211,12 @@ class AppNode(dce_nodes.DceNode):
         ce_pending = ce_tasks["Pending"]
         if ce_pending > 100:
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending))
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
         elif ce_pending > 20 and ce_pending > (10 * ce_tasks["Worker Count"]):
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending))
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending)))
         else:
-            util.logger.debug(
-                "Number of pending background tasks (%d) is OK", ce_pending
-            )
+            util.logger.debug("Number of pending background tasks (%d) is OK", ce_pending)
         return problems
 
 

@@ -73,9 +73,7 @@ def get_list(endpoint, params=None):
     rule_list = {}
     while page <= nb_pages:
         params["p"] = page
-        data = json.loads(
-            env.get(API_RULES_SEARCH, ctxt=endpoint, params=new_params).text
-        )
+        data = json.loads(env.get(API_RULES_SEARCH, ctxt=endpoint, params=new_params).text)
         for r in data["rules"]:
             rule_list[r["key"]] = Rule(r["key"], endpoint=endpoint, data=r)
         nb_pages = utilities.int_div_ceil(data["total"], data["ps"])

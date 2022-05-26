@@ -97,9 +97,7 @@ class QualityProfile(sq.SqObject):
         parent = self.parent_name
         if parent is None:
             return None
-        parent_qp = search(
-            self.endpoint, {"language": self.language, "qualityProfile": parent}
-        )[0]
+        parent_qp = search(self.endpoint, {"language": self.language, "qualityProfile": parent})[0]
         return parent_qp.get_built_in_parent()
 
     def has_deprecated_rules(self):
@@ -157,7 +155,7 @@ class QualityProfile(sq.SqObject):
         return util.remove_nones(json_data)
 
     def compare(self, another_qp):
-        params = {'leftKey': self.key, 'rightKey': another_qp.key}
+        params = {"leftKey": self.key, "rightKey": another_qp.key}
         data = json.loads(self.get("qualityprofiles/compare", params=params).text)
         for r in data["inLeft"] + data["same"] + data["inRight"] + data["modified"]:
             for k in ("name", "pluginKey", "pluginName", "languageKey", "languageName"):
@@ -207,12 +205,8 @@ class QualityProfile(sq.SqObject):
         if self._permissions is not None:
             return self._permissions
         self._permissions = {}
-        self._permissions["users"] = permissions.get_qp(
-            self.endpoint, self.name, self.language, "users", "login"
-        )
-        self._permissions["groups"] = permissions.get_qp(
-            self.endpoint, self.name, self.language, "groups", "name"
-        )
+        self._permissions["users"] = permissions.get_qp(self.endpoint, self.name, self.language, "users", "login")
+        self._permissions["groups"] = permissions.get_qp(self.endpoint, self.name, self.language, "groups", "name")
         return self._permissions
 
     def audit(self, audit_settings=None):
@@ -229,12 +223,8 @@ class QualityProfile(sq.SqObject):
             msg = rule.msg.format(str(self), age)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
 
-        total_rules = rules.count(
-            endpoint=self.endpoint, params={"languages": self.language}
-        )
-        if self.nbr_rules < int(
-            total_rules * audit_settings["audit.qualityProfiles.minNumberOfRules"]
-        ):
+        total_rules = rules.count(endpoint=self.endpoint, params={"languages": self.language})
+        if self.nbr_rules < int(total_rules * audit_settings["audit.qualityProfiles.minNumberOfRules"]):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
             msg = rule.msg.format(str(self), self.nbr_rules, total_rules)
             problems.append(pb.Problem(rule.type, rule.severity, msg))
@@ -280,13 +270,12 @@ def audit(endpoint=None, audit_settings=None):
     for lang, nb_qp in langs.items():
         if nb_qp > 5:
             rule = arules.get_rule(arules.RuleId.QP_TOO_MANY_QP)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5))
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5)))
     return problems
 
 
 def hierarchize(qp_list, strip_rules=True):
+    """Organize a flat list of QP in hierarchical (inheritance) fashion"""
     for lang, qpl in qp_list.copy().items():
         for qp_name, qp_value in qpl.copy().items():
             if "parentName" not in qp_value:
@@ -304,14 +293,16 @@ def hierarchize(qp_list, strip_rules=True):
     return qp_list
 
 
-def get_list(endpoint=None, include_rules=False, in_hierarchy=False):
+def get_list(endpoint=None):
     if endpoint is not None and len(_QUALITY_PROFILES) == 0:
         search(endpoint=endpoint)
-    if not include_rules:
-        return _QUALITY_PROFILES
-    qp_list = {}
+    return _QUALITY_PROFILES
+
+
+def export(endpoint, in_hierarchy=True):
     util.logger.info("Exporting quality profiles")
-    for qp in _QUALITY_PROFILES.values():
+    qp_list = {}
+    for qp in get_list(endpoint=endpoint).values():
         util.logger.info("Exporting %s", str(qp))
         json_data = qp.to_json(include_rules=True)
         lang = json_data.pop("language")
@@ -321,7 +312,6 @@ def get_list(endpoint=None, include_rules=False, in_hierarchy=False):
         qp_list[lang][name] = json_data
     if in_hierarchy:
         qp_list = hierarchize(qp_list)
-
     return qp_list
 
 
