@@ -167,7 +167,7 @@ class QualityProfile(sq.SqObject):
     def diff(self, another_qp):
         comp = self.compare(another_qp)
         diff_rules = {}
-        util.json_dump_debug(comp, "COMPARING ")
+        util.json_dump_debug(comp, "Comparing 2 QP ")
         for r in comp["inLeft"]:
             diff_rules[r["key"]] = r
             r.pop("key")
@@ -287,10 +287,8 @@ def audit(endpoint=None, audit_settings=None):
 
 
 def hierarchize(qp_list, strip_rules=True):
-    util.json_dump_debug(qp_list, "Hierarchizing QP")
     for lang, qpl in qp_list.copy().items():
         for qp_name, qp_value in qpl.copy().items():
-            util.json_dump_debug(qp_value, f"Checking {qp_name} = ")
             if "parentName" not in qp_value:
                 continue
             util.logger.debug("QP name %s has parent %s", qp_name, qp_value["parentName"])
@@ -337,12 +335,11 @@ def get_object(key=None, name=None, lang=None, data=None, endpoint=None):
 
 def _convert_rule(rule, qp_lang, full_specs=False):
     d = {"severity": rule["severity"]}
-    # util.json_dump_debug(rule, "CONVERTING RULE ")
     if len(rule["params"]) > 0:
         if not full_specs:
             d["params"] = {}
             for p in rule["params"]:
-                d["params"][p["key"]] =  p.get("defaultValue", "")
+                d["params"][p["key"]] = p.get("defaultValue", "")
         else:
             d["params"] = rule["params"]
     if "templateKey" in rule:
@@ -351,7 +348,6 @@ def _convert_rule(rule, qp_lang, full_specs=False):
         d["isTemplate"] = True
     if rule["lang"] != qp_lang:
         d["language"] = rule["lang"]
-    # util.json_dump_debug(d, "CONVERTED RULE ")
     return d
 
 
