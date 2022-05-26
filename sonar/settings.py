@@ -50,7 +50,7 @@ CATEGORIES = (
 
 NEW_CODE_PERIOD = "newCodePeriod"
 
-DEFAULT_SETTING = "__sonar_default__"
+DEFAULT_SETTING = "__default__"
 
 _SETTINGS = {}
 
