@@ -123,9 +123,8 @@ def main():
         sq_settings["users"] = users.get_list(endpoint, as_json=True)
     if "groups" in what:
         sq_settings["groups"] = groups.get_list(endpoint, as_json=True)
-    fd = util.open_output(args.file)
-    print(util.json_dump(sq_settings), file=fd)
-    util.close_output(file=args.file, fd=fd)
+    with util.open_file(args.file) as fd:
+        print(util.json_dump(sq_settings), file=fd)
 
     util.logger.info("Exported %d items", __count_settings(what, sq_settings))
     sys.exit(0)
