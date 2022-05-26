@@ -82,6 +82,9 @@ def audit(sub_sif, sif):
     if len(searchnodes) < 3:
         rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_NOT_HA)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format()))
+    elif len(searchnodes) > 3:
+        rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(len(searchnodes))))
     for i in range(len(searchnodes)):
         problems += searchnodes[i].audit()
         size_i = searchnodes[i].store_size()
