@@ -123,26 +123,28 @@ def set_target_sonar_args(parser):
     return parser
 
 
-def set_output_file_args(parser):
+def set_output_file_args(parser, json_fmt=True, csv_fmt=True):
     parser.add_argument(
         "-f",
         "--file",
         required=False,
         help="Output file for the report, stdout by default",
     )
-    parser.add_argument(
-        "--" + options.FORMAT,
-        choices=["csv", "json"],
-        required=False,
-        help="Output format for generated report.\nIf not specified, "
-        "it is the output file extension if json or csv, then csv by default",
-    )
-    parser.add_argument(
-        "--" + options.CSV_SEPARATOR,
-        required=False,
-        default=CSV_SEPARATOR,
-        help=f"CSV separator (for CSV output), default {CSV_SEPARATOR}",
-    )
+    if json_fmt and csv_fmt:
+        parser.add_argument(
+            "--" + options.FORMAT,
+            choices=["csv", "json"],
+            required=False,
+            help="Output format for generated report.\nIf not specified, "
+            "it is the output file extension if json or csv, then csv by default",
+        )
+    if csv_fmt:
+        parser.add_argument(
+            "--" + options.CSV_SEPARATOR,
+            required=False,
+            default=CSV_SEPARATOR,
+            help=f"CSV separator (for CSV output), default {CSV_SEPARATOR}",
+        )
 
     return parser
 
