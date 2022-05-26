@@ -115,7 +115,7 @@ def __export_config(args):
     if "qp" in what:
         sq_settings[__QP] = qualityprofiles.export(endpoint)
     if "qg" in what:
-        sq_settings[__QG] = qualitygates.get_list(endpoint, as_json=True)
+        sq_settings[__QG] = qualitygates.export(endpoint)
     if "projects" in what:
         project_settings = {}
         for p in projects.get_projects_list(

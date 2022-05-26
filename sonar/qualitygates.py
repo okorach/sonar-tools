@@ -235,7 +235,7 @@ def audit(endpoint=None, audit_settings=None):
     return problems
 
 
-def get_list(endpoint, as_json=False):
+def get_list(endpoint):
     util.logger.info("Getting quality gates")
     data = json.loads(env.get("qualitygates/list", ctxt=endpoint).text)
     qg_list = {}
@@ -247,7 +247,15 @@ def get_list(endpoint, as_json=False):
             and data["default"] == qg["id"]
         ):
             qg_obj.is_default = True
-        qg_list[qg_obj.name] = qg_obj.to_json() if as_json else qg_obj
+        qg_list[qg_obj.name] = qg_obj
+    return qg_list
+
+
+def export(endpoint):
+    util.logger.info("Exporting quality gates")
+    qg_list = {}
+    for k, qg in get_list(endpoint).items():
+        qg_list[k] = qg.to_json()
     return qg_list
 
 
