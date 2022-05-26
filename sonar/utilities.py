@@ -349,7 +349,7 @@ def dict_add(dict1, dict2):
 
 def exit_fatal(err_msg, exit_code):
     logger.fatal(err_msg)
-    print(f"FATAL: {err_msg}")
+    print(f"FATAL: {err_msg}", file=sys.stderr)
     sys.exit(exit_code)
 
 
