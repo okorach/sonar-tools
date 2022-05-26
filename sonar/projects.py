@@ -800,7 +800,7 @@ Is this normal ?",
             if len(permiss) > 0:
                 json_data["permissions"][ptype] = permiss
 
-    def settings(self, settings_list=None, format="json", include_inherited=False):
+    def export(self, settings_list=None, include_inherited=False):
         util.logger.info("Exporting %s", str(self))
         settings_dict = settings.get_bulk(
             endpoint=self,
@@ -808,9 +808,7 @@ Is this normal ?",
             settings_list=settings_list,
             include_not_set=False,
         )
-        if format is None or format.lower() != "json":
-            return settings_dict
-        json_data = {"name": self.name}
+        json_data = {"key": self.key, "name": self.name}
         for s in settings_dict.values():
             if not include_inherited and s.inherited:
                 continue
@@ -835,7 +833,6 @@ Is this normal ?",
             if settings.GENERAL_SETTINGS not in json_data:
                 json_data[settings.GENERAL_SETTINGS] = {}
             json_data[settings.GENERAL_SETTINGS].update({"webhooks": whooks})
-        util.json_dump_debug(json_data, f"PROJECT {self.key}:")
         return json_data
 
     def new_code_periods(self):

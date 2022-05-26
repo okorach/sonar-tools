@@ -118,10 +118,11 @@ def __export_config(args):
         sq_settings[__QG] = qualitygates.export(endpoint)
     if "projects" in what:
         project_settings = {}
-        for p in projects.get_projects_list(
+        for k, p in projects.get_projects_list(
             str_key_list=args.projectKeys, endpoint=endpoint
-        ).values():
-            project_settings[p.key] = p.settings()
+        ).items():
+            project_settings[k] = p.export()
+            project_settings[k].pop("key")
         sq_settings["projects"] = project_settings
     if "portfolios" in what:
         portfolios_settings = {}
