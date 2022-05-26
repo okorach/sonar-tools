@@ -296,9 +296,10 @@ def hierarchize(qp_list, strip_rules=True):
             util.logger.debug("QP name %s has parent %s", qp_name, qp_value["parentName"])
             if "childrens" not in qp_list[lang][qp_value["parentName"]]:
                 qp_list[lang][qp_value["parentName"]]["childrens"] = {}
-            parent_qp = get_object(key=name_to_uuid(qp_value["parentName"], lang))
-            this_qp = get_object(key=name_to_uuid(qp_name, lang))
-            qp_value["rules"] = this_qp.diff(parent_qp)
+            if strip_rules:
+                parent_qp = get_object(key=name_to_uuid(qp_value["parentName"], lang))
+                this_qp = get_object(key=name_to_uuid(qp_name, lang))
+                qp_value["rules"] = this_qp.diff(parent_qp)
             qp_list[lang][qp_value["parentName"]]["childrens"][qp_name] = qp_value
             qp_list[lang].pop(qp_name)
             qp_value.pop("parentName")
