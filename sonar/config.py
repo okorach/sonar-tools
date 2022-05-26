@@ -38,23 +38,6 @@ from sonar import (
 )
 import sonar.utilities as util
 
-"""
-def __open_output(file):
-    if file is None:
-        fd = sys.stdout
-        util.logger.info("Dumping report to stdout")
-    else:
-        fd = open(file, "w", encoding='utf-8')
-        util.logger.info("Dumping report to file '%s'", file)
-    return fd
-
-
-def __close_output(file, fd):
-    if file is not None:
-        fd.close()
-        util.logger.info("File '%s' generated", file)
-"""
-
 _EVERYTHING = "settings,qp,qg,projects,users,groups,portfolios,apps"
 
 __SETTINGS = "globalSettings"
@@ -140,7 +123,10 @@ def main():
         sq_settings["users"] = users.get_list(endpoint, as_json=True)
     if "groups" in what:
         sq_settings["groups"] = groups.get_list(endpoint, as_json=True)
-    print(util.json_dump(sq_settings))
+    fd = util.open_output(args.file)
+    print(util.json_dump(sq_settings), file=fd)
+    util.close_output(file=args.file, fd=fd)
+
     util.logger.info("Exported %d items", __count_settings(what, sq_settings))
     sys.exit(0)
 
