@@ -179,7 +179,7 @@ class Portfolio(aggregations.Aggregation):
             data["lastAnalysis"] = self.last_analysis()
         return data
 
-    def settings(self):
+    def export(self):
         util.logger.info("Exporting %s", str(self))
         self._load_full()
         json_data = {
