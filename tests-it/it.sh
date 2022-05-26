@@ -117,6 +117,10 @@ do
 
     echo "IT $env sonar-config -w qp,settings" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/config-$env-1.json"
+    sonar-config -e -w "qp, qg, projects" -k okorach_audio-video-tools,okorach_sonar-tools >$f
+
+    echo "IT $env sonar-config -w qp,settings" | tee -a $IT_LOG_FILE
+    f="$IT_ROOT/config-$env-2.json"
     sonar-config --export >$f
 
     echo "IT $env sonar-config" | tee -a $IT_LOG_FILE
