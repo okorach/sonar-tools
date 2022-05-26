@@ -32,8 +32,6 @@ from sonar import (
     qualitygates,
     portfolios,
     applications,
-    permissions,
-    permission_templates,
     users,
     groups,
     options,
@@ -107,9 +105,6 @@ def __export_config(args):
     sq_settings["platform"] = endpoint.basics()
     if "settings" in what:
         sq_settings[__SETTINGS] = endpoint.export()
-        sq_settings[__SETTINGS][settings.DEVOPS_INTEGRATION] = devops.export(endpoint)
-        sq_settings[__SETTINGS]["permissions"] = permissions.export(endpoint)
-        sq_settings[__SETTINGS]["permissionTemplates"] = permission_templates.export(endpoint)
     if "qp" in what:
         sq_settings[__QP] = qualityprofiles.export(endpoint)
     if "qg" in what:

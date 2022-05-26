@@ -29,7 +29,7 @@ import json
 import requests
 
 import sonar.utilities as util
-from sonar import options, settings, permissions
+from sonar import options, settings, permissions, permission_templates, devops
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -205,11 +205,9 @@ class Environment:
                 wh.pop("key", None)
                 wh.pop("latestDelivery", None)
         json_data[settings.GENERAL_SETTINGS].update({"webhooks": whooks})
-        json_data["permissions"] = {}
-        for ptype in ("users", "groups"):
-            perms = permissions.simplify(permissions.get(self, ptype))
-            if len(perms) > 0:
-                json_data["permissions"][ptype] = perms
+        json_data["permissions"] = permissions.export(self)
+        json_data["permissionTemplates"] = permission_templates.export(self)
+        json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
         return json_data
 
     def basics(self):
