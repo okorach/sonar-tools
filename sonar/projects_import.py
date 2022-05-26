@@ -78,7 +78,7 @@ def main():
             else:
                 statuses[s] = 1
         else:
-            status = projects.Project(project["key"], endpoint=sq).importproject()
+            status = projects.Project(project["key"], endpoint=sq).import_zip()
             s = f"IMPORT {status}"
             if s in statuses:
                 statuses[s] += 1

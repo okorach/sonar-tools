@@ -562,7 +562,7 @@ Is this normal ?",
             + self.__audit_zero_loc(audit_settings)
         )
 
-    def export(self, timeout=180):
+    def export_zip(self, timeout=180):
         util.logger.info("Exporting %s (synchronously)", str(self))
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in [
             "enterprise",
@@ -602,7 +602,7 @@ Is this normal ?",
         data = json.loads(resp.text)
         return data["taskId"]
 
-    def importproject(self):
+    def import_zip(self):
         util.logger.info("Importing %s (asynchronously)", str(self))
         if self.endpoint.edition() not in ["enterprise", "datacenter"]:
             raise env.UnsupportedOperation(
