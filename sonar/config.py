@@ -139,7 +139,7 @@ def __export_config(args):
     if "users" in what:
         sq_settings["users"] = users.export(endpoint)
     if "groups" in what:
-        sq_settings["groups"] = groups.get_list(endpoint, as_json=True)
+        sq_settings["groups"] = groups.export(endpoint)
     with util.open_file(args.file) as fd:
         print(util.json_dump(sq_settings), file=fd)
 

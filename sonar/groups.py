@@ -82,13 +82,17 @@ def search(params=None, endpoint=None):
     )
 
 
-def get_list(endpoint, params=None, as_json=False, full_specs=False):
+def get_list(endpoint, params=None):
     util.logger.info("Listing groups")
-    g_list = search(params=params, endpoint=endpoint)
-    if as_json:
-        for g_name, g_obj in g_list.copy().items():
-            g_list[g_name] = g_obj.to_json(full_specs=full_specs)
-            g_list[g_name].pop("name")
+    return search(params=params, endpoint=endpoint)
+
+
+def export(endpoint, full_specs=False):
+    util.logger.info("Exporting groups")
+    g_list = {}
+    for g_name, g_obj in search(endpoint=endpoint).items():
+        g_list[g_name] = g_obj.to_json(full_specs=full_specs)
+        g_list[g_name].pop("name")
     return g_list
 
 
