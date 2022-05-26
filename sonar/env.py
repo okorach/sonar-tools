@@ -187,14 +187,15 @@ class Environment:
             return None
 
     def settings(self, settings_list=None, include_not_set=False, format="json"):
-        util.logger.info("Exporting global settings")
-        settings_dict = settings.get_bulk(
+        util.logger.info("getting global settings")
+        return settings.get_bulk(
             endpoint=self, settings_list=settings_list, include_not_set=include_not_set
         )
-        if format is None or format.lower() != "json":
-            return settings_dict
+
+    def export(self):
+        util.logger.info("Exporting platform global settings")
         json_data = {}
-        for s in settings_dict.values():
+        for s in self.settings(include_not_set=True).values():
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
 
