@@ -115,6 +115,10 @@ do
     sonar-loc -n -a -f $f --csvSeparator ';'
     check $f
 
+    echo "IT $env sonar-config -w qp,settings" | tee -a $IT_LOG_FILE
+    f="$IT_ROOT/config-$env-1.csv"
+    sonar-config >$f
+
     echo "IT $env sonar-config" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/config-$env-unrel.csv"
     sonar-config >$f
