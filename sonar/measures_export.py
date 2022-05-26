@@ -236,7 +236,8 @@ def main():
             print("[", end="", file=fd)
         else:
             print(
-                __get_csv_header(wanted_metrics, endpoint.edition(), **vars(args)), file=fd
+                __get_csv_header(wanted_metrics, endpoint.edition(), **vars(args)),
+                file=fd,
             )
 
         for obj in obj_list:

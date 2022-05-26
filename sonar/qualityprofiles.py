@@ -40,7 +40,9 @@ class QualityProfile(sq.SqObject):
     def __init__(self, key, endpoint, data=None):
         super().__init__(key, endpoint)
         if data is None:
-            data = json.loads(self.get("qualityprofiles/show", params={"key": key}).text)
+            data = json.loads(
+                self.get("qualityprofiles/show", params={"key": key}).text
+            )
         self._json = data
         self.name = data["name"]
         if "lastUsed" in data:
@@ -157,7 +159,7 @@ class QualityProfile(sq.SqObject):
         return util.remove_nones(json_data)
 
     def compare(self, another_qp):
-        params = {'leftKey': self.key, 'rightKey': another_qp.key}
+        params = {"leftKey": self.key, "rightKey": another_qp.key}
         data = json.loads(self.get("qualityprofiles/compare", params=params).text)
         for r in data["inLeft"] + data["same"] + data["inRight"] + data["modified"]:
             for k in ("name", "pluginKey", "pluginName", "languageKey", "languageName"):
@@ -292,7 +294,9 @@ def hierarchize(qp_list, strip_rules=True):
         for qp_name, qp_value in qpl.copy().items():
             if "parentName" not in qp_value:
                 continue
-            util.logger.debug("QP name %s has parent %s", qp_name, qp_value["parentName"])
+            util.logger.debug(
+                "QP name %s has parent %s", qp_name, qp_value["parentName"]
+            )
             if "childrens" not in qp_list[lang][qp_value["parentName"]]:
                 qp_list[lang][qp_value["parentName"]]["childrens"] = {}
             if strip_rules:

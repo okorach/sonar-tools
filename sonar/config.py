@@ -66,14 +66,14 @@ def __parse_args(desc):
         "--export",
         required=False,
         default=False,
-        action='store_true',
+        action="store_true",
         help="to export configuration (exclusive of --import)",
     )
     parser.add_argument(
         "--import",
         required=False,
         default=False,
-        action='store_true',
+        action="store_true",
         help="to import configuration (exclusive of --export)",
     )
     args = util.parse_and_check_token(parser)
@@ -137,15 +137,25 @@ def __export_config(args):
 
     util.logger.info("Exported %d items", __count_settings(what, sq_settings))
 
+
 def main():
     args = __parse_args("Extract SonarQube platform configuration")
     kwargs = vars(args)
     if not kwargs["export"] and not kwargs["import"]:
-        util.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
+        util.exit_fatal(
+            "One of --export or --import option must be chosen",
+            exit_code=options.ERR_ARGS_ERROR,
+        )
     if kwargs["export"] and kwargs["import"]:
-        util.exit_fatal("--export or --import options are exclusive of each other", exit_code=options.ERR_ARGS_ERROR)
+        util.exit_fatal(
+            "--export or --import options are exclusive of each other",
+            exit_code=options.ERR_ARGS_ERROR,
+        )
     if kwargs["import"]:
-        util.exit_fatal("--import option not yet supported", exit_code=options.ERR_UNSUPPORTED_OPERATION)
+        util.exit_fatal(
+            "--import option not yet supported",
+            exit_code=options.ERR_UNSUPPORTED_OPERATION,
+        )
 
     if kwargs["export"]:
         __export_config(args)
