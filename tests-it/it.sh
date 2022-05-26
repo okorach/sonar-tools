@@ -117,11 +117,11 @@ do
 
     echo "IT $env sonar-config -w qp,settings" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/config-$env-1.json"
-    sonar-config >$f
+    sonar-config --export >$f
 
     echo "IT $env sonar-config" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/config-$env-unrel.json"
-    sonar-config -f $f
+    sonar-config --export -f $f
 
     if [ $noExport -eq 1 ]; then
         echo "IT $env sonar-projects-export test skipped" | tee -a $IT_LOG_FILE
