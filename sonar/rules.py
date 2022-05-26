@@ -26,13 +26,13 @@ import json
 import sonar.sqobject as sq
 from sonar import env, utilities
 
+_RULES = {}
 API_RULES_SEARCH = "rules/search"
 
 
 class Rule(sq.SqObject):
     def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
-        self.key = key
         self.severity = data["severity"]
         self.tags = data["tags"]
         self.sys_tags = data["sysTags"]
@@ -47,6 +47,7 @@ class Rule(sq.SqObject):
         self.created_at = data["createdAt"]
         self.is_template = data["isTemplate"]
         self.template_key = data.get("templateKey", None)
+        _RULES[self.key] = self
 
 
 def get_facet(facet, endpoint=None):
@@ -80,3 +81,9 @@ def get_list(endpoint, params=None):
         nb_pages = utilities.int_div_ceil(data["total"], data["ps"])
         page += 1
     return rule_list
+
+
+def get_object(key, data=None, endpoint=None):
+    if key not in _RULES:
+        _ = Rule(key=key, data=data, endpoint=endpoint)
+    return _RULES[key]
