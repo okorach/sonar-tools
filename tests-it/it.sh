@@ -116,12 +116,12 @@ do
     check $f
 
     echo "IT $env sonar-config -w qp,settings" | tee -a $IT_LOG_FILE
-    f="$IT_ROOT/config-$env-1.csv"
+    f="$IT_ROOT/config-$env-1.json"
     sonar-config >$f
 
     echo "IT $env sonar-config" | tee -a $IT_LOG_FILE
-    f="$IT_ROOT/config-$env-unrel.csv"
-    sonar-config >$f
+    f="$IT_ROOT/config-$env-unrel.json"
+    sonar-config -f $f
 
     if [ $noExport -eq 1 ]; then
         echo "IT $env sonar-projects-export test skipped" | tee -a $IT_LOG_FILE
@@ -142,13 +142,13 @@ do
     sonar-findings-export -f $IT_ROOT/findings-$env-rel.csv
     sonar-audit >$IT_ROOT/audit-$env-rel.csv || echo "OK"
     sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 
-    sonar-config >$IT_ROOT/config-$env-rel.csv 
+    sonar-config >$IT_ROOT/config-$env-rel.json 
 done
 ./deploy.sh
 for env in $*
 do
     echo "IT compare released and unreleased $env" | tee -a $IT_LOG_FILE
-    for f in measures findings audit loc config
+    for f in measures findings audit loc
     do
         root=$IT_ROOT/$f-$env
         echo "==========================" | tee -a $IT_LOG_FILE
@@ -157,6 +157,14 @@ do
         sort $root-rel.csv >$root-rel.sorted.csv
         sort $root-unrel.csv >$root-unrel.sorted.csv
         diff $root-rel.csv $root-unrel.csv | tee -a $IT_LOG_FILE || echo "" 
+    done
+    for f in config
+    do
+        root=$IT_ROOT/$f-$env
+        echo "==========================" | tee -a $IT_LOG_FILE
+        echo $f-$env diff                 | tee -a $IT_LOG_FILE
+        echo "==========================" | tee -a $IT_LOG_FILE
+        diff $root-rel.json $root-unrel.json | tee -a $IT_LOG_FILE || echo "" 
     done
 done
 
