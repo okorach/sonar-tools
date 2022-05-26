@@ -120,7 +120,7 @@ def __export_config(args):
     if "projects" in what:
         project_settings = {}
         for p in projects.get_projects_list(
-            str_key_list=None, endpoint=endpoint
+            str_key_list=args.projectKeys, endpoint=endpoint
         ).values():
             project_settings[p.key] = p.settings()
         sq_settings["projects"] = project_settings
