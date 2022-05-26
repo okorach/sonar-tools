@@ -65,6 +65,7 @@ def __parse_args(desc):
         help="What to export (settings,qp,qg,projects,users,groups,portfolios,apps)",
     )
     parser.add_argument(
+        "-e",
         "--export",
         required=False,
         default=False,
