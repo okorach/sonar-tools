@@ -45,19 +45,20 @@ __MAX_QG_PERMS = 25
 
 
 def get(endpoint, perm_type, **kwargs):
-    if perm_type not in ("users", "groups"):
+    if perm_type not in ("users", "groups", "template_users", "template_groups"):
         return None
     params = kwargs.copy()
     params["ps"] = __MAX_PERMS
     perms = []
     page, nbr_pages = 1, 1
+    short_perm = perm_type.replace("template_", "")
     while page <= nbr_pages:
         params["p"] = page
         data = json.loads(endpoint.get(f"permissions/{perm_type}", params=params).text)
         # Workaround for SQ 7.9+, all groups/users even w/o permissions are returned
         # Stop collecting permissions as soon as 5 groups with no permissions are encountered
         no_perms_count = 0
-        for item in data.get(perm_type, []):
+        for item in data.get(short_perm, []):
             no_perms_count = 0 if item["permissions"] else no_perms_count + 1
             if item["permissions"]:
                 perms.append(item)
