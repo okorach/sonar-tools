@@ -84,8 +84,9 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - DCE: Different version of SonarQube running on different app nodes
   - DCE: Some nodes are not in GREEN status
   - DCE: App Cluster no longer HA (only 1 node up left)
-  - DCE: Search Cluster no longer HA (only 2 nodes up left)
-  - DCE: Search Cluster with more than 3 search nodes
+  - DCE: Search cluster no longer HA (only 2 nodes up left)
+  - DCE: Search cluster with more than 3 search nodes
+  - DCE: Search cluster with even number of nodes (unsafe configuration)
   - DCE: Very unbalanced search nodes index sizes
 - General global settings: (if `audit.globalSettings = yes`, default `yes`)
   - `sonar.forceAuthentication` is `false`
