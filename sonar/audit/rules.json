@@ -180,10 +180,20 @@
         "type": "OPERATIONS",
         "message": "Only 2 search nodes are running, cluster will go down if another search node goes down"
     },
+    "DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "Unsupported number of search nodes ({}), DCE configuration not supported"
+    },
+    "DCE_ES_CLUSTER_EVEN_NUMBER_OF_NODES": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Even number of search nodes ({}), cluster may be unstable"
+    },
     "DCE_ES_UNBALANCED_INDEX": {
         "severity": "LOW",
         "type": "OPERATIONS",
-        "message": "The search index is oddly balanced between the 3 search nodes"
+        "message": "The search index is oddly balanced between the search nodes"
     },
     "DCE_ES_INDEX_EMPTY": {
         "severity": "MEDIUM",
