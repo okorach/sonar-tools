@@ -74,34 +74,39 @@ class SearchNode(nodes.DceNode):
             return []
 
 
+def __audit_index_balance(searchnodes):
+    nbr_search_nodes = len(searchnodes)
+    for i in range(nbr_search_nodes):
+        size_i = searchnodes[i].store_size()
+        if size_i is None:
+            continue
+        for j in range(i + 1, nbr_search_nodes):
+            size_j = searchnodes[j].store_size()
+            if size_j is None or size_j == 0:
+                continue
+            store_ratio = size_i / size_j
+            if store_ratio >= 0.5 or store_ratio <= 2:
+                continue
+            rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format())]
+    return []
+
 def audit(sub_sif, sif):
     searchnodes = []
     problems = []
     for n in sub_sif:
         searchnodes.append(SearchNode(n, sif))
-    if len(searchnodes) < 3:
+    nbr_search_nodes = len(searchnodes)
+    if nbr_search_nodes < 3:
         rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_NOT_HA)
         problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format()))
-    elif len(searchnodes) > 3:
-        rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(len(searchnodes))))
-    for i in range(len(searchnodes)):
+    elif nbr_search_nodes > 3:
+        if nbr_search_nodes % 2 == 0:
+            rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_EVEN_NUMBER_OF_NODES)
+        else:
+            rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES)
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nbr_search_nodes)))
+    for i in range(nbr_search_nodes):
         problems += searchnodes[i].audit()
-        size_i = searchnodes[i].store_size()
-        if size_i is None:
-            continue
-        for j in range(i + 1, len(searchnodes)):
-            size_j = searchnodes[j].store_size()
-            if size_j is None or size_j == 0:
-                continue
-            store_ratio = size_i / size_j
-            if store_ratio < 0.5 or store_ratio > 2:
-                rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX)
-                problems.append(
-                    pb.Problem(
-                        rule.type,
-                        rule.severity,
-                        rule.msg.format(str(searchnodes[i]), str(searchnodes[j])),
-                    )
-                )
+    problems += __audit_index_balance(searchnodes)
     return problems
