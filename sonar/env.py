@@ -202,6 +202,18 @@ class Environment:
         json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
         return json_data
 
+    def import_config(self, file):
+        data = util.load_json_file(file)["globalSettings"]
+        for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
+            if section not in data:
+                continue
+            for config_setting in data[section]:
+                if config_setting.startsWith("sonar.issue."):
+                    continue
+                if config_setting == "webhooks":
+                    continue
+                self.post("settings/set", params={"key": config_setting, "value": data[section][config_setting]})
+
     def basics(self):
         return {
             "version": self.version(as_string=True),
