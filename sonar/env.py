@@ -204,17 +204,16 @@ class Environment:
         json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
         return json_data
 
-    def import_config(self, file):
-        data = util.load_json_file(file)["globalSettings"]
+    def import_config(self, config_data):
         for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
-            if section not in data:
+            if section not in config_data:
                 continue
-            for config_setting in data[section]:
+            for config_setting in config_data[section]:
                 if config_setting == "webhooks":
-                    for wh in data[section][config_setting]:
+                    for wh in config_data[section][config_setting]:
                         webhooks.update(name=wh["name"], endpoint=self, **wh)
                 else:
-                    self.set_setting(config_setting, data[section][config_setting])
+                    self.set_setting(config_setting, config_data[section][config_setting])
 
     def basics(self):
         return {
