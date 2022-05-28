@@ -26,19 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonar import (
-    env,
-    components,
-    qualityprofiles,
-    tasks,
-    custom_measures,
-    pull_requests,
-    branches,
-    measures,
-    options,
-    settings,
-    webhooks
-)
+from sonar import env, components, qualityprofiles, tasks, custom_measures, pull_requests, branches, measures, options, settings, webhooks
 from sonar.findings import issues, hotspots
 import sonar.sqobject as sq
 import sonar.utilities as util

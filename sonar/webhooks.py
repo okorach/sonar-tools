@@ -32,7 +32,6 @@ _WEBHOOKS = {}
 
 
 class WebHook(sq.SqObject):
-
     def __init__(self, name, endpoint, url=None, secret=None, project=None, data=None):
         super().__init__(name, endpoint)
         if data is None:
@@ -57,7 +56,6 @@ class WebHook(sq.SqObject):
         params = util.remove_nones(kwargs)
         self.post("webhooks/update", params=params)
 
-
     def to_json(self):
         json_data = {
             "name": self.name,
@@ -66,24 +64,19 @@ class WebHook(sq.SqObject):
             "secret": self.secret,
         }
         if self.last_delivery is not None:
-            json_data.update({
-                "lastDeliveryDate": self.last_delivery.get("at", None),
-                "lastDeliverySuccess": self.last_delivery.get("success", None),
-                "lastDeliveryHttpStatus": self.last_delivery.get("httpStatus", None),
-                "lastDeliveryDuration": self.last_delivery.get("durationMs", None)
+            json_data.update(
+                {
+                    "lastDeliveryDate": self.last_delivery.get("at", None),
+                    "lastDeliverySuccess": self.last_delivery.get("success", None),
+                    "lastDeliveryHttpStatus": self.last_delivery.get("httpStatus", None),
+                    "lastDeliveryDuration": self.last_delivery.get("durationMs", None),
                 }
             )
         return json_data
 
+
 def search(endpoint, params=None):
-    return sq.search_objects(
-        api="webhooks/list",
-        params=params,
-        returned_field="webhooks",
-        key_field="key",
-        object_class=WebHook,
-        endpoint=endpoint
-    )
+    return sq.search_objects(api="webhooks/list", params=params, returned_field="webhooks", key_field="key", object_class=WebHook, endpoint=endpoint)
 
 
 def get_list(endpoint, project_key=None):
@@ -99,7 +92,7 @@ def export(endpoint, project_key=None):
     for wb in get_list(endpoint, project_key).values():
         j = wb.to_json()
         for k in j.copy().keys():
-            if k.startswith("lastDelivery") or k in ("name", "key") :
+            if k.startswith("lastDelivery") or k in ("name", "key"):
                 j.pop(k)
         json_data[wb.name] = util.remove_nones(j)
     return json_data if len(json_data) > 0 else None
