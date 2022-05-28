@@ -46,11 +46,11 @@ class SqObject:
         return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error)
 
     def post(self, api, params=None):
-        resp = self.endpoint.post(api, params, self.endpoint)
+        resp = self.endpoint.post(api, params)
         return (resp.status_code // 100) == 2
 
     def delete(self, api, params=None):
-        resp = self.endpoint.delete(api, params, self.endpoint)
+        resp = self.endpoint.delete(api, params)
         return (resp.status_code // 100) == 2
 
 
