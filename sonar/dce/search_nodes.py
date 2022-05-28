@@ -91,6 +91,7 @@ def __audit_index_balance(searchnodes):
             return [pb.Problem(rule.type, rule.severity, rule.msg.format())]
     return []
 
+
 def audit(sub_sif, sif):
     searchnodes = []
     problems = []

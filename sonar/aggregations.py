@@ -23,7 +23,6 @@
 
 """
 import json
-from sonar import env
 import sonar.components as comp
 import sonar.utilities as util
 from sonar.audit import rules, problem
@@ -41,7 +40,7 @@ class Aggregation(comp.Component):
         if self._json is None and data is not None:
             self._json = data
         if self._json is None:
-            self._json = json.loads(env.get(api, ctxt=self.endpoint, params={key_name: self.key}).text)
+            self._json = json.loads(self.get(api, params={key_name: self.key}).text)
         self._id = self.key
         self.name = self._json.get("name", None)
         self._visibility = self._json.get("visibility", None)
@@ -53,13 +52,9 @@ class Aggregation(comp.Component):
 
     def nbr_projects(self):
         if self._nbr_projects is None:
-            data = json.loads(
-                env.get(
-                    "measures/component",
-                    ctxt=self.endpoint,
-                    params={"component": self.key, "metricKeys": "projects,ncloc"},
-                ).text
-            )["component"]["measures"]
+            data = json.loads(self.get("measures/component", params={"component": self.key, "metricKeys": "projects,ncloc"},).text)[
+                "component"
+            ]["measures"]
             for m in data:
                 if m["metric"] == "projects":
                     self._nbr_projects = int(m["value"])
@@ -85,10 +80,9 @@ class Aggregation(comp.Component):
         return self._audit_aggregation_cardinality((1, 1), broken_rule)
 
 
-def count(api, params=None, endpoint=None):
+def count(api, endpoint, params=None):
     if params is None:
         params = {}
     params["ps"] = 1
-    resp = env.get(api, params=params, ctxt=endpoint)
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.get(api, params=params).text)
     return data["paging"]["total"]

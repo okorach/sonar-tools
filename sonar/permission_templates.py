@@ -43,7 +43,7 @@ class PermissionTemplate(sqobject.SqObject):
         self.description = data["description"]
         self.creation_date = utilities.string_to_date(data["createdAt"])
         self.last_update = utilities.string_to_date(data["updatedAt"])
-        self.project_key_pattern = data["projectKeyPattern"]
+        self.project_key_pattern = data.get("projectKeyPattern", "")
         self._permissions = None
 
     def is_default_for(self, qualifier):

@@ -71,7 +71,7 @@ class Group(sq.SqObject):
         return util.remove_nones(json_data)
 
 
-def search(params=None, endpoint=None):
+def search(endpoint, params=None):
     return sq.search_objects(
         api="user_groups/search",
         params=params,

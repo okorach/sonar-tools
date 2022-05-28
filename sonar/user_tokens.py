@@ -23,7 +23,6 @@
 
 """
 import json
-from sonar import env
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -34,15 +33,7 @@ class UserToken(sq.SqObject):
     API_SEARCH = API_ROOT + "/search"
     API_GENERATE = API_ROOT + "/generate"
 
-    def __init__(
-        self,
-        login,
-        name=None,
-        json_data=None,
-        created_at=None,
-        token=None,
-        endpoint=None,
-    ):
+    def __init__(self, login, name=None, json_data=None, created_at=None, token=None, endpoint=None):
         super().__init__(login, endpoint)
         self.login = login
         if isinstance(created_at, str):
@@ -67,26 +58,19 @@ class UserToken(sq.SqObject):
         if self.name is None:
             return False
         util.logger.info("Revoking token '%s' of user login '%s'", self.name, self.login)
-        env.post(
-            UserToken.API_REVOKE,
-            {"name": self.name, "login": self.login},
-            self.endpoint,
-        )
-        return True
+        return self.post(UserToken.API_REVOKE, {"name": self.name, "login": self.login})
 
 
-def search(login, endpoint=None):
-    resp = env.get(UserToken.API_SEARCH, {"login": login}, endpoint)
+def search(endpoint, login):
+    data = json.loads(endpoint.get(UserToken.API_SEARCH, {"login": login}).text)
     token_list = []
-    data = json.loads(resp.text)
     for tk in data["userTokens"]:
         token_list.append(UserToken(login=data["login"], json_data=tk, endpoint=endpoint))
     return token_list
 
 
-def generate(name, login=None, endpoint=None):
-    resp = env.post(UserToken.API_GENERATE, {"name": name, "login": login}, endpoint)
-    data = json.loads(resp.text)
+def generate(name, endpoint, login=None):
+    data = json.loads(endpoint.post(UserToken.API_GENERATE, {"name": name, "login": login}).text)
     return UserToken(
         login=data["login"],
         name=data["name"],

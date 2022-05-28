@@ -25,7 +25,7 @@
 import datetime
 import json
 import pytz
-from sonar import env, rules, permissions
+from sonar import rules, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -251,9 +251,8 @@ class QualityProfile(sq.SqObject):
         return problems
 
 
-def search(endpoint=None, params=None):
-    resp = env.get("qualityprofiles/search", ctxt=endpoint, params=params)
-    data = json.loads(resp.text)
+def search(endpoint, params=None):
+    data = json.loads(endpoint.get("qualityprofiles/search", params=params).text)
     qp_list = []
     for qp in data["profiles"]:
         qp_list.append(QualityProfile(qp["key"], endpoint=endpoint, data=qp))

@@ -24,7 +24,6 @@
 """
 import re
 import json
-from sonar import env
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -89,8 +88,7 @@ class Metric(sq.SqObject):
     def __load__(self, data):
         if data is None:
             # TODO handle pagination
-            resp = env.get(Metric.SEARCH_API, params={"ps": 500}, ctxt=self.endpoint)
-            data_json = json.loads(resp.text)
+            data_json = json.loads(self.get(Metric.SEARCH_API, params={"ps": 500}).text)
             for m in data_json["metrics"]:
                 if self.key == m["key"]:
                     data = m
@@ -116,8 +114,7 @@ class Metric(sq.SqObject):
 
 def count(endpoint):
     if Metric.Count is None:
-        resp = env.get(Metric.SEARCH_API, params={"ps": 1}, ctxt=endpoint)
-        data = json.loads(resp.text)
+        data = json.loads(endpoint.get(Metric.SEARCH_API, params={"ps": 1}).text)
         Metric.Count = data["total"]
     return Metric.Count
 
@@ -128,10 +125,9 @@ def search(endpoint, skip_hidden_metrics=True):
         page, nb_pages = 1, 1
         while page <= nb_pages:
             data = json.loads(
-                env.get(
+                endpoint.get(
                     Metric.SEARCH_API,
                     params={"ps": __MAX_PAGE_SIZE, "p": page},
-                    ctxt=endpoint,
                 ).text
             )
             for m in data["metrics"]:

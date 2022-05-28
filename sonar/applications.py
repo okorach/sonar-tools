@@ -23,7 +23,7 @@
 
 """
 import json
-from sonar import env, measures, permissions
+from sonar import measures, permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
@@ -50,7 +50,7 @@ class Application(aggr.Aggregation):
         super()._load(data=data, api=_GET_API, key_name="key")
 
     def _load_full(self):
-        data = json.loads(env.get(_GET_API, ctxt=self.endpoint, params={"application": self.key}).text)
+        data = json.loads(self.get(_GET_API, params={"application": self.key}).text)
         self._json = data["application"]
         self._description = self._json.get("description", None)
 
@@ -90,7 +90,7 @@ class Application(aggr.Aggregation):
         return self._branches
 
     def delete(self, api="applications/delete", params=None):
-        _ = env.post("applications/delete", ctxt=self.endpoint, params={"application": self.key})
+        _ = self.post("applications/delete", params={"application": self.key})
         return True
 
     def _audit_empty(self, audit_settings):
@@ -131,18 +131,13 @@ class Application(aggr.Aggregation):
 
 
 def count(endpoint=None):
-    resp = env.get(
-        "api/components/search_projects",
-        params={"ps": 1, "filter": "qualifier = APP"},
-        ctxt=endpoint,
-    )
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.get("components/search_projects", params={"ps": 1, "filter": "qualifier = APP"}))
     return data["paging"]["total"]
 
 
-def search(params=None, endpoint=None):
+def search(endpoint, params=None):
     app_list = {}
-    edition = env.edition(ctxt=endpoint)
+    edition = endpoint.edition()
     if edition == "community":
         util.logger.info("No applications in %s edition", edition)
     else:
@@ -160,9 +155,9 @@ def search(params=None, endpoint=None):
     return app_list
 
 
-def get(key, sqenv=None):
+def get_object(key, endpoint):
     if key not in _OBJECTS:
-        _OBJECTS[key] = Application(key=key, endpoint=sqenv)
+        _OBJECTS[key] = Application(key=key, endpoint=endpoint)
     return _OBJECTS[key]
 
 
