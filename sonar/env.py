@@ -360,12 +360,12 @@ class Environment:
 
     def _audit_lts_latest(self):
         problems = []
-        vers = self.version()
-        if vers < (8, 9, 0):
+        sq_vers = self.version()
+        if sq_vers < (8, 9, 0):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
             msg = rule.msg.format(str(self))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
-        elif vers < (9, 2, 0):
+        elif sq_vers < (9, 2, 0):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
             msg = rule.msg.format(str(self))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))

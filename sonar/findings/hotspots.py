@@ -23,7 +23,7 @@ import json
 import re
 import requests.utils
 import sonar.utilities as util
-from sonar import env, projects, syncer, users
+from sonar import projects, syncer, users
 from sonar.findings import findings, changelog
 
 SEARCH_CRITERIAS = (

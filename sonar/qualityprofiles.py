@@ -25,7 +25,7 @@
 import datetime
 import json
 import pytz
-from sonar import env, rules, permissions
+from sonar import rules, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 

@@ -24,7 +24,7 @@
 """
 import json
 import sonar.sqobject as sq
-from sonar import env, utilities
+from sonar import utilities
 
 _RULES = {}
 API_RULES_SEARCH = "rules/search"

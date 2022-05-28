@@ -27,7 +27,6 @@
 import time
 import json
 import re
-from sonar import env
 from sonar.audit import rules, problem
 import sonar.sqobject as sq
 import sonar.utilities as util

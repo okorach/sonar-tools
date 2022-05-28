@@ -26,7 +26,7 @@ import re
 
 import requests.utils
 
-from sonar import env, projects, users, syncer
+from sonar import projects, users, syncer
 from sonar.findings import findings, changelog
 import sonar.utilities as util
 

@@ -23,7 +23,6 @@
 
 """
 import json
-from sonar import env
 import sonar.components as comp
 import sonar.utilities as util
 from sonar.audit import rules, problem

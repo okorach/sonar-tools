@@ -24,7 +24,7 @@
 """
 import json
 import re
-from sonar import env, metrics
+from sonar import metrics
 import sonar.utilities as util
 import sonar.sqobject as sq
 

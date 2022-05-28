@@ -26,7 +26,6 @@
 import json
 import sonar.sqobject as sq
 import sonar.utilities as util
-from sonar import env
 
 
 class Component(sq.SqObject):

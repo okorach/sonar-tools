@@ -24,7 +24,7 @@
 """
 
 import json
-from sonar import env, utilities
+from sonar import utilities
 
 
 class SqObject:

@@ -25,7 +25,7 @@
 
 import json
 import sonar.sqobject as sq
-from sonar import env, permissions, options
+from sonar import permissions, options
 import sonar.utilities as util
 
 from sonar.audit import rules, severities, types

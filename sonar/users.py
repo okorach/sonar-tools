@@ -25,7 +25,6 @@
 import json
 import datetime as dt
 import pytz
-from sonar import env
 import sonar.sqobject as sq
 import sonar.utilities as util
 import sonar.user_tokens as tok
