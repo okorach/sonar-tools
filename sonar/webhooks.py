@@ -24,7 +24,6 @@
 """
 
 import json
-from sonar.projects import PROJECT_SEARCH_API
 import sonar.utilities as util
 import sonar.sqobject as sq
 
