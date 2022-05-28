@@ -70,9 +70,8 @@ def __parse_args(desc):
         help="to export configuration (exclusive of --import)",
     )
     parser.add_argument(
-        "--import",
-        required=False,
-        default=False,
+        "-i", "--import",
+        required=False, default=False,
         action="store_true",
         help="to import configuration (exclusive of --export)",
     )
@@ -133,7 +132,7 @@ def __export_config(endpoint, what, args):
 def __import_config(endpoint, what, args):
     data = util.load_json_file(args.file)["globalSettings"]
     if "settings" in what:
-        endpoint.import_settings(data)
+        endpoint.import_config(data)
     util.logger.info("Import finished")
 
 
@@ -149,11 +148,6 @@ def main():
         util.exit_fatal(
             "--export or --import options are exclusive of each other",
             exit_code=options.ERR_ARGS_ERROR,
-        )
-    if kwargs["import"]:
-        util.exit_fatal(
-            "--import option not yet supported",
-            exit_code=options.ERR_UNSUPPORTED_OPERATION,
         )
 
     endpoint = env.Environment(some_url=args.url, some_token=args.token)

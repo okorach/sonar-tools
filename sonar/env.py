@@ -41,6 +41,7 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
+_SONAR_TOOLS_AGENT = {'user-agent': 'sonar-tools'}
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -130,7 +131,7 @@ class Environment:
             if params is None:
                 r = requests.post(url=self.url + api, auth=self.credentials())
             else:
-                r = requests.post(url=self.url + api, auth=self.credentials(), params=params)
+                r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -152,13 +153,24 @@ class Environment:
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
 
+    def get_setting(self, key):
+        return self.__get_platform_settings(key).get(key, None)
+
+    def reset_setting(self, key):
+        if self.get_setting(key) is not None:
+            util.logger.info("Resetting setting '%s", key)
+            self.post("settings/reset", params={"key": key})
+
     def set_setting(self, key, value):
+        if value is None or value == "":
+            return self.reset_setting(key)
         if isinstance(value, str):
-            util.logger.info("Setting setting %s to value %s", key, str(value))
+            util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
             self.post("settings/set", params={"key": key, "value": value})
         elif isinstance(value, list):
-            util.logger.inof("Setting multi valued setting %s to value %s", key, str(value))
-            self.post("settings/set", params={"key": key, "fieldValues": value})
+            util.logger.info("NOT setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
+            #params  
+            self.post("settings/set", params={"key": key, "fieldValues": util.json_dump(value)})
 
     def urlstring(self, api, params):
         first = True
@@ -222,8 +234,11 @@ class Environment:
             "serverId": self.server_id(),
         }
 
-    def __get_platform_settings(self):
-        resp = self.get("settings/values")
+    def __get_platform_settings(self, settings_list=None):
+        params = None
+        if settings_list is not None:
+            params = {"keys": util.list_to_csv(settings_list)}
+        resp = self.get("settings/values", params=params)
         json_s = json.loads(resp.text)
         platform_settings = {}
         for s in json_s["settings"]:

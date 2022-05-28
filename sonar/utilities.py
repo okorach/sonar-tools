@@ -274,6 +274,8 @@ def csv_to_list(string, separator=","):
 
 
 def list_to_csv(array, separator=","):
+    if isinstance(array, str):
+        return array
     return separator.join(array)
 
 
