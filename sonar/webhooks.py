@@ -68,9 +68,9 @@ class WebHook(sq.SqObject):
         if self.last_delivery is not None:
             json_data.update({
                 "lastDeliveryDate": self.last_delivery.get("at", None),
-                "lastDeliverySuccess": self.last_delivery("success", None),
-                "lastDeliveryHttpStatus": self.last_delivery("httpStatus", None),
-                "lastDeliveryDuration": self.last_delivery("durationMs", None)
+                "lastDeliverySuccess": self.last_delivery.get("success", None),
+                "lastDeliveryHttpStatus": self.last_delivery.get("httpStatus", None),
+                "lastDeliveryDuration": self.last_delivery.get("durationMs", None)
                 }
             )
         return json_data
@@ -87,19 +87,19 @@ def search(endpoint, params=None):
 
 
 def get_list(endpoint, project_key=None):
-    util.logger.info("Getting webhooks")
+    util.logger.debug("Getting webhooks for project key %s", str(project_key))
     params = None
-    if project_key is None:
+    if project_key is not None:
         params = {"project": project_key}
     return search(endpoint, params)
 
 
 def export(endpoint, project_key=None):
     json_data = {}
-    for wb in get_list(endpoint, project_key):
+    for wb in get_list(endpoint, project_key).values():
         j = wb.to_json()
-        for k in j.keys():
-            if k.startsWith("lastDelivery") or k in ("name", "key") :
+        for k in j.copy().keys():
+            if k.startswith("lastDelivery") or k in ("name", "key") :
                 j.pop(k)
         json_data[wb.name] = util.remove_nones(j)
     return json_data if len(json_data) > 0 else None

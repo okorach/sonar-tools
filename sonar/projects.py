@@ -713,7 +713,11 @@ Is this normal ?",
         if is_default:
             json_data.pop("qualityGate")
 
-        json_data[settings.GENERAL_SETTINGS].update({"webhooks": webhooks.export(self.endpoint, self.key)})
+        wh = webhooks.export(self.endpoint, self.key)
+        if wh is not None:
+            if settings.GENERAL_SETTINGS not in json_data:
+                json_data[settings.GENERAL_SETTINGS] = {}
+            json_data[settings.GENERAL_SETTINGS].update({"webhooks": wh})
         return util.remove_nones(json_data)
 
     def new_code_periods(self):
