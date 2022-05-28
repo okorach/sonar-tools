@@ -29,7 +29,7 @@ import json
 import requests
 
 import sonar.utilities as util
-from sonar import options, settings, permissions, permission_templates, devops
+from sonar import options, settings, permissions, permission_templates, devops, version
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -41,6 +41,7 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
+_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
