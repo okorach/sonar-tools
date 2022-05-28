@@ -284,19 +284,6 @@ When tools complete successfully they return exit code 0. En case of fatal error
 - Code 9: SIF audit error (file not found, can't open file, not a legit JSON file, ...)
 - Code 10: Incorrect command line arguments
 
-### :information_source: Limitations
-- The script has to be run before the closed issue purge period (SonarQube parameter `sonar.dbcleaner.daysBeforeDeletingClosedIssues` whose default value is **30 days**)
-- The recovery is not 100% deterministic. In some rare corner cases (typically less than 5%) it is not possible to determine that an issue was closed unexpectedly, in which case the issue is not recovered. The script will log those cases
-- When recovering an issue all state change of the issue are applied with the user whose token is provided to the script (it cannot be applied with the original user). Some comments are added to mention who was the original user that made the change
-
-### Examples
-```
-issues_recover.py -u <url> -t <token> -k <projectKey>
-```
-
-## sonar-project-history
-Extracts the history of some given metrics for a given project
-
 # License
 
 Copyright (C) 2019-2022 Olivier Korach
