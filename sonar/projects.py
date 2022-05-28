@@ -78,8 +78,7 @@ class Project(components.Component):
     def __load__(self, data=None):
         """Loads a project object with contents of an api/projects/search call"""
         if data is None:
-            resp = env.get(PROJECT_SEARCH_API, ctxt=self.endpoint, params={"projects": self.key})
-            data = json.loads(resp.text)
+            data = json.loads(self.get(PROJECT_SEARCH_API, params={"projects": self.key}).text)
             if not data["components"]:
                 raise env.NonExistingObjectError(self.key, "Project key does not exist")
             data = data["components"][0]
@@ -150,12 +149,10 @@ class Project(components.Component):
             return []
 
         if self.branches is None:
-            resp = env.get(
+            data = json.loads(self.get(
                 "project_branches/list",
-                params={"project": self.key},
-                ctxt=self.endpoint,
-            )
-            data = json.loads(resp.text)
+                params={"project": self.key}
+            ).text)
             self.branches = []
             for b in data["branches"]:
                 self.branches.append(branches.get_object(b["name"], self, data=b))
@@ -167,12 +164,10 @@ class Project(components.Component):
             return []
 
         if self.pull_requests is None:
-            resp = env.get(
+            data = json.loads(self.get(
                 "project_pull_requests/list",
                 params={"project": self.key},
-                ctxt=self.endpoint,
-            )
-            data = json.loads(resp.text)
+            ).text)
             self.pull_requests = []
             for p in data["pullRequests"]:
                 self.pull_requests.append(pull_requests.get_object(p["key"], self, p))
@@ -201,9 +196,8 @@ class Project(components.Component):
 
     def binding(self):
         if self._binding["has_binding"] and self._binding["binding"] is None:
-            resp = env.get(
+            resp = self.get(
                 "alm_settings/get_binding",
-                ctxt=self.endpoint,
                 params={"project": self.key},
                 exit_on_error=False,
             )
@@ -382,8 +376,7 @@ Is this normal ?",
             util.logger.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
         util.logger.debug("Auditing %s visibility", str(self))
-        resp = env.get("navigation/component", ctxt=self.endpoint, params={"component": self.key})
-        data = json.loads(resp.text)
+        data = json.loads(self.get("navigation/component", params={"component": self.key}).text)
         visi = data["visibility"]
         if visi != "private":
             rule = rules.get_rule(rules.RuleId.PROJ_VISIBILITY)
@@ -462,12 +455,7 @@ Is this normal ?",
                 str(self),
             )
             return []
-        resp = env.get(
-            "alm_settings/validate_binding",
-            ctxt=self.endpoint,
-            params={"project": self.key},
-            exit_on_error=False,
-        )
+        resp = self.get("alm_settings/validate_binding", params={"project": self.key}, exit_on_error=False)
         if resp.status_code // 100 == 2:
             util.logger.debug("%s binding is valid", str(self))
             return []
@@ -508,7 +496,7 @@ Is this normal ?",
             raise env.UnsupportedOperation(
                 "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
             )
-        resp = env.post("project_dump/export", params={"key": self.key}, ctxt=self.endpoint)
+        resp = self.post("project_dump/export", params={"key": self.key})
         if resp.status_code != 200:
             return {"status": f"HTTP_ERROR {resp.status_code}"}
         data = json.loads(resp.text)
@@ -516,15 +504,14 @@ Is this normal ?",
         if status != tasks.SUCCESS:
             util.logger.error("%s export %s", str(self), status)
             return {"status": status}
-        resp = env.get("project_dump/status", params={"key": self.key}, ctxt=self.endpoint)
-        data = json.loads(resp.text)
+        data = json.loads(self.get("project_dump/status", params={"key": self.key}).text)
         dump_file = data["exportedDump"]
         util.logger.debug("%s export %s, dump file %s", str(self), status, dump_file)
         return {"status": status, "file": dump_file}
 
     def export_async(self):
         util.logger.info("Exporting %s (asynchronously)", str(self))
-        resp = env.post("project_dump/export", params={"key": self.key}, ctxt=self.endpoint)
+        resp = self.post("project_dump/export", params={"key": self.key})
         if resp.status_code != 200:
             return None
         data = json.loads(resp.text)
@@ -534,7 +521,7 @@ Is this normal ?",
         util.logger.info("Importing %s (asynchronously)", str(self))
         if self.endpoint.edition() not in ["enterprise", "datacenter"]:
             raise env.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
-        resp = env.post("project_dump/import", params={"key": self.key}, ctxt=self.endpoint)
+        resp = self.post("project_dump/import", params={"key": self.key})
         return resp.status_code
 
     def search_custom_measures(self):
@@ -555,7 +542,7 @@ Is this normal ?",
         elif pr is not None:
             params["pullRequest"] = pr
 
-        resp = env.get("projects/export_findings", params=params, ctxt=self.endpoint)
+        resp = self.get("projects/export_findings", params=params)
         data = json.loads(resp.text)["export_findings"]
         findings_conflicts = {
             "SECURITY_HOTSPOT": 0,
@@ -757,12 +744,12 @@ Is this normal ?",
         return nc
 
 
-def count(endpoint=None, params=None):
+def count(endpoint, params=None):
     if params is None:
         params = {}
     params["ps"] = 1
     params["p"] = 1
-    resp = env.get(PROJECT_SEARCH_API, ctxt=endpoint, params=params)
+    resp = endpoint.get(PROJECT_SEARCH_API, params=params)
     data = json.loads(resp.text)
     return data["paging"]["total"]
 
@@ -818,14 +805,10 @@ def get_object(key, data=None, endpoint=None):
     return _PROJECTS[key]
 
 
-def create_project(key, name=None, visibility="private", sqenv=None):
+def create(key, endpoint, name=None, visibility="private"):
     if name is None:
         name = key
-    resp = env.post(
-        "projects/create",
-        ctxt=sqenv,
-        params={"project": key, "name": name, "visibility": visibility},
-    )
+    resp = endpoint.post("projects/create", params={"project": key, "name": name, "visibility": visibility})
     return resp.status_code
 
 

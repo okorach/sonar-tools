@@ -68,7 +68,7 @@ def main():
     i = 0
     statuses = {}
     for project in project_list:
-        status = projects.create_project(key=project["key"], sqenv=sq)
+        status = projects.create(key=project["key"], endpoint=sq)
         if status != 200:
             s = f"CREATE {status}"
             if s in statuses:

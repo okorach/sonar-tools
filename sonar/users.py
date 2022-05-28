@@ -38,7 +38,7 @@ class User(sq.SqObject):
     API_SEARCH = API_ROOT + "/search"
     API_DEACTIVATE = API_ROOT + "/deactivate"
 
-    def __init__(self, login, endpoint=None, data=None):
+    def __init__(self, login, endpoint, data=None):
         super().__init__(login, endpoint)
         self.login = login
         self.jsondata = data
@@ -55,7 +55,7 @@ class User(sq.SqObject):
         return f"user '{self.login}'"
 
     def deactivate(self):
-        env.post(User.API_DEACTIVATE, {"name": self.name, "login": self.login}, self.endpoint)
+        self.post(User.API_DEACTIVATE, {"name": self.name, "login": self.login})
         return True
 
     def tokens(self):
@@ -152,8 +152,7 @@ def export(endpoint, full_specs=False):
 
 
 def create(name, login=None, endpoint=None):
-    resp = env.post(User.API_CREATE, {"name": name, "login": login}, endpoint)
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.post(User.API_CREATE, {"name": name, "login": login}).text)
     return User(data["login"], data["name"], endpoint, **data)
 
 

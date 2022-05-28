@@ -69,8 +69,7 @@ class Task(sq.SqObject):
             # Context already retrieved or not available
             return
         params = {"id": self.key, "additionalFields": "scannerContext,stacktrace"}
-        resp = env.get("ce/task", params=params, ctxt=self.endpoint)
-        self._json.update(json.loads(resp.text)["task"])
+        self._json.update(json.loads(self.get("ce/task", params=params).text)["task"])
 
     def id(self):
         return self.key
@@ -117,8 +116,8 @@ class Task(sq.SqObject):
             time.sleep(sleep_time)
             wait_time += sleep_time
             sleep_time *= 2
-            resp = env.get("ce/activity", params=params, ctxt=self.endpoint)
-            for t in json.loads(resp.text)["tasks"]:
+            data = json.loads(self.get("ce/activity", params=params).text)
+            for t in data["tasks"]:
                 if t["id"] != self.key:
                     continue
                 status = t["status"]
@@ -224,8 +223,7 @@ def search(only_current=False, component_key=None, endpoint=None):
         params["onlyCurrents"] = "true"
     if component_key is not None:
         params["component"] = component_key
-    resp = env.get("ce/activity", params=params, ctxt=endpoint)
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.get("ce/activity", params=params).text)
     task_list = []
     for t in data["tasks"]:
         task_list.append(Task(t["id"], endpoint, data=t))

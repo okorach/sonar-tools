@@ -314,7 +314,7 @@ def search_by_project(project_key, endpoint=None, params=None):
     return hotspots
 
 
-def search(endpoint=None, page=None, params=None):
+def search(endpoint, page=None, params=None):
     hotspots_list = {}
     new_params = {} if params is None else params.copy()
     r_list = util.csv_to_list(params.get("resolution", None))
@@ -337,7 +337,7 @@ def search(endpoint=None, page=None, params=None):
             new_params["p"] = p
         else:
             new_params["p"] = page
-        resp = env.get("hotspots/search", params=new_params, ctxt=endpoint)
+        resp = endpoint.get("hotspots/search", params=new_params)
         data = json.loads(resp.text)
         nbr_hotspots = data["paging"]["total"]
         nbr_pages = (nbr_hotspots + 499) // 500

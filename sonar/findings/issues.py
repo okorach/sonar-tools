@@ -620,7 +620,7 @@ def search_all(endpoint, params=None):
     return issue_list
 
 
-def search(endpoint=None, params=None, raise_error=True):
+def search(endpoint, params=None, raise_error=True):
     new_params = {} if params is None else params.copy()
     util.logger.debug("Search params = %s", str(new_params))
     if "ps" not in new_params:
@@ -629,8 +629,7 @@ def search(endpoint=None, params=None, raise_error=True):
     issue_list = {}
     while True:
         new_params["p"] = p
-        resp = env.get(Issue.SEARCH_API, params=new_params, ctxt=endpoint)
-        data = json.loads(resp.text)
+        data = json.loads(endpoint.get(Issue.SEARCH_API, params=new_params).text)
         nbr_issues = data["paging"]["total"]
         nbr_pages = min(20, (nbr_issues + new_params["ps"] - 1) // new_params["ps"])
         util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, new_params["p"], nbr_pages)
@@ -656,9 +655,7 @@ def _get_facets(project_key, facets="directories", endpoint=None, params=None):
     new_params = {} if params is None else params.copy()
     new_params.update({"componentKeys": project_key, "facets": facets, "ps": 500})
     new_params = __get_issues_search_params(new_params)
-    resp = env.get(Issue.SEARCH_API, params=new_params, ctxt=endpoint)
-    data = json.loads(resp.text)
-    util.json_dump_debug(data["facets"], "FACETS = ")
+    data = json.loads(endpoint.get(Issue.SEARCH_API, params=new_params).text)
     l = {}
     facets_list = util.csv_to_list(facets)
     for f in data["facets"]:

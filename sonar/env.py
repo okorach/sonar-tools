@@ -430,12 +430,6 @@ def _log_and_exit(code):
         util.exit_fatal(f"HTTP error {code} - Exiting", options.ERR_SONAR_API)
 
 
-def get(api, params=None, ctxt=None, exit_on_error=True):
-    if ctxt is None:
-        ctxt = this.context
-    return ctxt.get(api, params, exit_on_error)
-
-
 def post(api, params=None, ctxt=None):
     if ctxt is None:
         ctxt = this.context

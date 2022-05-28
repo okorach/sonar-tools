@@ -72,7 +72,7 @@ class Measure(sq.SqObject):
         return measures
 
 
-def get(comp_key, metrics_list, endpoint=None, branch=None, pr_key=None, as_list=False, **kwargs):
+def get(comp_key, metrics_list, endpoint, branch=None, pr_key=None, as_list=False, **kwargs):
     util.logger.debug(
         "For component %s, branch %s, PR %s, getting measures %s",
         comp_key,
@@ -91,8 +91,7 @@ def get(comp_key, metrics_list, endpoint=None, branch=None, pr_key=None, as_list
     elif pr_key is not None:
         params["pullRequest"] = pr_key
 
-    resp = env.get(Measure.API_COMPONENT, params={**kwargs, **params}, ctxt=endpoint)
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.get(Measure.API_COMPONENT, params={**kwargs, **params}).text)
     m_dict, m_list = {}, []
     for m in metrics_list:
         m_dict[m] = None
