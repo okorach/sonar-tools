@@ -391,8 +391,10 @@ def int_div_ceil(number, divider):
 def nbr_pages(sonar_api_json):
     if "total" in sonar_api_json:
         return int_div_ceil(sonar_api_json["total"], sonar_api_json["ps"])
-    else:
+    elif "paging" in sonar_api_json:
         return int_div_ceil(sonar_api_json["paging"]["total"], sonar_api_json["paging"]["pageSize"])
+    else:
+        return 1
 
 
 @contextlib.contextmanager
