@@ -131,7 +131,7 @@ class Application(aggr.Aggregation):
 
 
 def count(endpoint=None):
-    data = json.loads(endpoint.get("components/search_projects", params={"ps": 1, "filter": "qualifier = APP"} ))
+    data = json.loads(endpoint.get("components/search_projects", params={"ps": 1, "filter": "qualifier = APP"}))
     return data["paging"]["total"]
 
 

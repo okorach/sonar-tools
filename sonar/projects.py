@@ -149,10 +149,7 @@ class Project(components.Component):
             return []
 
         if self.branches is None:
-            data = json.loads(self.get(
-                "project_branches/list",
-                params={"project": self.key}
-            ).text)
+            data = json.loads(self.get("project_branches/list", params={"project": self.key}).text)
             self.branches = []
             for b in data["branches"]:
                 self.branches.append(branches.get_object(b["name"], self, data=b))
@@ -164,10 +161,12 @@ class Project(components.Component):
             return []
 
         if self.pull_requests is None:
-            data = json.loads(self.get(
-                "project_pull_requests/list",
-                params={"project": self.key},
-            ).text)
+            data = json.loads(
+                self.get(
+                    "project_pull_requests/list",
+                    params={"project": self.key},
+                ).text
+            )
             self.pull_requests = []
             for p in data["pullRequests"]:
                 self.pull_requests.append(pull_requests.get_object(p["key"], self, p))

@@ -120,15 +120,17 @@ class Portfolio(aggregations.Aggregation):
         return self._tags
 
     def get_components(self):
-        data = json.loads(self.get(
-            "measures/component_tree",
-            params={
-                "component": self.key,
-                "metricKeys": "ncloc",
-                "strategy": "children",
-                "ps": 500,
-            },
-        ).text)
+        data = json.loads(
+            self.get(
+                "measures/component_tree",
+                params={
+                    "component": self.key,
+                    "metricKeys": "ncloc",
+                    "strategy": "children",
+                    "ps": 500,
+                },
+            ).text
+        )
         comp_list = {}
         for c in data["components"]:
             comp_list[c["key"]] = c

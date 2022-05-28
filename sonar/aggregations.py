@@ -53,12 +53,9 @@ class Aggregation(comp.Component):
 
     def nbr_projects(self):
         if self._nbr_projects is None:
-            data = json.loads(
-                self.get(
-                    "measures/component",
-                    params={"component": self.key, "metricKeys": "projects,ncloc"},
-                ).text
-            )["component"]["measures"]
+            data = json.loads(self.get("measures/component", params={"component": self.key, "metricKeys": "projects,ncloc"},).text)[
+                "component"
+            ]["measures"]
             for m in data:
                 if m["metric"] == "projects":
                     self._nbr_projects = int(m["value"])
