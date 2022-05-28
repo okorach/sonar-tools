@@ -71,14 +71,8 @@ class Environment:
         self.token = some_token
         util.logger.debug("Setting environment: %s", str(self))
 
-    def set_token(self, some_token):
-        self.token = some_token
-
     def credentials(self):
         return (self.token, "")
-
-    def set_url(self, some_url):
-        self.url = some_url
 
     def version(self, digits=3, as_string=False):
         if self._version is None:
@@ -160,8 +154,10 @@ class Environment:
 
     def set_setting(self, key, value):
         if isinstance(value, str):
+            util.logger.info("Setting setting %s to value %s", key, str(value))
             self.post("settings/set", params={"key": key, "value": value})
         elif isinstance(value, list):
+            util.logger.inof("Setting multi valued setting %s to value %s", key, str(value))
             self.post("settings/set", params={"key": key, "fieldValues": value})
 
     def urlstring(self, api, params):
@@ -219,7 +215,6 @@ class Environment:
                         webhooks.update(name=wh["name"], endpoint=self, **wh)
                 else:
                     self.set_setting(config_setting, data[section][config_setting])
-
 
     def basics(self):
         return {
@@ -406,26 +401,6 @@ this.context = Environment("http://localhost:9000", "")
 def set_env(some_url, some_token):
     this.context = Environment(some_url, some_token)
     util.logger.debug("Setting GLOBAL environment: %s@%s", util.redacted_token(some_token), some_url)
-
-
-def set_token(some_token):
-    this.context.set_token(some_token)
-
-
-def token():
-    return this.context.token
-
-
-def credentials():
-    return this.context.credentials()
-
-
-def set_url(some_url):
-    this.context.set_url(some_url)
-
-
-def url():
-    return this.context.url
 
 
 def _normalize_api(api):
