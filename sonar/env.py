@@ -119,9 +119,9 @@ class Environment:
         util.logger.debug("GET: %s", self.urlstring(api, params))
         try:
             if params is None:
-                r = requests.get(url=self.url + api, auth=self.credentials())
+                r = requests.get(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT)
             else:
-                r = requests.get(url=self.url + api, auth=self.credentials(), params=params)
+                r = requests.get(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -135,9 +135,9 @@ class Environment:
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
             if params is None:
-                r = requests.post(url=self.url + api, auth=self.credentials())
+                r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT)
             else:
-                r = requests.post(url=self.url + api, auth=self.credentials(), params=params)
+                r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -150,9 +150,9 @@ class Environment:
         util.logger.debug("DELETE: %s", self.urlstring(api, params))
         try:
             if params is None:
-                r = requests.delete(url=self.url + api, auth=self.credentials())
+                r = requests.delete(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT)
             else:
-                r = requests.delete(url=self.url + api, auth=self.credentials(), params=params)
+                r = requests.delete(url=self.url + api, auth=self.credentials(), params=params, headers=_SONAR_TOOLS_AGENT)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
