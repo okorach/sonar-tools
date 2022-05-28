@@ -408,3 +408,8 @@ def open_file(file=None, mode="w"):
     finally:
         if fd is not sys.stdout:
             fd.close()
+
+
+def load_json_file(file):
+    with open(file, 'r', encoding='utf-8') as fd:
+        return json.loads(fd.read())
