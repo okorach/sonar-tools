@@ -35,5 +35,6 @@ Collections of utilities for SonarQube:
   (also available as sonar-issues-sync for backward compatibility, but deprecated)
 - sonar-projects-export: Exports all projects from a platform (EE and higher)
 - sonar-projects-import: Imports a list of projects into a platform (EE and higher)
+- sonar-config: Exports and imports a whole SonarQube platform configuration as code (JSON)
 See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation
 ''')
