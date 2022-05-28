@@ -37,6 +37,7 @@ from sonar import (
     measures,
     options,
     settings,
+    webhooks
 )
 from sonar.findings import issues, hotspots
 import sonar.sqobject as sq
@@ -527,7 +528,6 @@ Is this normal ?",
         return custom_measures.search(self.endpoint, self.key)
 
     def get_findings(self, branch=None, pr=None):
-
         if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in (
             "enterprise",
             "datacenter",
@@ -640,6 +640,9 @@ Is this normal ?",
         data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
         return (data["qualityGate"]["name"], data["qualityGate"]["default"])
 
+    def webhooks(self):
+        return webhooks.get_list(self.endpoint, self.key)
+
     def links(self):
         data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         link_list = None
@@ -648,13 +651,6 @@ Is this normal ?",
                 link_list = []
             link_list.append({"type": link["type"], "url": link["url"]})
         return link_list
-
-    def webhooks(self):
-        data = json.loads(self.get("webhooks/list", params={"project": self.key}).text)
-        if len(data.get("webhooks", [])) > 0:
-            return data["webhooks"]
-        else:
-            return None
 
     def __settings_add_new_code(self, json_data):
         nc = self.new_code_periods()
@@ -717,15 +713,8 @@ Is this normal ?",
         if is_default:
             json_data.pop("qualityGate")
 
-        whooks = self.webhooks()
-        if whooks is not None:
-            for wh in whooks:
-                wh.pop("key", None)
-                wh.pop("latestDelivery", None)
-            if settings.GENERAL_SETTINGS not in json_data:
-                json_data[settings.GENERAL_SETTINGS] = {}
-            json_data[settings.GENERAL_SETTINGS].update({"webhooks": whooks})
-        return json_data
+        json_data[settings.GENERAL_SETTINGS].update({"webhooks": webhooks.export(self.endpoint, self.key)})
+        return util.remove_nones(json_data)
 
     def new_code_periods(self):
         nc = {}

@@ -30,7 +30,7 @@ import requests
 
 import sonar.utilities as util
 import sonar.version as vers
-from sonar import options, settings, permissions, permission_templates, devops
+from sonar import options, settings, permissions, permission_templates, devops, webhooks
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -168,11 +168,7 @@ class Environment:
         return url_prefix
 
     def webhooks(self):
-        data = json.loads(self.get("webhooks/list").text)
-        if len(data.get("webhooks", [])) > 0:
-            return data["webhooks"]
-        else:
-            return None
+        return webhooks.get_list(self)
 
     def settings(self, settings_list=None, include_not_set=False):
         util.logger.info("getting global settings")
@@ -185,12 +181,7 @@ class Environment:
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
 
-        whooks = self.webhooks()
-        if whooks is not None:
-            for wh in whooks:
-                wh.pop("key", None)
-                wh.pop("latestDelivery", None)
-        json_data[settings.GENERAL_SETTINGS].update({"webhooks": whooks})
+        json_data[settings.GENERAL_SETTINGS].update({"webhooks": webhooks.export(self)})
         json_data["permissions"] = permissions.export(self)
         json_data["permissionTemplates"] = permission_templates.export(self)
         json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
