@@ -93,13 +93,7 @@ def __count_settings(what, sq_settings):
     return nbr_settings
 
 
-def __export_config(args):
-    endpoint = env.Environment(some_url=args.url, some_token=args.token)
-
-    what = args.what
-    if args.what == "":
-        what = _EVERYTHING
-    what = util.csv_to_list(what)
+def __export_config(endpoint, what, args):
     sq_settings = {}
     sq_settings["platform"] = endpoint.basics()
     if "settings" in what:
@@ -136,6 +130,13 @@ def __export_config(args):
     util.logger.info("Exported %d items", __count_settings(what, sq_settings))
 
 
+def __import_config(endpoint, what, args):
+    data = util.load_json_file(what.file)["globalSettings"]
+    if "settings" in what:
+        endpoint.import_settings(data)
+    util.logger.info("Import finished")
+
+
 def main():
     args = __parse_args("Extract SonarQube platform configuration")
     kwargs = vars(args)
@@ -155,8 +156,15 @@ def main():
             exit_code=options.ERR_UNSUPPORTED_OPERATION,
         )
 
+    endpoint = env.Environment(some_url=args.url, some_token=args.token)
+    what = args.what
+    if args.what == "":
+        what = _EVERYTHING
+    what = util.csv_to_list(what)
     if kwargs["export"]:
-        __export_config(args)
+        __export_config(endpoint, what, args)
+    if kwargs["import"]:
+        __import_config(endpoint, what, args)
 
     sys.exit(0)
 
