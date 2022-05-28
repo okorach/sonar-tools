@@ -57,12 +57,11 @@ class DevopsPlatform(sqobject.SqObject):
 def get_all(endpoint):
     """Gets several settings as bulk (returns a dict)"""
     object_list = {}
-    resp = endpoint.get("api/alm_settings/list_definitions")
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.get("api/alm_settings/list_definitions").text)
     for t in _DEVOPS_PLATFORM_TYPES:
         for d in data[t]:
             o = DevopsPlatform(d["key"], endpoint=endpoint, platform_type=t, data=d)
-        object_list[o.uuid()] = o
+            object_list[o.uuid()] = o
     return object_list
 
 
