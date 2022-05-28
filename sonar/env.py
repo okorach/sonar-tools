@@ -29,7 +29,8 @@ import json
 import requests
 
 import sonar.utilities as util
-from sonar import options, settings, permissions, permission_templates, devops, version
+import sonar.version as vers
+from sonar import options, settings, permissions, permission_templates, devops
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -41,7 +42,7 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
-_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
+_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {vers.PACKAGE_VERSION}"}
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -118,10 +119,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("GET: %s", self.urlstring(api, params))
         try:
-            if params is None:
-                r = requests.get(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT)
-            else:
-                r = requests.get(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
+            r = requests.get(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -134,10 +132,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
-            if params is None:
-                r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT)
-            else:
-                r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
+            r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -149,10 +144,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("DELETE: %s", self.urlstring(api, params))
         try:
-            if params is None:
-                r = requests.delete(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT)
-            else:
-                r = requests.delete(url=self.url + api, auth=self.credentials(), params=params, headers=_SONAR_TOOLS_AGENT)
+            r = requests.delete(url=self.url + api, auth=self.credentials(), params=params, headers=_SONAR_TOOLS_AGENT)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
