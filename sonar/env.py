@@ -29,7 +29,7 @@ import json
 import requests
 
 import sonar.utilities as util
-from sonar import options, settings, permissions, permission_templates, devops
+from sonar import options, settings, permissions, permission_templates, devops, webhooks
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -158,6 +158,12 @@ class Environment:
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
 
+    def set_setting(self, key, value):
+        if isinstance(value, str):
+            self.post("settings/set", params={"key": key, "value": value})
+        elif isinstance(value, list):
+            self.post("settings/set", params={"key": key, "fieldValues": value})
+
     def urlstring(self, api, params):
         first = True
         url_prefix = f"{str(self)}{api}"
@@ -208,11 +214,12 @@ class Environment:
             if section not in data:
                 continue
             for config_setting in data[section]:
-                if config_setting.startsWith("sonar.issue."):
-                    continue
                 if config_setting == "webhooks":
-                    continue
-                self.post("settings/set", params={"key": config_setting, "value": data[section][config_setting]})
+                    for wh in data[section][config_setting]:
+                        webhooks.update(name=wh["name"], endpoint=self, **wh)
+                else:
+                    self.set_setting(config_setting, data[section][config_setting])
+
 
     def basics(self):
         return {
