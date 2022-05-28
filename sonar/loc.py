@@ -170,9 +170,9 @@ def main():
         params = {}
         if args.topLevelOnly:
             params["qualifiers"] = "VW"
-        objects_list = portfolios.search(endpoint=endpoint, params=params)
+        objects_list = portfolios.search(endpoint, params=params)
     else:
-        objects_list = projects.search(endpoint=endpoint)
+        objects_list = projects.search(endpoint)
     __dump_loc(objects_list, file, **vars(args))
     sys.exit(0)
 

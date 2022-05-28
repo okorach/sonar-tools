@@ -201,7 +201,7 @@ def count(endpoint=None):
     return aggregations.count(api=SEARCH_API, endpoint=endpoint)
 
 
-def search(endpoint=None, params=None):
+def search(endpoint, params=None):
     portfolio_list = {}
     edition = env.edition(ctxt=endpoint)
     if edition not in ("enterprise", "datacenter"):

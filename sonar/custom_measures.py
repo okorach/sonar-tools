@@ -65,7 +65,7 @@ class CustomMeasure(sq.SqObject):
         return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid})
 
 
-def search(project_key, endpoint):
+def search(endpoint, project_key):
     data = json.loads(endpoint.get(CustomMeasure.API_ROOT + "search", params={"projectKey": project_key, "ps": 500}).text)
     # nbr_measures = data['total'] if > 500, we're screwed...
     measures = []
@@ -84,7 +84,7 @@ def search(project_key, endpoint):
 
 
 def update(project_key, metric_key, value, description=None, endpoint=None):
-    for m in search(project_key, endpoint=endpoint):
+    for m in search(endpoint, project_key):
         if m.key == metric_key:
             m.update(value, description)
             break

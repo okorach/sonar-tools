@@ -23,7 +23,7 @@
 
 """
 import json
-from sonar import env, measures, permissions
+from sonar import measures, permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
@@ -135,9 +135,9 @@ def count(endpoint=None):
     return data["paging"]["total"]
 
 
-def search(params=None, endpoint=None):
+def search(endpoint, params=None):
     app_list = {}
-    edition = env.edition(ctxt=endpoint)
+    edition = endpoint.edition()
     if edition == "community":
         util.logger.info("No applications in %s edition", edition)
     else:

@@ -524,7 +524,7 @@ Is this normal ?",
         return resp.status_code
 
     def search_custom_measures(self):
-        return custom_measures.search(self.key, self.endpoint)
+        return custom_measures.search(self.endpoint, self.key)
 
     def get_findings(self, branch=None, pr=None):
 
@@ -753,7 +753,7 @@ def count(endpoint, params=None):
     return data["paging"]["total"]
 
 
-def search(endpoint=None, params=None):
+def search(endpoint, params=None):
     new_params = {} if params is None else params.copy()
     new_params["qualifiers"] = "TRK"
     return sq.search_objects(

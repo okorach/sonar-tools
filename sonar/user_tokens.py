@@ -61,7 +61,7 @@ class UserToken(sq.SqObject):
         return self.post(UserToken.API_REVOKE, {"name": self.name, "login": self.login})
 
 
-def search(login, endpoint=None):
+def search(endpoint, login):
     data = json.loads(endpoint.get(UserToken.API_SEARCH, {"login": login}).text)
     token_list = []
     for tk in data["userTokens"]:

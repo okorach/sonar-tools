@@ -48,7 +48,7 @@ def main():
             options.ERR_UNSUPPORTED_OPERATION,
         )
 
-    project_list = projects.search(endpoint=sq)
+    project_list = projects.search(sq)
     nb_projects = len(project_list)
     util.logger.info("%d projects to export", nb_projects)
     statuses = {}

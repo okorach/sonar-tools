@@ -216,7 +216,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(only_current=False, component_key=None, endpoint=None):
+def search(endpoint, only_current=False, component_key=None):
     params = {"status": ",".join(STATUSES)}
     if only_current:
         params["onlyCurrents"] = "true"

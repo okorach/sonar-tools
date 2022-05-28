@@ -59,7 +59,7 @@ class User(sq.SqObject):
 
     def tokens(self):
         if self.tokens_list is None:
-            self.tokens_list = tok.search(self.login, self.endpoint)
+            self.tokens_list = tok.search(self.endpoint, self.login)
         return self.tokens_list
 
     def last_login_date(self):
@@ -126,7 +126,7 @@ class User(sq.SqObject):
         return util.remove_nones(json_data)
 
 
-def search(params=None, endpoint=None):
+def search(endpoint, params=None):
     return sq.search_objects(
         api=User.API_SEARCH,
         params=params,
