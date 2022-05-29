@@ -146,7 +146,7 @@ do
     sonar-findings-export -f $IT_ROOT/findings-$env-rel.csv
     sonar-audit >$IT_ROOT/audit-$env-rel.csv || echo "OK"
     sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 
-    sonar-config >$IT_ROOT/config-$env-rel.json 
+    sonar-config -e >$IT_ROOT/config-$env-rel.json 
 done
 ./deploy.sh
 for env in $*

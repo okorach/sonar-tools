@@ -109,13 +109,13 @@ def __export_config(endpoint, what, args):
         sq_settings["projects"] = project_settings
     if "portfolios" in what:
         portfolios_settings = {}
-        for k, p in portfolios.search(endpoint=endpoint).items():
+        for k, p in portfolios.search(endpoint).items():
             portfolios_settings[k] = p.export()
             portfolios_settings[k].pop("key")
         sq_settings["portfolios"] = portfolios_settings
     if "apps" in what:
         apps_settings = {}
-        for k, app in applications.search(endpoint=endpoint).items():
+        for k, app in applications.search(endpoint).items():
             apps_settings[k] = app.export()
             apps_settings[k].pop("key")
         sq_settings[__APPS] = apps_settings

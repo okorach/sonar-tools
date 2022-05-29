@@ -27,11 +27,10 @@ import json
 import sonar.utilities as util
 import sonar.sqobject as sq
 
-_WEBHOOKS = []
+_WEBHOOKS = {}
 
 
 class WebHook(sq.SqObject):
-
     def __init__(self, name, endpoint, url=None, secret=None, project=None, data=None):
         super().__init__(name, endpoint)
         if data is None:
@@ -42,33 +41,60 @@ class WebHook(sq.SqObject):
         self.key = data["key"]
         self.url = data["url"]
         self.secret = data.get("secret", None)
+        self.project = project
+        self.last_delivery = data.get("latestDelivery", None)
         _WEBHOOKS[self.uuid()] = self
 
     def __str__(self):
         return f"webhook '{self.name}'"
 
     def uuid(self):
-        return self.name
+        return _uuid(self.name, self.project)
 
     def update(self, **kwargs):
         params = util.remove_nones(kwargs)
         self.post("webhooks/update", params=params)
 
+    def to_json(self):
+        json_data = {
+            "name": self.name,
+            "key": self.key,
+            "url": self.url,
+            "secret": self.secret,
+        }
+        if self.last_delivery is not None:
+            json_data.update(
+                {
+                    "lastDeliveryDate": self.last_delivery.get("at", None),
+                    "lastDeliverySuccess": self.last_delivery.get("success", None),
+                    "lastDeliveryHttpStatus": self.last_delivery.get("httpStatus", None),
+                    "lastDeliveryDuration": self.last_delivery.get("durationMs", None),
+                }
+            )
+        return json_data
+
 
 def search(endpoint, params=None):
-    return sq.search_objects(
-        api="webhooks/list",
-        params=params,
-        returned_field="webhooks",
-        key_field="key",
-        object_class=WebHook,
-        endpoint=endpoint
-    )
+    return sq.search_objects(api="webhooks/list", params=params, returned_field="webhooks", key_field="key", object_class=WebHook, endpoint=endpoint)
 
 
-def get_list(endpoint):
-    util.logger.info("Getting webhooks")
-    return search(endpoint=endpoint)
+def get_list(endpoint, project_key=None):
+    util.logger.debug("Getting webhooks for project key %s", str(project_key))
+    params = None
+    if project_key is not None:
+        params = {"project": project_key}
+    return search(endpoint, params)
+
+
+def export(endpoint, project_key=None):
+    json_data = {}
+    for wb in get_list(endpoint, project_key).values():
+        j = wb.to_json()
+        for k in j.copy().keys():
+            if k.startswith("lastDelivery") or k in ("name", "key"):
+                j.pop(k)
+        json_data[wb.name] = util.remove_nones(j)
+    return json_data if len(json_data) > 0 else None
 
 
 def create(endpoint, name, url, secret=None, project=None):
@@ -76,10 +102,16 @@ def create(endpoint, name, url, secret=None, project=None):
 
 
 def update(endpoint, name, **kwargs):
-    get_object(name, endpoint).update(**kwargs)
+    get_object(name, endpoint, kwargs.pop("project", None)).update(**kwargs)
 
 
-def get_object(name, endpoint):
-    if name not in _WEBHOOKS:
+def get_object(name, endpoint, project_key=None):
+    u = _uuid(name, project_key)
+    if u not in _WEBHOOKS:
         _ = WebHook(name=name, endpoint=endpoint)
-    return _WEBHOOKS[name]
+    return _WEBHOOKS[u]
+
+
+def _uuid(name, project_key):
+    p = "" if project_key is None else f":PROJECT:{project_key}"
+    return f"{name}{p}"

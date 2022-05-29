@@ -29,6 +29,8 @@ import json
 import requests
 
 import sonar.utilities as util
+import sonar.version as vers
+
 from sonar import options, settings, permissions, permission_templates, devops, webhooks
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
@@ -41,7 +43,8 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
-_SONAR_TOOLS_AGENT = {'user-agent': 'sonar-tools'}
+_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {vers.PACKAGE_VERSION}"}
+
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
@@ -112,10 +115,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("GET: %s", self.urlstring(api, params))
         try:
-            if params is None:
-                r = requests.get(url=self.url + api, auth=self.credentials())
-            else:
-                r = requests.get(url=self.url + api, auth=self.credentials(), params=params)
+            r = requests.get(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -128,10 +128,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
-            if params is None:
-                r = requests.post(url=self.url + api, auth=self.credentials())
-            else:
-                r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
+            r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -143,10 +140,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("DELETE: %s", self.urlstring(api, params))
         try:
-            if params is None:
-                r = requests.delete(url=self.url + api, auth=self.credentials())
-            else:
-                r = requests.delete(url=self.url + api, auth=self.credentials(), params=params)
+            r = requests.delete(url=self.url + api, auth=self.credentials(), params=params, headers=_SONAR_TOOLS_AGENT)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -169,7 +163,6 @@ class Environment:
             self.post("settings/set", params={"key": key, "value": value})
         elif isinstance(value, list):
             util.logger.info("NOT setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
-            #params  
             self.post("settings/set", params={"key": key, "fieldValues": util.json_dump(value)})
 
     def urlstring(self, api, params):
@@ -188,11 +181,7 @@ class Environment:
         return url_prefix
 
     def webhooks(self):
-        data = json.loads(self.get("webhooks/list").text)
-        if len(data.get("webhooks", [])) > 0:
-            return data["webhooks"]
-        else:
-            return None
+        return webhooks.get_list(self)
 
     def settings(self, settings_list=None, include_not_set=False):
         util.logger.info("getting global settings")
@@ -205,12 +194,7 @@ class Environment:
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
 
-        whooks = self.webhooks()
-        if whooks is not None:
-            for wh in whooks:
-                wh.pop("key", None)
-                wh.pop("latestDelivery", None)
-        json_data[settings.GENERAL_SETTINGS].update({"webhooks": whooks})
+        json_data[settings.GENERAL_SETTINGS].update({"webhooks": webhooks.export(self)})
         json_data["permissions"] = permissions.export(self)
         json_data["permissionTemplates"] = permission_templates.export(self)
         json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
@@ -394,12 +378,12 @@ class Environment:
 
     def _audit_lts_latest(self):
         problems = []
-        vers = self.version()
-        if vers < (8, 9, 0):
+        sq_vers = self.version()
+        if sq_vers < (8, 9, 0):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
             msg = rule.msg.format(str(self))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
-        elif vers < (9, 2, 0):
+        elif sq_vers < (9, 2, 0):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
             msg = rule.msg.format(str(self))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
@@ -443,12 +427,6 @@ def _log_and_exit(code):
         )
     if (code // 100) != 2:
         util.exit_fatal(f"HTTP error {code} - Exiting", options.ERR_SONAR_API)
-
-
-def get(api, params=None, ctxt=None, exit_on_error=True):
-    if ctxt is None:
-        ctxt = this.context
-    return ctxt.get(api, params, exit_on_error)
 
 
 def post(api, params=None, ctxt=None):

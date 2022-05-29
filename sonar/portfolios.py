@@ -120,23 +120,24 @@ class Portfolio(aggregations.Aggregation):
         return self._tags
 
     def get_components(self):
-        resp = env.get(
-            "measures/component_tree",
-            ctxt=self.endpoint,
-            params={
-                "component": self.key,
-                "metricKeys": "ncloc",
-                "strategy": "children",
-                "ps": 500,
-            },
+        data = json.loads(
+            self.get(
+                "measures/component_tree",
+                params={
+                    "component": self.key,
+                    "metricKeys": "ncloc",
+                    "strategy": "children",
+                    "ps": 500,
+                },
+            ).text
         )
         comp_list = {}
-        for c in json.loads(resp.text)["components"]:
+        for c in data["components"]:
             comp_list[c["key"]] = c
         return comp_list
 
     def delete(self, api="views/delete", params=None):
-        _ = env.post("views/delete", ctxt=self.endpoint, params={"key": self.key})
+        _ = self.post("views/delete", params={"key": self.key})
         return True
 
     def _audit_empty(self, audit_settings):
@@ -200,7 +201,7 @@ def count(endpoint=None):
     return aggregations.count(api=SEARCH_API, endpoint=endpoint)
 
 
-def search(endpoint=None, params=None):
+def search(endpoint, params=None):
     portfolio_list = {}
     edition = env.edition(ctxt=endpoint)
     if edition not in ("enterprise", "datacenter"):
@@ -219,9 +220,9 @@ def search(endpoint=None, params=None):
     return portfolio_list
 
 
-def get(key, sqenv=None):
+def get_object(key, endpoint=None):
     if key not in _OBJECTS:
-        _ = Portfolio(key=key, endpoint=sqenv)
+        _ = Portfolio(key=key, endpoint=endpoint)
     return _OBJECTS[key]
 
 

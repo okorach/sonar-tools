@@ -25,7 +25,7 @@
 
 import json
 import sonar.sqobject as sq
-from sonar import env, permissions, options
+from sonar import permissions, options
 import sonar.utilities as util
 
 from sonar.audit import rules, severities, types
@@ -93,8 +93,7 @@ class QualityGate(sq.SqObject):
         self.is_default = data.get("isDefault", False)
         self.is_built_in = data.get("isBuiltIn", False)
         self._permissions = None
-        resp = env.get("qualitygates/show", ctxt=self.endpoint, params={"id": self.key})
-        data = json.loads(resp.text)
+        data = json.loads(self.get("qualitygates/show", params={"id": self.key}).text)
         self.conditions = []
         self._projects = None
         for c in data.get("conditions", []):
@@ -223,7 +222,7 @@ def audit(endpoint=None, audit_settings=None):
 
 def get_list(endpoint):
     util.logger.info("Getting quality gates")
-    data = json.loads(env.get("qualitygates/list", ctxt=endpoint).text)
+    data = json.loads(endpoint.get("qualitygates/list").text)
     qg_list = {}
     for qg in data["qualitygates"]:
         qg_obj = QualityGate(key=qg["id"], endpoint=endpoint, data=qg)

@@ -24,7 +24,7 @@
 """
 import json
 import sonar.sqobject as sq
-from sonar import env, utilities
+from sonar import utilities
 
 _RULES = {}
 API_RULES_SEARCH = "rules/search"
@@ -50,19 +50,18 @@ class Rule(sq.SqObject):
         _RULES[self.key] = self
 
 
-def get_facet(facet, endpoint=None):
-    resp = env.get(API_RULES_SEARCH, ctxt=endpoint, params={"ps": 1, "facets": facet})
-    data = json.loads(resp.text)
+def get_facet(facet, endpoint):
+    data = json.loads(endpoint.get(API_RULES_SEARCH, params={"ps": 1, "facets": facet}).text)
     facet_dict = {}
     for f in data["facets"][0]["values"]:
         facet_dict[f["val"]] = f["count"]
     return facet_dict
 
 
-def count(endpoint=None, params=None):
+def count(endpoint, params=None):
     new_params = {} if params is None else params.copy()
     new_params.update({"ps": 1, "p": 1})
-    data = json.loads(env.get(API_RULES_SEARCH, ctxt=endpoint, params=new_params).text)
+    data = json.loads(endpoint.get(API_RULES_SEARCH, params=new_params).text)
     return data["total"]
 
 
@@ -73,7 +72,7 @@ def get_list(endpoint, params=None):
     rule_list = {}
     while page <= nb_pages:
         params["p"] = page
-        data = json.loads(env.get(API_RULES_SEARCH, ctxt=endpoint, params=new_params).text)
+        data = json.loads(endpoint.get(API_RULES_SEARCH, params=new_params).text)
         for r in data["rules"]:
             rule_list[r["key"]] = Rule(r["key"], endpoint=endpoint, data=r)
         nb_pages = utilities.int_div_ceil(data["total"], data["ps"])

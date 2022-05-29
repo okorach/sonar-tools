@@ -114,7 +114,7 @@ def __get_wanted_metrics(args, endpoint):
     main_metrics = util.list_to_csv(metrics.Metric.MAIN_METRICS)
     wanted_metrics = args.metricKeys
     if wanted_metrics == "_all":
-        all_metrics = util.csv_to_list(metrics.as_csv(metrics.search(endpoint=endpoint).values()))
+        all_metrics = util.csv_to_list(metrics.as_csv(metrics.search(endpoint).values()))
         wanted_metrics = main_metrics + "," + util.list_to_csv(__diff(all_metrics, metrics.Metric.MAIN_METRICS))
     elif wanted_metrics == "_main" or wanted_metrics is None:
         wanted_metrics = main_metrics

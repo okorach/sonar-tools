@@ -26,7 +26,6 @@
 import json
 import sonar.sqobject as sq
 import sonar.utilities as util
-from sonar import env
 
 
 class Component(sq.SqObject):
@@ -59,8 +58,7 @@ class Component(sq.SqObject):
             "ps": 1,
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
-        resp = env.get("measures/component_tree", params=parms, ctxt=self.endpoint)
-        data = json.loads(resp.text)
+        data = json.loads(self.get("measures/component_tree", params=parms).text)
         nb_comp = data["paging"]["total"]
         util.logger.debug("Found %d subcomponents to %s", nb_comp, str(self))
         nb_pages = (nb_comp + 500 - 1) // 500
@@ -68,8 +66,7 @@ class Component(sq.SqObject):
         parms["ps"] = 500
         for page in range(nb_pages):
             parms["p"] = page + 1
-            resp = env.get("measures/component_tree", params=parms, ctxt=self.endpoint)
-            data = json.loads(resp.text)
+            data = json.loads(self.get("measures/component_tree", params=parms).text)
             for d in data["components"]:
                 nbr_issues = 0
                 for m in d["measures"]:
@@ -143,13 +140,8 @@ class Component(sq.SqObject):
         pass
 
 
-def get_components(component_types, endpoint=None):
-    resp = env.get(
-        "projects/search",
-        params={"ps": 500, "qualifiers": component_types},
-        ctxt=endpoint,
-    )
-    data = json.loads(resp.text)
+def get_components(component_types, endpoint):
+    data = json.loads(endpoint.get("projects/search", params={"ps": 500, "qualifiers": component_types}).text)
     return data["components"]
 
 

@@ -24,7 +24,7 @@
 """
 
 import json
-from sonar import env, utilities
+from sonar import utilities
 
 
 class SqObject:
@@ -46,10 +46,10 @@ class SqObject:
         return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error)
 
     def post(self, api, params=None):
-        return env.post(api, params, self.endpoint)
+        return self.endpoint.post(api, params)
 
     def delete(self, api, params=None):
-        resp = env.delete(api, params, self.endpoint)
+        resp = self.endpoint.delete(api, params)
         return (resp.status_code // 100) == 2
 
 
@@ -62,7 +62,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
     objects_list = {}
     while page <= nb_pages:
         new_params["p"] = page
-        data = json.loads(env.get(api, params=new_params, ctxt=endpoint).text)
+        data = json.loads(endpoint.get(api, params=new_params).text)
         for obj in data[returned_field]:
             objects_list[obj[key_field]] = object_class(obj[key_field], endpoint=endpoint, data=obj)
         nb_pages = utilities.nbr_pages(data)

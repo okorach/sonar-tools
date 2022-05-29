@@ -25,7 +25,6 @@
 import json
 import datetime as dt
 import pytz
-from sonar import env
 import sonar.sqobject as sq
 import sonar.utilities as util
 import sonar.user_tokens as tok
@@ -38,7 +37,7 @@ class User(sq.SqObject):
     API_SEARCH = API_ROOT + "/search"
     API_DEACTIVATE = API_ROOT + "/deactivate"
 
-    def __init__(self, login, endpoint=None, data=None):
+    def __init__(self, login, endpoint, data=None):
         super().__init__(login, endpoint)
         self.login = login
         self.jsondata = data
@@ -55,12 +54,12 @@ class User(sq.SqObject):
         return f"user '{self.login}'"
 
     def deactivate(self):
-        env.post(User.API_DEACTIVATE, {"name": self.name, "login": self.login}, self.endpoint)
+        self.post(User.API_DEACTIVATE, {"name": self.name, "login": self.login})
         return True
 
     def tokens(self):
         if self.tokens_list is None:
-            self.tokens_list = tok.search(self.login, self.endpoint)
+            self.tokens_list = tok.search(self.endpoint, self.login)
         return self.tokens_list
 
     def last_login_date(self):
@@ -127,7 +126,7 @@ class User(sq.SqObject):
         return util.remove_nones(json_data)
 
 
-def search(params=None, endpoint=None):
+def search(endpoint, params=None):
     return sq.search_objects(
         api=User.API_SEARCH,
         params=params,
@@ -152,8 +151,7 @@ def export(endpoint, full_specs=False):
 
 
 def create(name, login=None, endpoint=None):
-    resp = env.post(User.API_CREATE, {"name": name, "login": login}, endpoint)
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.post(User.API_CREATE, {"name": name, "login": login}).text)
     return User(data["login"], data["name"], endpoint, **data)
 
 
