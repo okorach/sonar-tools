@@ -164,13 +164,13 @@ class Environment:
             value = re.split(r" *, *", value)
         if isinstance(value, str):
             util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
-            self.post("settings/set", params={"key": key, "value": value})
+            return self.post("settings/set", params={"key": key, "value": value})
         elif isinstance(value, list):
-            util.logger.info("NOT setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
+            util.logger.info("Setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
             if isinstance(value[0], str):
-                self.post("settings/set", params={"key": key, "values": value})
+                return self.post("settings/set", params={"key": key, "values": value})
             else:
-                self.post("settings/set", params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
+                return self.post("settings/set", params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
 
     def urlstring(self, api, params):
         first = True
