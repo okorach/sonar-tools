@@ -128,7 +128,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
-            r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
+            r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, data=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -158,12 +158,19 @@ class Environment:
     def set_setting(self, key, value):
         if value is None or value == "":
             return self.reset_setting(key)
+        
+        # TODO: Handle all comma separated settings
+        if key == "sonar.dbcleaner.branchesToKeepWhenInactive":
+            value = re.split(r" *, *", value)
         if isinstance(value, str):
             util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
             self.post("settings/set", params={"key": key, "value": value})
         elif isinstance(value, list):
             util.logger.info("NOT setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
-            self.post("settings/set", params={"key": key, "fieldValues": util.json_dump(value)})
+            if isinstance(value[0], str):
+                self.post("settings/set", params={"key": key, "values": value})
+            else:
+                self.post("settings/set", params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
 
     def urlstring(self, api, params):
         first = True
@@ -206,8 +213,8 @@ class Environment:
                 continue
             for config_setting in config_data[section]:
                 if config_setting == "webhooks":
-                    for wh in config_data[section][config_setting]:
-                        webhooks.update(name=wh["name"], endpoint=self, **wh)
+                    for wh_name, wh in config_data[section][config_setting].items():
+                        webhooks.update(name=wh_name, endpoint=self, **wh)
                 else:
                     self.set_setting(config_setting, config_data[section][config_setting])
 
