@@ -53,6 +53,7 @@ class WebHook(sq.SqObject):
 
     def update(self, **kwargs):
         params = util.remove_nones(kwargs)
+        params.update({"name":  self.name, "webhook": self.key})
         self.post("webhooks/update", params=params)
 
     def to_json(self):
@@ -102,13 +103,19 @@ def create(endpoint, name, url, secret=None, project=None):
 
 
 def update(endpoint, name, **kwargs):
-    get_object(name, endpoint, kwargs.pop("project", None)).update(**kwargs)
+    project_key = kwargs.pop("project", None)
+    get_list(endpoint, project_key)
+    if _uuid(name, project_key) not in _WEBHOOKS:
+        create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
+    else:
+        get_object(name, endpoint, project_key=project_key, data=kwargs).update(**kwargs)
 
 
-def get_object(name, endpoint, project_key=None):
+def get_object(name, endpoint, project_key=None, data=None):
+    util.logger.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
     u = _uuid(name, project_key)
     if u not in _WEBHOOKS:
-        _ = WebHook(name=name, endpoint=endpoint)
+        _ = WebHook(name=name, endpoint=endpoint, data=data)
     return _WEBHOOKS[u]
 
 
