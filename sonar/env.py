@@ -161,7 +161,7 @@ class Environment:
         
         # TODO: Handle all comma separated settings
         if key == "sonar.dbcleaner.branchesToKeepWhenInactive":
-            value = re.split(r" *, *", value)
+            value = re.split(r"\s*,\s*", value)
         if isinstance(value, str):
             util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
             return self.post("settings/set", params={"key": key, "value": value})
