@@ -250,6 +250,8 @@ def _uuid_p(key, project):
 
 
 def new_code_to_string(data):
+    if isinstance(data, int) or isinstance(data, str):
+        return data
     if data.get("inherited", False):
         return None
     if data["type"] == "PREVIOUS_VERSION":
@@ -258,6 +260,7 @@ def new_code_to_string(data):
         return f"{data['type']} = {data['effectiveValue']}"
     else:
         return f"{data['type']} = {data['value']}"
+
 
 def string_to_new_code(value):
     return re.split(r"\s*=\s*", value)
@@ -307,10 +310,14 @@ def encode(setting_key, setting_value):
 
 
 def decode(setting_key, setting_value):
+    if setting_key == NEW_CODE_PERIOD:
+        if isinstance(setting_value, int):
+            return ("NUMBER_OF_DAYS", setting_value)
+        elif setting_value == "PREVIOUS_VERSION":
+            return (setting_value, "")
+        return string_to_new_code(setting_value)
     if not isinstance(setting_value, str):
         return setting_value
-    if setting_key == NEW_CODE_PERIOD:
-        return string_to_new_code(setting_value)
     # TODO: Handle all comma separated settings
     for reg in _INLINE_SETTINGS:
         if re.match(reg, setting_key):
