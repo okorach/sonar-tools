@@ -160,15 +160,17 @@ class Environment:
             return self.reset_setting(key)
 
         value = settings.decode(key, value)
-        if isinstance(value, str):
-            util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
-            return self.post("settings/set", params={"key": key, "value": value})
-        elif isinstance(value, list):
+        if isinstance(value, list):
             util.logger.info("Setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
             if isinstance(value[0], str):
                 return self.post("settings/set", params={"key": key, "values": value})
             else:
                 return self.post("settings/set", params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
+        else:
+            if isinstance(value, bool):
+                value = "true" if value else "false"
+            util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
+            return self.post("settings/set", params={"key": key, "value": value})
 
     def urlstring(self, api, params):
         first = True
@@ -215,6 +217,10 @@ class Environment:
                         webhooks.update(name=wh_name, endpoint=self, **wh)
                 else:
                     self.set_setting(config_setting, config_data[section][config_setting])
+        if 'languages' in config_data:
+            for data in config_data["languages"].values():
+                for s, v in data.items():
+                    self.set_setting(s, v)
 
     def basics(self):
         return {
