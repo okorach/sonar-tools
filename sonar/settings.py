@@ -69,8 +69,16 @@ _INLINE_SETTINGS = (
     r"^sonar\.[a-z]+\.exclusions$",
     r"^sonar\.javascript\.(globals|environments)$",
     r"^sonar\.dbcleaner\.branchesToKeepWhenInactive$",
-    r"^sonar.rpg.suffixes$",
+    r"^sonar\.rpg\.suffixes$",
+    r"^sonar\.cs\.roslyn\.(bug|codeSmell|vulnerability)Categories$",
+    r"^sonar\.governance\.report\.view\.recipients$"
 )
+
+_API_SET = "settings/set"
+_API_GET = "settings/values"
+_API_LIST = "settings/list_definitions"
+_API_NEW_CODE_GET = "new_code_periods/show"
+_API_NEW_CODE_SET = "new_code_periods/set"
 
 
 class Setting(sqobject.SqObject):
@@ -84,13 +92,13 @@ class Setting(sqobject.SqObject):
                 params = {}
                 if project:
                     params["project"] = project.key
-                resp = self.get(api="new_code_periods/show", params=params)
+                resp = self.get(api=_API_NEW_CODE_GET, params=params)
                 data = json.loads(resp.text)
             else:
                 params = {"keys": key}
                 if project:
                     params["component"] = project.key
-                resp = self.get("api/settings/values", params=params)
+                resp = self.get(_API_GET, params=params)
                 data = json.loads(resp.text)["settings"]
         self.__load(data)
         util.logger.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
@@ -134,18 +142,10 @@ class Setting(sqobject.SqObject):
         params = {}
         if self.project:
             params["component"] = self.project.key
-        return self.post("api/settings/set", params=params)
+        return self.post(_API_SET, params=params)
 
     def to_json(self):
-        val = self.value
-        for reg in _INLINE_SETTINGS:
-            if re.match(reg, self.key) and isinstance(self.value, list):
-                # TODO: Support case where branch pattern contains a comma
-                val = ", ".join([v.strip() for v in self.value])
-                break
-            if val is None:
-                val = ""
-        return {self.key: val}
+        return {self.key: encode(self.key, self.value)}
 
     def category(self):
         m = re.match(
@@ -201,8 +201,7 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
     if project:
         params["component"] = project.key
     if include_not_set:
-        resp = endpoint.get("api/settings/list_definitions", params=params)
-        data = json.loads(resp.text)
+        data = json.loads(endpoint.get(_API_LIST, params=params).text)
         settings_dict = {}
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
@@ -215,8 +214,7 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
         params["keys"] = util.list_to_csv(settings_list)
     else:
         params["keys"] = util.csv_normalize(settings_list)
-    resp = endpoint.get("api/settings/values", params=params)
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.get(_API_GET, params=params).text)
     for s in data["settings"]:
         skip = False
         for priv in _PRIVATE_SETTINGS:
@@ -256,6 +254,8 @@ def _uuid_p(key, project):
 
 
 def new_code_to_string(data):
+    if isinstance(data, (int, str)):
+        return data
     if data.get("inherited", False):
         return None
     if data["type"] == "PREVIOUS_VERSION":
@@ -264,3 +264,67 @@ def new_code_to_string(data):
         return f"{data['type']} = {data['effectiveValue']}"
     else:
         return f"{data['type']} = {data['value']}"
+
+
+def string_to_new_code(value):
+    return re.split(r"\s*=\s*", value)
+
+
+def set_new_code(endpoint, nc_type, nc_value, project_key=None, branch=None):
+    return endpoint.post("new_code_periods/set",
+                         params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
+
+
+def set_setting(endpoint, key, value, project=None, branch=None):
+    if value is None or value == "":
+        return endpoint.reset_setting(key)
+
+    value = decode(key, value)
+    if isinstance(value, list):
+        util.logger.info("Setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
+        if isinstance(value[0], str):
+            return endpoint.post(_API_SET, params={"key": key, "values": value})
+        else:
+            return endpoint.post(_API_SET, params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
+    else:
+        if isinstance(value, bool):
+            value = "true" if value else "false"
+        util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
+        return endpoint.post(_API_SET, params={"key": key, "value": value})
+
+
+def encode(setting_key, setting_value):
+    if setting_value is None:
+        return ""
+    if setting_key == NEW_CODE_PERIOD:
+        return new_code_to_string(setting_value)
+    if isinstance(setting_value, str):
+        return setting_value
+    if not isinstance(setting_value, list):
+        return setting_value
+    val = setting_value.copy()
+    for reg in _INLINE_SETTINGS:
+        if re.match(reg, setting_key):
+            # TODO: Support case where setting value contains a comma
+            val = util.list_to_csv([v.strip() for v in val], ", ")
+            break
+    if val is None:
+        val = ""
+    return val
+
+
+def decode(setting_key, setting_value):
+    if setting_key == NEW_CODE_PERIOD:
+        if isinstance(setting_value, int):
+            return ("NUMBER_OF_DAYS", setting_value)
+        elif setting_value == "PREVIOUS_VERSION":
+            return (setting_value, "")
+        return string_to_new_code(setting_value)
+    if not isinstance(setting_value, str):
+        return setting_value
+    # TODO: Handle all comma separated settings
+    for reg in _INLINE_SETTINGS:
+        if re.match(reg, setting_key):
+            setting_value = util.csv_to_list(setting_value)
+            break
+    return setting_value

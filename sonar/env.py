@@ -30,6 +30,7 @@ import requests
 
 import sonar.utilities as util
 import sonar.version as vers
+
 from sonar import options, settings, permissions, permission_templates, devops, webhooks
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
@@ -74,14 +75,8 @@ class Environment:
         self.token = some_token
         util.logger.debug("Setting environment: %s", str(self))
 
-    def set_token(self, some_token):
-        self.token = some_token
-
     def credentials(self):
         return (self.token, "")
-
-    def set_url(self, some_url):
-        self.url = some_url
 
     def version(self, digits=3, as_string=False):
         if self._version is None:
@@ -133,7 +128,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
-            r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
+            r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, data=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             _log_and_exit(r.status_code)
@@ -151,6 +146,17 @@ class Environment:
             _log_and_exit(r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
+
+    def get_setting(self, key):
+        return self.__get_platform_settings(key).get(key, None)
+
+    def reset_setting(self, key):
+        if self.get_setting(key) is not None:
+            util.logger.info("Resetting setting '%s", key)
+            self.post("settings/reset", params={"key": key})
+
+    def set_setting(self, key, value):
+        return settings.set_setting(self, key, value)
 
     def urlstring(self, api, params):
         first = True
@@ -187,6 +193,25 @@ class Environment:
         json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
         return json_data
 
+    def import_config(self, config_data):
+        for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
+            if section not in config_data:
+                continue
+            for config_setting in config_data[section]:
+                if config_setting == "webhooks":
+                    for wh_name, wh in config_data[section][config_setting].items():
+                        webhooks.update(name=wh_name, endpoint=self, **wh)
+                else:
+                    self.set_setting(config_setting, config_data[section][config_setting])
+        if 'languages' in config_data:
+            for data in config_data["languages"].values():
+                for s, v in data.items():
+                    self.set_setting(s, v)
+
+        if settings.NEW_CODE_PERIOD in config_data["generalSettings"]:
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
+            settings.set_new_code(self, nc_type, nc_val)
+
     def basics(self):
         return {
             "version": self.version(as_string=True),
@@ -194,8 +219,11 @@ class Environment:
             "serverId": self.server_id(),
         }
 
-    def __get_platform_settings(self):
-        resp = self.get("settings/values")
+    def __get_platform_settings(self, settings_list=None):
+        params = None
+        if settings_list is not None:
+            params = {"keys": util.list_to_csv(settings_list)}
+        resp = self.get("settings/values", params=params)
         json_s = json.loads(resp.text)
         platform_settings = {}
         for s in json_s["settings"]:
@@ -372,26 +400,6 @@ this.context = Environment("http://localhost:9000", "")
 def set_env(some_url, some_token):
     this.context = Environment(some_url, some_token)
     util.logger.debug("Setting GLOBAL environment: %s@%s", util.redacted_token(some_token), some_url)
-
-
-def set_token(some_token):
-    this.context.set_token(some_token)
-
-
-def token():
-    return this.context.token
-
-
-def credentials():
-    return this.context.credentials()
-
-
-def set_url(some_url):
-    this.context.set_url(some_url)
-
-
-def url():
-    return this.context.url
 
 
 def _normalize_api(api):
