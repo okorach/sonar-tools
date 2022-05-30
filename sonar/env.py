@@ -156,21 +156,7 @@ class Environment:
             self.post("settings/reset", params={"key": key})
 
     def set_setting(self, key, value):
-        if value is None or value == "":
-            return self.reset_setting(key)
-
-        value = settings.decode(key, value)
-        if isinstance(value, list):
-            util.logger.info("Setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
-            if isinstance(value[0], str):
-                return self.post("settings/set", params={"key": key, "values": value})
-            else:
-                return self.post("settings/set", params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
-        else:
-            if isinstance(value, bool):
-                value = "true" if value else "false"
-            util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
-            return self.post("settings/set", params={"key": key, "value": value})
+        return settings.set_setting(self, key, value)
 
     def urlstring(self, api, params):
         first = True
@@ -221,6 +207,10 @@ class Environment:
             for data in config_data["languages"].values():
                 for s, v in data.items():
                     self.set_setting(s, v)
+
+        if settings.NEW_CODE_PERIOD in config_data["generalSettings"]:
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
+            settings.set_new_code(self, nc_type, nc_val)
 
     def basics(self):
         return {

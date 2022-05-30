@@ -263,9 +263,34 @@ def string_to_new_code(value):
     return re.split(r"\s*=\s*", value)
 
 
+def set_new_code(endpoint, nc_type, nc_value, project_key=None, branch=None):
+    return endpoint.post("new_code_periods/set",
+                         params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
+
+
+def set_setting(endpoint, key, value, project=None, branch=None):
+    if value is None or value == "":
+        return endpoint.reset_setting(key)
+
+    value = decode(key, value)
+    if isinstance(value, list):
+        util.logger.info("Setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
+        if isinstance(value[0], str):
+            return endpoint.post("settings/set", params={"key": key, "values": value})
+        else:
+            return endpoint.post("settings/set", params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
+    else:
+        if isinstance(value, bool):
+            value = "true" if value else "false"
+        util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
+        return endpoint.post("settings/set", params={"key": key, "value": value})
+
+
 def encode(setting_key, setting_value):
     if setting_value is None:
         return ""
+    if setting_key == NEW_CODE_PERIOD:
+        return new_code_to_string(setting_value)
     if isinstance(setting_value, str):
         return setting_value
     if not isinstance(setting_value, list):
@@ -284,6 +309,8 @@ def encode(setting_key, setting_value):
 def decode(setting_key, setting_value):
     if not isinstance(setting_value, str):
         return setting_value
+    if setting_key == NEW_CODE_PERIOD:
+        return string_to_new_code(setting_value)
     # TODO: Handle all comma separated settings
     for reg in _INLINE_SETTINGS:
         if re.match(reg, setting_key):
