@@ -74,6 +74,8 @@ _INLINE_SETTINGS = (
     r"^sonar\.governance\.report\.view\.recipients$"
 )
 
+_API_SET = "settings/set"
+
 
 class Setting(sqobject.SqObject):
     def __init__(self, key, endpoint, project=None, data=None):
@@ -136,7 +138,7 @@ class Setting(sqobject.SqObject):
         params = {}
         if self.project:
             params["component"] = self.project.key
-        return self.post("api/settings/set", params=params)
+        return self.post(_API_SET, params=params)
 
     def to_json(self):
         return {self.key: encode(self.key, self.value)}
@@ -250,7 +252,7 @@ def _uuid_p(key, project):
 
 
 def new_code_to_string(data):
-    if isinstance(data, int) or isinstance(data, str):
+    if isinstance(data, (int, str)):
         return data
     if data.get("inherited", False):
         return None
@@ -279,14 +281,14 @@ def set_setting(endpoint, key, value, project=None, branch=None):
     if isinstance(value, list):
         util.logger.info("Setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
         if isinstance(value[0], str):
-            return endpoint.post("settings/set", params={"key": key, "values": value})
+            return endpoint.post(_API_SET, params={"key": key, "values": value})
         else:
-            return endpoint.post("settings/set", params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
+            return endpoint.post(_API_SET, params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
     else:
         if isinstance(value, bool):
             value = "true" if value else "false"
         util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
-        return endpoint.post("settings/set", params={"key": key, "value": value})
+        return endpoint.post(_API_SET, params={"key": key, "value": value})
 
 
 def encode(setting_key, setting_value):
