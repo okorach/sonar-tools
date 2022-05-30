@@ -211,6 +211,7 @@ class Environment:
         if settings.NEW_CODE_PERIOD in config_data["generalSettings"]:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
             settings.set_new_code(self, nc_type, nc_val)
+        permission_templates.import_settings(self, config_data)
 
     def basics(self):
         return {
