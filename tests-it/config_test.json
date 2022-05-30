@@ -433,7 +433,7 @@
          "sonar.governance.report.project.branch.frequency": "Daily",
          "sonar.governance.report.view.frequency": "Weekly",
          "sonar.governance.report.view.recipients": "config-test@korach.name",
-         "sonar.issues.defaultAssigneeLogin": "syncer",
+         "sonar.issues.defaultAssigneeLogin": "admin",
          "sonar.lf.enableGravatar": true,
          "sonar.lf.gravatarServerUrl": "https://secure.gravatar.com/avatar/{EMAIL_MD5}.jpg?s={SIZE}&d=identicon",
          "sonar.lf.logoUrl": "",
