@@ -137,15 +137,7 @@ class Setting(sqobject.SqObject):
         return self.post("api/settings/set", params=params)
 
     def to_json(self):
-        val = self.value
-        for reg in _INLINE_SETTINGS:
-            if re.match(reg, self.key) and isinstance(self.value, list):
-                # TODO: Support case where branch pattern contains a comma
-                val = ", ".join([v.strip() for v in self.value])
-                break
-            if val is None:
-                val = ""
-        return {self.key: val}
+        return {self.key: encode(self.key, self.value)}
 
     def category(self):
         m = re.match(
@@ -264,3 +256,35 @@ def new_code_to_string(data):
         return f"{data['type']} = {data['effectiveValue']}"
     else:
         return f"{data['type']} = {data['value']}"
+
+def string_to_new_code(value):
+    return re.split(r"\s*=\s*", value)
+
+
+def encode(setting_key, setting_value):
+    if setting_value is None:
+        return ""
+    if isinstance(setting_value, str):
+        return setting_value
+    if not isinstance(setting_value, list):
+        return setting_value
+    val = setting_value.copy()
+    for reg in _INLINE_SETTINGS:
+        if re.match(reg, setting_key):
+            # TODO: Support case where setting value contains a comma
+            val = ", ".join([v.strip() for v in val])
+            break
+    if val is None:
+        val = ""
+    return val
+
+
+def decode(setting_key, setting_value):
+    if not isinstance(setting_value, str):
+        return setting_value
+    # TODO: Handle all comma separated settings
+    for reg in _INLINE_SETTINGS:
+        if re.match(reg, setting_key):
+            setting_value = re.split(r"\s*,\s*", setting_value)
+            break
+    return setting_value

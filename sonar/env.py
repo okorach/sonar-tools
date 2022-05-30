@@ -159,9 +159,7 @@ class Environment:
         if value is None or value == "":
             return self.reset_setting(key)
 
-        # TODO: Handle all comma separated settings
-        if key == "sonar.dbcleaner.branchesToKeepWhenInactive":
-            value = re.split(r"\s*,\s*", value)
+        value = settings.decode(key, value)
         if isinstance(value, str):
             util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
             return self.post("settings/set", params={"key": key, "value": value})
