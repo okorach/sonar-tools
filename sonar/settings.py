@@ -70,7 +70,8 @@ _INLINE_SETTINGS = (
     r"^sonar\.javascript\.(globals|environments)$",
     r"^sonar\.dbcleaner\.branchesToKeepWhenInactive$",
     r"^sonar\.rpg\.suffixes$",
-    r"^sonar\.cs\.roslyn\.(bug|codeSmell|vulnerability)Categories$"
+    r"^sonar\.cs\.roslyn\.(bug|codeSmell|vulnerability)Categories$",
+    r"^sonar\.governance\.report\.view\.recipients$"
 )
 
 
