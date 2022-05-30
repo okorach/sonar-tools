@@ -630,10 +630,10 @@
             "sonar.vbnet.roslyn.vulnerabilityCategories": ""
          },
          "xml": {
-            "sonar.xml.file.suffixes": ".xml, .xsd, .xsl"
+            "sonar.xml.file.suffixes": ".xml, .xsd, .xsl, .xslt"
          },
          "yaml": {
-            "sonar.yaml.file.suffixes": ".yaml, .yml"
+            "sonar.yaml.file.suffixes": ".yaml, .yml, .yummy"
          }
       },
       "linters": {
