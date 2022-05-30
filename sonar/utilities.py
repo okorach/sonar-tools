@@ -195,6 +195,8 @@ def format_date(somedate):
 
 
 def string_to_date(string):
+    if string is None:
+        return None
     return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
 
 
