@@ -272,7 +272,7 @@ def encode(setting_key, setting_value):
     for reg in _INLINE_SETTINGS:
         if re.match(reg, setting_key):
             # TODO: Support case where setting value contains a comma
-            val = ", ".join([v.strip() for v in val])
+            val = util.list_to_csv([v.strip() for v in val], ", ")
             break
     if val is None:
         val = ""
@@ -285,6 +285,6 @@ def decode(setting_key, setting_value):
     # TODO: Handle all comma separated settings
     for reg in _INLINE_SETTINGS:
         if re.match(reg, setting_key):
-            setting_value = re.split(r"\s*,\s*", setting_value)
+            setting_value = util.csv_to_list(setting_value)
             break
     return setting_value

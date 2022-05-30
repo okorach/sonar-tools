@@ -91,7 +91,7 @@ class PermissionTemplate(sqobject.SqObject):
         if self.is_portfolios_default():
             defaults.append("portfolios")
         if len(defaults) > 0:
-            json_data["defaultFor"] = ", ".join(defaults)
+            json_data["defaultFor"] = utilities.list_to_csv(defaults, ", ")
 
         if full_specs:
             json_data["creationDate"] = utilities.date_to_string(self.creation_date)

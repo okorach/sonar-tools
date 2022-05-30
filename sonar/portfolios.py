@@ -93,7 +93,7 @@ class Portfolio(aggregations.Aggregation):
             if self.endpoint.version() >= (9, 3, 0):
                 for p in self._json["selectedProjects"]:
                     if "selectedBranches" in p:
-                        self._projects[p["projectKey"]] = ", ".join(p["selectedBranches"])
+                        self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ")
                     else:
                         self._projects[p["projectKey"]] = options.DEFAULT
             else:
@@ -116,7 +116,7 @@ class Portfolio(aggregations.Aggregation):
         if self.selection_mode() != SELECTION_MODE_TAGS:
             self._tags = None
         elif self._tags is None:
-            self._tags = ", ".join(self._json["tags"])
+            self._tags = util.list_to_csv(self._json["tags"], ", ")
         return self._tags
 
     def get_components(self):
@@ -266,7 +266,7 @@ def __cleanup_portfolio_json(p):
         if p["selectionMode"] == SELECTION_MODE_REGEXP:
             p[_PROJECT_SELECTION_REGEXP] = p.pop("regexp")
         elif p["selectionMode"] == SELECTION_MODE_TAGS:
-            p[_PROJECT_SELECTION_REGEXP] = ", ".join(p.pop("tags"))
+            p[_PROJECT_SELECTION_REGEXP] = util.list_to_csv(p.pop("tags"), ", ")
         p[_PROJECT_SELECTION_MODE] = p.pop("selectionMode")
 
 
@@ -299,7 +299,7 @@ def _projects(json_data, version):
     if version >= (9, 3, 0):
         for p in json_data["selectedProjects"]:
             if "selectedBranches" in p:
-                projects[p["projectKey"]] = ", ".join(p["selectedBranches"])
+                projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ")
             else:
                 projects[p["projectKey"]] = options.DEFAULT
     else:
