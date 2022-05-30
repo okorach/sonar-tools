@@ -75,6 +75,10 @@ _INLINE_SETTINGS = (
 )
 
 _API_SET = "settings/set"
+_API_GET = "settings/values"
+_API_LIST = "settings/list_definitions"
+_API_NEW_CODE_GET = "new_code_periods/show"
+_API_NEW_CODE_SET = "new_code_periods/set"
 
 
 class Setting(sqobject.SqObject):
@@ -88,13 +92,13 @@ class Setting(sqobject.SqObject):
                 params = {}
                 if project:
                     params["project"] = project.key
-                resp = self.get(api="new_code_periods/show", params=params)
+                resp = self.get(api=_API_NEW_CODE_GET, params=params)
                 data = json.loads(resp.text)
             else:
                 params = {"keys": key}
                 if project:
                     params["component"] = project.key
-                resp = self.get("api/settings/values", params=params)
+                resp = self.get(_API_GET, params=params)
                 data = json.loads(resp.text)["settings"]
         self.__load(data)
         util.logger.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
@@ -197,8 +201,7 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
     if project:
         params["component"] = project.key
     if include_not_set:
-        resp = endpoint.get("api/settings/list_definitions", params=params)
-        data = json.loads(resp.text)
+        data = json.loads(endpoint.get(_API_LIST, params=params).text)
         settings_dict = {}
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
@@ -211,8 +214,7 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
         params["keys"] = util.list_to_csv(settings_list)
     else:
         params["keys"] = util.csv_normalize(settings_list)
-    resp = endpoint.get("api/settings/values", params=params)
-    data = json.loads(resp.text)
+    data = json.loads(endpoint.get(_API_GET, params=params).text)
     for s in data["settings"]:
         skip = False
         for priv in _PRIVATE_SETTINGS:
