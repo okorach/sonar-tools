@@ -419,3 +419,11 @@ def open_file(file=None, mode="w"):
 def load_json_file(file):
     with open(file, 'r', encoding='utf-8') as fd:
         return json.loads(fd.read())
+
+
+def search_by_name(endpoint, name, api, returned_field):
+    data = json.loads(endpoint.get(api, params={"q": name}).text)
+    for d in data[returned_field]:
+        if d["name"] == name:
+            return d
+    return None
