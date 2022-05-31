@@ -132,6 +132,7 @@ def __export_config(endpoint, what, args):
 def __import_config(endpoint, what, args):
     data = util.load_json_file(args.file)
     groups.import_config(endpoint, data)
+    users.import_config(endpoint, data)
     if "settings" in what:
         endpoint.import_config(data["globalSettings"])
     util.logger.info("Import finished")
