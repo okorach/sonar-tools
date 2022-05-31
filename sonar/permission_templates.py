@@ -30,17 +30,15 @@ _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
 class PermissionTemplate(sqobject.SqObject):
-    def __init__(self, endpoint, name, create_data=None, search_data=None):
+    def __init__(self, endpoint, name, data=None, create_data=None):
         super().__init__(name, endpoint)
         self.key = None
         if create_data is not None:
             create_data["name"] = name
             self.post(_CREATE_API, params=create_data)
             data = search_by_name(endpoint, name)
-        elif search_data is None:
+        elif data is None:
             data = search_by_name(endpoint, name)
-        else:
-            data = search_data
         self._json = data
         self.name = name
         self.key = data.get("id", None)
@@ -75,8 +73,10 @@ class PermissionTemplate(sqobject.SqObject):
         utilities.logger.info("Updating %s, %s with %s", self.key, self.name, str(params))
         self.post(_UPDATE_API, params=params)
         if name is not None:
+            _MAP.pop(_uuid(self.name, self.key), None)
             self.name = name
-        if name is not None:
+            _MAP[_uuid(self.name, self.key)] = self
+        if description is not None:
             self.description = description
         if pattern is not None:
             self.project_key_pattern = pattern
@@ -170,19 +170,13 @@ def search(endpoint, params=None):
     objects_list = {}
     data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
     for obj in data["permissionTemplates"]:
-        objects_list[_uuid(obj["name"], obj["id"])] = PermissionTemplate(name=obj["name"], endpoint=endpoint, search_data=obj)
+        objects_list[_uuid(obj["name"], obj["id"])] = PermissionTemplate(name=obj["name"], endpoint=endpoint, data=obj)
     _load_default_templates(data=data)
     return objects_list
 
 
 def search_by_name(endpoint, name):
-    data = json.loads(endpoint.get(_SEARCH_API, params={"q": name}).text)
-    for d in data["permissionTemplates"]:
-        if d["name"] == name:
-            utilities.logger.debug("Found")
-            return d
-        utilities.logger.debug("%s != %s", d["name"], name)
-    return None
+    return utilities.search_by_name(endpoint, name, _SEARCH_API, "permissionTemplates")
 
 
 def get_list(endpoint):
@@ -208,7 +202,7 @@ def export(endpoint, full_specs=False):
     return json_data
 
 
-def import_settings(endpoint, config_data):
+def import_config(endpoint, config_data):
     if "permissionTemplates" not in config_data:
         utilities.logger.info("No permissions templates in config, skipping import...")
         return
