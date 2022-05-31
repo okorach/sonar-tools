@@ -38,14 +38,7 @@ class PermissionTemplate(sqobject.SqObject):
             self.post(_CREATE_API, params=create_data)
             data = search_by_name(endpoint, name)
         elif search_data is None:
-            data = json.loads(self.get(_SEARCH_API).text)
-            for p in data["permissionTemplates"]:
-                if p["name"] == name:
-                    perm_temp = p
-                    break
-
-            _load_default_templates(data)
-            data = perm_temp
+            data = search_by_name(endpoint, name)
         else:
             data = search_data
         self._json = data
@@ -60,10 +53,6 @@ class PermissionTemplate(sqobject.SqObject):
 
     def __str__(self):
         return f"permission template '{self.name}'"
-
-    #def __del__(self):
-    #    _MAP.pop(self.key, None)
-    #    _PERMISSION_TEMPLATES.pop(_uuid(self.name, self.key))
 
     def __set_hash(self):
         _PERMISSION_TEMPLATES[_uuid(self.name, self.key)] = self
@@ -189,7 +178,6 @@ def search(endpoint, params=None):
 def search_by_name(endpoint, name):
     data = json.loads(endpoint.get(_SEARCH_API, params={"q": name}).text)
     for d in data["permissionTemplates"]:
-        utilities.logger.debug("Instpecting %s", str(d))
         if d["name"] == name:
             utilities.logger.debug("Found")
             return d
