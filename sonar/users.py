@@ -57,6 +57,7 @@ class User(sq.SqObject):
                     params[p] = create_data[p]
             self.post(_CREATE_API, params=params)
             self.add_groups(create_data.get("groups", None))
+            self.add_scm_accounts(create_data.get("scmAccounts", None))
             data = create_data
         elif data is None:
             for d in search(endpoint, params={"q": login}):
@@ -97,11 +98,12 @@ class User(sq.SqObject):
     def update(self, **kwargs):
         params = {"login": self.login}
         my_data = vars(self)
-        for p in ("name", "email", "scmAccount"):
+        for p in ("name", "email"):
             if p in kwargs and kwargs[p] != my_data[p]:
                 params[p] = kwargs[p]
-        if len(params) > 0:
+        if len(params) > 1:
             self.post(_UPDATE_API, params=params)
+        self.add_scm_accounts(kwargs.get("scmAccounts", None))
         if "login" in kwargs:
             new_login = kwargs["login"]
             if new_login not in _USERS:
@@ -125,6 +127,23 @@ class User(sq.SqObject):
                 continue
             util.logger.info("Adding group '%s' to %s", g, str(self))
             self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
+
+    def add_scm_accounts(self, accounts_list):
+        if accounts_list is None or len(accounts_list) == 0:
+            return
+        util.logger.info("Setting 1 SCM accounts '%s' to %s", str(accounts_list), str(self))
+        if self.scmAccounts is None:
+            self.scmAccounts = []
+        new_scms = self.scmAccounts
+        for a in accounts_list:
+            if a not in self.scmAccounts:
+                new_scms.append(a)
+        if len(new_scms) > len(self.scmAccounts):
+            util.logger.info("Setting SCM accounts '%s' to %s", str(new_scms), str(self))
+            self.post(_UPDATE_API, params={"login": self.login, "scmAccount": new_scms})
+            self.scmAccounts = new_scms
+        else:
+            util.logger.info("No SCM accounts to add to %s current is %s", str(self), str(self.scmAccounts))
 
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
