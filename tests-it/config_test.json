@@ -641,7 +641,7 @@
          "sonar.eslint.reportPaths": "config/test/eslint"
       },
       "permissionTemplates": {
-         "Default Template": {
+         "Default template": {
             "defaultFor": "projects",
             "description": "TEST: This permission template will be used as default when no other permission configuration is available",
             "pattern": "",
