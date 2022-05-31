@@ -47,6 +47,7 @@ class User(sq.SqObject):
     def __init__(self, login, endpoint, data=None, create_data=None):
         super().__init__(login, endpoint)
         self.login = login
+        self.groups = None
         if create_data is not None:
             util.logger.info("Creating %s", str(self))
             params = {"login": login}
