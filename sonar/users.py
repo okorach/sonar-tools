@@ -58,12 +58,7 @@ class User(sq.SqObject):
                 if p in create_data:
                     params[p] = create_data[p]
             self.post(_CREATE_API, params=params)
-            if "groups" in create_data:
-                for g in create_data["groups"]:
-                    if g == "sonar-users":
-                        continue
-                    util.logger.info("Adding group '%s' to %s", g, str(self))
-                    self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
+            self.add_groups(create_data.get("groups", None))
             data = create_data
         elif data is None:
             for d in search(endpoint, params={"q": login}):
@@ -116,14 +111,23 @@ class User(sq.SqObject):
                 _USERS.pop(self.login, None)
                 self.login = new_login
                 _USERS[self.login] = self
-        if "groups" in kwargs:
-            for g in kwargs["groups"]:
-                if g in self.groups or g == "sonar-users":
-                    continue
-                util.logger.info("Adding group '%s' to %s", g, str(self))
-                self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
-                self.groups.append(g)
+        self.add_groups(kwargs.get("groups", None))
         return self
+
+    def add_groups(self, group_list):
+        if group_list is None:
+            return
+        for g in group_list:
+            if self.groups is None:
+                self.groups = []
+            if g in self.groups:
+                continue
+            if g == "sonar-users":
+                self.groups.append(g)
+                continue
+            util.logger.info("Adding group '%s' to %s", g, str(self))
+            self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
+
 
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
