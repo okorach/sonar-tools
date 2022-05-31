@@ -24,7 +24,7 @@ from sonar import sqobject, utilities, permissions
 _PERMISSION_TEMPLATES = {}
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
-
+_QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios": "VW"}
 _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
@@ -58,6 +58,9 @@ class PermissionTemplate(sqobject.SqObject):
         self._permissions = None
         self.__set_hash()
 
+    def __str__(self):
+        return f"permission template '{self.name}'"
+
     #def __del__(self):
     #    _MAP.pop(self.key, None)
     #    _PERMISSION_TEMPLATES.pop(_uuid(self.name, self.key))
@@ -65,10 +68,6 @@ class PermissionTemplate(sqobject.SqObject):
     def __set_hash(self):
         _PERMISSION_TEMPLATES[_uuid(self.name, self.key)] = self
         _MAP[self.name] = self.key
-        utilities.logger.debug("UPDATE PERM TEMPLATES = %s, %s", 
-            str([pt for pt in _PERMISSION_TEMPLATES]),
-            str([pt.name for pt in _PERMISSION_TEMPLATES.values()]))
-        utilities.logger.debug("MAP = %s", str(_MAP))
 
     def is_default_for(self, qualifier):
         return qualifier in _DEFAULT_TEMPLATES and _DEFAULT_TEMPLATES[qualifier] == self.key
@@ -107,6 +106,14 @@ class PermissionTemplate(sqobject.SqObject):
                 )
         return self._permissions
 
+    def set_as_default(self, what_list):
+        params = {"templateId": self.key}
+        utilities.logger.debug("Setting %s as default for %s", str(self), str(what_list))
+        for d in what_list:
+            #utilities.logger.debug("Setting %s as default for %s", str(self), d)
+            params["qualifier"] = _QUALIFIER_REVERSE_MAP.get(d, d)
+            self.post("permissions/set_default_template", params=params)
+
     def to_json(self, full_specs=False):
         json_data = {
             "key": self.key,
@@ -137,22 +144,15 @@ class PermissionTemplate(sqobject.SqObject):
 def get_object(name, endpoint=None):
     if len(_PERMISSION_TEMPLATES) == 0:
         get_list(endpoint)
-    utilities.logger.debug("get_object PERM TEMPLATES = %s, %s", 
-        str([pt for pt in _PERMISSION_TEMPLATES]),
-        str([pt.name for pt in _PERMISSION_TEMPLATES.values()]))
-    utilities.logger.debug("get_object MAP = %s", str(_MAP))
-    #utilities.logger.debug("get_object name = %s, id = %s", name, _MAP[name])
-    #utilities.logger.debug("get_object search by name id = %s",search_by_name(endpoint, name)["id"])
-    u = _uuid(name, _MAP['name'])
-    utilities.logger.debug("get_object uuid = %s", u)
-    if u not in _PERMISSION_TEMPLATES:
+    if name not in _MAP:
         get_list(endpoint)
-    if u not in _PERMISSION_TEMPLATES:
+    if name not in _MAP:
         return None
-    return _PERMISSION_TEMPLATES[u]
+    return _PERMISSION_TEMPLATES[_uuid(name, _MAP[name])]
 
 
 def update(name, endpoint=None, new_name=None, new_desc=None, new_pattern=None):
+    utilities.logger.debug("Update permission template %s", name)
     o = get_object(name=name, endpoint=endpoint)
     if o is None:
         return None
@@ -228,7 +228,10 @@ def import_settings(endpoint, config_data):
     get_list(endpoint)
     for name, data in config_data["permissionTemplates"].items():
         utilities.json_dump_debug(data, f"Importing: {name}:")
-        create_or_update(name, endpoint, description=data.get("description", None), pattern=data.get("pattern", None))
+        o = create_or_update(name, endpoint, description=data.get("description", None), pattern=data.get("pattern", None))
+        defs = data.get("defaultFor", None)
+        if defs is not None and defs != "":
+            o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
 
 
 def _uuid(name, id):
@@ -239,5 +242,4 @@ def _uuid(name, id):
 
 
 def name_to_id(name):
-    global _MAP
     return _MAP.get(name, None)
