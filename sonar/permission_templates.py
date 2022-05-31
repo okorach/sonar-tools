@@ -22,29 +22,41 @@ import json
 from sonar import sqobject, utilities, permissions
 
 _PERMISSION_TEMPLATES = {}
+_MAP = {}
 _DEFAULT_TEMPLATES = {}
-
+_QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios": "VW"}
 _SEARCH_API = "permissions/search_templates"
-
+_CREATE_API = "permissions/create_template"
+_UPDATE_API = "permissions/update_template"
 
 class PermissionTemplate(sqobject.SqObject):
-    def __init__(self, key=None, endpoint=None, data=None):
-        super().__init__(key, endpoint)
-        if data is None:
-            data = json.loads(self.get(_SEARCH_API).text)
-            for p in data["permissionTemplates"]:
-                if p["id"] == key:
-                    perm_temp = p
-                    break
-            _load_default_templates(data)
-            data = perm_temp
+    def __init__(self, endpoint, name, create_data=None, search_data=None):
+        super().__init__(name, endpoint)
+        self.key = None
+        if create_data is not None:
+            create_data["name"] = name
+            self.post(_CREATE_API, params=create_data)
+            data = search_by_name(endpoint, name)
+        elif search_data is None:
+            data = search_by_name(endpoint, name)
+        else:
+            data = search_data
         self._json = data
-        self.name = data["name"]
-        self.description = data["description"]
-        self.creation_date = utilities.string_to_date(data["createdAt"])
-        self.last_update = utilities.string_to_date(data["updatedAt"])
+        self.name = name
+        self.key = data.get("id", None)
+        self.description = data.get("description", None)
         self.project_key_pattern = data.get("projectKeyPattern", "")
+        self.creation_date = utilities.string_to_date(data.get("createdAt", None))
+        self.last_update = utilities.string_to_date(data.get("updatedAt", None))
         self._permissions = None
+        self.__set_hash()
+
+    def __str__(self):
+        return f"permission template '{self.name}'"
+
+    def __set_hash(self):
+        _PERMISSION_TEMPLATES[_uuid(self.name, self.key)] = self
+        _MAP[self.name] = self.key
 
     def is_default_for(self, qualifier):
         return qualifier in _DEFAULT_TEMPLATES and _DEFAULT_TEMPLATES[qualifier] == self.key
@@ -58,6 +70,18 @@ class PermissionTemplate(sqobject.SqObject):
     def is_portfolios_default(self):
         return self.is_default_for("VW")
 
+    def update(self, name=None, description=None, pattern=None):
+        params = {"id": self.key, "name": name, "description": description, "projectKeyPattern": pattern}
+        utilities.logger.info("Updating %s, %s with %s", self.key, self.name, str(params))
+        self.post(_UPDATE_API, params=params)
+        if name is not None:
+            self.name = name
+        if name is not None:
+            self.description = description
+        if pattern is not None:
+            self.project_key_pattern = pattern
+        return self
+
     def permissions(self):
         if self._permissions is None:
             self._permissions = {}
@@ -70,6 +94,14 @@ class PermissionTemplate(sqobject.SqObject):
                     )
                 )
         return self._permissions
+
+    def set_as_default(self, what_list):
+        params = {"templateId": self.key}
+        utilities.logger.debug("Setting %s as default for %s", str(self), str(what_list))
+        for d in what_list:
+            #utilities.logger.debug("Setting %s as default for %s", str(self), d)
+            params["qualifier"] = _QUALIFIER_REVERSE_MAP.get(d, d)
+            self.post("permissions/set_default_template", params=params)
 
     def to_json(self, full_specs=False):
         json_data = {
@@ -98,22 +130,59 @@ class PermissionTemplate(sqobject.SqObject):
             json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
         return json_data
 
+def get_object(name, endpoint=None):
+    if len(_PERMISSION_TEMPLATES) == 0:
+        get_list(endpoint)
+    if name not in _MAP:
+        get_list(endpoint)
+    if name not in _MAP:
+        return None
+    return _PERMISSION_TEMPLATES[_uuid(name, _MAP[name])]
 
-def get_object(key, data=None, endpoint=None):
-    if key not in _PERMISSION_TEMPLATES:
-        _ = PermissionTemplate(key=key, data=data, endpoint=endpoint)
-    return _PERMISSION_TEMPLATES[key]
 
+def update(name, endpoint=None, new_name=None, new_desc=None, new_pattern=None):
+    utilities.logger.debug("Update permission template %s", name)
+    o = get_object(name=name, endpoint=endpoint)
+    if o is None:
+        return None
+    return o.update(name=new_name, description=new_desc, pattern=new_pattern)
+
+
+def create_or_update(name, endpoint, new_name=None, description=None, pattern=None):
+    utilities.logger.debug("Create or update permission template %s", name)
+    o = get_object(endpoint=endpoint, name=name)
+    if o is None:
+        utilities.logger.debug("Permission template %s does not exist, creating...", name)
+        return create(name, endpoint, description=description, pattern=pattern)
+    else:
+        return update(name, endpoint, new_name=new_name, new_desc=description, new_pattern=pattern)
+
+
+def create(name, endpoint=None, **kwargs):
+    utilities.logger.debug("Create permission template %s", name)
+    o = get_object(name=name, endpoint=endpoint)
+    if o is None:
+        o = PermissionTemplate(name=name, endpoint=endpoint, create_data=kwargs)
+    return o
 
 def search(endpoint, params=None):
-    new_params = {} if params is None else params.copy()
+    utilities.logger.debug("Searching all permission templates")
     objects_list = {}
-    data = json.loads(endpoint.get(_SEARCH_API, params=new_params).text)
-
+    data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
     for obj in data["permissionTemplates"]:
-        objects_list[obj["id"]] = PermissionTemplate(obj["id"], endpoint=endpoint, data=obj)
+        objects_list[_uuid(obj["name"], obj["id"])] = PermissionTemplate(name=obj["name"], endpoint=endpoint, search_data=obj)
     _load_default_templates(data=data)
     return objects_list
+
+
+def search_by_name(endpoint, name):
+    data = json.loads(endpoint.get(_SEARCH_API, params={"q": name}).text)
+    for d in data["permissionTemplates"]:
+        if d["name"] == name:
+            utilities.logger.debug("Found")
+            return d
+        utilities.logger.debug("%s != %s", d["name"], name)
+    return None
 
 
 def get_list(endpoint):
@@ -135,5 +204,30 @@ def export(endpoint, full_specs=False):
         json_data[pt.name] = pt.to_json(full_specs)
         if not full_specs:
             json_data[pt.name].pop("name", None)
-            json_data[pt.name].pop("key", None)
+            json_data[pt.name].pop("id", None)
     return json_data
+
+
+def import_settings(endpoint, config_data):
+    if "permissionTemplates" not in config_data:
+        utilities.logger.info("No permissions templates in config, skipping import...")
+        return
+    utilities.logger.info("Importing permission templates")
+    get_list(endpoint)
+    for name, data in config_data["permissionTemplates"].items():
+        utilities.json_dump_debug(data, f"Importing: {name}:")
+        o = create_or_update(name, endpoint, description=data.get("description", None), pattern=data.get("pattern", None))
+        defs = data.get("defaultFor", None)
+        if defs is not None and defs != "":
+            o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
+
+
+def _uuid(name, id):
+    if id is None:
+        return name
+    else:
+        return id
+
+
+def name_to_id(name):
+    return _MAP.get(name, None)
