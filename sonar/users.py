@@ -33,17 +33,14 @@ from sonar.audit import rules, problem
 
 _USERS = {}
 
+_SEARCH_API = "users/search"
 _CREATE_API = "users/create"
 _UPDATE_API = "users/update"
+_DEACTIVATE_API = "users/deactivate"
 _ADD_GROUP_API = "user_groups/add_user"
 _UPDATE_LOGIN_API ="users/update_login"
 
 class User(sq.SqObject):
-    API_ROOT = "users"
-    API_CREATE = API_ROOT + "/create"
-    API_SEARCH = API_ROOT + "/search"
-    API_DEACTIVATE = API_ROOT + "/deactivate"
-
     def __init__(self, login, endpoint, data=None, create_data=None):
         super().__init__(login, endpoint)
         self.login = login
@@ -84,7 +81,7 @@ class User(sq.SqObject):
         return f"user '{self.login}'"
 
     def deactivate(self):
-        self.post(User.API_DEACTIVATE, {"name": self.name, "login": self.login})
+        self.post(_DEACTIVATE_API, {"name": self.name, "login": self.login})
         return True
 
     def tokens(self):
@@ -128,7 +125,6 @@ class User(sq.SqObject):
                 continue
             util.logger.info("Adding group '%s' to %s", g, str(self))
             self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
-
 
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
@@ -191,7 +187,7 @@ class User(sq.SqObject):
 
 def search(endpoint, params=None):
     return sq.search_objects(
-        api=User.API_SEARCH,
+        api=_SEARCH_API,
         params=params,
         returned_field="users",
         key_field="login",
@@ -211,11 +207,6 @@ def export(endpoint, full_specs=False):
     for u_name, u_obj in search(endpoint=endpoint).items():
         u_list[u_name] = u_obj.to_json(full_specs=full_specs)
     return u_list
-
-
-#def create(name, login=None, endpoint=None):
-#    data = json.loads(endpoint.post(User.API_CREATE, {"name": name, "login": login}).text)
-#    return User(data["login"], data["name"], endpoint, **data)
 
 
 def audit(audit_settings, endpoint=None):
