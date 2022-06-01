@@ -158,14 +158,6 @@ def get_object(name, endpoint=None):
     return _GROUPS[_uuid(name, _MAP[name])]
 
 
-def update(name, endpoint=None, new_name=None, new_desc=None):
-    util.logger.info("Update group '%s'", name)
-    o = get_object(name=name, endpoint=endpoint)
-    if o is None:
-        return None
-    return o.update(new_name, new_desc)
-
-
 def create(name, endpoint=None, **kwargs):
     util.logger.info("Create group '%s'", name)
     o = get_object(name=name, endpoint=endpoint)
