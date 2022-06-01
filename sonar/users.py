@@ -194,9 +194,9 @@ class User(sq.SqObject):
             json_data = {
                 "login": self.login,
                 "name": self.name,
-                "scmAccounts": self.scmAccounts,
+                "scmAccounts": util.list_to_csv(self.scmAccounts, ", ", True),
                 "email": self.email,
-                "groups": self.groups,
+                "groups": util.list_to_csv(self.groups, ", ", True),
             }
             if self.is_local:
                 json_data["local"] = True
