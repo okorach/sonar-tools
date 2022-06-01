@@ -32,6 +32,13 @@ from sonar.audit import rules, severities, types
 import sonar.audit.problem as pb
 
 
+_QUALITY_GATES = {}
+_MAP = {}
+
+_CREATE_API = "qualitygates/create"
+_SEARCH_API = "qualitygates/list"
+_DETAILS_API = "qualitygates/show"
+
 NEW_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on new issues should be 0 or should be removed from QG conditions"
 
 GOOD_QG_CONDITIONS = {
@@ -85,19 +92,30 @@ GOOD_QG_CONDITIONS = {
 
 
 class QualityGate(sq.SqObject):
-    def __init__(self, key, endpoint, data=None):
-        super().__init__(key, endpoint)
-        if data is None:
-            return
+    def __init__(self, name, endpoint, data=None, create_data=None):
+        super().__init__(name, endpoint)
+        self.name = None
+        self.is_built_in = False
+        self._conditions = None
+        self._permissions = None
+        self._projects = None
+        self.is_default = False
+        if create_data is not None:
+            params = create_data.copy()
+            params["name"] = name
+            params.pop("conditions", None)
+            self.post(_CREATE_API, params=params)
+            self.set_conditions(create_data.get("conditions"))
+            data = search_by_name(endpoint, name)
+        elif data is None:
+            data = search_by_name(endpoint, name)
+        self.key = data["id"]
         self.name = data["name"]
         self.is_default = data.get("isDefault", False)
         self.is_built_in = data.get("isBuiltIn", False)
-        self._permissions = None
-        data = json.loads(self.get("qualitygates/show", params={"id": self.key}).text)
-        self.conditions = []
-        self._projects = None
-        for c in data.get("conditions", []):
-            self.conditions.append(c)
+        self.conditions()
+        _QUALITY_GATES[_uuid(self.name, self.key)] = self
+        _MAP[self.name] = self.key
 
     def __str__(self):
         return f"quality gate '{self.name}'"
@@ -131,9 +149,58 @@ class QualityGate(sq.SqObject):
     def count_projects(self):
         return len(self.projects())
 
+    def conditions(self, encoded=False):
+        if self._conditions is None:
+            self._conditions = []
+            data = json.loads(self.get(_DETAILS_API, params={"id": self.key}).text)
+            for c in data.get("conditions", []):
+                self._conditions.append(c)
+        if encoded:
+            return _encode_conditions(self._conditions)
+        return self._conditions
+
+    def clear_conditions(self):
+        if self.is_built_in:
+            util.logger.warning("Can't clear conditions of built-in %s", str(self))
+        else:
+            util.logger.debug("Clearing conditions of %s", str(self))
+            for c in self.conditions():
+                self.post("qualitygates/delete_condition", params={"id": c["id"]})
+
+    def set_conditions(self, conditions_list):
+        if conditions_list is None or len(conditions_list) == 0:
+            return
+        if self.is_built_in:
+            util.logger.warning("Can't set conditions of built-in %s", str(self))
+            return
+        self.clear_conditions()
+        util.logger.debug("Setting conditions of %s", str(self))
+        params = {"gateName": self.name}
+        for cond in conditions_list:
+            (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
+            self.post("qualitygates/create_condition", params=params)
+
+    def update(self, **data):
+        upd = False
+        params = {"id": self.key}
+        my_vars = vars(self)
+        for p in ("name"):
+            if p in data and data[p] != my_vars[p]:
+                params[p] = data[p]
+                upd = True
+        if "name" in data and data["name"] != self.name:
+            util.logger.info("Renaming %s with %s", str(self), data["name"])
+            self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
+            _MAP.pop(_uuid(self.name, self.key), None)
+            self.name = data["name"]
+            _MAP[_uuid(self.name, self.key)] = self
+        self.set_conditions(data.get("conditions", []))
+        self.conditions()
+        return self
+
     def __audit_conditions__(self):
         problems = []
-        for c in self.conditions:
+        for c in self.conditions():
             m = c["metric"]
             if m not in GOOD_QG_CONDITIONS:
                 rule = rules.get_rule(rules.RuleId.QG_WRONG_METRIC)
@@ -142,13 +209,7 @@ class QualityGate(sq.SqObject):
                 continue
             val = int(c["error"])
             (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
-            util.logger.debug(
-                "Condition on metric '%s': Check that %d in range [%d - %d]",
-                m,
-                val,
-                mini,
-                maxi,
-            )
+            util.logger.debug("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
                 msg = f"{str(self)} condition on metric '{m}': {msg}".format(self.name, m, msg)
                 problems.append(pb.Problem(types.Type.BAD_PRACTICE, severities.Severity.HIGH, msg))
@@ -180,7 +241,7 @@ class QualityGate(sq.SqObject):
         return problems
 
     def to_json(self):
-        json_data = {"conditions": _simplified_conditions(self.conditions)}
+        json_data = {"conditions":self.conditions(encoded=True)}
         if self.is_default:
             json_data["isDefault"] = True
         if self.is_built_in:
@@ -228,11 +289,19 @@ def get_list(endpoint):
     data = json.loads(endpoint.get("qualitygates/list").text)
     qg_list = {}
     for qg in data["qualitygates"]:
-        qg_obj = QualityGate(key=qg["id"], endpoint=endpoint, data=qg)
+        qg_obj = QualityGate(name=qg["name"], endpoint=endpoint, data=qg)
         if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
             qg_obj.is_default = True
         qg_list[qg_obj.name] = qg_obj
     return qg_list
+
+
+def get_object(name, endpoint=None):
+    if len(_QUALITY_GATES) == 0:
+        get_list(endpoint)
+    if name not in _MAP:
+        return None
+    return _QUALITY_GATES[_uuid(name, _MAP[name])]
 
 
 def export(endpoint):
@@ -243,12 +312,49 @@ def export(endpoint):
     return qg_list
 
 
+def create(name, endpoint=None, **kwargs):
+    util.logger.info("Create quality gate '%s'", name)
+    o = get_object(name=name, endpoint=endpoint)
+    if o is None:
+        o = QualityGate(name=name, endpoint=endpoint, create_data=kwargs)
+    return o
+
+
+def create_or_update(endpoint, name, **kwargs):
+    o = get_object(endpoint=endpoint, name=name)
+    if o is None:
+        util.logger.debug("Quality gate '%s' does not exist, creating...", name)
+        return create(name, endpoint, **kwargs)
+    else:
+        return o.update(**kwargs)
+
+def import_config(endpoint, config_data):
+    if "qualityGates" not in config_data:
+        util.logger.info("No quality gates to import")
+        return
+    util.logger.info("Importing quality gates")
+    for name, data in config_data["qualityGates"].items():
+        create_or_update(endpoint, name, **data)
+
+
 def count(endpoint):
     return len(get_list(endpoint))
 
 
-def _simplified_conditions(conds):
+def _encode_conditions(conds):
     simple_conds = []
     for c in conds:
-        simple_conds.append(f"{c['metric']} {c['op']} {c['error']}")
+        simple_conds.append(_encode_condition(c))
     return simple_conds
+
+def _encode_condition(c):
+    return f"{c['metric']} {c['op']} {c['error']}"
+
+def _decode_condition(c):
+    return c.strip().split(" ")
+
+def _uuid(name, id):
+    return id
+
+def search_by_name(endpoint, name):
+    return util.search_by_name(endpoint, name, _SEARCH_API, "qualitygates")
