@@ -38,7 +38,7 @@ _CREATE_API = "users/create"
 _UPDATE_API = "users/update"
 _DEACTIVATE_API = "users/deactivate"
 _ADD_GROUP_API = "user_groups/add_user"
-_UPDATE_LOGIN_API ="users/update_login"
+_UPDATE_LOGIN_API = "users/update_login"
 
 class User(sq.SqObject):
     def __init__(self, login, endpoint, data=None, create_data=None):
