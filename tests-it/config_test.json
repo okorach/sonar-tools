@@ -3063,12 +3063,8 @@
             "reliability_rating GT 4"
          ],
          "permissions": {
-            "groups": [
-               "sonar-users"
-            ],
-            "users": [
-               "yacine"
-            ]
+            "groups": "sonar-users",
+            "users": "yacine"
          }
       },
       "Sonar way w/o Hotspots": {
@@ -3080,9 +3076,7 @@
             "new_duplicated_lines_density GT 3"
          ],
          "permissions": {
-            "users": [
-               "sylvain"
-            ]
+            "users": "sylvain"
          }
       },
       "Sonar way w/o coverage": {
