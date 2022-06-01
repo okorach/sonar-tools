@@ -105,7 +105,8 @@ class QualityGate(sq.SqObject):
             params["name"] = name
             params.pop("conditions", None)
             self.post(_CREATE_API, params=params)
-            self.set_conditions(create_data.get("conditions"))
+            self.set_conditions(create_data.get("conditions", None))
+            self.set_permissions(create_data.get("permissions", None))
             data = search_by_name(endpoint, name)
         elif data is None:
             data = search_by_name(endpoint, name)
@@ -114,6 +115,7 @@ class QualityGate(sq.SqObject):
         self.is_default = data.get("isDefault", False)
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
+        self.permissions()
         _QUALITY_GATES[_uuid(self.name, self.key)] = self
         _MAP[self.name] = self.key
 
@@ -166,6 +168,7 @@ class QualityGate(sq.SqObject):
             util.logger.debug("Clearing conditions of %s", str(self))
             for c in self.conditions():
                 self.post("qualitygates/delete_condition", params={"id": c["id"]})
+            self._conditions = None
 
     def set_conditions(self, conditions_list):
         if conditions_list is None or len(conditions_list) == 0:
@@ -179,15 +182,60 @@ class QualityGate(sq.SqObject):
         for cond in conditions_list:
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
             self.post("qualitygates/create_condition", params=params)
+        self.conditions()
+
+    def permissions(self):
+        if self.endpoint.version() < (9, 2, 0):
+            return None
+        if self._permissions is not None:
+            return self._permissions
+        self._permissions = {}
+        perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, "users", "login"))
+        if perms is not None:
+            self._permissions["users"] = perms
+        perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, "groups", "name"))
+        if perms is not None:
+            self._permissions["groups"] = perms
+        return self._permissions
+
+    def clear_permissions(self):
+        if self.is_built_in:
+            util.logger.warning("Can't clear permissions of built-in %s", str(self))
+        else:
+            util.logger.debug("Clearing permissions of %s", str(self))
+            perms = self.permissions()
+            if "users" in perms:
+                for u in util.csv_to_list(perms["users"]):
+                    self.post("qualitygates/remove_user", params={"gateName": self.name, "login": u})
+            if "groups" in perms:
+                for g in util.csv_to_list(perms["groups"]):
+                    self.post("qualitygates/remove_group", params={"gateName": self.name, "groupName": g})
+            self._permissions = None
+
+    def set_permissions(self, permissions_list):
+        util.logger.debug("Setting permissions of %s with %s", str(self), str(permissions_list))
+        if permissions_list is None or len(permissions_list) == 0:
+            return
+        if self.is_built_in:
+            util.logger.warning("Can't set permissions of built-in %s", str(self))
+            return
+        self.clear_permissions()
+        params = {"gateName": self.name}
+        if "groups" in permissions_list:
+            pl = permissions_list["groups"]
+            if isinstance(pl, str):
+                pl = util.csv_to_list(pl)
+            for p in pl:
+                self.post("qualitygates/add_group", params={"gateName": self.name, "groupName": p})
+        if "users" in permissions_list:
+            pl = permissions_list["users"]
+            if isinstance(pl, str):
+                pl = util.csv_to_list(pl)
+            for p in pl:
+                self.post("qualitygates/add_user", params={"gateName": self.name, "login": p})
+        self.permissions()
 
     def update(self, **data):
-        upd = False
-        params = {"id": self.key}
-        my_vars = vars(self)
-        for p in ("name"):
-            if p in data and data[p] != my_vars[p]:
-                params[p] = data[p]
-                upd = True
         if "name" in data and data["name"] != self.name:
             util.logger.info("Renaming %s with %s", str(self), data["name"])
             self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
@@ -195,6 +243,8 @@ class QualityGate(sq.SqObject):
             self.name = data["name"]
             _MAP[_uuid(self.name, self.key)] = self
         self.set_conditions(data.get("conditions", []))
+        self.conditions()
+        self.set_permissions(data.get("permissions", []))
         self.conditions()
         return self
 
@@ -253,20 +303,6 @@ class QualityGate(sq.SqObject):
                     perms[t] = util.list_to_csv(perms[t], ", ", True)
             json_data["permissions"] = util.remove_nones(perms)
         return json_data
-
-    def permissions(self):
-        if self.endpoint.version() < (9, 2, 0):
-            return None
-        if self._permissions is not None:
-            return self._permissions
-        self._permissions = {}
-        perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, "users", "login"))
-        if perms is not None:
-            self._permissions["users"] = perms
-        perms = util.remove_nones(permissions.get_qg(self.endpoint, self.name, "groups", "name"))
-        if perms is not None:
-            self._permissions["groups"] = perms
-        return self._permissions
 
 
 def audit(endpoint=None, audit_settings=None):
