@@ -192,7 +192,7 @@ class User(sq.SqObject):
             json_data = self._json
         else:
             groups = self.groups.copy()
-            groups.pop("sonar-users", None)
+            groups.remove("sonar-users")
             json_data = {
                 "login": self.login,
                 "name": self.name,
@@ -226,8 +226,9 @@ def get_list(endpoint, params=None):
 def export(endpoint, full_specs=False):
     util.logger.info("Exporting users")
     u_list = {}
-    for u_name, u_obj in search(endpoint=endpoint).items():
-        u_list[u_name] = u_obj.to_json(full_specs=full_specs)
+    for u_login, u_obj in search(endpoint=endpoint).items():
+        u_list[u_login] = u_obj.to_json(full_specs=full_specs)
+        u_list[u_login].pop("login", None)
     return u_list
 
 
