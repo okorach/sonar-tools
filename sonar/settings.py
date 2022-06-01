@@ -280,8 +280,8 @@ def set_setting(endpoint, key, value, project=None, branch=None):
         return endpoint.reset_setting(key)
 
     value = decode(key, value)
+    util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
     if isinstance(value, list):
-        util.logger.info("Setting multi valued setting '%s' to value '%s'", key, util.json_dump(value))
         if isinstance(value[0], str):
             return endpoint.post(_API_SET, params={"key": key, "values": value})
         else:
@@ -289,7 +289,6 @@ def set_setting(endpoint, key, value, project=None, branch=None):
     else:
         if isinstance(value, bool):
             value = "true" if value else "false"
-        util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
         return endpoint.post(_API_SET, params={"key": key, "value": value})
 
 
