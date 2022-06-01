@@ -17741,13 +17741,11 @@
       },
       "ado": {
          "groups": "CI Tools",
-
          "local": true,
          "name": "Azure DevOps"
       },
       "cameron": {
          "groups": "Team Developers, Team Tech Leads",
-
          "local": true,
          "name": "cameron"
       },
