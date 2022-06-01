@@ -66,7 +66,7 @@ _PRIVATE_SETTINGS = (
 _INLINE_SETTINGS = (
     r"^.*\.file\.suffixes$",
     r"^.*\.reportPaths$",
-    r"^sonar\.[a-z]+\.exclusions$",
+    r"^sonar(\.[a-z]+)?\.exclusions$",
     r"^sonar\.javascript\.(globals|environments)$",
     r"^sonar\.dbcleaner\.branchesToKeepWhenInactive$",
     r"^sonar\.rpg\.suffixes$",
