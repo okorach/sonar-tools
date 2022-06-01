@@ -118,6 +118,8 @@ class User(sq.SqObject):
     def add_groups(self, group_list):
         if group_list is None:
             return
+        if isinstance(group_list, str):
+            group_list = util.csv_to_list(group_list)
         for g in group_list:
             if self.groups is None:
                 self.groups = []
@@ -130,7 +132,11 @@ class User(sq.SqObject):
             self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
 
     def add_scm_accounts(self, accounts_list):
-        if accounts_list is None or len(accounts_list) == 0:
+        if accounts_list is None:
+            return
+        if isinstance(accounts_list, str):
+            accounts_list = util.csv_to_list(accounts_list)
+        if len(accounts_list) == 0:
             return
         util.logger.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
         if self.scmAccounts is None:

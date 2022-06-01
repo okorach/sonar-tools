@@ -270,6 +270,8 @@ def str_none(v):
 
 
 def csv_to_list(string, separator=","):
+    if isinstance(string, list):
+        return string
     if string is None or re.match(r"^\s*$", string):
         return []
     return [s.strip() for s in string.split(separator)]
