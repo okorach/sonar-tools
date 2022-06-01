@@ -93,7 +93,7 @@ class Portfolio(aggregations.Aggregation):
             if self.endpoint.version() >= (9, 3, 0):
                 for p in self._json["selectedProjects"]:
                     if "selectedBranches" in p:
-                        self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ")
+                        self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
                     else:
                         self._projects[p["projectKey"]] = options.DEFAULT
             else:
@@ -299,7 +299,7 @@ def _projects(json_data, version):
     if version >= (9, 3, 0):
         for p in json_data["selectedProjects"]:
             if "selectedBranches" in p:
-                projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ")
+                projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
                 projects[p["projectKey"]] = options.DEFAULT
     else:

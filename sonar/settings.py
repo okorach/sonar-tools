@@ -66,7 +66,7 @@ _PRIVATE_SETTINGS = (
 _INLINE_SETTINGS = (
     r"^.*\.file\.suffixes$",
     r"^.*\.reportPaths$",
-    r"^sonar\.[a-z]+\.exclusions$",
+    r"^sonar(\.[a-z]+)?\.exclusions$",
     r"^sonar\.javascript\.(globals|environments)$",
     r"^sonar\.dbcleaner\.branchesToKeepWhenInactive$",
     r"^sonar\.rpg\.suffixes$",
@@ -304,8 +304,7 @@ def encode(setting_key, setting_value):
     val = setting_value.copy()
     for reg in _INLINE_SETTINGS:
         if re.match(reg, setting_key):
-            # TODO: Support case where setting value contains a comma
-            val = util.list_to_csv([v.strip() for v in val], ", ")
+            val = util.list_to_csv(val, ", ", True)
             break
     if val is None:
         val = ""

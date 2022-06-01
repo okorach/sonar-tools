@@ -275,10 +275,18 @@ def csv_to_list(string, separator=","):
     return [s.strip() for s in string.split(separator)]
 
 
-def list_to_csv(array, separator=","):
+def list_to_csv(array, separator=",", check_for_separator=False):
     if isinstance(array, str):
         return array
-    return separator.join(array)
+    if array is None:
+        return None
+    if check_for_separator:
+        # Don't convert to string if one array item contains the string separator
+        s = separator.strip()
+        for item in array:
+            if s in item:
+                return array
+    return separator.join([v.strip() for v in array])
 
 
 def csv_normalize(string, separator=","):

@@ -123,10 +123,7 @@ class QualityProfile(sq.SqObject):
         return self._rules
 
     def to_json(self, full_specs=False, include_rules=False):
-        json_data = {
-            "name": self.name,
-            "language": self.language,
-        }
+        json_data = {"name": self.name, "language": self.language}
         if full_specs:
             json_data.update(
                 {
@@ -150,6 +147,9 @@ class QualityProfile(sq.SqObject):
 
         perms = util.remove_nones(self.permissions())
         if perms is not None and len(perms) > 0:
+            for t in ("users", "groups"):
+                if t in perms:
+                    perms[t] = util.list_to_csv(perms[t], ", ", True)
             json_data["permissions"] = perms
 
         return util.remove_nones(json_data)

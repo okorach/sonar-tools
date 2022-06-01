@@ -187,6 +187,9 @@ class QualityGate(sq.SqObject):
             json_data["isBuiltIn"] = True
         perms = self.permissions()
         if perms is not None and len(perms) > 0:
+            for t in ("users", "groups"):
+                if t in perms:
+                    perms[t] = util.list_to_csv(perms[t], ", ", True)
             json_data["permissions"] = util.remove_nones(perms)
         return json_data
 
