@@ -278,6 +278,8 @@ def csv_to_list(string, separator=","):
 def list_to_csv(array, separator=",", check_for_separator=False):
     if isinstance(array, str):
         return array
+    if array is None:
+        return None
     if check_for_separator:
         # Don't convert to string if one array item contains the string separator
         s = separator.strip()
