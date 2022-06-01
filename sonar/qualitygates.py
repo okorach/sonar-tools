@@ -220,7 +220,6 @@ class QualityGate(sq.SqObject):
             util.logger.warning("Can't set permissions of built-in %s", str(self))
             return
         self.clear_permissions()
-        params = {"gateName": self.name}
         if "groups" in permissions_list:
             pl = permissions_list["groups"]
             if isinstance(pl, str):
