@@ -17737,88 +17737,74 @@
          "email": "olivier.korach@sonarsource.com",
          "groups": "CI Tools, Sonar Administrators, Team Project Admins",
          "local": true,
-         "login": "admin",
          "name": "Administrator"
       },
       "ado": {
          "groups": "CI Tools",
 
          "local": true,
-         "login": "ado",
          "name": "Azure DevOps"
       },
       "cameron": {
          "groups": "Team Developers, Team Tech Leads",
 
          "local": true,
-         "login": "cameron",
          "name": "cameron"
       },
       "cli": {
          "groups": "CI Tools, Sonar Administrators",
          "local": true,
-         "login": "cli",
          "name": "cli"
       },
       "gitlab": {
          "groups": "CI Tools",
          "local": true,
-         "login": "gitlab",
          "name": "gitlab"
       },
       "gitlab-ci": {
          "groups": "CI Tools",
          "local": true,
-         "login": "gitlab-ci",
          "name": "gitlab-ci"
       },
       "issue-syncer": {
-         "groups":  "Sonar Administrators",
+         "groups": "Sonar Administrators",
          "local": true,
-         "login": "issue-syncer",
          "name": "issue-syncer"
       },
       "jack": {
          "groups": "",
          "local": true,
-         "login": "jack",
          "name": "jack"
       },
       "jenkins": {
          "email": "",
          "groups": "CI Tools",
          "local": true,
-         "login": "jenkins",
          "name": "Jenkins"
       },
       "joe": {
          "groups": "",
          "local": true,
-         "login": "joe",
          "name": "joe"
       },
       "john.doe@sonarsource.com": {
          "email": "john.doe@sonarsource.com",
          "groups": "Security Auditors",
          "local": true,
-         "login": "john.doe@sonarsource.com",
          "name": "John Doe"
       },
       "olivier-korach81134": {
          "groups": "Security Auditors",
-         "login": "olivier-korach81134",
          "name": "Olivier Korach"
       },
       "olivier-korach91357": {
          "email": "olivier.korach@gmail.com",
          "groups": "",
-         "login": "olivier-korach91357",
          "name": "Olivier Korach"
       },
       "olivierk": {
          "groups": "CI Tools, Team Project Admins, Team Tech Leads",
          "local": true,
-         "login": "olivierk",
          "name": "olivierk",
          "scmAccounts": "olivier.korach@test.com"
       },
@@ -17826,32 +17812,27 @@
          "email": "simon.brandhof@sonarsource.com",
          "groups": "Executives, Language Experts, Team 2 Developers",
          "local": true,
-         "login": "simon.brandhof@sonarsource.com",
          "name": "Simon Brandhof"
       },
       "sylvain": {
          "groups": "Language Experts, Team Developers, Team Tech Leads",
          "local": true,
-         "login": "sylvain",
          "name": "Sylvain Combe"
       },
       "syncer": {
          "groups": "Sonar Administrators",
          "local": true,
-         "login": "syncer",
          "name": "syncer"
       },
       "tfs": {
          "email": "",
          "groups": "",
          "local": true,
-         "login": "tfs",
          "name": "TFS"
       },
       "yacine": {
          "groups": "Team Developers",
          "local": true,
-         "login": "yacine",
          "name": "yacine"
       }
    }
