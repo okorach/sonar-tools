@@ -87,28 +87,25 @@ class Group(sq.SqObject):
                 json_data["default"] = True
         return util.remove_nones(json_data)
 
-    def update(self, new_name=None, new_desc=None):
-        if new_name is None and new_desc is None:
-            return self
+    def update(self, **data):
         upd = False
         params = {"id": self.key}
-        if new_name != self.name:
-            params["name"] = new_name
-            upd = True
-        if new_desc != self.description:
-            params["description"] = new_name
-            upd = True
+        my_vars = vars(self)
+        for p in ("name", "description"):
+            if p in data and data[p] != my_vars[p]:
+                params[p] = data[p]
+                upd = True
         if not upd:
             util.logger.info("Nothing to update for %s", str(self))
             return self
         util.logger.info("Updating %s with %s", str(self), str(params))
         self.post(_UPDATE_API, params=params)
-        if new_name is not None:
+        if "name" in data and data["name"] != self.name:
             _MAP.pop(_uuid(self.name, self.key), None)
-            self.name = new_name
+            self.name = data["name"]
             _MAP[_uuid(self.name, self.key)] = self
-        if new_desc is not None:
-            self.description = new_desc
+        if "description" in data:
+            self.description = data["description"]
         return self
 
 
@@ -183,7 +180,7 @@ def create_or_update(endpoint, name, **kwargs):
         util.logger.debug("Group '%s' does not exist, creating...", name)
         return create(name, endpoint, **kwargs)
     else:
-        return update(name, endpoint, new_name=name, new_desc=kwargs.get("desc", None))
+        return o.update(**kwargs)
 
 
 def import_config(endpoint, config_data):
@@ -192,7 +189,7 @@ def import_config(endpoint, config_data):
         return
     util.logger.info("Importing groups")
     for name, data in config_data["groups"].items():
-        create_or_update(endpoint, name, desc=data.get("description"))
+        create_or_update(endpoint, name, **data)
 
 
 def _uuid(name, id):

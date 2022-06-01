@@ -22,7 +22,7 @@
     Abstraction of the SonarQube "user" concept
 
 """
-import json
+
 import datetime as dt
 import pytz
 import sonar.sqobject as sq
@@ -31,16 +31,44 @@ import sonar.user_tokens as tok
 from sonar.audit import rules, problem
 
 
-class User(sq.SqObject):
-    API_ROOT = "users"
-    API_CREATE = API_ROOT + "/create"
-    API_SEARCH = API_ROOT + "/search"
-    API_DEACTIVATE = API_ROOT + "/deactivate"
+_USERS = {}
 
-    def __init__(self, login, endpoint, data=None):
+_SEARCH_API = "users/search"
+_CREATE_API = "users/create"
+_UPDATE_API = "users/update"
+_DEACTIVATE_API = "users/deactivate"
+_ADD_GROUP_API = "user_groups/add_user"
+_UPDATE_LOGIN_API = "users/update_login"
+
+class User(sq.SqObject):
+    def __init__(self, login, endpoint, data=None, create_data=None):
         super().__init__(login, endpoint)
         self.login = login
-        self.jsondata = data
+        self.groups = None
+        self.scmAccounts = None
+        if create_data is not None:
+            util.logger.info("Creating %s", str(self))
+            params = {"login": login}
+            local = create_data.get("local", False)
+            params["local"] = str(local).lower()
+            if local:
+                params["password"] = create_data.get("password", login)
+            for p in ("name", "email"):
+                if p in create_data:
+                    params[p] = create_data[p]
+            self.post(_CREATE_API, params=params)
+            self.add_groups(create_data.get("groups", None))
+            self.add_scm_accounts(create_data.get("scmAccounts", None))
+            data = create_data
+        elif data is None:
+            for d in search(endpoint, params={"q": login}):
+                if d["login"] == login:
+                    data = d
+                    break
+        if create_data is None:
+            util.logger.info("Sync'ing %s", str(self))
+
+        self._json = data
         self.name = data.get("name", None)
         self.is_local = data.get("local", False)
         self.email = data.get("email", None)
@@ -49,12 +77,13 @@ class User(sq.SqObject):
         self.nb_tokens = data.get("tokenCount", None)
         self.tokens_list = None
         self._last_login_date = None
+        _USERS[_uuid(self.login)] = self
 
     def __str__(self):
         return f"user '{self.login}'"
 
     def deactivate(self):
-        self.post(User.API_DEACTIVATE, {"name": self.name, "login": self.login})
+        self.post(_DEACTIVATE_API, {"name": self.name, "login": self.login})
         return True
 
     def tokens(self):
@@ -63,9 +92,59 @@ class User(sq.SqObject):
         return self.tokens_list
 
     def last_login_date(self):
-        if self._last_login_date is None and "lastConnectionDate" in self.jsondata:
-            self._last_login_date = util.string_to_date(self.jsondata["lastConnectionDate"])
+        if self._last_login_date is None and "lastConnectionDate" in self._json:
+            self._last_login_date = util.string_to_date(self._json["lastConnectionDate"])
         return self._last_login_date
+
+    def update(self, **kwargs):
+        params = {"login": self.login}
+        my_data = vars(self)
+        for p in ("name", "email"):
+            if p in kwargs and kwargs[p] != my_data[p]:
+                params[p] = kwargs[p]
+        if len(params) > 1:
+            self.post(_UPDATE_API, params=params)
+        self.add_scm_accounts(kwargs.get("scmAccounts", None))
+        if "login" in kwargs:
+            new_login = kwargs["login"]
+            if new_login not in _USERS:
+                self.post(_UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
+                _USERS.pop(self.login, None)
+                self.login = new_login
+                _USERS[self.login] = self
+        self.add_groups(kwargs.get("groups", None))
+        return self
+
+    def add_groups(self, group_list):
+        if group_list is None:
+            return
+        for g in group_list:
+            if self.groups is None:
+                self.groups = []
+            if g in self.groups:
+                continue
+            if g == "sonar-users":
+                self.groups.append(g)
+                continue
+            util.logger.info("Adding group '%s' to %s", g, str(self))
+            self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
+
+    def add_scm_accounts(self, accounts_list):
+        if accounts_list is None or len(accounts_list) == 0:
+            return
+        util.logger.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
+        if self.scmAccounts is None:
+            self.scmAccounts = []
+        new_scms = self.scmAccounts.copy()
+        for a in accounts_list:
+            if a not in self.scmAccounts:
+                new_scms.append(a)
+        if len(new_scms) > len(self.scmAccounts):
+            util.logger.info("Setting SCM accounts '%s' to %s", str(new_scms), str(self))
+            self.post(_UPDATE_API, params={"login": self.login, "scmAccount": new_scms})
+            self.scmAccounts = new_scms
+        else:
+            util.logger.info("No SCM accounts to add to %s current is %s", str(self), str(self.scmAccounts))
 
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
@@ -110,7 +189,7 @@ class User(sq.SqObject):
 
     def to_json(self, full_specs=False):
         if full_specs:
-            json_data = self.jsondata
+            json_data = self._json
         else:
             json_data = {
                 "login": self.login,
@@ -121,14 +200,14 @@ class User(sq.SqObject):
             }
             if self.is_local:
                 json_data["local"] = True
-            if not self.jsondata["active"]:
+            if not self._json["active"]:
                 json_data["active"] = False
         return util.remove_nones(json_data)
 
 
 def search(endpoint, params=None):
     return sq.search_objects(
-        api=User.API_SEARCH,
+        api=_SEARCH_API,
         params=params,
         returned_field="users",
         key_field="login",
@@ -150,11 +229,6 @@ def export(endpoint, full_specs=False):
     return u_list
 
 
-def create(name, login=None, endpoint=None):
-    data = json.loads(endpoint.post(User.API_CREATE, {"name": name, "login": login}).text)
-    return User(data["login"], data["name"], endpoint, **data)
-
-
 def audit(audit_settings, endpoint=None):
     if not audit_settings["audit.users"]:
         util.logger.info("Auditing users is disabled, skipping...")
@@ -173,3 +247,51 @@ def get_login_from_name(name, endpoint):
     if len(u_list) > 1:
         util.logger.warning("More than 1 user with name '%s', will return the 1st one", name)
     return list(u_list.keys()).pop(0)
+
+
+def update(login, endpoint, **kwargs):
+    util.logger.info("Update user '%s' with %s", login, str(kwargs))
+    o = get_object(login=login, endpoint=endpoint)
+    if o is None:
+        util.logger.warning("Can't update user '%s', it does not exists", login)
+        return None
+    return o.update(**kwargs)
+
+
+def create(login, endpoint=None, **kwargs):
+    util.logger.info("Create user '%s' with data %s", login, str(kwargs))
+    o = get_object(login=login, endpoint=endpoint)
+    if o is None:
+        o = User(login=login, endpoint=endpoint, create_data=kwargs)
+    return o
+
+
+def create_or_update(endpoint, login, **kwargs):
+    o = get_object(endpoint=endpoint, login=login)
+    if o is None:
+        util.logger.debug("User '%s' does not exist, creating...", login)
+        return create(login, endpoint, **kwargs)
+    else:
+        return update(login, endpoint, **kwargs)
+
+
+def import_config(endpoint, config_data):
+    if "users" not in config_data:
+        util.logger.info("No users to import")
+        return
+    util.logger.info("Importing users")
+    for login, data in config_data["users"].items():
+        data.pop("login", None)
+        create_or_update(endpoint, login, **data)
+
+
+def get_object(login, endpoint=None):
+    if len(_USERS) == 0:
+        get_list(endpoint)
+    u = _uuid(login)
+    if u not in _USERS:
+        return None
+    return _USERS[u]
+
+def _uuid(login):
+    return login
