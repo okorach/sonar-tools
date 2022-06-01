@@ -291,7 +291,7 @@ class QualityGate(sq.SqObject):
         return problems
 
     def to_json(self):
-        json_data = {"conditions":self.conditions(encoded=True)}
+        json_data = {"conditions": self.conditions(encoded=True)}
         if self.is_default:
             json_data["isDefault"] = True
         if self.is_built_in:
