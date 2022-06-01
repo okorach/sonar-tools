@@ -45,6 +45,7 @@ class User(sq.SqObject):
         super().__init__(login, endpoint)
         self.login = login
         self.groups = None
+        self.scmAccounts = None
         if create_data is not None:
             util.logger.info("Creating %s", str(self))
             params = {"login": login}
@@ -131,10 +132,10 @@ class User(sq.SqObject):
     def add_scm_accounts(self, accounts_list):
         if accounts_list is None or len(accounts_list) == 0:
             return
-        util.logger.info("Setting 1 SCM accounts '%s' to %s", str(accounts_list), str(self))
+        util.logger.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
         if self.scmAccounts is None:
             self.scmAccounts = []
-        new_scms = self.scmAccounts
+        new_scms = self.scmAccounts.copy()
         for a in accounts_list:
             if a not in self.scmAccounts:
                 new_scms.append(a)
