@@ -191,12 +191,14 @@ class User(sq.SqObject):
         if full_specs:
             json_data = self._json
         else:
+            groups = self.groups.copy()
+            groups.pop("sonar-users", None)
             json_data = {
                 "login": self.login,
                 "name": self.name,
                 "scmAccounts": util.list_to_csv(self.scmAccounts, ", ", True),
                 "email": self.email,
-                "groups": util.list_to_csv(self.groups, ", ", True),
+                "groups": util.list_to_csv(groups, ", ", True),
             }
             if self.is_local:
                 json_data["local"] = True
