@@ -111,7 +111,7 @@ class Group(sq.SqObject):
 
 def search(endpoint, params=None):
     return sq.search_objects(
-        api="user_groups/search",
+        api=_SEARCH_API,
         params=params,
         key_field="name",
         returned_field="groups",
