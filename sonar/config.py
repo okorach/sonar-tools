@@ -134,6 +134,7 @@ def __import_config(endpoint, what, args):
     groups.import_config(endpoint, data)
     users.import_config(endpoint, data)
     qualitygates.import_config(endpoint, data)
+    qualityprofiles.import_config(endpoint, data)
     if "settings" in what:
         endpoint.import_config(data["globalSettings"])
     util.logger.info("Import finished")
