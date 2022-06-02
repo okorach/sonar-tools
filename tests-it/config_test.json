@@ -5815,9 +5815,7 @@
             "childrens": {
                "Unused QP": {
                   "permissions": {
-                     "users": [
-                        "simon.brandhof@sonarsource.com"
-                     ]
+                     "users": "simon.brandhof@sonarsource.com"
                   },
                   "rules": {
                      "common-cs:InsufficientLineCoverage": {
@@ -7565,9 +7563,7 @@
                   "childrens": {
                      "Corp Android Apps": {
                         "permissions": {
-                           "users": [
-                              "simon.brandhof@sonarsource.com"
-                           ]
+                           "users": "simon.brandhof@sonarsource.com"
                         },
                         "rules": {
                            "java:S1108": {
@@ -7648,12 +7644,8 @@
                },
                "Olivier way": {
                   "permissions": {
-                     "groups": [
-                        "Language Experts"
-                     ],
-                     "users": [
-                        "olivier-korach91357"
-                     ]
+                     "groups": "Language Experts",
+                     "users": "olivier-korach91357"
                   },
                   "rules": {
                      "java:S104": {
@@ -9201,15 +9193,15 @@
                "javasecurity:S6399": {
                   "severity": "MAJOR"
                }
-            }
+            },
+            "isBuiltIn": true,
+            "isDefault": true
          },
          "Trapeze way": {
             "childrens": {
                "Team Toronto way": {
                   "permissions": {
-                     "users": [
-                        "sylvain"
-                     ]
+                     "users": "sylvain"
                   },
                   "rules": {
                      "java:S2156": {
@@ -12369,7 +12361,9 @@
                "OWASP:UsingComponentWithKnownVulnerabilitySecurityHotspot": {
                   "severity": "MAJOR"
                }
-            }
+            },
+            "isBuiltIn": true,
+            "isDefault": true
          }
       },
       "objc": {
@@ -14671,9 +14665,7 @@
             "childrens": {
                "Python Olivier": {
                   "permissions": {
-                     "users": [
-                        "olivierk"
-                     ]
+                     "users": "olivierk"
                   },
                   "rules": {
                      "common-py:DuplicatedBlocks": {
