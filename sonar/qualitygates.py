@@ -70,7 +70,6 @@ class QualityGate(sq.SqObject):
         self.is_default = False
         if create_data is not None:
             self.post(_CREATE_API, params={"name": name})
-            data = search_by_name(endpoint, name)
             self.set_conditions(create_data.get("conditions", None))
             self.set_permissions(create_data.get("permissions", None))
             data = search_by_name(endpoint, name)
