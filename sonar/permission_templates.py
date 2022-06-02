@@ -200,8 +200,8 @@ def export(endpoint, full_specs=False):
     for pt in pt_list.values():
         json_data[pt.name] = pt.to_json(full_specs)
         if not full_specs:
-            json_data[pt.name].pop("name", None)
-            json_data[pt.name].pop("id", None)
+            for k in ("name", "id", "key"):
+                json_data[pt.name].pop(k, None)
     return json_data
 
 
