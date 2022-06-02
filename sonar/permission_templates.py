@@ -69,18 +69,46 @@ class PermissionTemplate(sqobject.SqObject):
     def is_portfolios_default(self):
         return self.is_default_for("VW")
 
-    def update(self, name=None, description=None, pattern=None):
-        params = {"id": self.key, "name": name, "description": description, "projectKeyPattern": pattern}
+    def set_permissions(self, perms):
+        if perms is None or len(perms) == 0:
+            return
+        utilities.logger.debug("Setting permissions %s for %s", str(perms), str(self))
+        params = {"templateName": self.name}
+        if "users" in perms:
+            for login, u_perms in perms["users"].items():
+                params["login"] = login
+                for p in utilities.csv_to_list(u_perms):
+                    if p in ("portfoliocreator", "applicationcreator"):
+                        continue
+                    params["permission"] = p
+                    self.post("permissions/add_user_to_template", params=params)
+            params.pop("login")
+        if "groups" in perms:
+            for gr, g_perms in perms["groups"].items():
+                params["groupName"] = gr
+                for p in utilities.csv_to_list(g_perms):
+                    if p in ("portfoliocreator", "applicationcreator"):
+                        continue
+                    params["permission"] = p
+                    self.post("permissions/add_group_to_template", params=params)
+        self._permissions = self.permissions()
+
+    def update(self, **pt_data):
+        name = pt_data.get("name", None)
+        desc = pt_data.get("description", None)
+        pattern = pt_data.get("pattern", None)
+        params = {"id": self.key, "name": name, "description": desc, "projectKeyPattern": pattern}
         utilities.logger.info("Updating %s, %s with %s", self.key, self.name, str(params))
         self.post(_UPDATE_API, params=params)
         if name is not None:
             _MAP.pop(_uuid(self.name, self.key), None)
             self.name = name
             _MAP[_uuid(self.name, self.key)] = self
-        if description is not None:
-            self.description = description
+        if desc is not None:
+            self.description = desc
         if pattern is not None:
             self.project_key_pattern = pattern
+        self.set_permissions(pt_data.get("permissions", None))
         return self
 
     def permissions(self):
@@ -142,22 +170,14 @@ def get_object(name, endpoint=None):
     return _PERMISSION_TEMPLATES[_uuid(name, _MAP[name])]
 
 
-def update(name, endpoint=None, new_name=None, new_desc=None, new_pattern=None):
-    utilities.logger.debug("Update permission template %s", name)
-    o = get_object(name=name, endpoint=endpoint)
-    if o is None:
-        return None
-    return o.update(name=new_name, description=new_desc, pattern=new_pattern)
-
-
-def create_or_update(name, endpoint, new_name=None, description=None, pattern=None):
+def create_or_update(name, endpoint, **kwargs):
     utilities.logger.debug("Create or update permission template %s", name)
     o = get_object(endpoint=endpoint, name=name)
     if o is None:
         utilities.logger.debug("Permission template %s does not exist, creating...", name)
-        return create(name, endpoint, description=description, pattern=pattern)
+        return create(name, endpoint, description=kwargs.get("description", None), pattern=kwargs.get("pattern", None))
     else:
-        return update(name, endpoint, new_name=new_name, new_desc=description, new_pattern=pattern)
+        return o.update(name=name, **kwargs)
 
 
 def create(name, endpoint=None, **kwargs):
@@ -213,7 +233,7 @@ def import_config(endpoint, config_data):
     get_list(endpoint)
     for name, data in config_data["permissionTemplates"].items():
         utilities.json_dump_debug(data, f"Importing: {name}:")
-        o = create_or_update(name, endpoint, description=data.get("description", None), pattern=data.get("pattern", None))
+        o = create_or_update(name, endpoint, **data)
         defs = data.get("defaultFor", None)
         if defs is not None and defs != "":
             o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
