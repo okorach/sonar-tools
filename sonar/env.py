@@ -203,7 +203,7 @@ class Environment:
                         webhooks.update(name=wh_name, endpoint=self, **wh)
                 else:
                     self.set_setting(config_setting, config_data[section][config_setting])
-        if 'languages' in config_data:
+        if "languages" in config_data:
             for data in config_data["languages"].values():
                 for s, v in data.items():
                     self.set_setting(s, v)

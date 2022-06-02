@@ -40,6 +40,7 @@ _DEACTIVATE_API = "users/deactivate"
 _ADD_GROUP_API = "user_groups/add_user"
 _UPDATE_LOGIN_API = "users/update_login"
 
+
 class User(sq.SqObject):
     def __init__(self, login, endpoint, data=None, create_data=None):
         super().__init__(login, endpoint)
@@ -301,6 +302,7 @@ def get_object(login, endpoint=None):
     if u not in _USERS:
         return None
     return _USERS[u]
+
 
 def _uuid(login):
     return login

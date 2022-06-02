@@ -361,6 +361,7 @@ def create_or_update(endpoint, name, **kwargs):
     else:
         return o.update(**kwargs)
 
+
 def import_config(endpoint, config_data):
     if "qualityGates" not in config_data:
         util.logger.info("No quality gates to import")
@@ -380,14 +381,18 @@ def _encode_conditions(conds):
         simple_conds.append(_encode_condition(c))
     return simple_conds
 
+
 def _encode_condition(c):
     return f"{c['metric']} {c['op']} {c['error']}"
+
 
 def _decode_condition(c):
     return c.strip().split(" ")
 
+
 def _uuid(name, id):
     return id
+
 
 def search_by_name(endpoint, name):
     return util.search_by_name(endpoint, name, _SEARCH_API, "qualitygates")

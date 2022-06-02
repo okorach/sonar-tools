@@ -29,6 +29,7 @@ _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
+
 class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint, name, data=None, create_data=None):
         super().__init__(name, endpoint)
@@ -99,7 +100,7 @@ class PermissionTemplate(sqobject.SqObject):
         params = {"templateId": self.key}
         utilities.logger.debug("Setting %s as default for %s", str(self), str(what_list))
         for d in what_list:
-            #utilities.logger.debug("Setting %s as default for %s", str(self), d)
+            # utilities.logger.debug("Setting %s as default for %s", str(self), d)
             params["qualifier"] = _QUALIFIER_REVERSE_MAP.get(d, d)
             self.post("permissions/set_default_template", params=params)
 
@@ -129,6 +130,7 @@ class PermissionTemplate(sqobject.SqObject):
             json_data["creationDate"] = utilities.date_to_string(self.creation_date)
             json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
         return json_data
+
 
 def get_object(name, endpoint=None):
     if len(_PERMISSION_TEMPLATES) == 0:
@@ -164,6 +166,7 @@ def create(name, endpoint=None, **kwargs):
     if o is None:
         o = PermissionTemplate(name=name, endpoint=endpoint, create_data=kwargs)
     return o
+
 
 def search(endpoint, params=None):
     utilities.logger.debug("Searching all permission templates")

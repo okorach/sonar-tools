@@ -34,6 +34,7 @@ _UPDATE_API = "user_groups/update"
 _GROUPS = {}
 _MAP = {}
 
+
 class Group(sq.SqObject):
     def __init__(self, name, endpoint=None, data=None, create_data=None):
         super().__init__(name, endpoint)
@@ -147,6 +148,7 @@ def audit(audit_settings, endpoint=None):
     for _, g in search(endpoint=endpoint).items():
         problems += g.audit(audit_settings)
     return problems
+
 
 def get_object(name, endpoint=None):
     if len(_GROUPS) == 0:
