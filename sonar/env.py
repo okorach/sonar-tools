@@ -119,19 +119,20 @@ class Environment:
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
-                _log_and_exit(r.status_code)
+                util.log_and_exit(r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
 
-    def post(self, api, params=None):
+    def post(self, api, params=None, exit_on_error=True):
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
             r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, data=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
-            _log_and_exit(r.status_code)
+            if exit_on_error:
+                util.log_and_exit(r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
@@ -143,7 +144,7 @@ class Environment:
             r = requests.delete(url=self.url + api, auth=self.credentials(), params=params, headers=_SONAR_TOOLS_AGENT)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
-            _log_and_exit(r.status_code)
+            util.log_and_exit(r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
 
@@ -414,21 +415,6 @@ def _normalize_api(api):
     else:
         api = "/api/" + api
     return api
-
-
-def _log_and_exit(code):
-    if code == 401:
-        util.exit_fatal(
-            f"HTTP error {code} - Authentication error. Is token valid ?",
-            options.ERR_SONAR_API_AUTHENTICATION,
-        )
-    if code == 403:
-        util.exit_fatal(
-            f"HTTP error {code} - Insufficient permissions to perform operation",
-            options.ERR_SONAR_API_AUTHORIZATION,
-        )
-    if (code // 100) != 2:
-        util.exit_fatal(f"HTTP error {code} - Exiting", options.ERR_SONAR_API)
 
 
 def post(api, params=None, ctxt=None):

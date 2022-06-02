@@ -45,8 +45,8 @@ class SqObject:
     def get(self, api, params=None, exit_on_error=True):
         return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error)
 
-    def post(self, api, params=None):
-        return self.endpoint.post(api, params)
+    def post(self, api, params=None, exit_on_error=True):
+        return self.endpoint.post(api=api, params=params, exit_on_error=exit_on_error)
 
     def delete(self, api, params=None):
         resp = self.endpoint.delete(api, params)

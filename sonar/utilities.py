@@ -440,3 +440,18 @@ def search_by_name(endpoint, name, api, returned_field, extra_params=None):
         if d["name"] == name:
             return d
     return None
+
+
+def log_and_exit(code):
+    if code == 401:
+        exit_fatal(
+            f"HTTP error {code} - Authentication error. Is token valid ?",
+            options.ERR_SONAR_API_AUTHENTICATION,
+        )
+    elif code == 403:
+        exit_fatal(
+            f"HTTP error {code} - Insufficient permissions to perform operation",
+            options.ERR_SONAR_API_AUTHORIZATION,
+        )
+    if (code // 100) != 2:
+        exit_fatal(f"HTTP error {code} - Exiting", options.ERR_SONAR_API)

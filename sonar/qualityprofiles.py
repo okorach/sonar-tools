@@ -39,6 +39,8 @@ _SEARCH_FIELD = "profiles"
 _QUALITY_PROFILES = {}
 _MAP = {}
 
+_KEY_PARENT = "parent"
+_CHILDREN_KEY = "children"
 
 class QualityProfile(sq.SqObject):
     def __init__(self, name, endpoint, language=None, data=None, create_data=None):
@@ -49,15 +51,13 @@ class QualityProfile(sq.SqObject):
         self._permissions = None
         self.is_built_in = None
         self.is_default = None
+        self.language_name = None
         if create_data is not None:
-            ruleset = create_data.pop("rules", None)
-            perms = create_data.pop("permissions", None)
-            parent_name = create_data.pop("parent", None)
             self.post(_CREATE_API, params={"name": self.name, "language": self.language})
             self.is_built_in = False
-            self.set_rules(ruleset)
-            self.set_permissions(perms)
-            self.set_parent(parent_name)
+            self.set_rules(create_data.pop("rules", None))
+            self.set_permissions(create_data.pop("permissions", None))
+            self.set_parent(create_data.pop(_KEY_PARENT, None))
             data = search_by_name(endpoint, name, language)
             self.key = data["key"]
         elif data is None:
@@ -67,6 +67,7 @@ class QualityProfile(sq.SqObject):
         util.logger.debug("DATA = %s", util.json_dump(data))
         self._json = data
         self.name = data["name"]
+        self.language_name = data["languageName"]
         if "lastUsed" in data:
             self.last_used = util.string_to_date(data["lastUsed"])
         else:
@@ -109,8 +110,16 @@ class QualityProfile(sq.SqObject):
         return abs(today - self.last_updated).days
 
     def set_parent(self, parent_name):
-        params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
-        self.post("qualityprofiles/change_parent", params=params)
+        if parent_name is None:
+            return
+        if get_object(parent_name, self.language) is None:
+            util.logger.warning("Can't set parent name '%s' to %s", str(parent_name), str(self))
+            return
+        if self.parent_name is None or self.parent_name != parent_name:
+            params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
+            self.post("qualityprofiles/change_parent", params=params)
+        else:
+            util.logger.info("Won't set parent of %s. It's the same as currently", str(self))
 
     def is_child(self):
         return self.parent_name is not None
@@ -153,24 +162,36 @@ class QualityProfile(sq.SqObject):
             return
         params = {"key": self.key}
         for r_key, r_data in ruleset.items():
-            params.update({"rule": r_key, "severity": r_data["severity"]})
+            params.update({"rule": r_key, "severity": r_data.get("severity", None)})
             params.pop("params", None)
             if "params" in r_data:
                 params["params"] = ";".join([f"{k}={v}" for k, v in r_data["params"].items()])
-            self.post("qualityprofiles/activate_rule", params=params)
+            r = self.post("qualityprofiles/activate_rule", params=params, exit_on_error=False)
+            if r.status_code == 404:
+                util.logger.error("Rule %s not found, can't activate it in %s", r_key, str(self))
+            elif r.status_code == 400:
+                util.logger.error("HTTP error 400 while trying to activate rule %s in %s", r_key, str(self))
+            elif r.status_code // 100 != 2:
+                util.log_and_exit(r.status_code)
 
     def update(self, **data):
-        if "name" in data and data["name"] != self.name:
-            util.logger.info("Renaming %s with %s", str(self), data["name"])
-            self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
-            _MAP.pop(_format(self.name, self.language), None)
-            self.name = data["name"]
-            _MAP[_format(self.name, self.language)] = self
-        self.set_rules(data.get("rules", []))
-        self.set_permissions(data.get("permissions", []))
-        self.parent_name = data.get("parent", None)
-        self.is_built_in = data.get("isBuiltIn", False)
-        self.is_default = data.get("isDefault", False)
+        util.logger.debug("Updating %s with %s", str(self), util.json_dump(data))
+        if self.is_built_in:
+            util.logger.info("Not updating built-in %s", str(self))
+        else:
+            if "name" in data and data["name"] != self.name:
+                util.logger.info("Renaming %s with %s", str(self), data["name"])
+                self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
+                _MAP.pop(_format(self.name, self.language), None)
+                self.name = data["name"]
+                _MAP[_format(self.name, self.language)] = self
+            self.set_rules(data.get("rules", []))
+            self.set_permissions(data.get("permissions", []))
+            self.set_parent(data.pop(_KEY_PARENT, None))
+            self.is_built_in = data.get("isBuiltIn", False)
+            self.is_default = data.get("isDefault", False)
+
+        _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}))
         return self
 
     def to_json(self, full_specs=False, include_rules=False):
@@ -262,7 +283,7 @@ class QualityProfile(sq.SqObject):
             return
         params = {"qualityProfile": self.name, "language": self.language}
         if "users" in perms:
-            for u in util.csv_to_list(perms["user"]):
+            for u in util.csv_to_list(perms["users"]):
                 params["login"] = u
                 self.post("qualityprofiles/add_user", params=params)
             params.pop("login")
@@ -351,13 +372,13 @@ def hierarchize(qp_list, strip_rules=True):
             if "parentName" not in qp_value:
                 continue
             util.logger.debug("QP name %s has parent %s", qp_name, qp_value["parentName"])
-            if "childrens" not in qp_list[lang][qp_value["parentName"]]:
-                qp_list[lang][qp_value["parentName"]]["childrens"] = {}
+            if _CHILDREN_KEY not in qp_list[lang][qp_value["parentName"]]:
+                qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY] = {}
             if strip_rules:
                 parent_qp = get_object(qp_value["parentName"], lang)
                 this_qp = get_object(qp_name, lang)
                 qp_value["rules"] = this_qp.diff(parent_qp)
-            qp_list[lang][qp_value["parentName"]]["childrens"][qp_name] = qp_value
+            qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY][qp_name] = qp_value
             qp_list[lang].pop(qp_name)
             qp_value.pop("parentName")
     return qp_list
@@ -414,13 +435,21 @@ def create(name, language, endpoint=None, **kwargs):
     return o
 
 
+def _create_or_update_children(name, language, endpoint, children):
+    for qp_name, qp_data in children.items():
+        qp_data[_KEY_PARENT] = name
+        util.logger.debug("Updating child '%s' with %s", qp_name, util.json_dump(qp_data))
+        create_or_update(endpoint, qp_name, language, **qp_data)
+
+
 def create_or_update(endpoint, name, language, **kwargs):
     o = get_object(endpoint=endpoint, name=name, language=language)
     if o is None:
         util.logger.debug("Quality profile '%s' does not exist, creating...", name)
-        return create(name=name, language=language, endpoint=endpoint, create_data=kwargs)
+        create(name=name, language=language, endpoint=endpoint, create_data=kwargs)
+        _create_or_update_children(name=name, language=language, endpoint=endpoint, children=kwargs.get(_CHILDREN_KEY, {}))
     else:
-        return o.update(**kwargs)
+        o.update(**kwargs)
 
 
 def import_config(endpoint, config_data):
@@ -431,10 +460,6 @@ def import_config(endpoint, config_data):
     get_list(endpoint=endpoint)
     for lang, lang_data in config_data["qualityProfiles"].items():
         for name, qp_data in lang_data.items():
-            o = get_object(name=name, language=lang, endpoint=endpoint)
-            if o is not None and o.is_built_in:
-                util.logger.info("%s is built-in, can't import it", str(o))
-                continue
             util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
             create_or_update(endpoint, name, lang, **qp_data)
 
