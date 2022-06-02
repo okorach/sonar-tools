@@ -70,8 +70,10 @@ def __parse_args(desc):
         help="to export configuration (exclusive of --import)",
     )
     parser.add_argument(
-        "-i", "--import",
-        required=False, default=False,
+        "-i",
+        "--import",
+        required=False,
+        default=False,
         action="store_true",
         help="to import configuration (exclusive of --export)",
     )

@@ -427,7 +427,7 @@ def open_file(file=None, mode="w"):
 
 
 def load_json_file(file):
-    with open(file, 'r', encoding='utf-8') as fd:
+    with open(file, "r", encoding="utf-8") as fd:
         return json.loads(fd.read())
 
 

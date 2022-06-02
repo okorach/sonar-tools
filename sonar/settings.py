@@ -71,7 +71,7 @@ _INLINE_SETTINGS = (
     r"^sonar\.dbcleaner\.branchesToKeepWhenInactive$",
     r"^sonar\.rpg\.suffixes$",
     r"^sonar\.cs\.roslyn\.(bug|codeSmell|vulnerability)Categories$",
-    r"^sonar\.governance\.report\.view\.recipients$"
+    r"^sonar\.governance\.report\.view\.recipients$",
 )
 
 _API_SET = "settings/set"
@@ -271,8 +271,7 @@ def string_to_new_code(value):
 
 
 def set_new_code(endpoint, nc_type, nc_value, project_key=None, branch=None):
-    return endpoint.post("new_code_periods/set",
-                         params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
+    return endpoint.post("new_code_periods/set", params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
 
 
 def set_setting(endpoint, key, value, project=None, branch=None):

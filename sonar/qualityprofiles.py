@@ -63,7 +63,7 @@ class QualityProfile(sq.SqObject):
         elif data is None:
             self.key = name_to_uuid(name, language)
             data = json.loads(self.get(_DETAILS_API, params={"key": self.key}).text)
-            
+
         util.logger.debug("DATA = %s", util.json_dump(data))
         self._json = data
         self.name = data["name"]
@@ -316,8 +316,7 @@ class QualityProfile(sq.SqObject):
 
 def search(endpoint, params=None):
     return sq.search_objects(
-        endpoint=endpoint, api=_SEARCH_API, params=params,
-        key_field="key", returned_field=_SEARCH_FIELD, object_class=QualityProfile
+        endpoint=endpoint, api=_SEARCH_API, params=params, key_field="key", returned_field=_SEARCH_FIELD, object_class=QualityProfile
     )
 
 
