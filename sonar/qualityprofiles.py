@@ -32,15 +32,39 @@ import sonar.utilities as util
 import sonar.audit.rules as arules
 import sonar.audit.problem as pb
 
+_CREATE_API = "qualityprofiles/create"
+_SEARCH_API = "qualityprofiles/search"
+_DETAILS_API = "qualityprofiles/show"
+_SEARCH_FIELD = "profiles"
 _QUALITY_PROFILES = {}
-_NAME_MAP = {}
+_MAP = {}
 
 
 class QualityProfile(sq.SqObject):
-    def __init__(self, key, endpoint, data=None):
-        super().__init__(key, endpoint)
-        if data is None:
-            data = json.loads(self.get("qualityprofiles/show", params={"key": key}).text)
+    def __init__(self, name, endpoint, language=None, data=None, create_data=None):
+        super().__init__(name, endpoint)
+        self.name = name
+        self.language = language
+        self._rules = None
+        self._permissions = None
+        self.is_built_in = None
+        self.is_default = None
+        if create_data is not None:
+            ruleset = create_data.pop("rules", None)
+            perms = create_data.pop("permissions", None)
+            parent_name = create_data.pop("parent", None)
+            self.post(_CREATE_API, params={"name": self.name, "language": self.language})
+            self.is_built_in = False
+            self.set_rules(ruleset)
+            self.set_permissions(perms)
+            self.set_parent(parent_name)
+            data = search_by_name(endpoint, name, language)
+            self.key = data["key"]
+        elif data is None:
+            self.key = name_to_uuid(name, language)
+            data = json.loads(self.get(_DETAILS_API, params={"key": self.key}).text)
+            
+        util.logger.debug("DATA = %s", util.json_dump(data))
         self._json = data
         self.name = data["name"]
         if "lastUsed" in data:
@@ -54,14 +78,13 @@ class QualityProfile(sq.SqObject):
         self.project_count = data.get("projectCount", None)
         self.is_built_in = data["isBuiltIn"]
         self.nbr_rules = int(data["activeRuleCount"])
-        self._rules = None
+        self._rules = self.rules()
         self._projects = None
-        self._permissions = None
+        self._permissions = self.permissions()
         self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])
-        self.parent_key = data.get("parentKey", None)
         self.parent_name = data.get("parentName", None)
-        _NAME_MAP[f"{self.language}:{self.name}"] = self.uuid()
-        _QUALITY_PROFILES[self.uuid()] = self
+        _MAP[_format(self.name, self.language)] = self.key
+        _QUALITY_PROFILES[self.key] = self
 
     def uuid(self):
         return _uuid(self.key)
@@ -85,8 +108,12 @@ class QualityProfile(sq.SqObject):
         today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         return abs(today - self.last_updated).days
 
+    def set_parent(self, parent_name):
+        params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
+        self.post("qualityprofiles/change_parent", params=params)
+
     def is_child(self):
-        return self.parent_key is not None
+        return self.parent_name is not None
 
     def inherits_from_built_in(self):
         return self.get_built_in_parent() is not None
@@ -94,10 +121,9 @@ class QualityProfile(sq.SqObject):
     def get_built_in_parent(self):
         if self.is_built_in:
             return self
-        parent = self.parent_name
-        if parent is None:
+        if self.parent_name is None:
             return None
-        parent_qp = search(self.endpoint, {"language": self.language, "qualityProfile": parent})[0]
+        parent_qp = get_object(self.endpoint, self.parent_name, self.language)
         return parent_qp.get_built_in_parent()
 
     def has_deprecated_rules(self):
@@ -122,6 +148,31 @@ class QualityProfile(sq.SqObject):
             page += 1
         return self._rules
 
+    def set_rules(self, ruleset):
+        if ruleset is None or len(ruleset) == 0:
+            return
+        params = {"key": self.key}
+        for r_key, r_data in ruleset.items():
+            params.update({"rule": r_key, "severity": r_data["severity"]})
+            params.pop("params", None)
+            if "params" in r_data:
+                params["params"] = ";".join([f"{k}={v}" for k, v in r_data["params"].items()])
+            self.post("qualityprofiles/activate_rule", params=params)
+
+    def update(self, **data):
+        if "name" in data and data["name"] != self.name:
+            util.logger.info("Renaming %s with %s", str(self), data["name"])
+            self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
+            _MAP.pop(_format(self.name, self.language), None)
+            self.name = data["name"]
+            _MAP[_format(self.name, self.language)] = self
+        self.set_rules(data.get("rules", []))
+        self.set_permissions(data.get("permissions", []))
+        self.parent_name = data.get("parent", None)
+        self.is_built_in = data.get("isBuiltIn", False)
+        self.is_default = data.get("isDefault", False)
+        return self
+
     def to_json(self, full_specs=False, include_rules=False):
         json_data = {"name": self.name, "language": self.language}
         if full_specs:
@@ -138,10 +189,7 @@ class QualityProfile(sq.SqObject):
                     "languageName": self.language_name,
                 }
             )
-        if self.parent_key is not None:
-            json_data["parentName"] = self.parent_name
-            if full_specs:
-                json_data["parentKey"] = self.parent_key
+        json_data["parentName"] = self.parent_name
         if include_rules:
             json_data["rules"] = self.rules(full_specs=full_specs)
 
@@ -200,7 +248,7 @@ class QualityProfile(sq.SqObject):
         return False
 
     def permissions(self):
-        if self.endpoint.version() < (9, 2, 0):
+        if self.endpoint.version() < (8, 9, 0):
             return None
         if self._permissions is not None:
             return self._permissions
@@ -208,6 +256,21 @@ class QualityProfile(sq.SqObject):
         self._permissions["users"] = permissions.get_qp(self.endpoint, self.name, self.language, "users", "login")
         self._permissions["groups"] = permissions.get_qp(self.endpoint, self.name, self.language, "groups", "name")
         return self._permissions
+
+    def set_permissions(self, perms):
+        if perms is None or len(perms) == 0:
+            return
+        params = {"qualityProfile": self.name, "language": self.language}
+        if "users" in perms:
+            for u in util.csv_to_list(perms["user"]):
+                params["login"] = u
+                self.post("qualityprofiles/add_user", params=params)
+            params.pop("login")
+        if "groups" in perms:
+            for g in util.csv_to_list(perms["groups"]):
+                params["group"] = g
+                self.post("qualityprofiles/add_group", params=params)
+        self._permissions = self.permissions()
 
     def audit(self, audit_settings=None):
         util.logger.debug("Auditing %s", str(self))
@@ -252,11 +315,20 @@ class QualityProfile(sq.SqObject):
 
 
 def search(endpoint, params=None):
-    data = json.loads(endpoint.get("qualityprofiles/search", params=params).text)
-    qp_list = []
-    for qp in data["profiles"]:
-        qp_list.append(QualityProfile(qp["key"], endpoint=endpoint, data=qp))
-    return qp_list
+    return sq.search_objects(
+        endpoint=endpoint, api=_SEARCH_API, params=params,
+        key_field="key", returned_field=_SEARCH_FIELD, object_class=QualityProfile
+    )
+
+
+def get_list(endpoint=None):
+    if endpoint is not None and len(_QUALITY_PROFILES) == 0:
+        search(endpoint=endpoint)
+    return _QUALITY_PROFILES
+
+
+def search_by_name(endpoint, name, language):
+    return util.search_by_name(endpoint, name, _SEARCH_API, _SEARCH_FIELD, extra_params={"language": language})
 
 
 def audit(endpoint=None, audit_settings=None):
@@ -283,19 +355,13 @@ def hierarchize(qp_list, strip_rules=True):
             if "childrens" not in qp_list[lang][qp_value["parentName"]]:
                 qp_list[lang][qp_value["parentName"]]["childrens"] = {}
             if strip_rules:
-                parent_qp = get_object(key=name_to_uuid(qp_value["parentName"], lang))
-                this_qp = get_object(key=name_to_uuid(qp_name, lang))
+                parent_qp = get_object(qp_value["parentName"], lang)
+                this_qp = get_object(qp_name, lang)
                 qp_value["rules"] = this_qp.diff(parent_qp)
             qp_list[lang][qp_value["parentName"]]["childrens"][qp_name] = qp_value
             qp_list[lang].pop(qp_name)
             qp_value.pop("parentName")
     return qp_list
-
-
-def get_list(endpoint=None):
-    if endpoint is not None and len(_QUALITY_PROFILES) == 0:
-        search(endpoint=endpoint)
-    return _QUALITY_PROFILES
 
 
 def export(endpoint, in_hierarchy=True):
@@ -314,12 +380,13 @@ def export(endpoint, in_hierarchy=True):
     return qp_list
 
 
-def get_object(key=None, name=None, lang=None, data=None, endpoint=None):
-    if key is None:
-        key = name_to_uuid(name, lang)
-    if key not in _QUALITY_PROFILES:
-        _ = QualityProfile(key=key, data=data, endpoint=endpoint)
-    return _QUALITY_PROFILES[key]
+def get_object(name, language, endpoint=None):
+    if len(_QUALITY_PROFILES) == 0:
+        get_list(endpoint)
+    fmt = _format(name, language)
+    if fmt not in _MAP:
+        return None
+    return _QUALITY_PROFILES[_MAP[fmt]]
 
 
 def _convert_rule(rule, qp_lang, full_specs=False):
@@ -340,12 +407,45 @@ def _convert_rule(rule, qp_lang, full_specs=False):
     return d
 
 
+def create(name, language, endpoint=None, **kwargs):
+    util.logger.info("Create quality profile '%s'", name)
+    o = get_object(name=name, language=language, endpoint=endpoint)
+    if o is None:
+        o = QualityProfile(name=name, language=language, endpoint=endpoint, create_data=kwargs)
+    return o
+
+
+def create_or_update(endpoint, name, language, **kwargs):
+    o = get_object(endpoint=endpoint, name=name, language=language)
+    if o is None:
+        util.logger.debug("Quality profile '%s' does not exist, creating...", name)
+        return create(name=name, language=language, endpoint=endpoint, create_data=kwargs)
+    else:
+        return o.update(**kwargs)
+
+
+def import_config(endpoint, config_data):
+    if "qualityProfiles" not in config_data:
+        util.logger.info("No quality profiles to import")
+        return
+    util.logger.info("Importing quality profiles")
+    get_list(endpoint=endpoint)
+    for lang, lang_data in config_data["qualityProfiles"].items():
+        for name, qp_data in lang_data.items():
+            o = get_object(name=name, language=lang, endpoint=endpoint)
+            if o is not None and o.is_built_in:
+                util.logger.info("%s is built-in, can't import it", str(o))
+                continue
+            util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
+            create_or_update(endpoint, name, lang, **qp_data)
+
+
 def _format(name, lang):
     return f"{lang}:{name}"
 
 
 def name_to_uuid(name, lang):
-    return _NAME_MAP.get(_format(name, lang), None)
+    return _MAP.get(_format(name, lang), None)
 
 
 def _uuid(key):

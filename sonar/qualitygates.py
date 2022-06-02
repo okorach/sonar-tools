@@ -242,9 +242,7 @@ class QualityGate(sq.SqObject):
             self.name = data["name"]
             _MAP[_uuid(self.name, self.key)] = self
         self.set_conditions(data.get("conditions", []))
-        self.conditions()
         self.set_permissions(data.get("permissions", []))
-        self.conditions()
         return self
 
     def __audit_conditions__(self):

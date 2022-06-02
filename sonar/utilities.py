@@ -431,8 +431,11 @@ def load_json_file(file):
         return json.loads(fd.read())
 
 
-def search_by_name(endpoint, name, api, returned_field):
-    data = json.loads(endpoint.get(api, params={"q": name}).text)
+def search_by_name(endpoint, name, api, returned_field, extra_params=None):
+    params = {"q": name}
+    if extra_params is not None:
+        params.update(extra_params)
+    data = json.loads(endpoint.get(api, params=params).text)
     for d in data[returned_field]:
         if d["name"] == name:
             return d
