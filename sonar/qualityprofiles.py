@@ -40,6 +40,7 @@ _QUALITY_PROFILES = {}
 _MAP = {}
 
 _KEY_PARENT = "parent"
+_CHILDREN_KEY = "children"
 
 class QualityProfile(sq.SqObject):
     def __init__(self, name, endpoint, language=None, data=None, create_data=None):
@@ -190,10 +191,7 @@ class QualityProfile(sq.SqObject):
             self.is_built_in = data.get("isBuiltIn", False)
             self.is_default = data.get("isDefault", False)
 
-        for qp_name, qp_data in  data.get("children", {}).items():
-            qp_data[_KEY_PARENT] = self.name
-            util.logger.debug("Updating child '%s' with %s", qp_name, util.json_dump(qp_data))
-            create_or_update(self.endpoint, qp_name, self.language, **qp_data)
+        _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}))
         return self
 
     def to_json(self, full_specs=False, include_rules=False):
@@ -374,13 +372,13 @@ def hierarchize(qp_list, strip_rules=True):
             if "parentName" not in qp_value:
                 continue
             util.logger.debug("QP name %s has parent %s", qp_name, qp_value["parentName"])
-            if "children" not in qp_list[lang][qp_value["parentName"]]:
-                qp_list[lang][qp_value["parentName"]]["children"] = {}
+            if _CHILDREN_KEY not in qp_list[lang][qp_value["parentName"]]:
+                qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY] = {}
             if strip_rules:
                 parent_qp = get_object(qp_value["parentName"], lang)
                 this_qp = get_object(qp_name, lang)
                 qp_value["rules"] = this_qp.diff(parent_qp)
-            qp_list[lang][qp_value["parentName"]]["children"][qp_name] = qp_value
+            qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY][qp_name] = qp_value
             qp_list[lang].pop(qp_name)
             qp_value.pop("parentName")
     return qp_list
@@ -437,14 +435,19 @@ def create(name, language, endpoint=None, **kwargs):
     return o
 
 
+def _create_or_update_children(name, language, endpoint, children):
+    for qp_name, qp_data in children.items():
+        qp_data[_KEY_PARENT] = name
+        util.logger.debug("Updating child '%s' with %s", qp_name, util.json_dump(qp_data))
+        create_or_update(endpoint, qp_name, language, **qp_data)
+
+
 def create_or_update(endpoint, name, language, **kwargs):
     o = get_object(endpoint=endpoint, name=name, language=language)
     if o is None:
         util.logger.debug("Quality profile '%s' does not exist, creating...", name)
         create(name=name, language=language, endpoint=endpoint, create_data=kwargs)
-        for qp_name, qp_data in  kwargs.get("children", {}).items():
-            qp_data[_KEY_PARENT] = name
-            create_or_update(endpoint, qp_name, language, **qp_data)
+        _create_or_update_children(name=name, language=language, endpoint=endpoint, children=kwargs.get(_CHILDREN_KEY, {}))
     else:
         o.update(**kwargs)
 
