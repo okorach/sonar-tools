@@ -3092,7 +3092,7 @@
    "qualityProfiles": {
       "abap": {
          "Sonar way": {
-            "childrens": {
+            "children": {
                "My way": {
                   "rules": {
                      "abap:S100": {
@@ -5812,7 +5812,7 @@
       },
       "cs": {
          "Sonar way": {
-            "childrens": {
+            "children": {
                "Unused QP": {
                   "permissions": {
                      "users": "simon.brandhof@sonarsource.com"
@@ -7042,7 +7042,7 @@
       },
       "java": {
          "Sonar way": {
-            "childrens": {
+            "children": {
                "All rules": {
                   "rules": {
                      "common-java:FailedUnitTests": {
@@ -7560,7 +7560,7 @@
                   }
                },
                "Corp way": {
-                  "childrens": {
+                  "children": {
                      "Corp Android Apps": {
                         "permissions": {
                            "users": "simon.brandhof@sonarsource.com"
@@ -9198,7 +9198,7 @@
             "isDefault": true
          },
          "Trapeze way": {
-            "childrens": {
+            "children": {
                "Team Toronto way": {
                   "permissions": {
                      "users": "sylvain"
@@ -13220,7 +13220,7 @@
             }
          },
          "Sonar way": {
-            "childrens": {
+            "children": {
                "PHP Olivier": {
                   "rules": {
                      "common-php:FailedUnitTests": {
@@ -14662,7 +14662,7 @@
       },
       "py": {
          "Sonar way": {
-            "childrens": {
+            "children": {
                "Python Olivier": {
                   "permissions": {
                      "users": "olivierk"
@@ -17612,7 +17612,7 @@
       },
       "xml": {
          "Sonar way": {
-            "childrens": {
+            "children": {
                "Olivier": {
                   "rules": {
                      "xml:Check_any_tag": {
