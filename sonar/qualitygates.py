@@ -42,69 +42,35 @@ _DETAILS_API = "qualitygates/show"
 NEW_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on new issues should be 0 or should be removed from QG conditions"
 
 GOOD_QG_CONDITIONS = {
-    "new_reliability_rating": (
-        1,
-        1,
-        "Any rating other than A would let bugs slip through in new code",
-    ),
-    "new_security_rating": (
-        1,
-        1,
-        "Any rating other than A would let vulnerabilities slip through in new code",
-    ),
-    "new_maintainability_rating": (
-        1,
-        1,
-        "Expectation is that code smells density on new code is low enough to get A rating",
-    ),
-    "new_coverage": (
-        20,
-        90,
-        "Coverage below 20% is a too low bar, above 90% is overkill",
-    ),
+    "new_reliability_rating": (1, 1, "Any rating other than A would let bugs slip through in new code"),
+    "new_security_rating": (1, 1, "Any rating other than A would let vulnerabilities slip through in new code"),
+    "new_maintainability_rating": (1, 1, "Expectation is that code smells density on new code is low enough to get A rating"),
+    "new_coverage": (20, 90, "Coverage below 20% is a too low bar, above 90% is overkill"),
     "new_bugs": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     "new_vulnerabilities": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     "new_security_hotspots": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     "new_blocker_violations": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     "new_critical_violations": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
     "new_major_violations": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_duplicated_lines_density": (
-        1,
-        5,
-        "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed",
-    ),
-    "new_security_hotspots_reviewed": (
-        100,
-        100,
-        "All hotspots on new code must be reviewed, any other condition than 100% make little sense",
-    ),
-    "reliability_rating": (
-        4,
-        4,
-        "Threshold on overall code should not be too strict or passing the QG will be often impossible",
-    ),
-    "security_rating": (
-        4,
-        4,
-        "Threshold on overall code should not be too strict or passing the QG will be often impossible",
-    ),
+    "new_duplicated_lines_density": (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"),
+    "new_security_hotspots_reviewed": (100, 100, "All hotspots on new code must be reviewed, any other condition than 100% make little sense"),
+    "reliability_rating": (4, 4, "Threshold on overall code should not be too strict or passing the QG will be often impossible"),
+    "security_rating": (4, 4, "Threshold on overall code should not be too strict or passing the QG will be often impossible"),
 }
 
 
 class QualityGate(sq.SqObject):
     def __init__(self, name, endpoint, data=None, create_data=None):
         super().__init__(name, endpoint)
-        self.name = None
+        self.name = name
         self.is_built_in = False
         self._conditions = None
         self._permissions = None
         self._projects = None
         self.is_default = False
         if create_data is not None:
-            params = create_data.copy()
-            params["name"] = name
-            params.pop("conditions", None)
-            self.post(_CREATE_API, params=params)
+            self.post(_CREATE_API, params={"name": name})
+            data = search_by_name(endpoint, name)
             self.set_conditions(create_data.get("conditions", None))
             self.set_permissions(create_data.get("permissions", None))
             data = search_by_name(endpoint, name)
@@ -154,7 +120,7 @@ class QualityGate(sq.SqObject):
     def conditions(self, encoded=False):
         if self._conditions is None:
             self._conditions = []
-            data = json.loads(self.get(_DETAILS_API, params={"id": self.key}).text)
+            data = json.loads(self.get(_DETAILS_API, params={"name": self.name}).text)
             for c in data.get("conditions", []):
                 self._conditions.append(c)
         if encoded:
