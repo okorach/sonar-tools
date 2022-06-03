@@ -276,7 +276,8 @@ def set_new_code(endpoint, nc_type, nc_value, project_key=None, branch=None):
 
 def set_setting(endpoint, key, value, project=None, branch=None):
     if value is None or value == "":
-        return endpoint.reset_setting(key)
+        # return endpoint.reset_setting(key)
+        return None
 
     value = decode(key, value)
     util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
@@ -325,3 +326,9 @@ def decode(setting_key, setting_value):
             setting_value = util.csv_to_list(setting_value)
             break
     return setting_value
+
+
+def reset_setting(endpoint, setting_key, project_key=None):
+    util.logger.info("Resetting setting '%s", setting_key)
+    params={"key": setting_key, "component": project_key}
+    endpoint.post("settings/reset", params=params)
