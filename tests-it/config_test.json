@@ -1080,19 +1080,19 @@
       "BANK-RETAIL-401K": {
          "links": [
             {
-               "type": "homepage",
+               "name": "homepage",
                "url": "http://redirect.sonarsource.com/plugins/ldap.html"
             },
             {
-               "type": "ci",
+               "name": "ci",
                "url": "https://travis-ci.org/SonarSource/sonar-ldap"
             },
             {
-               "type": "issue",
+               "name": "issue",
                "url": "http://jira.sonarsource.com/browse/LDAP"
             },
             {
-               "type": "scm",
+               "name": "scm",
                "url": "https://github.com/SonarSource/sonar-ldap"
             }
          ],
@@ -1167,19 +1167,19 @@
       "WEBSITE-TIER2-BIZLOGIC": {
          "links": [
             {
-               "type": "homepage",
+               "name": "homepage",
                "url": "http://redirect.sonarsource.com/plugins/ldap.html"
             },
             {
-               "type": "ci",
+               "name": "ci",
                "url": "https://travis-ci.org/SonarSource/sonar-ldap"
             },
             {
-               "type": "issue",
+               "name": "issue",
                "url": "http://jira.sonarsource.com/browse/LDAP"
             },
             {
-               "type": "scm",
+               "name": "scm",
                "url": "https://github.com/SonarSource/sonar-ldap"
             }
          ],
@@ -2445,7 +2445,7 @@
       "demo:sca-log4shell-detect-maven": {
          "links": [
             {
-               "type": "homepage",
+               "name": "homepage",
                "url": "http://www.example.com"
             }
          ],
@@ -2468,15 +2468,15 @@
          },
          "links": [
             {
-               "type": "homepage",
+               "name": "homepage",
                "url": "http://redirect.sonarsource.com/plugins/java.html"
             },
             {
-               "type": "ci",
+               "name": "ci",
                "url": "https://travis-ci.org/SonarSource/sonar-java"
             },
             {
-               "type": "issue",
+               "name": "issue",
                "url": "https://jira.sonarsource.com/browse/SONARJAVA"
             },
             {
@@ -2684,7 +2684,7 @@
       "org.owasp:benchmark": {
          "links": [
             {
-               "type": "homepage",
+               "name": "homepage",
                "url": "https://www.owasp.org/index.php/Benchmark"
             }
          ],
@@ -2963,7 +2963,7 @@
       "training:security": {
          "links": [
             {
-               "type": "homepage",
+               "name": "homepage",
                "url": "http://maven.apache.org"
             }
          ],
@@ -3017,9 +3017,9 @@
                "sonar-users": "user"
             },
             "users": {
-               "Administrator": "admin",
-               "Olivier Korach": "admin",
-               "Sylvain Combe": "admin",
+               "admin": "admin",
+               "olivier-korach91357": "admin",
+               "sylvain": "admin",
                "cameron": "admin",
                "jack": "issueadmin, securityhotspotadmin, user",
                "joe": "admin, user",

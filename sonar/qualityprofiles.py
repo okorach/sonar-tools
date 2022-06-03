@@ -42,6 +42,7 @@ _MAP = {}
 _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
 
+
 class QualityProfile(sq.SqObject):
     def __init__(self, name, endpoint, language=None, data=None, create_data=None):
         super().__init__(name, endpoint)

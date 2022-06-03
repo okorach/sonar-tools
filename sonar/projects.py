@@ -26,9 +26,9 @@ import datetime
 import re
 import json
 import pytz
-from sonar import env, components, qualityprofiles, tasks, custom_measures, pull_requests, branches, measures, options, settings, webhooks
+from sonar import sqobject, env, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks
+from sonar import pull_requests, branches, measures, custom_measures
 from sonar.findings import issues, hotspots
-import sonar.sqobject as sq
 import sonar.utilities as util
 import sonar.permissions as perms
 
@@ -38,7 +38,8 @@ import sonar.audit.problem as pb
 _PROJECTS = {}
 
 MAX_PAGE_SIZE = 500
-PROJECT_SEARCH_API = "projects/search"
+_SEARCH_API = "projects/search"
+_CREATE_API = "projects/create"
 PRJ_QUALIFIER = "TRK"
 APP_QUALIFIER = "APP"
 
@@ -46,7 +47,7 @@ _BIND_SEP = ":::"
 
 
 class Project(components.Component):
-    def __init__(self, key, endpoint=None, data=None):
+    def __init__(self, key, endpoint=None, data=None, create_data=None):
         self.visibility = None
         self.main_branch_last_analysis_date = "undefined"
         self.all_branches_last_analysis_date = "undefined"
@@ -57,17 +58,25 @@ class Project(components.Component):
         self._ncloc_with_branches = None
         self._binding = {"has_binding": True, "binding": None}
         super().__init__(key, endpoint)
-        self.__load__(data)
+        if create_data is not None:
+            util.logger.info("Creating %s", str(self))
+            util.logger.debug("from %s", util.json_dump(create_data))
+            self.post(
+                _CREATE_API, params={"project": self.key, "name": create_data.get("name", None), "visibility": create_data.get("visibility", None)}
+            )
+            self.__load()
+        else:
+            self.__load(data)
         _PROJECTS[key] = self
-        util.logger.debug("Created object %s", str(self))
+        util.logger.debug("Created %s", str(self))
 
     def __str__(self):
         return f"project '{self.key}'"
 
-    def __load__(self, data=None):
+    def __load(self, data=None):
         """Loads a project object with contents of an api/projects/search call"""
         if data is None:
-            data = json.loads(self.get(PROJECT_SEARCH_API, params={"projects": self.key}).text)
+            data = json.loads(self.get(_SEARCH_API, params={"projects": self.key}).text)
             if not data["components"]:
                 raise env.NonExistingObjectError(self.key, "Project key does not exist")
             data = data["components"][0]
@@ -85,19 +94,16 @@ class Project(components.Component):
     def url(self):
         return f"{self.endpoint.url}/dashboard?id={self.key}"
 
-    def get_name(self):
-        if self.name is None:
-            self.__load__()
-        return self.name
-
-    def get_visibility(self):
-        if self.visibility is None:
-            self.__load__()
-        return self.visibility
+    def set_visibility(self, visibility):
+        if visibility not in ("public", "private"):
+            util.logger.warning("Can't set %s visibility to illegal value '%s'", str(self), visibility)
+            return
+        self.post("projects/update_visibility", params={"project": self.key, "visibility": visibility})
+        self.visibility = visibility
 
     def last_analysis_date(self, include_branches=False):
         if self.main_branch_last_analysis_date == "undefined":
-            self.__load__()
+            self.__load()
         if not include_branches:
             return self.main_branch_last_analysis_date
         if self.all_branches_last_analysis_date != "undefined":
@@ -637,7 +643,7 @@ Is this normal ?",
         for link in data["links"]:
             if link_list is None:
                 link_list = []
-            link_list.append({"type": link["type"], "url": link["url"]})
+            link_list.append({"type": link["type"], "name": link["name"], "url": link["url"]})
         return link_list
 
     def __settings_add_new_code(self, json_data):
@@ -672,7 +678,7 @@ Is this normal ?",
     def __settings_add_permissions(self, json_data):
         json_data["permissions"] = {}
         for ptype in ("users", "groups"):
-            permiss = perms.simplify(perms.get(self.endpoint, ptype, projectKey=self.key))
+            permiss = perms.simplify(perms.get(self.endpoint, ptype, projectKey=self.key), ptype)
             if len(permiss) > 0:
                 json_data["permissions"][ptype] = permiss
 
@@ -723,13 +729,56 @@ Is this normal ?",
             nc[b["branchKey"]] = new_code
         return nc
 
+    def set_permissions(self, data):
+        perms.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
+
+    def set_links(self, data):
+        params = {"projectKey": self.key}
+        for link in data.get("links", {}):
+            if "type" in link and link["type"] != "custom":
+                continue
+            params.update(link)
+            self.post("project_links/create", params=params)
+
+    def set_quality_gate(self, quality_gate):
+        if quality_gate is None:
+            return
+        if qualitygates.get_object(quality_gate) is None:
+            util.logger.warning("Can't set non existing quality gate '%s' to %s", quality_gate, str(self))
+        self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
+
+    def set_settings(self, data):
+        for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
+            if section not in data:
+                continue
+            for config_setting in data[section]:
+                if config_setting == "webhooks":
+                    for wh_name, wh in data[section][config_setting].items():
+                        webhooks.update(name=wh_name, endpoint=self.endpoint, **wh)
+                else:
+                    settings.set_setting(endpoint=self.endpoint, key=config_setting, value=data[section][config_setting], project=self.key)
+
+        if "languages" in data:
+            for lang_data in data["languages"].values():
+                for s, v in lang_data.items():
+                    settings.set_setting(endpoint=self.endpoint, key=s, value=v, project=self.key)
+
+        if settings.NEW_CODE_PERIOD in data["generalSettings"]:
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, data["generalSettings"][settings.NEW_CODE_PERIOD])
+            settings.set_new_code(self.endpoint, nc_type, nc_val, project_key=self.key)
+
+    def update(self, data):
+        self.set_permissions(data)
+        self.set_links(data)
+        self.set_quality_gate(data.get("qualityGate", None))
+
 
 def count(endpoint, params=None):
     if params is None:
         params = {}
     params["ps"] = 1
     params["p"] = 1
-    resp = endpoint.get(PROJECT_SEARCH_API, params=params)
+    resp = endpoint.get(_SEARCH_API, params=params)
     data = json.loads(resp.text)
     return data["paging"]["total"]
 
@@ -737,7 +786,7 @@ def count(endpoint, params=None):
 def search(endpoint, params=None):
     new_params = {} if params is None else params.copy()
     new_params["qualifiers"] = "TRK"
-    return sq.search_objects(
+    return sqobject.search_objects(
         api="projects/search",
         params=new_params,
         key_field="key",
@@ -774,22 +823,17 @@ def get_projects_list(str_key_list, endpoint):
 
 def key_obj(key_or_obj):
     if isinstance(key_or_obj, str):
-        return (key_or_obj, get_object(key_or_obj))
+        return (key_or_obj, _PROJECTS.get(key_or_obj, None))
     else:
         return (key_or_obj.key, key_or_obj)
 
 
-def get_object(key, data=None, endpoint=None):
+def get_object(key, endpoint):
     if key not in _PROJECTS:
-        _ = Project(key=key, data=data, endpoint=endpoint)
+        get_projects_list(str_key_list=None, endpoint=endpoint)
+    if key not in _PROJECTS:
+        return None
     return _PROJECTS[key]
-
-
-def create(key, endpoint, name=None, visibility="private"):
-    if name is None:
-        name = key
-    resp = endpoint.post("projects/create", params={"project": key, "name": name, "visibility": visibility})
-    return resp.status_code
 
 
 def audit(audit_settings, endpoint=None):
@@ -859,3 +903,38 @@ def loc_csv_header(**kwargs):
     if kwargs[options.WITH_URL]:
         arr.append("URL")
     return arr
+
+
+def create2(key, endpoint, name=None, visibility="private"):
+    if name is None:
+        name = key
+    resp = endpoint.post("projects/create", params={"project": key, "name": name, "visibility": visibility})
+    return resp.status_code
+
+
+def create(key, endpoint=None, data=None):
+    o = get_object(key=key, endpoint=endpoint)
+    if o is None:
+        o = Project(key=key, endpoint=endpoint, create_data=data)
+    else:
+        util.logger.info("%s already exist, creation skipped", str(o))
+    return o
+
+
+def create_or_update(endpoint, key, data):
+    o = get_object(key=key, endpoint=endpoint)
+    if o is None:
+        util.logger.debug("Project key '%s' does not exist, creating...", key)
+        o = create(key=key, endpoint=endpoint, data=data)
+    o.update(data)
+
+
+def import_config(endpoint, config_data):
+    if "projects" not in config_data:
+        util.logger.info("No projects to import")
+        return
+    util.logger.info("Importing projects")
+    get_projects_list(str_key_list=None, endpoint=endpoint)
+    for name, data in config_data["projects"].items():
+        util.logger.info("Importing project key '%s'", name)
+        create_or_update(endpoint, name, data)

@@ -108,7 +108,7 @@ class PermissionTemplate(sqobject.SqObject):
             self._permissions = {}
             for t in ("users", "groups"):
                 self._permissions[t] = permissions.simplify(
-                    permissions.get(endpoint=self.endpoint, perm_type=f"template_{t}", templateId=self.key)
+                    permissions.get(endpoint=self.endpoint, perm_type=f"template_{t}", templateId=self.key), t
                 )
         return self._permissions
 
