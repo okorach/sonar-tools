@@ -40,9 +40,9 @@ class Component(sq.SqObject):
         self._description = None
         self._last_analysis = None
         if data is not None:
-            self.__load__(data)
+            self.__load(data)
 
-    def __load__(self, data):
+    def __load(self, data):
         self.name = data.get("name", None)
         self.qualifier = data.get("qualifier", None)
         self.path = data.get("path", None)
