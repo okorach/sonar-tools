@@ -139,6 +139,7 @@ def __import_config(endpoint, what, args):
     qualityprofiles.import_config(endpoint, data)
     if "settings" in what:
         endpoint.import_config(data["globalSettings"])
+    projects.import_config(endpoint, data)
     util.logger.info("Import finished")
 
 
