@@ -97,6 +97,7 @@ def counts(some_perms, perms_dict):
 def simplify(perms_array):
     permiss = {}
     for p in perms_array:
+        p["permissions"].sort()
         permiss[p["name"]] = utilities.list_to_csv(p["permissions"], ", ")
     return permiss
 
