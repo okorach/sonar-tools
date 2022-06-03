@@ -162,13 +162,8 @@ def set_permissions(endpoint, permissions, project_key=None, template=None):
                 for p in utilities.csv_to_list(perms):
                     if template is not None and p in ("portfoliocreator", "applicationcreator"):
                         continue
-                    endpoint.post(apis[perm_type],
-                        params={
-                            field[perm_type]: elem,
-                            "permission": p,
-                            "projectKey": project_key,
-                            "templateName": template
-                        }
+                    endpoint.post(
+                        apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template}
                     )
 
 

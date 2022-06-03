@@ -61,12 +61,8 @@ class Project(components.Component):
         if create_data is not None:
             util.logger.info("Creating %s", str(self))
             util.logger.debug("from %s", util.json_dump(create_data))
-            self.post(_CREATE_API,
-                params={
-                    "project": self.key,
-                    "name": create_data.get("name", None),
-                    "visibility": create_data.get("visibility", None)
-                }
+            self.post(
+                _CREATE_API, params={"project": self.key, "name": create_data.get("name", None), "visibility": create_data.get("visibility", None)}
             )
             self.__load()
         else:
@@ -760,12 +756,7 @@ Is this normal ?",
                     for wh_name, wh in data[section][config_setting].items():
                         webhooks.update(name=wh_name, endpoint=self.endpoint, **wh)
                 else:
-                    settings.set_setting(
-                        endpoint=self.endpoint,
-                        key=config_setting,
-                        value=data[section][config_setting],
-                        project=self.key
-                    )
+                    settings.set_setting(endpoint=self.endpoint, key=config_setting, value=data[section][config_setting], project=self.key)
 
         if "languages" in data:
             for lang_data in data["languages"].values():
@@ -780,6 +771,7 @@ Is this normal ?",
         self.set_permissions(data)
         self.set_links(data)
         self.set_quality_gate(data.get("qualityGate", None))
+
 
 def count(endpoint, params=None):
     if params is None:
@@ -918,6 +910,7 @@ def create2(key, endpoint, name=None, visibility="private"):
         name = key
     resp = endpoint.post("projects/create", params={"project": key, "name": name, "visibility": visibility})
     return resp.status_code
+
 
 def create(key, endpoint=None, data=None):
     o = get_object(key=key, endpoint=endpoint)
