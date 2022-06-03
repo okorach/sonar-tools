@@ -737,7 +737,7 @@ Is this normal ?",
         perms.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
 
     def set_links(self, data):
-        params={"projectKey": self.key}
+        params = {"projectKey": self.key}
         for link in data.get("links", {}):
             if "type" in link and link["type"] != "custom":
                 continue
@@ -768,14 +768,13 @@ Is this normal ?",
                     )
 
         if "languages" in data:
-            for data in data["languages"].values():
-                for s, v in data.items():
+            for lang_data in data["languages"].values():
+                for s, v in lang_data.items():
                     settings.set_setting(endpoint=self.endpoint, key=s, value=v, project=self.key)
 
         if settings.NEW_CODE_PERIOD in data["generalSettings"]:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, data["generalSettings"][settings.NEW_CODE_PERIOD])
             settings.set_new_code(self.endpoint, nc_type, nc_val, project_key=self.key)
-
 
     def update(self, data):
         self.set_permissions(data)
