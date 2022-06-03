@@ -45,26 +45,31 @@ _CHILDREN_KEY = "children"
 class QualityProfile(sq.SqObject):
     def __init__(self, name, endpoint, language=None, data=None, create_data=None):
         super().__init__(name, endpoint)
-        self.name = name
-        self.language = language
+        self.name = data["name"] if data is not None else name
+        self.language = data["name"] if data is not None else language
         self._rules = None
         self._permissions = None
         self.is_built_in = None
         self.is_default = None
         self.language_name = None
+        self.parent_name = None
         if create_data is not None:
+            util.logger.info("Creating %s", str(self))
+            util.logger.debug("from %s", util.json_dump(create_data))
             self.post(_CREATE_API, params={"name": self.name, "language": self.language})
             self.is_built_in = False
-            self.set_rules(create_data.pop("rules", None))
             self.set_permissions(create_data.pop("permissions", None))
             self.set_parent(create_data.pop(_KEY_PARENT, None))
             data = search_by_name(endpoint, name, language)
             self.key = data["key"]
+            self.set_rules(create_data.pop("rules", None))
         elif data is None:
+            util.logger.info("Creating %s", str(self))
             self.key = name_to_uuid(name, language)
             data = json.loads(self.get(_DETAILS_API, params={"key": self.key}).text)
-
-        util.logger.debug("DATA = %s", util.json_dump(data))
+            util.logger.debug("from sonar details data %s", util.json_dump(data))
+        else:
+            util.logger.debug("from sonar list data %s", util.json_dump(data))
         self._json = data
         self.name = data["name"]
         self.language_name = data["languageName"]
@@ -91,7 +96,7 @@ class QualityProfile(sq.SqObject):
         return _uuid(self.key)
 
     def __str__(self):
-        return f"quality profile '{self.name}' of language '{self.language_name}'"
+        return f"quality profile '{self.name}' of language '{self.language}'"
 
     def last_use(self, as_days=False):
         if self.last_used is None:
@@ -174,7 +179,7 @@ class QualityProfile(sq.SqObject):
             elif r.status_code // 100 != 2:
                 util.log_and_exit(r.status_code)
 
-    def update(self, **data):
+    def update(self, data):
         util.logger.debug("Updating %s with %s", str(self), util.json_dump(data))
         if self.is_built_in:
             util.logger.info("Not updating built-in %s", str(self))
@@ -427,11 +432,12 @@ def _convert_rule(rule, qp_lang, full_specs=False):
     return d
 
 
-def create(name, language, endpoint=None, **kwargs):
-    util.logger.info("Create quality profile '%s'", name)
+def create(name, language, endpoint=None, create_data=None):
     o = get_object(name=name, language=language, endpoint=endpoint)
     if o is None:
-        o = QualityProfile(name=name, language=language, endpoint=endpoint, create_data=kwargs)
+        o = QualityProfile(name=name, language=language, endpoint=endpoint, create_data=create_data)
+    else:
+        util.logger.info("%s already exist, creation skipped", str(o))
     return o
 
 
@@ -439,17 +445,17 @@ def _create_or_update_children(name, language, endpoint, children):
     for qp_name, qp_data in children.items():
         qp_data[_KEY_PARENT] = name
         util.logger.debug("Updating child '%s' with %s", qp_name, util.json_dump(qp_data))
-        create_or_update(endpoint, qp_name, language, **qp_data)
+        create_or_update(endpoint, qp_name, language, qp_data)
 
 
-def create_or_update(endpoint, name, language, **kwargs):
+def create_or_update(endpoint, name, language, qp_data):
     o = get_object(endpoint=endpoint, name=name, language=language)
     if o is None:
         util.logger.debug("Quality profile '%s' does not exist, creating...", name)
-        create(name=name, language=language, endpoint=endpoint, create_data=kwargs)
-        _create_or_update_children(name=name, language=language, endpoint=endpoint, children=kwargs.get(_CHILDREN_KEY, {}))
+        create(name=name, language=language, endpoint=endpoint, create_data=qp_data)
+        _create_or_update_children(name=name, language=language, endpoint=endpoint, children=qp_data.get(_CHILDREN_KEY, {}))
     else:
-        o.update(**kwargs)
+        o.update(qp_data)
 
 
 def import_config(endpoint, config_data):
@@ -461,7 +467,7 @@ def import_config(endpoint, config_data):
     for lang, lang_data in config_data["qualityProfiles"].items():
         for name, qp_data in lang_data.items():
             util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
-            create_or_update(endpoint, name, lang, **qp_data)
+            create_or_update(endpoint, name, lang, qp_data)
 
 
 def _format(name, lang):
