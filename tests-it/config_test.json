@@ -24,7 +24,7 @@
          "name": "App with branches - TEST",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -57,7 +57,7 @@
          "name": "Azure DevOps monorepo",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -90,7 +90,7 @@
          "name": "Bitbucket Cloud monorepo",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -123,7 +123,7 @@
          "name": "Bitbucket Server LATEST monorepo",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -156,7 +156,7 @@
          "name": "Bitbucket Server LTS monorepo",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -232,7 +232,7 @@
          "name": "Corporate Web Site",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -266,7 +266,7 @@
          "name": "GitHub monorepo",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -299,7 +299,7 @@
          "name": "GitLab-CI monorepo",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -649,7 +649,7 @@
                "groups": {
                   "CI Tools": "scan",
                   "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-                  "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+                  "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                   "Team Developers": "codeviewer, user",
                   "Team Project Admins": "admin, codeviewer, user",
                   "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -683,7 +683,7 @@
             "pattern": "",
             "permissions": {
                "groups": {
-                  "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+                  "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                   "sonar-users": "codeviewer, user"
                }
             }
@@ -705,7 +705,7 @@
             "pattern": "training:.*",
             "permissions": {
                "groups": {
-                  "Sonar Administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user"
+                  "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user"
                }
             }
          }
@@ -714,7 +714,7 @@
          "groups": {
             "CI Tools": "provisioning, scan",
             "Language Experts": "profileadmin",
-            "Sonar Administrators": "admin, applicationcreator, gateadmin, portfoliocreator, profileadmin, provisioning, scan",
+            "sonar-administrators": "admin, applicationcreator, gateadmin, portfoliocreator, profileadmin, provisioning, scan",
             "sonar-users": "applicationcreator, portfoliocreator"
          }
       },
@@ -749,7 +749,7 @@
       },
       "Language Experts": {},
       "Security Auditors": {},
-      "Sonar Administrators": {
+      "sonar-administrators": {
          "description": "System administrators"
       },
       "Team 2 Developers": {
@@ -782,7 +782,7 @@
          "name": "All projects",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -794,7 +794,7 @@
          "name": "Bitbucket Cloud projects",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -806,7 +806,7 @@
          "name": "Bitbucket Server LATEST projects",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -818,7 +818,7 @@
          "name": "GitHub projects",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -830,7 +830,7 @@
          "name": "GitLab projects",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -842,7 +842,7 @@
          "name": "Whole Bank and Insurance",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -871,7 +871,7 @@
          "name": "Corporate banking projects",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -884,7 +884,7 @@
          "name": "Banking division",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -916,7 +916,7 @@
          "name": "Insurance division",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -929,7 +929,7 @@
          "name": "Private banking projects",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -942,7 +942,7 @@
          "name": "Retail banking projects",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -960,7 +960,7 @@
          "name": "Top Level",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "NONE",
@@ -1005,7 +1005,7 @@
          "name": "Empty portfolio",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "NONE",
@@ -1019,7 +1019,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1033,7 +1033,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1047,7 +1047,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1061,7 +1061,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1072,7 +1072,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1101,7 +1101,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1112,7 +1112,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1123,7 +1123,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1134,7 +1134,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1145,7 +1145,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1156,7 +1156,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1188,7 +1188,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1202,7 +1202,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1217,7 +1217,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1231,7 +1231,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1250,7 +1250,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1264,7 +1264,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1283,7 +1283,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1302,7 +1302,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1316,7 +1316,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1336,7 +1336,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1369,7 +1369,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1390,7 +1390,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1410,7 +1410,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1431,7 +1431,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1451,7 +1451,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1471,7 +1471,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1491,7 +1491,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1510,7 +1510,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1529,7 +1529,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1548,7 +1548,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1566,7 +1566,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1584,7 +1584,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1603,7 +1603,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1622,7 +1622,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1642,7 +1642,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1662,7 +1662,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1683,7 +1683,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1703,7 +1703,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1723,7 +1723,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1743,7 +1743,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1763,7 +1763,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1784,7 +1784,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1805,7 +1805,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1826,7 +1826,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1841,7 +1841,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1866,7 +1866,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1882,7 +1882,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -1905,7 +1905,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1921,7 +1921,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -1943,7 +1943,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
@@ -1964,7 +1964,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
@@ -1982,7 +1982,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
@@ -2000,7 +2000,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
@@ -2020,7 +2020,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2036,7 +2036,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2052,7 +2052,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2068,7 +2068,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2085,7 +2085,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2102,7 +2102,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2119,7 +2119,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2136,7 +2136,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2151,7 +2151,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2166,7 +2166,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2184,7 +2184,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2203,7 +2203,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2219,7 +2219,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2242,7 +2242,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2258,7 +2258,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2274,7 +2274,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2289,7 +2289,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2304,7 +2304,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2319,7 +2319,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2334,7 +2334,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2350,7 +2350,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2366,7 +2366,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2382,7 +2382,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2398,7 +2398,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2409,7 +2409,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2423,7 +2423,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2437,7 +2437,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2454,7 +2454,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2497,7 +2497,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2514,7 +2514,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2536,7 +2536,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2558,7 +2558,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2577,7 +2577,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2592,7 +2592,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
@@ -2604,7 +2604,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2615,7 +2615,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2632,7 +2632,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2650,7 +2650,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2664,7 +2664,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
@@ -2676,7 +2676,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2693,7 +2693,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
@@ -2705,7 +2705,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2716,7 +2716,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2730,7 +2730,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2744,7 +2744,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2755,7 +2755,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2766,7 +2766,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2777,7 +2777,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2788,7 +2788,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2799,7 +2799,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2810,7 +2810,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2821,7 +2821,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2844,7 +2844,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
@@ -2859,7 +2859,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2878,7 +2878,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team Developers": "codeviewer, user",
                "Team Project Admins": "admin, codeviewer, user",
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
@@ -2900,7 +2900,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
@@ -2911,7 +2911,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "user"
             }
          },
@@ -2923,7 +2923,7 @@
          "name": "Training: Coverage",
          "permissions": {
             "groups": {
-               "Sonar Administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user"
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user"
             }
          }
       },
@@ -2933,7 +2933,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "user"
             }
          }
@@ -2944,7 +2944,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "user"
             }
          }
@@ -2955,7 +2955,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "user"
             }
          }
@@ -2972,7 +2972,7 @@
             "groups": {
                "CI Tools": "scan",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "user"
             }
          }
@@ -3011,7 +3011,7 @@
                "Executives": "admin",
                "Language Experts": "admin",
                "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
-               "Sonar Administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "Team 2 Developers": "admin, user",
                "Team Developers": "admin, user",
                "sonar-users": "user"
@@ -17721,7 +17721,7 @@
    "users": {
       "admin": {
          "email": "olivier.korach@sonarsource.com",
-         "groups": "CI Tools, Sonar Administrators, Team Project Admins",
+         "groups": "CI Tools, sonar-administrators, Team Project Admins",
          "local": true,
          "name": "Administrator"
       },
@@ -17736,7 +17736,7 @@
          "name": "cameron"
       },
       "cli": {
-         "groups": "CI Tools, Sonar Administrators",
+         "groups": "CI Tools, sonar-administrators",
          "local": true,
          "name": "cli"
       },
@@ -17751,7 +17751,7 @@
          "name": "gitlab-ci"
       },
       "issue-syncer": {
-         "groups": "Sonar Administrators",
+         "groups": "sonar-administrators",
          "local": true,
          "name": "issue-syncer"
       },
@@ -17804,7 +17804,7 @@
          "name": "Sylvain Combe"
       },
       "syncer": {
-         "groups": "Sonar Administrators",
+         "groups": "sonar-administrators",
          "local": true,
          "name": "syncer"
       },
