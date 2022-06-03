@@ -200,14 +200,16 @@ class QualityProfile(sq.SqObject):
         return self
 
     def to_json(self, full_specs=False, include_rules=False):
-        json_data = {"name": self.name, "language": self.language}
+        json_data = {"name": self.name, "language": self.language, "parentName": self.parent_name}
+        if self.is_built_in:
+            json_data["isBuiltIn"] = True
+        if self.is_default:
+            json_data["isDefault"] = True
         if full_specs:
             json_data.update(
                 {
                     "key": self.key,
                     "lastUpdated": self.last_updated,
-                    "isDefault": self.is_default,
-                    "isBuiltIn": self.is_built_in,
                     "rulesCount": self.nbr_rules,
                     "projectsCount": self.project_count,
                     "deprecatedRulesCount": self.nbr_deprecated_rules,
@@ -215,7 +217,6 @@ class QualityProfile(sq.SqObject):
                     "languageName": self.language_name,
                 }
             )
-        json_data["parentName"] = self.parent_name
         if include_rules:
             json_data["rules"] = self.rules(full_specs=full_specs)
 

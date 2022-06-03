@@ -3094,6 +3094,7 @@
          "Sonar way": {
             "children": {
                "My way": {
+                  "isDefault": true,
                   "rules": {
                      "abap:S100": {
                         "modified": true,
@@ -14664,6 +14665,7 @@
          "Sonar way": {
             "children": {
                "Python Olivier": {
+                  "isDefault": true,
                   "permissions": {
                      "users": "olivierk"
                   },
