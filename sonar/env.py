@@ -152,9 +152,7 @@ class Environment:
         return self.__get_platform_settings(key).get(key, None)
 
     def reset_setting(self, key):
-        if self.get_setting(key) is not None:
-            util.logger.info("Resetting setting '%s", key)
-            self.post("settings/reset", params={"key": key})
+        return settings.reset_setting(self, key)
 
     def set_setting(self, key, value):
         return settings.set_setting(self, key, value)
