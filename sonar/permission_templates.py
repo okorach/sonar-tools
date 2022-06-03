@@ -82,24 +82,7 @@ class PermissionTemplate(sqobject.SqObject):
         if perms is None or len(perms) == 0:
             return
         utilities.logger.debug("Setting permissions %s for %s", str(perms), str(self))
-        params = {"templateName": self.name}
-        if "users" in perms:
-            for login, u_perms in perms["users"].items():
-                params["login"] = login
-                for p in utilities.csv_to_list(u_perms):
-                    if p in ("portfoliocreator", "applicationcreator"):
-                        continue
-                    params["permission"] = p
-                    self.post("permissions/add_user_to_template", params=params)
-            params.pop("login")
-        if "groups" in perms:
-            for gr, g_perms in perms["groups"].items():
-                params["groupName"] = gr
-                for p in utilities.csv_to_list(g_perms):
-                    if p in ("portfoliocreator", "applicationcreator"):
-                        continue
-                    params["permission"] = p
-                    self.post("permissions/add_group_to_template", params=params)
+        permissions.set_permissions(endpoint=self.endpoint, permissions=perms, template=self.name)
         self._permissions = self.permissions()
 
     def update(self, **pt_data):
