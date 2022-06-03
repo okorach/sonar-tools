@@ -34,12 +34,22 @@ class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint, name, data=None, create_data=None):
         super().__init__(name, endpoint)
         self.key = None
+        self.name = name
+        self._permissions = None
         if create_data is not None:
+            utilities.logger.info("Creating permission template '%s'", name)
+            utilities.logger.debug("from create_data %s", utilities.json_dump(create_data))
             create_data["name"] = name
             self.post(_CREATE_API, params=create_data)
             data = search_by_name(endpoint, name)
+            self.key = data.get("id", None)
+            self.set_pattern(create_data.pop("pattern", None))
+            self.set_permissions(create_data.pop("permissions", None))
         elif data is None:
             data = search_by_name(endpoint, name)
+            self.permissions()
+            utilities.logger.info("Creating permission template '%s'", name)
+            utilities.logger.debug("from sync data %s", utilities.json_dump(data))
         self._json = data
         self.name = name
         self.key = data.get("id", None)
@@ -47,14 +57,13 @@ class PermissionTemplate(sqobject.SqObject):
         self.project_key_pattern = data.get("projectKeyPattern", "")
         self.creation_date = utilities.string_to_date(data.get("createdAt", None))
         self.last_update = utilities.string_to_date(data.get("updatedAt", None))
-        self._permissions = None
         self.__set_hash()
 
     def __str__(self):
         return f"permission template '{self.name}'"
 
     def __set_hash(self):
-        _PERMISSION_TEMPLATES[_uuid(self.name, self.key)] = self
+        _PERMISSION_TEMPLATES[self.key] = self
         _MAP[self.name] = self.key
 
     def is_default_for(self, qualifier):
@@ -101,9 +110,9 @@ class PermissionTemplate(sqobject.SqObject):
         utilities.logger.info("Updating %s, %s with %s", self.key, self.name, str(params))
         self.post(_UPDATE_API, params=params)
         if name is not None:
-            _MAP.pop(_uuid(self.name, self.key), None)
+            _MAP.pop(self.name, None)
             self.name = name
-            _MAP[_uuid(self.name, self.key)] = self
+            _MAP[self.name] = self.key
         if desc is not None:
             self.description = desc
         if pattern is not None:
@@ -116,11 +125,7 @@ class PermissionTemplate(sqobject.SqObject):
             self._permissions = {}
             for t in ("users", "groups"):
                 self._permissions[t] = permissions.simplify(
-                    permissions.get(
-                        endpoint=self.endpoint,
-                        perm_type=f"template_{t}",
-                        templateId=self.key,
-                    )
+                    permissions.get(endpoint=self.endpoint, perm_type=f"template_{t}", templateId=self.key)
                 )
         return self._permissions
 
@@ -131,6 +136,13 @@ class PermissionTemplate(sqobject.SqObject):
             # utilities.logger.debug("Setting %s as default for %s", str(self), d)
             params["qualifier"] = _QUALIFIER_REVERSE_MAP.get(d, d)
             self.post("permissions/set_default_template", params=params)
+
+    def set_pattern(self, pattern):
+        if pattern is None:
+            return
+        r = self.post(_UPDATE_API, params={"id": self.key, "projectKeyPattern": pattern})
+        self.project_key_pattern = pattern
+        return r
 
     def to_json(self, full_specs=False):
         json_data = {
@@ -164,27 +176,26 @@ def get_object(name, endpoint=None):
     if len(_PERMISSION_TEMPLATES) == 0:
         get_list(endpoint)
     if name not in _MAP:
-        get_list(endpoint)
-    if name not in _MAP:
         return None
-    return _PERMISSION_TEMPLATES[_uuid(name, _MAP[name])]
+    return _PERMISSION_TEMPLATES[_MAP[name]]
 
 
-def create_or_update(name, endpoint, **kwargs):
-    utilities.logger.debug("Create or update permission template %s", name)
+def create_or_update(name, endpoint, kwargs):
+    utilities.logger.debug("Create or update permission template '%s'", name)
     o = get_object(endpoint=endpoint, name=name)
     if o is None:
-        utilities.logger.debug("Permission template %s does not exist, creating...", name)
-        return create(name, endpoint, description=kwargs.get("description", None), pattern=kwargs.get("pattern", None))
+        utilities.logger.debug("Permission template '%s' does not exist, creating...", name)
+        return create(name, endpoint, create_data=kwargs)
     else:
         return o.update(name=name, **kwargs)
 
 
-def create(name, endpoint=None, **kwargs):
-    utilities.logger.debug("Create permission template %s", name)
+def create(name, endpoint=None, create_data=None):
     o = get_object(name=name, endpoint=endpoint)
     if o is None:
-        o = PermissionTemplate(name=name, endpoint=endpoint, create_data=kwargs)
+        o = PermissionTemplate(name=name, endpoint=endpoint, create_data=create_data)
+    else:
+        utilities.logger.info("%s already exists, skipping creation...", str(o))
     return o
 
 
@@ -193,7 +204,7 @@ def search(endpoint, params=None):
     objects_list = {}
     data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
     for obj in data["permissionTemplates"]:
-        objects_list[_uuid(obj["name"], obj["id"])] = PermissionTemplate(name=obj["name"], endpoint=endpoint, data=obj)
+        objects_list[obj["id"]] = PermissionTemplate(name=obj["name"], endpoint=endpoint, data=obj)
     _load_default_templates(data=data)
     return objects_list
 
@@ -233,18 +244,7 @@ def import_config(endpoint, config_data):
     get_list(endpoint)
     for name, data in config_data["permissionTemplates"].items():
         utilities.json_dump_debug(data, f"Importing: {name}:")
-        o = create_or_update(name, endpoint, **data)
+        o = create_or_update(name, endpoint, data)
         defs = data.get("defaultFor", None)
         if defs is not None and defs != "":
             o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
-
-
-def _uuid(name, id):
-    if id is None:
-        return name
-    else:
-        return id
-
-
-def name_to_id(name):
-    return _MAP.get(name, None)
