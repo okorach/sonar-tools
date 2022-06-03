@@ -74,7 +74,7 @@ def get(endpoint, perm_type, **kwargs):
 def export(endpoint, component_key=None):
     exp = {}
     for perm_type in ("users", "groups"):
-        exp[perm_type] = simplify(get(endpoint, perm_type, projectKey=component_key))
+        exp[perm_type] = simplify(get(endpoint, perm_type, projectKey=component_key), perm_type)
         if len(exp[perm_type]) == 0:
             exp.pop(perm_type)
     return exp
@@ -94,11 +94,12 @@ def counts(some_perms, perms_dict):
     return perm_counts
 
 
-def simplify(perms_array):
+def simplify(perms_array, perm_type):
     permiss = {}
+    field = "name" if perm_type == "groups" else "login"
     for p in perms_array:
         p["permissions"].sort()
-        permiss[p["name"]] = utilities.list_to_csv(p["permissions"], ", ")
+        permiss[p[field]] = utilities.list_to_csv(p["permissions"], ", ")
     return permiss
 
 
@@ -161,7 +162,14 @@ def set_permissions(endpoint, permissions, project_key=None, template=None):
                 for p in utilities.csv_to_list(perms):
                     if template is not None and p in ("portfoliocreator", "applicationcreator"):
                         continue
-                    endpoint.post(apis[perm_type], params={field[perm_type]: elem, "permission": p, "templateName": template})
+                    endpoint.post(apis[perm_type],
+                        params={
+                            field[perm_type]: elem,
+                            "permission": p,
+                            "projectKey": project_key,
+                            "templateName": template
+                        }
+                    )
 
 
 def import_config(endpoint, config_data):
