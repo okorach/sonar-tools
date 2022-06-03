@@ -17721,7 +17721,7 @@
    "users": {
       "admin": {
          "email": "olivier.korach@sonarsource.com",
-         "groups": "CI Tools, sonar-administrators, Team Project Admins",
+         "groups": "CI Tools, Team Project Admins, sonar-administrators",
          "local": true,
          "name": "Administrator"
       },
