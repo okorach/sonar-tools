@@ -97,6 +97,7 @@ def counts(some_perms, perms_dict):
 def simplify(perms_array):
     permiss = {}
     for p in perms_array:
+        p["permissions"].sort()
         permiss[p["name"]] = utilities.list_to_csv(p["permissions"], ", ")
     return permiss
 
@@ -144,3 +145,29 @@ def get_qp(endpoint, qp_name, qp_language, perm_type, pfield):
         False,
     )
     return perms if len(perms) > 0 else None
+
+
+def set_permissions(endpoint, permissions, project_key=None, template=None):
+    if permissions is None or len(permissions) == 0:
+        return
+    if template is None:
+        apis = {"users": "permissions/add_user", "groups": "permissions/add_group"}
+    else:
+        apis = {"users": "permissions/add_user_to_template", "groups": "permissions/add_group_to_template"}
+    field = {"users": "login", "groups": "groupName"}
+    for perm_type in ("users", "groups"):
+        if perm_type in permissions:
+            for elem, perms in permissions[perm_type].items():
+                for p in utilities.csv_to_list(perms):
+                    if template is not None and p in ("portfoliocreator", "applicationcreator"):
+                        continue
+                    endpoint.post(apis[perm_type], params={field[perm_type]: elem, "permission": p, "templateName": template})
+
+
+def import_config(endpoint, config_data):
+    permissions = config_data.get("permissions", {})
+    if len(permissions) == 0:
+        utilities.logger.info("No global permissions in config, skipping import...")
+        return
+    utilities.logger.info("Importing global permissions")
+    set_permissions(endpoint, permissions)
