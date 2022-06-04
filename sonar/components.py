@@ -27,6 +27,8 @@ import json
 import sonar.sqobject as sq
 import sonar.utilities as util
 
+SEARCH_API = "components/search"
+
 
 class Component(sq.SqObject):
     def __init__(self, key, endpoint=None, data=None):
