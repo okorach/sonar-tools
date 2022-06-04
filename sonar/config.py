@@ -140,6 +140,7 @@ def __import_config(endpoint, what, args):
     if "settings" in what:
         endpoint.import_config(data["globalSettings"])
     projects.import_config(endpoint, data)
+    applications.import_config(endpoint, data)
     util.logger.info("Import finished")
 
 
