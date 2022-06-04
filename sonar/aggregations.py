@@ -31,7 +31,6 @@ from sonar.audit import rules, problem
 class Aggregation(comp.Component):
     def __init__(self, key, endpoint, data=None):
         self._nbr_projects = None
-        self._id = None
         self._visibility = None
         super().__init__(key, endpoint)
 
@@ -41,7 +40,6 @@ class Aggregation(comp.Component):
             self._json = data
         if self._json is None:
             self._json = json.loads(self.get(api, params={key_name: self.key}).text)
-        self._id = self.key
         self.name = self._json.get("name", None)
         self._visibility = self._json.get("visibility", None)
 
