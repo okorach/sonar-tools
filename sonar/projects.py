@@ -905,13 +905,6 @@ def loc_csv_header(**kwargs):
     return arr
 
 
-def create2(key, endpoint, name=None, visibility="private"):
-    if name is None:
-        name = key
-    resp = endpoint.post("projects/create", params={"project": key, "name": name, "visibility": visibility})
-    return resp.status_code
-
-
 def create(key, endpoint=None, data=None):
     o = get_object(key=key, endpoint=endpoint)
     if o is None:
