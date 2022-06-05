@@ -643,17 +643,10 @@ Is this normal ?",
         for link in data["links"]:
             if link_list is None:
                 link_list = []
-            link_list.append({"type": link["type"], "name": link["name"], "url": link["url"]})
+            link_list.append({"type": link["type"], "name": link.get("name", link["type"]), "url": link["url"]})
         return link_list
 
-    def __settings_add_new_code(self, json_data):
-        nc = self.new_code_periods()
-        if nc:
-            if settings.GENERAL_SETTINGS not in json_data:
-                json_data[settings.GENERAL_SETTINGS] = {}
-            json_data[settings.GENERAL_SETTINGS].update({settings.NEW_CODE_PERIOD: nc})
-
-    def __settings_add_binding(self, json_data):
+    def __export_get_binding(self, json_data):
         binding = self.binding()
         if binding:
             # Remove redundant fields
@@ -661,65 +654,69 @@ Is this normal ?",
             binding.pop("url", None)
             if not binding["monorepo"]:
                 binding.pop("monorepo")
-            json_data[settings.DEVOPS_INTEGRATION] = binding
+        return binding
 
-    def __settings_add_qp(self, json_data):
-        qp_json = {}
-        for qp in self.quality_profiles().values():
-            qp_json[qp.language] = f"{qp.key} {qp.name}"
-        if len(qp_json) > 0:
-            json_data["qualityProfiles"] = qp_json
+    def __export_get_qp(self):
+        qp_json = {qp.language: f"{qp.key} {qp.name}" for qp in self.quality_profiles().values()}
+        if len(qp_json) == 0:
+            return None
+        return qp_json
 
-    def __settings_add_links(self, json_data):
-        p_links = self.links()
-        if p_links is not None:
-            json_data["links"] = p_links
-
-    def __settings_add_permissions(self, json_data):
-        json_data["permissions"] = {}
+    def __export_get_permissions(self):
+        the_perms = {}
         for ptype in ("users", "groups"):
             permiss = perms.simplify(perms.get(self.endpoint, ptype, projectKey=self.key), ptype)
             if len(permiss) > 0:
-                json_data["permissions"][ptype] = permiss
+                the_perms[ptype] = permiss
+        return the_perms
 
-    def export(self, settings_list=None, include_inherited=False):
+    def __get_branch_export(self):
+        branch_data = {}
+        for branch in self.get_branches():
+            branch_data[branch.name] = branch.export(full_export=False)
+        if len(branch_data) == 0:
+            return None
+        return branch_data
+
+    def export(self, settings_list=None, include_inherited=False, full_export=False):
+        full_export = True
         util.logger.info("Exporting %s", str(self))
-        settings_dict = settings.get_bulk(
-            endpoint=self,
-            project=self,
-            settings_list=settings_list,
-            include_not_set=False,
-        )
+        settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
         json_data = {"key": self.key, "name": self.name}
         for s in settings_dict.values():
             if not include_inherited and s.inherited:
                 continue
-            (categ, subcateg) = s.category()
-            util.update_json(json_data, categ, subcateg, s.to_json())
+            json_data.update(s.to_json())
 
-        self.__settings_add_binding(json_data)
-        self.__settings_add_new_code(json_data)
-        self.__settings_add_qp(json_data)
-        self.__settings_add_links(json_data)
-        self.__settings_add_permissions(json_data)
+        json_data["binding"] = self.__export_get_binding()
+        json_data[settings.NEW_CODE_PERIOD] = self.new_code()
+        json_data["qualityProfiles"] = self.__export_get_qp()
+        json_data["links"] = self.links()
+        json_data["permissions"] = self.__export_get_permissions()
+        json_data["branches"] = self.__get_branch_export()
 
-        (json_data["qualityGate"], is_default) = self.quality_gate()
-        if is_default:
-            json_data.pop("qualityGate")
+        (json_data["qualityGate"], qg_is_default) = self.quality_gate()
+        if qg_is_default:
+            qg = json_data.pop("qualityGate")
 
         wh = webhooks.export(self.endpoint, self.key)
         if wh is not None:
             if settings.GENERAL_SETTINGS not in json_data:
                 json_data[settings.GENERAL_SETTINGS] = {}
             json_data[settings.GENERAL_SETTINGS].update({"webhooks": wh})
+
+        if full_export:
+            pass
+            #self.__add_optional_export(json_data)
+
         return util.remove_nones(json_data)
 
-    def new_code_periods(self):
+    def new_code(self, include_branches=False):
         nc = {}
         data = json.loads(self.get(api="new_code_periods/show", params={"project": self.key}).text)
         new_code = settings.new_code_to_string(data)
-        if new_code is None:
-            return None
+        if new_code is None or not include_branches:
+            return new_code
         nc[settings.DEFAULT_SETTING] = new_code
         data = json.loads(self.get(api="new_code_periods/list", params={"project": self.key}).text)
         for b in data["newCodePeriods"]:
@@ -763,8 +760,13 @@ Is this normal ?",
                 for s, v in lang_data.items():
                     settings.set_setting(endpoint=self.endpoint, key=s, value=v, project=self.key)
 
+        nc = None
         if settings.NEW_CODE_PERIOD in data["generalSettings"]:
-            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, data["generalSettings"][settings.NEW_CODE_PERIOD])
+            nc = data["generalSettings"][settings.NEW_CODE_PERIOD]
+        if settings.NEW_CODE_PERIOD in data:
+            nc = data[settings.NEW_CODE_PERIOD]
+        if nc is not None:
+            (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
             settings.set_new_code(self.endpoint, nc_type, nc_val, project_key=self.key)
 
     def update(self, data):
