@@ -240,17 +240,30 @@ class QualityProfile(sq.SqObject):
 
     def diff(self, another_qp):
         comp = self.compare(another_qp)
+        my_rules = self.rules()
         diff_rules = {}
         util.json_dump_debug(comp, "Comparing 2 QP ")
         for r in comp["inLeft"]:
-            diff_rules[r["key"]] = r
+            r_key = r["key"]
+            diff_rules[r_key] = r
+            if "templateKey" in my_rules.get(r["key"], {}):
+                diff_rules[r_key]["templateKey"] = my_rules[r_key]["templateKey"]
+                diff_rules[r_key]["params"] = my_rules[r_key]["params"]
             r.pop("key")
         for r in comp["modified"]:
-            diff_rules[r["key"]] = {"modified": True}
+            r_key = r["key"]
+            diff_rules[r_key] = {"modified": True}
+            parms = None
             if r["left"]["severity"] != r["right"]["severity"]:
-                diff_rules[r["key"]]["severity"] = r["left"]["severity"]
+                diff_rules[r_key]["severity"] = r["left"]["severity"]
             if "params" in r["left"] and len(r["left"]["params"]) > 0:
-                diff_rules[r["key"]]["params"] = r["left"]["params"]
+                diff_rules[r_key]["params"] = r["left"]["params"]
+                parms = r["left"]["params"]
+            if "templateKey" in my_rules.get(r["key"], {}):
+                diff_rules[r_key]["templateKey"] = my_rules[r_key]["templateKey"]
+                diff_rules[r_key]["params"] = my_rules[r_key]["params"]
+                if parms is not None:
+                    diff_rules[r_key]["params"].update(parms)
         return diff_rules
 
     def projects(self):
