@@ -97,9 +97,11 @@ class Branch(components.Component):
         util.logger.debug("Returning branch new code %s", str(self._new_code))
         return self._new_code
 
-    def export(self):
+    def export(self, full_export=True):
         util.logger.debug("Exporting %s", str(self))
-        data = {"name": self.name, "project": self.project.key, "newCode": self.new_code()}
+        data = {"newCode": self.new_code()}
+        if full_export:
+            data.update({"name": self.name, "project": self.project.key})
         return util.remove_nones(data)
 
     def url(self):
