@@ -59,7 +59,6 @@ class Application(aggr.Aggregation):
     def __str__(self):
         return f"application key '{self.key}'"
 
-
     def _load_full(self):
         data = json.loads(self.get(_GET_API, params={"application": self.key}).text)
         self._json = data["application"]
@@ -170,10 +169,8 @@ class Application(aggr.Aggregation):
         }
         return util.remove_nones(json_data)
 
-
     def set_permissions(self, data):
         permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
-
 
     def add_projects(self, project_list):
         current_projects = self.projects().keys()
