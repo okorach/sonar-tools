@@ -151,20 +151,25 @@ def get_qp(endpoint, qp_name, qp_language, perm_type, pfield):
 def set_permissions(endpoint, permissions, project_key=None, template=None):
     if permissions is None or len(permissions) == 0:
         return
-    if template is None:
-        apis = {"users": "permissions/add_user", "groups": "permissions/add_group"}
-    else:
+
+    apis = {"users": "permissions/add_user", "groups": "permissions/add_group"}
+    if template is not None:
         apis = {"users": "permissions/add_user_to_template", "groups": "permissions/add_group_to_template"}
     field = {"users": "login", "groups": "groupName"}
     for perm_type in ("users", "groups"):
-        if perm_type in permissions:
-            for elem, perms in permissions[perm_type].items():
-                for p in utilities.csv_to_list(perms):
-                    if (project_key is not None or template is not None) and p in ("portfoliocreator", "applicationcreator"):
-                        continue
-                    endpoint.post(
-                        apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template}
-                    )
+        if perm_type not in permissions:
+            continue
+        for elem, perms in permissions[perm_type].items():
+            for p in utilities.csv_to_list(perms):
+                is_global_perm = (project_key is None and template is None)
+                if is_global_perm and p not in GLOBAL_PERMISSIONS:
+                    continue
+                if not is_global_perm and p not in PROJECT_PERMISSIONS:
+                    continue
+                utilities.logger.info("Setting permission %s to %s - %s, %s", p, elem, str(project_key), str(template))
+                endpoint.post(
+                    apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template}
+                )
 
 
 def import_config(endpoint, config_data):
