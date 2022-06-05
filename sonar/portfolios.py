@@ -50,7 +50,7 @@ _CREATE_API = "views/create"
 _GET_API = "views/show"
 
 class Portfolio(aggregations.Aggregation):
-    def __init__(self, key, name, endpoint, data=None, create_data=None):
+    def __init__(self, key, endpoint, name=None, data=None, create_data=None):
         super().__init__(key, endpoint)
         self._selection_mode = None
         self._qualifier = None
@@ -209,6 +209,72 @@ class Portfolio(aggregations.Aggregation):
             json_data["branch"] = self._json.get("branch", None)
 
         return util.remove_nones(json_data)
+
+    def set_permissions(self, data):
+        permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
+
+    def set_projects(self, project_list):
+        current_projects = self.projects()
+        self.post("views/set_manual_mode", params={"portfolio": self.key})
+        if current_projects is None:
+            return
+        current_projects = current_projects.keys()
+        for proj in project_list:
+            params={"key": self.key, "project": proj}
+            # FIXME: Handle portfolios with several branches of same project
+            if proj not in current_projects:
+                util.logger.info("Adding project '%s' to %s", proj, str(self))
+                self.post("views/add_project", params=params)
+                if project_list[proj] != options.DEFAULT:
+                    util.logger.info("Adding project '%s' branch '%s' to %s", proj, project_list[proj], str(self))
+                    params["branch"] = project_list["proj"]
+                    self.post("views/add_project_branch", params=params)
+            elif project_list[proj] != current_projects[proj]:
+                util.logger.info("Adding project '%s' branch '%s' to %s", proj, project_list[proj], str(self))
+                params["branch"] = project_list["proj"]
+                self.post("views/add_project_branch", params=params)                
+            else:
+                util.logger.info("Won't add project '%s' branch '%s' to %s, it's already added",
+                                 proj, project_list[proj], str(self))
+            self.post("views/add_project", params={"application": self.key, "project": proj})
+
+    def set_tags(self, tags):
+        # TODO: Support branches
+        self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags)})
+
+    def set_regexp(self, regexp):
+        # TODO: Support branches
+        self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp})
+
+    def set_rest(self):
+        self.post("views/set_remaining_projects_mode", params={"portfolio": self.key})
+
+    def set_none(self):
+        self.post("views/set_none_mode", params={"portfolio": self.key})
+
+    def update(self, data):
+        self.set_permissions(data)
+        selection_mode = data[_PROJECT_SELECTION_MODE]
+        if selection_mode == "MANUAL":
+            self.set_projects(data.get("projects", {}))
+        elif selection_mode == "TAGS":
+            self.set_tags(data[_PROJECT_SELECTION_TAGS])
+        elif selection_mode == "REGEXP":
+            self.set_regexp(data[_PROJECT_SELECTION_REGEXP])
+        elif selection_mode == "REST":
+            self.set_rest()
+        elif selection_mode == "NONE":
+            self.set_none()
+
+def _project_list(data):
+    plist = {}
+    for b in data.get("branches", {}).values():
+        if isinstance(b["projects"], dict):
+            plist.update(b["projects"])
+        else:
+            for p in b["projects"]:
+                plist[p["projectKey"]] = ""
+    return plist.keys()
 
 
 def count(endpoint=None):
