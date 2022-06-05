@@ -138,7 +138,7 @@ class Project(components.Component):
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
-    def get_branches(self):
+    def get_branches(self, include_main=True):
         if self.endpoint.edition() == "community":
             util.logger.debug("Branches not available in Community Edition")
             return []
@@ -147,6 +147,8 @@ class Project(components.Component):
             data = json.loads(self.get("project_branches/list", params={"project": self.key}).text)
             self.branches = []
             for b in data["branches"]:
+                if b.get("isMain", False) and not include_main:
+                    continue
                 self.branches.append(branches.get_object(b["name"], self, data=b))
         return self.branches
 
@@ -672,7 +674,13 @@ Is this normal ?",
 
     def __get_branch_export(self):
         branch_data = {}
-        for branch in self.get_branches():
+        my_branches = self.get_branches()
+        nb_branches = len(my_branches)
+        for branch in my_branches:
+            exp = branch.export(full_export=False)
+            if nb_branches == 1 and branch.is_main() and len(exp) == 0:
+                # Don't export main branch with no data
+                continue
             branch_data[branch.name] = branch.export(full_export=False)
         if len(branch_data) == 0:
             return None
@@ -697,7 +705,7 @@ Is this normal ?",
 
         (json_data["qualityGate"], qg_is_default) = self.quality_gate()
         if qg_is_default:
-            qg = json_data.pop("qualityGate")
+            json_data.pop("qualityGate")
 
         wh = webhooks.export(self.endpoint, self.key)
         if wh is not None:

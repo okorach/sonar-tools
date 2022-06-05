@@ -119,12 +119,9 @@ class Application(aggr.Aggregation):
             b_name = br.pop("name")
             params["branch"] = b_name
             data = json.loads(self.get(_GET_API, params=params).text)
-            br["projects"] = []
+            br["projects"] = {}
             for proj in data["application"]["projects"]:
-                proj["projectKey"] = proj.pop("key")
-                for k in ("selected", "name", "enabled", "isMain"):
-                    proj.pop(k, None)
-                br["projects"].append(proj)
+                br["projects"][proj["key"]] = proj["branch"]
 
             self._branches[b_name] = br
 
