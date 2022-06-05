@@ -17799,7 +17799,7 @@
    },
    "users": {
       "admin": {
-         "email": "olivier.korach@sonarsource.com",
+         "email": "olivier.korach@test.com",
          "groups": "CI Tools, Team Project Admins, sonar-administrators",
          "local": true,
          "name": "Administrator"
@@ -17872,7 +17872,7 @@
          "groups": "CI Tools, Team Project Admins, Team Tech Leads",
          "local": true,
          "name": "olivierk",
-         "scmAccounts": "olivier.korach@sonarsource.com"
+         "scmAccounts": "olivier.korach@test2.com"
       },
       "simon.brandhof@sonarsource.com": {
          "email": "simon.brandhof@sonarsource.com",
