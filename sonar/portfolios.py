@@ -210,8 +210,6 @@ class Portfolio(aggregations.Aggregation):
             "permissions": permissions.export(self.endpoint, self.key),
         }
         json_data.update(self.sub_portfolios())
-        if self.selection_mode() != "MANUAL":
-            json_data["branch"] = self._json.get("branch", None)
 
         return util.remove_nones(json_data)
 
@@ -243,16 +241,14 @@ class Portfolio(aggregations.Aggregation):
                                  proj, project_list[proj], str(self))
             self.post("views/add_project", params={"application": self.key, "project": proj})
 
-    def set_tags(self, tags):
-        # TODO: Support branches
-        self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags)})
+    def set_tags(self, tags, branch):
+        self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
 
-    def set_regexp(self, regexp):
-        # TODO: Support branches
-        self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp})
+    def set_regexp(self, regexp, branch):
+        self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
 
-    def set_rest(self):
-        self.post("views/set_remaining_projects_mode", params={"portfolio": self.key})
+    def set_rest(self, branch):
+        self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
 
     def set_none(self):
         self.post("views/set_none_mode", params={"portfolio": self.key})
@@ -263,11 +259,11 @@ class Portfolio(aggregations.Aggregation):
         if selection_mode == SELECTION_MODE_MANUAL:
             self.set_projects(data.get("projects", {}))
         elif selection_mode == SELECTION_MODE_TAGS:
-            self.set_tags(data[_PROJECT_SELECTION_TAGS])
+            self.set_tags(data[_PROJECT_SELECTION_TAGS], data.get(_PROJECT_SELECTION_BRANCH, None))
         elif selection_mode == SELECTION_MODE_REGEXP:
-            self.set_regexp(data[_PROJECT_SELECTION_REGEXP])
+            self.set_regexp(data[_PROJECT_SELECTION_REGEXP], data.get(_PROJECT_SELECTION_BRANCH, None))
         elif selection_mode == SELECTION_MODE_OTHERS:
-            self.set_rest()
+            self.set_rest(data.get(_PROJECT_SELECTION_BRANCH, None))
         elif selection_mode == SELECTION_MODE_NONE:
             self.set_none()
         else:
