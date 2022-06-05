@@ -24,6 +24,7 @@
 """
 
 import datetime
+import json
 import pytz
 import requests.utils
 from sonar import projects, measures, components, syncer
@@ -186,3 +187,13 @@ def get_object(branch, project_key_or_obj, data=None, endpoint=None):
     if b_id not in _BRANCHES:
         _ = Branch(p_obj, branch, data=data, endpoint=endpoint)
     return _BRANCHES[b_id]
+
+
+def get_list(project_key, endpoint):
+    data = json.loads(endpoint.post("project_branches/list", params={"project": project_key}).text)
+    for branch in data.get("branches", {}):
+        get_object(branch=branch["name"], project_key_or_obj=project_key, data=branch, endpoint=endpoint)
+
+def exists(branch_name, project_key, endpoint):
+    get_list(project_key=project_key, endpoint=endpoint)
+    return _uuid(project_key, branch_name) in _BRANCHES
