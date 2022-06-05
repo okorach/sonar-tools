@@ -44,6 +44,7 @@ SELECTION_MODE_NONE = "NONE"
 SELECTION_MODES = (SELECTION_MODE_MANUAL, SELECTION_MODE_REGEXP, SELECTION_MODE_TAGS, SELECTION_MODE_OTHERS, SELECTION_MODE_NONE)
 
 _PROJECT_SELECTION_MODE = "projectSelectionMode"
+_PROJECT_SELECTION_BRANCH = "projectSelectionBranch"
 _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
 _PROJECT_SELECTION_TAGS = "projectSelectionTags"
 
@@ -54,6 +55,7 @@ class Portfolio(aggregations.Aggregation):
     def __init__(self, key, endpoint, name=None, data=None, create_data=None):
         super().__init__(key, endpoint)
         self._selection_mode = None
+        self._selection_branch = None
         self._qualifier = None
         self._projects = None
         self._tags = None
@@ -81,6 +83,7 @@ class Portfolio(aggregations.Aggregation):
         """Loads a portfolio object with contents of data"""
         super()._load(data=data, api=GET_API, key_name="key")
         self._selection_mode = self._json.get("selectionMode", None)
+        self._selection_branch = self._json.get("branch", None)
         self._regexp = self._json.get("regexp", None)
         self._description = self._json.get("desc", None)
         self._qualifier = self._json.get("qualifier", None)
@@ -202,6 +205,7 @@ class Portfolio(aggregations.Aggregation):
             "visibility": self.visibility(),
             # 'projects': self.projects(),
             _PROJECT_SELECTION_REGEXP: self.regexp(),
+            _PROJECT_SELECTION_BRANCH: self._selection_branch,
             _PROJECT_SELECTION_TAGS: self.tags(),
             "permissions": permissions.export(self.endpoint, self.key),
         }
