@@ -46,9 +46,11 @@ _PROJECT_SELECTION_MODE = "projectSelectionMode"
 _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
 _PROJECT_SELECTION_TAGS = "projectSelectionTags"
 
+_CREATE_API = "views/create"
+_GET_API = "views/show"
 
 class Portfolio(aggregations.Aggregation):
-    def __init__(self, key, endpoint, data=None):
+    def __init__(self, key, name, endpoint, data=None, create_data=None):
         super().__init__(key, endpoint)
         self._selection_mode = None
         self._qualifier = None
@@ -56,8 +58,20 @@ class Portfolio(aggregations.Aggregation):
         self._tags = None
         self._regexp = None
         self._sub_portfolios = None
-        self._load(data)
-        _OBJECTS[key] = self
+        if create_data is not None:
+            self.name = create_data["name"]
+            util.logger.info("Creating %s", str(self))
+            util.logger.debug("from %s", util.json_dump(create_data))
+            resp = self.post(
+                _CREATE_API, params={"key": key, "name": self.name, "visibility": create_data.get("visibility", None)}
+            )
+            self.key = json.loads(resp.text)["key"]
+            self._load()
+        else:
+            self.key = data["key"]
+            self.name = data["name"]
+            self._load(data)
+        _OBJECTS[self.key] = self
 
     def __str__(self):
         return f"portfolio key '{self.key}'"
@@ -220,12 +234,6 @@ def search(endpoint, params=None):
     return portfolio_list
 
 
-def get_object(key, endpoint=None):
-    if key not in _OBJECTS:
-        _ = Portfolio(key=key, endpoint=endpoint)
-    return _OBJECTS[key]
-
-
 def audit(audit_settings, endpoint=None):
     if not audit_settings["audit.portfolios"]:
         util.logger.debug("Auditing portfolios is disabled, skipping...")
@@ -306,3 +314,44 @@ def _projects(json_data, version):
         for p in json_data["projects"]:
             projects[p] = options.DEFAULT
     return projects
+
+
+
+
+
+def get_list(endpoint):
+    return search(endpoint=endpoint)
+
+
+def get_object(key, endpoint=None):
+    if key not in _OBJECTS:
+        get_list(endpoint)
+    return _OBJECTS.get(key, None)
+
+
+def create(endpoint, name, key=None, data=None):
+    o = get_object(key, endpoint=endpoint)
+    if o is None:
+        o = Portfolio(endpoint=endpoint, name=name, key=key, create_data=data)
+    else:
+        util.logger.info("%s already exist, creation skipped", str(o))
+    return o
+
+
+def create_or_update(endpoint, name, key, data):
+    o =  get_object(key, endpoint=endpoint)
+    if o is None:
+        util.logger.debug("Portfolio key '%s' does not exist, creating...", key)
+        o = create(name=name, key=key, endpoint=endpoint, data=data)
+    o.update(data)
+
+
+def import_config(endpoint, config_data):
+    if "portfolios" not in config_data:
+        util.logger.info("No portfolios to import")
+        return
+    util.logger.info("Importing portfolios")
+    search(endpoint=endpoint)
+    for key, data in config_data["portfolios"].items():
+        util.logger.info("Importing portfolios key '%s'", key)
+        create_or_update(endpoint=endpoint, key=key, name=data["name"], data=data)
