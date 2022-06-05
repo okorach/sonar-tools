@@ -41,6 +41,7 @@ SELECTION_MODE_REGEXP = "REGEXP"
 SELECTION_MODE_TAGS = "TAGS"
 SELECTION_MODE_OTHERS = "REST"
 SELECTION_MODE_NONE = "NONE"
+SELECTION_MODES = (SELECTION_MODE_MANUAL, SELECTION_MODE_REGEXP, SELECTION_MODE_TAGS, SELECTION_MODE_OTHERS, SELECTION_MODE_NONE)
 
 _PROJECT_SELECTION_MODE = "projectSelectionMode"
 _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
@@ -255,26 +256,18 @@ class Portfolio(aggregations.Aggregation):
     def update(self, data):
         self.set_permissions(data)
         selection_mode = data[_PROJECT_SELECTION_MODE]
-        if selection_mode == "MANUAL":
+        if selection_mode == SELECTION_MODE_MANUAL:
             self.set_projects(data.get("projects", {}))
-        elif selection_mode == "TAGS":
+        elif selection_mode == SELECTION_MODE_TAGS:
             self.set_tags(data[_PROJECT_SELECTION_TAGS])
-        elif selection_mode == "REGEXP":
+        elif selection_mode == SELECTION_MODE_REGEXP:
             self.set_regexp(data[_PROJECT_SELECTION_REGEXP])
-        elif selection_mode == "REST":
+        elif selection_mode == SELECTION_MODE_OTHERS:
             self.set_rest()
-        elif selection_mode == "NONE":
+        elif selection_mode == SELECTION_MODE_NONE:
             self.set_none()
-
-def _project_list(data):
-    plist = {}
-    for b in data.get("branches", {}).values():
-        if isinstance(b["projects"], dict):
-            plist.update(b["projects"])
         else:
-            for p in b["projects"]:
-                plist[p["projectKey"]] = ""
-    return plist.keys()
+            util.logger.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
 
 
 def count(endpoint=None):
