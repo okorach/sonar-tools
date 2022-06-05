@@ -33,24 +33,12 @@
          "branches": {
             "master": {
                "isMain": true,
-               "projects": [
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:azdo-mono-dotnet"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:azdo-mono-cli"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:azdo-mono-gradle"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:azdo-mono-maven"
-                  }
-               ]
+               "projects": {
+                  "demo:azdo-mono-dotnet": "master",
+                  "demo:azdo-mono-cli": "master",
+                  "demo:azdo-mono-gradle": "master",
+                  "demo:azdo-mono-maven": "master"
+               }
             }
          },
          "description": "",
@@ -66,24 +54,12 @@
          "branches": {
             "master": {
                "isMain": true,
-               "projects": [
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbc-proj"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbc-dotnet"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbc-gradle"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbc-maven"
-                  }
-               ]
+               "projects": {
+                  "demo:bbc-proj": "master", 
+                  "demo:bbc-dotnet": "master",
+                  "demo:bbc-gradle": "master",
+                  "demo:bbc-maven": "master"
+               }
             }
          },
          "description": "",
@@ -99,24 +75,12 @@
          "branches": {
             "master": {
                "isMain": true,
-               "projects": [
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbs-latest-mono-dotnet"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbs-latest-mono-cli"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbs-latest-mono-gradle"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbs-latest-mono-maven"
-                  }
-               ]
+               "projects": {
+                  "demo:bbs-latest-mono-dotnet": "master",
+                  "demo:bbs-latest-mono-cli": "master",
+                  "demo:bbs-latest-mono-gradle": "master",
+                  "demo:bbs-latest-mono-maven": "master"
+               }
             }
          },
          "description": "",
@@ -132,24 +96,12 @@
          "branches": {
             "master": {
                "isMain": true,
-               "projects": [
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbs-lts-proj"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbs-lts-dotnet"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbs-lts-gradle"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:bbs-lts-maven"
-                  }
-               ]
+               "projects": {
+                  "demo:bbs-lts-proj": "master",
+                  "demo:bbs-lts-dotnet": "master",
+                  "demo:bbs-lts-gradle": "master",
+                  "demo:bbs-lts-maven": "master"
+               }
             }
          },
          "description": "",
@@ -164,69 +116,34 @@
       "Corporate_Web_Site": {
          "branches": {
             "Release 1.1": {
-               "projects": [
-                  {
-                     "branch": "release-1.1",
-                     "projectKey": "WEBSITE-TIER1-WEB"
-                  },
-                  {
-                     "branch": "release-1.1",
-                     "projectKey": "WEBSITE-TIER2-BIZLOGIC"
-                  },
-                  {
-                     "branch": "release-1.1",
-                     "projectKey": "WEBSITE-TIER3-DBLAYER"
-                  }
-               ]
+               "projects": {
+                  "WEBSITE-TIER1-WEB": "release-1.1",
+                  "WEBSITE-TIER2-BIZLOGIC": "release-1.1",
+                  "WEBSITE-TIER3-DBLAYER": "release-1.1"
+               }
             },
             "Release-2020.1": {
-               "projects": [
-                  {
-                     "branch": "release-2020.1",
-                     "projectKey": "WEBSITE-TIER1-WEB"
-                  },
-                  {
-                     "branch": "release-2020.1",
-                     "projectKey": "WEBSITE-TIER2-BIZLOGIC"
-                  },
-                  {
-                     "branch": "release-2020.1",
-                     "projectKey": "WEBSITE-TIER3-DBLAYER"
-                  }
-               ]
+               "projects": {
+                  "WEBSITE-TIER1-WEB": "release-2020.1",
+                  "WEBSITE-TIER2-BIZLOGIC": "release-2020.1",
+                  "WEBSITE-TIER3-DBLAYER": "release-2020.1"
+               }
             },
             "master": {
                "isMain": true,
-               "projects": [
-                  {
-                     "branch": "master",
-                     "projectKey": "WEBSITE-TIER1-WEB"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "WEBSITE-TIER2-BIZLOGIC"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "WEBSITE-TIER3-DBLAYER"
-                  }
-               ]
+               "projects": {
+                  "WEBSITE-TIER1-WEB": "master",
+                  "WEBSITE-TIER2-BIZLOGIC": "master",
+                  "WEBSITE-TIER3-DBLAYER": "master"
+               }
+
             },
             "realease-2019.4": {
-               "projects": [
-                  {
-                     "branch": "release-2019.4",
-                     "projectKey": "WEBSITE-TIER1-WEB"
-                  },
-                  {
-                     "branch": "release-2019.4",
-                     "projectKey": "WEBSITE-TIER2-BIZLOGIC"
-                  },
-                  {
-                     "branch": "release-2019.4",
-                     "projectKey": "WEBSITE-TIER3-DBLAYER"
-                  }
-               ]
+               "projects": {
+                  "WEBSITE-TIER1-WEB": "release-2019.4",
+                  "WEBSITE-TIER2-BIZLOGIC": "release-2019.4",
+                  "WEBSITE-TIER3-DBLAYER": "release-2019.4"
+               }
             }
          },
          "name": "Corporate Web Site",
@@ -242,24 +159,12 @@
          "branches": {
             "master": {
                "isMain": true,
-               "projects": [
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:github-mono-jenkins-dotnet"
-                  },
-                  {
-                     "branch": "main",
-                     "projectKey": "demo:github-mono-jenkins-cli"
-                  },
-                  {
-                     "branch": "main",
-                     "projectKey": "demo:github-mono-jenkins-gradle"
-                  },
-                  {
-                     "branch": "master",
-                     "projectKey": "demo:github-mono-jenkins-maven"
-                  }
-               ]
+               "projects": {
+                     "demo:github-mono-jenkins-dotnet": "master",
+                     "demo:github-mono-jenkins-cli": "main",
+                     "demo:github-mono-jenkins-gradle": "main",
+                     "demo:github-mono-jenkins-maven": "master"
+               }
             }
          },
          "description": "",

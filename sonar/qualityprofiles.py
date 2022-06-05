@@ -178,7 +178,7 @@ class QualityProfile(sq.SqObject):
             elif r.status_code == 400:
                 util.logger.error("HTTP error 400 while trying to activate rule %s in %s", r_key, str(self))
             elif r.status_code // 100 != 2:
-                util.log_and_exit(r.status_code)
+                util.log_and_exit(r)
 
     def update(self, data):
         util.logger.debug("Updating %s with %s", str(self), util.json_dump(data))

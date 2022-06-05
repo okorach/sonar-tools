@@ -23,31 +23,41 @@
 
 """
 import json
-from sonar import measures, permissions
+from sonar import measures, permissions, components, branches, projects
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
 from sonar.audit import rules
 
 _OBJECTS = {}
-_GET_API = "applications/show"
+_MAP = {}
 
+_GET_API = "applications/show"
+_CREATE_API = "applications/create"
 
 class Application(aggr.Aggregation):
-    def __init__(self, key, endpoint, data=None):
+    def __init__(self, key, endpoint, data=None, name=None, create_data=None):
         super().__init__(key, endpoint)
         self._branches = None
         self._projects = None
         self._description = None
-        self._load(data)
-        _OBJECTS[key] = self
+        if create_data is not None:
+            self.name = name
+            util.logger.info("Creating %s", str(self))
+            util.logger.debug("from %s", util.json_dump(create_data))
+            self.post(
+                _CREATE_API, params={"key": self.key, "name": self.name, "visibility": create_data.get("visibility", None)}
+            )
+            self._load(api=_GET_API, key_name="application")
+            self.key = key
+        else:
+            self._load(api=_GET_API, data=data)
+        util.logger.debug("Created %s", str(self))
+        _OBJECTS[self.key] = self
+        _MAP[self.name] = self.key
 
     def __str__(self):
         return f"application key '{self.key}'"
-
-    def _load(self, data=None, api=None, key_name="application"):
-        """Loads an object with contents of data"""
-        super()._load(data=data, api=_GET_API, key_name="key")
 
     def _load_full(self):
         data = json.loads(self.get(_GET_API, params={"application": self.key}).text)
@@ -57,12 +67,42 @@ class Application(aggr.Aggregation):
     def projects(self):
         if self._projects is not None:
             return self._projects
-        self._projects = []
+        self._projects = {}
         if "projects" not in self._json:
             self._load_full()
         for p in self._json["projects"]:
-            self._projects.append({"key": p["key"], "branch": p["branch"]})
+            self._projects[p["key"]] = p["branch"]
         return self._projects
+
+    def branch_exists(self, branch):
+        return branch in self.branches()
+
+    def branch_is_main(self, branch):
+        return branch in self.branches() and self._branches[branch]["isMain"]
+
+    def set_branch(self, branch_name, branch_data):
+        project_list, branch_list = [], []
+        for p in branch_data.get("projects", []):
+            if isinstance(p, dict):
+                pkey = p["projectKey"]
+                bname = p["branch"]
+            else:
+                pkey = p
+                bname = branch_data["projects"][p]
+            if projects.exists(pkey, self.endpoint) and branches.exists(bname, pkey, self.endpoint):
+                project_list.append(pkey)
+                br_obj = branches.get_object(bname, pkey, self.endpoint)
+                branch_list.append("" if br_obj.is_main() else bname)
+            else:
+                util.logger.warning("Branch '%s' or project '%s' does not exist, cannot create application branch", bname, pkey)
+
+        if len(project_list) > 0:
+            params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
+            api = "applications/create_branch"
+            if self.branch_exists(branch_name):
+                api = "applications/update_branch"
+                params["name"] = params["branch"]
+            self.post(api, params=params)
 
     def branches(self):
         if self._branches is not None:
@@ -129,9 +169,38 @@ class Application(aggr.Aggregation):
         }
         return util.remove_nones(json_data)
 
+    def set_permissions(self, data):
+        permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
+
+    def add_projects(self, project_list):
+        current_projects = self.projects().keys()
+        for proj in project_list:
+            if proj in current_projects:
+                util.logger.info("Won't add project '%s' to %s, it's already added", proj, str(self))
+                continue
+            util.logger.info("Adding project '%s' to %s", proj, str(self))
+            self.post("applications/add_project", params={"application": self.key, "project": proj})
+
+    def update(self, data):
+        self.set_permissions(data)
+        self.add_projects(_project_list(data))
+        for name, branch_data in data.get("branches", {}).items():
+            self.set_branch(name, branch_data)
+
+
+def _project_list(data):
+    plist = {}
+    for b in data.get("branches", {}).values():
+        if isinstance(b["projects"], dict):
+            plist.update(b["projects"])
+        else:
+            for p in b["projects"]:
+                plist[p["projectKey"]] = ""
+    return plist.keys()
+
 
 def count(endpoint=None):
-    data = json.loads(endpoint.get("components/search_projects", params={"ps": 1, "filter": "qualifier = APP"}))
+    data = json.loads(endpoint.get(components.SEARCH_API, params={"ps": 1, "filter": "qualifier = APP"}))
     return data["paging"]["total"]
 
 
@@ -150,15 +219,13 @@ def search(endpoint, params=None):
             returned_field="components",
             key_field="key",
             object_class=Application,
-            endpoint=endpoint,
+            endpoint=endpoint
         )
     return app_list
 
 
-def get_object(key, endpoint):
-    if key not in _OBJECTS:
-        _OBJECTS[key] = Application(key=key, endpoint=endpoint)
-    return _OBJECTS[key]
+def get_list(endpoint):
+    return search(endpoint=endpoint)
 
 
 def audit(audit_settings, endpoint=None):
@@ -171,3 +238,46 @@ def audit(audit_settings, endpoint=None):
     for _, obj in objects_list.items():
         problems += obj.audit(audit_settings)
     return problems
+
+
+def get_object(name, endpoint=None):
+    if len(_OBJECTS) == 0 or name not in _MAP:
+        get_list(endpoint)
+    if name not in _MAP:
+        return None
+    return _OBJECTS[_MAP[name]]
+
+
+def create(endpoint, name, key, data=None):
+    if key not in _OBJECTS:
+        get_list(endpoint)
+    o = _OBJECTS.get(key)
+    if o is None:
+        o = Application(endpoint=endpoint, name=name, key=key, create_data=data)
+    else:
+        util.logger.info("%s already exist, creation skipped", str(o))
+    return o
+
+
+def create_or_update(endpoint, name, key, data):
+    if key not in _OBJECTS:
+        get_list(endpoint)
+    o = _OBJECTS.get(key, None)
+    if o is None:
+        util.logger.debug("Application key '%s' does not exist, creating...", key)
+        o = create(name=name, key=key, endpoint=endpoint, data=data)
+    o.update(data)
+
+
+def import_config(endpoint, config_data):
+    if "applications" not in config_data:
+        util.logger.info("No applications to import")
+        return
+    util.logger.info("Importing applications")
+    search(endpoint=endpoint)
+    for key, data in config_data["applications"].items():
+        util.logger.info("Importing application key '%s'", key)
+        create_or_update(endpoint=endpoint, name=data["name"], key=key, data=data)
+
+def search_by_name(endpoint, name):
+    return util.search_by_name(endpoint, name, components.SEARCH_API, "components", extra_params={"qualifiers": "APP"})

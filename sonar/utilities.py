@@ -442,16 +442,26 @@ def search_by_name(endpoint, name, api, returned_field, extra_params=None):
     return None
 
 
-def log_and_exit(code):
+def log_and_exit(response):
+    if response.ok:
+        return
+    tool_msg = f"For request URL {response.request.url}\n"
+    code = response.status_code
+    sq_msg = response.text
     if code == 401:
-        exit_fatal(
-            f"HTTP error {code} - Authentication error. Is token valid ?",
-            options.ERR_SONAR_API_AUTHENTICATION,
-        )
+        tool_msg += f"HTTP error {code} - Authentication error. Is token valid ?"
+        err_code = options.ERR_SONAR_API_AUTHENTICATION
     elif code == 403:
-        exit_fatal(
-            f"HTTP error {code} - Insufficient permissions to perform operation",
-            options.ERR_SONAR_API_AUTHORIZATION,
-        )
-    if (code // 100) != 2:
-        exit_fatal(f"HTTP error {code} - Exiting", options.ERR_SONAR_API)
+        tool_msg += f"HTTP error {code} - Insufficient permissions to perform operation"
+        err_code = options.ERR_SONAR_API_AUTHORIZATION
+    else:
+        tool_msg += f"HTTP error {code} - Exiting"
+        err_code = options.ERR_SONAR_API
+    exit_fatal(f"{tool_msg}: {sq_msg}", err_code)
+
+
+def object_key(key_or_obj):
+    if isinstance(key_or_obj, str):
+        return key_or_obj
+    else:
+        return key_or_obj.key
