@@ -674,9 +674,9 @@ Is this normal ?",
 
     def __get_branch_export(self):
         branch_data = {}
-        branches = self.get_branches()
-        nb_branches = len(branches)
-        for branch in branches:
+        my_branches = self.get_branches()
+        nb_branches = len(my_branches)
+        for branch in my_branches:
             exp = branch.export(full_export=False)
             if nb_branches == 1 and branch.is_main() and len(exp) == 0:
                 # Don't export main branch with no data
