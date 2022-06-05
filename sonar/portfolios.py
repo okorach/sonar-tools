@@ -233,7 +233,7 @@ class Portfolio(aggregations.Aggregation):
             elif project_list[proj] != current_projects[proj]:
                 util.logger.info("Adding project '%s' branch '%s' to %s", proj, project_list[proj], str(self))
                 params["branch"] = project_list["proj"]
-                self.post("views/add_project_branch", params=params)         
+                self.post("views/add_project_branch", params=params)
             else:
                 util.logger.info("Won't add project '%s' branch '%s' to %s, it's already added",
                                  proj, project_list[proj], str(self))
