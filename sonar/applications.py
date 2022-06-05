@@ -68,11 +68,11 @@ class Application(aggr.Aggregation):
     def projects(self):
         if self._projects is not None:
             return self._projects
-        self._projects = []
+        self._projects = {}
         if "projects" not in self._json:
             self._load_full()
         for p in self._json["projects"]:
-            self._projects.append({"key": p["key"], "branch": p["branch"]})
+            self._projects[p["key"]] = p["branch"]
         return self._projects
 
     def branch_exists(self, branch):
@@ -84,8 +84,12 @@ class Application(aggr.Aggregation):
     def set_branch(self, branch_name, branch_data):
         project_list, branch_list = [], []
         for p in branch_data.get("projects", []):
-            pkey = p["projectKey"]
-            bname = p["branch"]
+            if isinstance(p, dict):
+                pkey = p["projectKey"]
+                bname = p["branch"]
+            else:
+                pkey = p
+                bname = branch_data["projects"][p]
             if projects.exists(pkey, self.endpoint) and branches.exists(bname, pkey, self.endpoint):
                 project_list.append(pkey)
                 br_obj = branches.get_object(bname, pkey, self.endpoint)
@@ -171,12 +175,31 @@ class Application(aggr.Aggregation):
         permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
 
 
+    def add_projects(self, project_list):
+        current_projects = self.projects().keys()
+        for proj in project_list:
+            if proj in current_projects:
+                util.logger.info("Won't add project '%s' to %s, it's already added", proj, str(self))
+                continue
+            util.logger.info("Adding project '%s' to %s", proj, str(self))
+            self.post("applications/add_project", params={"application": self.key, "project": proj})
+
     def update(self, data):
         self.set_permissions(data)
+        self.add_projects(_project_list(data))
         for name, branch_data in data.get("branches", {}).items():
             self.set_branch(name, branch_data)
 
 
+def _project_list(data):
+    plist = {}
+    for b in data.get("branches", {}).values():
+        if isinstance(b["projects"], dict):
+            plist.update(b["projects"])
+        else:
+            for p in b["projects"]:
+                plist[p["projectKey"]] = ""
+    return plist.keys()
 
 
 def count(endpoint=None):
