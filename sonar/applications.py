@@ -45,9 +45,10 @@ class Application(aggr.Aggregation):
             self.name = name
             util.logger.info("Creating %s", str(self))
             util.logger.debug("from %s", util.json_dump(create_data))
-            self.post(
+            resp = self.post(
                 _CREATE_API, params={"key": self.key, "name": self.name, "visibility": create_data.get("visibility", None)}
             )
+            self.key = json.loads(resp.text)["application"]["key"]
             self._load(api=_GET_API, key_name="application")
             self.key = key
         else:

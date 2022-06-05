@@ -141,6 +141,7 @@ def __import_config(endpoint, what, args):
         endpoint.import_config(data["globalSettings"])
     projects.import_config(endpoint, data)
     applications.import_config(endpoint, data)
+    portfolios.import_config(endpoint, data)
     util.logger.info("Import finished")
 
 
