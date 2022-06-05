@@ -455,3 +455,10 @@ def log_and_exit(code):
         )
     if (code // 100) != 2:
         exit_fatal(f"HTTP error {code} - Exiting", options.ERR_SONAR_API)
+
+
+def object_key(key_or_obj):
+    if isinstance(key_or_obj, str):
+        return key_or_obj
+    else:
+        return key_or_obj.key
