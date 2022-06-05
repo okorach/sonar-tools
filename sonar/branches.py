@@ -45,6 +45,7 @@ class Branch(components.Component):
         self.name = name
         self.project = project
         self.json = data
+        self._new_code = None
         self._last_analysis_date = None
         self._ncloc = None
         _BRANCHES[self.uuid()] = self
@@ -88,20 +89,26 @@ class Branch(components.Component):
         util.logger.info("%s: Successfully deleted", str(self))
         return True
 
+    def new_code(self):
+        if self._new_code is None:
+            project_nc = self.project.new_code(include_branches=True)
+            if project_nc is not None:
+                self._new_code = project_nc.get(self.name, None)
+        util.logger.debug("Returning branch new code %s", str(self._new_code))
+        return self._new_code
+
+    def export(self):
+        util.logger.debug("Exporting %s", str(self))
+        data = {"name": self.name, "project": self.project.key, "newCode": self.new_code()}
+        return util.remove_nones(data)
+
     def url(self):
         return f"{self.endpoint.url}/dashboard?id={self.project.key}&branch={requests.utils.quote(self.name)}"
 
     def __audit_zero_loc(self):
         if self.last_analysis_date() is not None and self.ncloc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
-            return [
-                problem.Problem(
-                    rule.type,
-                    rule.severity,
-                    rule.msg.format(str(self)),
-                    concerned_object=self,
-                )
-            ]
+            return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return []
 
     def get_measures(self, metrics_list):
