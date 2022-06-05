@@ -271,7 +271,7 @@ def string_to_new_code(value):
 
 
 def set_new_code(endpoint, nc_type, nc_value, project_key=None, branch=None):
-    return endpoint.post("new_code_periods/set", params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
+    return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
 
 
 def set_setting(endpoint, key, value, project=None, branch=None):
