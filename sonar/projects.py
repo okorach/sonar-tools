@@ -646,7 +646,7 @@ Is this normal ?",
             link_list.append({"type": link["type"], "name": link.get("name", link["type"]), "url": link["url"]})
         return link_list
 
-    def __export_get_binding(self, json_data):
+    def __export_get_binding(self):
         binding = self.binding()
         if binding:
             # Remove redundant fields
