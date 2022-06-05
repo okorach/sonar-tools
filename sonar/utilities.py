@@ -445,7 +445,7 @@ def search_by_name(endpoint, name, api, returned_field, extra_params=None):
 def log_and_exit(response):
     if response.ok:
         return
-    tool_msg = "For request URL %s\n", response.request.url
+    tool_msg = f"For request URL {response.request.url}\n"
     code = response.status_code
     sq_msg = response.text
     if code == 401:
