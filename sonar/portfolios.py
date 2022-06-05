@@ -221,7 +221,7 @@ class Portfolio(aggregations.Aggregation):
             return
         current_projects = current_projects.keys()
         for proj in project_list:
-            params={"key": self.key, "project": proj}
+            params = {"key": self.key, "project": proj}
             # FIXME: Handle portfolios with several branches of same project
             if proj not in current_projects:
                 util.logger.info("Adding project '%s' to %s", proj, str(self))
@@ -233,7 +233,7 @@ class Portfolio(aggregations.Aggregation):
             elif project_list[proj] != current_projects[proj]:
                 util.logger.info("Adding project '%s' branch '%s' to %s", proj, project_list[proj], str(self))
                 params["branch"] = project_list["proj"]
-                self.post("views/add_project_branch", params=params)                
+                self.post("views/add_project_branch", params=params)         
             else:
                 util.logger.info("Won't add project '%s' branch '%s' to %s, it's already added",
                                  proj, project_list[proj], str(self))
@@ -375,9 +375,6 @@ def _projects(json_data, version):
     return projects
 
 
-
-
-
 def get_list(endpoint):
     return search(endpoint=endpoint)
 
@@ -398,7 +395,7 @@ def create(endpoint, name, key=None, data=None):
 
 
 def create_or_update(endpoint, name, key, data):
-    o =  get_object(key, endpoint=endpoint)
+    o = get_object(key, endpoint=endpoint)
     if o is None:
         util.logger.debug("Portfolio key '%s' does not exist, creating...", key)
         o = create(name=name, key=key, endpoint=endpoint, data=data)
