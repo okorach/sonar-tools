@@ -23,7 +23,7 @@
 
 """
 import json
-from sonar import measures, permissions, components
+from sonar import measures, permissions, components, branches, projects
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
@@ -75,14 +75,31 @@ class Application(aggr.Aggregation):
             self._projects.append({"key": p["key"], "branch": p["branch"]})
         return self._projects
 
+    def branch_exists(self, branch):
+        return branch in self.branches()
+
+    def branch_is_main(self, branch):
+        return branch in self.branches() and self._branches[branch]["isMain"]
+
     def set_branch(self, branch_name, branch_data):
-        projects, branches = [], []
+        project_list, branch_list = [], []
         for p in branch_data.get("projects", []):
-            projects.append(p["projectKey"])
-            branches.append(p["branch"])
-        if len(projects) > 0:
-            params = {"application": self.key, "branch": branch_name, "project": projects, "projectBranch": branches}
-            self.post("applications/create_branch", params=params)
+            pkey = p["projectKey"]
+            bname = p["branch"]
+            if projects.exists(pkey, self.endpoint) and branches.exists(bname, pkey, self.endpoint):
+                project_list.append(pkey)
+                br_obj = branches.get_object(bname, pkey, self.endpoint)
+                branch_list.append("" if br_obj.is_main() else bname)
+            else:
+                util.logger.warning("Branch '%s' or project '%s' does not exist, cannot create application branch", bname, pkey)
+
+        if len(project_list) > 0:
+            params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
+            api = "applications/create_branch"
+            if self.branch_exists(branch_name):
+                api = "applications/update_branch"
+                params["name"] = params["branch"]
+            self.post(api, params=params)
 
     def branches(self):
         if self._branches is not None:
