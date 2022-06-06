@@ -38,6 +38,7 @@ class Rule(sq.SqObject):
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
         self.type = data.get("type", None)
+        self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
         self.name = data.get("name", None)
         self.language = data.get("lang", None)
         self.created_at = data["createdAt"]
@@ -88,13 +89,25 @@ def get_object(key, data=None, endpoint=None):
     return _RULES[key]
 
 
-def export(endpoint, only_instantiated=True):
+def export(endpoint, instantiated_only=True, tagged_only=True):
     utilities.logger.info("Exporting rules")
-    rule_list = {}
+    rule_list, other_rules, instantiated_rules, tagged_rules = {}, {}, {}, {}
     for rule_key, rule in get_list(endpoint=endpoint).items():
-        if only_instantiated and rule.template_key is None:
+        if (instantiated_only and rule.template_key is None) and (tagged_only and rule.tags is None):
             continue
-        rule_list[rule_key] = convert_for_export(rule.to_json(), rule.language)
+        rule_export = convert_for_export(rule.to_json(), rule.language)
+        if rule.template_key is not None:
+            instantiated_rules[rule_key] = rule_export
+        elif rule.tags is not None:
+            tagged_rules[rule_key] = rule_export
+        else:
+            other_rules[rule_key] = rule_export
+    if len(instantiated_rules) > 0:
+        rule_list["instantiatedRules"] = instantiated_rules
+    if len(tagged_rules) > 0:
+        rule_list["taggedRules"] = tagged_rules
+    if len(other_rules) > 0:
+        rule_list["otherRules"] = other_rules
     return rule_list
 
 
@@ -109,6 +122,8 @@ def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
             d["params"] = rule["params"]
     if rule["isTemplate"]:
         d["isTemplate"] = True
+    if "tags" in rule and len(rule["tags"]) > 0:
+        d["tags"] = utilities.list_to_csv(rule["tags"])
     if with_template_key and "templateKey" in rule:
         d["templateKey"] = rule["templateKey"]
     if "lang" in rule and rule["lang"] != qp_lang:
