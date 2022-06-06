@@ -217,6 +217,9 @@ class Portfolio(aggregations.Aggregation):
     def set_permissions(self, data):
         permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
 
+    def set_component_tags(self, tags, api):
+        util.logger.warning("Can't set tags on portfolios, operation skipped...")
+
     def set_projects(self, project_list):
         current_projects = self.projects()
         self.post("views/set_manual_mode", params={"portfolio": self.key})
@@ -242,16 +245,16 @@ class Portfolio(aggregations.Aggregation):
                                  proj, project_list[proj], str(self))
             self.post("views/add_project", params={"application": self.key, "project": proj})
 
-    def set_tags(self, tags, branch):
+    def set_tag_mode(self, tags, branch):
         self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
 
-    def set_regexp(self, regexp, branch):
+    def set_regexp_mode(self, regexp, branch):
         self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
 
-    def set_rest(self, branch):
+    def set_remaining_projects_mode(self, branch):
         self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
 
-    def set_none(self):
+    def set_node_mode(self):
         self.post("views/set_none_mode", params={"portfolio": self.key})
 
     def update(self, data):
@@ -260,13 +263,13 @@ class Portfolio(aggregations.Aggregation):
         if selection_mode == SELECTION_MODE_MANUAL:
             self.set_projects(data.get("projects", {}))
         elif selection_mode == SELECTION_MODE_TAGS:
-            self.set_tags(data[_PROJECT_SELECTION_TAGS], data.get(_PROJECT_SELECTION_BRANCH, None))
+            self.set_tag_mode(data[_PROJECT_SELECTION_TAGS], data.get(_PROJECT_SELECTION_BRANCH, None))
         elif selection_mode == SELECTION_MODE_REGEXP:
-            self.set_regexp(data[_PROJECT_SELECTION_REGEXP], data.get(_PROJECT_SELECTION_BRANCH, None))
+            self.set_regexp_mode(data[_PROJECT_SELECTION_REGEXP], data.get(_PROJECT_SELECTION_BRANCH, None))
         elif selection_mode == SELECTION_MODE_OTHERS:
-            self.set_rest(data.get(_PROJECT_SELECTION_BRANCH, None))
+            self.set_remaining_projects_mode(data.get(_PROJECT_SELECTION_BRANCH, None))
         elif selection_mode == SELECTION_MODE_NONE:
-            self.set_none()
+            self.set_node_mode()
         else:
             util.logger.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
 
