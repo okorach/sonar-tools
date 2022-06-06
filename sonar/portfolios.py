@@ -208,6 +208,7 @@ class Portfolio(aggregations.Aggregation):
             _PROJECT_SELECTION_BRANCH: self._selection_branch,
             _PROJECT_SELECTION_TAGS: self.tags(),
             "permissions": permissions.export(self.endpoint, self.key),
+            "tags": util.list_to_csv(self.tags(), separator=", ")
         }
         json_data.update(self.sub_portfolios())
 
