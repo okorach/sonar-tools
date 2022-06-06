@@ -168,7 +168,10 @@ class QualityProfile(sq.SqObject):
             return
         params = {"key": self.key}
         for r_key, r_data in ruleset.items():
-            params.update({"rule": r_key, "severity": r_data.get("severity", None)})
+            if isinstance(r_data, str):
+                params.update({"rule": r_key, "severity": r_data})
+            else:
+                params.update({"rule": r_key, "severity": r_data.get("severity", None)})
             params.pop("params", None)
             if "params" in r_data:
                 params["params"] = ";".join([f"{k}={v}" for k, v in r_data["params"].items()])
@@ -244,12 +247,13 @@ class QualityProfile(sq.SqObject):
         diff_rules = {}
         util.json_dump_debug(comp, "Comparing 2 QP ")
         for r in comp["inLeft"]:
-            r_key = r["key"]
-            diff_rules[r_key] = r
-            if "templateKey" in my_rules.get(r["key"], {}):
-                diff_rules[r_key]["templateKey"] = my_rules[r_key]["templateKey"]
-                diff_rules[r_key]["params"] = my_rules[r_key]["params"]
-            r.pop("key")
+            r_key = r.pop("key")
+            diff_rules[r_key] = my_rules.get(r_key, r)
+            if "severity" in r:
+                if isinstance(diff_rules[r_key], str):
+                    diff_rules[r_key] = r["severity"]
+                else:
+                    diff_rules[r_key]["severity"] = r["severity"]
         for r in comp["modified"]:
             r_key = r["key"]
             diff_rules[r_key] = {"modified": True}
@@ -444,6 +448,8 @@ def _convert_rule(rule, qp_lang, full_specs=False):
         d["isTemplate"] = True
     if rule["lang"] != qp_lang:
         d["language"] = rule["lang"]
+    if len(d) == 1:
+        return d["severity"]
     return d
 
 
