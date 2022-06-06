@@ -42,7 +42,7 @@ _EVERYTHING = "settings,qp,qg,projects,users,groups,portfolios,apps"
 
 __SETTINGS = "globalSettings"
 __QP = "qualityProfiles"
-__RULES = "instantiatedRules"
+__RULES = "rules"
 __QG = "qualityGates"
 __APPS = "applications"
 

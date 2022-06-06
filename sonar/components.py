@@ -28,6 +28,7 @@ import sonar.sqobject as sq
 import sonar.utilities as util
 
 SEARCH_API = "components/search"
+_DETAILS_API = "components/show"
 
 
 class Component(sq.SqObject):
@@ -41,6 +42,7 @@ class Component(sq.SqObject):
         self._ncloc = None
         self._description = None
         self._last_analysis = None
+        self._tags = None
         if data is not None:
             self.__load(data)
 
@@ -52,6 +54,20 @@ class Component(sq.SqObject):
 
     def __str__(self):
         return self.key
+
+    def tags(self):
+        if self._tags is not None:
+            pass
+        elif self._json is not None and "tags" in self._json:
+            self._tags = self._json["tags"]
+        else:
+            data = json.loads(self.post(_DETAILS_API, params={"component": self.key}).text)
+            if self._json is None:
+                self._json = data["component"]
+            else:
+                self._json.update(data["component"])
+            self._tags = self._json["tags"]
+        return self._tags if len(self._tags) > 0 else None
 
     def get_subcomponents(self, strategy="children", with_issues=False):
         parms = {

@@ -48,6 +48,7 @@ _BIND_SEP = ":::"
 
 class Project(components.Component):
     def __init__(self, key, endpoint=None, data=None, create_data=None):
+        super().__init__(key, endpoint)
         self.visibility = None
         self.main_branch_last_analysis_date = "undefined"
         self.all_branches_last_analysis_date = "undefined"
@@ -87,9 +88,6 @@ class Project(components.Component):
         else:
             self.main_branch_last_analysis_date = None
         self.revision = data.get("revision", None)
-
-    #    def __del__(self):
-    #        # del PROJECTS[self.key]
 
     def url(self):
         return f"{self.endpoint.url}/dashboard?id={self.key}"
@@ -702,7 +700,7 @@ Is this normal ?",
         json_data["links"] = self.links()
         json_data["permissions"] = self.__export_get_permissions()
         json_data["branches"] = self.__get_branch_export()
-
+        json_data["tags"] = util.list_to_csv(self.tags(), separator=", ")
         (json_data["qualityGate"], qg_is_default) = self.quality_gate()
         if qg_is_default:
             json_data.pop("qualityGate")
