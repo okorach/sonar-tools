@@ -38,18 +38,46 @@ from sonar import (
 )
 import sonar.utilities as util
 
-_EVERYTHING = "settings,qp,qg,projects,users,groups,portfolios,apps"
 
-__SETTINGS = "globalSettings"
-__QP = "qualityProfiles"
-__RULES = "rules"
-__QG = "qualityGates"
-__APPS = "applications"
+_SETTINGS = "settings"
+_USERS = "users"
+_GROUPS = "groups"
+_GATES = "qualitygates"
+_RULES = "rules"
+_PROFILES = "qualityprofiles"
+_PROJECTS = "projects"
+_APPS = "applications"
+_PORTFOLIOS = "portfolios"
+
+_EVERYTHING = [_SETTINGS, _USERS, _GROUPS, _GATES, _RULES, _PROFILES, _PROJECTS, _APPS, _PORTFOLIOS]
+
+__JSON_KEY_PLATFORM = "platform"
+
+__JSON_KEY_SETTINGS = "globalSettings"
+__JSON_KEY_USERS = "users"
+__JSON_KEY_GROUPS = "groups"
+__JSON_KEY_GATES = "qualityGates"
+__JSON_KEY_RULES = "rules"
+__JSON_KEY_PROFILES = "qualityProfiles"
+__JSON_KEY_PROJECTS = "projects"
+__JSON_KEY_APPS = "applications"
+__JSON_KEY_PORTFOLIOS = "portfolios"
+
+__MAP = {
+    _SETTINGS: __JSON_KEY_SETTINGS,
+    _USERS: __JSON_KEY_USERS,
+    _GROUPS: __JSON_KEY_GROUPS,
+    _GATES: __JSON_KEY_GATES,
+    _RULES: __JSON_KEY_RULES,
+    _PROFILES: __JSON_KEY_PROFILES,
+    _PROJECTS: __JSON_KEY_PROJECTS,
+    _APPS: __JSON_KEY_APPS,
+    _PORTFOLIOS: __JSON_KEY_PORTFOLIOS
+}
 
 
 def __map(k):
-    mapping = {"settings": __SETTINGS, "qp": __QP, "qg": __QG, "apps": __APPS}
-    return mapping.get(k, k)
+    return __MAP.get(k, k)
 
 
 def __parse_args(desc):
@@ -61,7 +89,7 @@ def __parse_args(desc):
         "--what",
         required=False,
         default="",
-        help="What to export (settings,qp,qg,projects,users,groups,portfolios,apps)",
+        help=f"What to export or import {','.join(_EVERYTHING)}",
     )
     parser.add_argument(
         "-e",
@@ -91,43 +119,46 @@ def __count_settings(what, sq_settings):
         nbr_settings += len(sq_settings.get(__map(s), {}))
     if "settings" in what:
         for categ in settings.CATEGORIES:
-            if categ in sq_settings[__SETTINGS]:
-                nbr_settings += len(sq_settings[__SETTINGS][categ]) - 1
+            if categ in sq_settings[__JSON_KEY_SETTINGS]:
+                nbr_settings += len(sq_settings[__JSON_KEY_SETTINGS][categ]) - 1
     return nbr_settings
 
 
 def __export_config(endpoint, what, args):
     sq_settings = {}
-    sq_settings["platform"] = endpoint.basics()
-    if "settings" in what:
-        sq_settings[__SETTINGS] = endpoint.export()
-    if "qp" in what:
-        sq_settings[__RULES] = rules.export(endpoint)
-        sq_settings[__QP] = qualityprofiles.export(endpoint)
-    if "qg" in what:
-        sq_settings[__QG] = qualitygates.export(endpoint)
-    if "projects" in what:
+    sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
+    if _SETTINGS in what:
+        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export()
+    if _RULES in what:
+        sq_settings[__JSON_KEY_RULES] = rules.export(endpoint)
+    if _PROFILES in what:
+        if _RULES not in what:
+            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint)
+        sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint)
+    if _GATES in what:
+        sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint)
+    if _PROJECTS in what:
         project_settings = {}
         for k, p in projects.get_projects_list(str_key_list=args.projectKeys, endpoint=endpoint).items():
             project_settings[k] = p.export()
             project_settings[k].pop("key")
-        sq_settings["projects"] = project_settings
-    if "portfolios" in what:
-        portfolios_settings = {}
-        for k, p in portfolios.search(endpoint).items():
-            portfolios_settings[k] = p.export()
-            portfolios_settings[k].pop("key")
-        sq_settings["portfolios"] = portfolios_settings
-    if "apps" in what:
+        sq_settings[__JSON_KEY_PROJECTS] = project_settings
+    if _APPS in what:
         apps_settings = {}
         for k, app in applications.search(endpoint).items():
             apps_settings[k] = app.export()
             apps_settings[k].pop("key")
-        sq_settings[__APPS] = apps_settings
-    if "users" in what:
-        sq_settings["users"] = users.export(endpoint)
-    if "groups" in what:
-        sq_settings["groups"] = groups.export(endpoint)
+        sq_settings[__JSON_KEY_APPS] = apps_settings
+    if _PORTFOLIOS in what:
+        portfolios_settings = {}
+        for k, p in portfolios.search(endpoint).items():
+            portfolios_settings[k] = p.export()
+            portfolios_settings[k].pop("key")
+        sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios_settings
+    if _USERS in what:
+        sq_settings[__JSON_KEY_USERS] = users.export(endpoint)
+    if _GROUPS in what:
+        sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint)
     with util.open_file(args.file) as fd:
         print(util.json_dump(sq_settings), file=fd)
 
@@ -136,15 +167,28 @@ def __export_config(endpoint, what, args):
 
 def __import_config(endpoint, what, args):
     data = util.load_json_file(args.file)
-    groups.import_config(endpoint, data)
-    users.import_config(endpoint, data)
-    qualitygates.import_config(endpoint, data)
-    qualityprofiles.import_config(endpoint, data)
-    if "settings" in what:
+    if _GROUPS in what:
+        groups.import_config(endpoint, data)
+    if _USERS in what:
+        users.import_config(endpoint, data)
+    if _GATES in what:
+        qualitygates.import_config(endpoint, data)
+    if _RULES in what:
+        pass
+        #rules.import_config(endpoint, data)
+    if _PROFILES in what:
+        if _RULES not in what:
+            pass
+            #rules.import_config(endpoint, data)
+        qualityprofiles.import_config(endpoint, data)
+    if _SETTINGS in what:
         endpoint.import_config(data["globalSettings"])
-    projects.import_config(endpoint, data)
-    applications.import_config(endpoint, data)
-    portfolios.import_config(endpoint, data)
+    if _PROJECTS in what:
+        projects.import_config(endpoint, data)
+    if _APPS in what:
+        applications.import_config(endpoint, data)
+    if _PORTFOLIOS in what:
+        portfolios.import_config(endpoint, data)
     util.logger.info("Import finished")
 
 
@@ -152,21 +196,22 @@ def main():
     args = __parse_args("Extract SonarQube platform configuration")
     kwargs = vars(args)
     if not kwargs["export"] and not kwargs["import"]:
-        util.exit_fatal(
-            "One of --export or --import option must be chosen",
-            exit_code=options.ERR_ARGS_ERROR,
-        )
+        util.exit_fatal( "One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
     if kwargs["export"] and kwargs["import"]:
-        util.exit_fatal(
-            "--export or --import options are exclusive of each other",
-            exit_code=options.ERR_ARGS_ERROR,
-        )
+        util.exit_fatal("--export or --import options are exclusive of each other", exit_code=options.ERR_ARGS_ERROR)
 
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     what = args.what
     if args.what == "":
         what = _EVERYTHING
-    what = util.csv_to_list(what)
+    else:
+        what = util.csv_to_list(what)
+    for w in what:
+        if w not in _EVERYTHING:
+            util.exit_fatal(f"'{w}' is not an something that can be imported or exported, "
+                            f"chose among {','.join(_EVERYTHING)}",
+                            exit_code=options.ERR_ARGS_ERROR)
+
     if kwargs["export"]:
         __export_config(endpoint, what, args)
     if kwargs["import"]:
