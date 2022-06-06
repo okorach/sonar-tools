@@ -158,7 +158,9 @@ class QualityProfile(sq.SqObject):
                 self._rules += data["rules"]
             else:
                 for r in data["rules"]:
-                    self._rules[r["key"]] = _convert_rule(r, self.language, full_specs)
+                    if "templateKey" in r:
+                        r.pop("params")
+                    self._rules[r["key"]] = rules.convert_for_export(r, self.language, with_template_key=False, full_specs=full_specs)
             nb_pages = util.nbr_pages(data)
             page += 1
         return self._rules
@@ -431,26 +433,6 @@ def get_object(name, language, endpoint=None):
     if fmt not in _MAP:
         return None
     return _QUALITY_PROFILES[_MAP[fmt]]
-
-
-def _convert_rule(rule, qp_lang, full_specs=False):
-    d = {"severity": rule["severity"]}
-    if len(rule["params"]) > 0:
-        if not full_specs:
-            d["params"] = {}
-            for p in rule["params"]:
-                d["params"][p["key"]] = p.get("defaultValue", "")
-        else:
-            d["params"] = rule["params"]
-    if "templateKey" in rule:
-        d["templateKey"] = rule["templateKey"]
-    if rule["isTemplate"]:
-        d["isTemplate"] = True
-    if rule["lang"] != qp_lang:
-        d["language"] = rule["lang"]
-    if len(d) == 1:
-        return d["severity"]
-    return d
 
 
 def create(name, language, endpoint=None, create_data=None):

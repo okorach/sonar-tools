@@ -33,21 +33,23 @@ API_RULES_SEARCH = "rules/search"
 class Rule(sq.SqObject):
     def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
-        self.severity = data["severity"]
-        self.tags = data["tags"]
-        self.sys_tags = data["sysTags"]
-        self.repo = data["repo"]
-        self.type = data["type"]
-        self.status = data["status"]
-        self.scope = data["scope"]
-        self.html_desc = data["htmlDesc"]
-        self.md_desc = data["mdDesc"]
-        self.name = data["name"]
-        self.language = data["lang"]
+        utilities.logger.debug("Creating rule from %s", utilities.json_dump(data))
+        self._json = data
+        self.severity = data.get("severity", None)
+        self.repo = data.get("repo", None)
+        self.type = data.get("type", None)
+        self.name = data.get("name", None)
+        self.language = data.get("lang", None)
         self.created_at = data["createdAt"]
-        self.is_template = data["isTemplate"]
+        self.is_template = data.get("isTemplate", False)
         self.template_key = data.get("templateKey", None)
         _RULES[self.key] = self
+
+    def __str__(self):
+        return f"rule key '{self.key}'"
+
+    def to_json(self):
+        return self._json
 
 
 def get_facet(facet, endpoint):
@@ -71,7 +73,7 @@ def get_list(endpoint, params=None):
     page, nb_pages = 1, 1
     rule_list = {}
     while page <= nb_pages:
-        params["p"] = page
+        new_params["p"] = page
         data = json.loads(endpoint.get(API_RULES_SEARCH, params=new_params).text)
         for r in data["rules"]:
             rule_list[r["key"]] = Rule(r["key"], endpoint=endpoint, data=r)
@@ -84,3 +86,33 @@ def get_object(key, data=None, endpoint=None):
     if key not in _RULES:
         _ = Rule(key=key, data=data, endpoint=endpoint)
     return _RULES[key]
+
+
+def export(endpoint, only_instantiated=True):
+    utilities.logger.info("Exporting rules")
+    rule_list = {}
+    for rule_key, rule in get_list(endpoint=endpoint).items():
+        if only_instantiated and rule.template_key is None:
+            continue
+        rule_list[rule_key] = convert_for_export(rule.to_json(), rule.language)
+    return rule_list
+
+
+def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
+    d = {"severity": rule.get("severity", "")}
+    if len(rule.get("params", {})) > 0:
+        if not full_specs:
+            d["params"] = {}
+            for p in rule["params"]:
+                d["params"][p["key"]] = p.get("defaultValue", "")
+        else:
+            d["params"] = rule["params"]
+    if rule["isTemplate"]:
+        d["isTemplate"] = True
+    if with_template_key and "templateKey" in rule:
+        d["templateKey"] = rule["templateKey"]
+    if "lang" in rule and rule["lang"] != qp_lang:
+        d["language"] = rule["lang"]
+    if len(d) == 1:
+        return d["severity"]
+    return d
