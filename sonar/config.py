@@ -27,6 +27,7 @@ from sonar import (
     version,
     settings,
     projects,
+    rules,
     qualityprofiles,
     qualitygates,
     portfolios,
@@ -41,6 +42,7 @@ _EVERYTHING = "settings,qp,qg,projects,users,groups,portfolios,apps"
 
 __SETTINGS = "globalSettings"
 __QP = "qualityProfiles"
+__RULES = "instantiatedRules"
 __QG = "qualityGates"
 __APPS = "applications"
 
@@ -100,6 +102,7 @@ def __export_config(endpoint, what, args):
     if "settings" in what:
         sq_settings[__SETTINGS] = endpoint.export()
     if "qp" in what:
+        sq_settings[__RULES] = rules.export(endpoint)
         sq_settings[__QP] = qualityprofiles.export(endpoint)
     if "qg" in what:
         sq_settings[__QG] = qualitygates.export(endpoint)

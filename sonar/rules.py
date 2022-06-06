@@ -84,3 +84,31 @@ def get_object(key, data=None, endpoint=None):
     if key not in _RULES:
         _ = Rule(key=key, data=data, endpoint=endpoint)
     return _RULES[key]
+
+def export(endpoint, only_instantiated=True):
+    rule_list = {}
+    for rule_key, rule in get_list(endpoint=endpoint).items():
+        if only_instantiated and "templateKey" not in rule:
+            continue
+        rule_list[rule_key] = convert_for_export(rule, rule["lang"])
+    return rule_list
+
+
+def convert_for_export(rule, qp_lang, full_specs=False):
+    d = {"severity": rule["severity"]}
+    if len(rule["params"]) > 0:
+        if not full_specs:
+            d["params"] = {}
+            for p in rule["params"]:
+                d["params"][p["key"]] = p.get("defaultValue", "")
+        else:
+            d["params"] = rule["params"]
+    if "templateKey" in rule:
+        d["templateKey"] = rule["templateKey"]
+    if rule["isTemplate"]:
+        d["isTemplate"] = True
+    if rule["lang"] != qp_lang:
+        d["language"] = rule["lang"]
+    if len(d) == 1:
+        return d["severity"]
+    return d
