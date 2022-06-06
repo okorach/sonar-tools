@@ -111,6 +111,10 @@ def export(endpoint, instantiated_only=True, tagged_only=True):
     return rule_list
 
 
+def import_config(endpoint, data):
+    utilities.logger.info("Importing rules not yet implemented")
+
+
 def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
     d = {"severity": rule.get("severity", "")}
     if len(rule.get("params", {})) > 0:
