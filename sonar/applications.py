@@ -164,6 +164,7 @@ class Application(aggr.Aggregation):
             # 'projects': self.projects(),
             "branches": self.branches(),
             "permissions": permissions.export(self.endpoint, self.key),
+            "tags": util.list_to_csv(self.tags(), separator=", ")
         }
         return util.remove_nones(json_data)
 
