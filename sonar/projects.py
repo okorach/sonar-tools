@@ -743,6 +743,16 @@ Is this normal ?",
             params.update(link)
             self.post("project_links/create", params=params)
 
+    def set_tags(self, tags):
+        if tags is None or len(tags) == 0:
+            return
+        if isinstance(tags, list):
+            my_tags = util.list_to_csv(tags)
+        else:
+            my_tags = util.csv_normalize(tags)
+        self.post("project_tags/set", params={"project": self.key, "tags": my_tags})
+        self._tags = util.csv_to_list(my_tags)
+
     def set_quality_gate(self, quality_gate):
         if quality_gate is None:
             return
@@ -778,6 +788,7 @@ Is this normal ?",
     def update(self, data):
         self.set_permissions(data)
         self.set_links(data)
+        self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))
 
 

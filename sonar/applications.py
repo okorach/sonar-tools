@@ -171,6 +171,16 @@ class Application(aggr.Aggregation):
     def set_permissions(self, data):
         permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
 
+    def set_tags(self, tags):
+        if tags is None or len(tags) == 0:
+            return
+        if isinstance(tags, list):
+            my_tags = util.list_to_csv(tags)
+        else:
+            my_tags = util.csv_normalize(tags)
+        self.post("applications/set_tags", params={"application": self.key, "tags": my_tags})
+        self._tags = util.csv_to_list(my_tags)
+
     def add_projects(self, project_list):
         current_projects = self.projects().keys()
         for proj in project_list:
@@ -183,6 +193,7 @@ class Application(aggr.Aggregation):
     def update(self, data):
         self.set_permissions(data)
         self.add_projects(_project_list(data))
+        self.set_tags(data.get("tags", None))
         for name, branch_data in data.get("branches", {}).items():
             self.set_branch(name, branch_data)
 
