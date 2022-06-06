@@ -105,7 +105,7 @@ def export(endpoint, instantiated_only=True, tagged_only=True):
     if len(instantiated_rules) > 0:
         rule_list["instantiated"] = instantiated_rules
     if len(tagged_rules) > 0:
-        rule_list["tagged"] = tagged_rules
+        rule_list["customTags"] = tagged_rules
     if len(other_rules) > 0:
         rule_list["others"] = other_rules
     return rule_list
