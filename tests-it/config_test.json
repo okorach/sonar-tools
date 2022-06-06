@@ -45,6 +45,7 @@
                "ado": "admin"
             }
          },
+         "tags": "azure-devops, monorepo",
          "visibility": "public"
       },
       "Bitbucket_Cloud_monorepo": {
@@ -87,6 +88,7 @@
                "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
+         "tags": "bbs-latest",
          "visibility": "public"
       },
       "Bitbucket_Server_LTS_monorepo": {
@@ -170,6 +172,7 @@
                "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
+         "tags": "github, monorepo",
          "visibility": "public"
       },
       "GitLab_monorepo": {
@@ -191,6 +194,7 @@
                "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
+         "tags": "gitlab, monorepo",
          "visibility": "public"
       }
    },
