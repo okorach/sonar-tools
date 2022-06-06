@@ -174,12 +174,10 @@ def __import_config(endpoint, what, args):
     if _GATES in what:
         qualitygates.import_config(endpoint, data)
     if _RULES in what:
-        pass
-        #rules.import_config(endpoint, data)
+        rules.import_config(endpoint, data)
     if _PROFILES in what:
         if _RULES not in what:
-            pass
-            #rules.import_config(endpoint, data)
+            rules.import_config(endpoint, data)
         qualityprofiles.import_config(endpoint, data)
     if _SETTINGS in what:
         endpoint.import_config(data["globalSettings"])
@@ -196,7 +194,7 @@ def main():
     args = __parse_args("Extract SonarQube platform configuration")
     kwargs = vars(args)
     if not kwargs["export"] and not kwargs["import"]:
-        util.exit_fatal( "One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
+        util.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
     if kwargs["export"] and kwargs["import"]:
         util.exit_fatal("--export or --import options are exclusive of each other", exit_code=options.ERR_ARGS_ERROR)
 
