@@ -103,8 +103,6 @@ def convert_for_export(rule, qp_lang, full_specs=False):
                 d["params"][p["key"]] = p.get("defaultValue", "")
         else:
             d["params"] = rule["params"]
-    if "templateKey" in rule:
-        d["templateKey"] = rule["templateKey"]
     if rule["isTemplate"]:
         d["isTemplate"] = True
     if rule["lang"] != qp_lang:

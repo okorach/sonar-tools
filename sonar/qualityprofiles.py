@@ -159,6 +159,8 @@ class QualityProfile(sq.SqObject):
             else:
                 for r in data["rules"]:
                     self._rules[r["key"]] = rules.convert_for_export(r, self.language, full_specs)
+                    if "templateKey" in self._rules[r["key"]]:
+                        self._rules[r["key"]].pop("params")
             nb_pages = util.nbr_pages(data)
             page += 1
         return self._rules
