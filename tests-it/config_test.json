@@ -3021,7 +3021,7 @@
                "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "user"
             }
-         },
+         }
       },
       "training:external-issues": {
          "name": "Training: External issues import",
