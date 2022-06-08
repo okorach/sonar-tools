@@ -207,7 +207,7 @@ def main():
     for w in what:
         if w not in _EVERYTHING:
             util.exit_fatal(
-                f"'{w}' is not an something that can be imported or exported, chose among {','.join(_EVERYTHING)}",
+                f"'{w}' is not something that can be imported or exported, chose among {','.join(_EVERYTHING)}",
                 exit_code=options.ERR_ARGS_ERROR,
             )
 
