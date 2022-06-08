@@ -58,21 +58,29 @@ class Rule(sq.SqObject):
             return
         if isinstance(tags, list):
             tags = utilities.list_to_csv(tags)
+        utilities.logger.info("Settings custom tags '%s' to %s", tags, str(self))
         self.post("rules/update", params={"key": self.key, "tags": tags})
 
     def set_description(self, description):
         if description is None:
             return
+        utilities.logger.info("Settings custom description '%s' to %s", description, str(self))
         self.post("rules/update", params={"key": self.key, "markdown_note": description})
 
     def instantiate(self, key, data):
-        # rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
+        if get_object(key, self.endpoint) is not None:
+            utilities.logger.warning("Rule key '%s' already exists, creation skipped...")
+            return
+        utilities.logger.info("Creating rule key '%s' from template key '%s'", key, self.key)
+        rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
+        (_, key) = key.split(":")
         self.post("rules/create", params={
             "custom_key": key,
             "template_key": self.key,
-            "name":  data("name", key),
-            "params": ";".join([f"{k}={v}" for k, v in data["params"].items()]),
-            "markdown_description": data("description", "NO DESCRIPTION")
+            "name":  data.get("name", key),
+            "severity":  data.get("severity", "MAJOR"),
+            "params": rule_params,
+            "markdown_description": data.get("description", "NO DESCRIPTION")
             }
         )
 
@@ -93,8 +101,7 @@ def count(endpoint, params=None):
 
 
 def get_list(endpoint, templates=False):
-    new_params = {} if params is None else params.copy()
-    new_params.update({"is_template": str(templates).lower(), "include_external": "true", "ps": 500})
+    new_params = {"is_template": str(templates).lower(), "include_external": "true", "ps": 500}
     page, nb_pages = 1, 1
     rule_list = {}
     while page <= nb_pages:
@@ -142,7 +149,7 @@ def import_config(endpoint, config_data):
         utilities.logger.info("No customized (Custom tags, extended description) to import")
         return
     utilities.logger.info("Importing rules")
-    for key, custom in config_data["rules"].get("extended", {}):
+    for key, custom in config_data["rules"].get("extended", {}).items():
         rule = get_object(key, endpoint=endpoint)
         if rule is None:
             utilities.logger.warning("Rule key '%s' does not exist, can't import it", key)
@@ -151,7 +158,7 @@ def import_config(endpoint, config_data):
         rule.set_tags(custom.get("tags", None))
 
     get_list(endpoint=endpoint, templates=True)
-    for key, instantiation_data in config_data["rules"].get("instantiated", {}):
+    for key, instantiation_data in config_data["rules"].get("instantiated", {}).items():
         template_rule = get_object(instantiation_data["templateKey"], endpoint=endpoint)
         if template_rule is None:
             utilities.logger.warning("Rule template key '%s' does not exist, can't instantiate it", key)
