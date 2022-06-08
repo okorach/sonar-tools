@@ -161,15 +161,13 @@ def set_permissions(endpoint, permissions, project_key=None, template=None):
             continue
         for elem, perms in permissions[perm_type].items():
             for p in utilities.csv_to_list(perms):
-                is_global_perm = (project_key is None and template is None)
+                is_global_perm = project_key is None and template is None
                 if is_global_perm and p not in GLOBAL_PERMISSIONS:
                     continue
                 if not is_global_perm and p not in PROJECT_PERMISSIONS:
                     continue
                 utilities.logger.info("Setting permission %s to %s - %s, %s", p, elem, str(project_key), str(template))
-                endpoint.post(
-                    apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template}
-                )
+                endpoint.post(apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template})
 
 
 def import_config(endpoint, config_data):

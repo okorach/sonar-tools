@@ -72,7 +72,7 @@ __MAP = {
     _PROFILES: __JSON_KEY_PROFILES,
     _PROJECTS: __JSON_KEY_PROJECTS,
     _APPS: __JSON_KEY_APPS,
-    _PORTFOLIOS: __JSON_KEY_PORTFOLIOS
+    _PORTFOLIOS: __JSON_KEY_PORTFOLIOS,
 }
 
 
@@ -206,9 +206,10 @@ def main():
         what = util.csv_to_list(what)
     for w in what:
         if w not in _EVERYTHING:
-            util.exit_fatal(f"'{w}' is not an something that can be imported or exported, "
-                            f"chose among {','.join(_EVERYTHING)}",
-                            exit_code=options.ERR_ARGS_ERROR)
+            util.exit_fatal(
+                f"'{w}' is not an something that can be imported or exported, " f"chose among {','.join(_EVERYTHING)}",
+                exit_code=options.ERR_ARGS_ERROR,
+            )
 
     if kwargs["export"]:
         __export_config(endpoint, what, args)

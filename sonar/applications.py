@@ -35,6 +35,7 @@ _MAP = {}
 _GET_API = "applications/show"
 _CREATE_API = "applications/create"
 
+
 class Application(aggr.Aggregation):
     def __init__(self, key, endpoint, data=None, name=None, create_data=None):
         super().__init__(key, endpoint)
@@ -45,9 +46,7 @@ class Application(aggr.Aggregation):
             self.name = name
             util.logger.info("Creating %s", str(self))
             util.logger.debug("from %s", util.json_dump(create_data))
-            resp = self.post(
-                _CREATE_API, params={"key": self.key, "name": self.name, "visibility": create_data.get("visibility", None)}
-            )
+            resp = self.post(_CREATE_API, params={"key": self.key, "name": self.name, "visibility": create_data.get("visibility", None)})
             self.key = json.loads(resp.text)["application"]["key"]
             self._load(api=_GET_API, key_name="application")
             self.key = key
@@ -164,7 +163,7 @@ class Application(aggr.Aggregation):
             # 'projects': self.projects(),
             "branches": self.branches(),
             "permissions": permissions.export(self.endpoint, self.key),
-            "tags": util.list_to_csv(self.tags(), separator=", ")
+            "tags": util.list_to_csv(self.tags(), separator=", "),
         }
         return util.remove_nones(json_data)
 
@@ -229,7 +228,7 @@ def search(endpoint, params=None):
             returned_field="components",
             key_field="key",
             object_class=Application,
-            endpoint=endpoint
+            endpoint=endpoint,
         )
     return app_list
 
@@ -288,6 +287,7 @@ def import_config(endpoint, config_data):
     for key, data in config_data["applications"].items():
         util.logger.info("Importing application key '%s'", key)
         create_or_update(endpoint=endpoint, name=data["name"], key=key, data=data)
+
 
 def search_by_name(endpoint, name):
     return util.search_by_name(endpoint, name, components.SEARCH_API, "components", extra_params={"qualifiers": "APP"})

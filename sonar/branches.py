@@ -203,6 +203,7 @@ def get_list(project_key, endpoint):
     for branch in data.get("branches", {}):
         get_object(branch=branch["name"], project_key_or_obj=project_key, data=branch, endpoint=endpoint)
 
+
 def exists(branch_name, project_key, endpoint):
     get_list(project_key=project_key, endpoint=endpoint)
     return _uuid(project_key, branch_name) in _BRANCHES

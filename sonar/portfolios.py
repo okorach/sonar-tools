@@ -51,6 +51,7 @@ _PROJECT_SELECTION_TAGS = "projectSelectionTags"
 _CREATE_API = "views/create"
 _GET_API = "views/show"
 
+
 class Portfolio(aggregations.Aggregation):
     def __init__(self, key, endpoint, name=None, data=None, create_data=None):
         super().__init__(key, endpoint)
@@ -65,9 +66,7 @@ class Portfolio(aggregations.Aggregation):
             self.name = create_data["name"]
             util.logger.info("Creating %s", str(self))
             util.logger.debug("from %s", util.json_dump(create_data))
-            resp = self.post(
-                _CREATE_API, params={"key": key, "name": self.name, "visibility": create_data.get("visibility", None)}
-            )
+            resp = self.post(_CREATE_API, params={"key": key, "name": self.name, "visibility": create_data.get("visibility", None)})
             self.key = json.loads(resp.text)["key"]
             self._load()
         else:
@@ -208,7 +207,7 @@ class Portfolio(aggregations.Aggregation):
             _PROJECT_SELECTION_BRANCH: self._selection_branch,
             _PROJECT_SELECTION_TAGS: self.tags(),
             "permissions": permissions.export(self.endpoint, self.key),
-            "tags": util.list_to_csv(self.tags(), separator=", ")
+            "tags": util.list_to_csv(self.tags(), separator=", "),
         }
         json_data.update(self.sub_portfolios())
 
@@ -241,8 +240,7 @@ class Portfolio(aggregations.Aggregation):
                 params["branch"] = project_list["proj"]
                 self.post("views/add_project_branch", params=params)
             else:
-                util.logger.info("Won't add project '%s' branch '%s' to %s, it's already added",
-                                 proj, project_list[proj], str(self))
+                util.logger.info("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
             self.post("views/add_project", params={"application": self.key, "project": proj})
 
     def set_tag_mode(self, tags, branch):
