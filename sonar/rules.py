@@ -65,6 +65,17 @@ class Rule(sq.SqObject):
             return
         self.post("rules/update", params={"key": self.key, "markdown_note": description})
 
+    def instantiate(self, key, data):
+        # rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
+        self.post("rules/create", params={
+            "custom_key": key,
+            "template_key": self.key,
+            "name":  data("name", key),
+            "params": ";".join([f"{k}={v}" for k, v in data["params"].items()]),
+            "markdown_description": data("description", "NO DESCRIPTION")
+            }
+        )
+
 
 def get_facet(facet, endpoint):
     data = json.loads(endpoint.get(API_RULES_SEARCH, params={"ps": 1, "facets": facet}).text)
@@ -81,9 +92,9 @@ def count(endpoint, params=None):
     return data["total"]
 
 
-def get_list(endpoint, params=None):
+def get_list(endpoint, templates=False):
     new_params = {} if params is None else params.copy()
-    new_params.update({"is_template": "false", "include_external": "true", "ps": 500})
+    new_params.update({"is_template": str(templates).lower(), "include_external": "true", "ps": 500})
     page, nb_pages = 1, 1
     rule_list = {}
     while page <= nb_pages:
@@ -139,12 +150,13 @@ def import_config(endpoint, config_data):
         rule.set_description(custom.get("description", None))
         rule.set_tags(custom.get("tags", None))
 
+    get_list(endpoint=endpoint, templates=True)
     for key, instantiation_data in config_data["rules"].get("instantiated", {}):
         template_rule = get_object(instantiation_data["templateKey"], endpoint=endpoint)
         if template_rule is None:
             utilities.logger.warning("Rule template key '%s' does not exist, can't instantiate it", key)
             continue
-        template_rule.instantiate(instantiation_data)
+        template_rule.instantiate(key, instantiation_data)
 
 
 def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
