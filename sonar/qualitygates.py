@@ -25,7 +25,7 @@
 
 import json
 import sonar.sqobject as sq
-from sonar import permissions, options
+from sonar import permissions, options, measures
 import sonar.utilities as util
 
 from sonar.audit import rules, severities, types
@@ -253,17 +253,19 @@ class QualityGate(sq.SqObject):
         return problems
 
     def to_json(self):
-        json_data = {"conditions": self.conditions(encoded=True)}
+        json_data = {}
         if self.is_default:
             json_data["isDefault"] = True
         if self.is_built_in:
             json_data["isBuiltIn"] = True
-        perms = self.permissions()
-        if perms is not None and len(perms) > 0:
-            for t in ("users", "groups"):
-                if t in perms:
-                    perms[t] = util.list_to_csv(perms[t], ", ", True)
-            json_data["permissions"] = util.remove_nones(perms)
+        else:
+            json_data["conditions"] = self.conditions(encoded=True)
+            perms = self.permissions()
+            if perms is not None and len(perms) > 0:
+                for t in ("users", "groups"):
+                    if t in perms:
+                        perms[t] = util.list_to_csv(perms[t], ", ", True)
+                json_data["permissions"] = util.remove_nones(perms)
         return json_data
 
 
@@ -348,12 +350,25 @@ def _encode_conditions(conds):
 
 
 def _encode_condition(c):
-    return f"{c['metric']} {c['op']} {c['error']}"
+    metric, op, val = c['metric'], c['op'], c['error']
+    if op == "GT":
+        op = ">="
+    elif op == "LT":
+        op = "<="
+    if metric.endswith("rating"):
+        val = measures.get_rating_letter(val)
+    return f"{metric} {op} {val}"
 
 
 def _decode_condition(c):
-    return c.strip().split(" ")
-
+    (metric, op, val) = c.strip().split(" ")
+    if op in (">", ">="):
+        op = "GT"
+    elif op in ("<", "<="):
+        op = "LT"
+    if metric.endswith("rating"):
+        val = measures.get_rating_number(val)
+    return (metric, op, val)
 
 def _uuid(name, id):
     return id
