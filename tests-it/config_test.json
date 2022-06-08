@@ -10148,7 +10148,7 @@
       }
    },
    "rules": {
-      "customized": {
+      "extended": {
          "Web:S5148": {
             "description": "Derivco suggest to do blah blah blah"
          },
