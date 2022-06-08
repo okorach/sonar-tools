@@ -211,6 +211,7 @@ class QualityProfile(sq.SqObject):
         json_data = {"name": self.name, "language": self.language, "parentName": self.parent_name}
         if self.is_built_in:
             json_data["isBuiltIn"] = True
+            include_rules = False
         if self.is_default:
             json_data["isDefault"] = True
         if full_specs:
