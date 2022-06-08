@@ -90,23 +90,20 @@ def get_object(key, data=None, endpoint=None):
     return _RULES[key]
 
 
-def export(endpoint, instantiated_only=True, tagged_only=True, custom_desc_only=True):
+def export(endpoint, instantiated=True, extended=True, standard=False):
     utilities.logger.info("Exporting rules")
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
     for rule_key, rule in get_list(endpoint=endpoint).items():
-        if ((instantiated_only and rule.template_key is None) and (tagged_only and rule.tags is None) and
-           (custom_desc_only and rule.custom_desc is None)):
-            continue
         rule_export = convert_for_export(rule.to_json(), rule.language)
-        if rule.template_key is not None:
+        if instantiated and rule.template_key is not None:
             instantiated_rules[rule_key] = rule_export
-        elif rule.tags is not None or rule.custom_desc is not None:
+        elif extended and rule.tags is not None or rule.custom_desc is not None:
             extended_rules[rule_key] = {}
             if rule.tags is not None:
                 extended_rules[rule_key].update({"tags": rule_export["tags"]})
             if rule.custom_desc is not None:
                 extended_rules[rule_key].update({"description": rule_export["description"]})
-        else:
+        elif standard:
             other_rules[rule_key] = rule_export
     if len(instantiated_rules) > 0:
         rule_list["instantiated"] = instantiated_rules
