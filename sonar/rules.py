@@ -74,14 +74,16 @@ class Rule(sq.SqObject):
         utilities.logger.info("Creating rule key '%s' from template key '%s'", key, self.key)
         rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
         (_, key) = key.split(":")
-        self.post("rules/create", params={
-            "custom_key": key,
-            "template_key": self.key,
-            "name":  data.get("name", key),
-            "severity":  data.get("severity", "MAJOR"),
-            "params": rule_params,
-            "markdown_description": data.get("description", "NO DESCRIPTION")
-            }
+        self.post(
+            "rules/create",
+            params={
+                "custom_key": key,
+                "template_key": self.key,
+                "name": data.get("name", key),
+                "severity": data.get("severity", "MAJOR"),
+                "params": rule_params,
+                "markdown_description": data.get("description", "NO DESCRIPTION"),
+            },
         )
 
 
