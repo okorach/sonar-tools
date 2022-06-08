@@ -10148,7 +10148,53 @@
       }
    },
    "rules": {
-      "instantiatedRules": {
+      "customized": {
+         "Web:S5148": {
+            "description": "Derivco suggest to do blah blah blah"
+         },
+         "c:S3805": {
+            "description": "Because import is bad and include is good"
+         },
+         "c:S989": {
+            "tags": "resilience"
+         },
+         "cpp:S3696": {
+            "tags": "pci-dss"
+         },
+         "cpp:S3806": {
+            "tags": "autosar"
+         },
+         "cpp:S985": {
+            "tags": "pci-dss"
+         },
+         "csharpsquid:S1206": {
+            "tags": "cwe-786-cbr"
+         },
+         "java:S2095": {
+            "tags": "universal-critical"
+         },
+         "java:S2200": {
+            "tags": "payment-critical",
+            "description": "See [Quora thread](https://www.quora.com/How-does-one-effectively-use-the-compareTo-method-in-java-for-checking-string-value)"
+         },
+         "java:S2204": {
+            "tags": "my-rule-tag,tag1,tag10,tag2,tag3,tag4,tag5,tag6,tag7,tag8,tag9"
+         },
+         "java:S2273": {
+            "description": "Nilrod comment: This is related to standard XXX"
+         },
+         "php:S3972": {
+            "tags": "psr12",
+            "description": "Extended comment: The non compliant form is quite difficult to understand"
+         },
+         "python:S1763": {
+            "tags": "dead-code"
+         },
+         "python:S2757": {
+            "description": "*Korach corp additional description*: Simple problem but this has been the source of so many bugs across all languages !"
+         }
+      },
+      "instantiated": {
          "java:Disallow_Sri_classes": {
             "params": {
                "className": "com\\.sri\\.*"
@@ -10245,40 +10291,6 @@
             },
             "severity": "MAJOR",
             "templateKey": "xml:XPathCheck"
-         }
-      },
-      "taggedRules": {
-         "c:S989": {
-            "severity": "CRITICAL",
-            "tags": "resilience"
-         },
-         "cpp:S3696": {
-            "severity": "MAJOR",
-            "tags": "pci-dss"
-         },
-         "cpp:S3806": {
-            "severity": "MAJOR",
-            "tags": "autosar"
-         },
-         "cpp:S985": {
-            "severity": "CRITICAL",
-            "tags": "pci-dss"
-         },
-         "csharpsquid:S1206": {
-            "severity": "MINOR",
-            "tags": "cwe-786-cbr"
-         },
-         "csharpsquid:S3885": {
-            "severity": "MAJOR",
-            "tags": "siemens-love"
-         },
-         "java:S2204": {
-            "severity": "MAJOR",
-            "tags": "my-rule-tag,tag1,tag10,tag2,tag3,tag4,tag5,tag6,tag7,tag8,tag9"
-         },
-         "php:S3972": {
-            "severity": "CRITICAL",
-            "tags": "psr12"
          }
       }
    },
