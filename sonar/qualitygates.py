@@ -350,7 +350,7 @@ def _encode_conditions(conds):
 
 
 def _encode_condition(c):
-    metric, op, val = c['metric'], c['op'], c['error']
+    metric, op, val = c["metric"], c["op"], c["error"]
     if op == "GT":
         op = ">="
     elif op == "LT":
@@ -369,6 +369,7 @@ def _decode_condition(c):
     if metric.endswith("rating"):
         val = measures.get_rating_number(val)
     return (metric, op, val)
+
 
 def _uuid(name, id):
     return id
