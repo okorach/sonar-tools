@@ -92,32 +92,28 @@ def get_object(key, data=None, endpoint=None):
 
 def export(endpoint, instantiated_only=True, tagged_only=True, custom_desc_only=True):
     utilities.logger.info("Exporting rules")
-    rule_list, other_rules, instantiated_rules, tagged_rules, custom_desc_rules = {}, {}, {}, {}, {}
+    rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
     for rule_key, rule in get_list(endpoint=endpoint).items():
         if ((instantiated_only and rule.template_key is None) and (tagged_only and rule.tags is None) and
            (custom_desc_only and rule.custom_desc is None)):
             continue
         rule_export = convert_for_export(rule.to_json(), rule.language)
-        is_special = False
         if rule.template_key is not None:
             instantiated_rules[rule_key] = rule_export
-            is_special = True
-        if rule.tags is not None:
-            tagged_rules[rule_key] = rule_export["tags"]
-            is_special = True
-        if rule.custom_desc is not None:
-            custom_desc_rules[rule_key] = rule.custom_desc
-            is_special = True
-        if not is_special:
+        elif rule.tags is not None or rule.custom_desc is not None:
+            extended_rules[rule_key] = {}
+            if rule.tags is not None:
+                extended_rules[rule_key].update({"tags": rule_export["tags"]})
+            if rule.custom_desc is not None:
+                extended_rules[rule_key].update({"description": rule_export["description"]})
+        else:
             other_rules[rule_key] = rule_export
     if len(instantiated_rules) > 0:
         rule_list["instantiated"] = instantiated_rules
-    if len(tagged_rules) > 0:
-        rule_list["customTags"] = tagged_rules
-    if len(custom_desc_rules) > 0:
-        rule_list["customDescription"] = custom_desc_rules
+    if len(extended_rules) > 0:
+        rule_list["extended"] = extended_rules
     if len(other_rules) > 0:
-        rule_list["others"] = other_rules
+        rule_list["standard"] = other_rules
     return rule_list
 
 
@@ -139,7 +135,7 @@ def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
     if "tags" in rule and len(rule["tags"]) > 0:
         d["tags"] = utilities.list_to_csv(rule["tags"])
     if rule.get("mdNote", None) is not None:
-        d["customDescription"] = rule["mdNote"]
+        d["description"] = rule["mdNote"]
     if with_template_key and "templateKey" in rule:
         d["templateKey"] = rule["templateKey"]
     if "lang" in rule and rule["lang"] != qp_lang:
