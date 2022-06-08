@@ -53,6 +53,18 @@ class Rule(sq.SqObject):
     def to_json(self):
         return self._json
 
+    def set_tags(self, tags):
+        if tags is None:
+            return
+        if isinstance(tags, list):
+            tags = utilities.list_to_csv(tags)
+        self.post("rules/update", params={"key": self.key, "tags": tags})
+
+    def set_description(self, description):
+        if description is None:
+            return
+        self.post("rules/update", params={"key": self.key, "markdown_note": description})
+
 
 def get_facet(facet, endpoint):
     data = json.loads(endpoint.get(API_RULES_SEARCH, params={"ps": 1, "facets": facet}).text)
@@ -84,10 +96,10 @@ def get_list(endpoint, params=None):
     return rule_list
 
 
-def get_object(key, data=None, endpoint=None):
+def get_object(key, endpoint):
     if key not in _RULES:
-        _ = Rule(key=key, data=data, endpoint=endpoint)
-    return _RULES[key]
+        get_list(endpoint=endpoint)
+    return _RULES.get(key, None)
 
 
 def export(endpoint, instantiated=True, extended=True, standard=False):
@@ -114,8 +126,25 @@ def export(endpoint, instantiated=True, extended=True, standard=False):
     return rule_list
 
 
-def import_config(endpoint, data):
-    utilities.logger.info("Importing rules not yet implemented")
+def import_config(endpoint, config_data):
+    if "rules" not in config_data:
+        utilities.logger.info("No customized (Custom tags, extended description) to import")
+        return
+    utilities.logger.info("Importing rules")
+    for key, custom in config_data["rules"].get("extended", {}):
+        rule = get_object(key, endpoint=endpoint)
+        if rule is None:
+            utilities.logger.warning("Rule key '%s' does not exist, can't import it", key)
+            continue
+        rule.set_description(custom.get("description", None))
+        rule.set_tags(custom.get("tags", None))
+
+    for key, instantiation_data in config_data["rules"].get("instantiated", {}):
+        template_rule = get_object(instantiation_data["templateKey"], endpoint=endpoint)
+        if template_rule is None:
+            utilities.logger.warning("Rule template key '%s' does not exist, can't instantiate it", key)
+            continue
+        template_rule.instantiate(instantiation_data)
 
 
 def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
