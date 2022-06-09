@@ -247,17 +247,23 @@ sonar-projects-import -f exported_projects.csv
 
 # <a name="sonar-config"></a>sonar-config
 
-Exports all or part of a SOnarQube platform configuration.
-Importing the configuration will come in later release
+Exports or imports all or part of a SonarQube platform configuration.
+`sonar-config` is expected to export/import everything that is configurable in a SonarQube platform, except secrets
 
 Basic Usage: `sonar-config --export -f <file.json>`  
-- `-f`: Define the output file, if not specified
+- `-f`: Define the output file, if not specified `stdout` is used
 - `-e` or `--export`: Specify the export operation
-- `-w` or `--what`: Specify what to export (everything by default). You can specify what to export as a commad separated list containing any of "settings,qp,qg,projects,users,groups,portfolios,apps"
+- `-w` or `--what`: Specify what to export (everything by default). See See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
+
+Basic Usage: `sonar-config --import -f <file.json>`  
+- `-f`: Define the input file where the configuration is described (manually or from a prio export operation), if not specified `stdin` is used
+- `-i` or `--import`: Specify the import operation
+- `-w` or `--what`: Specify what to import (everything by default). See See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
 
 ## Required Permissions
 
-`sonar-config` needs the global `Administer system` permission to export global settings, users, groups and permissions, as well as `Browse` permission on projects, apps and portfolios if export on these objects is requested
+To export and import configuration, `sonar-config` needs elevated permissions.
+See [sonar-config complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md) for details
 
 ## Examples
 ```
@@ -266,9 +272,15 @@ export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 
 # Exports all platform configuration from https://sonar.acme-corp.com
 sonar-config -e >config.json
-# Exports QG, QP, portfolios, users and groups from platform configuration https://sonar.foobar-corp.com
-sonar-config -u https://sonar.foobar-corp.com -t 15ee09df11fb9b8237b7a13333c5fce2e4e93d999 --export --what "qp,qg,portfolios,users,groups" -f partial_export.json
+# Exports QG, portfolios, users and groups from platform configuration https://sonar.foobar-corp.com
+sonar-config -u https://sonar.foobar-corp.com -t 15ee09df11fb9b8237b7a13333c5fce2e4e93d999 --export --what "qualitygates,portfolios,users,groups" -f partial_export.json
+
+# Imports customized rules and quality profiles found in config.json (using $SONAR_HOST_URL as target)
+sonar-config --import --what "rules,qualityprofiles" -f config.json
 ```
+
+For more about what is exported and imported by `sonar-config` please see the [sonar-config complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
+
 
 # <a name="exit-codes"></a>Exit codes
 
