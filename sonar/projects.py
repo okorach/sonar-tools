@@ -685,7 +685,6 @@ Is this normal ?",
         return branch_data
 
     def export(self, settings_list=None, include_inherited=False, full_export=False):
-        full_export = True
         util.logger.info("Exporting %s", str(self))
         settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
         json_data = {"key": self.key, "name": self.name}
