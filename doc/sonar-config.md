@@ -34,7 +34,7 @@ When `--what` is not specified, everything is exported or
 - `--what applications`: Exports/Imports all applications definition and settings. This can be a fairly long operation if there are a lot of applications
 - `-f <file>`: Sends export to or read import from `<file>`, `stdout` for export and `stdin` for import is the default.
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Required Permissions
 
