@@ -5,11 +5,11 @@ The detail of what is audited is listed at the bottom of this page
 
 ## Requirements and Installation
 
-`sonar-audit` is installed through the **sonar-tools** [general installation](README.md#install)
+`sonar-audit` is installed through the **sonar-tools** [general installation](../README.md#install)
 
 ## Common command line parameters
 
-`sonar-audit` accepts all the **sonar-tools** [common parameters](README.md#common-params)
+`sonar-audit` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Usage
 
@@ -35,7 +35,7 @@ When `--what` is not specified, everything is audited
 - `--format [json|csv]`: Generates output in JSON or CSV format (CSV is the default)
 - `--csvSeparator <separator>`: Allows to select the separator character for CSV, `,` is the default
 - `-h`: Displays help and exits
-- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](README.md#common-params)
+- `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Required Permissions
 
@@ -47,7 +47,7 @@ To be able to audit everything, the token provided to `sonar-audit` should have 
 other audit parameters.
 You can create a default config file in the home directory by running `sonar-audit --config`
 
-See [sonar-audit configuration](https://github.com/okorach/sonar-tools/blob/master/audit-settings.md) for the details of parameters
+See [sonar-audit configuration](https://github.com/okorach/sonar-tools/blob/master/doc/audit-settings.md) for the details of parameters
 
 ## Example
 ```
