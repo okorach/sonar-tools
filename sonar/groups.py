@@ -134,8 +134,9 @@ def export(endpoint, full_specs=False):
     util.logger.info("Exporting groups")
     g_list = {}
     for g_name, g_obj in search(endpoint=endpoint).items():
-        g_list[g_name] = g_obj.to_json(full_specs=full_specs)
-        g_list[g_name].pop("name")
+        if g_obj.is_default:
+            continue
+        g_list[g_name] = "" if g_obj.description is None else g_obj.description
     return g_list
 
 
