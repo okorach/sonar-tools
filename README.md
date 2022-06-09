@@ -60,12 +60,12 @@ See common [error exit codes](#exit-codes) at the bottom of this page
 # <a name="sonar-audit"></a>sonar-audit
 
 `sonar-audit` allows to audit a SonarQube instance and output warning logs for all anomalies found.
-See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/sonar-audit.md) for details
+See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-audit.md) for details
 
 # <a name="sonar-issues-sync"></a>sonar-issues-sync
 
 `sonar-issues-sync` allows to synchronizes issue changelog (false positives, won't fix, issue severity or type change, tags and comments) between branches, projects or SonarQube instances.
-See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/sonar-issues-sync.md) for details
+See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-issues-sync.md) for details
 
 # <a name="sonar-housekeeper"></a>sonar-housekeeper
 
