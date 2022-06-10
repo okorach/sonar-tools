@@ -109,6 +109,18 @@ class Branch(components.Component):
     def url(self):
         return f"{self.endpoint.url}/dashboard?id={self.project.key}&branch={requests.utils.quote(self.name)}"
 
+    def rename(self, new_name):
+        if not self.is_main():
+            util.logger.error("Can't rename any other branch than the main branch")
+            return False
+        util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.project), self.name, new_name)
+        resp = self.post("project_branches/rename", params={"project": self.project.key, "name": new_name}, exit_on_error=False)
+        if not resp.ok:
+            util.logger.error("HTTP %d - %s", resp.status_code, resp.text)
+            return False
+        self.name = new_name
+        return True
+
     def __audit_zero_loc(self):
         if self.last_analysis_date() is not None and self.ncloc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
