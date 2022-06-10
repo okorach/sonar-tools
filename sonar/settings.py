@@ -72,6 +72,7 @@ _INLINE_SETTINGS = (
     r"^sonar\.rpg\.suffixes$",
     r"^sonar\.cs\.roslyn\.(bug|codeSmell|vulnerability)Categories$",
     r"^sonar\.governance\.report\.view\.recipients$",
+    r"^sonar\.portfolios\.recompute\.hours$"
 )
 
 _API_SET = "settings/set"
