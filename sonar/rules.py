@@ -69,7 +69,7 @@ class Rule(sq.SqObject):
 
     def instantiate(self, key, data):
         if get_object(key, self.endpoint) is not None:
-            utilities.logger.warning("Rule key '%s' already exists, creation skipped...")
+            utilities.logger.warning("Rule key '%s' already exists, creation skipped...", key)
             return
         utilities.logger.info("Creating rule key '%s' from template key '%s'", key, self.key)
         rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
