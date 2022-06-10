@@ -1074,7 +1074,9 @@
       },
       "WEBSITE-TIER1-WEB": {
          "branches": {
-            "master": {},
+            "master": {
+               "isMain": true
+            },
             "release-1.1": {},
             "release-2019.4": {},
             "release-2020.1": {}
@@ -1095,7 +1097,9 @@
       },
       "WEBSITE-TIER2-BIZLOGIC": {
          "branches": {
-            "master": {},
+            "master": {
+               "isMain": true
+            },
             "release-1.1": {},
             "release-2019.4": {},
             "release-2020.1": {}
@@ -1138,7 +1142,9 @@
       },
       "WEBSITE-TIER3-DBLAYER": {
          "branches": {
-            "master": {},
+            "master": {
+               "isMain": true
+            },
             "release-1.1": {},
             "release-2019.4": {},
             "release-2020.1": {}
@@ -1162,7 +1168,9 @@
          "branches": {
             "branch,with+%funny name": {},
             "branch-with-no-code": {},
-            "master": {}
+            "master": {
+               "isMain": true
+            }
          },
          "name": "Bad project for audit 1",
          "permissions": {
@@ -1387,7 +1395,8 @@
                "sonar-users": "user"
             }
          },
-         "qualityGate": "Sonar way w/o Hotspots"
+         "qualityGate": "Sonar way w/o Hotspots",
+         "tags": "strategic"
       },
       "demo:bbc-dotnet": {
          "binding": {
@@ -1456,10 +1465,6 @@
          "binding": {
             "key": "Bitbucket Cloud",
             "repository": "demo-cli"
-         },
-         "branches": {
-            "main": {},
-            "master": {}
          },
          "name": "BB Cloud / Pipes / CLI",
          "permissions": {
@@ -1807,7 +1812,9 @@
       "demo:conditional-compilation": {
          "branches": {
             "branch-noscreen": {},
-            "master": {}
+            "main": {
+               "isMain": true
+            }
          },
          "name": "C/C++ Conditional Compilation",
          "permissions": {
@@ -1830,6 +1837,7 @@
          },
          "branches": {
             "main": {
+               "isMain": true,
                "newCode": "NUMBER_OF_DAYS = 180"
             }
          },
@@ -1907,10 +1915,6 @@
             "monorepo": true,
             "repository": "okorach/pr-demo",
             "summaryCommentEnabled": true
-         },
-         "branches": {
-            "main": {},
-            "master": {}
          },
          "name": "GitHub / Actions / monorepo CLI",
          "newCodePeriod": "NUMBER_OF_DAYS = 30",
@@ -1995,7 +1999,9 @@
             "summaryCommentEnabled": true
          },
          "branches": {
-            "main": {},
+            "main": {
+               "isMain": true
+            },
             "python-version-and-tags": {}
          },
          "name": "GitHub / Jenkins / CLI",
@@ -2035,7 +2041,9 @@
          "branches": {
             "add-tags": {},
             "fix-project-name": {},
-            "main": {}
+            "main": {
+               "isMain": true
+            }
          },
          "name": "GitHub / Jenkins / Gradle",
          "permissions": {
@@ -2057,7 +2065,9 @@
          "branches": {
             "fix-project-name": {},
             "hardening": {},
-            "main": {},
+            "main": {
+               "isMain": true
+            },
             "project-tags": {},
             "some-branch": {}
          },
@@ -2081,7 +2091,9 @@
          },
          "branches": {
             "fix-dotnet-core-project-name": {},
-            "main": {},
+            "main": {
+               "isMain": true
+            },
             "set-tags-on-the-fly-2": {}
          },
          "name": "GitHub / Jenkins / monorepo CLI",
@@ -2104,8 +2116,9 @@
          },
          "branches": {
             "fix-dotnet-core-project-name": {},
-            "main": {},
-            "master": {},
+            "master": {
+               "isMain": true
+            },
             "set-tags-on-the-fly-2": {}
          },
          "name": "GitHub / Jenkins / monorepo .Net Core",
@@ -2128,7 +2141,9 @@
          },
          "branches": {
             "fix-dotnet-core-project-name": {},
-            "main": {},
+            "main": {
+               "isMain": true
+            },
             "set-tags-on-the-fly-2": {}
          },
          "name": "GitHub / Jenkins / monorepo Gradle",
@@ -2151,8 +2166,9 @@
          },
          "branches": {
             "fix-dotnet-core-project-name": {},
-            "main": {},
-            "master": {},
+            "main": {
+               "isMain": true
+            },
             "set-tags-on-the-fly-2": {}
          },
          "name": "GitHub / Jenkins / monorepo Maven",
@@ -2205,10 +2221,6 @@
             "key": "GitLab.com",
             "repository": "30602438"
          },
-         "branches": {
-            "main": {},
-            "master": {}
-         },
          "name": "GitLab-CI / Gradle",
          "permissions": {
             "groups": {
@@ -2229,7 +2241,9 @@
             "repository": "30599779"
          },
          "branches": {
-            "main": {},
+            "main": {
+               "isMain": true
+            },
             "release-1.x": {}
          },
          "name": "GitLab-CI / Maven",
@@ -2353,10 +2367,6 @@
             "key": "GitLab.com",
             "repository": "30453671"
          },
-         "branches": {
-            "main": {},
-            "master": {}
-         },
          "name": "GitLab / Jenkins / Gradle",
          "permissions": {
             "groups": {
@@ -2372,10 +2382,6 @@
          "binding": {
             "key": "GitLab.com",
             "repository": "30452699"
-         },
-         "branches": {
-            "main": {},
-            "master": {}
          },
          "name": "GitLab / Jenkins / Maven",
          "permissions": {
@@ -2474,7 +2480,9 @@
       "demo:pull-request-bbs-jenkins": {
          "branches": {
             "feature/hb": {},
-            "master": {}
+            "master": {
+               "isMain": true
+            }
          },
          "name": "Demo: Pull Request Bitbucket Server from Jenkins",
          "permissions": {
@@ -2504,7 +2512,9 @@
          "branches": {
             "dont-use-log4j": {},
             "fix-log4j-dependency": {},
-            "master": {}
+            "master": {
+               "isMain": true
+            }
          },
          "links": [
             {
@@ -2526,6 +2536,7 @@
       "jenkins-pipeline:sonar-java": {
          "branches": {
             "master": {
+               "isMain": true,
                "newCode": "SPECIFIC_ANALYSIS = 2021-01-18T14:45:21+0100"
             }
          },
@@ -2576,6 +2587,7 @@
       "jenkins:audio-video-tools": {
          "branches": {
             "master": {
+               "isMain": true,
                "newCode": "NUMBER_OF_DAYS = 60"
             }
          },
@@ -2646,7 +2658,8 @@
                "sonar-users": "user"
             }
          },
-         "qualityGate": "Sonar way w/o coverage"
+         "qualityGate": "Sonar way w/o coverage",
+         "tags": "strategic"
       },
       "jenkins:sonarqube-tools": {
          "name": "SonarQube Tools - Jenkins",
@@ -2675,7 +2688,9 @@
       "no_code_2": {
          "branches": {
             "empty-branch": {},
-            "master": {}
+            "master": {
+               "isMain": true
+            }
          },
          "name": "Project with no code 2",
          "permissions": {
@@ -2690,6 +2705,7 @@
       "okorach_audio-video-tools": {
          "branches": {
             "master": {
+               "isMain": true,
                "newCode": "PREVIOUS_VERSION"
             }
          },
@@ -2727,7 +2743,9 @@
       },
       "okorach_sonar-tools": {
          "branches": {
-            "master": {},
+            "master": {
+               "isMain": true
+            },
             "release-1.8.1": {},
             "release-1.8.x": {}
          },
@@ -2912,6 +2930,7 @@
             "longer-file": {},
             "longer-file-2": {},
             "master": {
+               "isMain": true,
                "newCode": "NUMBER_OF_DAYS = 30"
             }
          },
@@ -2969,6 +2988,7 @@
                "newCode": "REFERENCE_BRANCH = release-1.1"
             },
             "develop": {
+               "isMain": true,
                "newCode": "SPECIFIC_ANALYSIS = 2018-06-01T00:00:00+0200"
             },
             "release-1.1": {
@@ -3005,7 +3025,9 @@
       "training:coverage": {
          "branches": {
             "issue-on-test-files": {},
-            "master": {},
+            "master": {
+               "isMain": true
+            },
             "partial-coverage": {},
             "partial-coverage-2": {}
          },
@@ -3075,7 +3097,9 @@
          },
          "branches": {
             "fix-issues": {},
-            "master": {},
+            "master": {
+               "isMain": true
+            },
             "new-branch": {},
             "prep-new-21-22-season": {}
          },
