@@ -676,11 +676,14 @@ Is this normal ?",
         nb_branches = len(my_branches)
         for branch in my_branches:
             exp = branch.export(full_export=False)
-            if nb_branches == 1 and branch.is_main() and len(exp) == 0:
+            if nb_branches == 1 and branch.is_main() and len(exp) <= 1:
                 # Don't export main branch with no data
                 continue
-            branch_data[branch.name] = branch.export(full_export=False)
+            branch_data[branch.name] = exp
         if len(branch_data) == 0:
+            return None
+        # If there is only 1 branch with no specific config except being main, don't return anything
+        if len(branch_data) == 1 and len(exp) <= 1:
             return None
         return branch_data
 
@@ -755,9 +758,16 @@ Is this normal ?",
     def set_quality_gate(self, quality_gate):
         if quality_gate is None:
             return
-        if qualitygates.get_object(quality_gate) is None:
+        if qualitygates.get_object(quality_gate, endpoint=self.endpoint) is None:
             util.logger.warning("Can't set non existing quality gate '%s' to %s", quality_gate, str(self))
         self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
+
+    def rename_main_branch(self, main_branch_name):
+        for b in self.get_branches():
+            if b.is_main():
+                return b.rename(main_branch_name)
+        util.logger.warning("No main branch to rename found for %s", str(self))
+        return False
 
     def set_settings(self, data):
         for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
@@ -783,12 +793,20 @@ Is this normal ?",
         if nc is not None:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
             settings.set_new_code(self.endpoint, nc_type, nc_val, project_key=self.key)
+        util.logger.debug("Checking main branch")
+        for branch, branch_data in data.get("branches", {}):
+            if branches.exists(self.key, branch, self.endpoint):
+                branches.get_object(branch, self.key, self.endpoint).update(branch_data)
 
     def update(self, data):
         self.set_permissions(data)
         self.set_links(data)
         self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))
+        for bname, bdata in data.get("branches", {}).items():
+            if bdata.get("isMain", False):
+                self.rename_main_branch(bname)
+                break
 
 
 def count(endpoint, params=None):
