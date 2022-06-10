@@ -676,11 +676,14 @@ Is this normal ?",
         nb_branches = len(my_branches)
         for branch in my_branches:
             exp = branch.export(full_export=False)
-            if nb_branches == 1 and branch.is_main() and len(exp) == 0:
+            if nb_branches == 1 and branch.is_main() and len(exp) <= 1:
                 # Don't export main branch with no data
                 continue
-            branch_data[branch.name] = branch.export(full_export=False)
+            branch_data[branch.name] = exp
         if len(branch_data) == 0:
+            return None
+        # If there is only 1 branch with no specific config except being main, don't return anything
+        if len(branch_data) == 1 and len(exp) <= 1:
             return None
         return branch_data
 

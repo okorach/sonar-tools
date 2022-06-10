@@ -100,8 +100,10 @@ class Branch(components.Component):
     def export(self, full_export=True):
         util.logger.debug("Exporting %s", str(self))
         data = {"newCode": self.new_code()}
+        if self.is_main():
+            data["isMain"] = True
         if full_export:
-            data.update({"name": self.name, "project": self.project.key, "isMain": self.is_main()})
+            data.update({"name": self.name, "project": self.project.key})
         return util.remove_nones(data)
 
     def url(self):
