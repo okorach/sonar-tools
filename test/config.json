@@ -1259,7 +1259,7 @@
       },
       "demo:azdo-dotnetfwk": {
          "binding": {
-            "key": "Azure DevOps Services",
+            "key": "Azure DevOps Sevices",
             "repository": "demo-dotnet-fwk",
             "slug": "demo-azdo"
          },
