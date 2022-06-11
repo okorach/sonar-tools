@@ -97,6 +97,8 @@ class Portfolio(aggregations.Aggregation):
         _OBJECTS[self.key] = self
 
     def __str__(self):
+        if self._qualifier == "SVW":
+            return f"subportfolio name '{self.name}'"
         return f"portfolio name '{self.name}'"
 
     def get_details(self):
@@ -467,3 +469,23 @@ def import_config(endpoint, config_data):
 
 def search_by_name(endpoint, name):
     return util.search_by_name(endpoint, name, _SEARCH_API, "components")
+
+
+def export(endpoint):
+    if endpoint.edition() in ("community", "developer"):
+        util.logger.info("No portfolios in community and developer editions")
+        return None
+    util.logger.info("Exporting portfolios")
+    nb_portfolios = count(endpoint=endpoint)
+    i = 0
+    exported_portfolios = {}
+    for k, p in search(endpoint).items():
+        if not p.is_sub_portfolio():
+            exported_portfolios[k] = p.export()
+            exported_portfolios[k].pop("key")
+        else:
+            util.logger.info("Skipping export of %s", str(p))
+        i += 1
+        if i % 50 == 0 or i == nb_portfolios:
+            util.logger.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
+    return exported_portfolios
