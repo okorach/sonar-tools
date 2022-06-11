@@ -209,7 +209,7 @@ class Branch(components.Component):
             return []
         max_age = audit_settings["audit.projects.branches.maxLastAnalysisAge"]
         problems = []
-        if not self.is_purgeable():
+        if self.is_kept_when_inactive():
             util.logger.debug("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
