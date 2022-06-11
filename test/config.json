@@ -1308,6 +1308,9 @@
                "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "user"
             }
+         },
+         "qualityProfiles": {
+            "xml": "Olivier"
          }
       },
       "demo:azdo-mono-cli": {
@@ -1817,7 +1820,7 @@
       "demo:conditional-compilation": {
          "branches": {
             "branch-noscreen": {},
-            "main": {
+            "master": {
                "isMain": true
             }
          },
@@ -1933,7 +1936,7 @@
          },
          "qualityGate": "Sonar way w/o coverage",
          "qualityProfiles": {
-            "py": "AWQc0wTE-OPYhocP7Azv Python OlivierKoko"
+            "py": "Python OlivierKoko"
          },
          "tags": "github, actions, github-actions, monorepo, cli"
       },
@@ -1993,7 +1996,7 @@
          },
          "qualityGate": "Sonar way w/o coverage",
          "qualityProfiles": {
-            "java": "AXuiB_2TKRWd5R9lyuWv Olivier way"
+            "java": "Olivier way"
          },
          "tags": "github, actions, github-actions, monorepo, maven"
       },
@@ -2606,7 +2609,7 @@
             }
          },
          "qualityGate": "Sonar way w/o coverage",
-         "tags": "jenkins, jenkins-classic"
+         "tags": "jenkins, jenkins-classic, olivier, accenture"
       },
       "jenkins:cpp-sample": {
          "name": "C++ example - Jenkins",
@@ -2951,7 +2954,7 @@
          },
          "qualityGate": "Sonar way w/o coverage",
          "qualityProfiles": {
-            "java": "AXvP-5Zbohx_h_6VGSGw All rules"
+            "java": "All rules"
          }
       },
       "test:cpp-symbolic-exec": {
@@ -3028,7 +3031,7 @@
             }
          },
          "qualityProfiles": {
-            "java": "AWL-Dr6K1Rzw1Fg1LVky Corp way"
+            "java": "Corp way"
          }
       },
       "training:coverage": {
@@ -3136,7 +3139,7 @@
             }
          },
          "qualityProfiles": {
-            "php": "php-php-olivier-76841 PHP Olivier"
+            "php": "PHP Olivier"
          },
          "sonar.androidLint.reportPaths": "foo/androidLint.xml",
          "sonar.dbcleaner.branchesToKeepWhenInactive": "master, develop, trunk, release-.*, main, release-[\\d.].*",
