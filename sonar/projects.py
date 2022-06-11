@@ -623,6 +623,7 @@ Is this normal ?",
         return (report, counters)
 
     def quality_profiles(self):
+        util.logger.debug("Exporting quality profiles for %s", str(self))
         qp_list = qualityprofiles.get_list(self.endpoint)
         projects_qp = {}
         for qp in qp_list.values():

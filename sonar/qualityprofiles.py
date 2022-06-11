@@ -286,14 +286,15 @@ class QualityProfile(sq.SqObject):
         while more:
             params["p"] = page
             data = json.loads(self.get("qualityprofiles/projects", params=params).text)
-            self._projects += data["results"]
+            self._projects += [p["key"] for p in data["results"]]
             more = data["more"]
             page += 1
+        util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
         return self._projects
 
     def selected_for_project(self, key):
-        for p in self.projects():
-            if key == p["key"]:
+        for project_key in self.projects():
+            if key == project_key:
                 return True
         return False
 
