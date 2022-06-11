@@ -212,6 +212,7 @@ class Environment:
             settings.set_new_code(self, nc_type, nc_val)
         permission_templates.import_config(self, config_data)
         permissions.import_config(self, config_data)
+        devops.import_config(self, config_data)
 
     def basics(self):
         return {

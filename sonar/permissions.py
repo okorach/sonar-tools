@@ -166,7 +166,7 @@ def set_permissions(endpoint, permissions, project_key=None, template=None):
                     continue
                 if not is_global_perm and p not in PROJECT_PERMISSIONS:
                     continue
-                utilities.logger.info("Setting permission %s to %s - %s, %s", p, elem, str(project_key), str(template))
+                utilities.logger.debug("Setting permission %s to %s - %s, %s", p, elem, str(project_key), str(template))
                 endpoint.post(apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template})
 
 

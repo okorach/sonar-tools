@@ -26,7 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonar import sqobject, env, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks
+from sonar import sqobject, env, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops
 from sonar import pull_requests, branches, measures, custom_measures
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
@@ -798,6 +798,52 @@ Is this normal ?",
             if branches.exists(self.key, branch, self.endpoint):
                 branches.get_object(branch, self.key, self.endpoint).update(branch_data)
 
+    def set_devops_binding(self, data):
+        util.logger.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
+        alm_key = data["key"]
+        alm_type = devops.platform_type(platform_key=alm_key, endpoint=self.endpoint)
+        mono = data.get("monorepo", False)
+        repo = data["repository"]
+        if alm_type == "github":
+            self.set_github_binding(alm_key, repository=repo, monorepo=mono, summary_comment=data.get("summaryComment", True))
+        elif alm_type == "gitlab":
+            self.set_gitlab_binding(alm_key, repository=repo, monorepo=mono)
+        elif alm_type == "azure":
+            self.set_azure_devops_binding(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
+        elif alm_type == "bitbucket":
+            self.set_bitbucket_binding(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
+        elif alm_type == "bitbucketcloud":
+            self.set_bitbucketcloud_binding(alm_key, repository=repo, monorepo=mono)
+        else:
+            util.logger.error("Invalid devops platform type '%s' for %s, setting skipped", alm_key, str(self))
+
+    def __std_binding_params(self, alm_key, repo, monorepo):
+        return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
+
+    def set_github_binding(self, devops_platform_key, repository, monorepo=False, summary_comment=True):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        params["summaryCommentEnabled"] = str(summary_comment).lower()
+        self.post("alm_settings/set_github_binding", params=params)
+
+    def set_gitlab_binding(self, devops_platform_key, repository, monorepo=False):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        self.post("alm_settings/set_gitlab_binding", params=params)
+
+    def set_bitbucket_binding(self, devops_platform_key, repository, slug, monorepo=False):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        params["slug"] = slug
+        self.post("alm_settings/set_bitbucket_binding", params=params)
+
+    def set_bitbucketcloud_binding(self, devops_platform_key, repository, monorepo=False):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        self.post("alm_settings/set_bitbucketcloud_binding", params=params)
+
+    def set_azure_devops_binding(self, devops_platform_key, slug, repository, monorepo=False):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        params["projectName"] = slug
+        params["repositoryName"] = params.pop("repository")
+        self.post("alm_settings/set_azure_binding", params=params)
+
     def update(self, data):
         self.set_permissions(data)
         self.set_links(data)
@@ -807,15 +853,16 @@ Is this normal ?",
             if bdata.get("isMain", False):
                 self.rename_main_branch(bname)
                 break
+        if "binding" in data:
+            self.set_devops_binding(data["binding"])
+        else:
+            util.logger.debug("%s has no devops binding, skipped")
 
 
 def count(endpoint, params=None):
-    if params is None:
-        params = {}
-    params["ps"] = 1
-    params["p"] = 1
-    resp = endpoint.get(_SEARCH_API, params=params)
-    data = json.loads(resp.text)
+    new_params = {} if params is None else params.copy()
+    new_params.update({"ps": 1, "p": 1})
+    data = json.loads(endpoint.get(_SEARCH_API, params=params))
     return data["paging"]["total"]
 
 
@@ -964,6 +1011,11 @@ def import_config(endpoint, config_data):
         return
     util.logger.info("Importing projects")
     get_projects_list(str_key_list=None, endpoint=endpoint)
+    nb_projects = len(config_data["projects"])
+    i = 0
     for name, data in config_data["projects"].items():
         util.logger.info("Importing project key '%s'", name)
         create_or_update(endpoint, name, data)
+        i += 1
+        if i % 20 == 0 or i == nb_projects:
+            util.logger.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))

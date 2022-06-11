@@ -113,6 +113,9 @@ class Branch(components.Component):
         if not self.is_main():
             util.logger.error("Can't rename any other branch than the main branch")
             return False
+        if self.name == new_name:
+            util.logger.debug("Skipping rename %s with same new name", str(self))
+            return True
         util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.project), self.name, new_name)
         resp = self.post("project_branches/rename", params={"project": self.project.key, "name": new_name}, exit_on_error=False)
         if not resp.ok:
