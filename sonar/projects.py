@@ -26,7 +26,7 @@ import datetime
 import re
 import json
 import pytz
-from sonar import sqobject, env, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks
+from sonar import sqobject, env, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops
 from sonar import pull_requests, branches, measures, custom_measures
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
@@ -798,6 +798,9 @@ Is this normal ?",
             if branches.exists(self.key, branch, self.endpoint):
                 branches.get_object(branch, self.key, self.endpoint).update(branch_data)
 
+    def set_devops_binding(self, data):
+        devops.set_devops_binding(endpoint=self.endpoint, project_key=self.key, data=data)
+
     def update(self, data):
         self.set_permissions(data)
         self.set_links(data)
@@ -807,6 +810,8 @@ Is this normal ?",
             if bdata.get("isMain", False):
                 self.rename_main_branch(bname)
                 break
+        if "binding" in data:
+            self.set_devops_binding(data["binding"])
 
 
 def count(endpoint, params=None):

@@ -106,3 +106,56 @@ def import_config(endpoint, config_data):
     util.logger.info("Importing devops integration settings")
     for name, data in devops_settings.items():
         create_or_update_devops_platform(name=name, data=data, endpoint=endpoint)
+
+
+def platform_type(platform_key, endpoint):
+    p_list = get_all(endpoint=endpoint)
+    for platform in p_list.values():
+        if platform.key == platform_key:
+            return platform.type
+    return None
+
+
+def set_devops_binding(project_key, data, endpoint):
+    alm_key = data["key"]
+    alm_type = platform_type(platform_key=alm_key, endpoint=endpoint)
+    if alm_type == "github":
+        set_github_binding(endpoint, project_key, alm_key, repository=data["repository"],
+                           summary_comment=data.get("summaryComment", True), monorepo=data.get("monorepo", False))
+    elif alm_type == "gitlab":
+        set_gitlab_binding(endpoint, project_key, alm_key, repository=data["repository"], monorepo=data.get("monorepo", False))
+    elif alm_type == "azure":
+        set_azure_devops_binding(endpoint, project_key, alm_key, repository=data["repository"], monorepo=data.get("monorepo", False),
+                                 slug=data["slug"])
+
+
+def __std_params(alm_key, proj_key, repo, monorepo):
+    return {"almSetting": alm_key, "project": proj_key, "repository": repo, "monorepo": str(monorepo).lower()}
+
+
+def set_github_binding(endpoint, project_key, devops_platform_key, repository, monorepo=False, summary_comment=True):
+    params = __std_params(devops_platform_key, project_key, repository, monorepo)
+    params["summaryCommentEnabled"] = str(summary_comment).lower()
+    endpoint.post("alm_settings/set_github_binding", params=params)
+
+
+def set_gitlab_binding(endpoint, project_key, devops_platform_key, repository,  monorepo=False):
+    params = __std_params(devops_platform_key, project_key, repository, monorepo)
+    endpoint.post("alm_settings/set_gitlab_binding", params=params)
+
+
+def set_bitbucket_binding(endpoint, project_key, devops_platform_key, repository,  slug, monorepo=False):
+    params = __std_params(devops_platform_key, project_key, repository, monorepo)
+    params["slug"] = slug
+    endpoint.post("alm_settings/set_bitbucket_binding", params=params)
+
+
+def set_bitbucketcloud_binding(endpoint, project_key, devops_platform_key, repository,  monorepo=False):
+    params = __std_params(devops_platform_key, project_key, repository, monorepo)
+    endpoint.post("alm_settings/set_bitbucketcloud_binding", params=params)
+
+
+def set_azure_devops_binding(endpoint, project_key, devops_platform_key, slug, repository,  monorepo=False):
+    params = __std_params(devops_platform_key, project_key, repository, monorepo)
+    params["projectName"] = slug
+    endpoint.post("alm_settings/set_azure_binding", params=params)
