@@ -152,8 +152,9 @@ def __export_config(endpoint, what, args):
     if _PORTFOLIOS in what:
         portfolios_settings = {}
         for k, p in portfolios.search(endpoint).items():
-            portfolios_settings[k] = p.export()
-            portfolios_settings[k].pop("key")
+            if not p.is_sub_portfolio():
+                portfolios_settings[k] = p.export()
+                portfolios_settings[k].pop("key")
         sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios_settings
     if _USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint)
