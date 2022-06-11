@@ -860,12 +860,9 @@ Is this normal ?",
 
 
 def count(endpoint, params=None):
-    if params is None:
-        params = {}
-    params["ps"] = 1
-    params["p"] = 1
-    resp = endpoint.get(_SEARCH_API, params=params)
-    data = json.loads(resp.text)
+    new_params = {} if params is None else params.copy()
+    new_params.update({"ps": 1, "p": 1})
+    data = json.loads(endpoint.get(_SEARCH_API, params=params))
     return data["paging"]["total"]
 
 
@@ -1014,6 +1011,11 @@ def import_config(endpoint, config_data):
         return
     util.logger.info("Importing projects")
     get_projects_list(str_key_list=None, endpoint=endpoint)
+    nb_projects = len(config_data["projects"])
+    i = 0
     for name, data in config_data["projects"].items():
-        util.logger.info("Importing project key '%s'", name)
+        util.logger.debug("Importing project key '%s'", name)
         create_or_update(endpoint, name, data)
+        i += 1
+        if i % 20 == 0 or i == nb_projects:
+            util.logger.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))
