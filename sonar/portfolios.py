@@ -30,9 +30,11 @@ from sonar.audit import rules
 
 _OBJECTS = {}
 
-LIST_API = "views/list"
-SEARCH_API = "views/search"
-GET_API = "views/show"
+_LIST_API = "views/list"
+_SEARCH_API = "views/search"
+_CREATE_API = "views/create"
+_GET_API = "views/show"
+
 MAX_PAGE_SIZE = 500
 PORTFOLIO_QUALIFIER = "VW"
 
@@ -48,77 +50,96 @@ _PROJECT_SELECTION_BRANCH = "projectSelectionBranch"
 _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
 _PROJECT_SELECTION_TAGS = "projectSelectionTags"
 
-_CREATE_API = "views/create"
-_GET_API = "views/show"
-
 
 class Portfolio(aggregations.Aggregation):
-    def __init__(self, key, endpoint, name=None, data=None, create_data=None):
+    @classmethod
+    def read(cls, name, endpoint):
+        util.logger.debug("Reading portfolio name '%s'", name)
+        data = search_by_name(endpoint=endpoint, name=name)
+        if data is None:
+            return None
+        key = data["key"]
+        if key in _OBJECTS:
+            return _OBJECTS[key]
+        return cls(key=key, endpoint=endpoint, data=data)
+
+    @classmethod
+    def create(cls, name, endpoint, **kwargs):
+        params = {"name": name}
+        for p in ("description", "parent", "key", "visibility"):
+            params[p] = kwargs.get(p, None)
+        util.logger.debug("Creating portfolio name '%s'", name)
+        r = endpoint.post(_CREATE_API, params=params)
+        if not r.ok:
+            return None
+        o = cls.read(name=name, endpoint=endpoint)
+        # TODO - Allow on the fly selection mode
+        return o
+
+    @classmethod
+    def load(cls, name, endpoint, data):
+        util.logger.debug("Loading portfolio '%s'", name)
+        return cls(key=data["key"], endpoint=endpoint, data=data)
+
+    def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
-        self._selection_mode = None
-        self._selection_branch = None
-        self._qualifier = None
-        self._projects = None
-        self._tags = None
-        self._regexp = None
-        self._sub_portfolios = None
-        if create_data is not None:
-            self.name = create_data["name"]
-            util.logger.info("Creating %s", str(self))
-            util.logger.debug("from %s", util.json_dump(create_data))
-            resp = self.post(_CREATE_API, params={"key": key, "name": self.name, "visibility": create_data.get("visibility", None)})
-            self.key = json.loads(resp.text)["key"]
-            self._load()
-        else:
-            self.key = data["key"]
-            self.name = data["name"]
-            self._load(data)
-        _OBJECTS[self.key] = self
-
-    def __str__(self):
-        return f"portfolio key '{self.key}'"
-
-    def _load(self, data=None, api=None, key_name="key"):
-        """Loads a portfolio object with contents of data"""
-        super()._load(data=data, api=GET_API, key_name="key")
+        self._json = data
+        self.name = data.get("name")
         self._selection_mode = self._json.get("selectionMode", None)
         self._selection_branch = self._json.get("branch", None)
         self._regexp = self._json.get("regexp", None)
-        self._description = self._json.get("desc", None)
+        self._description = self._json.get("desc", self._json.get("description", None))
         self._qualifier = self._json.get("qualifier", None)
+        self._projects = None
+        self._tags = None
+        self._sub_portfolios = None
+        _OBJECTS[self.key] = self
 
-    def _load_full(self):
-        if self._qualifier == "VW":
-            self._json = None
-            self._load(data=None)
+    def __str__(self):
+        if self._qualifier == "SVW":
+            return f"subportfolio name '{self.name}'"
+        return f"portfolio name '{self.name}'"
+
+    def get_details(self):
+        data = json.loads(self.get(_GET_API, params={"key": self.key}).text)
+        self._json.update(data)
+        self._selection_mode = self._json.get("selectionMode", None)
+        self._selection_branch = self._json.get("branch", None)
+        self._regexp = self._json.get("regexp", None)
+        self._description = self._json.get("desc", self._json.get("description", None))
+        self._qualifier = self._json.get("qualifier", None)
 
     def url(self):
         return f"{self.endpoint.url}/portfolio?id={self.key}"
 
+    def is_sub_portfolio(self):
+        return self._qualifier == "SVW"
+
     def selection_mode(self):
-        if self._selection_mode is None:
-            self._load()
         return self._selection_mode
 
     def projects(self):
         if self._selection_mode != SELECTION_MODE_MANUAL:
             self._projects = None
-        elif self._projects is None:
-            if "selectedProjects" not in self._json:
-                self._load_full()
-            self._projects = {}
-            if self.endpoint.version() >= (9, 3, 0):
-                for p in self._json["selectedProjects"]:
-                    if "selectedBranches" in p:
-                        self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
-                    else:
-                        self._projects[p["projectKey"]] = options.DEFAULT
+            return self._projects
+        if self._projects is not None:
+            return self._projects
+        if "selectedProjects" not in self._json:
+            self.get_details()
+        self._projects = {}
+        if self.endpoint.version() < (9, 3, 0):
+            for p in self._json["projects"]:
+                self._projects[p] = options.DEFAULT
+            return self._projects
+        for p in self._json["selectedProjects"]:
+            if "selectedBranches" in p:
+                self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
-                for p in self._json["projects"]:
-                    self._projects[p] = options.DEFAULT
+                self._projects[p["projectKey"]] = options.DEFAULT
         return self._projects
 
     def sub_portfolios(self):
+        self.get_details()
         self._sub_portfolios = _sub_portfolios(self._json, self.endpoint.version())
         return self._sub_portfolios
 
@@ -180,7 +201,7 @@ class Portfolio(aggregations.Aggregation):
         return m
 
     def dump_data(self, **opts):
-        self._load_full()
+        self.get_details()
         data = {
             "type": "portfolio",
             "key": self.key,
@@ -195,7 +216,7 @@ class Portfolio(aggregations.Aggregation):
 
     def export(self):
         util.logger.info("Exporting %s", str(self))
-        self._load_full()
+        self.get_details()
         json_data = {
             "key": self.key,
             "name": self.name,
@@ -212,8 +233,10 @@ class Portfolio(aggregations.Aggregation):
 
         return util.remove_nones(json_data)
 
-    def set_permissions(self, data):
-        permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
+    def set_permissions(self, portfolio_perms):
+        if portfolio_perms is None or len(portfolio_perms) == 0:
+            return
+        permissions.set_permissions(self.endpoint, portfolio_perms, project_key=self.key)
 
     def set_component_tags(self, tags, api):
         util.logger.warning("Can't set tags on portfolios, operation skipped...")
@@ -221,7 +244,7 @@ class Portfolio(aggregations.Aggregation):
     def set_projects(self, project_list):
         current_projects = self.projects()
         self.post("views/set_manual_mode", params={"portfolio": self.key})
-        if current_projects is None:
+        if current_projects is None or project_list is None:
             return
         current_projects = current_projects.keys()
         for proj in project_list:
@@ -254,25 +277,64 @@ class Portfolio(aggregations.Aggregation):
     def set_node_mode(self):
         self.post("views/set_none_mode", params={"portfolio": self.key})
 
-    def update(self, data):
-        self.set_permissions(data)
-        selection_mode = data[_PROJECT_SELECTION_MODE]
+    def set_selection_mode(self, selection_mode, projects=None, regexp=None, tags=None, branch=None):
         if selection_mode == SELECTION_MODE_MANUAL:
-            self.set_projects(data.get("projects", {}))
+            self.set_projects(projects)
         elif selection_mode == SELECTION_MODE_TAGS:
-            self.set_tag_mode(data[_PROJECT_SELECTION_TAGS], data.get(_PROJECT_SELECTION_BRANCH, None))
+            self.set_tag_mode(tags=tags, branch=branch)
         elif selection_mode == SELECTION_MODE_REGEXP:
-            self.set_regexp_mode(data[_PROJECT_SELECTION_REGEXP], data.get(_PROJECT_SELECTION_BRANCH, None))
+            self.set_regexp_mode(regexp=regexp, branch=branch)
         elif selection_mode == SELECTION_MODE_OTHERS:
-            self.set_remaining_projects_mode(data.get(_PROJECT_SELECTION_BRANCH, None))
+            self.set_remaining_projects_mode(branch)
         elif selection_mode == SELECTION_MODE_NONE:
             self.set_node_mode()
         else:
             util.logger.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
 
+    def add_subportfolio(self, key):
+        if not exists(key, self.endpoint):
+            util.logger.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
+            return False
+        r = self.post("views/add_portfolio", params={"portfolio": self.key, "reference": key})
+        return r.ok
+
+    def update(self, data):
+        util.logger.info("Updating %s", str(self))
+        self.set_permissions(data.get("permissions", {}))
+        selection_mode = data.get(_PROJECT_SELECTION_MODE, "NONE")
+        branch = data.get(_PROJECT_SELECTION_BRANCH, None)
+        regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
+        tags = data.get(_PROJECT_SELECTION_TAGS, None)
+        projects = data.get("projects", None)
+        self.set_selection_mode(selection_mode=selection_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+
+        for subp in data.get("subPortfolios", []):
+            key_list = [p["key"] for p in self.sub_portfolios().get("subPortfolios", [])]
+            if subp.get("byReference", False):
+                o_subp = get_object(key=subp["key"], endpoint=self.endpoint)
+                if o_subp is not None:
+                    if o_subp.key not in key_list:
+                        self.add_subportfolio(o_subp.key)
+                    o_subp.update(subp)
+"""
+            else:
+                name = subp.pop("name")
+                key = subp["key"]
+                util.logger.info("subp key list = %s", str(key_list))
+                if key in key_list:
+                    o = get_object(key=key, endpoint=self.endpoint)
+                    if o is None:
+                        o = Portfolio.create(name=name, endpoint=self.endpoint, parent=self.key, **subp)
+                else:
+                    util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
+                    o = Portfolio.create(name=name, endpoint=self.endpoint, parent=self.key, **subp)
+                    if o is None:
+                        util.logger.info("Can't create subport %s to parent %s", name, self.key)
+                o.update(subp)
+"""
 
 def count(endpoint=None):
-    return aggregations.count(api=SEARCH_API, endpoint=endpoint)
+    return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
 
 def search(endpoint, params=None):
@@ -281,10 +343,8 @@ def search(endpoint, params=None):
     if edition not in ("enterprise", "datacenter"):
         util.logger.info("No portfolios in %s edition", edition)
     else:
-        if params is None:
-            params = {"qualifiers": "VW"}
         portfolio_list = sq.search_objects(
-            api="views/search",
+            api=_SEARCH_API,
             params=params,
             returned_field="components",
             key_field="key",
@@ -386,21 +446,8 @@ def get_object(key, endpoint=None):
     return _OBJECTS.get(key, None)
 
 
-def create(endpoint, name, key=None, data=None):
-    o = get_object(key, endpoint=endpoint)
-    if o is None:
-        o = Portfolio(endpoint=endpoint, name=name, key=key, create_data=data)
-    else:
-        util.logger.info("%s already exist, creation skipped", str(o))
-    return o
-
-
-def create_or_update(endpoint, name, key, data):
-    o = get_object(key, endpoint=endpoint)
-    if o is None:
-        util.logger.debug("Portfolio key '%s' does not exist, creating...", key)
-        o = create(name=name, key=key, endpoint=endpoint, data=data)
-    o.update(data)
+def exists(key, endpoint):
+    return get_object(key, endpoint) is not None
 
 
 def import_config(endpoint, config_data):
@@ -409,6 +456,42 @@ def import_config(endpoint, config_data):
         return
     util.logger.info("Importing portfolios")
     search(endpoint=endpoint)
+    # First pass to create all top level porfolios that may be referenced
     for key, data in config_data["portfolios"].items():
         util.logger.info("Importing portfolios key '%s'", key)
-        create_or_update(endpoint=endpoint, key=key, name=data["name"], data=data)
+        o = get_object(key, endpoint)
+        if o is None:
+            newdata = data.copy()
+            name = newdata.pop("name")
+            Portfolio.create(name=name, endpoint=endpoint, key=key, **newdata)
+    # Second pass to define hierarchies
+    util.logger.info("Setting portfolios hierarchies")
+    for key, data in config_data["portfolios"].items():
+        o = get_object(key, endpoint)
+        if o is None:
+            util.logger.warning("Can't find portfolio key '%s', name '%s'", key, data["name"])
+        o.update(data)
+
+
+def search_by_name(endpoint, name):
+    return util.search_by_name(endpoint, name, _SEARCH_API, "components")
+
+
+def export(endpoint):
+    if endpoint.edition() in ("community", "developer"):
+        util.logger.info("No portfolios in community and developer editions")
+        return None
+    util.logger.info("Exporting portfolios")
+    nb_portfolios = count(endpoint=endpoint)
+    i = 0
+    exported_portfolios = {}
+    for k, p in search(endpoint).items():
+        if not p.is_sub_portfolio():
+            exported_portfolios[k] = p.export()
+            exported_portfolios[k].pop("key")
+        else:
+            util.logger.info("Skipping export of %s", str(p))
+        i += 1
+        if i % 50 == 0 or i == nb_portfolios:
+            util.logger.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
+    return exported_portfolios

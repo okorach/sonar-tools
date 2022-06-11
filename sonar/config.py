@@ -150,15 +150,13 @@ def __export_config(endpoint, what, args):
             apps_settings[k].pop("key")
         sq_settings[__JSON_KEY_APPS] = apps_settings
     if _PORTFOLIOS in what:
-        portfolios_settings = {}
-        for k, p in portfolios.search(endpoint).items():
-            portfolios_settings[k] = p.export()
-            portfolios_settings[k].pop("key")
-        sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios_settings
+        sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint)
     if _USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint)
     if _GROUPS in what:
         sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint)
+
+    util.remove_nones(sq_settings)
     with util.open_file(args.file) as fd:
         print(util.json_dump(sq_settings), file=fd)
 
