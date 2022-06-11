@@ -799,7 +799,7 @@ Is this normal ?",
                 branches.get_object(branch, self.key, self.endpoint).update(branch_data)
 
     def set_devops_binding(self, data):
-        util.logger.info("Setting devops binding of %s to %s", str(self), util.json_dump(data))
+        util.logger.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
         alm_key = data["key"]
         alm_type = devops.platform_type(platform_key=alm_key, endpoint=self.endpoint)
         mono = data.get("monorepo", False)
@@ -1014,7 +1014,7 @@ def import_config(endpoint, config_data):
     nb_projects = len(config_data["projects"])
     i = 0
     for name, data in config_data["projects"].items():
-        util.logger.debug("Importing project key '%s'", name)
+        util.logger.info("Importing project key '%s'", name)
         create_or_update(endpoint, name, data)
         i += 1
         if i % 20 == 0 or i == nb_projects:
