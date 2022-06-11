@@ -53,13 +53,26 @@ class DevopsPlatform(sqobject.SqObject):
         json_data.update({"key": self.key, "type": self.type, "url": self.url})
         return json_data
 
+    def update(self, data):
+        alm_type = data["type"]
+        if alm_type != self.type:
+            util.logger.error("DevOps platform type '%s' for update of %s is incompatible", alm_type, str(self))
+            return False
+
+        params = {"key": self.key, "url": data["url"]}
+        if alm_type == "bitbucketcloud":
+            params.update({"clientId": data["clientId"], "workspace": data["workspace"]})
+        elif alm_type == "github":
+            params.update({"clientId": data["clientId"], "appId": data["appId"]})
+
+        return self.post(f"alm_settings/update_{alm_type}", params=params).ok
 
 def get_all(endpoint):
     """Gets several settings as bulk (returns a dict)"""
     object_list = {}
     data = json.loads(endpoint.get("api/alm_settings/list_definitions").text)
     for t in _DEVOPS_PLATFORM_TYPES:
-        for d in data[t]:
+        for d in data.get(t, {}):
             o = DevopsPlatform(d["key"], endpoint=endpoint, platform_type=t, data=d)
             object_list[o.uuid()] = o
     return object_list
@@ -76,3 +89,20 @@ def export(endpoint):
         json_data[s.uuid()] = s.to_json()
         json_data[s.uuid()].pop("key")
     return json_data
+
+def create_or_update_devops_platform(name, data, endpoint):
+    existing_platforms = get_all(endpoint=endpoint)
+    if name in existing_platforms:
+        existing_platforms[name].update(data)
+    else:
+        o = DevopsPlatform(key=name, platform_type=data["type"], endpoint=endpoint, data=data)
+
+
+def import_config(endpoint, config_data):
+    devops_settings = config_data.get("devopsIntegration", {})
+    if len(devops_settings) == 0:
+        util.logger.info("No devops integration settings in config, skipping import...")
+        return
+    util.logger.info("Importing devops integration settings")
+    for name, data in devops_settings.items():
+        create_or_update_devops_platform(name=name, data=data, endpoint=endpoint)
