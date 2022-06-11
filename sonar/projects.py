@@ -147,7 +147,7 @@ class Project(components.Component):
             for b in data["branches"]:
                 if b.get("isMain", False) and not include_main:
                     continue
-                self.branches.append(branches.get_object(b["name"], self, data=b))
+                self.branches.append(branches.get_object(b["name"], self, data=b, endpoint=self.endpoint))
         return self.branches
 
     def get_pull_requests(self):
