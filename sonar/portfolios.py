@@ -51,7 +51,6 @@ _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
 _PROJECT_SELECTION_TAGS = "projectSelectionTags"
 
 
-
 class Portfolio(aggregations.Aggregation):
     @classmethod
     def read(cls, name, endpoint):
@@ -278,6 +277,20 @@ class Portfolio(aggregations.Aggregation):
     def set_node_mode(self):
         self.post("views/set_none_mode", params={"portfolio": self.key})
 
+    def set_selection_mode(self, selection_mode, projects=None, regexp=None, tags=None, branch=None):
+        if selection_mode == SELECTION_MODE_MANUAL:
+            self.set_projects(projects)
+        elif selection_mode == SELECTION_MODE_TAGS:
+            self.set_tag_mode(tags=tags, branch=branch)
+        elif selection_mode == SELECTION_MODE_REGEXP:
+            self.set_regexp_mode(regexp=regexp, branch=branch)
+        elif selection_mode == SELECTION_MODE_OTHERS:
+            self.set_remaining_projects_mode(branch)
+        elif selection_mode == SELECTION_MODE_NONE:
+            self.set_node_mode()
+        else:
+            util.logger.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
+
     def add_subportfolio(self, key):
         if not exists(key, self.endpoint):
             util.logger.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
@@ -289,18 +302,12 @@ class Portfolio(aggregations.Aggregation):
         util.logger.info("Updating %s", str(self))
         self.set_permissions(data.get("permissions", {}))
         selection_mode = data.get(_PROJECT_SELECTION_MODE, "NONE")
-        if selection_mode == SELECTION_MODE_MANUAL:
-            self.set_projects(data.get("projects", {}))
-        elif selection_mode == SELECTION_MODE_TAGS:
-            self.set_tag_mode(data[_PROJECT_SELECTION_TAGS], data.get(_PROJECT_SELECTION_BRANCH, None))
-        elif selection_mode == SELECTION_MODE_REGEXP:
-            self.set_regexp_mode(data[_PROJECT_SELECTION_REGEXP], data.get(_PROJECT_SELECTION_BRANCH, None))
-        elif selection_mode == SELECTION_MODE_OTHERS:
-            self.set_remaining_projects_mode(data.get(_PROJECT_SELECTION_BRANCH, None))
-        elif selection_mode == SELECTION_MODE_NONE:
-            self.set_node_mode()
-        else:
-            util.logger.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
+        branch = data.get(_PROJECT_SELECTION_BRANCH, None)
+        regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
+        tags = data.get(_PROJECT_SELECTION_TAGS, None)
+        projects = data.get("projects", None)
+        self.set_selection_mode(selection_mode=selection_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+
         for subp in data.get("subPortfolios", []):
             key_list = [p["key"] for p in self.sub_portfolios().get("subPortfolios", [])]
             if subp.get("byReference", False):
@@ -309,7 +316,8 @@ class Portfolio(aggregations.Aggregation):
                     if o_subp.key not in key_list:
                         self.add_subportfolio(o_subp.key)
                     o_subp.update(subp)
-            elif False:
+"""
+            else:
                 name = subp.pop("name")
                 key = subp["key"]
                 util.logger.info("subp key list = %s", str(key_list))
@@ -323,7 +331,7 @@ class Portfolio(aggregations.Aggregation):
                     if o is None:
                         util.logger.info("Can't create subport %s to parent %s", name, self.key)
                 o.update(subp)
-
+"""
 
 def count(endpoint=None):
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
@@ -335,8 +343,6 @@ def search(endpoint, params=None):
     if edition not in ("enterprise", "datacenter"):
         util.logger.info("No portfolios in %s edition", edition)
     else:
-        #if params is None:
-        #    params = {"qualifiers": "VW"}
         portfolio_list = sq.search_objects(
             api=_SEARCH_API,
             params=params,
