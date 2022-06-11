@@ -228,8 +228,10 @@ class Portfolio(aggregations.Aggregation):
 
         return util.remove_nones(json_data)
 
-    def set_permissions(self, data):
-        permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
+    def set_permissions(self, portfolio_perms):
+        if portfolio_perms is None or len(portfolio_perms) == 0:
+            return
+        permissions.set_permissions(self.endpoint, portfolio_perms, project_key=self.key)
 
     def set_component_tags(self, tags, api):
         util.logger.warning("Can't set tags on portfolios, operation skipped...")
@@ -271,7 +273,7 @@ class Portfolio(aggregations.Aggregation):
         self.post("views/set_none_mode", params={"portfolio": self.key})
 
     def update(self, data):
-        self.set_permissions(data)
+        self.set_permissions(data.get("permissions", {}))
         selection_mode = data[_PROJECT_SELECTION_MODE]
         if selection_mode == SELECTION_MODE_MANUAL:
             self.set_projects(data.get("projects", {}))
@@ -402,23 +404,6 @@ def get_object(key, endpoint=None):
     return _OBJECTS.get(key, None)
 
 
-def create(endpoint, name, key=None, data=None):
-    o = get_object(key, endpoint=endpoint)
-    if o is None:
-        o = Portfolio(endpoint=endpoint, name=name, key=key, create_data=data)
-    else:
-        util.logger.info("%s already exist, creation skipped", str(o))
-    return o
-
-
-def create_or_update(endpoint, name, key, data):
-    o = get_object(key, endpoint=endpoint)
-    if o is None:
-        util.logger.debug("Portfolio key '%s' does not exist, creating...", key)
-        o = create(name=name, key=key, endpoint=endpoint, data=data)
-    o.update(data)
-
-
 def import_config(endpoint, config_data):
     if "portfolios" not in config_data:
         util.logger.info("No portfolios to import")
@@ -427,8 +412,10 @@ def import_config(endpoint, config_data):
     search(endpoint=endpoint)
     for key, data in config_data["portfolios"].items():
         util.logger.info("Importing portfolios key '%s'", key)
-        create_or_update(endpoint=endpoint, key=key, name=data["name"], data=data)
-
+        o = get_object(key, endpoint)
+        if o is None:
+            Portfolio.create(name=data.pop("name"), endpoint=endpoint, **data)
+        o.update(data)
 
 def search_by_name(endpoint, name):
     for data in json.load(endpoint.get("views/list").text):
