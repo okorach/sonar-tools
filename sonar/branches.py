@@ -48,7 +48,7 @@ class Branch(components.Component):
         self._json = data
         self._new_code = None
         self._last_analysis = None
-        self._is_purgeable = None
+        self._keep_when_inactive = None
         self._ncloc = None
         _BRANCHES[self.uuid()] = self
         util.logger.debug("Created object %s", str(self))
@@ -70,7 +70,7 @@ class Branch(components.Component):
             self._json.update(data)
         self._is_main = self._json["isMain"]
         self._last_analysis = util.string_to_date(self._json.get("analysisDate", None))
-        self._is_purgeable = self._json.get("excludedFromPurge", False)
+        self._keep_when_inactive = self._json.get("excludedFromPurge", False)
         self._is_main = self._json.get("isMain", False)
 
     def uuid(self):
@@ -90,13 +90,10 @@ class Branch(components.Component):
         else:
             return today - last_analysis
 
-    def is_purgeable(self):
-        if self._is_purgeable is None or self._json is None:
+    def is_kept_when_inactive(self):
+        if self._keep_when_inactive is None or self._json is None:
             self.read()
-        return self._is_purgeable
-
-    def is_protected(self):
-        return not self.is_purgeable()
+        return self._keep_when_inactive
 
     def is_main(self):
         if self._is_main is None or self._json is None:
@@ -124,8 +121,8 @@ class Branch(components.Component):
         data = {"newCode": self.new_code()}
         if self.is_main():
             data["isMain"] = True
-        if self.is_protected() and not self.is_main():
-            data["isProtected"] = True
+        if self.is_kept_when_inactive() and not self.is_main():
+            data["keepWhenInactive"] = True
         if full_export:
             data.update({"name": self.name, "project": self.project.key})
         return util.remove_nones(data)
