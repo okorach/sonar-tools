@@ -36,28 +36,38 @@ _MAP = {}
 
 
 class Group(sq.SqObject):
-    def __init__(self, name, endpoint=None, data=None, create_data=None):
-        super().__init__(name, endpoint)
-        self.key = None
+
+    @classmethod
+    def read(cls, name, endpoint):
+        util.logger.debug("Reading group '%s'", name)
+        data = search_by_name(endpoint=endpoint, name=name)
+        if data is None:
+            return None
+        id = data["id"]
+        if id in _GROUPS:
+            return _GROUPS[id]
+        return cls(name, endpoint, data=data)
+
+    @classmethod
+    def create(cls, name, endpoint, description=None):
+        util.logger.debug("Creating group '%s'", name)
+        endpoint.post(_CREATE_API, params={"name": name, "description": description})
+        return cls.read(name=name, endpoint=endpoint)
+
+    @classmethod
+    def load(cls, name, endpoint, data):
+        util.logger.debug("Loading group '%s'", name)
+        return cls(name=name, endpoint=endpoint, data=data)
+
+    def __init__(self, name, endpoint, data):
+        super().__init__(data["id"], endpoint)
         self.name = name
-        if create_data is not None:
-            create_data["name"] = name
-            self.post(_CREATE_API, params=create_data)
-            data = search_by_name(endpoint, name)
-        elif data is None:
-            data = search_by_name(endpoint, name)
         self._json = data
-        self.key = data["id"]
-        self.name = data["name"]
-        self.members_count = data["membersCount"]
-        self.is_default = data["default"]
-        self.description = data.get("description", None)
-        _GROUPS[_uuid(self.name, self.key)] = self
+        self.members_count = data.get("membersCount", None)
+        self.is_default = data.get("default", None)
+        self.description = data.get("description", "")
+        _GROUPS[self.key] = self
         _MAP[self.name] = self.key
-        if create_data is None:
-            util.logger.debug("Sync'ed %s id '%s'", str(self), self.key)
-        else:
-            util.logger.debug("Created %s id '%s'", str(self), self.key)
 
     def __str__(self):
         return f"group '{self.name}'"
@@ -88,25 +98,29 @@ class Group(sq.SqObject):
                 json_data["default"] = True
         return util.remove_nones(json_data)
 
-    def update(self, **data):
-        upd = False
-        params = {"id": self.key}
-        my_vars = vars(self)
-        for p in ("name", "description"):
-            if p in data and data[p] != my_vars[p]:
-                params[p] = data[p]
-                upd = True
-        if not upd:
-            util.logger.info("Nothing to update for %s", str(self))
+    def set_description(self, description):
+        if description is None or description == self.description:
+            util.logger.info("No description to update for %s", str(self))
             return self
-        util.logger.info("Updating %s with %s", str(self), str(params))
-        self.post(_UPDATE_API, params=params)
-        if "name" in data and data["name"] != self.name:
-            _MAP.pop(_uuid(self.name, self.key), None)
-            self.name = data["name"]
-            _MAP[_uuid(self.name, self.key)] = self
-        if "description" in data:
-            self.description = data["description"]
+        util.logger.info("Updating %s with description = %s", str(self), description)
+        self.post(_UPDATE_API, params={"id": self.key, "description": description})
+        self.description = description
+        return self
+
+    def set_name(self, name):
+        if name is None or name == self.name:
+            util.logger.info("No name to update for %s", str(self))
+            return self
+        util.logger.info("Updating %s with name = %s", str(self), name)
+        self.post(_UPDATE_API, params={"id": self.key, "name": name})
+        _MAP.pop(self.name, None)
+        self.name = name
+        _MAP[self.name] = self.key
+        return self
+
+    def update(self, description=None, name=None):
+        self.set_description(description)
+        self.set_name(name)
         return self
 
 
@@ -152,30 +166,20 @@ def audit(audit_settings, endpoint=None):
 
 
 def get_object(name, endpoint=None):
-    if len(_GROUPS) == 0:
-        get_list(endpoint)
-    if name not in _MAP:
+    if len(_GROUPS) == 0 or name not in _MAP:
         get_list(endpoint)
     if name not in _MAP:
         return None
-    return _GROUPS[_uuid(name, _MAP[name])]
+    return _GROUPS[_MAP[name]]
 
 
-def create(name, endpoint=None, **kwargs):
-    util.logger.info("Create group '%s'", name)
-    o = get_object(name=name, endpoint=endpoint)
-    if o is None:
-        o = Group(name=name, endpoint=endpoint, create_data=kwargs)
-    return o
-
-
-def create_or_update(endpoint, name, **kwargs):
+def create_or_update(endpoint, name, description):
     o = get_object(endpoint=endpoint, name=name)
     if o is None:
         util.logger.debug("Group '%s' does not exist, creating...", name)
-        return create(name, endpoint, **kwargs)
+        return Group.create(name, endpoint, description)
     else:
-        return o.update(**kwargs)
+        return o.update(description)
 
 
 def import_config(endpoint, config_data):
@@ -184,8 +188,12 @@ def import_config(endpoint, config_data):
         return
     util.logger.info("Importing groups")
     for name, data in config_data["groups"].items():
-        create_or_update(endpoint, name, **data)
+        if isinstance(data, dict):
+            desc = data["description"]
+        else:
+            desc = data
+        create_or_update(endpoint, name, desc)
 
 
-def _uuid(name, id):
-    return id
+def exists(group_name, endpoint):
+    return get_object(name=group_name, endpoint=endpoint) is not None
