@@ -759,8 +759,20 @@ Is this normal ?",
         if quality_gate is None:
             return
         if qualitygates.get_object(quality_gate, endpoint=self.endpoint) is None:
-            util.logger.warning("Can't set non existing quality gate '%s' to %s", quality_gate, str(self))
-        self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
+            util.logger.warning("Quality gate '%s' does not exist, can't set it for %s", quality_gate, str(self))
+            return False
+        util.logger.debug("Setting quality gate '%s' for %s", quality_gate, str(self))
+        r = self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
+        return r.ok
+
+    def set_quality_profile(self, language, profile_name):
+        if not qualityprofiles.exists(language=language, name=profile_name, endpoint=self.endpoint):
+            util.logger.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s",
+                                profile_name, language, str(self))
+            return False
+        util.logger.debug("Setting quality profile '%s' of language '%s' for %s", profile_name, language, str(self))
+        r = self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": profile_name, "language": language})
+        return r.ok
 
     def rename_main_branch(self, main_branch_name):
         for b in self.get_branches():
@@ -854,6 +866,10 @@ Is this normal ?",
         self.set_links(data)
         self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))
+        for lang, qp_name in data.get("qualityProfiles", {}).items():
+            res = qp_name.split(" ", maxsplit=1)
+            profile = " ".join(res[1:]) if len(res) > 1 else qp_name
+            self.set_quality_profile(language=lang, profile_name=profile)
         for bname, bdata in data.get("branches", {}).items():
             if bdata.get("isMain", False):
                 self.rename_main_branch(bname)
