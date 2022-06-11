@@ -26,17 +26,48 @@ from sonar import sqobject
 import sonar.utilities as util
 
 _DEVOPS_PLATFORM_TYPES = ("github", "azure", "bitbucket", "bitbucketcloud", "gitlab")
-
+_OBJECTS = {}
+_CREATE_API_GITHUB = "alm_settings/create_github"
+_CREATE_API_GITLAB = "alm_settings/create_gitlab"
+_CREATE_API_AZURE = "alm_settings/create_azure"
+_CREATE_API_BITBUCKET = "alm_settings/create_bitbucket"
+_CREATE_API_BBCLOUD = "alm_settings/create_bitbucketcloud"
+_LIST_API = "alm_settings/list_definitions"
 
 class DevopsPlatform(sqobject.SqObject):
-    def __init__(self, key, platform_type, endpoint, data=None):
+    def __init__(self, key, devops_platform_type, endpoint, data=None, create_data=None):
         super().__init__(key, endpoint)
-        self.type = platform_type
-        self.json = data
-        if platform_type == "bitbucketcloud":
-            self.url = "https://bitbucket.org"
+        self.type = devops_platform_type
+        if create_data is not None:
+            self.type = create_data.pop("type")
+            params = create_data
+            params["key"] = self.key
+            if self.type == "github":
+                params["clientSecret"] = "TO_BE_SET"
+                params["privateKey"] = "TO_BE_SET"
+                self.post(_CREATE_API_GITHUB, params=params)
+            elif self.type == "azure":
+                # TODO: pass secrets on the cmd line
+                params["personalAccessToken"] = "TO_BE_SET"
+                self.post(_CREATE_API_AZURE, params=params)
+            elif self.type == "gitlab":
+                params["personalAccessToken"] = "TO_BE_SET"
+                self.post(_CREATE_API_GITLAB, params=params)
+            elif self.type == "bitbucket":
+                params["personalAccessToken"] = "TO_BE_SET"
+                self.post(_CREATE_API_BITBUCKET, params=params)
+            elif self.type == "bitbucketcloud":
+                params["clientSecret"] = "TO_BE_SET"
+                self.post(_CREATE_API_BBCLOUD, params=params)
+            self.read()
+        elif data is None:
+            self.read()
         else:
-            self.url = data["url"]
+            self._json = data
+            self.url = data.get("url", "")
+        if devops_platform_type == "bitbucketcloud":
+            self.url = "https://bitbucket.org"
+        _OBJECTS[key] = self
         util.logger.debug("Created %s", str(self))
 
     def uuid(self):
@@ -45,11 +76,20 @@ class DevopsPlatform(sqobject.SqObject):
     def __str__(self):
         string = f"devops platform '{self.key}'"
         if self.type == "bitbucketcloud":
-            string += f" workspace '{self.json['workspace']}'"
+            string += f" workspace '{self._json['workspace']}'"
         return string
 
+    def read(self):
+        data = json.loads(self.get(_LIST_API).text)
+        for alm_data in data.get(self.type, {}):
+            if alm_data["key"] != self.key:
+                continue
+            self._json = alm_data
+            break
+        return self._json
+
     def to_json(self):
-        json_data = self.json.copy()
+        json_data = self._json.copy()
         json_data.update({"key": self.key, "type": self.type, "url": self.url})
         return json_data
 
@@ -67,19 +107,30 @@ class DevopsPlatform(sqobject.SqObject):
 
         return self.post(f"alm_settings/update_{alm_type}", params=params).ok
 
-def get_all(endpoint):
+def get_list(endpoint):
     """Gets several settings as bulk (returns a dict)"""
-    object_list = {}
-    data = json.loads(endpoint.get("api/alm_settings/list_definitions").text)
-    for t in _DEVOPS_PLATFORM_TYPES:
-        for d in data.get(t, {}):
-            o = DevopsPlatform(d["key"], endpoint=endpoint, platform_type=t, data=d)
-            object_list[o.uuid()] = o
-    return object_list
+    data = json.loads(endpoint.get(_LIST_API).text)
+    for alm_type in _DEVOPS_PLATFORM_TYPES:
+        for alm_data in data.get(alm_type, {}):
+            if alm_data["key"] in _OBJECTS:
+                _OBJECTS[alm_data["key"]].update(alm_data)
+            else:
+                o = DevopsPlatform(alm_data["key"], endpoint=endpoint, devops_platform_type=alm_type, data=alm_data)
+    return _OBJECTS
+
+
+def get_object(devops_platform_key, endpoint):
+    if len(_OBJECTS) == 0:
+        get_list(endpoint)
+    return _OBJECTS.get(devops_platform_key, None)
+
+
+def exists(devops_platform_key, endpoint):
+    return get_object(devops_platform_key, endpoint) is not None
 
 
 def settings(endpoint):
-    return get_all(endpoint)
+    return get_list(endpoint)
 
 
 def export(endpoint):
@@ -90,12 +141,14 @@ def export(endpoint):
         json_data[s.uuid()].pop("key")
     return json_data
 
+
 def create_or_update_devops_platform(name, data, endpoint):
-    existing_platforms = get_all(endpoint=endpoint)
-    if name in existing_platforms:
-        existing_platforms[name].update(data)
+    o = _OBJECTS.get(name, None)
+    if o is None:
+        o = DevopsPlatform(key=name, devops_platform_type=data["type"], endpoint=endpoint, create_data=data)
     else:
-        o = DevopsPlatform(key=name, platform_type=data["type"], endpoint=endpoint, data=data)
+        o.update(data)
+    return o
 
 
 def import_config(endpoint, config_data):
@@ -104,58 +157,14 @@ def import_config(endpoint, config_data):
         util.logger.info("No devops integration settings in config, skipping import...")
         return
     util.logger.info("Importing devops integration settings")
+    if len(_OBJECTS) == 0:
+        get_list(endpoint)
     for name, data in devops_settings.items():
         create_or_update_devops_platform(name=name, data=data, endpoint=endpoint)
 
 
 def platform_type(platform_key, endpoint):
-    p_list = get_all(endpoint=endpoint)
-    for platform in p_list.values():
-        if platform.key == platform_key:
-            return platform.type
-    return None
-
-
-def set_devops_binding(project_key, data, endpoint):
-    alm_key = data["key"]
-    alm_type = platform_type(platform_key=alm_key, endpoint=endpoint)
-    if alm_type == "github":
-        set_github_binding(endpoint, project_key, alm_key, repository=data["repository"],
-                           summary_comment=data.get("summaryComment", True), monorepo=data.get("monorepo", False))
-    elif alm_type == "gitlab":
-        set_gitlab_binding(endpoint, project_key, alm_key, repository=data["repository"], monorepo=data.get("monorepo", False))
-    elif alm_type == "azure":
-        set_azure_devops_binding(endpoint, project_key, alm_key, repository=data["repository"], monorepo=data.get("monorepo", False),
-                                 slug=data["slug"])
-
-
-def __std_params(alm_key, proj_key, repo, monorepo):
-    return {"almSetting": alm_key, "project": proj_key, "repository": repo, "monorepo": str(monorepo).lower()}
-
-
-def set_github_binding(endpoint, project_key, devops_platform_key, repository, monorepo=False, summary_comment=True):
-    params = __std_params(devops_platform_key, project_key, repository, monorepo)
-    params["summaryCommentEnabled"] = str(summary_comment).lower()
-    endpoint.post("alm_settings/set_github_binding", params=params)
-
-
-def set_gitlab_binding(endpoint, project_key, devops_platform_key, repository,  monorepo=False):
-    params = __std_params(devops_platform_key, project_key, repository, monorepo)
-    endpoint.post("alm_settings/set_gitlab_binding", params=params)
-
-
-def set_bitbucket_binding(endpoint, project_key, devops_platform_key, repository,  slug, monorepo=False):
-    params = __std_params(devops_platform_key, project_key, repository, monorepo)
-    params["slug"] = slug
-    endpoint.post("alm_settings/set_bitbucket_binding", params=params)
-
-
-def set_bitbucketcloud_binding(endpoint, project_key, devops_platform_key, repository,  monorepo=False):
-    params = __std_params(devops_platform_key, project_key, repository, monorepo)
-    endpoint.post("alm_settings/set_bitbucketcloud_binding", params=params)
-
-
-def set_azure_devops_binding(endpoint, project_key, devops_platform_key, slug, repository,  monorepo=False):
-    params = __std_params(devops_platform_key, project_key, repository, monorepo)
-    params["projectName"] = slug
-    endpoint.post("alm_settings/set_azure_binding", params=params)
+    o = get_object(platform_key, endpoint)
+    if o is None:
+        return None
+    return o.type

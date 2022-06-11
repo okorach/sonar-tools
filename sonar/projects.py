@@ -799,7 +799,50 @@ Is this normal ?",
                 branches.get_object(branch, self.key, self.endpoint).update(branch_data)
 
     def set_devops_binding(self, data):
-        devops.set_devops_binding(endpoint=self.endpoint, project_key=self.key, data=data)
+        util.logger.info("Setting devops binding of %s to %s", str(self), util.json_dump(data))
+        alm_key = data["key"]
+        alm_type = devops.platform_type(platform_key=alm_key, endpoint=self.endpoint)
+        mono = data.get("monorepo", False)
+        repo = data["repository"]
+        if alm_type == "github":
+            self.set_github_binding(alm_key, repository=repo, monorepo=mono, summary_comment=data.get("summaryComment", True))
+        elif alm_type == "gitlab":
+            self.set_gitlab_binding(alm_key, repository=repo, monorepo=mono)
+        elif alm_type == "azure":
+            self.set_azure_devops_binding(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
+        elif alm_type == "bitbucket":
+            self.set_bitbucket_binding(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
+        elif alm_type == "bitbucketcloud":
+            self.set_bitbucketcloud_binding(alm_key, repository=repo, monorepo=mono)
+        else:
+            util.logger.error("Invalid devops platform type '%s' for %s, setting skipped", alm_key, str(self))
+
+    def __std_binding_params(self, alm_key, repo, monorepo):
+        return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
+
+    def set_github_binding(self, devops_platform_key, repository, monorepo=False, summary_comment=True):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        params["summaryCommentEnabled"] = str(summary_comment).lower()
+        self.post("alm_settings/set_github_binding", params=params)
+
+    def set_gitlab_binding(self, devops_platform_key, repository,  monorepo=False):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        self.post("alm_settings/set_gitlab_binding", params=params)
+
+    def set_bitbucket_binding(self, devops_platform_key, repository, slug, monorepo=False):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        params["slug"] = slug
+        self.post("alm_settings/set_bitbucket_binding", params=params)
+
+    def set_bitbucketcloud_binding(self, devops_platform_key, repository,  monorepo=False):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        self.post("alm_settings/set_bitbucketcloud_binding", params=params)
+
+    def set_azure_devops_binding(self, devops_platform_key, slug, repository,  monorepo=False):
+        params = self.__std_binding_params(devops_platform_key, repository, monorepo)
+        params["projectName"] = slug
+        params["repositoryName"] = params.pop("repository")
+        self.post("alm_settings/set_azure_binding", params=params)
 
     def update(self, data):
         self.set_permissions(data)
@@ -812,6 +855,8 @@ Is this normal ?",
                 break
         if "binding" in data:
             self.set_devops_binding(data["binding"])
+        else:
+            util.logger.debug("%s has no devops binding, skipped")
 
 
 def count(endpoint, params=None):
