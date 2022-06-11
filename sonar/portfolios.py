@@ -53,69 +53,85 @@ _GET_API = "views/show"
 
 
 class Portfolio(aggregations.Aggregation):
-    def __init__(self, key, endpoint, name=None, data=None, create_data=None):
+    @classmethod
+    def read(cls, name, endpoint):
+        util.logger.debug("Reading portfolio name '%s'", name)
+        data = search_by_name(endpoint=endpoint, name=name)
+        if data is None:
+            return None
+        key = data["key"]
+        if key in _OBJECTS:
+            return _OBJECTS[key]
+        return cls(key=key, endpoint=endpoint, data=data)
+
+    @classmethod
+    def create(cls, name, endpoint, **kwargs):
+        params = {"name": name}
+        for p in ("description", "parent", "key", "visibility"):
+            params[p] = kwargs.get(p, None)
+        util.logger.debug("Creating portfolio name '%s'", name)
+        r = endpoint.post(_CREATE_API, params=params)
+        if not r.ok:
+            return None
+        o = cls.read(name=name, endpoint=endpoint)
+        # TODO - Allow on the fly selection mode
+        return o
+
+    @classmethod
+    def load(cls, name, endpoint, data):
+        util.logger.debug("Loading portfolio '%s'", name)
+        return cls(key=data["key"], endpoint=endpoint, data=data)
+
+    def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
-        self._selection_mode = None
-        self._selection_branch = None
-        self._qualifier = None
-        self._projects = None
-        self._tags = None
-        self._regexp = None
-        self._sub_portfolios = None
-        if create_data is not None:
-            self.name = create_data["name"]
-            util.logger.info("Creating %s", str(self))
-            util.logger.debug("from %s", util.json_dump(create_data))
-            resp = self.post(_CREATE_API, params={"key": key, "name": self.name, "visibility": create_data.get("visibility", None)})
-            self.key = json.loads(resp.text)["key"]
-            self._load()
-        else:
-            self.key = data["key"]
-            self.name = data["name"]
-            self._load(data)
-        _OBJECTS[self.key] = self
-
-    def __str__(self):
-        return f"portfolio key '{self.key}'"
-
-    def _load(self, data=None, api=None, key_name="key"):
-        """Loads a portfolio object with contents of data"""
-        super()._load(data=data, api=GET_API, key_name="key")
+        self._json = data
+        self.name = data.get("name")
         self._selection_mode = self._json.get("selectionMode", None)
         self._selection_branch = self._json.get("branch", None)
         self._regexp = self._json.get("regexp", None)
-        self._description = self._json.get("desc", None)
+        self._description = self._json.get("desc", self._json.get("description", None))
         self._qualifier = self._json.get("qualifier", None)
+        self._projects = None
+        self._tags = None
+        self._sub_portfolios = None
+        _OBJECTS[self.key] = self
 
-    def _load_full(self):
-        if self._qualifier == "VW":
-            self._json = None
-            self._load(data=None)
+    def __str__(self):
+        return f"portfolio name '{self.name}'"
+
+    def get_details(self):
+        data = json.loads(self.get("views/show", params={"key": self.key}).text)
+        self._json.update(data)
+        self._selection_mode = self._json.get("selectionMode", None)
+        self._selection_branch = self._json.get("branch", None)
+        self._regexp = self._json.get("regexp", None)
+        self._description = self._json.get("desc", self._json.get("description", None))
+        self._qualifier = self._json.get("qualifier", None)
 
     def url(self):
         return f"{self.endpoint.url}/portfolio?id={self.key}"
 
     def selection_mode(self):
-        if self._selection_mode is None:
-            self._load()
         return self._selection_mode
 
     def projects(self):
         if self._selection_mode != SELECTION_MODE_MANUAL:
             self._projects = None
-        elif self._projects is None:
-            if "selectedProjects" not in self._json:
-                self._load_full()
-            self._projects = {}
-            if self.endpoint.version() >= (9, 3, 0):
-                for p in self._json["selectedProjects"]:
-                    if "selectedBranches" in p:
-                        self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
-                    else:
-                        self._projects[p["projectKey"]] = options.DEFAULT
+            return self._projects
+        if self._projects is not None:
+            return self._projects
+        if "selectedProjects" not in self._json:
+            self.get_details()
+        self._projects = {}
+        if self.endpoint.version() < (9, 3, 0):
+            for p in self._json["projects"]:
+                self._projects[p] = options.DEFAULT
+            return self._projects
+        for p in self._json["selectedProjects"]:
+            if "selectedBranches" in p:
+                self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
-                for p in self._json["projects"]:
-                    self._projects[p] = options.DEFAULT
+                self._projects[p["projectKey"]] = options.DEFAULT
         return self._projects
 
     def sub_portfolios(self):
@@ -180,7 +196,7 @@ class Portfolio(aggregations.Aggregation):
         return m
 
     def dump_data(self, **opts):
-        self._load_full()
+        self.get_details()
         data = {
             "type": "portfolio",
             "key": self.key,
@@ -195,7 +211,7 @@ class Portfolio(aggregations.Aggregation):
 
     def export(self):
         util.logger.info("Exporting %s", str(self))
-        self._load_full()
+        self.get_details()
         json_data = {
             "key": self.key,
             "name": self.name,
@@ -412,3 +428,10 @@ def import_config(endpoint, config_data):
     for key, data in config_data["portfolios"].items():
         util.logger.info("Importing portfolios key '%s'", key)
         create_or_update(endpoint=endpoint, key=key, name=data["name"], data=data)
+
+
+def search_by_name(endpoint, name):
+    for data in json.load(endpoint.get("views/list").text):
+        if data["name"] == name:
+            return data
+    return None
