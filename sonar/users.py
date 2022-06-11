@@ -25,7 +25,7 @@
 
 import datetime as dt
 import pytz
-import sonar.sqobject as sq
+from sonar import groups, sqobject
 import sonar.utilities as util
 import sonar.user_tokens as tok
 from sonar.audit import rules, problem
@@ -41,7 +41,7 @@ _ADD_GROUP_API = "user_groups/add_user"
 _UPDATE_LOGIN_API = "users/update_login"
 
 
-class User(sq.SqObject):
+class User(sqobject.SqObject):
     def __init__(self, login, endpoint, data=None, create_data=None):
         super().__init__(login, endpoint)
         self.login = login
@@ -129,6 +129,9 @@ class User(sq.SqObject):
             if g == "sonar-users":
                 self.groups.append(g)
                 continue
+            if not groups.exists(g, self.endpoint):
+                util.logger.warning("Group '%s' does not exists, can't add membership of %s", g, str(self))
+                continue
             util.logger.info("Adding group '%s' to %s", g, str(self))
             self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
 
@@ -198,14 +201,14 @@ class User(sq.SqObject):
         if full_specs:
             json_data = self._json
         else:
-            groups = self.groups.copy()
-            groups.remove("sonar-users")
+            my_groups = self.groups.copy()
+            my_groups.remove("sonar-users")
             json_data = {
                 "login": self.login,
                 "name": self.name,
                 "scmAccounts": util.list_to_csv(self.scmAccounts, ", ", True),
                 "email": self.email,
-                "groups": util.list_to_csv(groups, ", ", True),
+                "groups": util.list_to_csv(my_groups, ", ", True),
             }
             if self.is_local:
                 json_data["local"] = True
@@ -215,7 +218,7 @@ class User(sq.SqObject):
 
 
 def search(endpoint, params=None):
-    return sq.search_objects(
+    return sqobject.search_objects(
         api=_SEARCH_API,
         params=params,
         returned_field="users",
