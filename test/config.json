@@ -1166,7 +1166,7 @@
                "sonar-users": "user"
             }
          },
-         "qualityGate": "Sonar way ++",
+         "qualityGate": "Sonar way +++",
          "tags": "superbank.com"
       },
       "bad-project-for-audit-1": {
@@ -1933,7 +1933,7 @@
          },
          "qualityGate": "Sonar way w/o coverage",
          "qualityProfiles": {
-            "py": "AWQc0wTE-OPYhocP7Azv Python Olivier"
+            "py": "AWQc0wTE-OPYhocP7Azv Python OlivierKoko"
          },
          "tags": "github, actions, github-actions, monorepo, cli"
       },
