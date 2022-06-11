@@ -767,8 +767,7 @@ Is this normal ?",
 
     def set_quality_profile(self, language, profile_name):
         if not qualityprofiles.exists(language=language, name=profile_name, endpoint=self.endpoint):
-            util.logger.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s",
-                                profile_name, language, str(self))
+            util.logger.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", profile_name, language, str(self))
             return False
         util.logger.debug("Setting quality profile '%s' of language '%s' for %s", profile_name, language, str(self))
         r = self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": profile_name, "language": language})

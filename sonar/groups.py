@@ -36,7 +36,6 @@ _MAP = {}
 
 
 class Group(sq.SqObject):
-
     @classmethod
     def read(cls, name, endpoint):
         util.logger.debug("Reading group '%s'", name)
