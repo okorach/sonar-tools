@@ -244,7 +244,7 @@ class Portfolio(aggregations.Aggregation):
     def set_projects(self, project_list):
         current_projects = self.projects()
         self.post("views/set_manual_mode", params={"portfolio": self.key})
-        if current_projects is None:
+        if current_projects is None or project_list is None:
             return
         current_projects = current_projects.keys()
         for proj in project_list:
