@@ -657,7 +657,7 @@ Is this normal ?",
         return binding
 
     def __export_get_qp(self):
-        qp_json = {qp.language: f"{qp.key} {qp.name}" for qp in self.quality_profiles().values()}
+        qp_json = {qp.language: f"{qp.name}" for qp in self.quality_profiles().values()}
         if len(qp_json) == 0:
             return None
         return qp_json
