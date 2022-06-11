@@ -486,3 +486,6 @@ def name_to_uuid(name, lang):
 
 def _uuid(key):
     return key
+
+def exists(language, name, endpoint):
+    return get_object(name=name, language=language, endpoint=endpoint) is not None
