@@ -757,7 +757,7 @@ Is this normal ?",
 
     def set_quality_gate(self, quality_gate):
         if quality_gate is None:
-            return
+            return False
         if qualitygates.get_object(quality_gate, endpoint=self.endpoint) is None:
             util.logger.warning("Quality gate '%s' does not exist, can't set it for %s", quality_gate, str(self))
             return False

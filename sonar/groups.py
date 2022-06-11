@@ -43,9 +43,9 @@ class Group(sq.SqObject):
         data = search_by_name(endpoint=endpoint, name=name)
         if data is None:
             return None
-        id = data["id"]
-        if id in _GROUPS:
-            return _GROUPS[id]
+        key = data["id"]
+        if key in _GROUPS:
+            return _GROUPS[key]
         return cls(name, endpoint, data=data)
 
     @classmethod
