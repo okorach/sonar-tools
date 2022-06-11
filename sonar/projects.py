@@ -657,7 +657,7 @@ Is this normal ?",
         return binding
 
     def __export_get_qp(self):
-        qp_json = {qp.language: f"{qp.key} {qp.name}" for qp in self.quality_profiles().values()}
+        qp_json = {qp.language: f"{qp.name}" for qp in self.quality_profiles().values()}
         if len(qp_json) == 0:
             return None
         return qp_json
@@ -757,10 +757,21 @@ Is this normal ?",
 
     def set_quality_gate(self, quality_gate):
         if quality_gate is None:
-            return
+            return False
         if qualitygates.get_object(quality_gate, endpoint=self.endpoint) is None:
-            util.logger.warning("Can't set non existing quality gate '%s' to %s", quality_gate, str(self))
-        self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
+            util.logger.warning("Quality gate '%s' does not exist, can't set it for %s", quality_gate, str(self))
+            return False
+        util.logger.debug("Setting quality gate '%s' for %s", quality_gate, str(self))
+        r = self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
+        return r.ok
+
+    def set_quality_profile(self, language, profile_name):
+        if not qualityprofiles.exists(language=language, name=profile_name, endpoint=self.endpoint):
+            util.logger.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", profile_name, language, str(self))
+            return False
+        util.logger.debug("Setting quality profile '%s' of language '%s' for %s", profile_name, language, str(self))
+        r = self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": profile_name, "language": language})
+        return r.ok
 
     def rename_main_branch(self, main_branch_name):
         for b in self.get_branches():
@@ -801,6 +812,9 @@ Is this normal ?",
     def set_devops_binding(self, data):
         util.logger.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
         alm_key = data["key"]
+        if not devops.platform_exists(alm_key, self.endpoint):
+            util.logger.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
+            return False
         alm_type = devops.platform_type(platform_key=alm_key, endpoint=self.endpoint)
         mono = data.get("monorepo", False)
         repo = data["repository"]
@@ -816,6 +830,8 @@ Is this normal ?",
             self.set_bitbucketcloud_binding(alm_key, repository=repo, monorepo=mono)
         else:
             util.logger.error("Invalid devops platform type '%s' for %s, setting skipped", alm_key, str(self))
+            return False
+        return True
 
     def __std_binding_params(self, alm_key, repo, monorepo):
         return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
@@ -849,6 +865,10 @@ Is this normal ?",
         self.set_links(data)
         self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))
+        for lang, qp_name in data.get("qualityProfiles", {}).items():
+            res = qp_name.split(" ", maxsplit=1)
+            profile = " ".join(res[1:]) if len(res) > 1 else qp_name
+            self.set_quality_profile(language=lang, profile_name=profile)
         for bname, bdata in data.get("branches", {}).items():
             if bdata.get("isMain", False):
                 self.rename_main_branch(bname)

@@ -34,6 +34,7 @@ _CREATE_API_BITBUCKET = "alm_settings/create_bitbucket"
 _CREATE_API_BBCLOUD = "alm_settings/create_bitbucketcloud"
 _LIST_API = "alm_settings/list_definitions"
 
+
 class DevopsPlatform(sqobject.SqObject):
     def __init__(self, key, devops_platform_type, endpoint, data=None, create_data=None):
         super().__init__(key, endpoint)
@@ -107,6 +108,7 @@ class DevopsPlatform(sqobject.SqObject):
 
         return self.post(f"alm_settings/update_{alm_type}", params=params).ok
 
+
 def get_list(endpoint):
     """Gets several settings as bulk (returns a dict)"""
     data = json.loads(endpoint.get(_LIST_API).text)
@@ -168,3 +170,7 @@ def platform_type(platform_key, endpoint):
     if o is None:
         return None
     return o.type
+
+
+def platform_exists(platform_key, endpoint):
+    return get_object(platform_key, endpoint) is not None

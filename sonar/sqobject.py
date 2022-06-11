@@ -64,7 +64,10 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         new_params["p"] = page
         data = json.loads(endpoint.get(api, params=new_params).text)
         for obj in data[returned_field]:
-            objects_list[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
+            if str(object_class) == "Group":
+                objects_list[obj[key_field]] = object_class.load(obj[key_field], endpoint, data=obj)
+            else:
+                objects_list[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
         nb_pages = utilities.nbr_pages(data)
         page += 1
     return objects_list
