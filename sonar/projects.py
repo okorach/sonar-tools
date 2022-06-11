@@ -825,7 +825,7 @@ Is this normal ?",
         params["summaryCommentEnabled"] = str(summary_comment).lower()
         self.post("alm_settings/set_github_binding", params=params)
 
-    def set_gitlab_binding(self, devops_platform_key, repository,  monorepo=False):
+    def set_gitlab_binding(self, devops_platform_key, repository, monorepo=False):
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         self.post("alm_settings/set_gitlab_binding", params=params)
 
@@ -834,11 +834,11 @@ Is this normal ?",
         params["slug"] = slug
         self.post("alm_settings/set_bitbucket_binding", params=params)
 
-    def set_bitbucketcloud_binding(self, devops_platform_key, repository,  monorepo=False):
+    def set_bitbucketcloud_binding(self, devops_platform_key, repository, monorepo=False):
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         self.post("alm_settings/set_bitbucketcloud_binding", params=params)
 
-    def set_azure_devops_binding(self, devops_platform_key, slug, repository,  monorepo=False):
+    def set_azure_devops_binding(self, devops_platform_key, slug, repository, monorepo=False):
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["projectName"] = slug
         params["repositoryName"] = params.pop("repository")

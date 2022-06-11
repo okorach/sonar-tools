@@ -115,7 +115,7 @@ def get_list(endpoint):
             if alm_data["key"] in _OBJECTS:
                 _OBJECTS[alm_data["key"]].update(alm_data)
             else:
-                o = DevopsPlatform(alm_data["key"], endpoint=endpoint, devops_platform_type=alm_type, data=alm_data)
+                _ = DevopsPlatform(alm_data["key"], endpoint=endpoint, devops_platform_type=alm_type, data=alm_data)
     return _OBJECTS
 
 
