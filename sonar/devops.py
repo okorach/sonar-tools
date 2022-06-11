@@ -168,3 +168,7 @@ def platform_type(platform_key, endpoint):
     if o is None:
         return None
     return o.type
+
+
+def platform_exists(platform_key, endpoint):
+    return get_object(platform_key, endpoint) is not None

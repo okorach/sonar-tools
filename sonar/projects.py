@@ -801,6 +801,9 @@ Is this normal ?",
     def set_devops_binding(self, data):
         util.logger.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
         alm_key = data["key"]
+        if not devops.platform_exists(alm_key, self.endpoint):
+            util.logger.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
+            return False
         alm_type = devops.platform_type(platform_key=alm_key, endpoint=self.endpoint)
         mono = data.get("monorepo", False)
         repo = data["repository"]
@@ -816,6 +819,8 @@ Is this normal ?",
             self.set_bitbucketcloud_binding(alm_key, repository=repo, monorepo=mono)
         else:
             util.logger.error("Invalid devops platform type '%s' for %s, setting skipped", alm_key, str(self))
+            return False
+        return True
 
     def __std_binding_params(self, alm_key, repo, monorepo):
         return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
