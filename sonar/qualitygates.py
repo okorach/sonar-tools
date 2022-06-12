@@ -234,7 +234,7 @@ class QualityGate(sq.SqObject):
         if self.is_built_in:
             return problems
         max_cond = int(util.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8))
-        nb_conditions = len(self.conditions)
+        nb_conditions = len(self.conditions())
         util.logger.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
         if nb_conditions == 0:
             rule = rules.get_rule(rules.RuleId.QG_NO_COND)
