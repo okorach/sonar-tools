@@ -441,6 +441,7 @@ def search_by_name(endpoint, name, api, returned_field, extra_params=None):
             return d
     return None
 
+
 def search_by_key(endpoint, key, api, returned_field, extra_params=None):
     params = {"q": key}
     if extra_params is not None:
@@ -450,6 +451,7 @@ def search_by_key(endpoint, key, api, returned_field, extra_params=None):
         if d["key"] == key:
             return d
     return None
+
 
 def log_and_exit(response):
     if response.ok:

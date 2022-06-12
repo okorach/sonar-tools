@@ -473,6 +473,7 @@ def import_config(endpoint, config_data):
 def _format(name, lang):
     return f"{lang}:{name}"
 
+
 def name_to_key(name, lang):
     return _MAP.get(_format(name, lang), None)
 
