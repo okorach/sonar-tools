@@ -330,7 +330,6 @@ class Portfolio(aggregations.Aggregation):
                     o_subp.update(subp)
             else:
                 name = subp.pop("name")
-                key = subp["key"]
                 o = get_object(key=subp["key"], endpoint=self.endpoint)
                 if o is None:
                     util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
@@ -445,6 +444,7 @@ def get_object(key, endpoint=None):
     data = search_by_key(endpoint=endpoint, key=key)
     if data is not None:
         return Portfolio.load(name=data["name"], endpoint=endpoint, data=data)
+    return None
 
 
 def exists(key, endpoint):
