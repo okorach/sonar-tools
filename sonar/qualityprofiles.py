@@ -36,7 +36,7 @@ _CREATE_API = "qualityprofiles/create"
 _SEARCH_API = "qualityprofiles/search"
 _DETAILS_API = "qualityprofiles/show"
 _SEARCH_FIELD = "profiles"
-_QUALITY_PROFILES = {}
+_OBJECTS = {}
 _MAP = {}
 
 _KEY_PARENT = "parent"
@@ -44,57 +44,61 @@ _CHILDREN_KEY = "children"
 
 
 class QualityProfile(sq.SqObject):
-    def __init__(self, name, endpoint, language=None, data=None, create_data=None):
-        super().__init__(name, endpoint)
-        self.name = data["name"] if data is not None else name
-        self.language = data["name"] if data is not None else language
-        self._rules = None
-        self._permissions = None
-        self.is_built_in = None
-        self.is_default = None
-        self.language_name = None
-        self.parent_name = None
-        if create_data is not None:
-            util.logger.info("Creating %s", str(self))
-            util.logger.debug("from %s", util.json_dump(create_data))
-            self.post(_CREATE_API, params={"name": self.name, "language": self.language})
-            self.is_built_in = False
-            self.set_permissions(create_data.pop("permissions", None))
-            self.set_parent(create_data.pop(_KEY_PARENT, None))
-            data = search_by_name(endpoint, name, language)
-            self.key = data["key"]
-            self.set_rules(create_data.pop("rules", None))
-        elif data is None:
-            util.logger.info("Creating %s", str(self))
-            self.key = name_to_uuid(name, language)
-            data = json.loads(self.get(_DETAILS_API, params={"key": self.key}).text)
-            util.logger.debug("from sonar details data %s", util.json_dump(data))
-        else:
-            util.logger.debug("from sonar list data %s", util.json_dump(data))
-        self._json = data
-        self.name = data["name"]
-        self.language_name = data["languageName"]
-        if "lastUsed" in data:
-            self.last_used = util.string_to_date(data["lastUsed"])
-        else:
-            self.last_used = None
-        self.last_updated = util.string_to_date(data["rulesUpdatedAt"])
-        self.language = data["language"]
-        self.language_name = data["languageName"]
-        self.is_default = data["isDefault"]
-        self.project_count = data.get("projectCount", None)
-        self.is_built_in = data["isBuiltIn"]
-        self.nbr_rules = int(data["activeRuleCount"])
-        self._rules = self.rules()
-        self._projects = None
-        self._permissions = self.permissions()
-        self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])
-        self.parent_name = data.get("parentName", None)
-        _MAP[_format(self.name, self.language)] = self.key
-        _QUALITY_PROFILES[self.key] = self
+    @classmethod
+    def read(cls, name, language, endpoint):
+        util.logger.debug("Reading quality profile '%s of language '%s'", name, language)
+        key = name_to_key(name, language)
+        if key in _OBJECTS:
+            return _OBJECTS[key]
+        data = json.loads(endpoint.get(_DETAILS_API, params={"key": key}).text)
+        return cls(key=key, endpoint=endpoint, data=data)
 
-    def uuid(self):
-        return _uuid(self.key)
+    @classmethod
+    def create(cls, name, language, endpoint, **kwargs):
+        params = {"name": name, "language": language}
+        util.logger.debug("Creating quality profile '%s of language '%s'", name, language)
+        r = endpoint.post(_CREATE_API, params=params)
+        if not r.ok:
+            return None
+        o = cls.read(name=name, language=language, endpoint=endpoint)
+        return o
+
+    @classmethod
+    def load(cls, name, language, endpoint, data):
+        util.logger.debug("Loading quality profile '%s' of language '%s'", name, language)
+        key = name_to_key(name, language)
+        o = cls(key=key, endpoint=endpoint, data=data)
+        return o
+
+    def __init__(self, key, endpoint, data=None):
+        super().__init__(key, endpoint)
+
+        self._json = data
+        self._permissions = None
+        self._rules = None
+        self.last_used = None
+        self.last_updated = None
+        self.name = data["name"]
+        self.language = data["language"]
+        self.is_default = data["isDefault"]
+        self.is_built_in = data["isBuiltIn"]
+        self._permissions = self.permissions()
+
+        self._rules = self.rules()
+        self.nbr_rules = int(data["activeRuleCount"])
+        self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])
+
+        self._projects = None
+        self.project_count = data.get("projectCount", None)
+        self.parent_name = data.get("parentName", None)
+        self.language_name = data["languageName"]
+        self.last_used = util.string_to_date(data.get("lastUsed", None))
+        self.last_updated = util.string_to_date(data.get("rulesUpdatedAt", None))
+
+        util.logger.info("Created object %s", str(self))
+        _MAP[_format(self.name, self.language)] = self.key
+        util.logger.info("_MAP = %s", str(_MAP.keys()))
+        _OBJECTS[self.key] = self
 
     def __str__(self):
         return f"quality profile '{self.name}' of language '{self.language}'"
@@ -118,7 +122,7 @@ class QualityProfile(sq.SqObject):
     def set_parent(self, parent_name):
         if parent_name is None:
             return
-        if get_object(parent_name, self.language) is None:
+        if get_object(name=parent_name, language=self.language) is None:
             util.logger.warning("Can't set parent name '%s' to %s", str(parent_name), str(self))
             return
         if self.parent_name is None or self.parent_name != parent_name:
@@ -134,11 +138,12 @@ class QualityProfile(sq.SqObject):
         return self.get_built_in_parent() is not None
 
     def get_built_in_parent(self):
+        self.is_built_in = self._json.get("isBuiltIn", False)
         if self.is_built_in:
             return self
         if self.parent_name is None:
             return None
-        parent_qp = get_object(self.endpoint, self.parent_name, self.language)
+        parent_qp = get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language)
         return parent_qp.get_built_in_parent()
 
     def has_deprecated_rules(self):
@@ -372,9 +377,9 @@ def search(endpoint, params=None):
 
 
 def get_list(endpoint=None):
-    if endpoint is not None and len(_QUALITY_PROFILES) == 0:
+    if endpoint is not None and len(_OBJECTS) == 0:
         search(endpoint=endpoint)
-    return _QUALITY_PROFILES
+    return _OBJECTS
 
 
 def search_by_name(endpoint, name, language):
@@ -383,9 +388,10 @@ def search_by_name(endpoint, name, language):
 
 def audit(endpoint=None, audit_settings=None):
     util.logger.info("--- Auditing quality profiles ---")
+    get_list(endpoint=endpoint)
     problems = []
     langs = {}
-    for qp in search(endpoint):
+    for qp in search(endpoint).values():
         problems += qp.audit(audit_settings)
         langs[qp.language] = langs.get(qp.language, 0) + 1
     for lang, nb_qp in langs.items():
@@ -406,7 +412,7 @@ def hierarchize(qp_list, strip_rules=True):
                 qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY] = {}
             if strip_rules:
                 parent_qp = get_object(qp_value["parentName"], lang)
-                this_qp = get_object(qp_name, lang)
+                this_qp = get_object(name=qp_name, language=lang)
                 qp_value["rules"] = this_qp.diff(parent_qp)
             qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY][qp_name] = qp_value
             qp_list[lang].pop(qp_name)
@@ -431,37 +437,21 @@ def export(endpoint, in_hierarchy=True):
 
 
 def get_object(name, language, endpoint=None):
-    if len(_QUALITY_PROFILES) == 0:
+    if len(_OBJECTS) == 0:
         get_list(endpoint)
     fmt = _format(name, language)
     if fmt not in _MAP:
         return None
-    return _QUALITY_PROFILES[_MAP[fmt]]
-
-
-def create(name, language, endpoint=None, create_data=None):
-    o = get_object(name=name, language=language, endpoint=endpoint)
-    if o is None:
-        o = QualityProfile(name=name, language=language, endpoint=endpoint, create_data=create_data)
-    else:
-        util.logger.info("%s already exist, creation skipped", str(o))
-    return o
+    return _OBJECTS[_MAP[fmt]]
 
 
 def _create_or_update_children(name, language, endpoint, children):
     for qp_name, qp_data in children.items():
         qp_data[_KEY_PARENT] = name
         util.logger.debug("Updating child '%s' with %s", qp_name, util.json_dump(qp_data))
-        create_or_update(endpoint, qp_name, language, qp_data)
-
-
-def create_or_update(endpoint, name, language, qp_data):
-    o = get_object(endpoint=endpoint, name=name, language=language)
-    if o is None:
-        util.logger.debug("Quality profile '%s' does not exist, creating...", name)
-        create(name=name, language=language, endpoint=endpoint, create_data=qp_data)
-        _create_or_update_children(name=name, language=language, endpoint=endpoint, children=qp_data.get(_CHILDREN_KEY, {}))
-    else:
+        o = get_object(name=qp_name, language=language, endpoint=endpoint)
+        if o is None:
+            QualityProfile.create(name=name, language=language, endpoint=endpoint)
         o.update(qp_data)
 
 
@@ -473,20 +463,18 @@ def import_config(endpoint, config_data):
     get_list(endpoint=endpoint)
     for lang, lang_data in config_data["qualityProfiles"].items():
         for name, qp_data in lang_data.items():
+            o = get_object(name=name, language=lang, endpoint=endpoint)
+            if o is None:
+                QualityProfile.create(name=name, language=lang, endpoint=endpoint)
             util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
-            create_or_update(endpoint, name, lang, qp_data)
+            o.update(qp_data)
 
 
 def _format(name, lang):
     return f"{lang}:{name}"
 
-
-def name_to_uuid(name, lang):
+def name_to_key(name, lang):
     return _MAP.get(_format(name, lang), None)
-
-
-def _uuid(key):
-    return key
 
 
 def exists(language, name, endpoint):
