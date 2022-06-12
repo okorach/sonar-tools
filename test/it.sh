@@ -115,16 +115,16 @@ do
     sonar-loc -n -a -f $f --csvSeparator ';'
     check $f
 
-    echo "IT $env sonar-config -w qp,settings" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/config-$env-1.json"
-    sonar-config -e -w "qp, qg, projects" -k okorach_audio-video-tools,okorach_sonar-tools >$f
+    echo "IT $env sonar-config -e -w \"qualitygates, qualityprofiles, projects\" -k okorach_audio-video-tools,okorach_sonar-tools >$f" | tee -a $IT_LOG_FILE
+    sonar-config -e -w "qualitygates, qualityprofiles, projects" -k okorach_audio-video-tools,okorach_sonar-tools >$f
 
-    echo "IT $env sonar-config -w qp,settings" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/config-$env-2.json"
+    echo "IT $env sonar-config --export >$f" | tee -a $IT_LOG_FILE
     sonar-config --export >$f
 
-    echo "IT $env sonar-config" | tee -a $IT_LOG_FILE
     f="$IT_ROOT/config-$env-unrel.json"
+    echo "IT $env sonar-config --export -f $f" | tee -a $IT_LOG_FILE
     sonar-config --export -f $f
 
     if [ $noExport -eq 1 ]; then
