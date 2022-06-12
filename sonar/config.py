@@ -116,7 +116,8 @@ def __parse_args(desc):
 def __count_settings(what, sq_settings):
     nbr_settings = 0
     for s in what:
-        nbr_settings += len(sq_settings.get(__map(s), {}))
+        tmp_settings = sq_settings.get(__map(s), {})
+        nbr_settings += 0 if tmp_settings is None else len(tmp_settings)
     if "settings" in what:
         for categ in settings.CATEGORIES:
             if categ in sq_settings[__JSON_KEY_SETTINGS]:
