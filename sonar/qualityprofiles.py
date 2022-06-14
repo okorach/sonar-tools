@@ -46,17 +46,17 @@ _CHILDREN_KEY = "children"
 class QualityProfile(sq.SqObject):
     @classmethod
     def read(cls, name, language, endpoint):
-        util.logger.debug("Reading quality profile '%s of language '%s'", name, language)
+        util.logger.debug("Reading quality profile '%s'  of language '%s'", name, language)
         key = name_to_key(name, language)
         if key in _OBJECTS:
             return _OBJECTS[key]
-        data = json.loads(endpoint.get(_DETAILS_API, params={"key": key}).text)
-        return cls(key=key, endpoint=endpoint, data=data)
+        data = search_by_name(endpoint=endpoint, name=name, language=language)
+        return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
     def create(cls, name, language, endpoint, **kwargs):
         params = {"name": name, "language": language}
-        util.logger.debug("Creating quality profile '%s of language '%s'", name, language)
+        util.logger.debug("Creating quality profile '%s' of language '%s'", name, language)
         r = endpoint.post(_CREATE_API, params=params)
         if not r.ok:
             return None
@@ -97,7 +97,6 @@ class QualityProfile(sq.SqObject):
 
         util.logger.info("Created object %s", str(self))
         _MAP[_format(self.name, self.language)] = self.key
-        util.logger.info("_MAP = %s", str(_MAP.keys()))
         _OBJECTS[self.key] = self
 
     def __str__(self):
@@ -451,7 +450,7 @@ def _create_or_update_children(name, language, endpoint, children):
         util.logger.debug("Updating child '%s' with %s", qp_name, util.json_dump(qp_data))
         o = get_object(name=qp_name, language=language, endpoint=endpoint)
         if o is None:
-            QualityProfile.create(name=name, language=language, endpoint=endpoint)
+            o = QualityProfile.create(name=qp_name, language=language, endpoint=endpoint)
         o.update(qp_data)
 
 
@@ -465,7 +464,7 @@ def import_config(endpoint, config_data):
         for name, qp_data in lang_data.items():
             o = get_object(name=name, language=lang, endpoint=endpoint)
             if o is None:
-                QualityProfile.create(name=name, language=lang, endpoint=endpoint)
+                o = QualityProfile.create(name=name, language=lang, endpoint=endpoint)
             util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
             o.update(qp_data)
 
