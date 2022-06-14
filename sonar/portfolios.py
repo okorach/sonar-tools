@@ -480,8 +480,8 @@ def import_config(endpoint, config_data):
             name = newdata.pop("name")
             o = Portfolio.create(name=name, endpoint=endpoint, key=key, root_key=key, **newdata)
         nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
-            # Hack: When subportfolios are created, recompute is needed to get them in the
-            # api/views/search results
+        # Hack: When subportfolios are created, recompute is needed to get them in the
+        # api/views/search results
         if nbr_creations > 0:
             o.recompute()
             # Sleep 500ms per created portfolio
