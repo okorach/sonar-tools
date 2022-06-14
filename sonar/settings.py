@@ -49,6 +49,7 @@ CATEGORIES = (
 )
 
 NEW_CODE_PERIOD = "newCodePeriod"
+PROJECTS_DEFAULT_VISIBILITY = "projects.default.visibility"
 
 DEFAULT_SETTING = "__default__"
 
@@ -180,7 +181,7 @@ class Setting(sqobject.SqObject):
         m = re.match(r"^sonar\.forceAuthentication$", self.key)
         if m:
             return (AUTH_SETTINGS, None)
-        if self.key != NEW_CODE_PERIOD and not re.match(
+        if self.key not in (NEW_CODE_PERIOD, PROJECTS_DEFAULT_VISIBILITY) and not re.match(
             r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|"
             r"sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|"
             r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks).*$",
@@ -205,7 +206,6 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
         params["component"] = project.key
     if include_not_set:
         data = json.loads(endpoint.get(_API_LIST, params=params).text)
-        settings_dict = {}
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
@@ -227,6 +227,12 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
         if skip:
             util.logger.debug("Skipping private setting %s", s["key"])
             continue
+        o = Setting(s["key"], endpoint=endpoint, data=s, project=project)
+        settings_dict[o.key] = o
+    # Hack since projects.default.visibility is not returned by settings/list_definitions
+    params.update({"keys": PROJECTS_DEFAULT_VISIBILITY})
+    data = json.loads(endpoint.get(_API_GET, params=params).text)
+    for s in data["settings"]:
         o = Setting(s["key"], endpoint=endpoint, data=s, project=project)
         settings_dict[o.key] = o
     o = get_new_code_period(endpoint, project)
