@@ -167,14 +167,6 @@ class Project(components.Component):
                 self.pull_requests.append(pull_requests.get_object(p["key"], self, p))
         return self.pull_requests
 
-    def permissions(self, perm_type):
-        p = perms.get(self.endpoint, perm_type)
-        if perm_type == "groups":
-            self._group_permissions = p
-        else:
-            self._user_permissions = p
-        return p
-
     def delete(self, api="projects/delete", params=None):
         loc = int(self.get_measure("ncloc", fallback="0"))
         util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
@@ -730,6 +722,14 @@ class Project(components.Component):
                 continue
             nc[b["branchKey"]] = new_code
         return nc
+
+    def permissions(self, perm_type):
+        p = perms.get(self.endpoint, perm_type, projectKey=self.key)
+        if perm_type == "groups":
+            self._group_permissions = p
+        else:
+            self._user_permissions = p
+        return p
 
     def clear_permissions(self):
         perms.clear_permissions(self.endpoint, self.permissions("users"), project_key=self.key)
