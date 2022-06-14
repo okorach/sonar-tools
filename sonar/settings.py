@@ -73,6 +73,8 @@ _INLINE_SETTINGS = (
     r"^sonar\.cs\.roslyn\.(bug|codeSmell|vulnerability)Categories$",
     r"^sonar\.governance\.report\.view\.recipients$",
     r"^sonar\.portfolios\.recompute\.hours$",
+    r"^sonar\.cobol\.copy\.(directories|exclusions)$",
+    r"^sonar\.cobol\.sql\.catalog\.defaultSchema$",
 )
 
 _API_SET = "settings/set"
