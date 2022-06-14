@@ -97,7 +97,6 @@ class QualityProfile(sq.SqObject):
 
         util.logger.info("Created object %s", str(self))
         _MAP[_format(self.name, self.language)] = self.key
-        util.logger.info("_MAP = %s", str(_MAP.keys()))
         _OBJECTS[self.key] = self
 
     def __str__(self):
