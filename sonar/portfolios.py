@@ -404,13 +404,12 @@ def __cleanup_portfolio_json(p):
         if p["selectionMode"] == SELECTION_MODE_REGEXP:
             p[_PROJECT_SELECTION_REGEXP] = p.pop("regexp")
         elif p["selectionMode"] == SELECTION_MODE_TAGS:
-            p[_PROJECT_SELECTION_REGEXP] = util.list_to_csv(p.pop("tags"), ", ")
+            p[_PROJECT_SELECTION_TAGS] = util.list_to_csv(p.pop("tags"), ", ")
         p[_PROJECT_SELECTION_MODE] = p.pop("selectionMode")
 
 
 def _sub_portfolios(json_data, version):
     subport = []
-    util.logger.debug("Getting subpotofolo from %s", util.json_dump(json_data))
     if "subViews" in json_data and len(json_data["subViews"]) > 0:
         for p in json_data["subViews"]:
             qual = p.pop("qualifier", "SVW")
