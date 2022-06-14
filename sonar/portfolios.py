@@ -57,10 +57,10 @@ class Portfolio(aggregations.Aggregation):
     @classmethod
     def read(cls, name, endpoint, root_key=None):
         util.logger.debug("Reading portfolio name '%s'", name)
-        if root_key is None:
-            data = search_by_name(endpoint=endpoint, name=name)
-        else:
-            data = _find_sub_portfolio_by_name(name=name, data=_OBJECTS[root_key]._json)
+        #if root_key is None:
+        data = search_by_name(endpoint=endpoint, name=name)
+        #else:
+        #    data = _find_sub_portfolio_by_name(name=name, data=_OBJECTS[root_key]._json)
         if data is None:
             return None
         key = data["key"]
@@ -110,9 +110,7 @@ class Portfolio(aggregations.Aggregation):
         return f"portfolio name '{self.name}'"
 
     def get_details(self):
-        if self.root_key is None:
-            util.logger.debug("%s has no root key, skipping details", str(self))
-            return
+        util.logger.debug("Updating details for %s root key %s", str(self), self.root_key)
         data = json.loads(self.get(_GET_API, params={"key": self.root_key}).text)
         if self.root_key == self.key:
             self._json.update(data)
@@ -353,7 +351,6 @@ class Portfolio(aggregations.Aggregation):
                 o.set_parent(self.key)
                 o.update(subp, root_key)
 
-
 def count(endpoint=None):
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
@@ -482,15 +479,21 @@ def import_config(endpoint, config_data):
             newdata = data.copy()
             name = newdata.pop("name")
             o = Portfolio.create(name=name, endpoint=endpoint, key=key, root_key=key, **newdata)
-    # recompute(endpoint=endpoint)
-    #time.sleep(10)
+        nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
+            # Hack: When subportfolios are created, recompute is needed to get them in the
+            # api/views/search results
+        if nbr_creations > 0:
+            o.recompute()
+            # Sleep 500ms per created portfolio
+            time.sleep(nbr_creations * 500 / 1000)
     # Second pass to define hierarchies
     util.logger.info("Importing portfolios - pass 2: Creating sub-portfolios")
     for key, data in config_data["portfolios"].items():
         o = get_object(key, endpoint)
         if o is None:
-            util.logger.warning("Can't find portfolio key '%s', name '%s'", key, data["name"])
-        o.update(data, root_key=key)
+            util.logger.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
+        else:
+            o.update(data, root_key=key)
 
 
 def search_by_name(endpoint, name):
@@ -542,3 +545,19 @@ def _find_sub_portfolio_by_name(name, data):
         if child is not None:
             return child
     return None
+
+
+def __create_portfolio_hierarchy(endpoint, data, parent_key):
+    nbr_creations = 0
+    for subp in data.get("subPortfolios", []):
+        if subp.get("byReference", False):
+            continue
+        params = {"parent": parent_key}
+        for p in ("name", "description", "key", "visibility"):
+            params[p] = subp.get(p, None)
+        util.logger.debug("Creating portfolio name '%s'", subp["name"])
+        r = endpoint.post(_CREATE_API, params=params, exit_on_error=False)
+        if r.ok:
+            nbr_creations += 1
+        nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=subp["key"])
+    return nbr_creations
