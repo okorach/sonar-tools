@@ -19,7 +19,7 @@
                }
             }
          },
-         "description": "",
+         "description": "A demo application",
          "name": "App with branches",
          "permissions": {
             "groups": {
@@ -40,7 +40,6 @@
                }
             }
          },
-         "description": "",
          "name": "Azure DevOps monorepo",
          "permissions": {
             "groups": {
@@ -65,7 +64,6 @@
                }
             }
          },
-         "description": "",
          "name": "Bitbucket Cloud monorepo",
          "permissions": {
             "groups": {
@@ -86,7 +84,6 @@
                }
             }
          },
-         "description": "",
          "name": "Bitbucket Server LATEST monorepo",
          "permissions": {
             "groups": {
@@ -108,7 +105,6 @@
                }
             }
          },
-         "description": "",
          "name": "Bitbucket Server LTS monorepo",
          "permissions": {
             "groups": {
@@ -170,7 +166,6 @@
                }
             }
          },
-         "description": "",
          "name": "GitHub monorepo",
          "permissions": {
             "groups": {
@@ -192,7 +187,6 @@
                }
             }
          },
-         "description": "",
          "name": "GitLab-CI monorepo",
          "permissions": {
             "groups": {
@@ -556,7 +550,7 @@
             }
          },
          "Full Open Permissions": {
-            "description": "",
+            "description": "Permission template giving full permissions to all sonar users",
             "pattern": "",
             "permissions": {
                "groups": {
@@ -565,7 +559,6 @@
             }
          },
          "Permissions for projects of Team 1": {
-            "description": "",
             "pattern": "TEAM_A_.*",
             "permissions": {
                "groups": {
@@ -577,7 +570,6 @@
          },
          "Portfolios permissions": {
             "defaultFor": "applications, portfolios",
-            "description": "",
             "pattern": "",
             "permissions": {
                "groups": {
@@ -599,7 +591,6 @@
             }
          },
          "Training permissions": {
-            "description": "",
             "pattern": "training:.*",
             "permissions": {
                "groups": {
@@ -661,7 +652,7 @@
    },
    "portfolios": {
       "All_projects": {
-         "description": "",
+         "description": "All projects of the platform",
          "name": "All projects",
          "permissions": {
             "groups": {
@@ -673,7 +664,7 @@
          "visibility": "private"
       },
       "Bitbucket_Cloud_projects": {
-         "description": "",
+         "description": "All BB Cloud projects",
          "name": "Bitbucket Cloud projects",
          "permissions": {
             "groups": {
@@ -686,7 +677,6 @@
          "visibility": "public"
       },
       "Bitbucket_Server_projects": {
-         "description": "",
          "name": "Bitbucket Server LATEST projects",
          "permissions": {
             "groups": {
@@ -698,7 +688,6 @@
          "visibility": "public"
       },
       "GitHub_projects": {
-         "description": "",
          "name": "GitHub projects",
          "permissions": {
             "groups": {
@@ -710,7 +699,6 @@
          "visibility": "public"
       },
       "GitLab_projects": {
-         "description": "",
          "name": "GitLab projects",
          "permissions": {
             "groups": {
