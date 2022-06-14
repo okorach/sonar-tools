@@ -265,8 +265,7 @@ class Project(components.Component):
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
             else:
                 util.logger.info(
-                    "Group '%s' has browse permissions on %s. \
-Is this normal ?",
+                    "Group '%s' has browse permissions on %s. Is this normal ?",
                     gr["name"],
                     str(self.key),
                 )
@@ -522,10 +521,7 @@ Is this normal ?",
         return custom_measures.search(self.endpoint, self.key)
 
     def get_findings(self, branch=None, pr=None):
-        if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in (
-            "enterprise",
-            "datacenter",
-        ):
+        if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ("enterprise", "datacenter"):
             return {}
 
         findings_list = {}
@@ -735,7 +731,12 @@ Is this normal ?",
             nc[b["branchKey"]] = new_code
         return nc
 
+    def clear_permissions(self):
+        perms.clear_permissions(self.endpoint, self.permissions("users"), project_key=self.key)
+        perms.clear_permissions(self.endpoint, self.permissions("groups"), project_key=self.key)
+
     def set_permissions(self, data):
+        self.clear_permissions()
         perms.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
 
     def set_links(self, data):
