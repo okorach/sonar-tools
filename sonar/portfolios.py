@@ -537,16 +537,6 @@ def _find_sub_portfolio(key, data):
     return None
 
 
-def _find_sub_portfolio_by_name(name, data):
-    for subp in data.get("subViews", []):
-        if subp["name"] == name:
-            return subp
-        child = _find_sub_portfolio(name, subp)
-        if child is not None:
-            return child
-    return None
-
-
 def __create_portfolio_hierarchy(endpoint, data, parent_key):
     nbr_creations = 0
     for subp in data.get("subPortfolios", []):
