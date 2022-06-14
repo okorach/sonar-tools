@@ -23,7 +23,7 @@
          "name": "App with branches",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -44,7 +44,7 @@
          "name": "Azure DevOps monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             },
             "users": {
                "ado": "admin"
@@ -69,7 +69,7 @@
          "name": "Bitbucket Cloud monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -90,7 +90,7 @@
          "name": "Bitbucket Server LATEST monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "tags": "bbs-latest",
@@ -112,7 +112,7 @@
          "name": "Bitbucket Server LTS monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -152,7 +152,7 @@
          "name": "Corporate Web Site",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -174,7 +174,7 @@
          "name": "GitHub monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "tags": "github, monorepo",
@@ -196,7 +196,7 @@
          "name": "GitLab-CI monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "tags": "gitlab, monorepo",
@@ -581,7 +581,7 @@
             "pattern": "",
             "permissions": {
                "groups": {
-                  "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+                  "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                   "sonar-users": "codeviewer, user"
                }
             }
@@ -665,7 +665,7 @@
          "name": "All projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -677,7 +677,7 @@
          "name": "Bitbucket Cloud projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "projectSelectionBranch": "Babar",
@@ -690,7 +690,7 @@
          "name": "Bitbucket Server LATEST projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -702,7 +702,7 @@
          "name": "GitHub projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -714,7 +714,7 @@
          "name": "GitLab projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -726,7 +726,7 @@
          "name": "Whole Bank and Insurance",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -754,7 +754,7 @@
          "name": "Corporate banking projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -768,7 +768,7 @@
          "name": "Banking division",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -800,7 +800,7 @@
          "name": "Insurance division",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -813,7 +813,7 @@
          "name": "Private banking projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -826,7 +826,7 @@
          "name": "Retail banking projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -843,7 +843,7 @@
          "name": "Portfolio on regexp branch",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "projectSelectionBranch": "release-1.1",
@@ -856,7 +856,7 @@
          "name": "Top Level",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "NONE",
@@ -901,7 +901,7 @@
          "name": "Empty portfolio",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
+               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "NONE",
