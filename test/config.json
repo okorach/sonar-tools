@@ -892,7 +892,7 @@
                "key": "Sub_Portfolio_2",
                "name": "Sub Portfolio 2",
                "projectSelectionMode": "TAGS",
-               "projectSelectionRegexp": "gitlab"
+               "projectSelectionTags": "gitlab"
             }
          ],
          "visibility": "public"
