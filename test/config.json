@@ -591,7 +591,6 @@
          "sonar.junit.reportPaths": ""
       },
       "thirdParty": {
-         "projects.default.visibility": "public",
          "sonar.dependencyCheck.htmlReportPath": "target/dependency-check-report.html",
          "sonar.dependencyCheck.jsonReportPath": "target/dependency-check-report.json",
          "sonar.dependencyCheck.securityHotspot": false,
