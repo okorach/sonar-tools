@@ -94,12 +94,15 @@ def counts(some_perms, perms_dict):
     return perm_counts
 
 
-def simplify(perms_array, perm_type):
+def simplify(perms_array, perm_type, use_csv=True):
     permiss = {}
     field = "name" if perm_type == "groups" else "login"
     for p in perms_array:
         p["permissions"].sort()
-        permiss[p[field]] = utilities.list_to_csv(p["permissions"], ", ")
+        if use_csv:
+            permiss[p[field]] = utilities.list_to_csv(p["permissions"], ", ")
+        else:
+            permiss[p[field]] = p["permissions"]
     return permiss
 
 
@@ -171,6 +174,8 @@ def set_permissions(endpoint, permissions, project_key=None, template=None):
 
 
 def clear_permissions(endpoint, permissions, project_key=None, template=None):
+    if permissions is None:
+        return
     apis = {"users": "permissions/remove_user", "groups": "permissions/remove_group"}
     if template is not None:
         apis = {"users": "permissions/remove_user_from_template", "groups": "permissions/remove_group_from_template"}
@@ -184,6 +189,9 @@ def clear_permissions(endpoint, permissions, project_key=None, template=None):
                 if is_global_perm and p not in GLOBAL_PERMISSIONS:
                     continue
                 if not is_global_perm and p not in PROJECT_PERMISSIONS:
+                    continue
+                if p == "admin" and (elem == "admin" or elem == "sonar-administrators"):
+                    # FIXME: Remove admin permission when this is request (you may self remove admin permission)
                     continue
                 utilities.logger.debug("Removing permission %s to %s - %s, %s", p, elem, str(project_key), str(template))
                 endpoint.post(apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template})
