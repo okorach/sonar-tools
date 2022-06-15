@@ -2592,19 +2592,6 @@
          },
          "qualityGate": "Sonar way w/o coverage"
       },
-      "test:cpp-symbolic-exec": {
-         "name": "Test: C++ symbolic execution",
-         "permissions": {
-            "groups": {
-               "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         }
-      },
       "test_cobol": {
          "name": "test_cobol",
          "permissions": {
