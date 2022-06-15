@@ -100,6 +100,7 @@ class Portfolio(aggregations.Aggregation):
         self._projects = None
         self._tags = None
         self._sub_portfolios = None
+        self._permissions = None
         self.parent_key = data.get("parentKey")
         self.root_key = self.key if root_key is None else root_key
         _OBJECTS[self.key] = self
@@ -249,6 +250,16 @@ class Portfolio(aggregations.Aggregation):
         json_data.update(self.sub_portfolios())
 
         return util.remove_nones(json_data)
+
+    def clear_permissions(self):
+        permissions.clear_permissions(self.endpoint, self.permissions(), project_key=self.key)
+
+    def permissions(self):
+        self._permissions = {}
+        for perm in ("users", "groups"):
+            p = permissions.simplify(permissions.get(self.endpoint, perm, projectKey=self.key), perm_type=perm)
+            self._permissions[perm] = p
+        return self._permissions
 
     def set_permissions(self, portfolio_perms):
         if portfolio_perms is None or len(portfolio_perms) == 0:

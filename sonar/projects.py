@@ -724,7 +724,7 @@ class Project(components.Component):
         return nc
 
     def permissions(self, perm_type):
-        p = perms.get(self.endpoint, perm_type, projectKey=self.key)
+        p = perms.simplify(perms.get(self.endpoint, perm_type, projectKey=self.key), perm_type=perm_type)
         if perm_type == "groups":
             self._group_permissions = p
         else:
@@ -732,12 +732,16 @@ class Project(components.Component):
         return p
 
     def clear_permissions(self):
-        perms.clear_permissions(self.endpoint, self.permissions("users"), project_key=self.key)
-        perms.clear_permissions(self.endpoint, self.permissions("groups"), project_key=self.key)
+        my_perms = {"users": self.permissions("users"), "groups": self.permissions("groups")}
+        util.logger.debug("Clearing permissions of %s current %s", str(self), str(my_perms))
+        perms.clear_permissions(self.endpoint, my_perms, project_key=self.key)
 
     def set_permissions(self, data):
+        if data is None:
+            return
         self.clear_permissions()
-        perms.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
+        util.logger.debug("Setting permissions of %s with %s", str(self), str(data))
+        perms.set_permissions(self.endpoint, data, project_key=self.key)
 
     def set_links(self, data):
         params = {"projectKey": self.key}
@@ -863,7 +867,7 @@ class Project(components.Component):
         self.post("alm_settings/set_azure_binding", params=params)
 
     def update(self, data):
-        self.set_permissions(data)
+        self.set_permissions(data.get("permissions", None))
         self.set_links(data)
         self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))

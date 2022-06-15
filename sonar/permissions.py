@@ -190,8 +190,8 @@ def clear_permissions(endpoint, permissions, project_key=None, template=None):
                     continue
                 if not is_global_perm and p not in PROJECT_PERMISSIONS:
                     continue
-                if p == "admin" and (elem == "admin" or elem == "sonar-administrators"):
-                    # FIXME: Remove admin permission when this is request (you may self remove admin permission)
+                if p == "admin":  # and (elem == "admin" or elem == "sonar-administrators"):
+                    # FIXME: Don't remove admin permission when this is requested (you may self remove admin permission)
                     continue
                 utilities.logger.debug("Removing permission %s to %s - %s, %s", p, elem, str(project_key), str(template))
                 endpoint.post(apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template})
