@@ -2494,58 +2494,6 @@
          "qualityGate": "Sonar way ++",
          "tags": "strategic"
       },
-      "org.sonarqube:javascript-simple-sq-runner": {
-         "name": "JavaScript :: Simple Project :: SonarQube Runner",
-         "permissions": {
-            "groups": {
-               "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         }
-      },
-      "org.sonarqube:sonarqube-scanner": {
-         "name": "Example of SonarQube Scanner Usage",
-         "permissions": {
-            "groups": {
-               "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         }
-      },
-      "org.sonarqube:sonarscanner-maven-basic": {
-         "name": "Example of basic Maven project",
-         "permissions": {
-            "groups": {
-               "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         }
-      },
-      "plandora": {
-         "name": "Plandora",
-         "permissions": {
-            "groups": {
-               "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         }
-      },
       "prov": {
          "name": "prov",
          "permissions": {
@@ -2574,19 +2522,6 @@
       },
       "target": {
          "name": "target",
-         "permissions": {
-            "groups": {
-               "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
-            }
-         }
-      },
-      "test-ublox": {
-         "name": "test-ublox",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
