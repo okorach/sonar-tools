@@ -47,7 +47,7 @@ class PermissionTemplate(sqobject.SqObject):
             self.set_permissions(create_data.pop("permissions", None))
         elif data is None:
             data = search_by_name(endpoint, name)
-            self.permissions()
+            self.permissions().read()
             utilities.logger.info("Creating permission template '%s'", name)
             utilities.logger.debug("from sync data %s", utilities.json_dump(data))
         self._json = data
@@ -81,9 +81,7 @@ class PermissionTemplate(sqobject.SqObject):
     def set_permissions(self, perms):
         if perms is None or len(perms) == 0:
             return
-        utilities.logger.debug("Setting permissions %s for %s", str(perms), str(self))
-        permissions.set_permissions(endpoint=self.endpoint, permissions=perms, template=self.name)
-        self._permissions = self.permissions()
+        self.permissions().set(perms)
 
     def update(self, **pt_data):
         name = pt_data.get("name", None)
@@ -100,16 +98,12 @@ class PermissionTemplate(sqobject.SqObject):
             self.description = desc
         if pattern is not None:
             self.project_key_pattern = pattern
-        self.set_permissions(pt_data.get("permissions", None))
+        self.permissions().set(pt_data.get("permissions", None))
         return self
 
     def permissions(self):
         if self._permissions is None:
-            self._permissions = {}
-            for t in ("users", "groups"):
-                self._permissions[t] = permissions.simplify(
-                    permissions.get(endpoint=self.endpoint, perm_type=f"template_{t}", templateId=self.key), t
-                )
+            self._permissions = permissions.TemplatePermissions(self)
         return self._permissions
 
     def set_as_default(self, what_list):
@@ -133,11 +127,8 @@ class PermissionTemplate(sqobject.SqObject):
             "name": self.name,
             "description": self.description,
             "pattern": self.project_key_pattern,
-            "permissions": self.permissions(),
+            "permissions": self.permissions().export(),
         }
-        for t in ("users", "groups"):
-            if len(json_data["permissions"][t]) == 0:
-                json_data["permissions"].pop(t)
 
         defaults = []
         if self.is_projects_default():

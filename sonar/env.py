@@ -66,6 +66,7 @@ class Environment:
         self._version = None
         self._sys_info = None
         self._server_id = None
+        self._permissions = None
 
     def __str__(self):
         return f"{util.redacted_token(self.token)}@{self.url}"
@@ -86,6 +87,11 @@ class Environment:
             return ".".join(self._version[0:digits])
         else:
             return tuple(int(n) for n in self._version[0:digits])
+
+    def global_permissions(self):
+        if self._permissions is None:
+            self._permissions = permissions.GlobalPermissions(self)
+        return self._permissions
 
     def server_id(self):
         if self._server_id is not None:
@@ -187,7 +193,7 @@ class Environment:
             util.update_json(json_data, categ, subcateg, s.to_json())
 
         json_data[settings.GENERAL_SETTINGS].update({"webhooks": webhooks.export(self)})
-        json_data["permissions"] = permissions.export(self)
+        json_data["permissions"] = self.global_permissions().export()
         json_data["permissionTemplates"] = permission_templates.export(self)
         json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
         return json_data
@@ -297,7 +303,7 @@ class Environment:
     def __audit_group_permissions(self):
         util.logger.info("Auditing group global permissions")
         problems = []
-        groups = permissions.get(self, "groups")
+        groups = self.global_permissions().groups()
         if len(groups) > 10:
             problems.append(
                 pb.Problem(
@@ -324,7 +330,6 @@ class Environment:
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
 
-        perm_counts = permissions.counts(groups, permissions.GLOBAL_PERMISSIONS)
         maxis = {
             "admin": 2,
             "gateadmin": 2,
@@ -333,12 +338,13 @@ class Environment:
             "provisioning": 3,
         }
         for key, name in permissions.GLOBAL_PERMISSIONS.items():
-            if key in maxis and perm_counts[key] > maxis[key]:
+            counter = self.global_permissions().count(perm_type="groups", perm_filter=(key))
+            if key in maxis and counter > maxis[key]:
                 problems.append(
                     pb.Problem(
                         typ.Type.BAD_PRACTICE,
                         sev.Severity.MEDIUM,
-                        f"Too many ({perm_counts[key]}) groups with permission {name}, {maxis[key]} max recommended",
+                        f"Too many ({counter}) groups with permission '{name}', {maxis[key]} max recommended",
                     )
                 )
         return problems
@@ -346,7 +352,7 @@ class Environment:
     def __audit_user_permissions(self):
         util.logger.info("Auditing users global permissions")
         problems = []
-        users = permissions.get(self, "users")
+        users = self.global_permissions().users()
         if len(users) > 10:
             problems.append(
                 pb.Problem(
@@ -355,8 +361,6 @@ class Environment:
                     f"Too many ({len(users)}) users with direct global permissions, use groups instead",
                 )
             )
-
-        counts = permissions.counts(users, permissions.GLOBAL_PERMISSIONS)
         maxis = {
             "admin": 3,
             "gateadmin": 3,
@@ -365,12 +369,13 @@ class Environment:
             "provisioning": 3,
         }
         for key, name in permissions.GLOBAL_PERMISSIONS.items():
-            if key in maxis and counts[key] > maxis[key]:
+            counter = self.global_permissions().count(perm_type="users", perm_filter=(key))
+            if key in maxis and counter > maxis[key]:
                 problems.append(
                     pb.Problem(
                         typ.Type.BAD_PRACTICE,
                         sev.Severity.MEDIUM,
-                        f"Too many ({counts[key]}) users with permission {name}, use groups instead",
+                        f"Too many ({counter}) users with permission '{name}', use groups instead",
                     )
                 )
         return problems

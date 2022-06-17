@@ -19,6 +19,7 @@
 #
 
 import json
+from abc import ABC, abstractmethod
 from sonar import utilities, options
 
 GLOBAL_PERMISSIONS = {
@@ -40,162 +41,398 @@ PROJECT_PERMISSIONS = {
     "admin": "Administer Project",
 }
 
-__MAX_PERMS = 100
-__MAX_QG_PERMS = 25
+_GLOBAL = 0
+_PROJECTS = 1
+_TEMPLATES = 2
+_QG = 3
+_QP = 4
+_APPS = 5
+_PORTFOLIOS = 5
+
+OBJECTS_WITH_PERMISSIONS = (_GLOBAL, _PROJECTS, _TEMPLATES, _QG, _QP, _APPS, _PORTFOLIOS)
+PERMISSION_TYPES = ("users", "groups")
+NO_PERMISSIONS = {"users": None, "groups": None}
+
+MAX_PERMS = 100
+MAX_QG_PERMS = 25
 
 
-def get(endpoint, perm_type, **kwargs):
-    if perm_type not in ("users", "groups", "template_users", "template_groups"):
-        return None
-    params = kwargs.copy()
-    params["ps"] = __MAX_PERMS
-    perms = []
-    page, nbr_pages = 1, 1
-    short_perm = perm_type.replace("template_", "")
-    while page <= nbr_pages:
-        params["p"] = page
-        data = json.loads(endpoint.get(f"permissions/{perm_type}", params=params).text)
-        # Workaround for SQ 7.9+, all groups/users even w/o permissions are returned
-        # Stop collecting permissions as soon as 5 groups with no permissions are encountered
-        no_perms_count = 0
-        for item in data.get(short_perm, []):
-            no_perms_count = 0 if item["permissions"] else no_perms_count + 1
-            if item["permissions"]:
-                perms.append(item)
-            if no_perms_count >= 5:
+class Permissions(ABC):
+    def __init__(self, endpoint):
+        self.endpoint = endpoint
+        self.permissions = NO_PERMISSIONS
+        self.read()
+
+    def to_json(self, perm_type=None, csv=False):
+        if not csv:
+            return self.permissions[perm_type] if _is_valid(perm_type) else self.permissions
+        perms = {}
+        for p in _normalize(perm_type):
+            dperms = self.permissions.get(p, None)
+            if dperms is not None and len(dperms) > 0:
+                perms[p] = simplify(dperms)
+        return perms if len(perms) > 0 else None
+        #return {p: simplify(self.permissions.get(p, None)) for p in _normalize(perm_type) if self.permissions.get(p, None) is not None}
+
+    def export(self):
+        return self.to_json(csv=True)
+
+    @abstractmethod
+    def read(self, perm_type=None):
+        pass
+
+    @abstractmethod
+    def set(self, perms_dict):
+        pass
+
+    def set_user_permissions(self, user_perms_dict):
+        self.set(user_perms_dict)
+
+    def set_group_permissions(self, group_perms_dict):
+        self.set(group_perms_dict)
+
+    """
+    @abstractmethod
+    def remove_user_permissions(self, user_perms_dict):
+        pass
+
+    @abstractmethod
+    def remove_group_permissions(self, group_perms_dict):
+        pass
+
+
+    def remove_permissions(self, perms_dict):
+        self.remove_user_permissions(perms_dict.get("users", None))
+        self.remove_group_permissions(perms_dict.get("groups", None))
+    """
+
+    def clear(self):
+        self.set({"users": {}, "groups": {}})
+
+    def users(self):
+        if self.permissions is None:
+            self.read()
+        return self.to_json(perm_type="users")
+
+    def groups(self):
+        if self.permissions is None:
+            self.read()
+        return self.to_json(perm_type="groups")
+
+    def flattened(self):
+        return {
+            "groups": flatten(self.permissions["groups"]),
+            "users": flatten(self.permissions["users"])
+        }
+
+    def added_permissions(self, other_perms):
+        return diff(self.permissions, other_perms)
+
+    def removed_permissions(self, other_perms):
+        return diff(other_perms, self.permissions)
+
+    def compare(self, other_perms):
+        return {"added": diff(self.permissions, other_perms), "removed": diff(other_perms, self.permissions)}
+
+
+    def count(self, perm_type=None, perm_filter=None):
+        perms = PERMISSION_TYPES if perm_type is None else (perm_type)
+        perm_list = {}
+        elem_counter, perm_counter = 0, 0
+        for ptype in perms:
+            for elem_perms in self.permissions[ptype].values():
+                elem_counter += 1
+                if perm_filter is None:
+                    continue
+                for p in elem_perms:
+                    if p in perm_filter:
+                        perm_counter += 1
+        return elem_counter if perm_filter is None else perm_counter
+
+    def _get_api(self, api, perm_type, ret_field, **extra_params):
+        perms = {}
+        params = extra_params.copy()
+        page, nbr_pages = 1, 1
+        counter = 0
+        while page <= nbr_pages:
+            params["p"] = page
+            resp = self.endpoint.get(api, params=params)
+            if resp.ok:
+                data = json.loads(resp.text)
+                # perms.update({p[ret_field]: p["permissions"] for p in data[perm_type]})
+                for p in data[perm_type]:
+                    if len(p["permissions"]) > 0:
+                        perms[p[ret_field]] = p["permissions"]
+                        counter = 0
+                    else:
+                        counter += 1
+            elif resp.status_code not in (400, 404):
+                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+            page, nbr_pages = page + 1, utilities.nbr_pages(data)
+            if counter > 5 or not resp.ok:
                 break
-        if no_perms_count >= 5:
-            break
-        nbr_pages = utilities.nbr_pages(data)
-        page += 1
-    return perms
+        return perms
+
+    def _post_api(self, api, set_field, perms_dict, **extra_params):
+        if perms_dict is None:
+            return True
+        result = False
+        params = extra_params.copy()
+        for u, perms in perms_dict:
+            params[set_field] = u
+            for p in perms:
+                params["permission"] = p
+                r = self.endpoint.post(api, params=params)
+                result = result and r.ok
+        return result
+
+class GlobalPermissions(Permissions):
+    API_GET = {"users": "permissions/users", "groups": "permissions/groups"}
+    API_SET = {"users": "permissions/add_user", "groups": "permissions/add_group"}
+    API_REMOVE = {"users": "permissions/remove_user", "groups": "permissions/remove_group"}
+    API_GET_FIELD = {"users": "login", "groups": "name"}
+    API_SET_FIELD = {"users": "login", "groups": "groupName"}
+
+    def read(self, perm_type=None):
+        for perm in _normalize(perm_type):
+            self.permissions[perm] = self._get_api(GlobalPermissions.API_GET[perm], perm,
+                                                   GlobalPermissions.API_GET_FIELD[perm], ps=MAX_PERMS)
+        return self
+
+    def set(self, perms_dict):
+        utilities.logger.debug("Setting global permissions to %s", str(perms_dict))
+        for p in PERMISSION_TYPES:
+            if perms_dict is None or p not in perms_dict:
+                continue
+            to_remove = diff(self.permissions[p], perms_dict)
+            self._post_api(GlobalPermissions.API_REMOVE[p], GlobalPermissions.API_SET_FIELD[p], to_remove)
+            to_add = diff(perms_dict, self.permissions[p])
+            self._post_api(GlobalPermissions.API_SET[p], GlobalPermissions.API_SET_FIELD[p], to_add)
+        return self
+
+class TemplatePermissions(Permissions):
+    API_GET = {"users": "permissions/template_users", "groups": "permissions/template_groups"}
+    API_SET = {"users": "permissions/add_user_to_template", "groups": "permissions/add_group_to_template"}
+    API_REMOVE = {"users": "permissions/remove_user_from_template", "groups": "permissions/remove_group_from_template"}
+    API_GET_FIELD = {"users": "login", "groups": "name"}
+    API_SET_FIELD = {"users": "login", "groups": "groupName"}
+
+    def __init__(self, template_object):
+        self.concerned_object = template_object
+        super().__init__(template_object.endpoint)
+
+    def read(self, perm_type=None):
+        for perm in _normalize(perm_type):
+            self.permissions[perm] = self._get_api(TemplatePermissions.API_GET[perm], perm,
+                                                   TemplatePermissions.API_GET_FIELD[perm],
+                                                   templateName=self.concerned_object.name, ps=MAX_PERMS)
+        return self
+
+    def set(self, perms_dict):
+        utilities.logger.debug("Setting permissions of %s with %s", str(self.concerned_object), str(perms_dict))
+        for p in PERMISSION_TYPES:
+            if perms_dict is None or p not in perms_dict:
+                continue
+            to_remove = diff(self.permissions[p], perms_dict)
+            self._post_api(TemplatePermissions.API_REMOVE[p], TemplatePermissions.API_SET_FIELD[p], to_remove,
+                          templateName=self.concerned_object.name)
+            to_add = diff(perms_dict, self.permissions[p])
+            self._post_api(TemplatePermissions.API_SET[p], TemplatePermissions.API_SET_FIELD[p], to_add,
+                          templateName=self.concerned_object.name)
+        return self
+
+class QualityGatePermissions(Permissions):
+    API_GET = {"users": "qualitygates/search_users", "groups": "qualitygates/search_groups"}
+    API_SET = {"users": "qualitygates/add_user", "groups": "qualitygates/add_group"}
+    API_REMOVE = {"users": "qualitygates/remove_user", "groups": "qualitygates/remove_group"}
+    API_GET_FIELD = {"users": "login", "groups": "name"}
+    API_SET_FIELD = {"users": "login", "groups": "groupName"}
+
+    def __init__(self, qg_object):
+        self.concerned_object = qg_object
+        super().__init__(qg_object.endpoint)
+
+    def read(self, perm_type=None):
+        if self.concerned_object.is_built_in:
+            return self
+        if self.endpoint.version() < (9, 2, 0):
+            utilities.logger.warning("Can read permissions of %s on SonarQube < 9.2", str(self.concerned_object))
+            return self
+        for p in _normalize(perm_type):
+            self.permissions[p] = self._get_api(QualityGatePermissions.API_GET[p], p,
+                                                QualityGatePermissions.API_GET_FIELD[p],
+                                                gateName=self.concerned_object.name)
+        return self
+
+    def set(self, perms_dict):
+        if self.concerned_object.is_built_in:
+            utilities.logger.warning("Can set permission of built-in %s", str(self.concerned_object))
+            return self
+        if self.endpoint.version() < (9, 2, 0):
+            utilities.logger.warning("Can set permission of %s on SonarQube < 9.2", str(self.concerned_object))
+            return self
+        utilities.logger.debug("Setting permissions of %s with %s", str(self.concerned_object), str(perms_dict))
+        for p in PERMISSION_TYPES:
+            if perms_dict is None or p not in perms_dict:
+                continue
+            to_remove = diff(self.permissions[p], perms_dict)
+            self._post_api(QualityGatePermissions.API_REMOVE[p], QualityGatePermissions.API_SET_FIELD[p], to_remove,
+                          gateName=self.concerned_object.name)
+            to_add = diff(perms_dict, self.permissions[p])
+            self._post_api(QualityGatePermissions.API_SET[p], QualityGatePermissions.API_SET_FIELD[p], to_add,
+                          gateName=self.concerned_object.name)
+        return self
+
+    def to_json(self, perm_type=None, csv=False):
+        if not csv:
+            return self.permissions[perm_type] if _is_valid(perm_type) else self.permissions
+        perms = {}
+        for p in _normalize(perm_type):
+            dperms = self.permissions.get(p, None)
+            if dperms is not None and len(dperms) > 0:
+                perms[p] = utilities.list_to_csv(self.permissions.get(p, None), ", ")
+        return perms if len(perms) > 0 else None
+        # return {p: utilities.list_to_csv(self.permissions.get(p, None), ", ") for p in _normalize(perm_type) if len(self.permissions.get(p, None)) > 0}
+
+    def _get_api(self, api, perm_type, ret_field, **extra_params):
+        perms = []
+        params = extra_params.copy()
+        params["ps"] = MAX_QG_PERMS
+        page, nbr_pages = 1, 1
+        while page <= nbr_pages:
+            params["p"] = page
+            resp = self.endpoint.get(api, params=params)
+            if resp.ok:
+                data = json.loads(resp.text)
+                perms += [p[ret_field] for p in data[perm_type]]
+            elif resp.status_code not in (400, 404):
+                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+            else:
+                break
+            page, nbr_pages = page + 1, utilities.nbr_pages(data)
+        return perms
+
+class QualityProfilePermissions(Permissions):
+    API_GET = {"users": "qualityprofiles/search_users", "groups": "qualityprofiles/search_groups"}
+    API_SET = {"users": "qualityprofiles/add_user", "groups": "qualityprofiles/add_group"}
+    API_REMOVE = {"users": "qualityprofiles/remove_user", "groups": "qualityprofiles/remove_group"}
+    API_GET_ID = "qualityProfile"
+    API_GET_FIELD = {"users": "login", "groups": "name"}
+    API_SET_FIELD = {"users": "login", "groups": "name"}
+
+    def __init__(self, qp_object):
+        self.concerned_object = qp_object
+        super().__init__(qp_object.endpoint)
+
+    def _get_api(self, api, perm_type, ret_field, **extra_params):
+        perms = []
+        params = extra_params.copy()
+        params["ps"] = MAX_QG_PERMS
+        page, nbr_pages = 1, 1
+        while page <= nbr_pages:
+            params["p"] = page
+            resp = self.endpoint.get(api, params=params)
+            if resp.ok:
+                data = json.loads(resp.text)
+                perms += [p[ret_field] for p in data[perm_type]]
+            elif resp.status_code not in (400, 404):
+                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+            else:
+                break
+            page, nbr_pages = page + 1, utilities.nbr_pages(data)
+        return perms
+
+    def read(self, perm_type=None):
+        if self.concerned_object.is_built_in:
+            return self
+        if self.endpoint.version() < (6, 6, 0):
+            utilities.logger.warning("Can read permissions of %s on SonarQube < 6.6", str(self.concerned_object))
+            return self
+        for p in _normalize(perm_type):
+            self.permissions[p] = self._get_api(QualityProfilePermissions.API_GET[p], p,
+                                                QualityProfilePermissions.API_GET_FIELD[p],
+                                                qualityProfile=self.concerned_object.name, language=self.concerned_object.language)
+        return self
+
+    def set(self, perms_dict):
+        if self.concerned_object.is_built_in:
+            utilities.logger.warning("Can set permission of built-in %s", str(self.concerned_object))
+            return self
+        if self.endpoint.version() < (6, 6, 0):
+            utilities.logger.warning("Can set permission of %s on SonarQube < 6.6", str(self.concerned_object))
+            return self
+        utilities.logger.debug("Setting permissions of %s with %s", str(self.concerned_object), str(perms_dict))
+        for p in PERMISSION_TYPES:
+            if perms_dict is None or p not in perms_dict:
+                continue
+            to_remove = diff(self.permissions[p], perms_dict)
+            self._post_api(QualityProfilePermissions.API_REMOVE[p], QualityProfilePermissions.API_SET_FIELD[p], to_remove,
+                          qualityProfile=self.concerned_object.name, language=self.concerned_object.language)
+            to_add = diff(perms_dict, self.permissions[p])
+            return self._post_api(QualityProfilePermissions.API_SET[p], QualityProfilePermissions.API_SET_FIELD[p], to_add,
+                                 qualityProfile=self.concerned_object.name, language=self.concerned_object.language)
+        return self
+
+    def to_json(self, perm_type=None, csv=False):
+        if not csv:
+            return self.permissions[perm_type] if _is_valid(perm_type) else self.permissions
+        return {p: utilities.list_to_csv(self.permissions.get(p, None), ", ") for p in _normalize(perm_type) if len(self.permissions.get(p, None)) > 0}
 
 
-def export(endpoint, component_key=None):
-    exp = {}
-    for perm_type in ("users", "groups"):
-        exp[perm_type] = simplify(get(endpoint, perm_type, projectKey=component_key), perm_type)
-        if len(exp[perm_type]) == 0:
-            exp.pop(perm_type)
-    return exp
+class ProjectPermissions(Permissions):
+    API_GET = {"users": "permissions/users", "groups": "permissions/groups"}
+    API_SET = {"users": "permissions/add_user", "groups": "permissions/add_group"}
+    API_REMOVE = {"users": "permissions/remove_user", "groups": "permissions/remove_group"}
+    API_GET_FIELD = {"users": "login", "groups": "name"}
+    API_SET_FIELD = {"users": "login", "groups": "groupName"}
+
+    def __init__(self, project_object):
+        self.concerned_object = project_object
+        super().__init__(project_object.endpoint)
+
+    def read(self, perm_type=None):
+        for p in _normalize(perm_type):
+            self.permissions[p] = self._get_api(ProjectPermissions.API_GET[p], p, ProjectPermissions.API_GET_FIELD[p],
+                                                projectKey=self.concerned_object.key, ps=MAX_PERMS)
+        return self
+
+    def set(self, perms_dict):
+        utilities.logger.debug("Setting permissions of %s with %s", str(self.concerned_object), str(perms_dict))
+        for p in PERMISSION_TYPES:
+            if perms_dict is None or p not in perms_dict:
+                continue
+            to_remove = diff(self.permissions[p], perms_dict)
+            self._post_api(ProjectPermissions.API_REMOVE[p], ProjectPermissions.API_SET_FIELD[p], to_remove,
+                          projectKey=self.concerned_object.key)
+            to_add = diff(perms_dict, self.permissions[p])
+            self._post_api(ProjectPermissions.API_SET[p], ProjectPermissions.API_SET_FIELD[p], to_add,
+                          projectKey=self.concerned_object.key)
+        return self
 
 
-def counts(some_perms, perms_dict):
-    perm_counts = {k: 0 for k in perms_dict}
-    # counts = dict(zip(perms_dict.keys(), [0, 0, 0, 0, 0, 0, 0]))
-    perm_counts["overall"] = 0
-    for p in some_perms:
-        if not p["permissions"]:
-            continue
-        perm_counts["overall"] += 1
-        for perm in PROJECT_PERMISSIONS:
-            if perm in p["permissions"]:
-                perm_counts[perm] += 1
-    return perm_counts
+class PortfolioPermissions(ProjectPermissions):
+    def __init__(self, portfolio_object):
+        self.concerned_object = portfolio_object
+        super().__init__(portfolio_object)
 
 
-def simplify(perms_array, perm_type, use_csv=True):
-    permiss = {}
-    field = "name" if perm_type == "groups" else "login"
-    for p in perms_array:
-        p["permissions"].sort()
-        if use_csv:
-            permiss[p[field]] = utilities.list_to_csv(p["permissions"], ", ")
-        else:
-            permiss[p[field]] = p["permissions"]
-    return permiss
+class ApplicationPermissions(ProjectPermissions):
+    def __init__(self, app_object):
+        self.concerned_object = app_object
+        super().__init__(app_object)
 
 
-def __get_perms(endpoint, url, perm_type, pfield, params, exit_on_error):
-    perms = []
-    new_params = {} if params is None else params.copy()
-    new_params["ps"] = __MAX_QG_PERMS
-    page, nbr_pages = 1, 1
-    while page <= nbr_pages:
-        new_params["p"] = page
-        resp = endpoint.get(url, params=new_params, exit_on_error=exit_on_error)
-        if (resp.status_code // 100) == 2:
-            data = json.loads(resp.text)
-            for p in data[perm_type]:
-                perms.append(p[pfield])
-            nbr_pages = utilities.int_div_ceil(data["paging"]["total"], __MAX_QG_PERMS)
-            page += 1
-        elif resp.status_code not in (400, 404):
-            utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
-        else:
-            break
-    return perms
+def simplify(perms_dict):
+    if perms_dict is None or len(perms_dict) == 0:
+        return None
+    return {k: encode(v) for k, v in perms_dict.items() if len(v) > 0}
 
 
-def get_qg(endpoint, qg_name, perm_type, pfield):
-    perms = __get_perms(
-        endpoint,
-        f"qualitygates/search_{perm_type}",
-        perm_type,
-        pfield,
-        {"gateName": qg_name},
-        False,
-    )
-    return perms if len(perms) > 0 else None
-
-
-def get_qp(endpoint, qp_name, qp_language, perm_type, pfield):
-    perms = __get_perms(
-        endpoint,
-        f"qualityprofiles/search_{perm_type}",
-        perm_type,
-        pfield,
-        {"qualityProfile": qp_name, "language": qp_language},
-        False,
-    )
-    return perms if len(perms) > 0 else None
-
-
-def set_permissions(endpoint, permissions, project_key=None, template=None):
-    if permissions is None or len(permissions) == 0:
-        return
-
-    apis = {"users": "permissions/add_user", "groups": "permissions/add_group"}
-    if template is not None:
-        apis = {"users": "permissions/add_user_to_template", "groups": "permissions/add_group_to_template"}
-    field = {"users": "login", "groups": "groupName"}
-    for perm_type in ("users", "groups"):
-        if perm_type not in permissions:
-            continue
-        for elem, perms in permissions[perm_type].items():
-            for p in utilities.csv_to_list(perms):
-                is_global_perm = project_key is None and template is None
-                if is_global_perm and p not in GLOBAL_PERMISSIONS:
-                    continue
-                if not is_global_perm and p not in PROJECT_PERMISSIONS:
-                    continue
-                utilities.logger.debug("Setting permission %s to %s - %s, %s", p, elem, str(project_key), str(template))
-                endpoint.post(apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template})
-
-
-def clear_permissions(endpoint, permissions, project_key=None, template=None):
-    if permissions is None:
-        return
-    apis = {"users": "permissions/remove_user", "groups": "permissions/remove_group"}
-    if template is not None:
-        apis = {"users": "permissions/remove_user_from_template", "groups": "permissions/remove_group_from_template"}
-    field = {"users": "login", "groups": "groupName"}
-    for perm_type in ("users", "groups"):
-        if perm_type not in permissions:
-            continue
-        for elem, perms in permissions[perm_type].items():
-            for p in utilities.csv_to_list(perms):
-                is_global_perm = project_key is None and template is None
-                if is_global_perm and p not in GLOBAL_PERMISSIONS:
-                    continue
-                if not is_global_perm and p not in PROJECT_PERMISSIONS:
-                    continue
-                if p == "admin":  # and (elem == "admin" or elem == "sonar-administrators"):
-                    # FIXME: Don't remove admin permission when this is requested (you may self remove admin permission)
-                    continue
-                utilities.logger.debug("Removing permission %s to %s - %s, %s", p, elem, str(project_key), str(template))
-                endpoint.post(apis[perm_type], params={field[perm_type]: elem, "permission": p, "projectKey": project_key, "templateName": template})
-
+def flatten(perm_list):
+    flat = []
+    for elem, perms in perm_list.items():
+        flat += [{elem: p} for p in perms]
+    return flat
 
 def import_config(endpoint, config_data):
     permissions = config_data.get("permissions", {})
@@ -203,4 +440,35 @@ def import_config(endpoint, config_data):
         utilities.logger.info("No global permissions in config, skipping import...")
         return
     utilities.logger.info("Importing global permissions")
-    set_permissions(endpoint, permissions)
+    global_perms = GlobalPermissions(endpoint)
+    global_perms.set(permissions)
+
+def encode(perms_array):
+    return utilities.list_to_csv(perms_array, ", ")
+
+def decode(encoded_perms):
+    return utilities.csv_to_list(encoded_perms)
+
+
+def _is_valid(perm_type):
+    return perm_type is not None and perm_type in PERMISSION_TYPES
+
+def _normalize(perm_type):
+    return (perm_type) if _is_valid(perm_type) else PERMISSION_TYPES
+
+
+def apply_api(endpoint, api, ufield, uvalue, ofield, ovalue, perm_list):
+    for p in perm_list:
+        endpoint.post(api, params={ufield: uvalue, ofield: ovalue, "permission": p})
+
+def diff(perms_1, perms_2):
+    diff_perms = perms_1.copy()
+    for perm_type in ("users", "groups"):
+        for elem, perms in perms_2:
+            if elem not in perms_1:
+                continue
+            for p in perms:
+                if p not in diff_perms[perm_type][elem]:
+                    continue
+                diff_perms[perm_type][elem].remove(p)
+    return diff_perms

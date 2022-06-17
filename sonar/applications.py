@@ -64,6 +64,11 @@ class Application(aggr.Aggregation):
         self._json = data["application"]
         self._description = self._json.get("description", None)
 
+    def permissions(self):
+        if self._permissions is None:
+            self._permissions = permissions.ApplicationPermissions(app_object=self)
+        return self._permissions
+
     def projects(self):
         if self._projects is not None:
             return self._projects
@@ -162,13 +167,13 @@ class Application(aggr.Aggregation):
             "visibility": self.visibility(),
             # 'projects': self.projects(),
             "branches": self.branches(),
-            "permissions": permissions.export(self.endpoint, self.key),
+            "permissions": self.permissions().export(),
             "tags": util.list_to_csv(self.tags(), separator=", "),
         }
         return util.remove_nones(json_data)
 
     def set_permissions(self, data):
-        permissions.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
+        self.permissions().set(data.get("permissions", None))
 
     def set_tags(self, tags):
         if tags is None or len(tags) == 0:

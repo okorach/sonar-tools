@@ -245,26 +245,19 @@ class Portfolio(aggregations.Aggregation):
             _PROJECT_SELECTION_REGEXP: self.regexp(),
             _PROJECT_SELECTION_BRANCH: self._selection_branch,
             _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
-            "permissions": permissions.export(self.endpoint, self.key),
+            "permissions": self.permissions().export(),
         }
         json_data.update(self.sub_portfolios())
 
         return util.remove_nones(json_data)
 
-    def clear_permissions(self):
-        permissions.clear_permissions(self.endpoint, self.permissions(), project_key=self.key)
-
     def permissions(self):
-        self._permissions = {}
-        for perm in ("users", "groups"):
-            p = permissions.simplify(permissions.get(self.endpoint, perm, projectKey=self.key), perm_type=perm)
-            self._permissions[perm] = p
+        if self._permissions is None:
+            self._permissions = permissions.PortfolioPermissions(self)
         return self._permissions
 
     def set_permissions(self, portfolio_perms):
-        if portfolio_perms is None or len(portfolio_perms) == 0:
-            return
-        permissions.set_permissions(self.endpoint, portfolio_perms, project_key=self.key)
+        self.permissions().set(portfolio_perms)
 
     def set_component_tags(self, tags, api):
         util.logger.warning("Can't set tags on portfolios, operation skipped...")

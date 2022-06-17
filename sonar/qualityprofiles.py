@@ -82,7 +82,6 @@ class QualityProfile(sq.SqObject):
         self.language = data["language"]
         self.is_default = data["isDefault"]
         self.is_built_in = data["isBuiltIn"]
-        self._permissions = self.permissions()
 
         self._rules = self.rules()
         self.nbr_rules = int(data["activeRuleCount"])
@@ -232,14 +231,7 @@ class QualityProfile(sq.SqObject):
             )
         if include_rules:
             json_data["rules"] = self.rules(full_specs=full_specs)
-
-        perms = util.remove_nones(self.permissions())
-        if perms is not None and len(perms) > 0:
-            for t in ("users", "groups"):
-                if t in perms:
-                    perms[t] = util.list_to_csv(perms[t], ", ", True)
-            json_data["permissions"] = perms
-
+        json_data["permissions"] = self.permissions().export()
         return util.remove_nones(json_data)
 
     def compare(self, another_qp):
@@ -303,29 +295,12 @@ class QualityProfile(sq.SqObject):
         return False
 
     def permissions(self):
-        if self.endpoint.version() < (8, 9, 0):
-            return None
-        if self._permissions is not None:
-            return self._permissions
-        self._permissions = {}
-        self._permissions["users"] = permissions.get_qp(self.endpoint, self.name, self.language, "users", "login")
-        self._permissions["groups"] = permissions.get_qp(self.endpoint, self.name, self.language, "groups", "name")
+        if self._permissions is None:
+            self._permissions = permissions.QualityProfilePermissions(self)
         return self._permissions
 
     def set_permissions(self, perms):
-        if perms is None or len(perms) == 0:
-            return
-        params = {"qualityProfile": self.name, "language": self.language}
-        if "users" in perms:
-            for u in util.csv_to_list(perms["users"]):
-                params["login"] = u
-                self.post("qualityprofiles/add_user", params=params)
-            params.pop("login")
-        if "groups" in perms:
-            for g in util.csv_to_list(perms["groups"]):
-                params["group"] = g
-                self.post("qualityprofiles/add_group", params=params)
-        self._permissions = self.permissions()
+        self.permissions().set(perms)
 
     def audit(self, audit_settings=None):
         util.logger.debug("Auditing %s", str(self))
