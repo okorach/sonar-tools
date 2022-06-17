@@ -22,6 +22,7 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
+import datetime
 from sonar import (
     env,
     version,
@@ -197,6 +198,8 @@ def main():
     if kwargs["export"] and kwargs["import"]:
         util.exit_fatal("--export or --import options are exclusive of each other", exit_code=options.ERR_ARGS_ERROR)
 
+    start_time = datetime.datetime.today()
+
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     what = args.what
     if args.what == "":
@@ -214,7 +217,7 @@ def main():
         __export_config(endpoint, what, args)
     if kwargs["import"]:
         __import_config(endpoint, what, args)
-
+    util.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
 

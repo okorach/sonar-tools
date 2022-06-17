@@ -216,7 +216,10 @@ def get_setting(settings, key, default):
 def redacted_token(token):
     if token is None:
         return "-"
-    return re.sub(r"(...).*(...)", r"\1***\2", token)
+    if token[0:4] in ("squ_", "sqa_", "sqp_"):
+        return re.sub(r"(......).*(..)", r"\1***\2", token)
+    else:
+        return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
 def convert_to_type(value):

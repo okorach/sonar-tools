@@ -238,7 +238,7 @@ class Portfolio(aggregations.Aggregation):
         json_data = {
             "key": self.key,
             "name": self.name,
-            "description": self._description,
+            "description": None if self._description == "" else self._description,
             _PROJECT_SELECTION_MODE: self.selection_mode(),
             "visibility": self.visibility(),
             # 'projects': self.projects(),

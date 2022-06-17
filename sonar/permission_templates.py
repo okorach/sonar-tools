@@ -125,7 +125,7 @@ class PermissionTemplate(sqobject.SqObject):
         json_data = {
             "key": self.key,
             "name": self.name,
-            "description": self.description,
+            "description": self.description if self.description != "" else None,
             "pattern": self.project_key_pattern,
             "permissions": self.permissions().export(),
         }
@@ -143,7 +143,7 @@ class PermissionTemplate(sqobject.SqObject):
         if full_specs:
             json_data["creationDate"] = utilities.date_to_string(self.creation_date)
             json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
-        return json_data
+        return utilities.remove_nones(json_data)
 
 
 def get_object(name, endpoint=None):
