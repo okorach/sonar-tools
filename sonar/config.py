@@ -219,7 +219,6 @@ def main():
     if kwargs["import"]:
         __import_config(endpoint, what, args)
     util.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
-        
     sys.exit(0)
 
 
