@@ -2,17 +2,28 @@
    "applications": {
       "App_with_branches": {
          "branches": {
+            "break": {
+               "projects": {
+                  "training:branches": "break"
+               }
+            },
             "master": {
                "isMain": true,
                "projects": {
                   "training:branches": "develop"
                }
+            },
+            "release-1.1": {
+               "projects": {
+                  "training:branches": "release-1.1"
+               }
             }
          },
+         "description": "",
          "name": "App with branches",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -29,10 +40,11 @@
                }
             }
          },
+         "description": "",
          "name": "Azure DevOps monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             },
             "users": {
                "ado": "admin"
@@ -53,10 +65,11 @@
                }
             }
          },
+         "description": "",
          "name": "Bitbucket Cloud monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
@@ -73,10 +86,11 @@
                }
             }
          },
+         "description": "",
          "name": "Bitbucket Server LATEST monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "tags": "bbs-latest",
@@ -94,16 +108,31 @@
                }
             }
          },
+         "description": "",
          "name": "Bitbucket Server LTS monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "visibility": "public"
       },
       "Corporate_Web_Site": {
          "branches": {
+            "Release 1.1": {
+               "projects": {
+                  "WEBSITE-TIER1-WEB": "release-1.1",
+                  "WEBSITE-TIER2-BIZLOGIC": "release-1.1",
+                  "WEBSITE-TIER3-DBLAYER": "release-1.1"
+               }
+            },
+            "Release-2020.1": {
+               "projects": {
+                  "WEBSITE-TIER1-WEB": "release-2020.1",
+                  "WEBSITE-TIER2-BIZLOGIC": "release-2020.1",
+                  "WEBSITE-TIER3-DBLAYER": "release-2020.1"
+               }
+            },
             "master": {
                "isMain": true,
                "projects": {
@@ -111,12 +140,19 @@
                   "WEBSITE-TIER2-BIZLOGIC": "master",
                   "WEBSITE-TIER3-DBLAYER": "master"
                }
+            },
+            "realease-2019.4": {
+               "projects": {
+                  "WEBSITE-TIER1-WEB": "release-2019.4",
+                  "WEBSITE-TIER2-BIZLOGIC": "release-2019.4",
+                  "WEBSITE-TIER3-DBLAYER": "release-2019.4"
+               }
             }
          },
          "name": "Corporate Web Site",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -128,16 +164,17 @@
                "isMain": true,
                "projects": {
                   "demo:github-mono-jenkins-cli": "main",
-                  "demo:github-mono-jenkins-dotnet": "master",
+                  "demo:github-mono-jenkins-dotnet": "main",
                   "demo:github-mono-jenkins-gradle": "main",
-                  "demo:github-mono-jenkins-maven": "master"
+                  "demo:github-mono-jenkins-maven": "main"
                }
             }
          },
+         "description": "",
          "name": "GitHub monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "tags": "github, monorepo",
@@ -155,10 +192,11 @@
                }
             }
          },
+         "description": "",
          "name": "GitLab-CI monorepo",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "tags": "gitlab, monorepo",
@@ -620,7 +658,7 @@
    },
    "platform": {
       "edition": "enterprise",
-      "serverId": "147B411E-AYFjQN8-gYsFQ28ejqnV",
+      "serverId": "B40A8E55-AWOxMI1ddSkf4BExMG4d",
       "version": "9.5.0"
    },
    "portfolios": {
@@ -629,7 +667,7 @@
          "name": "All projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -641,7 +679,7 @@
          "name": "Bitbucket Cloud projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionBranch": "Babar",
@@ -654,7 +692,7 @@
          "name": "Bitbucket Server LATEST projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -666,7 +704,7 @@
          "name": "GitHub projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -678,7 +716,7 @@
          "name": "GitLab projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "TAGS",
@@ -690,7 +728,7 @@
          "name": "Whole Bank and Insurance",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -718,11 +756,13 @@
          "name": "Corporate banking projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
-         "projectSelectionMode": "NONE",
+         "projectSelectionBranch": "foo",
+         "projectSelectionMode": "REGEXP",
+         "projectSelectionRegexp": "BANK-CORP-.*",
          "visibility": "private"
       },
       "PORTFOLIO-DIV-BANKING": {
@@ -730,15 +770,21 @@
          "name": "Banking division",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
          "projectSelectionMode": "MANUAL",
+         "projects": {
+            "WEBSITE-TIER1-WEB": "__default__",
+            "WEBSITE-TIER2-BIZLOGIC": "__default__",
+            "WEBSITE-TIER3-DBLAYER": "__default__",
+            "training:branches": "release-1.1, develop"
+         },
          "subPortfolios": [
             {
                "byReference": true,
-               "key": "PORTFOLIO-RETAIL-BANKING"
+               "key": "PORTFOLIO-CORPORATE-BANKING"
             },
             {
                "byReference": true,
@@ -746,7 +792,7 @@
             },
             {
                "byReference": true,
-               "key": "PORTFOLIO-CORPORATE-BANKING"
+               "key": "PORTFOLIO-RETAIL-BANKING"
             }
          ],
          "visibility": "private"
@@ -756,7 +802,7 @@
          "name": "Insurance division",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -769,7 +815,7 @@
          "name": "Private banking projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
@@ -782,18 +828,24 @@
          "name": "Retail banking projects",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                "sonar-users": "codeviewer, user"
             }
          },
          "projectSelectionMode": "MANUAL",
+         "projects": {
+            "BANK-RETAIL-401K": "__default__",
+            "BANK-RETAIL-CREDITRATING": "__default__",
+            "BANK-RETAIL-LOANSCALC": "__default__",
+            "BANK-RETAIL-MOBILEAPP": "__default__"
+         },
          "visibility": "private"
       },
       "Portfolio_on_regexp_branch": {
          "name": "Portfolio on regexp branch",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionBranch": "release-1.1",
@@ -806,7 +858,7 @@
          "name": "Top Level",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "NONE",
@@ -822,7 +874,11 @@
                      "key": "Sub_Sub_1_1",
                      "name": "Sub Sub 1.1",
                      "projectSelectionMode": "MANUAL",
-                     "projects": []
+                     "projects": {
+                        "demo:azdo-dotnetcore": "__default__",
+                        "jenkins:audio-video-tools": "__default__",
+                        "training:branches": "release-1.1"
+                     }
                   },
                   {
                      "byReference": false,
@@ -847,7 +903,7 @@
          "name": "Empty portfolio",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, securityhotspotadmin"
+               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin"
             }
          },
          "projectSelectionMode": "NONE",
@@ -860,11 +916,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "superbank.com"
@@ -874,11 +931,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "superbank.com"
@@ -888,11 +946,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "superbank.com"
@@ -902,11 +961,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "superbank.com"
@@ -916,25 +973,43 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "superbank.com"
       },
       "BANK-RETAIL-401K": {
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "http://redirect.sonarsource.com/plugins/ldap.html"
+            },
+            {
+               "name": "ci",
+               "type": "ci",
+               "url": "https://travis-ci.org/SonarSource/sonar-ldap"
+            },
+            {
+               "name": "issue",
+               "type": "issue",
+               "url": "http://jira.sonarsource.com/browse/LDAP"
+            },
+            {
+               "name": "scm",
+               "type": "scm",
+               "url": "https://github.com/SonarSource/sonar-ldap"
+            }
+         ],
          "name": "Retail Banking - 401K",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
@@ -943,11 +1018,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "superbank.com"
@@ -957,11 +1030,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "superbank.com"
@@ -971,11 +1042,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "superbank.com"
@@ -985,67 +1054,141 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "superbank.com"
       },
       "WEBSITE-TIER1-WEB": {
+         "branches": {
+            "master": {
+               "isMain": true
+            },
+            "release-1.1": {
+               "keepWhenInactive": true
+            },
+            "release-2019.4": {
+               "keepWhenInactive": true
+            },
+            "release-2020.1": {
+               "keepWhenInactive": true
+            }
+         },
          "name": "Bank Web Site: Tier 1 - Web Presentation",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "superbank.com"
       },
       "WEBSITE-TIER2-BIZLOGIC": {
+         "branches": {
+            "master": {
+               "isMain": true
+            },
+            "release-1.1": {
+               "keepWhenInactive": true
+            },
+            "release-2019.4": {
+               "keepWhenInactive": true
+            },
+            "release-2020.1": {
+               "keepWhenInactive": true
+            }
+         },
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "http://redirect.sonarsource.com/plugins/ldap.html"
+            },
+            {
+               "name": "ci",
+               "type": "ci",
+               "url": "https://travis-ci.org/SonarSource/sonar-ldap"
+            },
+            {
+               "name": "issue",
+               "type": "issue",
+               "url": "http://jira.sonarsource.com/browse/LDAP"
+            },
+            {
+               "name": "scm",
+               "type": "scm",
+               "url": "https://github.com/SonarSource/sonar-ldap"
+            }
+         ],
          "name": "Bank Web Site: Tier 2 - Biz Logic",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "superbank.com"
       },
       "WEBSITE-TIER3-DBLAYER": {
+         "branches": {
+            "master": {
+               "isMain": true
+            },
+            "release-1.1": {
+               "keepWhenInactive": true
+            },
+            "release-2019.4": {
+               "keepWhenInactive": true
+            },
+            "release-2020.1": {
+               "keepWhenInactive": true
+            }
+         },
          "name": "Bank Web Site: Tier 3 - DB Layer",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
+         "qualityGate": "Sonar way ++",
          "tags": "superbank.com"
       },
       "bad-project-for-audit-1": {
+         "branches": {
+            "branch,with+%funny name": {},
+            "branch-with-no-code": {},
+            "master": {
+               "isMain": true
+            }
+         },
          "name": "Bad project for audit 1",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -1054,11 +1197,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -1072,24 +1216,26 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
       "demo:azdo-dotnet": {
-         "name": "AzDO .Net Core project",
+         "name": "Lloyds .Net core porject",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "azure-devops, dotnetcore, dotnet"
@@ -1104,37 +1250,45 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
       "demo:azdo-dotnetfwk": {
+         "binding": {
+            "key": "Azure DevOps Services",
+            "repository": "demo-dotnet-fwk",
+            "slug": "demo-azdo"
+         },
          "name": "AzDO .Net Framework project",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
       "demo:azdo-gradle": {
-         "name": "AzDO / Gradle",
+         "name": "Llloyds gradle project",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o Hotspots"
@@ -1148,12 +1302,12 @@
          "name": "Azure DevOps / Maven",
          "permissions": {
             "groups": {
-               "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "CI Tools": "codeviewer, scan, user",
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, scan, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityProfiles": {
@@ -1171,14 +1325,23 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o Hotspots",
+         "sonar.coverage.exclusions": "**/gen/**/*, **/*DAO.java",
+         "sonar.cpd.exclusions": "**/gen/**/*, **/*DAO.java",
+         "sonar.exclusions": "**/node_modules/**/*, fileThatCrashesAnalysis.cs",
+         "sonar.issue.ignore.allfile": [
+            {
+               "fileRegexp": ".*Generated by MotoGen v2\\.1.*"
+            }
+         ],
          "tags": "azure-devops, cli, e-banking"
       },
       "demo:azdo-mono-dotnet": {
@@ -1192,11 +1355,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -1211,11 +1375,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o Hotspots"
@@ -1231,15 +1396,30 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o Hotspots",
          "tags": "strategic"
+      },
+      "demo:azdo-project": {
+         "name": "AzDO project",
+         "permissions": {
+            "groups": {
+               "CI Tools": "scan",
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
+            }
+         }
       },
       "demo:bbc-dotnet": {
          "binding": {
@@ -1251,11 +1431,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1271,11 +1452,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1291,11 +1473,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1310,11 +1493,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -1328,11 +1512,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1347,11 +1532,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -1364,11 +1550,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -1381,11 +1568,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -1399,11 +1587,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "bitbucket"
@@ -1418,11 +1607,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1438,11 +1628,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1458,11 +1649,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1479,11 +1671,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "bbs-latest, cli, monorepo"
@@ -1499,11 +1692,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "bbs-latest, dotnet, dotnetcore"
@@ -1519,11 +1713,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "bbs-latest, gradle, monorepo"
@@ -1539,11 +1734,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "bbs-latest, monorepo, maven"
@@ -1559,11 +1755,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1580,11 +1777,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1601,11 +1799,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1622,26 +1821,34 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
          "tags": "bbs-lts, cli"
       },
       "demo:conditional-compilation": {
+         "branches": {
+            "branch-noscreen": {},
+            "master": {
+               "isMain": true
+            }
+         },
          "name": "C/C++ Conditional Compilation",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -1651,15 +1858,20 @@
             "repository": "okorach/demo-actions-cli",
             "summaryCommentEnabled": true
          },
+         "branches": {
+            "main": {
+               "isMain": true,
+               "newCode": "NUMBER_OF_DAYS = 180"
+            }
+         },
          "name": "GitHub / Actions / CLI",
+         "newCodePeriod": "REFERENCE_BRANCH = main",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, actions, github-actions, cli"
@@ -1674,14 +1886,16 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way ++",
+         "sonar.security.config.phpsecurity": "{\n  \"S3649\": {\n    \"sources\": [\n      {\n        \"methodId\": \"My\\\\Namespace\\\\ClassName\\\\ServerRequest::getQueryNEW\"\n      }\n    ],\n    \"passthroughs\": [\n      {\n        \"methodId\": \"My\\\\Namespace\\\\RawUrl::RawUrl\",\n        \"isWhitelist\": true,\n        \"args\": [\n          1\n        ]\n      }\n    ],\n    \"sinks\": [\n      {\n        \"methodId\": \"mysql_query\",\n        \"args\": [\n          1\n        ]\n      },\n     {\n        \"methodId\": \"My\\\\Namespace\\\\SqlStatement::execute\",\n        \"isMethodPrefix\": true,\n        \"args\": [\n          0,\n          1\n        ]\n      },\n      {\n        \"methodId\": \"My\\\\Namespace\\\\SqlStatement::run\",\n        \"interval\": {\n          \"fromIndex\": 1\n        }\n      }\n    ]\n  },\n  \"S5131\": {\n    \"sources\": [\n      {\n        \"methodId\": \"My\\\\Namespace\\\\ClassName\\\\ServerRequest::getQueryString\"\n      }\n    ],\n    \"sinks\": [\n      {\n        \"methodId\": \"My\\\\Namespace\\\\ClassName\\\\Server::write\",\n        \"isMethodPrefix\": true,\n        \"interval\": {\n          \"fromIndex\": 1\n        }\n      }\n    ]\n  }\n}",
          "tags": "github, actions, github-actions, dotnet"
       },
       "demo:github-actions-gradle": {
@@ -1694,11 +1908,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, actions, github-actions, gradle"
@@ -1713,11 +1925,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, actions, github-actions, maven"
@@ -1730,17 +1940,19 @@
             "summaryCommentEnabled": true
          },
          "name": "GitHub / Actions / monorepo CLI",
+         "newCodePeriod": "NUMBER_OF_DAYS = 30",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
+         "qualityProfiles": {
+            "py": "Python Olivier"
+         },
          "tags": "github, actions, github-actions, monorepo, cli"
       },
       "demo:github-actions-mono-dotnet": {
@@ -1754,11 +1966,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1775,11 +1985,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -1796,14 +2004,15 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
+         "qualityProfiles": {
+            "java": "Olivier way"
+         },
          "tags": "github, actions, github-actions, monorepo, maven"
       },
       "demo:github-jenkins-cli": {
@@ -1812,15 +2021,19 @@
             "repository": "okorach/demo-cli-jenkins",
             "summaryCommentEnabled": true
          },
+         "branches": {
+            "main": {
+               "isMain": true
+            },
+            "python-version-and-tags": {}
+         },
          "name": "GitHub / Jenkins / CLI",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, jenkins, cli"
@@ -1835,11 +2048,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, dotnetcore, jenkins"
@@ -1850,15 +2061,20 @@
             "repository": "okorach/demo-gradle-jenkins",
             "summaryCommentEnabled": true
          },
+         "branches": {
+            "add-tags": {},
+            "fix-project-name": {},
+            "main": {
+               "isMain": true
+            }
+         },
          "name": "GitHub / Jenkins / Gradle",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, jenkins, gradle"
@@ -1869,15 +2085,22 @@
             "repository": "okorach/demo-maven-jenkins",
             "summaryCommentEnabled": true
          },
+         "branches": {
+            "fix-project-name": {},
+            "hardening": {},
+            "main": {
+               "isMain": true
+            },
+            "project-tags": {},
+            "some-branch": {}
+         },
          "name": "GitHub / Jenkins / Maven",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, jenkins, maven, strategic"
@@ -1889,15 +2112,20 @@
             "repository": "okorach/demo-jenkins",
             "summaryCommentEnabled": true
          },
+         "branches": {
+            "fix-dotnet-core-project-name": {},
+            "main": {
+               "isMain": true
+            },
+            "set-tags-on-the-fly-2": {}
+         },
          "name": "GitHub / Jenkins / monorepo CLI",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, jenkins, monorepo, cli"
@@ -1913,11 +2141,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, jenkins, monorepo, dotnet"
@@ -1929,15 +2155,20 @@
             "repository": "okorach/demo-jenkins",
             "summaryCommentEnabled": true
          },
+         "branches": {
+            "fix-dotnet-core-project-name": {},
+            "main": {
+               "isMain": true
+            },
+            "set-tags-on-the-fly-2": {}
+         },
          "name": "GitHub / Jenkins / monorepo Gradle",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, jenkins, monorepo, gradle"
@@ -1953,11 +2184,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "github, jenkins, monorepo, maven"
@@ -1971,11 +2200,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "cli, gitlab, gitlab-ci"
@@ -1989,11 +2216,12 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -2002,15 +2230,24 @@
             "key": "GitLab.com",
             "repository": "30602438"
          },
+         "branches": {
+            "main": {
+               "keepWhenInactive": true
+            },
+            "master": {
+               "isMain": true
+            }
+         },
          "name": "GitLab-CI / Gradle",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage"
@@ -2020,15 +2257,21 @@
             "key": "GitLab.com",
             "repository": "30599779"
          },
+         "branches": {
+            "main": {
+               "isMain": true
+            },
+            "release-1.x": {
+               "keepWhenInactive": true
+            }
+         },
          "name": "GitLab-CI / Maven",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, gitlab-ci, maven, team-xxx"
@@ -2043,11 +2286,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, cli"
@@ -2062,13 +2303,16 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
+         "sonar.exclusions": [
+            "gen/**/*",
+            "full/path/to/file/particular,file.cs",
+            "**/gen*.cs"
+         ],
          "tags": "gitlab, dotnetcore"
       },
       "demo:gitlab-ci-mono-gradle": {
@@ -2081,11 +2325,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, gradle"
@@ -2100,11 +2342,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, maven"
@@ -2118,11 +2358,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, jenkins, cli"
@@ -2136,11 +2374,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, jenkins, dotnet"
@@ -2154,11 +2390,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, jenkins, gradle"
@@ -2172,11 +2406,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, jenkins, maven"
@@ -2191,11 +2423,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, monorepo, jenkins"
@@ -2210,11 +2440,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, monorepo, maven"
@@ -2229,11 +2457,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, jenkins, monorepo, cli"
@@ -2248,11 +2474,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "gitlab, jenkins, monorepo, dotnet"
@@ -2262,25 +2486,33 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "tags": "strategic"
       },
       "demo:pull-request-bbs-jenkins": {
+         "branches": {
+            "feature/hb": {},
+            "master": {
+               "isMain": true
+            }
+         },
          "name": "Demo: Pull Request Bitbucket Server from Jenkins",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -2289,51 +2521,106 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
       "demo:sca-log4shell-detect-maven": {
+         "branches": {
+            "dont-use-log4j": {},
+            "fix-log4j-dependency": {},
+            "master": {
+               "isMain": true
+            }
+         },
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "http://www.example.com"
+            }
+         ],
          "name": "SCA demo - Log4shell detect - Maven",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
       "jenkins-pipeline:sonar-java": {
+         "branches": {
+            "master": {
+               "isMain": true,
+               "newCode": "SPECIFIC_ANALYSIS = 2021-01-18T14:45:21+0100"
+            }
+         },
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "http://redirect.sonarsource.com/plugins/java.html"
+            },
+            {
+               "name": "ci",
+               "type": "ci",
+               "url": "https://travis-ci.org/SonarSource/sonar-java"
+            },
+            {
+               "name": "issue",
+               "type": "issue",
+               "url": "https://jira.sonarsource.com/browse/SONARJAVA"
+            },
+            {
+               "name": "scm",
+               "type": "scm",
+               "url": "https://github.com/SonarSource/sonar-java"
+            },
+            {
+               "name": "ci",
+               "type": "ci",
+               "url": "https://foo.com"
+            },
+            {
+               "name": "ci",
+               "type": "ci",
+               "url": "https://travis-ci.org/SonarSource/sonar-java"
+            }
+         ],
          "name": "SonarJava - Jenkins",
+         "newCodePeriod": "PREVIOUS_VERSION",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "tags": "jenkins-pipeline, jenkins"
       },
       "jenkins:audio-video-tools": {
+         "branches": {
+            "master": {
+               "isMain": true,
+               "newCode": "NUMBER_OF_DAYS = 60"
+            }
+         },
          "name": "Audio Video tools - Jenkins",
+         "newCodePeriod": "NUMBER_OF_DAYS = 90",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -2344,38 +2631,50 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
-         "tags": "jenkins, strategic"
+         "sonar.coverage.exclusions": "**/*.json, fileThatWillNeverHaveTests.cs",
+         "sonar.exclusions": "**/*DAO.java, vendor/**/*",
+         "tags": "jenkins, norway, strategic"
       },
       "jenkins:dotnet": {
          "name": "Demo: Dotnet Core with Jenkins",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
-         }
+         },
+         "sonar.issue.ignore.multicriteria": [
+            {
+               "resourceKey": "**/MyMockDirectory/*",
+               "ruleKey": "csharpsquid:S2068"
+            }
+         ]
       },
       "jenkins:excel-tools": {
          "name": "Excel tools - Jenkins",
+         "newCodePeriod": "NUMBER_OF_DAYS = 90",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -2386,11 +2685,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "qualityGate": "Sonar way w/o coverage",
@@ -2401,37 +2698,45 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
       "no_code_2": {
+         "branches": {
+            "empty-branch": {},
+            "master": {
+               "isMain": true
+            }
+         },
          "name": "Project with no code 2",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
       "okorach_audio-video-tools": {
+         "branches": {
+            "master": {
+               "isMain": true,
+               "newCode": "PREVIOUS_VERSION"
+            }
+         },
          "name": "Audio Video Tools",
+         "newCodePeriod": "REFERENCE_BRANCH = master",
          "permissions": {
             "groups": {
-               "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "CI Tools": "codeviewer, scan, user",
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
@@ -2444,24 +2749,34 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
       "okorach_sonar-tools": {
+         "branches": {
+            "master": {
+               "isMain": true
+            },
+            "release-1.8.1": {
+               "keepWhenInactive": true
+            },
+            "release-1.8.x": {
+               "keepWhenInactive": true
+            }
+         },
          "name": "Sonar Tools",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "qualityGate": "Sonar way w/o coverage"
@@ -2471,24 +2786,27 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
       "org.owasp:benchmark": {
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "https://www.owasp.org/index.php/Benchmark"
+            }
+         ],
          "name": "OWASP Benchmark Project",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
          "qualityGate": "Sonar way ++",
@@ -2499,11 +2817,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
@@ -2512,11 +2828,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
@@ -2525,11 +2839,20 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
+            }
+         }
+      },
+      "test-ublox": {
+         "name": "test-ublox",
+         "permissions": {
+            "groups": {
+               "CI Tools": "scan",
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
@@ -2538,11 +2861,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
@@ -2551,11 +2872,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
@@ -2564,11 +2883,9 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          }
       },
@@ -2579,58 +2896,120 @@
             "repository": "OK",
             "slug": "test-bbs-latest"
          },
+         "branches": {
+            "even-longer": {},
+            "longer-file": {},
+            "longer-file-2": {},
+            "master": {
+               "isMain": true,
+               "newCode": "NUMBER_OF_DAYS = 30"
+            }
+         },
          "name": "Test: Bitbucket Latest - Maven",
+         "newCodePeriod": "REFERENCE_BRANCH = master",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
          },
-         "qualityGate": "Sonar way w/o coverage"
+         "qualityGate": "Sonar way w/o coverage",
+         "qualityProfiles": {
+            "java": "All rules"
+         }
+      },
+      "test:cpp-symbolic-exec": {
+         "name": "Test: C++ symbolic execution",
+         "permissions": {
+            "groups": {
+               "CI Tools": "scan",
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
+            }
+         }
       },
       "test_cobol": {
+         "generalSettings": {
+            "webhooks": {
+               "JenkinsWeb": {
+                  "secret": "tagada",
+                  "url": "http://foo.fr"
+               }
+            }
+         },
          "name": "test_cobol",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team Developers": "codeviewer, user",
+               "Team Project Admins": "admin, codeviewer, user",
+               "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
       "training:branches": {
+         "branches": {
+            "break": {
+               "newCode": "REFERENCE_BRANCH = release-1.1"
+            },
+            "develop": {
+               "isMain": true,
+               "newCode": "SPECIFIC_ANALYSIS = 2018-06-01T00:00:00+0200"
+            },
+            "release-1.1": {
+               "keepWhenInactive": true,
+               "newCode": "REFERENCE_BRANCH = develop"
+            }
+         },
          "name": "Training: Branches",
+         "newCodePeriod": "PREVIOUS_VERSION",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, issueadmin, scan, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "codeviewer, issueadmin, securityhotspotadmin, user"
             }
-         }
+         },
+         "sonar.androidLint.reportPaths": "data/android.xml",
+         "sonar.test.exclusions": "**/test_file_to_exclude.*"
       },
       "training:complexity": {
          "name": "Training: Cyclomatic vs Cognitive complexity",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, issueadmin, scan, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
+         },
+         "qualityProfiles": {
+            "java": "Corp way"
          }
       },
       "training:coverage": {
+         "branches": {
+            "issue-on-test-files": {},
+            "master": {
+               "isMain": true
+            },
+            "partial-coverage": {},
+            "partial-coverage-2": {}
+         },
          "name": "Training: Coverage",
          "permissions": {
             "groups": {
-               "sonar-administrators": "admin, issueadmin, scan, securityhotspotadmin"
+               "sonar-administrators": "admin, codeviewer, issueadmin, scan, securityhotspotadmin, user"
             }
          }
       },
@@ -2639,18 +3018,21 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, issueadmin, scan, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
-         }
+         },
+         "tags": "accenture"
       },
       "training:external-issues": {
          "name": "Training: External issues import",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, issueadmin, scan, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -2659,18 +3041,27 @@
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, issueadmin, scan, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
       "training:security": {
+         "links": [
+            {
+               "name": "homepage",
+               "type": "homepage",
+               "url": "http://maven.apache.org"
+            }
+         ],
          "name": "Training: Security",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, issueadmin, scan, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             }
          }
       },
@@ -2680,36 +3071,57 @@
             "repository": "okorach/volley-bridoire-web",
             "summaryCommentEnabled": true
          },
+         "branches": {
+            "fix-issues": {},
+            "master": {
+               "isMain": true
+            },
+            "new-branch": {},
+            "prep-new-21-22-season": {}
+         },
          "name": "Volley Bridoire Web",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
                "Executives": "admin",
                "Language Experts": "admin",
-               "Security Auditors": "issueadmin, securityhotspotadmin",
-               "Team 2 Developers": "admin",
-               "Team Developers": "admin",
-               "Team Project Admins": "admin",
-               "Team Tech Leads": "issueadmin, securityhotspotadmin",
-               "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
-               "sonar-users": "issueadmin, securityhotspotadmin"
+               "Security Auditors": "codeviewer, issueadmin, securityhotspotadmin, user",
+               "Team 2 Developers": "admin, user",
+               "Team Developers": "admin, user",
+               "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
+               "sonar-users": "user"
             },
             "users": {
                "admin": "admin",
                "cameron": "admin",
-               "jack": "issueadmin, securityhotspotadmin",
-               "joe": "admin",
+               "jack": "issueadmin, securityhotspotadmin, user",
+               "joe": "admin, user",
                "olivier-korach91357": "admin",
+               "olivierk": "codeviewer",
                "sylvain": "admin",
-               "yacine": "issueadmin"
+               "yacine": "codeviewer, issueadmin"
             }
-         }
+         },
+         "qualityProfiles": {
+            "php": "PHP Olivier"
+         },
+         "sonar.androidLint.reportPaths": "foo/androidLint.xml",
+         "sonar.dbcleaner.branchesToKeepWhenInactive": "master, develop, trunk, release-.*, main, release-[\\d.].*",
+         "sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshotByMonth": 26,
+         "sonar.dependencyCheck.skip": true,
+         "sonar.developerAggregatedInfo.disabled": true,
+         "sonar.exclusions": "**/*.notcode",
+         "sonar.governance.report.project.branch.frequency": "Weekly",
+         "sonar.issues.defaultAssigneeLogin": "sylvain",
+         "sonar.php.file.suffixes": "php, php3, php4, php5, phtml, inc, phpx",
+         "sonar.scm.provider": "git",
+         "sonar.security.config.phpsecurity": "{\n  \"S3649\": {\n    \"sources\": [\n      {\n        \"methodId\": \"My\\\\Namespace\\\\ClassName\\\\ServerRequest::getQuery\"\n      }\n    ],\n    \"passthroughs\": [\n      {\n        \"methodId\": \"My\\\\Namespace\\\\RawUrl::RawUrl\",\n        \"isWhitelist\": true,\n        \"args\": [\n          1\n        ]\n      }\n    ],\n    \"sinks\": [\n      {\n        \"methodId\": \"mysql_query\",\n        \"args\": [\n          1\n        ]\n      },\n     {\n        \"methodId\": \"My\\\\Namespace\\\\SqlStatement::execute\",\n        \"isMethodPrefix\": true,\n        \"args\": [\n          0,\n          1\n        ]\n      },\n      {\n        \"methodId\": \"My\\\\Namespace\\\\SqlStatement::run\",\n        \"interval\": {\n          \"fromIndex\": 1\n        }\n      }\n    ]\n  },\n  \"S5131\": {\n    \"sources\": [\n      {\n        \"methodId\": \"My\\\\Namespace\\\\ClassName\\\\ServerRequest::getQueryString\"\n      }\n    ],\n    \"sinks\": [\n      {\n        \"methodId\": \"My\\\\Namespace\\\\ClassName\\\\Server::write\",\n        \"isMethodPrefix\": true,\n        \"interval\": {\n          \"fromIndex\": 1\n        }\n      }\n    ]\n  }\n}",
+         "tags": "slovakia"
       }
    },
    "qualityGates": {
       "Sonar way": {
-         "isBuiltIn": true,
-         "isDefault": true
+         "isBuiltIn": true
       },
       "Sonar way ++": {
          "conditions": [
@@ -2722,6 +3134,7 @@
             "security_rating >= C",
             "reliability_rating >= D"
          ],
+         "isDefault": true,
          "permissions": {
             "groups": "sonar-users",
             "users": "yacine"
@@ -2746,7 +3159,10 @@
             "new_maintainability_rating >= A",
             "new_duplicated_lines_density >= 3",
             "new_security_hotspots_reviewed <= 100"
-         ]
+         ],
+         "permissions": {
+            "users": "cameron"
+         }
       }
    },
    "qualityProfiles": {
@@ -2754,6 +3170,10 @@
          "Sonar way": {
             "children": {
                "My way": {
+                  "isDefault": true,
+                  "permissions": {
+                     "groups": "Spacers, Team Tech Leads"
+                  },
                   "rules": {
                      "abap:S100": {
                         "modified": true,
@@ -2774,8 +3194,7 @@
                   }
                }
             },
-            "isBuiltIn": true,
-            "isDefault": true
+            "isBuiltIn": true
          }
       },
       "apex": {
@@ -3155,7 +3574,28 @@
                      "java:S864": "MAJOR",
                      "java:S881": "MAJOR",
                      "java:S888": "CRITICAL",
-                     "java:S923": "INFO"
+                     "java:S923": "INFO",
+                     "xml:AssertJ_3_4_1_forbidden": {
+                        "severity": "MAJOR"
+                     },
+                     "xml:Forbidden_to_use_Jackson_5_11": {
+                        "severity": "MAJOR"
+                     },
+                     "xml:S3282": {
+                        "severity": "BLOCKER"
+                     },
+                     "xml:S3373": {
+                        "severity": "MINOR"
+                     },
+                     "xml:S3419": {
+                        "severity": "MINOR"
+                     },
+                     "xml:S3420": {
+                        "severity": "MINOR"
+                     },
+                     "xml:S3423": {
+                        "severity": "MINOR"
+                     }
                   }
                },
                "All security rules": {
@@ -3257,6 +3697,7 @@
                         }
                      }
                   },
+                  "isDefault": true,
                   "rules": {
                      "java:Don_t_use_offensive_words_in_comments": "MAJOR",
                      "java:S1109": "MINOR",
@@ -3291,8 +3732,7 @@
                   }
                }
             },
-            "isBuiltIn": true,
-            "isDefault": true
+            "isBuiltIn": true
          }
       },
       "js": {
@@ -3579,10 +4019,10 @@
       },
       "json": {
          "Sonar way": {
-            "isBuiltIn": true,
-            "isDefault": true
+            "isBuiltIn": true
          },
          "SonarQube Way": {
+            "isDefault": true,
             "rules": {}
          }
       },
@@ -3598,10 +4038,10 @@
             "isDefault": true
          },
          "detekt active": {
-            "rules": {}
+            "isBuiltIn": true
          },
          "detekt all": {
-            "rules": {}
+            "isBuiltIn": true
          }
       },
       "neutral": {
@@ -3944,6 +4384,7 @@
          "Sonar way": {
             "children": {
                "Python Olivier": {
+                  "isDefault": true,
                   "permissions": {
                      "users": "olivierk"
                   },
@@ -4031,8 +4472,7 @@
                   }
                }
             },
-            "isBuiltIn": true,
-            "isDefault": true
+            "isBuiltIn": true
          }
       },
       "rpg": {
@@ -4085,6 +4525,7 @@
       },
       "vb": {
          "Olivier way": {
+            "isDefault": true,
             "rules": {
                "common-vb:DuplicatedBlocks": "MAJOR",
                "vb:ParseError": "MAJOR",
@@ -4172,8 +4613,7 @@
             }
          },
          "Sonar way": {
-            "isBuiltIn": true,
-            "isDefault": true
+            "isBuiltIn": true
          }
       },
       "vbnet": {
@@ -4192,6 +4632,7 @@
          "Sonar way": {
             "children": {
                "Olivier": {
+                  "isDefault": true,
                   "rules": {
                      "xml:Check_any_tag": "MAJOR",
                      "xml:Test_XPATH": "MAJOR",
@@ -4200,11 +4641,10 @@
                   }
                }
             },
-            "isBuiltIn": true,
-            "isDefault": true
+            "isBuiltIn": true
          },
          "Sonar way Apigee": {
-            "rules": {}
+            "isBuiltIn": true
          }
       },
       "yaml": {
@@ -4375,7 +4815,7 @@
    "users": {
       "admin": {
          "email": "olivier.korach@sonarsource.com",
-         "groups": "CI Tools, sonar-administrators",
+         "groups": "CI Tools, Team Project Admins, sonar-administrators",
          "local": true,
          "name": "Administrator"
       },
@@ -4447,7 +4887,7 @@
          "groups": "CI Tools, Team Project Admins, Team Tech Leads",
          "local": true,
          "name": "olivierk",
-         "scmAccounts": "olivier.korach@korach.com"
+         "scmAccounts": "olivier.korach@sonarsource.com"
       },
       "simon.brandhof@sonarsource.com": {
          "email": "simon.brandhof@sonarsource.com",
