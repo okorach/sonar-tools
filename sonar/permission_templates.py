@@ -88,7 +88,7 @@ class PermissionTemplate(sqobject.SqObject):
         desc = pt_data.get("description", None)
         pattern = pt_data.get("pattern", None)
         params = {"id": self.key, "name": name, "description": desc, "projectKeyPattern": pattern}
-        utilities.logger.info("Updating %s, %s with %s", self.key, self.name, str(params))
+        utilities.logger.info("Updating %s", str(self))
         self.post(_UPDATE_API, params=params)
         if name is not None:
             _MAP.pop(self.name, None)
