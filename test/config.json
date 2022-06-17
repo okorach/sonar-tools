@@ -582,7 +582,7 @@
             "pattern": "",
             "permissions": {
                "groups": {
-                  "sonar-administrators": "admin, issueadmin, securityhotspotadmin",
+                  "sonar-administrators": "admin, applicationcreator, issueadmin, portfoliocreator, securityhotspotadmin",
                   "sonar-users": "codeviewer, user"
                }
             }
@@ -611,11 +611,13 @@
       },
       "permissions": {
          "groups": {
-            "Anyone": "provisioning, scan",
             "CI Tools": "provisioning, scan",
             "Language Experts": "profileadmin",
             "sonar-administrators": "admin, applicationcreator, gateadmin, portfoliocreator, profileadmin, provisioning, scan",
             "sonar-users": "applicationcreator, portfoliocreator"
+         },
+         "users": {
+            "admin": "admin"
          }
       },
       "sastConfig": {
@@ -1226,7 +1228,7 @@
          }
       },
       "demo:azdo-dotnet": {
-         "name": "Lloyds .Net core porject",
+         "name": "AzDO .Net Core project",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
@@ -1279,7 +1281,7 @@
          }
       },
       "demo:azdo-gradle": {
-         "name": "Llloyds gradle project",
+         "name": "AzDO / Gradle",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
@@ -1351,7 +1353,7 @@
             "repository": "demo-monorepo",
             "slug": "demo-azdo"
          },
-         "name": "AzDO / Mono / .Net Core",
+         "name": "AzDO / Monorepo / .Net Core",
          "permissions": {
             "groups": {
                "CI Tools": "scan",
@@ -3172,7 +3174,7 @@
                "My way": {
                   "isDefault": true,
                   "permissions": {
-                     "groups": "Spacers, Team Tech Leads"
+                     "groups": "Team Tech Leads"
                   },
                   "rules": {
                      "abap:S100": {
