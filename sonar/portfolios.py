@@ -57,9 +57,9 @@ class Portfolio(aggregations.Aggregation):
     @classmethod
     def read(cls, name, endpoint, root_key=None):
         util.logger.debug("Reading portfolio name '%s'", name)
-        #if root_key is None:
+        # if root_key is None:
         data = search_by_name(endpoint=endpoint, name=name)
-        #else:
+        # else:
         #    data = _find_sub_portfolio_by_name(name=name, data=_OBJECTS[root_key]._json)
         if data is None:
             return None
@@ -355,6 +355,7 @@ class Portfolio(aggregations.Aggregation):
                 o.set_parent(self.key)
                 o.update(subp, root_key)
 
+
 def count(endpoint=None):
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
@@ -520,7 +521,7 @@ def export(endpoint):
             exported_portfolios[k] = p.export()
             exported_portfolios[k].pop("key")
         else:
-            util.logger.info("Skipping export of %s", str(p))
+            util.logger.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
         i += 1
         if i % 50 == 0 or i == nb_portfolios:
             util.logger.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
@@ -529,6 +530,7 @@ def export(endpoint):
 
 def recompute(endpoint):
     endpoint.post("views/refresh")
+
 
 def _find_sub_portfolio(key, data):
     for subp in data.get("subViews", []):
