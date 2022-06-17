@@ -52,8 +52,7 @@ class Project(components.Component):
         self.visibility = None
         self.main_branch_last_analysis_date = "undefined"
         self.all_branches_last_analysis_date = "undefined"
-        self._user_permissions = None
-        self._group_permissions = None
+        self._permissions = None
         self.branches = None
         self.pull_requests = None
         self._ncloc_with_branches = None
@@ -167,14 +166,6 @@ class Project(components.Component):
                 self.pull_requests.append(pull_requests.get_object(p["key"], self, p))
         return self.pull_requests
 
-    def permissions(self, perm_type):
-        p = perms.get(self.endpoint, perm_type)
-        if perm_type == "groups":
-            self._group_permissions = p
-        else:
-            self._user_permissions = p
-        return p
-
     def delete(self, api="projects/delete", params=None):
         loc = int(self.get_measure("ncloc", fallback="0"))
         util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
@@ -231,24 +222,25 @@ class Project(components.Component):
 
     def __audit_user_permissions__(self, audit_settings):
         problems = []
-        counts = perms.counts(self.permissions("users"), perms.PROJECT_PERMISSIONS)
+        user_count = self._permissions.count("users")
         max_users = audit_settings["audit.projects.permissions.maxUsers"]
-        if counts["overall"] > max_users:
+        if user_count > max_users:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
-            msg = rule.msg.format(str(self), counts["overall"])
+            msg = rule.msg.format(str(self), user_count)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_admins = audit_settings["audit.projects.permissions.maxAdminUsers"]
-        if counts["admin"] > max_admins:
+        admin_count = self._permissions.count("users", ("admin"))
+        if admin_count > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_USERS)
-            msg = rule.msg.format(str(self), counts["admin"], max_admins)
+            msg = rule.msg.format(str(self), admin_count, max_admins)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         return problems
 
     def __audit_group_permissions__(self, audit_settings):
         problems = []
-        groups = self.permissions("groups")
+        groups = counts = self.permissions().read().to_json(perm_type="groups")
         for gr in groups:
             p = gr["permissions"]
             if not p:
@@ -265,45 +257,48 @@ class Project(components.Component):
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
             else:
                 util.logger.info(
-                    "Group '%s' has browse permissions on %s. \
-Is this normal ?",
+                    "Group '%s' has browse permissions on %s. Is this normal ?",
                     gr["name"],
                     str(self.key),
                 )
 
-        counts = perms.counts(groups, perms.PROJECT_PERMISSIONS)
         max_perms = audit_settings["audit.projects.permissions.maxGroups"]
-        if counts["overall"] > max_perms:
+        counter = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
+        if counter > max_perms:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
-            msg = rule.msg.format(str(self), counts["overall"], max_perms)
+            msg = rule.msg.format(str(self), counter, max_perms)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_scan = audit_settings["audit.projects.permissions.maxScanGroups"]
-        if counts["scan"] > max_scan:
+        counter = self.permissions().count(perm_type="groups", perm_filter=("scan"))
+        if counter > max_scan:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_SCAN_GROUPS)
             msg = rule.msg.format(str(self), counts["scan"], max_scan)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_issue_adm = audit_settings["audit.projects.permissions.maxIssueAdminGroups"]
-        if counts["issueadmin"] > max_issue_adm:
+        counter = self._permissions.count(perm_type="groups", perm_filter=("issueadmin"))
+        if counter > max_issue_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
             msg = rule.msg.format(str(self), counts["issueadmin"], max_issue_adm)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_spots_adm = audit_settings["audit.projects.permissions.maxHotspotAdminGroups"]
-        if counts["securityhotspotadmin"] > max_spots_adm:
+        counter = self._permissions.count(perm_type="groups", perm_filter=("securityhotspotadmin"))
+        if counter > max_spots_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_HOTSPOT_ADM_GROUPS)
-            msg = rule.msg.format(str(self), counts["securityhotspotadmin"], max_spots_adm)
+            msg = rule.msg.format(str(self), counter, max_spots_adm)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_admins = audit_settings["audit.projects.permissions.maxAdminGroups"]
-        if counts["admin"] > max_admins:
+        counter = self._permissions.count(perm_type="groups", perm_filter=("admin"))
+        if counter > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_GROUPS)
             problems.append(
                 pb.Problem(
                     rule.type,
                     rule.severity,
-                    rule.msg.format(str(self), counts["admin"], max_admins),
+                    rule.msg.format(str(self), counter, max_admins),
                     concerned_object=self,
                 )
             )
@@ -522,10 +517,7 @@ Is this normal ?",
         return custom_measures.search(self.endpoint, self.key)
 
     def get_findings(self, branch=None, pr=None):
-        if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in (
-            "enterprise",
-            "datacenter",
-        ):
+        if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ("enterprise", "datacenter"):
             return {}
 
         findings_list = {}
@@ -663,14 +655,6 @@ Is this normal ?",
             return None
         return qp_json
 
-    def __export_get_permissions(self):
-        the_perms = {}
-        for ptype in ("users", "groups"):
-            permiss = perms.simplify(perms.get(self.endpoint, ptype, projectKey=self.key), ptype)
-            if len(permiss) > 0:
-                the_perms[ptype] = permiss
-        return the_perms
-
     def __get_branch_export(self):
         branch_data = {}
         my_branches = self.get_branches()
@@ -701,7 +685,7 @@ Is this normal ?",
         json_data[settings.NEW_CODE_PERIOD] = self.new_code()
         json_data["qualityProfiles"] = self.__export_get_qp()
         json_data["links"] = self.links()
-        json_data["permissions"] = self.__export_get_permissions()
+        json_data["permissions"] = self.permissions().to_json(csv=True)
         json_data["branches"] = self.__get_branch_export()
         json_data["tags"] = util.list_to_csv(self.tags(), separator=", ")
         (json_data["qualityGate"], qg_is_default) = self.quality_gate()
@@ -735,8 +719,13 @@ Is this normal ?",
             nc[b["branchKey"]] = new_code
         return nc
 
+    def permissions(self):
+        if self._permissions is None:
+            self._permissions = perms.ProjectPermissions(project_object=self)
+        return self._permissions
+
     def set_permissions(self, data):
-        perms.set_permissions(self.endpoint, data.get("permissions", None), project_key=self.key)
+        self.permissions().set(data)
 
     def set_links(self, data):
         params = {"projectKey": self.key}
@@ -862,7 +851,7 @@ Is this normal ?",
         self.post("alm_settings/set_azure_binding", params=params)
 
     def update(self, data):
-        self.set_permissions(data)
+        self.set_permissions(data.get("permissions", None))
         self.set_links(data)
         self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))

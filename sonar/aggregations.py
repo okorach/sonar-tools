@@ -32,6 +32,7 @@ class Aggregation(comp.Component):
     def __init__(self, key, endpoint, data=None):
         self._nbr_projects = None
         self._visibility = None
+        self._permissions = None
         super().__init__(key, endpoint)
 
     def _load(self, data=None, api=None, key_name="key"):

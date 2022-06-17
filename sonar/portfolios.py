@@ -57,9 +57,9 @@ class Portfolio(aggregations.Aggregation):
     @classmethod
     def read(cls, name, endpoint, root_key=None):
         util.logger.debug("Reading portfolio name '%s'", name)
-        #if root_key is None:
+        # if root_key is None:
         data = search_by_name(endpoint=endpoint, name=name)
-        #else:
+        # else:
         #    data = _find_sub_portfolio_by_name(name=name, data=_OBJECTS[root_key]._json)
         if data is None:
             return None
@@ -100,6 +100,7 @@ class Portfolio(aggregations.Aggregation):
         self._projects = None
         self._tags = None
         self._sub_portfolios = None
+        self._permissions = None
         self.parent_key = data.get("parentKey")
         self.root_key = self.key if root_key is None else root_key
         _OBJECTS[self.key] = self
@@ -244,16 +245,22 @@ class Portfolio(aggregations.Aggregation):
             _PROJECT_SELECTION_REGEXP: self.regexp(),
             _PROJECT_SELECTION_BRANCH: self._selection_branch,
             _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
-            "permissions": permissions.export(self.endpoint, self.key),
+            "permissions": self.permissions().export(),
         }
         json_data.update(self.sub_portfolios())
 
         return util.remove_nones(json_data)
 
+    def permissions(self):
+        if self._permissions is None and self.portfolio_type == "VW":
+            # No permissions for SVW
+            self._permissions = permissions.PortfolioPermissions(self)
+        return self._permissions
+
     def set_permissions(self, portfolio_perms):
-        if portfolio_perms is None or len(portfolio_perms) == 0:
-            return
-        permissions.set_permissions(self.endpoint, portfolio_perms, project_key=self.key)
+        if self.portfolio_type == "VW":
+            # No permissions for SVW
+            self.permissions().set(portfolio_perms)
 
     def set_component_tags(self, tags, api):
         util.logger.warning("Can't set tags on portfolios, operation skipped...")
@@ -350,6 +357,7 @@ class Portfolio(aggregations.Aggregation):
                         util.logger.info("Can't create subport %s to parent %s", name, self.key)
                 o.set_parent(self.key)
                 o.update(subp, root_key)
+
 
 def count(endpoint=None):
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
@@ -516,7 +524,7 @@ def export(endpoint):
             exported_portfolios[k] = p.export()
             exported_portfolios[k].pop("key")
         else:
-            util.logger.info("Skipping export of %s", str(p))
+            util.logger.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
         i += 1
         if i % 50 == 0 or i == nb_portfolios:
             util.logger.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
@@ -525,6 +533,7 @@ def export(endpoint):
 
 def recompute(endpoint):
     endpoint.post("views/refresh")
+
 
 def _find_sub_portfolio(key, data):
     for subp in data.get("subViews", []):

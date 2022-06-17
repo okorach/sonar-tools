@@ -64,8 +64,10 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         new_params["p"] = page
         data = json.loads(endpoint.get(api, params=new_params).text)
         for obj in data[returned_field]:
-            if str(object_class) in ("Group", "Portfolio", "QualityProfile"):
-                objects_list[obj[key_field]] = object_class.load(obj[key_field], endpoint, data=obj)
+            if object_class.__name__ in ("Portfolio", "Groups"):
+                objects_list[obj[key_field]] = object_class.load(name=obj[key_field], endpoint=endpoint, data=obj)
+            elif object_class.__name__ == "QualityProfile":
+                objects_list[obj[key_field]] = object_class.load(name=obj["name"], language=obj["language"], endpoint=endpoint, data=obj)
             else:
                 objects_list[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
         nb_pages = utilities.nbr_pages(data)

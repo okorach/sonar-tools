@@ -33,7 +33,7 @@ API_RULES_SEARCH = "rules/search"
 class Rule(sq.SqObject):
     def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
-        utilities.logger.debug("Creating rule from %s", utilities.json_dump(data))
+        utilities.logger.debug("Creating rule %s", key)  # utilities.json_dump(data))
         self._json = data
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)

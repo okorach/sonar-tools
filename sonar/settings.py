@@ -49,6 +49,7 @@ CATEGORIES = (
 )
 
 NEW_CODE_PERIOD = "newCodePeriod"
+PROJECTS_DEFAULT_VISIBILITY = "projects.default.visibility"
 
 DEFAULT_SETTING = "__default__"
 
@@ -180,7 +181,7 @@ class Setting(sqobject.SqObject):
         m = re.match(r"^sonar\.forceAuthentication$", self.key)
         if m:
             return (AUTH_SETTINGS, None)
-        if self.key != NEW_CODE_PERIOD and not re.match(
+        if self.key not in (NEW_CODE_PERIOD, PROJECTS_DEFAULT_VISIBILITY) and not re.match(
             r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|"
             r"sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|"
             r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks).*$",
@@ -205,7 +206,6 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
         params["component"] = project.key
     if include_not_set:
         data = json.loads(endpoint.get(_API_LIST, params=params).text)
-        settings_dict = {}
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
@@ -229,6 +229,13 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
             continue
         o = Setting(s["key"], endpoint=endpoint, data=s, project=project)
         settings_dict[o.key] = o
+    if project is None:
+        # Hack since projects.default.visibility is not returned by settings/list_definitions
+        params.update({"keys": PROJECTS_DEFAULT_VISIBILITY})
+        data = json.loads(endpoint.get(_API_GET, params=params).text)
+        for s in data["settings"]:
+            o = Setting(s["key"], endpoint=endpoint, data=s, project=project)
+            settings_dict[o.key] = o
     o = get_new_code_period(endpoint, project)
     settings_dict[o.key] = o
     return settings_dict
@@ -274,13 +281,24 @@ def string_to_new_code(value):
 
 
 def set_new_code(endpoint, nc_type, nc_value, project_key=None, branch=None):
+    util.logger.info(
+        "Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value)
+    )
     return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
+
+
+def set_project_default_visibility(endpoint, visibility):
+    util.logger.info("Setting setting '%s' to value '%s'", PROJECTS_DEFAULT_VISIBILITY, str(visibility))
+    r = endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility})
+    util.logger.debug("Response = %s", str(r))
 
 
 def set_setting(endpoint, key, value, project=None, branch=None):
     if value is None or value == "":
         # return endpoint.reset_setting(key)
         return None
+    if key == PROJECTS_DEFAULT_VISIBILITY:
+        return set_project_default_visibility(endpoint=endpoint, visibility=value)
 
     value = decode(key, value)
     util.logger.info("Setting setting '%s' to value '%s'", key, str(value))

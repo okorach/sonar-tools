@@ -35,8 +35,6 @@
 """
 import sys
 import os
-
-
 from sonar import version, env, projects, options
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
@@ -169,9 +167,8 @@ def __dump_compact(finding_list, file, **kwargs):
         print(util.json_dump(new_dict, indent=1), file=f)
 
 
-def __get_list(project_key, list_str, list_type):
+def __get_list(project, list_str, list_type):
     if list_str == "*":
-        project = projects.get_object(project_key)
         if list_type == "branch":
             list_array = project.get_branches()
         else:
@@ -328,22 +325,22 @@ def main():
     )
     nbr_findings = 0
     __write_header(file, fmt)
-    for project_key in project_list:
+    for project in project_list.values():
         all_findings = {}
-        branches = __get_list(project_key, kwargs.get("branches", None), "branch")
-        prs = __get_list(project_key, kwargs.get("pullRequests", None), "pullrequest")
+        branches = __get_list(project, kwargs.get("branches", None), "branch")
+        prs = __get_list(project, kwargs.get("pullRequests", None), "pullrequest")
         if branches:
             for b in branches:
                 params["branch"] = b.name
-                all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
+                all_findings.update(__get_project_findings(project.key, params=params, endpoint=sqenv))
         params.pop("branch", None)
         if prs:
             for p in prs:
                 params["pullRequest"] = p.key
-                all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
+                all_findings.update(__get_project_findings(project.key, params=params, endpoint=sqenv))
         params.pop("pullRequest", None)
         if not (branches or prs):
-            all_findings.update(__get_project_findings(project_key, params=params, endpoint=sqenv))
+            all_findings.update(__get_project_findings(project.key, params=params, endpoint=sqenv))
 
         __dump_findings(all_findings, file, fmt, **kwargs)
         nbr_findings += len(all_findings)
