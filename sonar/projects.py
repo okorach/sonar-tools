@@ -262,7 +262,6 @@ class Project(components.Component):
                     str(self.key),
                 )
 
-        nb_groups = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
         max_perms = audit_settings["audit.projects.permissions.maxGroups"]
         counter = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
         if counter > max_perms:
