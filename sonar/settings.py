@@ -281,14 +281,17 @@ def string_to_new_code(value):
 
 
 def set_new_code(endpoint, nc_type, nc_value, project_key=None, branch=None):
-    util.logger.info("Setting new code period for project '%s' branch '%s' to value '%s = %s'",
-                     str(project_key), str(branch), str(nc_type), str(nc_value))
+    util.logger.info(
+        "Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value)
+    )
     return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
+
 
 def set_project_default_visibility(endpoint, visibility):
     util.logger.info("Setting setting '%s' to value '%s'", PROJECTS_DEFAULT_VISIBILITY, str(visibility))
     r = endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility})
     util.logger.debug("Response = %s", str(r))
+
 
 def set_setting(endpoint, key, value, project=None, branch=None):
     if value is None or value == "":
