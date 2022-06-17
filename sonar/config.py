@@ -23,7 +23,6 @@
 """
 import sys
 import datetime
-import pytz
 from sonar import (
     env,
     version,
