@@ -218,8 +218,8 @@ class QualityGate(sq.SqObject):
             json_data["isBuiltIn"] = True
         else:
             json_data["conditions"] = self.conditions(encoded=True)
-            json_data["permissions"] = util.remove_nones(self.permissions().to_json(csv=True))
-        return json_data
+            json_data["permissions"] = self.permissions().export()
+        return util.remove_nones(json_data)
 
 
 def audit(endpoint=None, audit_settings=None):
