@@ -252,12 +252,15 @@ class Portfolio(aggregations.Aggregation):
         return util.remove_nones(json_data)
 
     def permissions(self):
-        if self._permissions is None:
+        if self._permissions is None and self.portfolio_type == "VW":
+            # No permissions for SVW
             self._permissions = permissions.PortfolioPermissions(self)
         return self._permissions
 
     def set_permissions(self, portfolio_perms):
-        self.permissions().set(portfolio_perms)
+        if self.portfolio_type == "VW":
+            # No permissions for SVW
+            self.permissions().set(portfolio_perms)
 
     def set_component_tags(self, tags, api):
         util.logger.warning("Can't set tags on portfolios, operation skipped...")
