@@ -47,7 +47,7 @@ _TEMPLATES = 2
 _QG = 3
 _QP = 4
 _APPS = 5
-_PORTFOLIOS = 5
+_PORTFOLIOS = 6
 
 OBJECTS_WITH_PERMISSIONS = (_GLOBAL, _PROJECTS, _TEMPLATES, _QG, _QP, _APPS, _PORTFOLIOS)
 PERMISSION_TYPES = ("users", "groups")
@@ -132,9 +132,18 @@ class Permissions(ABC):
     def compare(self, other_perms):
         return {"added": diff(self.permissions, other_perms), "removed": diff(other_perms, self.permissions)}
 
+    def _remove_aggregations_creator(self):
+        # Hack: SonarQube returns application/portfoliocreator even for objects that don't have this permission
+        # so these perms needs to be removed manually
+        for p in PERMISSION_TYPES:
+            for u, perms in self.permissions[p].items():
+                for unwanted in ('applicationcreator', 'portfoliocreator'):
+                    if unwanted in perms:
+                        perms.remove(unwanted)
+                self.permissions[p][u] = perms
+
     def count(self, perm_type=None, perm_filter=None):
         perms = PERMISSION_TYPES if perm_type is None else (perm_type)
-        perm_list = {}
         elem_counter, perm_counter = 0, 0
         for ptype in perms:
             for elem_perms in self.permissions.get(ptype, {}).values():
@@ -175,7 +184,7 @@ class Permissions(ABC):
             return True
         result = False
         params = extra_params.copy()
-        for u, perms in perms_dict:
+        for u, perms in perms_dict.items():
             params[set_field] = u
             for p in perms:
                 params["permission"] = p
@@ -206,9 +215,10 @@ class GlobalPermissions(Permissions):
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
-            to_remove = diff(self.permissions[p], new_perms)
+            decoded_perms = {k: decode(v) for k, v in new_perms[p].items()}
+            to_remove = diff(self.permissions[p], decoded_perms)
             self._post_api(GlobalPermissions.API_REMOVE[p], GlobalPermissions.API_SET_FIELD[p], to_remove)
-            to_add = diff(new_perms, self.permissions[p])
+            to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(GlobalPermissions.API_SET[p], GlobalPermissions.API_SET_FIELD[p], to_add)
         self.read()
         return self
@@ -238,6 +248,7 @@ class TemplatePermissions(Permissions):
                 templateName=self.concerned_object.name,
                 ps=MAX_PERMS,
             )
+        self._remove_aggregations_creator()
         return self
 
     def set(self, new_perms):
@@ -246,11 +257,12 @@ class TemplatePermissions(Permissions):
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
-            to_remove = diff(self.permissions[p], new_perms[p])
+            decoded_perms = {k: decode(v) for k, v in new_perms[p].items()}
+            to_remove = diff(self.permissions[p], decoded_perms)
             self._post_api(
                 TemplatePermissions.API_REMOVE[p], TemplatePermissions.API_SET_FIELD[p], to_remove, templateName=self.concerned_object.name
             )
-            to_add = diff(new_perms[p], self.permissions[p])
+            to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(TemplatePermissions.API_SET[p], TemplatePermissions.API_SET_FIELD[p], to_add, templateName=self.concerned_object.name)
         self.read()
         return self
@@ -270,6 +282,17 @@ class QualityGatePermissions(Permissions):
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
 
+    def _post_api(self, api, set_field, perms_dict, **extra_params):
+        if perms_dict is None:
+            return True
+        result = False
+        params = extra_params.copy()
+        for u in perms_dict:
+            params[set_field] = u
+            r = self.endpoint.post(api, params=params)
+            result = result and r.ok
+        return result
+
     def read(self, perm_type=None):
         self.permissions = {p: [] for p in PERMISSION_TYPES}
         if self.concerned_object.is_built_in:
@@ -282,12 +305,11 @@ class QualityGatePermissions(Permissions):
             self.permissions[p] = self._get_api(
                 QualityGatePermissions.API_GET[p], p, QualityGatePermissions.API_GET_FIELD[p], gateName=self.concerned_object.name
             )
-        utilities.logger.debug("READ %s = %s", str(self), utilities.json_dump(self.permissions))
         return self
 
     def set(self, new_perms):
         if self.concerned_object.is_built_in:
-            utilities.logger.warning("Can set %s because it's built-in", str(self))
+            utilities.logger.warning("Can't set %s because it's built-in", str(self))
             self.permissions = {p: [] for p in PERMISSION_TYPES}
             return self
         if self.endpoint.version() < (9, 2, 0):
@@ -299,11 +321,12 @@ class QualityGatePermissions(Permissions):
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
-            to_remove = diff(self.permissions[p], new_perms[p])
+            decoded_perms = decode(new_perms[p])
+            to_remove = diffarray(self.permissions[p], decoded_perms)
             self._post_api(
                 QualityGatePermissions.API_REMOVE[p], QualityGatePermissions.API_SET_FIELD[p], to_remove, gateName=self.concerned_object.name
             )
-            to_add = diff(new_perms[p], self.permissions[p])
+            to_add = diffarray(decoded_perms, self.permissions[p])
             self._post_api(QualityGatePermissions.API_SET[p], QualityGatePermissions.API_SET_FIELD[p], to_add, gateName=self.concerned_object.name)
         self.read()
         return self
@@ -317,7 +340,6 @@ class QualityGatePermissions(Permissions):
             if dperms is not None and len(dperms) > 0:
                 perms[p] = encode(self.permissions.get(p, None))
         return perms if len(perms) > 0 else None
-        # return {p: utilities.list_to_csv(self.permissions.get(p, None), ", ") for p in _normalize(perm_type) if len(self.permissions.get(p, None)) > 0}
 
     def _get_api(self, api, perm_type, ret_field, **extra_params):
         perms = []
@@ -344,7 +366,7 @@ class QualityProfilePermissions(Permissions):
     API_REMOVE = {"users": "qualityprofiles/remove_user", "groups": "qualityprofiles/remove_group"}
     API_GET_ID = "qualityProfile"
     API_GET_FIELD = {"users": "login", "groups": "name"}
-    API_SET_FIELD = {"users": "login", "groups": "name"}
+    API_SET_FIELD = {"users": "login", "groups": "group"}
 
     def __init__(self, qp_object):
         self.concerned_object = qp_object
@@ -370,6 +392,17 @@ class QualityProfilePermissions(Permissions):
                 break
             page, nbr_pages = page + 1, utilities.nbr_pages(data)
         return perms
+
+    def _post_api(self, api, set_field, perms_dict, **extra_params):
+        if perms_dict is None:
+            return True
+        result = False
+        params = extra_params.copy()
+        for u in perms_dict:
+            params[set_field] = u
+            r = self.endpoint.post(api, params=params)
+            result = result and r.ok
+        return result
 
     def read(self, perm_type=None):
         self.permissions = {p: [] for p in PERMISSION_TYPES}
@@ -401,7 +434,8 @@ class QualityProfilePermissions(Permissions):
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
-            to_remove = diff(self.permissions[p], new_perms[p])
+            decoded_perms = decode(new_perms[p])
+            to_remove = diffarray(self.permissions[p], decoded_perms)
             self._post_api(
                 QualityProfilePermissions.API_REMOVE[p],
                 QualityProfilePermissions.API_SET_FIELD[p],
@@ -409,7 +443,7 @@ class QualityProfilePermissions(Permissions):
                 qualityProfile=self.concerned_object.name,
                 language=self.concerned_object.language,
             )
-            to_add = diff(new_perms[p], self.permissions[p])
+            to_add = diffarray(decoded_perms, self.permissions[p])
             return self._post_api(
                 QualityProfilePermissions.API_SET[p],
                 QualityProfilePermissions.API_SET_FIELD[p],
@@ -447,6 +481,7 @@ class ProjectPermissions(Permissions):
             self.permissions[p] = self._get_api(
                 ProjectPermissions.API_GET[p], p, ProjectPermissions.API_GET_FIELD[p], projectKey=self.concerned_object.key, ps=MAX_PERMS
             )
+        self._remove_aggregations_creator()
         return self
 
     def set(self, new_perms):
@@ -455,9 +490,10 @@ class ProjectPermissions(Permissions):
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
-            to_remove = diff(self.permissions[p], new_perms[p])
+            decoded_perms = {k: decode(v) for k, v in new_perms[p].items()}
+            to_remove = diff(self.permissions[p], decoded_perms)
             self._post_api(ProjectPermissions.API_REMOVE[p], ProjectPermissions.API_SET_FIELD[p], to_remove, projectKey=self.concerned_object.key)
-            to_add = diff(new_perms[p], self.permissions[p])
+            to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(ProjectPermissions.API_SET[p], ProjectPermissions.API_SET_FIELD[p], to_add, projectKey=self.concerned_object.key)
         self.read()
         return self
@@ -519,7 +555,7 @@ def apply_api(endpoint, api, ufield, uvalue, ofield, ovalue, perm_list):
         endpoint.post(api, params={ufield: uvalue, ofield: ovalue, "permission": p})
 
 
-def diff(perms_1, perms_2):
+def diff_full(perms_1, perms_2):
     diff_perms = perms_1.copy()
     for perm_type in ("users", "groups"):
         for elem, perms in perms_2:
@@ -529,4 +565,24 @@ def diff(perms_1, perms_2):
                 if p not in diff_perms[perm_type][elem]:
                     continue
                 diff_perms[perm_type][elem].remove(p)
+    return diff_perms
+
+
+def diff(perms_1, perms_2):
+    diff_perms = perms_1.copy()
+    for elem, perms in perms_2.items():
+        if elem not in perms_1:
+            continue
+        for p in perms:
+            if p not in diff_perms[elem]:
+                continue
+            diff_perms[elem].remove(p)
+    return diff_perms
+
+
+def diffarray(perms_1, perms_2):
+    diff_perms = perms_1.copy()
+    for elem in perms_2:
+        if elem in diff_perms:
+            diff_perms.remove(elem)
     return diff_perms
