@@ -265,7 +265,7 @@ class Project(components.Component):
         nb_groups = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
         max_perms = audit_settings["audit.projects.permissions.maxGroups"]
         counter = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
-        if  counter > max_perms:
+        if counter > max_perms:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
             msg = rule.msg.format(str(self), counter, max_perms)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
