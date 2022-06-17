@@ -192,7 +192,7 @@ class QualityProfile(sq.SqObject):
                 util.log_and_exit(r)
 
     def update(self, data):
-        util.logger.debug("Updating %s with %s", str(self), util.json_dump(data))
+        util.logger.info("Updating %s", str(self))
         if self.is_built_in:
             util.logger.info("Not updating built-in %s", str(self))
         else:
