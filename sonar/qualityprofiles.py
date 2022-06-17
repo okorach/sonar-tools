@@ -66,7 +66,7 @@ class QualityProfile(sq.SqObject):
     @classmethod
     def load(cls, name, language, endpoint, data):
         util.logger.debug("Loading quality profile '%s' of language '%s'", name, language)
-        key = name_to_key(name, language)
+        key = data["key"]  # name_to_key(name, language)
         o = cls(key=key, endpoint=endpoint, data=data)
         return o
 
@@ -153,7 +153,8 @@ class QualityProfile(sq.SqObject):
             return self._rules
         self._rules = {}
         page, nb_pages = 1, 1
-        params = {"activation": "true", "qprofile": self.key, "s": "key", "ps": 500}
+        # TODO: Filter on QP key for speed
+        params = {"activation": "true", "qprofile": self.key, "s": "key", "languages": self.language, "ps": 500}
         while page <= nb_pages:
             params["p"] = page
             data = json.loads(self.get("rules/search", params=params).text)
