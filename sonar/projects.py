@@ -670,7 +670,7 @@ class Project(components.Component):
         # If there is only 1 branch with no specific config except being main, don't return anything
         if len(branch_data) == 1 and len(exp) <= 1:
             return None
-        return branch_data
+        return util.remove_nones(branch_data)
 
     def export(self, settings_list=None, include_inherited=False, full_export=False):
         util.logger.info("Exporting %s", str(self))

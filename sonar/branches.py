@@ -125,7 +125,8 @@ class Branch(components.Component):
             data["keepWhenInactive"] = True
         if full_export:
             data.update({"name": self.name, "project": self.project.key})
-        return util.remove_nones(data)
+        data = util.remove_nones(data)
+        return None if len(data) == 0 else data
 
     def url(self):
         return f"{self.endpoint.url}/dashboard?id={self.project.key}&branch={requests.utils.quote(self.name)}"
