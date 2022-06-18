@@ -218,17 +218,22 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
     else:
         params["keys"] = util.csv_normalize(settings_list)
     data = json.loads(endpoint.get(_API_GET, params=params).text)
-    for s in data["settings"]:
-        skip = False
-        for priv in _PRIVATE_SETTINGS:
-            if s["key"].startswith(priv):
-                skip = True
-                break
-        if skip:
-            util.logger.debug("Skipping private setting %s", s["key"])
-            continue
-        o = Setting(s["key"], endpoint=endpoint, data=s, project=project)
-        settings_dict[o.key] = o
+    settings_type_list = ["settings"]
+    # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
+    if project is None:
+        settings_type_list.append("setSecuredSettings")
+    for setting_type in settings_type_list:
+        for s in data[setting_type]:
+            if isinstance(s, str):
+                key, sdata = s, {}
+            else:
+                key, sdata = s["key"], s
+            nb_priv = sum([1 for p in _PRIVATE_SETTINGS if key.startswith(p)])
+            if nb_priv > 0:
+                util.logger.debug("Skipping private setting %s", s["key"])
+                continue
+            o = Setting(key, endpoint=endpoint, data=sdata, project=project)
+            settings_dict[o.key] = o
     if project is None:
         # Hack since projects.default.visibility is not returned by settings/list_definitions
         params.update({"keys": PROJECTS_DEFAULT_VISIBILITY})
