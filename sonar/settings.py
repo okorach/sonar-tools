@@ -248,10 +248,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
     for setting_type in settings_type_list:
         util.logger.debug("Looking at %s", setting_type)
         for s in data[setting_type]:
-            if isinstance(s, str):
-                key, sdata = s, {}
-            else:
-                key, sdata = s["key"], s
+            (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
             nb_priv = sum([1 for p in _PRIVATE_SETTINGS if key.startswith(p)])
             if nb_priv > 0:
                 util.logger.debug("Skipping private setting %s", s["key"])
@@ -259,7 +256,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
             o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
             settings_dict[o.key] = o
 
-    # Hack since projects.default.visibility is not returned by settings/list_definitions    
+    # Hack since projects.default.visibility is not returned by settings/list_definitions
     o = get_visibility(endpoint, component)
     settings_dict[o.key] = o
 
@@ -299,7 +296,6 @@ def new_code_to_string(data):
         return f"{data['type']} = {data['value']}"
 
 
-
 def get_new_code_period(endpoint, project_or_branch):
     return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
@@ -330,6 +326,7 @@ def set_visibility(endpoint, visibility, component=None):
         util.logger.info("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
         r = endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility})
         util.logger.debug("Response = %s", str(r))
+        return r
 
 def set_setting(endpoint, key, value, component=None):
     if value is None or value == "":
