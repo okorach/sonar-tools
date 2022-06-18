@@ -53,7 +53,7 @@ PROJECTS_DEFAULT_VISIBILITY = "projects.default.visibility"
 
 DEFAULT_SETTING = "__default__"
 
-_SETTINGS = {}
+_OBJECTS = {}
 
 _PRIVATE_SETTINGS = (
     "sonaranalyzer",
@@ -79,6 +79,7 @@ _INLINE_SETTINGS = (
 )
 
 _API_SET = "settings/set"
+_CREATE_API = "settings/set"
 _API_GET = "settings/values"
 _API_LIST = "settings/list_definitions"
 _API_NEW_CODE_GET = "new_code_periods/show"
@@ -86,29 +87,51 @@ _API_NEW_CODE_SET = "new_code_periods/set"
 
 
 class Setting(sqobject.SqObject):
-    def __init__(self, key, endpoint, project=None, data=None):
+    @classmethod
+    def read(cls, key, endpoint, component=None):
+        util.logger.debug("Reading setting '%s' for project '%s'", key, str(component))
+        if key == NEW_CODE_PERIOD:
+            params = get_component_params(component, name="project")
+            data = json.loads(endpoint.get(_API_NEW_CODE_GET, params=params).text)
+        else:
+            params = get_component_params(component)
+            params.update({"keys": key})
+            data = json.loads(endpoint.get(_API_GET, params=params).text)["settings"][0]
+        return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
+
+    @classmethod
+    def create(cls, key, endpoint, value=None, component=None):
+        util.logger.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
+        r = endpoint.post(_CREATE_API, params={"key": key, "component": component})
+        if not r.ok:
+            return None
+        o = cls.read(key=key, endpoint=endpoint, component=component)
+        return o
+
+    @classmethod
+    def load(cls, key, endpoint, data, component=None):
+        util.logger.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
+        uu = _uuid_p(key, component)
+        if uu in _OBJECTS:
+            util.logger.debug("Found in obj list uu = %s")
+            o = _OBJECTS[uu]
+        else:
+            o = cls(key=key, endpoint=endpoint, data=data, component=component)
+        o._load(data)
+        return o
+
+    def __init__(self, key, endpoint, component=None, data=None):
         super().__init__(key, endpoint)
-        self.project = project
+        self.component = component
         self.value = None
         self.inherited = None
-        if data is None:
-            if key == NEW_CODE_PERIOD:
-                params = {}
-                if project:
-                    params["project"] = project.key
-                resp = self.get(api=_API_NEW_CODE_GET, params=params)
-                data = json.loads(resp.text)
-            else:
-                params = {"keys": key}
-                if project:
-                    params["component"] = project.key
-                resp = self.get(_API_GET, params=params)
-                data = json.loads(resp.text)["settings"]
-        self.__load(data)
+        self._load(data)
         util.logger.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
-        _SETTINGS[self.uuid()] = self
+        _OBJECTS[self.uuid()] = self
 
-    def __load(self, data):
+    def _load(self, data):
+        if not data:
+            return
         if self.key == NEW_CODE_PERIOD:
             if data["type"] == "NUMBER_OF_DAYS":
                 self.value = int(data["value"])
@@ -126,26 +149,26 @@ class Setting(sqobject.SqObject):
             self.inherited = False
         elif "category" in data:
             self.inherited = True
-        elif self.project is not None:
+        elif self.component is not None:
             self.inherited = False
         else:
             self.inherited = True
-        if self.project is None:
+        if self.component is None:
             self.inherited = True
 
     def uuid(self):
-        return _uuid_p(self.key, self.project)
+        return _uuid_p(self.key, self.component)
 
     def __str__(self):
-        if self.project is None:
+        if self.component is None:
             return f"setting '{self.key}'"
         else:
-            return f"setting '{self.key}' of {str(self.project)}"
+            return f"setting '{self.key}' of {str(self.component)}"
 
     def set(self, value):
         params = {}
-        if self.project:
-            params["component"] = self.project.key
+        if self.component:
+            params["component"] = self.component.key
         return self.post(_API_SET, params=params)
 
     def to_json(self):
@@ -191,25 +214,20 @@ class Setting(sqobject.SqObject):
         return (GENERAL_SETTINGS, None)
 
 
-def get_object(key, endpoint=None, data=None, project=None):
-    uu = _uuid_p(key, project)
-    if uu not in _SETTINGS:
-        _ = Setting(key=key, endpoint=endpoint, data=data, project=project)
-    return _SETTINGS[uu]
+def get_object(key, component=None):
+    return _OBJECTS.get(_uuid_p(key, component), None)
 
 
-def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
+def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False):
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
-    params = {}
-    if project:
-        params["component"] = project.key
+    params = get_component_params(component)
     if include_not_set:
         data = json.loads(endpoint.get(_API_LIST, params=params).text)
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
-            o = Setting(s["key"], endpoint=endpoint, data=s, project=project)
+            o = Setting.load(key=s["key"], endpoint=endpoint, data=s, component=component)
             settings_dict[o.uuid()] = o
     if settings_list is None:
         pass
@@ -220,9 +238,11 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
     data = json.loads(endpoint.get(_API_GET, params=params).text)
     settings_type_list = ["settings"]
     # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
-    if project is None:
-        settings_type_list.append("setSecuredSettings")
+    if component is None:
+        settings_type_list = ["setSecuredSettings"]
+    settings_type_list += ["settings"]
     for setting_type in settings_type_list:
+        util.logger.debug("Looking at %s", setting_type)
         for s in data[setting_type]:
             if isinstance(s, str):
                 key, sdata = s, {}
@@ -232,26 +252,27 @@ def get_bulk(endpoint, settings_list=None, project=None, include_not_set=False):
             if nb_priv > 0:
                 util.logger.debug("Skipping private setting %s", s["key"])
                 continue
-            o = Setting(key, endpoint=endpoint, data=sdata, project=project)
+            o = Setting.load(key=key, endpoint=endpoint, component=params.get("component", None), data=sdata)
             settings_dict[o.key] = o
-    if project is None:
+    if component is None:
         # Hack since projects.default.visibility is not returned by settings/list_definitions
         params.update({"keys": PROJECTS_DEFAULT_VISIBILITY})
         data = json.loads(endpoint.get(_API_GET, params=params).text)
         for s in data["settings"]:
-            o = Setting(s["key"], endpoint=endpoint, data=s, project=project)
+            o = Setting.load(key=s["key"], endpoint=endpoint, component=params.get("component", None), data=s)
             settings_dict[o.key] = o
-    o = get_new_code_period(endpoint, project)
+
+    o = get_new_code_period(endpoint, component)
     settings_dict[o.key] = o
     return settings_dict
 
 
 def get_all(endpoint, project=None):
-    return get_bulk(endpoint, project=project, include_not_set=True)
+    return get_bulk(endpoint, component=project, include_not_set=True)
 
 
-def get_new_code_period(endpoint, project):
-    return get_object(key=NEW_CODE_PERIOD, endpoint=endpoint, project=project)
+def get_new_code_period(endpoint, project_or_branch):
+    return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
 
 def uuid(key, project_key=None):
@@ -262,9 +283,9 @@ def uuid(key, project_key=None):
         return f"{key}#{project_key}"
 
 
-def _uuid_p(key, project):
+def _uuid_p(key, component):
     """Computes uuid for a setting"""
-    pk = None if project is None else project.key
+    pk = None if component is None else component.key
     return uuid(key, pk)
 
 
@@ -357,3 +378,12 @@ def decode(setting_key, setting_value):
 def reset_setting(endpoint, setting_key, project_key=None):
     util.logger.info("Resetting setting '%s", setting_key)
     endpoint.post("settings/reset", params={"key": setting_key, "component": project_key})
+
+
+def get_component_params(component, name="component"):
+    if not component:
+        return {}
+    elif type(component).__name__ == "Branch":
+        return {name: component.project.key, "branch": component.key} if component else {}
+    else:
+        return {name: component.key}
