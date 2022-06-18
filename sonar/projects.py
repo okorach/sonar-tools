@@ -674,7 +674,7 @@ class Project(components.Component):
 
     def export(self, settings_list=None, include_inherited=False, full_export=False):
         util.logger.info("Exporting %s", str(self))
-        settings_dict = settings.get_bulk(endpoint=self, project=self, settings_list=settings_list, include_not_set=False)
+        settings_dict = settings.get_bulk(endpoint=self, component=self, settings_list=settings_list, include_not_set=False)
         json_data = {"key": self.key, "name": self.name}
         for s in settings_dict.values():
             if not include_inherited and s.inherited:
