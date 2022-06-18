@@ -547,15 +547,15 @@ def _find_sub_portfolio(key, data):
 
 def __create_portfolio_hierarchy(endpoint, data, parent_key):
     nbr_creations = 0
-    for subp in data.get("subPortfolios", []):
+    for key, subp in data.get("subPortfolios", {}).items():
         if subp.get("byReference", False):
             continue
-        params = {"parent": parent_key}
-        for p in ("name", "description", "key", "visibility"):
+        params = {"parent": parent_key, "key": key}
+        for p in ("name", "description", "visibility"):
             params[p] = subp.get(p, None)
         util.logger.debug("Creating portfolio name '%s'", subp["name"])
         r = endpoint.post(_CREATE_API, params=params, exit_on_error=False)
         if r.ok:
             nbr_creations += 1
-        nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=subp["key"])
+        nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=key)
     return nbr_creations
