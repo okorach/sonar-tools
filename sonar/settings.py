@@ -252,14 +252,14 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
             if nb_priv > 0:
                 util.logger.debug("Skipping private setting %s", s["key"])
                 continue
-            o = Setting.load(key=key, endpoint=endpoint, component=params.get("component", None), data=sdata)
+            o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
             settings_dict[o.key] = o
     if component is None:
         # Hack since projects.default.visibility is not returned by settings/list_definitions
         params.update({"keys": PROJECTS_DEFAULT_VISIBILITY})
         data = json.loads(endpoint.get(_API_GET, params=params).text)
         for s in data["settings"]:
-            o = Setting.load(key=s["key"], endpoint=endpoint, component=params.get("component", None), data=s)
+            o = Setting.load(key=s["key"], endpoint=endpoint, component=component, data=s)
             settings_dict[o.key] = o
 
     o = get_new_code_period(endpoint, component)
