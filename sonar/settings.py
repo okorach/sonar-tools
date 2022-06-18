@@ -49,7 +49,8 @@ CATEGORIES = (
 )
 
 NEW_CODE_PERIOD = "newCodePeriod"
-PROJECTS_DEFAULT_VISIBILITY = "projects.default.visibility"
+COMPONENT_VISIBILITY = "visibility"
+PROJECT_DEFAULT_VISIBILITY = "projects.default.visibility"
 
 DEFAULT_SETTING = "__default__"
 
@@ -137,10 +138,13 @@ class Setting(sqobject.SqObject):
                 self.value = int(data["value"])
             else:
                 self.value = data["type"]
+        elif self.key == COMPONENT_VISIBILITY:
+            self.value = data["visibility"]
         elif self.key.startswith("sonar.issue."):
             self.value = data.get("fieldValues", None)
         else:
             self.value = util.convert_string(data.get("value", data.get("values", data.get("defaultValue", ""))))
+
         if "inherited" in data:
             self.inherited = data["inherited"]
         elif self.key == NEW_CODE_PERIOD:
@@ -204,7 +208,7 @@ class Setting(sqobject.SqObject):
         m = re.match(r"^sonar\.forceAuthentication$", self.key)
         if m:
             return (AUTH_SETTINGS, None)
-        if self.key not in (NEW_CODE_PERIOD, PROJECTS_DEFAULT_VISIBILITY) and not re.match(
+        if self.key not in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, COMPONENT_VISIBILITY) and not re.match(
             r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|"
             r"sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|"
             r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks).*$",
@@ -254,13 +258,10 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
                 continue
             o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
             settings_dict[o.key] = o
-    if component is None:
-        # Hack since projects.default.visibility is not returned by settings/list_definitions
-        params.update({"keys": PROJECTS_DEFAULT_VISIBILITY})
-        data = json.loads(endpoint.get(_API_GET, params=params).text)
-        for s in data["settings"]:
-            o = Setting.load(key=s["key"], endpoint=endpoint, component=component, data=s)
-            settings_dict[o.key] = o
+
+    # Hack since projects.default.visibility is not returned by settings/list_definitions    
+    o = get_visibility(endpoint, component)
+    settings_dict[o.key] = o
 
     o = get_new_code_period(endpoint, component)
     settings_dict[o.key] = o
@@ -269,10 +270,6 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
 
 def get_all(endpoint, project=None):
     return get_bulk(endpoint, component=project, include_not_set=True)
-
-
-def get_new_code_period(endpoint, project_or_branch):
-    return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
 
 def uuid(key, project_key=None):
@@ -302,29 +299,44 @@ def new_code_to_string(data):
         return f"{data['type']} = {data['value']}"
 
 
+
+def get_new_code_period(endpoint, project_or_branch):
+    return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
+
+
 def string_to_new_code(value):
     return re.split(r"\s*=\s*", value)
 
 
-def set_new_code(endpoint, nc_type, nc_value, project_key=None, branch=None):
+def set_new_code_period(endpoint, nc_type, nc_value, project_key=None, branch=None):
     util.logger.info(
         "Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value)
     )
     return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
 
+def get_visibility(endpoint, component):
+    if component:
+        data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
+        return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])
+    else:
+        data = json.loads(endpoint.get(_API_GET, params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
+        return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
-def set_project_default_visibility(endpoint, visibility):
-    util.logger.info("Setting setting '%s' to value '%s'", PROJECTS_DEFAULT_VISIBILITY, str(visibility))
-    r = endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility})
-    util.logger.debug("Response = %s", str(r))
+def set_visibility(endpoint, visibility, component=None):
+    if component:
+        util.logger.info("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
+        return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility})
+    else:
+        util.logger.info("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
+        r = endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility})
+        util.logger.debug("Response = %s", str(r))
 
-
-def set_setting(endpoint, key, value, project=None, branch=None):
+def set_setting(endpoint, key, value, component=None):
     if value is None or value == "":
         # return endpoint.reset_setting(key)
         return None
-    if key == PROJECTS_DEFAULT_VISIBILITY:
-        return set_project_default_visibility(endpoint=endpoint, visibility=value)
+    if key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
+        return set_visibility(endpoint=endpoint, component=component, visibility=value)
 
     value = decode(key, value)
     util.logger.info("Setting setting '%s' to value '%s'", key, str(value))

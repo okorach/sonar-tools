@@ -779,12 +779,12 @@ class Project(components.Component):
                     for wh_name, wh in data[section][config_setting].items():
                         webhooks.update(name=wh_name, endpoint=self.endpoint, **wh)
                 else:
-                    settings.set_setting(endpoint=self.endpoint, key=config_setting, value=data[section][config_setting], project=self.key)
+                    settings.set_setting(endpoint=self.endpoint, key=config_setting, value=data[section][config_setting], component=self)
 
         if "languages" in data:
             for lang_data in data["languages"].values():
                 for s, v in lang_data.items():
-                    settings.set_setting(endpoint=self.endpoint, key=s, value=v, project=self.key)
+                    settings.set_setting(endpoint=self.endpoint, key=s, value=v, component=self)
 
         nc = None
         if settings.NEW_CODE_PERIOD in data["generalSettings"]:
@@ -793,7 +793,7 @@ class Project(components.Component):
             nc = data[settings.NEW_CODE_PERIOD]
         if nc is not None:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
-            settings.set_new_code(self.endpoint, nc_type, nc_val, project_key=self.key)
+            settings.set_new_code_period(self.endpoint, nc_type, nc_val, project_key=self.key)
         util.logger.debug("Checking main branch")
         for branch, branch_data in data.get("branches", {}):
             if branches.exists(self.key, branch, self.endpoint):
