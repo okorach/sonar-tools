@@ -49,7 +49,6 @@ _BIND_SEP = ":::"
 class Project(components.Component):
     def __init__(self, key, endpoint=None, data=None, create_data=None):
         super().__init__(key, endpoint)
-        self.visibility = None
         self.main_branch_last_analysis_date = "undefined"
         self.all_branches_last_analysis_date = "undefined"
         self._permissions = None
@@ -81,7 +80,7 @@ class Project(components.Component):
                 raise env.NonExistingObjectError(self.key, "Project key does not exist")
             data = data["components"][0]
         self.name = data["name"]
-        self.visibility = data["visibility"]
+        self._visibility = data["visibility"]
         if "lastAnalysisDate" in data:
             self.main_branch_last_analysis_date = util.string_to_date(data["lastAnalysisDate"])
         else:
@@ -90,13 +89,6 @@ class Project(components.Component):
 
     def url(self):
         return f"{self.endpoint.url}/dashboard?id={self.key}"
-
-    def set_visibility(self, visibility):
-        if visibility not in ("public", "private"):
-            util.logger.warning("Can't set %s visibility to illegal value '%s'", str(self), visibility)
-            return
-        self.post("projects/update_visibility", params={"project": self.key, "visibility": visibility})
-        self.visibility = visibility
 
     def last_analysis_date(self, include_branches=False):
         if self.main_branch_last_analysis_date == "undefined":
@@ -365,20 +357,18 @@ class Project(components.Component):
             util.logger.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
         util.logger.debug("Auditing %s visibility", str(self))
-        data = json.loads(self.get("navigation/component", params={"component": self.key}).text)
-        visi = data["visibility"]
-        if visi != "private":
+        if self.visibility() != "private":
             rule = rules.get_rule(rules.RuleId.PROJ_VISIBILITY)
             return [
                 pb.Problem(
                     rule.type,
                     rule.severity,
-                    rule.msg.format(str(self), visi),
+                    rule.msg.format(str(self), self.visibility()),
                     concerned_object=self,
                 )
             ]
 
-        util.logger.debug("%s visibility is private", str(self))
+        util.logger.debug("%s visibility is 'private'", str(self))
         return []
 
     def __audit_languages__(self, audit_settings):
@@ -688,6 +678,7 @@ class Project(components.Component):
         json_data["permissions"] = self.permissions().to_json(csv=True)
         json_data["branches"] = self.__get_branch_export()
         json_data["tags"] = util.list_to_csv(self.tags(), separator=", ")
+        json_data["visibility"] = self.visibility()
         (json_data["qualityGate"], qg_is_default) = self.quality_gate()
         if qg_is_default:
             json_data.pop("qualityGate")
