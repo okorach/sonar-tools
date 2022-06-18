@@ -127,6 +127,7 @@ def __count_settings(what, sq_settings):
 
 
 def __export_config(endpoint, what, args):
+    util.logger.info("Exporting configuration from %s", args.url)
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
     if _SETTINGS in what:
@@ -161,11 +162,11 @@ def __export_config(endpoint, what, args):
     util.remove_nones(sq_settings)
     with util.open_file(args.file) as fd:
         print(util.json_dump(sq_settings), file=fd)
-
-    util.logger.info("Exported %d items", __count_settings(what, sq_settings))
+    util.logger.info("Exporting configuration from %s completed", args.url)
 
 
 def __import_config(endpoint, what, args):
+    util.logger.info("Importing configuration to %s", args.url)
     data = util.load_json_file(args.file)
     if _GROUPS in what:
         groups.import_config(endpoint, data)
@@ -187,7 +188,7 @@ def __import_config(endpoint, what, args):
         applications.import_config(endpoint, data)
     if _PORTFOLIOS in what:
         portfolios.import_config(endpoint, data)
-    util.logger.info("Import finished")
+    util.logger.info("Importing configuration to %s completed", args.url)
 
 
 def main():
@@ -199,7 +200,6 @@ def main():
         util.exit_fatal("--export or --import options are exclusive of each other", exit_code=options.ERR_ARGS_ERROR)
 
     start_time = datetime.datetime.today()
-
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
     what = args.what
     if args.what == "":
