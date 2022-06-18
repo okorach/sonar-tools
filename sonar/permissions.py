@@ -296,10 +296,10 @@ class QualityGatePermissions(Permissions):
     def read(self, perm_type=None):
         self.permissions = {p: [] for p in PERMISSION_TYPES}
         if self.concerned_object.is_built_in:
-            utilities.logger.info("Won't read %s because it's built-in", str(self))
+            utilities.logger.debug("Won't read %s because it's built-in", str(self))
             return self
         if self.endpoint.version() < (9, 2, 0):
-            utilities.logger.info("Won't read %s on SonarQube < 9.2", str(self))
+            utilities.logger.debug("Won't read %s on SonarQube < 9.2", str(self))
             return self
         for p in _normalize(perm_type):
             self.permissions[p] = self._get_api(
@@ -407,10 +407,10 @@ class QualityProfilePermissions(Permissions):
     def read(self, perm_type=None):
         self.permissions = {p: [] for p in PERMISSION_TYPES}
         if self.concerned_object.is_built_in:
-            utilities.logger.info("Won't read %s since it is built-in", str(self))
+            utilities.logger.debug("Won't read %s since it is built-in", str(self))
             return self
         if self.endpoint.version() < (6, 6, 0):
-            utilities.logger.info("Won't read %s on SonarQube < 6.6", str(self))
+            utilities.logger.debug("Won't read %s on SonarQube < 6.6", str(self))
             return self
         for p in _normalize(perm_type):
             self.permissions[p] = self._get_api(

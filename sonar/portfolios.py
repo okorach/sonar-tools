@@ -417,7 +417,7 @@ def __cleanup_portfolio_json(p):
 
 
 def _sub_portfolios(json_data, version):
-    subport = []
+    subport = {}
     if "subViews" in json_data and len(json_data["subViews"]) > 0:
         for p in json_data["subViews"]:
             qual = p.pop("qualifier", "SVW")
@@ -428,7 +428,7 @@ def _sub_portfolios(json_data, version):
                     p.pop(k, None)
             p.update(_sub_portfolios(p, version))
             __cleanup_portfolio_json(p)
-            subport.append(p)
+            subport[p.pop("key")] = p
     projects = _projects(json_data, version)
     ret = {}
     if projects is not None and len(projects) > 0:
