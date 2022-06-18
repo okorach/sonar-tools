@@ -337,11 +337,10 @@ class Portfolio(aggregations.Aggregation):
         projects = data.get("projects", None)
         self.root_key = root_key
         self.set_selection_mode(selection_mode=selection_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
-        for subp in data.get("subPortfolios", []):
-            key_list = [p["key"] for p in self.sub_portfolios().get("subPortfolios", [])]
-            util.logger.debug("%s subport list = %s", str(self), str(key_list))
+        for key, subp in data.get("subPortfolios", {}).items():
+            key_list = [k for k in self.sub_portfolios().get("subPortfolios", {}).keys()]
             if subp.get("byReference", False):
-                o_subp = get_object(key=subp["key"], endpoint=self.endpoint)
+                o_subp = get_object(key=key, endpoint=self.endpoint)
                 if o_subp is not None:
                     if o_subp.key not in key_list:
                         self.add_subportfolio(o_subp.key)
@@ -349,7 +348,7 @@ class Portfolio(aggregations.Aggregation):
             else:
                 name = subp.pop("name")
                 get_list(endpoint=self.endpoint)
-                o = get_object(key=subp["key"], endpoint=self.endpoint)
+                o = get_object(key=key, endpoint=self.endpoint)
                 if o is None:
                     util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
                     o = Portfolio.create(name=name, endpoint=self.endpoint, parent=self.key, root_key=root_key, **subp)
