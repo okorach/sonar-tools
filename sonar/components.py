@@ -25,6 +25,7 @@
 
 import json
 import sonar.sqobject as sq
+from sonar import settings
 import sonar.utilities as util
 
 SEARCH_API = "components/search"
@@ -43,6 +44,7 @@ class Component(sq.SqObject):
         self._description = None
         self._last_analysis = None
         self._tags = None
+        self._visibility = None
         if data is not None:
             self.__load(data)
 
@@ -157,6 +159,14 @@ class Component(sq.SqObject):
         # Must be implemented in sub classes
         pass
 
+    def visibility(self):
+        if not self._visibility:
+            self._visibility = settings.get_visibility(self.endpoint, component=self).value
+        return self._visibility
+
+    def set_visibility(self, visibility):
+        settings.set_visibility(self.endpoint, visibility=visibility, component=self)
+        self._visibility = visibility
 
 def get_components(component_types, endpoint):
     data = json.loads(endpoint.get("projects/search", params={"ps": 500, "qualifiers": component_types}).text)

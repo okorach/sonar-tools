@@ -27,7 +27,7 @@ import datetime
 import json
 import pytz
 import requests.utils
-from sonar import projects, measures, components, syncer
+from sonar import projects, measures, components, syncer, settings
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
 
@@ -118,7 +118,7 @@ class Branch(components.Component):
 
     def export(self, full_export=True):
         util.logger.debug("Exporting %s", str(self))
-        data = {"newCode": self.new_code()}
+        data = {settings.NEW_CODE_PERIOD: self.new_code()}
         if self.is_main():
             data["isMain"] = True
         if self.is_kept_when_inactive() and not self.is_main():

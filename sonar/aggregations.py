@@ -44,11 +44,6 @@ class Aggregation(comp.Component):
         self.name = self._json.get("name", None)
         self._visibility = self._json.get("visibility", None)
 
-    def visibility(self):
-        if self._visibility is None:
-            self._load()
-        return self._visibility
-
     def nbr_projects(self):
         if self._nbr_projects is None:
             data = json.loads(self.get("measures/component", params={"component": self.key, "metricKeys": "projects,ncloc"},).text)[

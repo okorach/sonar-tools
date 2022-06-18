@@ -215,7 +215,7 @@ class Environment:
 
         if settings.NEW_CODE_PERIOD in config_data["generalSettings"]:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
-            settings.set_new_code(self, nc_type, nc_val)
+            settings.set_new_code_period(self, nc_type, nc_val)
         permission_templates.import_config(self, config_data)
         permissions.import_config(self, config_data)
         devops.import_config(self, config_data)
