@@ -53,7 +53,7 @@ class WebHook(sq.SqObject):
 
     def update(self, **kwargs):
         params = util.remove_nones(kwargs)
-        params.update({"name": self.name, "webhook": self.key})
+        params.update({"webhook": self.key})
         self.post("webhooks/update", params=params)
 
     def to_json(self):

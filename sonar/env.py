@@ -204,8 +204,18 @@ class Environment:
                 continue
             for config_setting in config_data[section]:
                 if config_setting == "webhooks":
+                    current_wh = self.webhooks()
+                    util.logger.debug("WH %s", str(current_wh))
+                    # FIXME: Handle several webhooks with same name
+                    current_wh_names = [wh.name for wh in current_wh.values()]
+                    wh_map = {wh.name: k for k, wh in current_wh.items()}
+                    util.logger.debug("Current WH %s", str(current_wh_names))
                     for wh_name, wh in config_data[section][config_setting].items():
-                        webhooks.update(name=wh_name, endpoint=self, **wh)
+                        util.logger.debug("Updating wh with name %s", wh_name)
+                        if wh_name in current_wh_names:
+                            current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
+                        else:
+                            webhooks.update(name=wh_name, endpoint=self, project=None, **wh)
                 else:
                     self.set_setting(config_setting, config_data[section][config_setting])
         if "languages" in config_data:
