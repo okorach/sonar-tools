@@ -45,3 +45,16 @@ ERR_RULES_LOADING_FAILED = 8
 ERR_SIF_AUDIT_ERROR = 9
 
 ERR_ARGS_ERROR = 10
+
+
+class UnsupportedOperation(Exception):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
+
+
+class NonExistingObjectError(Exception):
+    def __init__(self, key, message):
+        super().__init__()
+        self.key = key
+        self.message = message

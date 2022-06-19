@@ -293,21 +293,13 @@ def main():
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
 
-    for p in (
-        "statuses",
-        "createdAfter",
-        "createdBefore",
-        "resolutions",
-        "severities",
-        "types",
-        "tags",
-    ):
+    for p in ("statuses", "createdAfter", "createdBefore", "resolutions", "severities", "types", "tags"):
         if params.get(p, None) is not None:
             if params["useFindings"]:
                 util.logger.warning("Selected search criteria %s will disable --useFindings", params[p])
             params["useFindings"] = False
             break
-    project_list = projects.get_projects_list(project_key, sqenv)
+    project_list = projects.get_list(endpoint=sqenv, key_list=project_key)
 
     fmt = kwargs["format"]
     file = kwargs.pop("file", None)

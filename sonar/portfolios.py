@@ -374,6 +374,18 @@ def count(endpoint=None):
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
 
+def get_list(endpoint, key_list=None):
+    if key_list is None:
+        util.logger.info("Listing portfolios")
+        return search(endpoint=endpoint)
+    object_list = {}
+    for key in util.csv_to_list(key_list):
+        object_list[key] = get_object(key, endpoint=endpoint)
+        if object_list[key] is None:
+            raise options.NonExistingObjectError(key, f"Portfolio key '{key}' does not exist")
+    return object_list
+
+
 def search(endpoint, params=None):
     portfolio_list = {}
     edition = env.edition(ctxt=endpoint)
@@ -465,11 +477,6 @@ def _projects(json_data, version):
     return projects
 
 
-def get_list(endpoint):
-    util.logger.debug("Reading portfolio list")
-    return search(endpoint=endpoint)
-
-
 def get_object(key, endpoint=None):
     if key in _OBJECTS:
         return _OBJECTS.get(key, None)
@@ -522,15 +529,18 @@ def search_by_key(endpoint, key):
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
-def export(endpoint):
+def export(endpoint, key_list=None):
     if endpoint.edition() in ("community", "developer"):
         util.logger.info("No portfolios in community and developer editions")
         return None
     util.logger.info("Exporting portfolios")
-    nb_portfolios = count(endpoint=endpoint)
+    if key_list:
+        nb_portfolios = len(key_list)
+    else:
+        nb_portfolios = count(endpoint=endpoint)
     i = 0
     exported_portfolios = {}
-    for k, p in search(endpoint).items():
+    for k, p in get_list(endpoint=endpoint, key_list=key_list).items():
         if not p.is_sub_portfolio():
             exported_portfolios[k] = p.export()
             exported_portfolios[k].pop("key")

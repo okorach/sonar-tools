@@ -77,7 +77,7 @@ class Project(components.Component):
         if data is None:
             data = json.loads(self.get(_SEARCH_API, params={"projects": self.key}).text)
             if not data["components"]:
-                raise env.NonExistingObjectError(self.key, "Project key does not exist")
+                raise options.NonExistingObjectError(self.key, "Project key does not exist")
             data = data["components"][0]
         self.name = data["name"]
         self._visibility = data["visibility"]
@@ -472,7 +472,7 @@ class Project(components.Component):
     def export_zip(self, timeout=180):
         util.logger.info("Exporting %s (synchronously)", str(self))
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in ("enterprise", "datacenter"):
-            raise env.UnsupportedOperation(
+            raise options.UnsupportedOperation(
                 "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
             )
         resp = self.post("project_dump/export", params={"key": self.key})
@@ -491,15 +491,15 @@ class Project(components.Component):
     def export_async(self):
         util.logger.info("Exporting %s (asynchronously)", str(self))
         resp = self.post("project_dump/export", params={"key": self.key})
-        if resp.status_code != 200:
-            return None
-        data = json.loads(resp.text)
-        return data["taskId"]
+        if resp.ok:
+            data = json.loads(resp.text)
+            return data["taskId"]
+        return None
 
     def import_zip(self):
         util.logger.info("Importing %s (asynchronously)", str(self))
         if self.endpoint.edition() not in ["enterprise", "datacenter"]:
-            raise env.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
+            raise options.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         resp = self.post("project_dump/import", params={"key": self.key})
         return resp.status_code
 
@@ -884,17 +884,16 @@ def search(endpoint, params=None):
     )
 
 
-def get_projects_list(str_key_list, endpoint):
-    if str_key_list is None:
-        util.logger.info("Getting project list")
+def get_list(endpoint, key_list=None):
+    if key_list is None:
+        util.logger.info("Listing projects")
         return search(endpoint=endpoint)
-    project_list = {}
-    try:
-        for key in util.csv_to_list(str_key_list):
-            project_list[key] = get_object(key, endpoint=endpoint)
-    except env.NonExistingObjectError as e:
-        util.exit_fatal(f"Project key '{e.key}' does not exist, aborting...", options.ERR_NO_SUCH_PROJECT_KEY)
-    return project_list
+    object_list = {}
+    for key in util.csv_to_list(key_list):
+        object_list[key] = get_object(key, endpoint=endpoint)
+        if object_list[key] is None:
+            raise options.NonExistingObjectError(key, f"Project key '{key}' does not exist")
+    return object_list
 
 
 def key_obj(key_or_obj):
@@ -906,7 +905,7 @@ def key_obj(key_or_obj):
 
 def get_object(key, endpoint):
     if len(_OBJECTS) == 0:
-        get_projects_list(str_key_list=None, endpoint=endpoint)
+        get_list(endpoint=endpoint)
     if key not in _OBJECTS:
         return None
     return _OBJECTS[key]
@@ -954,6 +953,13 @@ def audit(audit_settings, endpoint=None):
     return problems
 
 
+def export(endpoint, key_list=None):
+    project_settings = {k: p.export() for k, p in get_list(endpoint=endpoint, key_list=key_list).items()}
+    for k in project_settings:
+        project_settings[k].pop("key")
+    return project_settings
+
+
 def exists(key, endpoint):
     return len(search(params={"projects": key}, endpoint=endpoint)) > 0
 
@@ -998,12 +1004,12 @@ def create_or_update(endpoint, key, data):
     o.update(data)
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint, config_data, key_list=None):
     if "projects" not in config_data:
         util.logger.info("No projects to import")
         return
     util.logger.info("Importing projects")
-    get_projects_list(str_key_list=None, endpoint=endpoint)
+    get_list(endpoint=endpoint)
     nb_projects = len(config_data["projects"])
     i = 0
     for name, data in config_data["projects"].items():
