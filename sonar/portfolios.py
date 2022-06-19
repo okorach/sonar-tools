@@ -491,7 +491,7 @@ def import_config(endpoint, config_data):
     search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
     for key, data in config_data["portfolios"].items():
-        util.logger.info("Importing portfolios key '%s'", key)
+        util.logger.info("Importing portfolio key '%s'", key)
         o = get_object(key, endpoint)
         if o is None:
             newdata = data.copy()
