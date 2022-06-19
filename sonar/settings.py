@@ -337,15 +337,19 @@ def set_setting(endpoint, key, value, component=None):
 
     value = decode(key, value)
     util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
+    params = {"key": key, "component": component.key if component else None}
     if isinstance(value, list):
         if isinstance(value[0], str):
-            return endpoint.post(_API_SET, params={"key": key, "values": value})
+            params["values"] = value
+            return endpoint.post(_API_SET, params=params)
         else:
-            return endpoint.post(_API_SET, params={"key": key, "fieldValues": [util.json.dumps(v) for v in value]})
+            params["fieldValues"] = [util.json.dumps(v) for v in value]
+            return endpoint.post(_API_SET, params=params)
     else:
         if isinstance(value, bool):
             value = "true" if value else "false"
-        return endpoint.post(_API_SET, params={"key": key, "value": value})
+        params["value"] = value
+        return endpoint.post(_API_SET, params=params)
 
 
 def encode(setting_key, setting_value):

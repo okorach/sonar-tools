@@ -762,33 +762,25 @@ class Project(components.Component):
         return False
 
     def set_settings(self, data):
-        for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
-            if section not in data:
+        util.logger.debug("Setting %s settings with %s", str(self), util.json_dump(data))
+        for key, value in data.items():
+            if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
-            for config_setting in data[section]:
-                if config_setting == "webhooks":
-                    for wh_name, wh in data[section][config_setting].items():
-                        webhooks.update(name=wh_name, endpoint=self.endpoint, **wh)
-                else:
-                    settings.set_setting(endpoint=self.endpoint, key=config_setting, value=data[section][config_setting], component=self)
+            if key == "webhooks":
+                for wh_name, wh in value.items():
+                    webhooks.update(name=wh_name, endpoint=self.endpoint, **wh)
+            else:
+                settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
-        if "languages" in data:
-            for lang_data in data["languages"].values():
-                for s, v in lang_data.items():
-                    settings.set_setting(endpoint=self.endpoint, key=s, value=v, component=self)
-
-        nc = None
-        if settings.NEW_CODE_PERIOD in data["generalSettings"]:
-            nc = data["generalSettings"][settings.NEW_CODE_PERIOD]
-        if settings.NEW_CODE_PERIOD in data:
-            nc = data[settings.NEW_CODE_PERIOD]
+        nc = data.get(settings.NEW_CODE_PERIOD, None)
         if nc is not None:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, nc)
             settings.set_new_code_period(self.endpoint, nc_type, nc_val, project_key=self.key)
-        util.logger.debug("Checking main branch")
-        for branch, branch_data in data.get("branches", {}):
-            if branches.exists(self.key, branch, self.endpoint):
-                branches.get_object(branch, self.key, self.endpoint).update(branch_data)
+        # TODO: Update branches (main, new code definition, keepWhenInactive)
+        # util.logger.debug("Checking main branch")
+        # for branch, branch_data in data.get("branches", {}).items():
+        #    if branches.exists(branch_name=branch, project_key=self.key, endpoint=self.endpoint):
+        #        branches.get_object(branch, self, endpoint=self.endpoint).update(branch_data)()
 
     def set_devops_binding(self, data):
         util.logger.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
@@ -858,6 +850,8 @@ class Project(components.Component):
             self.set_devops_binding(data["binding"])
         else:
             util.logger.debug("%s has no devops binding, skipped")
+        settings_to_apply = {k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding")}
+        self.set_settings(settings_to_apply)
 
 
 def count(endpoint, params=None):
