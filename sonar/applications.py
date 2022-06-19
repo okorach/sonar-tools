@@ -307,7 +307,7 @@ def create_or_update(endpoint, name, key, data):
     o.update(data)
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint, config_data, key_list=None):
     if "applications" not in config_data:
         util.logger.info("No applications to import")
         return

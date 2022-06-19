@@ -166,9 +166,9 @@ def __import_config(endpoint, what, args):
     if _PROJECTS in what:
         projects.import_config(endpoint, data, key_list=args.projectKeys)
     if _APPS in what:
-        applications.import_config(endpoint, data)
+        applications.import_config(endpoint, data, key_list=args.projectKeys)
     if _PORTFOLIOS in what:
-        portfolios.import_config(endpoint, data)
+        portfolios.import_config(endpoint, data, key_list=args.projectKeys)
     util.logger.info("Importing configuration to %s completed", args.url)
 
 

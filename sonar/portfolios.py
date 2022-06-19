@@ -490,7 +490,7 @@ def exists(key, endpoint):
     return get_object(key, endpoint) is not None
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint, config_data, key_list=None):
     if "portfolios" not in config_data:
         util.logger.info("No portfolios to import")
         return
