@@ -27,7 +27,7 @@ import json
 import sonar.utilities as util
 import sonar.sqobject as sq
 
-_WEBHOOKS = {}
+_OBJECTS = {}
 
 
 class WebHook(sq.SqObject):
@@ -43,7 +43,7 @@ class WebHook(sq.SqObject):
         self.secret = data.get("secret", None)
         self.project = project
         self.last_delivery = data.get("latestDelivery", None)
-        _WEBHOOKS[self.uuid()] = self
+        _OBJECTS[self.uuid()] = self
 
     def __str__(self):
         return f"webhook '{self.name}'"
@@ -105,7 +105,7 @@ def create(endpoint, name, url, secret=None, project=None):
 def update(endpoint, name, **kwargs):
     project_key = kwargs.pop("project", None)
     get_list(endpoint, project_key)
-    if _uuid(name, project_key) not in _WEBHOOKS:
+    if _uuid(name, project_key) not in _OBJECTS:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
         get_object(name, endpoint, project_key=project_key, data=kwargs).update(**kwargs)
@@ -114,9 +114,9 @@ def update(endpoint, name, **kwargs):
 def get_object(name, endpoint, project_key=None, data=None):
     util.logger.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
     u = _uuid(name, project_key)
-    if u not in _WEBHOOKS:
+    if u not in _OBJECTS:
         _ = WebHook(name=name, endpoint=endpoint, data=data)
-    return _WEBHOOKS[u]
+    return _OBJECTS[u]
 
 
 def _uuid(name, project_key):

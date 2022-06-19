@@ -683,11 +683,7 @@ class Project(components.Component):
         if qg_is_default:
             json_data.pop("qualityGate")
 
-        wh = webhooks.export(self.endpoint, self.key)
-        if wh is not None:
-            if settings.GENERAL_SETTINGS not in json_data:
-                json_data[settings.GENERAL_SETTINGS] = {}
-            json_data[settings.GENERAL_SETTINGS].update({"webhooks": wh})
+        json_data["webhooks"] = webhooks.export(self.endpoint, self.key)
 
         if full_export:
             pass
@@ -768,7 +764,7 @@ class Project(components.Component):
                 continue
             if key == "webhooks":
                 for wh_name, wh in value.items():
-                    webhooks.update(name=wh_name, endpoint=self.endpoint, **wh)
+                    webhooks.update(name=wh_name, endpoint=self.endpoint, project=self.key, **wh)
             else:
                 settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
