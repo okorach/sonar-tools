@@ -271,13 +271,14 @@ class Portfolio(aggregations.Aggregation):
         self.post("views/set_manual_mode", params={"portfolio": self.key})
         self._selection_mode = SELECTION_MODE_MANUAL
         current_projects = self.projects()
+        current_project_keys = list(current_projects.keys())
         util.logger.debug("Project list = %s", str(project_list))
         if project_list is None:
             return False
         util.logger.debug("Current Project list = %s", str(current_projects))
         ok = True
         for proj, branches in project_list.items():
-            if proj not in current_projects.keys():
+            if proj not in current_project_keys:
                 r = self.post("views/add_project", params={"key": self.key, "project": proj}, exit_on_error=False)
                 ok = ok and r.ok
                 current_projects[proj] = options.DEFAULT
@@ -318,7 +319,7 @@ class Portfolio(aggregations.Aggregation):
             self.none()
         else:
             util.logger.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
-            return
+            return self
         self._selection_mode = selection_mode
         return self
 

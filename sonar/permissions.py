@@ -242,11 +242,11 @@ class TemplatePermissions(Permissions):
 
     def read(self, perm_type=None):
         self.permissions = NO_PERMISSIONS
-        for perm_type in _normalize(perm_type):
-            self.permissions[perm_type] = self._get_api(
-                TemplatePermissions.API_GET[perm_type],
-                perm_type,
-                TemplatePermissions.API_GET_FIELD[perm_type],
+        for p in _normalize(perm_type):
+            self.permissions[p] = self._get_api(
+                TemplatePermissions.API_GET[p],
+                p,
+                TemplatePermissions.API_GET_FIELD[p],
                 templateName=self.concerned_object.name,
                 ps=MAX_PERMS,
             )
