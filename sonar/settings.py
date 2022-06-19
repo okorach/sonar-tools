@@ -310,6 +310,7 @@ def set_new_code_period(endpoint, nc_type, nc_value, project_key=None, branch=No
     )
     return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
 
+
 def get_visibility(endpoint, component):
     if component:
         data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
@@ -317,6 +318,7 @@ def get_visibility(endpoint, component):
     else:
         data = json.loads(endpoint.get(_API_GET, params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
+
 
 def set_visibility(endpoint, visibility, component=None):
     if component:
@@ -326,6 +328,7 @@ def set_visibility(endpoint, visibility, component=None):
         util.logger.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
         r = endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility})
         return r
+
 
 def set_setting(endpoint, key, value, component=None):
     if value is None or value == "":

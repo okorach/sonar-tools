@@ -168,6 +168,7 @@ class Component(sq.SqObject):
         settings.set_visibility(self.endpoint, visibility=visibility, component=self)
         self._visibility = visibility
 
+
 def get_components(component_types, endpoint):
     data = json.loads(endpoint.get("projects/search", params={"ps": 500, "qualifiers": component_types}).text)
     return data["components"]

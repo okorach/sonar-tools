@@ -142,7 +142,7 @@ class Permissions(ABC):
         # so these perms needs to be removed manually
         for p in PERMISSION_TYPES:
             for u, perms in self.permissions[p].items():
-                self.permissions[p][u] = _permission_filter(perms, ('applicationcreator', 'portfoliocreator'), black_list=True)
+                self.permissions[p][u] = _permission_filter(perms, ("applicationcreator", "portfoliocreator"), black_list=True)
 
     def count(self, perm_type=None, perm_filter=None):
         perms = PERMISSION_TYPES if perm_type is None else (perm_type)
