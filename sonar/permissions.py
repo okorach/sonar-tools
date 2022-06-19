@@ -20,6 +20,7 @@
 
 import json
 from abc import ABC, abstractmethod
+from math import perm
 from sonar import utilities, options
 
 GLOBAL_PERMISSIONS = {
@@ -142,7 +143,7 @@ class Permissions(ABC):
         # so these perms needs to be removed manually
         for p in PERMISSION_TYPES:
             for u, perms in self.permissions[p].items():
-                self.permissions[p][u] = [p for p in perms if p not in ('applicationcreator', 'portfoliocreator')]
+                self.permissions[p][u] = _permission_filter(perms, ('applicationcreator', 'portfoliocreator'), black_list=True)
 
     def count(self, perm_type=None, perm_filter=None):
         perms = PERMISSION_TYPES if perm_type is None else (perm_type)
@@ -213,7 +214,8 @@ class GlobalPermissions(Permissions):
 
     def set(self, new_perms):
         utilities.logger.debug("Setting %s to %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -222,8 +224,7 @@ class GlobalPermissions(Permissions):
             self._post_api(GlobalPermissions.API_REMOVE[p], GlobalPermissions.API_SET_FIELD[p], to_remove)
             to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(GlobalPermissions.API_SET[p], GlobalPermissions.API_SET_FIELD[p], to_add)
-        self.read()
-        return self
+        return self.read()
 
 
 class TemplatePermissions(Permissions):
@@ -242,11 +243,11 @@ class TemplatePermissions(Permissions):
 
     def read(self, perm_type=None):
         self.permissions = NO_PERMISSIONS
-        for perm in _normalize(perm_type):
-            self.permissions[perm] = self._get_api(
-                TemplatePermissions.API_GET[perm],
-                perm,
-                TemplatePermissions.API_GET_FIELD[perm],
+        for perm_type in _normalize(perm_type):
+            self.permissions[perm_type] = self._get_api(
+                TemplatePermissions.API_GET[perm_type],
+                perm_type,
+                TemplatePermissions.API_GET_FIELD[perm_type],
                 templateName=self.concerned_object.name,
                 ps=MAX_PERMS,
             )
@@ -255,7 +256,8 @@ class TemplatePermissions(Permissions):
 
     def set(self, new_perms):
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -266,8 +268,7 @@ class TemplatePermissions(Permissions):
             )
             to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(TemplatePermissions.API_SET[p], TemplatePermissions.API_SET_FIELD[p], to_add, templateName=self.concerned_object.name)
-        self.read()
-        return self
+        return self.read()
 
 
 class QualityGatePermissions(Permissions):
@@ -319,7 +320,8 @@ class QualityGatePermissions(Permissions):
             self.permissions = {p: [] for p in PERMISSION_TYPES}
             return self
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -330,8 +332,7 @@ class QualityGatePermissions(Permissions):
             )
             to_add = diffarray(decoded_perms, self.permissions[p])
             self._post_api(QualityGatePermissions.API_SET[p], QualityGatePermissions.API_SET_FIELD[p], to_add, gateName=self.concerned_object.name)
-        self.read()
-        return self
+        return self.read()
 
     def to_json(self, perm_type=None, csv=False):
         if not csv:
@@ -432,7 +433,8 @@ class QualityProfilePermissions(Permissions):
             utilities.logger.warning("Can set %s on SonarQube < 6.6", str(self))
             return self
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -453,8 +455,7 @@ class QualityProfilePermissions(Permissions):
                 qualityProfile=self.concerned_object.name,
                 language=self.concerned_object.language,
             )
-        self.read()
-        return self
+        return self.read()
 
     def to_json(self, perm_type=None, csv=False):
         if not csv:
@@ -475,7 +476,7 @@ class ProjectPermissions(Permissions):
         super().__init__(concerned_object.endpoint)
 
     def __str__(self):
-        return f"permissions of f{str(self.concerned_object)}"
+        return f"permissions of {str(self.concerned_object)}"
 
     def read(self, perm_type=None):
         self.permissions = NO_PERMISSIONS
@@ -488,7 +489,8 @@ class ProjectPermissions(Permissions):
 
     def set(self, new_perms):
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -497,8 +499,7 @@ class ProjectPermissions(Permissions):
             self._post_api(ProjectPermissions.API_REMOVE[p], ProjectPermissions.API_SET_FIELD[p], to_remove, projectKey=self.concerned_object.key)
             to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(ProjectPermissions.API_SET[p], ProjectPermissions.API_SET_FIELD[p], to_add, projectKey=self.concerned_object.key)
-        self.read()
-        return self
+        return self.read()
 
 
 class AggregationPermissions(ProjectPermissions):
@@ -508,19 +509,17 @@ class AggregationPermissions(ProjectPermissions):
 
     def read(self, perm_type=None):
         super().read(perm_type)
-        self._remove_non_portfolio_permissions(perm_type)
+        self._remove_non_aggregation_permissions(perm_type)
         return self
 
     def set(self, new_perms):
-        stripped_perms = [p for p in new_perms if p in AGGREGATION_PERMISSIONS]
-        super().set(stripped_perms)
-        return self.read()
+        return super().set(_permission_filter(new_perms, AGGREGATION_PERMISSIONS))
 
-    def _remove_non_portfolio_permissions(self, perm_type=None):
+    def _remove_non_aggregation_permissions(self, perm_type=None):
+        # Hack: SonarQube return permissions for aggregations that do not exist
         for ptype in _normalize(perm_type):
             for u, perms in self.permissions[ptype].items():
-                stripped_perms = [p for p in perms if p in AGGREGATION_PERMISSIONS]
-                self.permissions[ptype][u] = stripped_perms
+                self.permissions[ptype][u] = _permission_filter(perms, AGGREGATION_PERMISSIONS)
 
 
 class PortfolioPermissions(AggregationPermissions):
@@ -607,3 +606,10 @@ def diffarray(perms_1, perms_2):
         if elem in diff_perms:
             diff_perms.remove(elem)
     return diff_perms
+
+
+def _permission_filter(permissions, permissions_list, black_list=False):
+    if black_list:
+        return [p for p in permissions if p not in permissions_list]
+    else:
+        return [p for p in permissions if p in permissions_list]
