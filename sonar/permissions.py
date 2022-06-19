@@ -41,6 +41,11 @@ PROJECT_PERMISSIONS = {
     "admin": "Administer Project",
 }
 
+PORTFOLIO_PERMISSIONS = {
+    "user": "Browse",
+    "admin": "Administer Project",
+}
+
 _GLOBAL = 0
 _PROJECTS = 1
 _TEMPLATES = 2
@@ -205,8 +210,8 @@ class GlobalPermissions(Permissions):
 
     def read(self, perm_type=None):
         self.permissions = NO_PERMISSIONS
-        for perm in _normalize(perm_type):
-            self.permissions[perm] = self._get_api(GlobalPermissions.API_GET[perm], perm, GlobalPermissions.API_GET_FIELD[perm], ps=MAX_PERMS)
+        for ptype in _normalize(perm_type):
+            self.permissions[ptype] = self._get_api(GlobalPermissions.API_GET[ptype], ptype, GlobalPermissions.API_GET_FIELD[ptype], ps=MAX_PERMS)
         return self
 
     def set(self, new_perms):
@@ -504,11 +509,20 @@ class PortfolioPermissions(ProjectPermissions):
         self.concerned_object = portfolio_object
         super().__init__(portfolio_object)
 
+    def read(self, perm_type=None):
+        super().read(perm_type)
+        self.permissions = _remove_non_portfolio_permissions(self.permissions, perm_type)
+        return self
 
 class ApplicationPermissions(ProjectPermissions):
     def __init__(self, app_object):
         self.concerned_object = app_object
         super().__init__(app_object)
+
+    def read(self, perm_type=None):
+        super().read(perm_type)
+        self.permissions = _remove_non_portfolio_permissions(self.permissions, perm_type)
+        return self
 
 
 def simplify(perms_dict):
@@ -554,6 +568,16 @@ def apply_api(endpoint, api, ufield, uvalue, ofield, ovalue, perm_list):
     for p in perm_list:
         endpoint.post(api, params={ufield: uvalue, ofield: ovalue, "permission": p})
 
+
+def _remove_non_portfolio_permissions(some_perms, perm_type=None):
+    for ptype in _normalize(perm_type):
+        for u, perms in some_perms[ptype].items():
+            stripped_perms = []
+            for perm in perms:
+                if perm in PORTFOLIO_PERMISSIONS:
+                    stripped_perms.append(perm)
+            some_perms[ptype][u] = stripped_perms
+    return some_perms
 
 def diff_full(perms_1, perms_2):
     diff_perms = perms_1.copy()
