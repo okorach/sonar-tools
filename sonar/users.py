@@ -67,7 +67,7 @@ class User(sqobject.SqObject):
                     data = d
                     break
         if create_data is None:
-            util.logger.info("Sync'ing %s", str(self))
+            util.logger.debug("Sync'ing %s", str(self))
 
         self._json = data
         self.name = data.get("name", None)
@@ -78,6 +78,7 @@ class User(sqobject.SqObject):
         self.nb_tokens = data.get("tokenCount", None)
         self.tokens_list = None
         self._last_login_date = None
+        util.logger.info("Created %s", str(self))
         _USERS[_uuid(self.login)] = self
 
     def __str__(self):
