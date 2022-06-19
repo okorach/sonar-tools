@@ -305,10 +305,11 @@ def string_to_new_code(value):
 
 
 def set_new_code_period(endpoint, nc_type, nc_value, project_key=None, branch=None):
-    util.logger.info(
+    util.logger.debug(
         "Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value)
     )
     return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
+
 
 def get_visibility(endpoint, component):
     if component:
@@ -318,15 +319,16 @@ def get_visibility(endpoint, component):
         data = json.loads(endpoint.get(_API_GET, params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
+
 def set_visibility(endpoint, visibility, component=None):
     if component:
-        util.logger.info("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
+        util.logger.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
         return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility})
     else:
-        util.logger.info("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
+        util.logger.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
         r = endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility})
-        util.logger.debug("Response = %s", str(r))
         return r
+
 
 def set_setting(endpoint, key, value, component=None):
     if value is None or value == "":
@@ -336,7 +338,7 @@ def set_setting(endpoint, key, value, component=None):
         return set_visibility(endpoint=endpoint, component=component, visibility=value)
 
     value = decode(key, value)
-    util.logger.info("Setting setting '%s' to value '%s'", key, str(value))
+    util.logger.debug("Setting setting '%s' to value '%s'", key, str(value))
     params = {"key": key, "component": component.key if component else None}
     if isinstance(value, list):
         if isinstance(value[0], str):

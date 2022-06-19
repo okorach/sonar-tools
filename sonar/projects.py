@@ -35,7 +35,7 @@ import sonar.permissions as perms
 from sonar.audit import rules, severities
 import sonar.audit.problem as pb
 
-_PROJECTS = {}
+_OBJECTS = {}
 
 MAX_PAGE_SIZE = 500
 _SEARCH_API = "projects/search"
@@ -66,7 +66,7 @@ class Project(components.Component):
             self.__load()
         else:
             self.__load(data)
-        _PROJECTS[key] = self
+        _OBJECTS[key] = self
         util.logger.debug("Created %s", str(self))
 
     def __str__(self):
@@ -618,7 +618,8 @@ class Project(components.Component):
         return (data["qualityGate"]["name"], data["qualityGate"]["default"])
 
     def webhooks(self):
-        return webhooks.get_list(self.endpoint, self.key)
+        util.logger.debug("Getting PROJ webhooks for %s")
+        return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
 
     def links(self):
         data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
@@ -683,11 +684,7 @@ class Project(components.Component):
         if qg_is_default:
             json_data.pop("qualityGate")
 
-        wh = webhooks.export(self.endpoint, self.key)
-        if wh is not None:
-            if settings.GENERAL_SETTINGS not in json_data:
-                json_data[settings.GENERAL_SETTINGS] = {}
-            json_data[settings.GENERAL_SETTINGS].update({"webhooks": wh})
+        json_data["webhooks"] = webhooks.export(self.endpoint, self.key)
 
         if full_export:
             pass
@@ -761,14 +758,24 @@ class Project(components.Component):
         util.logger.warning("No main branch to rename found for %s", str(self))
         return False
 
+    def set_webhooks(self, webhook_data):
+        current_wh = self.webhooks()
+        current_wh_names = [wh.name for wh in current_wh.values()]
+        wh_map = {wh.name: k for k, wh in current_wh.items()}
+        # FIXME: Handle several webhooks with same name
+        for wh_name, wh in webhook_data.items():
+            if wh_name in current_wh_names:
+                current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
+            else:
+                webhooks.update(name=wh_name, endpoint=self.endpoint, project=self.key, **wh)
+
     def set_settings(self, data):
         util.logger.debug("Setting %s settings with %s", str(self), util.json_dump(data))
         for key, value in data.items():
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
             if key == "webhooks":
-                for wh_name, wh in value.items():
-                    webhooks.update(name=wh_name, endpoint=self.endpoint, **wh)
+                self.set_webhooks(value)
             else:
                 settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
@@ -850,7 +857,10 @@ class Project(components.Component):
             self.set_devops_binding(data["binding"])
         else:
             util.logger.debug("%s has no devops binding, skipped")
-        settings_to_apply = {k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding")}
+        settings_to_apply = {
+            k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
+        }
+        # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 
 
@@ -874,44 +884,32 @@ def search(endpoint, params=None):
     )
 
 
-def get_key_list(endpoint=None, params=None):
-    return search(endpoint, params).keys()
-
-
-def get_object_list(endpoint=None, params=None):
-    return search(endpoint, params).values()
-
-
 def get_projects_list(str_key_list, endpoint):
     if str_key_list is None:
         util.logger.info("Getting project list")
-        project_list = search(endpoint=endpoint)
-    else:
-        project_list = {}
-        try:
-            for key in util.csv_to_list(str_key_list):
-                project_list[key] = get_object(key, endpoint=endpoint)
-        except env.NonExistingObjectError as e:
-            util.exit_fatal(
-                f"Project key '{e.key}' does not exist, aborting...",
-                options.ERR_NO_SUCH_PROJECT_KEY,
-            )
+        return search(endpoint=endpoint)
+    project_list = {}
+    try:
+        for key in util.csv_to_list(str_key_list):
+            project_list[key] = get_object(key, endpoint=endpoint)
+    except env.NonExistingObjectError as e:
+        util.exit_fatal(f"Project key '{e.key}' does not exist, aborting...", options.ERR_NO_SUCH_PROJECT_KEY)
     return project_list
 
 
 def key_obj(key_or_obj):
     if isinstance(key_or_obj, str):
-        return (key_or_obj, _PROJECTS.get(key_or_obj, None))
+        return (key_or_obj, _OBJECTS.get(key_or_obj, None))
     else:
         return (key_or_obj.key, key_or_obj)
 
 
 def get_object(key, endpoint):
-    if key not in _PROJECTS:
+    if len(_OBJECTS) == 0:
         get_projects_list(str_key_list=None, endpoint=endpoint)
-    if key not in _PROJECTS:
+    if key not in _OBJECTS:
         return None
-    return _PROJECTS[key]
+    return _OBJECTS[key]
 
 
 def audit(audit_settings, endpoint=None):

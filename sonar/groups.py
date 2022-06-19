@@ -67,6 +67,7 @@ class Group(sq.SqObject):
         self.description = data.get("description", "")
         _GROUPS[self.key] = self
         _MAP[self.name] = self.key
+        util.logger.info("Created %s", str(self))
 
     def __str__(self):
         return f"group '{self.name}'"
@@ -99,18 +100,18 @@ class Group(sq.SqObject):
 
     def set_description(self, description):
         if description is None or description == self.description:
-            util.logger.info("No description to update for %s", str(self))
+            util.logger.debug("No description to update for %s", str(self))
             return self
-        util.logger.info("Updating %s with description = %s", str(self), description)
+        util.logger.debug("Updating %s with description = %s", str(self), description)
         self.post(_UPDATE_API, params={"id": self.key, "description": description})
         self.description = description
         return self
 
     def set_name(self, name):
         if name is None or name == self.name:
-            util.logger.info("No name to update for %s", str(self))
+            util.logger.debug("No name to update for %s", str(self))
             return self
-        util.logger.info("Updating %s with name = %s", str(self), name)
+        util.logger.debug("Updating %s with name = %s", str(self), name)
         self.post(_UPDATE_API, params={"id": self.key, "name": name})
         _MAP.pop(self.name, None)
         self.name = name

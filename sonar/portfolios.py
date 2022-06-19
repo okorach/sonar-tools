@@ -286,7 +286,7 @@ class Portfolio(aggregations.Aggregation):
                 util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
             for branch in util.csv_to_list(branches):
                 if branch != options.DEFAULT and branch not in util.csv_to_list(current_projects[proj]):
-                    util.logger.info("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
+                    util.logger.debug("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
                     r = self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch}, exit_on_error=False)
                     ok = ok and r.ok
                 else:
@@ -491,7 +491,7 @@ def import_config(endpoint, config_data):
     search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
     for key, data in config_data["portfolios"].items():
-        util.logger.info("Importing portfolios key '%s'", key)
+        util.logger.info("Importing portfolio key '%s'", key)
         o = get_object(key, endpoint)
         if o is None:
             newdata = data.copy()

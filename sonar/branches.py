@@ -51,7 +51,7 @@ class Branch(components.Component):
         self._keep_when_inactive = None
         self._ncloc = None
         _BRANCHES[self.uuid()] = self
-        util.logger.debug("Created object %s", str(self))
+        util.logger.debug("Created %s", str(self))
 
     def __str__(self):
         return f"branch '{self.name}' of {str(self.project)}"

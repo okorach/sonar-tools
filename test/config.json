@@ -158,10 +158,10 @@
             "master": {
                "isMain": true,
                "projects": {
-                  "demo:github-mono-jenkins-cli": "main",
-                  "demo:github-mono-jenkins-dotnet": "main",
-                  "demo:github-mono-jenkins-gradle": "main",
-                  "demo:github-mono-jenkins-maven": "main"
+                  "demo:github-mono-jenkins-cli": "__default__",
+                  "demo:github-mono-jenkins-dotnet": "__default__",
+                  "demo:github-mono-jenkins-gradle": "__default__",
+                  "demo:github-mono-jenkins-maven": "__default__"
                }
             }
          },
@@ -2913,14 +2913,6 @@
          }
       },
       "test_cobol": {
-         "generalSettings": {
-            "webhooks": {
-               "JenkinsWeb": {
-                  "secret": "tagada",
-                  "url": "http://foo.fr"
-               }
-            }
-         },
          "name": "test_cobol",
          "permissions": {
             "groups": {
@@ -2931,6 +2923,12 @@
                "Team Tech Leads": "codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-administrators": "admin, codeviewer, issueadmin, securityhotspotadmin, user",
                "sonar-users": "user"
+            }
+         },
+         "webhooks": {
+            "JenkinsWeb": {
+               "secret": "tagada",
+               "url": "http://foo.fr"
             }
          }
       },

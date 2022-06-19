@@ -189,9 +189,9 @@ class Application(aggr.Aggregation):
         current_projects = self.projects().keys()
         for proj in project_list:
             if proj in current_projects:
-                util.logger.info("Won't add project '%s' to %s, it's already added", proj, str(self))
+                util.logger.debug("Won't add project '%s' to %s, it's already added", proj, str(self))
                 continue
-            util.logger.info("Adding project '%s' to %s", proj, str(self))
+            util.logger.debug("Adding project '%s' to %s", proj, str(self))
             self.post("applications/add_project", params={"application": self.key, "project": proj})
 
     def update(self, data):

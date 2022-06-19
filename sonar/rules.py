@@ -58,13 +58,13 @@ class Rule(sq.SqObject):
             return
         if isinstance(tags, list):
             tags = utilities.list_to_csv(tags)
-        utilities.logger.info("Settings custom tags '%s' to %s", tags, str(self))
+        utilities.logger.debug("Settings custom tags '%s' to %s", tags, str(self))
         self.post("rules/update", params={"key": self.key, "tags": tags})
 
     def set_description(self, description):
         if description is None:
             return
-        utilities.logger.info("Settings custom description '%s' to %s", description, str(self))
+        utilities.logger.debug("Settings custom description '%s' to %s", description, str(self))
         self.post("rules/update", params={"key": self.key, "markdown_note": description})
 
     def instantiate(self, key, data):

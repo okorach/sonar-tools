@@ -142,7 +142,7 @@ class Permissions(ABC):
         # so these perms needs to be removed manually
         for p in PERMISSION_TYPES:
             for u, perms in self.permissions[p].items():
-                self.permissions[p][u] = _permission_filter(perms, ('applicationcreator', 'portfoliocreator'), black_list=True)
+                self.permissions[p][u] = _permission_filter(perms, ("applicationcreator", "portfoliocreator"), black_list=True)
 
     def count(self, perm_type=None, perm_filter=None):
         perms = PERMISSION_TYPES if perm_type is None else (perm_type)
@@ -311,11 +311,11 @@ class QualityGatePermissions(Permissions):
 
     def set(self, new_perms):
         if self.concerned_object.is_built_in:
-            utilities.logger.warning("Can't set %s because it's built-in", str(self))
+            utilities.logger.debug("Can't set %s because it's built-in", str(self))
             self.permissions = {p: [] for p in PERMISSION_TYPES}
             return self
         if self.endpoint.version() < (9, 2, 0):
-            utilities.logger.warning("Can set %s on SonarQube < 9.2", str(self))
+            utilities.logger.debug("Can set %s on SonarQube < 9.2", str(self))
             self.permissions = {p: [] for p in PERMISSION_TYPES}
             return self
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
@@ -426,10 +426,10 @@ class QualityProfilePermissions(Permissions):
 
     def set(self, new_perms):
         if self.concerned_object.is_built_in:
-            utilities.logger.warning("Can set %s because it's built-in", str(self))
+            utilities.logger.debug("Can set %s because it's built-in", str(self))
             return self
         if self.endpoint.version() < (6, 6, 0):
-            utilities.logger.warning("Can set %s on SonarQube < 6.6", str(self))
+            utilities.logger.debug("Can set %s on SonarQube < 6.6", str(self))
             return self
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:

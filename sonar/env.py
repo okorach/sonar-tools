@@ -198,19 +198,32 @@ class Environment:
         json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
         return json_data
 
+    def set_webhooks(self, webhooks_data):
+        current_wh = self.webhooks()
+        # FIXME: Handle several webhooks with same name
+        current_wh_names = [wh.name for wh in current_wh.values()]
+        wh_map = {wh.name: k for k, wh in current_wh.items()}
+        util.logger.debug("Current WH %s", str(current_wh_names))
+        for wh_name, wh in webhooks_data.items():
+            util.logger.debug("Updating wh with name %s", wh_name)
+            if wh_name in current_wh_names:
+                current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
+            else:
+                webhooks.update(name=wh_name, endpoint=self, project=None, **wh)
+
     def import_config(self, config_data):
         for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
             if section not in config_data:
                 continue
-            for config_setting in config_data[section]:
-                if config_setting == "webhooks":
-                    for wh_name, wh in config_data[section][config_setting].items():
-                        webhooks.update(name=wh_name, endpoint=self, **wh)
+            for setting_key, setting_value in config_data[section].items():
+                if setting_key == "webhooks":
+                    self.set_webhooks(setting_value)
                 else:
-                    self.set_setting(config_setting, config_data[section][config_setting])
+                    self.set_setting(setting_key, setting_value)
+
         if "languages" in config_data:
-            for data in config_data["languages"].values():
-                for s, v in data.items():
+            for setting_value in config_data["languages"].values():
+                for s, v in setting_value.items():
                     self.set_setting(s, v)
 
         if settings.NEW_CODE_PERIOD in config_data["generalSettings"]:

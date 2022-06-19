@@ -94,7 +94,7 @@ class QualityProfile(sq.SqObject):
         self.last_used = util.string_to_date(data.get("lastUsed", None))
         self.last_updated = util.string_to_date(data.get("rulesUpdatedAt", None))
 
-        util.logger.info("Created object %s", str(self))
+        util.logger.info("Created %s", str(self))
         _MAP[_format(self.name, self.language)] = self.key
         _OBJECTS[self.key] = self
 
@@ -192,10 +192,10 @@ class QualityProfile(sq.SqObject):
                 util.log_and_exit(r)
 
     def update(self, data):
-        util.logger.info("Updating %s", str(self))
         if self.is_built_in:
-            util.logger.info("Not updating built-in %s", str(self))
+            util.logger.debug("Not updating built-in %s", str(self))
         else:
+            util.logger.debug("Updating %s with %s", str(self), str(data))
             if "name" in data and data["name"] != self.name:
                 util.logger.info("Renaming %s with %s", str(self), data["name"])
                 self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
