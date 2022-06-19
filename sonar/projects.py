@@ -846,7 +846,7 @@ class Project(components.Component):
             self.set_devops_binding(data["binding"])
         else:
             util.logger.debug("%s has no devops binding, skipped")
-        settings_to_apply = {k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding")}
+        settings_to_apply = {k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")}
         self.set_settings(settings_to_apply)
 
 
