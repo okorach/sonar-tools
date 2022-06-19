@@ -758,23 +758,24 @@ class Project(components.Component):
         util.logger.warning("No main branch to rename found for %s", str(self))
         return False
 
+    def set_webhooks(self, webhook_data):
+        current_wh = self.webhooks()
+        current_wh_names = [wh.name for wh in current_wh.values()]
+        wh_map = {wh.name: k for k, wh in current_wh.items()}
+        # FIXME: Handle several webhooks with same name
+        for wh_name, wh in webhook_data.items():
+            if wh_name in current_wh_names:
+                current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
+            else:
+                webhooks.update(name=wh_name, endpoint=self.endpoint, project=self.key, **wh)
+
     def set_settings(self, data):
         util.logger.debug("Setting %s settings with %s", str(self), util.json_dump(data))
         for key, value in data.items():
             if key in ("branches", settings.NEW_CODE_PERIOD):
                 continue
             if key == "webhooks":
-                current_wh = self.webhooks()
-                current_wh_names = [wh.name for wh in current_wh.values()]
-                wh_map = {wh.name: k for k, wh in current_wh.items()}
-                util.logger.debug("Current WH %s", str(current_wh_names))
-                # FIXME: Handle several webhooks with same name
-                for wh_name, wh in value.items():
-                    util.logger.debug("Updating wh with name %s", wh_name)
-                    if wh_name in current_wh_names:
-                        current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
-                    else:
-                        webhooks.update(name=wh_name, endpoint=self.endpoint, project=self.key, **wh)
+                self.set_webhooks(value)
             else:
                 settings.set_setting(endpoint=self.endpoint, key=key, value=value, component=self)
 
@@ -859,6 +860,7 @@ class Project(components.Component):
         settings_to_apply = {
             k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
         }
+        # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 
 
