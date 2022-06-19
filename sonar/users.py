@@ -98,6 +98,7 @@ class User(sqobject.SqObject):
         return self._last_login_date
 
     def update(self, **kwargs):
+        util.logger.debug("Updating %s with %s", str(self), str(kwargs))
         params = {"login": self.login}
         my_data = vars(self)
         for p in ("name", "email"):
@@ -130,9 +131,9 @@ class User(sqobject.SqObject):
                 self.groups.append(g)
                 continue
             if not groups.exists(g, self.endpoint):
-                util.logger.warning("Group '%s' does not exists, can't add membership of %s", g, str(self))
+                util.logger.warning("Group '%s' does not exists, can't add membership for %s", g, str(self))
                 continue
-            util.logger.info("Adding group '%s' to %s", g, str(self))
+            util.logger.debug("Adding group '%s' to %s", g, str(self))
             self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
 
     def add_scm_accounts(self, accounts_list):
@@ -150,11 +151,11 @@ class User(sqobject.SqObject):
             if a not in self.scmAccounts:
                 new_scms.append(a)
         if len(new_scms) > len(self.scmAccounts):
-            util.logger.info("Setting SCM accounts '%s' to %s", str(new_scms), str(self))
+            util.logger.debug("Setting SCM accounts '%s' to %s", str(new_scms), str(self))
             self.post(_UPDATE_API, params={"login": self.login, "scmAccount": new_scms})
             self.scmAccounts = new_scms
         else:
-            util.logger.info("No SCM accounts to add to %s current is %s", str(self), str(self.scmAccounts))
+            util.logger.debug("No SCM accounts to add to %s current is %s", str(self), str(self.scmAccounts))
 
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
@@ -263,7 +264,6 @@ def get_login_from_name(name, endpoint):
 
 
 def update(login, endpoint, **kwargs):
-    util.logger.info("Update user '%s' with %s", login, str(kwargs))
     o = get_object(login=login, endpoint=endpoint)
     if o is None:
         util.logger.warning("Can't update user '%s', it does not exists", login)
@@ -272,7 +272,7 @@ def update(login, endpoint, **kwargs):
 
 
 def create(login, endpoint=None, **kwargs):
-    util.logger.info("Create user '%s' with data %s", login, str(kwargs))
+    util.logger.debug("Creating user '%s' with data %s", login, str(kwargs))
     o = get_object(login=login, endpoint=endpoint)
     if o is None:
         o = User(login=login, endpoint=endpoint, create_data=kwargs)

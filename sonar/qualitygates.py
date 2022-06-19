@@ -128,7 +128,7 @@ class QualityGate(sq.SqObject):
 
     def clear_conditions(self):
         if self.is_built_in:
-            util.logger.warning("Can't clear conditions of built-in %s", str(self))
+            util.logger.debug("Can't clear conditions of built-in %s", str(self))
         else:
             util.logger.debug("Clearing conditions of %s", str(self))
             for c in self.conditions():
@@ -139,7 +139,7 @@ class QualityGate(sq.SqObject):
         if conditions_list is None or len(conditions_list) == 0:
             return
         if self.is_built_in:
-            util.logger.warning("Can't set conditions of built-in %s", str(self))
+            util.logger.debug("Can't set conditions of built-in %s", str(self))
             return
         self.clear_conditions()
         util.logger.debug("Setting conditions of %s", str(self))

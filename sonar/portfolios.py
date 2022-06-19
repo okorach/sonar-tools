@@ -286,7 +286,7 @@ class Portfolio(aggregations.Aggregation):
                 util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
             for branch in util.csv_to_list(branches):
                 if branch != options.DEFAULT and branch not in util.csv_to_list(current_projects[proj]):
-                    util.logger.info("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
+                    util.logger.debug("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
                     r = self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch}, exit_on_error=False)
                     ok = ok and r.ok
                 else:
