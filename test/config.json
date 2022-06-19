@@ -19,7 +19,6 @@
                }
             }
          },
-         "description": "",
          "name": "App with branches",
          "permissions": {
             "groups": {
@@ -40,7 +39,6 @@
                }
             }
          },
-         "description": "",
          "name": "Azure DevOps monorepo",
          "permissions": {
             "groups": {
@@ -65,7 +63,6 @@
                }
             }
          },
-         "description": "",
          "name": "Bitbucket Cloud monorepo",
          "permissions": {
             "groups": {
@@ -86,7 +83,6 @@
                }
             }
          },
-         "description": "",
          "name": "Bitbucket Server LATEST monorepo",
          "permissions": {
             "groups": {
@@ -108,7 +104,6 @@
                }
             }
          },
-         "description": "",
          "name": "Bitbucket Server LTS monorepo",
          "permissions": {
             "groups": {
@@ -170,7 +165,6 @@
                }
             }
          },
-         "description": "",
          "name": "GitHub monorepo",
          "permissions": {
             "groups": {
@@ -192,7 +186,6 @@
                }
             }
          },
-         "description": "",
          "name": "GitLab-CI monorepo",
          "permissions": {
             "groups": {
@@ -557,7 +550,7 @@
             }
          },
          "Full Open Permissions": {
-            "description": "",
+            "description": "All users can do what they want",
             "pattern": "",
             "permissions": {
                "groups": {
@@ -566,7 +559,6 @@
             }
          },
          "Permissions for projects of Team 1": {
-            "description": "",
             "pattern": "TEAM_A_.*",
             "permissions": {
                "groups": {
@@ -578,7 +570,6 @@
          },
          "Portfolios permissions": {
             "defaultFor": "applications, portfolios",
-            "description": "",
             "pattern": "",
             "permissions": {
                "groups": {
@@ -600,7 +591,6 @@
             }
          },
          "Training permissions": {
-            "description": "",
             "pattern": "training:.*",
             "permissions": {
                "groups": {
@@ -665,7 +655,7 @@
    },
    "portfolios": {
       "All_projects": {
-         "description": "",
+         "description": "All projects of the platform",
          "name": "All projects",
          "permissions": {
             "groups": {
@@ -677,7 +667,6 @@
          "visibility": "private"
       },
       "Bitbucket_Cloud_projects": {
-         "description": "",
          "name": "Bitbucket Cloud projects",
          "permissions": {
             "groups": {
@@ -690,7 +679,6 @@
          "visibility": "public"
       },
       "Bitbucket_Server_projects": {
-         "description": "",
          "name": "Bitbucket Server LATEST projects",
          "permissions": {
             "groups": {
@@ -702,7 +690,6 @@
          "visibility": "public"
       },
       "GitHub_projects": {
-         "description": "",
          "name": "GitHub projects",
          "permissions": {
             "groups": {
@@ -714,7 +701,6 @@
          "visibility": "public"
       },
       "GitLab_projects": {
-         "description": "",
          "name": "GitLab projects",
          "permissions": {
             "groups": {
@@ -735,22 +721,19 @@
             }
          },
          "projectSelectionMode": "NONE",
-         "subPortfolios": [
-            {
+         "subPortfolios": {
+            "Others": {
                "byReference": false,
-               "key": "Others",
                "name": "Others",
                "projectSelectionMode": "REST"
             },
-            {
-               "byReference": true,
-               "key": "PORTFOLIO-DIV-BANKING"
+            "PORTFOLIO-DIV-BANKING": {
+               "byReference": true
             },
-            {
-               "byReference": true,
-               "key": "PORTFOLIO-DIV-INSURANCE"
+            "PORTFOLIO-DIV-INSURANCE": {
+               "byReference": true
             }
-         ],
+         },
          "visibility": "private"
       },
       "PORTFOLIO-CORPORATE-BANKING": {
@@ -783,20 +766,17 @@
             "WEBSITE-TIER3-DBLAYER": "__default__",
             "training:branches": "release-1.1, develop"
          },
-         "subPortfolios": [
-            {
-               "byReference": true,
-               "key": "PORTFOLIO-CORPORATE-BANKING"
+         "subPortfolios": {
+            "PORTFOLIO-CORPORATE-BANKING": {
+               "byReference": true
             },
-            {
-               "byReference": true,
-               "key": "PORTFOLIO-PRIVATE-BANKING"
+            "PORTFOLIO-PRIVATE-BANKING": {
+               "byReference": true
             },
-            {
-               "byReference": true,
-               "key": "PORTFOLIO-RETAIL-BANKING"
+            "PORTFOLIO-RETAIL-BANKING": {
+               "byReference": true
             }
-         ],
+         },
          "visibility": "private"
       },
       "PORTFOLIO-DIV-INSURANCE": {
@@ -864,16 +844,14 @@
             }
          },
          "projectSelectionMode": "NONE",
-         "subPortfolios": [
-            {
+         "subPortfolios": {
+            "Sub_Portfolio_1": {
                "byReference": false,
-               "key": "Sub_Portfolio_1",
                "name": "Sub Portfolio 1",
                "projectSelectionMode": "NONE",
-               "subPortfolios": [
-                  {
+               "subPortfolios": {
+                  "Sub_Sub_1_1": {
                      "byReference": false,
-                     "key": "Sub_Sub_1_1",
                      "name": "Sub Sub 1.1",
                      "projectSelectionMode": "MANUAL",
                      "projects": {
@@ -882,23 +860,21 @@
                         "training:branches": "release-1.1"
                      }
                   },
-                  {
+                  "Sub_Sub_1_2": {
                      "byReference": false,
-                     "key": "Sub_Sub_1_2",
                      "name": "Sub Sub 1.2",
                      "projectSelectionMode": "REGEXP",
                      "projectSelectionRegexp": "FOO.*"
                   }
-               ]
+               }
             },
-            {
+            "Sub_Portfolio_2": {
                "byReference": false,
-               "key": "Sub_Portfolio_2",
                "name": "Sub Portfolio 2",
                "projectSelectionMode": "TAGS",
                "projectSelectionTags": "gitlab"
             }
-         ],
+         },
          "visibility": "public"
       },
       "bad:empty_portfolio": {

@@ -712,7 +712,7 @@ class Project(components.Component):
 
     def permissions(self):
         if self._permissions is None:
-            self._permissions = perms.ProjectPermissions(project_object=self)
+            self._permissions = perms.ProjectPermissions(self)
         return self._permissions
 
     def set_permissions(self, data):

@@ -41,6 +41,11 @@ PROJECT_PERMISSIONS = {
     "admin": "Administer Project",
 }
 
+AGGREGATION_PERMISSIONS = {
+    "user": "Browse",
+    "admin": "Administer Project",
+}
+
 _GLOBAL = 0
 _PROJECTS = 1
 _TEMPLATES = 2
@@ -137,10 +142,7 @@ class Permissions(ABC):
         # so these perms needs to be removed manually
         for p in PERMISSION_TYPES:
             for u, perms in self.permissions[p].items():
-                for unwanted in ('applicationcreator', 'portfoliocreator'):
-                    if unwanted in perms:
-                        perms.remove(unwanted)
-                self.permissions[p][u] = perms
+                self.permissions[p][u] = _permission_filter(perms, ('applicationcreator', 'portfoliocreator'), black_list=True)
 
     def count(self, perm_type=None, perm_filter=None):
         perms = PERMISSION_TYPES if perm_type is None else (perm_type)
@@ -205,13 +207,14 @@ class GlobalPermissions(Permissions):
 
     def read(self, perm_type=None):
         self.permissions = NO_PERMISSIONS
-        for perm in _normalize(perm_type):
-            self.permissions[perm] = self._get_api(GlobalPermissions.API_GET[perm], perm, GlobalPermissions.API_GET_FIELD[perm], ps=MAX_PERMS)
+        for ptype in _normalize(perm_type):
+            self.permissions[ptype] = self._get_api(GlobalPermissions.API_GET[ptype], ptype, GlobalPermissions.API_GET_FIELD[ptype], ps=MAX_PERMS)
         return self
 
     def set(self, new_perms):
         utilities.logger.debug("Setting %s to %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -220,8 +223,7 @@ class GlobalPermissions(Permissions):
             self._post_api(GlobalPermissions.API_REMOVE[p], GlobalPermissions.API_SET_FIELD[p], to_remove)
             to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(GlobalPermissions.API_SET[p], GlobalPermissions.API_SET_FIELD[p], to_add)
-        self.read()
-        return self
+        return self.read()
 
 
 class TemplatePermissions(Permissions):
@@ -231,20 +233,20 @@ class TemplatePermissions(Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, template_object):
-        self.concerned_object = template_object
-        super().__init__(template_object.endpoint)
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object.endpoint)
 
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
 
     def read(self, perm_type=None):
         self.permissions = NO_PERMISSIONS
-        for perm in _normalize(perm_type):
-            self.permissions[perm] = self._get_api(
-                TemplatePermissions.API_GET[perm],
-                perm,
-                TemplatePermissions.API_GET_FIELD[perm],
+        for p in _normalize(perm_type):
+            self.permissions[p] = self._get_api(
+                TemplatePermissions.API_GET[p],
+                p,
+                TemplatePermissions.API_GET_FIELD[p],
                 templateName=self.concerned_object.name,
                 ps=MAX_PERMS,
             )
@@ -253,7 +255,8 @@ class TemplatePermissions(Permissions):
 
     def set(self, new_perms):
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -264,8 +267,7 @@ class TemplatePermissions(Permissions):
             )
             to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(TemplatePermissions.API_SET[p], TemplatePermissions.API_SET_FIELD[p], to_add, templateName=self.concerned_object.name)
-        self.read()
-        return self
+        return self.read()
 
 
 class QualityGatePermissions(Permissions):
@@ -275,9 +277,9 @@ class QualityGatePermissions(Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, qg_object):
-        self.concerned_object = qg_object
-        super().__init__(qg_object.endpoint)
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object.endpoint)
 
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
@@ -317,7 +319,8 @@ class QualityGatePermissions(Permissions):
             self.permissions = {p: [] for p in PERMISSION_TYPES}
             return self
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -328,8 +331,7 @@ class QualityGatePermissions(Permissions):
             )
             to_add = diffarray(decoded_perms, self.permissions[p])
             self._post_api(QualityGatePermissions.API_SET[p], QualityGatePermissions.API_SET_FIELD[p], to_add, gateName=self.concerned_object.name)
-        self.read()
-        return self
+        return self.read()
 
     def to_json(self, perm_type=None, csv=False):
         if not csv:
@@ -368,9 +370,9 @@ class QualityProfilePermissions(Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "group"}
 
-    def __init__(self, qp_object):
-        self.concerned_object = qp_object
-        super().__init__(qp_object.endpoint)
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object.endpoint)
 
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
@@ -430,7 +432,8 @@ class QualityProfilePermissions(Permissions):
             utilities.logger.warning("Can set %s on SonarQube < 6.6", str(self))
             return self
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -451,8 +454,7 @@ class QualityProfilePermissions(Permissions):
                 qualityProfile=self.concerned_object.name,
                 language=self.concerned_object.language,
             )
-        self.read()
-        return self
+        return self.read()
 
     def to_json(self, perm_type=None, csv=False):
         if not csv:
@@ -468,12 +470,12 @@ class ProjectPermissions(Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, project_object):
-        self.concerned_object = project_object
-        super().__init__(project_object.endpoint)
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object.endpoint)
 
     def __str__(self):
-        return f"permissions of f{str(self.concerned_object)}"
+        return f"permissions of {str(self.concerned_object)}"
 
     def read(self, perm_type=None):
         self.permissions = NO_PERMISSIONS
@@ -486,7 +488,8 @@ class ProjectPermissions(Permissions):
 
     def set(self, new_perms):
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        self.read()
+        if self.permissions is None:
+            self.read()
         for p in PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
@@ -495,20 +498,35 @@ class ProjectPermissions(Permissions):
             self._post_api(ProjectPermissions.API_REMOVE[p], ProjectPermissions.API_SET_FIELD[p], to_remove, projectKey=self.concerned_object.key)
             to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(ProjectPermissions.API_SET[p], ProjectPermissions.API_SET_FIELD[p], to_add, projectKey=self.concerned_object.key)
-        self.read()
+        return self.read()
+
+
+class AggregationPermissions(ProjectPermissions):
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object)
+
+    def read(self, perm_type=None):
+        super().read(perm_type)
+        self._remove_non_aggregation_permissions(perm_type)
         return self
 
+    def set(self, new_perms):
+        return super().set(_permission_filter(new_perms, AGGREGATION_PERMISSIONS))
 
-class PortfolioPermissions(ProjectPermissions):
-    def __init__(self, portfolio_object):
-        self.concerned_object = portfolio_object
-        super().__init__(portfolio_object)
+    def _remove_non_aggregation_permissions(self, perm_type=None):
+        # Hack: SonarQube return permissions for aggregations that do not exist
+        for ptype in _normalize(perm_type):
+            for u, perms in self.permissions[ptype].items():
+                self.permissions[ptype][u] = _permission_filter(perms, AGGREGATION_PERMISSIONS)
 
 
-class ApplicationPermissions(ProjectPermissions):
-    def __init__(self, app_object):
-        self.concerned_object = app_object
-        super().__init__(app_object)
+class PortfolioPermissions(AggregationPermissions):
+    pass
+
+
+class ApplicationPermissions(AggregationPermissions):
+    pass
 
 
 def simplify(perms_dict):
@@ -586,3 +604,10 @@ def diffarray(perms_1, perms_2):
         if elem in diff_perms:
             diff_perms.remove(elem)
     return diff_perms
+
+
+def _permission_filter(permissions, permissions_list, black_list=False):
+    if black_list:
+        return [p for p in permissions if p not in permissions_list]
+    else:
+        return [p for p in permissions if p in permissions_list]

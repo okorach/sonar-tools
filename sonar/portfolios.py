@@ -25,6 +25,7 @@
 
 import time
 import json
+
 from sonar import aggregations, env, measures, options, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -106,9 +107,7 @@ class Portfolio(aggregations.Aggregation):
         _OBJECTS[self.key] = self
 
     def __str__(self):
-        if self.portfolio_type == "SVW":
-            return f"subportfolio name '{self.name}'"
-        return f"portfolio name '{self.name}'"
+        return f"subportfolio '{self.key}'" if self.portfolio_type == "SVW" else f"portfolio '{self.key}'"
 
     def get_details(self):
         util.logger.debug("Updating details for %s root key %s", str(self), self.root_key)
@@ -138,13 +137,16 @@ class Portfolio(aggregations.Aggregation):
 
     def projects(self):
         if self._selection_mode != SELECTION_MODE_MANUAL:
-            self._projects = None
+            util.logger.debug("%s: Not manual mode, no projects", str(self))
+            self._projects = {}
             return self._projects
         if self._projects is not None:
+            util.logger.debug("%s: Projects already set, returning %s", str(self), str(self._projects))
             return self._projects
         if "selectedProjects" not in self._json:
             self.get_details()
         self._projects = {}
+        util.logger.debug("%s: Read projects %s", str(self), str(self._projects))
         if self.endpoint.version() < (9, 3, 0):
             for p in self._json["projects"]:
                 self._projects[p] = options.DEFAULT
@@ -259,35 +261,37 @@ class Portfolio(aggregations.Aggregation):
 
     def set_permissions(self, portfolio_perms):
         if self.portfolio_type == "VW":
-            # No permissions for SVW
+            # No permissions for SVW)
             self.permissions().set(portfolio_perms)
 
     def set_component_tags(self, tags, api):
         util.logger.warning("Can't set tags on portfolios, operation skipped...")
 
     def set_projects(self, project_list):
-        current_projects = self.projects()
         self.post("views/set_manual_mode", params={"portfolio": self.key})
-        if current_projects is None or project_list is None:
-            return
-        current_projects = current_projects.keys()
-        for proj in project_list:
-            params = {"key": self.key, "project": proj}
-            # FIXME: Handle portfolios with several branches of same project
-            if proj not in current_projects:
-                util.logger.info("Adding project '%s' to %s", proj, str(self))
-                self.post("views/add_project", params=params)
-                if project_list[proj] != options.DEFAULT:
-                    util.logger.info("Adding project '%s' branch '%s' to %s", proj, project_list[proj], str(self))
-                    params["branch"] = project_list["proj"]
-                    self.post("views/add_project_branch", params=params)
-            elif project_list[proj] != current_projects[proj]:
-                util.logger.info("Adding project '%s' branch '%s' to %s", proj, project_list[proj], str(self))
-                params["branch"] = project_list["proj"]
-                self.post("views/add_project_branch", params=params)
+        self._selection_mode = SELECTION_MODE_MANUAL
+        current_projects = self.projects()
+        current_project_keys = list(current_projects.keys())
+        util.logger.debug("Project list = %s", str(project_list))
+        if project_list is None:
+            return False
+        util.logger.debug("Current Project list = %s", str(current_projects))
+        ok = True
+        for proj, branches in project_list.items():
+            if proj not in current_project_keys:
+                r = self.post("views/add_project", params={"key": self.key, "project": proj}, exit_on_error=False)
+                ok = ok and r.ok
+                current_projects[proj] = options.DEFAULT
             else:
-                util.logger.info("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
-            self.post("views/add_project", params={"application": self.key, "project": proj})
+                util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
+            for branch in util.csv_to_list(branches):
+                if branch != options.DEFAULT and branch not in util.csv_to_list(current_projects[proj]):
+                    util.logger.info("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
+                    r = self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch}, exit_on_error=False)
+                    ok = ok and r.ok
+                else:
+                    util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
+        return ok
 
     def set_tag_mode(self, tags, branch):
         self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
@@ -298,10 +302,11 @@ class Portfolio(aggregations.Aggregation):
     def set_remaining_projects_mode(self, branch):
         self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
 
-    def set_node_mode(self):
+    def none(self):
         self.post("views/set_none_mode", params={"portfolio": self.key})
 
     def set_selection_mode(self, selection_mode, projects=None, regexp=None, tags=None, branch=None):
+        util.logger.debug("Setting selection mode %s for %s", str(selection_mode), str(self))
         if selection_mode == SELECTION_MODE_MANUAL:
             self.set_projects(projects)
         elif selection_mode == SELECTION_MODE_TAGS:
@@ -311,9 +316,12 @@ class Portfolio(aggregations.Aggregation):
         elif selection_mode == SELECTION_MODE_OTHERS:
             self.set_remaining_projects_mode(branch)
         elif selection_mode == SELECTION_MODE_NONE:
-            self.set_node_mode()
+            self.none()
         else:
             util.logger.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
+            return self
+        self._selection_mode = selection_mode
+        return self
 
     def add_subportfolio(self, key):
         if not exists(key, self.endpoint):
@@ -328,20 +336,23 @@ class Portfolio(aggregations.Aggregation):
         self.post("views/refresh", params={"key": self.root_key})
 
     def update(self, data, root_key):
-        util.logger.info("Updating %s", str(self))
-        self.set_permissions(data.get("permissions", {}))
-        selection_mode = data.get(_PROJECT_SELECTION_MODE, "NONE")
-        branch = data.get(_PROJECT_SELECTION_BRANCH, None)
-        regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
-        tags = data.get(_PROJECT_SELECTION_TAGS, None)
-        projects = data.get("projects", None)
-        self.root_key = root_key
-        self.set_selection_mode(selection_mode=selection_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
-        for subp in data.get("subPortfolios", []):
-            key_list = [p["key"] for p in self.sub_portfolios().get("subPortfolios", [])]
-            util.logger.debug("%s subport list = %s", str(self), str(key_list))
+        util.logger.debug("Updating %s with %s", str(self), util.json_dump(data))
+        if "byReference" not in data or not data["byReference"]:
+            self.set_permissions(data.get("permissions", {}))
+            selection_mode = data.get(_PROJECT_SELECTION_MODE, "NONE")
+            branch = data.get(_PROJECT_SELECTION_BRANCH, None)
+            regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
+            tags = data.get(_PROJECT_SELECTION_TAGS, None)
+            projects = data.get("projects", None)
+            self.root_key = root_key
+            self.set_selection_mode(selection_mode=selection_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+        else:
+            util.logger.debug("Skipping setting portfolio details, it's a reference")
+
+        for key, subp in data.get("subPortfolios", {}).items():
+            key_list = list(self.sub_portfolios().get("subPortfolios", {}).keys())
             if subp.get("byReference", False):
-                o_subp = get_object(key=subp["key"], endpoint=self.endpoint)
+                o_subp = get_object(key=key, endpoint=self.endpoint)
                 if o_subp is not None:
                     if o_subp.key not in key_list:
                         self.add_subportfolio(o_subp.key)
@@ -349,7 +360,7 @@ class Portfolio(aggregations.Aggregation):
             else:
                 name = subp.pop("name")
                 get_list(endpoint=self.endpoint)
-                o = get_object(key=subp["key"], endpoint=self.endpoint)
+                o = get_object(key=key, endpoint=self.endpoint)
                 if o is None:
                     util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
                     o = Portfolio.create(name=name, endpoint=self.endpoint, parent=self.key, root_key=root_key, **subp)
@@ -547,15 +558,15 @@ def _find_sub_portfolio(key, data):
 
 def __create_portfolio_hierarchy(endpoint, data, parent_key):
     nbr_creations = 0
-    for subp in data.get("subPortfolios", []):
+    for key, subp in data.get("subPortfolios", {}).items():
         if subp.get("byReference", False):
             continue
-        params = {"parent": parent_key}
-        for p in ("name", "description", "key", "visibility"):
+        params = {"parent": parent_key, "key": key}
+        for p in ("name", "description", "visibility"):
             params[p] = subp.get(p, None)
         util.logger.debug("Creating portfolio name '%s'", subp["name"])
         r = endpoint.post(_CREATE_API, params=params, exit_on_error=False)
         if r.ok:
             nbr_creations += 1
-        nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=subp["key"])
+        nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=key)
     return nbr_creations

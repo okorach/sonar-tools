@@ -66,7 +66,7 @@ class Application(aggr.Aggregation):
 
     def permissions(self):
         if self._permissions is None:
-            self._permissions = permissions.ApplicationPermissions(app_object=self)
+            self._permissions = permissions.ApplicationPermissions(self)
         return self._permissions
 
     def projects(self):
