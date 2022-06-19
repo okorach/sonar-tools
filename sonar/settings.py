@@ -113,11 +113,7 @@ class Setting(sqobject.SqObject):
     def load(cls, key, endpoint, data, component=None):
         util.logger.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
         uu = _uuid_p(key, component)
-        if uu in _OBJECTS:
-            util.logger.debug("Found in obj list uu = %s")
-            o = _OBJECTS[uu]
-        else:
-            o = cls(key=key, endpoint=endpoint, data=data, component=component)
+        o = _OBJECTS[uu] if uu in _OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
         o._load(data)
         return o
 
