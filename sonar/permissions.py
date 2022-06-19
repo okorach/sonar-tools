@@ -20,7 +20,6 @@
 
 import json
 from abc import ABC, abstractmethod
-from math import perm
 from sonar import utilities, options
 
 GLOBAL_PERMISSIONS = {
@@ -572,7 +571,6 @@ def _normalize(perm_type):
 def apply_api(endpoint, api, ufield, uvalue, ofield, ovalue, perm_list):
     for p in perm_list:
         endpoint.post(api, params={ufield: uvalue, ofield: ovalue, "permission": p})
-
 
 
 def diff_full(perms_1, perms_2):

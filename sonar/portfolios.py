@@ -23,11 +23,9 @@
 
 """
 
-from http.client import OK
 import time
 import json
 
-from click import option
 from sonar import aggregations, env, measures, options, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -351,7 +349,7 @@ class Portfolio(aggregations.Aggregation):
             util.logger.debug("Skipping setting portfolio details, it's a reference")
 
         for key, subp in data.get("subPortfolios", {}).items():
-            key_list = [k for k in self.sub_portfolios().get("subPortfolios", {}).keys()]
+            key_list = list(self.sub_portfolios().get("subPortfolios", {}).keys())
             if subp.get("byReference", False):
                 o_subp = get_object(key=key, endpoint=self.endpoint)
                 if o_subp is not None:
