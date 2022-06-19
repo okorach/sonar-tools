@@ -35,7 +35,7 @@ import sonar.permissions as perms
 from sonar.audit import rules, severities
 import sonar.audit.problem as pb
 
-_PROJECTS = {}
+_OBJECTS = {}
 
 MAX_PAGE_SIZE = 500
 _SEARCH_API = "projects/search"
@@ -66,7 +66,7 @@ class Project(components.Component):
             self.__load()
         else:
             self.__load(data)
-        _PROJECTS[key] = self
+        _OBJECTS[key] = self
         util.logger.debug("Created %s", str(self))
 
     def __str__(self):
@@ -870,42 +870,32 @@ def search(endpoint, params=None):
     )
 
 
-def get_key_list(endpoint=None, params=None):
-    return search(endpoint, params).keys()
-
-
-def get_object_list(endpoint=None, params=None):
-    return search(endpoint, params).values()
-
-
 def get_projects_list(str_key_list, endpoint):
     if str_key_list is None:
         util.logger.info("Getting project list")
-        project_list = search(endpoint=endpoint)
-    else:
-        project_list = {}
-        try:
-            for key in util.csv_to_list(str_key_list):
-                project_list[key] = get_object(key, endpoint=endpoint)
-        except env.NonExistingObjectError as e:
-            util.exit_fatal(
-                f"Project key '{e.key}' does not exist, aborting...",
-                options.ERR_NO_SUCH_PROJECT_KEY,
-            )
+        return search(endpoint=endpoint)
+    project_list = {}
+    try:
+        for key in util.csv_to_list(str_key_list):
+            project_list[key] = get_object(key, endpoint=endpoint)
+    except env.NonExistingObjectError as e:
+        util.exit_fatal(f"Project key '{e.key}' does not exist, aborting...", options.ERR_NO_SUCH_PROJECT_KEY)
     return project_list
 
 
 def key_obj(key_or_obj):
     if isinstance(key_or_obj, str):
-        return (key_or_obj, _PROJECTS.get(key_or_obj, None))
+        return (key_or_obj, _OBJECTS.get(key_or_obj, None))
     else:
         return (key_or_obj.key, key_or_obj)
 
 
 def get_object(key, endpoint):
-    if key not in _PROJECTS:
+    if len(_OBJECTS) == 0:
+        get_projects_list(str_key_list=None, endpoint=endpoint)
+    if key not in _OBJECTS:
         return None
-    return _PROJECTS[key]
+    return _OBJECTS[key]
 
 
 def audit(audit_settings, endpoint=None):
