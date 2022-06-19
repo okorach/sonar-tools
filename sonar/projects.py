@@ -904,8 +904,6 @@ def key_obj(key_or_obj):
 
 def get_object(key, endpoint):
     if key not in _PROJECTS:
-        get_projects_list(str_key_list=None, endpoint=endpoint)
-    if key not in _PROJECTS:
         return None
     return _PROJECTS[key]
 
