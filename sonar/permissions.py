@@ -41,7 +41,7 @@ PROJECT_PERMISSIONS = {
     "admin": "Administer Project",
 }
 
-PORTFOLIO_PERMISSIONS = {
+AGGREGATION_PERMISSIONS = {
     "user": "Browse",
     "admin": "Administer Project",
 }
@@ -142,10 +142,7 @@ class Permissions(ABC):
         # so these perms needs to be removed manually
         for p in PERMISSION_TYPES:
             for u, perms in self.permissions[p].items():
-                for unwanted in ('applicationcreator', 'portfoliocreator'):
-                    if unwanted in perms:
-                        perms.remove(unwanted)
-                self.permissions[p][u] = perms
+                self.permissions[p][u] = [p for p in perms if p not in ('applicationcreator', 'portfoliocreator')]
 
     def count(self, perm_type=None, perm_filter=None):
         perms = PERMISSION_TYPES if perm_type is None else (perm_type)
@@ -236,9 +233,9 @@ class TemplatePermissions(Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, template_object):
-        self.concerned_object = template_object
-        super().__init__(template_object.endpoint)
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object.endpoint)
 
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
@@ -280,9 +277,9 @@ class QualityGatePermissions(Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, qg_object):
-        self.concerned_object = qg_object
-        super().__init__(qg_object.endpoint)
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object.endpoint)
 
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
@@ -373,9 +370,9 @@ class QualityProfilePermissions(Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "group"}
 
-    def __init__(self, qp_object):
-        self.concerned_object = qp_object
-        super().__init__(qp_object.endpoint)
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object.endpoint)
 
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
@@ -473,9 +470,9 @@ class ProjectPermissions(Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, project_object):
-        self.concerned_object = project_object
-        super().__init__(project_object.endpoint)
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object.endpoint)
 
     def __str__(self):
         return f"permissions of f{str(self.concerned_object)}"
@@ -504,25 +501,34 @@ class ProjectPermissions(Permissions):
         return self
 
 
-class PortfolioPermissions(ProjectPermissions):
-    def __init__(self, portfolio_object):
-        self.concerned_object = portfolio_object
-        super().__init__(portfolio_object)
+class AggregationPermissions(ProjectPermissions):
+    def __init__(self, concerned_object):
+        self.concerned_object = concerned_object
+        super().__init__(concerned_object)
 
     def read(self, perm_type=None):
         super().read(perm_type)
-        self.permissions = _remove_non_portfolio_permissions(self.permissions, perm_type)
+        self._remove_non_portfolio_permissions(perm_type)
         return self
 
-class ApplicationPermissions(ProjectPermissions):
-    def __init__(self, app_object):
-        self.concerned_object = app_object
-        super().__init__(app_object)
+    def set(self, new_perms):
+        stripped_perms = [p for p in new_perms if p in AGGREGATION_PERMISSIONS]
+        super().set(stripped_perms)
+        return self.read()
 
-    def read(self, perm_type=None):
-        super().read(perm_type)
-        self.permissions = _remove_non_portfolio_permissions(self.permissions, perm_type)
-        return self
+    def _remove_non_portfolio_permissions(self, perm_type=None):
+        for ptype in _normalize(perm_type):
+            for u, perms in self.permissions[ptype].items():
+                stripped_perms = [p for p in perms if p in AGGREGATION_PERMISSIONS]
+                self.permissions[ptype][u] = stripped_perms
+
+
+class PortfolioPermissions(AggregationPermissions):
+    pass
+
+
+class ApplicationPermissions(AggregationPermissions):
+    pass
 
 
 def simplify(perms_dict):
@@ -569,15 +575,6 @@ def apply_api(endpoint, api, ufield, uvalue, ofield, ovalue, perm_list):
         endpoint.post(api, params={ufield: uvalue, ofield: ovalue, "permission": p})
 
 
-def _remove_non_portfolio_permissions(some_perms, perm_type=None):
-    for ptype in _normalize(perm_type):
-        for u, perms in some_perms[ptype].items():
-            stripped_perms = []
-            for perm in perms:
-                if perm in PORTFOLIO_PERMISSIONS:
-                    stripped_perms.append(perm)
-            some_perms[ptype][u] = stripped_perms
-    return some_perms
 
 def diff_full(perms_1, perms_2):
     diff_perms = perms_1.copy()
