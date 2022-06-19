@@ -38,10 +38,23 @@ ERR_SONAR_API_AUTHORIZATION = 2
 ERR_SONAR_API = 3
 ERR_TOKEN_MISSING = 4
 
-ERR_NO_SUCH_PROJECT_KEY = 5
+ERR_NO_SUCH_KEY = 5
 ERR_WRONG_SEARCH_CRITERIA = 6
 ERR_UNSUPPORTED_OPERATION = 7
 ERR_RULES_LOADING_FAILED = 8
 ERR_SIF_AUDIT_ERROR = 9
 
 ERR_ARGS_ERROR = 10
+
+
+class UnsupportedOperation(Exception):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
+
+
+class NonExistingObjectError(Exception):
+    def __init__(self, key, message):
+        super().__init__()
+        self.key = key
+        self.message = message

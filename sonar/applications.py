@@ -23,7 +23,7 @@
 
 """
 import json
-from sonar import measures, permissions, components, branches, projects
+from sonar import measures, permissions, components, branches, projects, options
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
@@ -238,8 +238,23 @@ def search(endpoint, params=None):
     return app_list
 
 
-def get_list(endpoint):
-    return search(endpoint=endpoint)
+def get_list(endpoint, key_list=None):
+    if key_list is None:
+        util.logger.info("Listing applications")
+        return search(endpoint=endpoint)
+    object_list = {}
+    for key in util.csv_to_list(key_list):
+        object_list[key] = get_object_by_key(key, endpoint=endpoint)
+        if object_list[key] is None:
+            raise options.NonExistingObjectError(key, f"Application key '{key}' does not exist")
+    return object_list
+
+
+def export(endpoint, key_list=None):
+    apps_settings = {k: app.export() for k, app in get_list(endpoint, key_list).items()}
+    for k in apps_settings:
+        apps_settings[k].pop("key")
+    return apps_settings
 
 
 def audit(audit_settings, endpoint=None):
@@ -255,11 +270,20 @@ def audit(audit_settings, endpoint=None):
 
 
 def get_object(name, endpoint=None):
+    # TODO - Don't re-read all apps every time a new app is searched
     if len(_OBJECTS) == 0 or name not in _MAP:
         get_list(endpoint)
     if name not in _MAP:
         return None
     return _OBJECTS[_MAP[name]]
+
+
+def get_object_by_key(key, endpoint=None):
+    if len(_OBJECTS) == 0:
+        get_list(endpoint)
+    if key not in _OBJECTS:
+        return None
+    return _OBJECTS[key]
 
 
 def create(endpoint, name, key, data=None):
@@ -283,13 +307,16 @@ def create_or_update(endpoint, name, key, data):
     o.update(data)
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint, config_data, key_list=None):
     if "applications" not in config_data:
         util.logger.info("No applications to import")
         return
     util.logger.info("Importing applications")
     search(endpoint=endpoint)
+    new_key_list = util.csv_to_list(key_list)
     for key, data in config_data["applications"].items():
+        if new_key_list and key not in new_key_list:
+            continue
         util.logger.info("Importing application key '%s'", key)
         create_or_update(endpoint=endpoint, name=data["name"], key=key, data=data)
 

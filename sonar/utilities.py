@@ -100,10 +100,10 @@ def set_project_args(parser):
     parser.add_argument(
         "-k",
         "--projectKeys",
-        "--componentKeys",
+        "--keys",
         "--projectKey",
         required=False,
-        help="Commas separated key of the components",
+        help="Commas separated keys of the objects to select",
     )
     return parser
 

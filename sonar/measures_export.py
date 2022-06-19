@@ -212,7 +212,7 @@ def main():
     wanted_metrics = __get_wanted_metrics(args, endpoint)
     (fmt, file) = __get_fmt_and_file(args)
 
-    project_list = projects.get_projects_list(args.projectKeys, endpoint)
+    project_list = projects.get_list(endpoint=endpoint, key_list=args.projectKeys)
 
     is_first = True
     obj_list = []

@@ -374,6 +374,18 @@ def count(endpoint=None):
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
 
+def get_list(endpoint, key_list=None):
+    if key_list is None:
+        util.logger.info("Listing portfolios")
+        return search(endpoint=endpoint)
+    object_list = {}
+    for key in util.csv_to_list(key_list):
+        object_list[key] = get_object(key, endpoint=endpoint)
+        if object_list[key] is None:
+            raise options.NonExistingObjectError(key, f"Portfolio key '{key}' does not exist")
+    return object_list
+
+
 def search(endpoint, params=None):
     portfolio_list = {}
     edition = env.edition(ctxt=endpoint)
@@ -465,11 +477,6 @@ def _projects(json_data, version):
     return projects
 
 
-def get_list(endpoint):
-    util.logger.debug("Reading portfolio list")
-    return search(endpoint=endpoint)
-
-
 def get_object(key, endpoint=None):
     if key in _OBJECTS:
         return _OBJECTS.get(key, None)
@@ -483,14 +490,17 @@ def exists(key, endpoint):
     return get_object(key, endpoint) is not None
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint, config_data, key_list=None):
     if "portfolios" not in config_data:
         util.logger.info("No portfolios to import")
         return
     util.logger.info("Importing portfolios - pass 1: Create all top level portfolios")
     search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
+    new_key_list = util.csv_to_list(key_list)
     for key, data in config_data["portfolios"].items():
+        if new_key_list and key not in new_key_list:
+            continue
         util.logger.info("Importing portfolio key '%s'", key)
         o = get_object(key, endpoint)
         if o is None:
@@ -507,6 +517,8 @@ def import_config(endpoint, config_data):
     # Second pass to define hierarchies
     util.logger.info("Importing portfolios - pass 2: Creating sub-portfolios")
     for key, data in config_data["portfolios"].items():
+        if new_key_list and key not in new_key_list:
+            continue
         o = get_object(key, endpoint)
         if o is None:
             util.logger.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
@@ -522,15 +534,18 @@ def search_by_key(endpoint, key):
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
-def export(endpoint):
+def export(endpoint, key_list=None):
     if endpoint.edition() in ("community", "developer"):
         util.logger.info("No portfolios in community and developer editions")
         return None
     util.logger.info("Exporting portfolios")
-    nb_portfolios = count(endpoint=endpoint)
+    if key_list:
+        nb_portfolios = len(key_list)
+    else:
+        nb_portfolios = count(endpoint=endpoint)
     i = 0
     exported_portfolios = {}
-    for k, p in search(endpoint).items():
+    for k, p in get_list(endpoint=endpoint, key_list=key_list).items():
         if not p.is_sub_portfolio():
             exported_portfolios[k] = p.export()
             exported_portfolios[k].pop("key")

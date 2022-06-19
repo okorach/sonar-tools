@@ -57,7 +57,7 @@ def main():
     for key, p in project_list.items():
         try:
             dump = p.export_zip(timeout=args.exportTimeout)
-        except env.UnsupportedOperation as e:
+        except options.UnsupportedOperation as e:
             util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
 
         status = dump["status"]

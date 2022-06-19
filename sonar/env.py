@@ -46,19 +46,6 @@ _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 _SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {vers.PACKAGE_VERSION}"}
 
 
-class UnsupportedOperation(Exception):
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-
-
-class NonExistingObjectError(Exception):
-    def __init__(self, key, message):
-        super().__init__()
-        self.key = key
-        self.message = message
-
-
 class Environment:
     def __init__(self, some_url, some_token):
         self.url = some_url

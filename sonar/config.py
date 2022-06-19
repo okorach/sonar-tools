@@ -23,21 +23,7 @@
 """
 import sys
 import datetime
-from sonar import (
-    env,
-    version,
-    settings,
-    projects,
-    rules,
-    qualityprofiles,
-    qualitygates,
-    portfolios,
-    applications,
-    users,
-    groups,
-    options,
-)
-import sonar.utilities as util
+from sonar import env, version, projects, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities
 
 
 _SETTINGS = "settings"
@@ -82,9 +68,9 @@ def __map(k):
 
 
 def __parse_args(desc):
-    parser = util.set_common_args(desc)
-    parser = util.set_project_args(parser)
-    parser = util.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
+    parser = utilities.set_common_args(desc)
+    parser = utilities.set_project_args(parser)
+    parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
     parser.add_argument(
         "-w",
         "--what",
@@ -92,7 +78,8 @@ def __parse_args(desc):
         default="",
         help=f"What to export or import {','.join(_EVERYTHING)}",
     )
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
         "-e",
         "--export",
         required=False,
@@ -100,7 +87,7 @@ def __parse_args(desc):
         action="store_true",
         help="to export configuration (exclusive of --import)",
     )
-    parser.add_argument(
+    group.add_argument(
         "-i",
         "--import",
         required=False,
@@ -108,26 +95,14 @@ def __parse_args(desc):
         action="store_true",
         help="to import configuration (exclusive of --export)",
     )
-    args = util.parse_and_check_token(parser)
-    util.check_environment(vars(args))
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    args = utilities.parse_and_check_token(parser)
+    utilities.check_environment(vars(args))
+    utilities.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     return args
 
 
-def __count_settings(what, sq_settings):
-    nbr_settings = 0
-    for s in what:
-        tmp_settings = sq_settings.get(__map(s), {})
-        nbr_settings += 0 if tmp_settings is None else len(tmp_settings)
-    if "settings" in what:
-        for categ in settings.CATEGORIES:
-            if categ in sq_settings[__JSON_KEY_SETTINGS]:
-                nbr_settings += len(sq_settings[__JSON_KEY_SETTINGS][categ]) - 1
-    return nbr_settings
-
-
 def __export_config(endpoint, what, args):
-    util.logger.info("Exporting configuration from %s", args.url)
+    utilities.logger.info("Exporting configuration from %s", args.url)
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
     if _SETTINGS in what:
@@ -141,33 +116,25 @@ def __export_config(endpoint, what, args):
     if _GATES in what:
         sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint)
     if _PROJECTS in what:
-        project_settings = {}
-        for k, p in projects.get_projects_list(str_key_list=args.projectKeys, endpoint=endpoint).items():
-            project_settings[k] = p.export()
-            project_settings[k].pop("key")
-        sq_settings[__JSON_KEY_PROJECTS] = project_settings
+        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys)
     if _APPS in what:
-        apps_settings = {}
-        for k, app in applications.search(endpoint).items():
-            apps_settings[k] = app.export()
-            apps_settings[k].pop("key")
-        sq_settings[__JSON_KEY_APPS] = apps_settings
+        sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys)
     if _PORTFOLIOS in what:
-        sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint)
+        sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=args.projectKeys)
     if _USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint)
     if _GROUPS in what:
         sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint)
 
-    util.remove_nones(sq_settings)
-    with util.open_file(args.file) as fd:
-        print(util.json_dump(sq_settings), file=fd)
-    util.logger.info("Exporting configuration from %s completed", args.url)
+    utilities.remove_nones(sq_settings)
+    with utilities.open_file(args.file) as fd:
+        print(utilities.json_dump(sq_settings), file=fd)
+    utilities.logger.info("Exporting configuration from %s completed", args.url)
 
 
 def __import_config(endpoint, what, args):
-    util.logger.info("Importing configuration to %s", args.url)
-    data = util.load_json_file(args.file)
+    utilities.logger.info("Importing configuration to %s", args.url)
+    data = utilities.load_json_file(args.file)
     if _GROUPS in what:
         groups.import_config(endpoint, data)
     if _USERS in what:
@@ -183,21 +150,19 @@ def __import_config(endpoint, what, args):
     if _SETTINGS in what:
         endpoint.import_config(data["globalSettings"])
     if _PROJECTS in what:
-        projects.import_config(endpoint, data)
+        projects.import_config(endpoint, data, key_list=args.projectKeys)
     if _APPS in what:
-        applications.import_config(endpoint, data)
+        applications.import_config(endpoint, data, key_list=args.projectKeys)
     if _PORTFOLIOS in what:
-        portfolios.import_config(endpoint, data)
-    util.logger.info("Importing configuration to %s completed", args.url)
+        portfolios.import_config(endpoint, data, key_list=args.projectKeys)
+    utilities.logger.info("Importing configuration to %s completed", args.url)
 
 
 def main():
     args = __parse_args("Extract SonarQube platform configuration")
     kwargs = vars(args)
     if not kwargs["export"] and not kwargs["import"]:
-        util.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
-    if kwargs["export"] and kwargs["import"]:
-        util.exit_fatal("--export or --import options are exclusive of each other", exit_code=options.ERR_ARGS_ERROR)
+        utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
 
     start_time = datetime.datetime.today()
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
@@ -205,19 +170,22 @@ def main():
     if args.what == "":
         what = _EVERYTHING
     else:
-        what = util.csv_to_list(what)
+        what = utilities.csv_to_list(what)
     for w in what:
         if w not in _EVERYTHING:
-            util.exit_fatal(
+            utilities.exit_fatal(
                 f"'{w}' is not something that can be imported or exported, chose among {','.join(_EVERYTHING)}",
                 exit_code=options.ERR_ARGS_ERROR,
             )
 
     if kwargs["export"]:
-        __export_config(endpoint, what, args)
+        try:
+            __export_config(endpoint, what, args)
+        except options.NonExistingObjectError as e:
+            utilities.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     if kwargs["import"]:
         __import_config(endpoint, what, args)
-    util.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
+    utilities.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
 
