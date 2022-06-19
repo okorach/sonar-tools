@@ -497,7 +497,10 @@ def import_config(endpoint, config_data, key_list=None):
     util.logger.info("Importing portfolios - pass 1: Create all top level portfolios")
     search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
+    new_key_list = util.csv_to_list(key_list)
     for key, data in config_data["portfolios"].items():
+        if new_key_list and key not in new_key_list:
+            continue
         util.logger.info("Importing portfolio key '%s'", key)
         o = get_object(key, endpoint)
         if o is None:
@@ -514,6 +517,8 @@ def import_config(endpoint, config_data, key_list=None):
     # Second pass to define hierarchies
     util.logger.info("Importing portfolios - pass 2: Creating sub-portfolios")
     for key, data in config_data["portfolios"].items():
+        if new_key_list and key not in new_key_list:
+            continue
         o = get_object(key, endpoint)
         if o is None:
             util.logger.error("Can't find portfolio key '%s', name '%s'", key, data["name"])

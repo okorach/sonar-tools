@@ -1012,9 +1012,12 @@ def import_config(endpoint, config_data, key_list=None):
     get_list(endpoint=endpoint)
     nb_projects = len(config_data["projects"])
     i = 0
-    for name, data in config_data["projects"].items():
-        util.logger.info("Importing project key '%s'", name)
-        create_or_update(endpoint, name, data)
+    new_key_list = util.csv_to_list(key_list)
+    for key, data in config_data["projects"].items():
+        if new_key_list and key not in new_key_list:
+            continue
+        util.logger.info("Importing project key '%s'", key)
+        create_or_update(endpoint, key, data)
         i += 1
         if i % 20 == 0 or i == nb_projects:
             util.logger.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))

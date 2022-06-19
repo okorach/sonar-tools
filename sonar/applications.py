@@ -244,7 +244,7 @@ def get_list(endpoint, key_list=None):
         return search(endpoint=endpoint)
     object_list = {}
     for key in util.csv_to_list(key_list):
-        object_list[key] = get_object(key, endpoint=endpoint)
+        object_list[key] = get_object_by_key(key, endpoint=endpoint)
         if object_list[key] is None:
             raise options.NonExistingObjectError(key, f"Application key '{key}' does not exist")
     return object_list
@@ -313,7 +313,10 @@ def import_config(endpoint, config_data, key_list=None):
         return
     util.logger.info("Importing applications")
     search(endpoint=endpoint)
+    new_key_list = util.csv_to_list(key_list)
     for key, data in config_data["applications"].items():
+        if new_key_list and key not in new_key_list:
+            continue
         util.logger.info("Importing application key '%s'", key)
         create_or_update(endpoint=endpoint, name=data["name"], key=key, data=data)
 
