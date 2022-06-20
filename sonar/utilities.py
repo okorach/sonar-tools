@@ -461,7 +461,7 @@ def log_and_exit(response):
         return
     tool_msg = f"For request URL {response.request.url}\n"
     code = response.status_code
-    sq_msg = response.text
+    sq_msg = " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
     if code == 401:
         tool_msg += f"HTTP error {code} - Authentication error. Is token valid ?"
         err_code = options.ERR_SONAR_API_AUTHENTICATION
