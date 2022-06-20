@@ -21,14 +21,13 @@
 import json
 from sonar import sqobject, utilities, permissions
 
-_PERMISSION_TEMPLATES = {}
+_OBJECTS = {}
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
 _QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios": "VW"}
 _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
-
 
 class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint, name, data=None, create_data=None):
@@ -47,6 +46,7 @@ class PermissionTemplate(sqobject.SqObject):
             self.set_permissions(create_data.pop("permissions", None))
         elif data is None:
             data = search_by_name(endpoint, name)
+            self.key = data.get("id", None)
             self.permissions().read()
             utilities.logger.info("Creating permission template '%s'", name)
             utilities.logger.debug("from sync data %s", utilities.json_dump(data))
@@ -58,12 +58,14 @@ class PermissionTemplate(sqobject.SqObject):
         self.creation_date = utilities.string_to_date(data.get("createdAt", None))
         self.last_update = utilities.string_to_date(data.get("updatedAt", None))
         self.__set_hash()
+        _OBJECTS[self.key] = self
+        _MAP[self.name.lower()] = self.key
 
     def __str__(self):
         return f"permission template '{self.name}'"
 
     def __set_hash(self):
-        _PERMISSION_TEMPLATES[self.key] = self
+        _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
 
     def is_default_for(self, qualifier):
@@ -147,11 +149,11 @@ class PermissionTemplate(sqobject.SqObject):
 
 
 def get_object(name, endpoint=None):
-    if len(_PERMISSION_TEMPLATES) == 0:
+    if len(_OBJECTS) == 0:
         get_list(endpoint)
     if name not in _MAP:
         return None
-    return _PERMISSION_TEMPLATES[_MAP[name]]
+    return _OBJECTS[_MAP[name]]
 
 
 def create_or_update(name, endpoint, kwargs):
