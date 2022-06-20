@@ -86,20 +86,18 @@ class PermissionTemplate(sqobject.SqObject):
         self.permissions().set(perms)
 
     def update(self, **pt_data):
-        name = pt_data.get("name", None)
-        desc = pt_data.get("description", None)
-        pattern = pt_data.get("pattern", None)
-        params = {"id": self.key, "name": name, "description": desc, "projectKeyPattern": pattern}
-        utilities.logger.info("Updating %s", str(self))
+        params = {"id": self.key}
+        # Hack: On SQ 8.9 if you pass all params otherwise SQ does NPE
+        params["name"] = pt_data.get("name", self.name if self.name else "")
+        params["description"] = pt_data.get("description", self.description if self.description else "")
+        params["projectKeyPattern"] = pt_data.get("pattern", self.project_key_pattern)
+        utilities.logger.info("Updating %s with %s", str(self), str(params))
         self.post(_UPDATE_API, params=params)
-        if name is not None:
-            _MAP.pop(self.name, None)
-            self.name = name
-            _MAP[self.name] = self.key
-        if desc is not None:
-            self.description = desc
-        if pattern is not None:
-            self.project_key_pattern = pattern
+        _MAP.pop(self.name, None)
+        self.name = params["name"]
+        _MAP[self.name] = self.key
+        self.description = params["description"]
+        self.project_key_pattern = params["projectKeyPattern"]
         self.permissions().set(pt_data.get("permissions", None))
         return self
 
