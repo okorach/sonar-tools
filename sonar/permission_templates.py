@@ -151,9 +151,10 @@ class PermissionTemplate(sqobject.SqObject):
 def get_object(name, endpoint=None):
     if len(_OBJECTS) == 0:
         get_list(endpoint)
-    if name not in _MAP:
+    lowername = name.lower()
+    if lowername not in _MAP:
         return None
-    return _OBJECTS[_MAP[name]]
+    return _OBJECTS.get(_MAP[lowername], None)
 
 
 def create_or_update(name, endpoint, kwargs):
