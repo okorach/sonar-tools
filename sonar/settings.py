@@ -243,7 +243,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
     settings_type_list += ["settings"]
     for setting_type in settings_type_list:
         util.logger.debug("Looking at %s", setting_type)
-        for s in data[setting_type]:
+        for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
             nb_priv = sum([1 for p in _PRIVATE_SETTINGS if key.startswith(p)])
             if nb_priv > 0:
