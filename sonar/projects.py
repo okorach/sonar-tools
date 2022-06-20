@@ -214,7 +214,7 @@ class Project(components.Component):
 
     def __audit_user_permissions__(self, audit_settings):
         problems = []
-        user_count = self._permissions.count("users")
+        user_count = self.permissions().count("users")
         max_users = audit_settings["audit.projects.permissions.maxUsers"]
         if user_count > max_users:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
@@ -222,7 +222,7 @@ class Project(components.Component):
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_admins = audit_settings["audit.projects.permissions.maxAdminUsers"]
-        admin_count = self._permissions.count("users", ("admin"))
+        admin_count = self.permissions().count("users", ("admin"))
         if admin_count > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_USERS)
             msg = rule.msg.format(str(self), admin_count, max_admins)
@@ -233,26 +233,18 @@ class Project(components.Component):
     def __audit_group_permissions__(self, audit_settings):
         problems = []
         groups = counts = self.permissions().read().to_json(perm_type="groups")
-        for gr in groups:
-            p = gr["permissions"]
-            if not p:
-                continue
+        for gr_name, gr_perms in groups.items():
             # -- Checks for Anyone, sonar-user
-            if gr["name"] != "Anyone" and gr["id"] != 2:
+            if gr_name not in ("Anyone", "sonar-users"):
                 continue
-            if "issueadmin" in p or "scan" in p or "securityhotspotadmin" in p or "admin" in p:
-                if gr["name"] == "Anyone":
+            if "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms:
+                if gr_name == "Anyone":
                     rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
                 else:
                     rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
-                msg = rule.msg.format(gr["name"], str(self))
-                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(gr_name, str(self)), concerned_object=self))
             else:
-                util.logger.info(
-                    "Group '%s' has browse permissions on %s. Is this normal ?",
-                    gr["name"],
-                    str(self.key),
-                )
+                util.logger.info("Group '%s' has browse permissions on %s. Is this normal ?", gr_name, str(self))
 
         max_perms = audit_settings["audit.projects.permissions.maxGroups"]
         counter = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
@@ -286,14 +278,8 @@ class Project(components.Component):
         counter = self._permissions.count(perm_type="groups", perm_filter=("admin"))
         if counter > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_GROUPS)
-            problems.append(
-                pb.Problem(
-                    rule.type,
-                    rule.severity,
-                    rule.msg.format(str(self), counter, max_admins),
-                    concerned_object=self,
-                )
-            )
+            msg = rule.msg.format(str(self), counter, max_admins)
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
 
     def __audit_permissions__(self, audit_settings):

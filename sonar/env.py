@@ -305,48 +305,22 @@ class Environment:
         problems = []
         groups = self.global_permissions().groups()
         if len(groups) > 10:
-            problems.append(
-                pb.Problem(
-                    typ.Type.BAD_PRACTICE,
-                    sev.Severity.MEDIUM,
-                    f"Too many ({len(groups)}) groups with global permissions",
-                )
-            )
-        for gr in groups:
-            if gr["name"] == "Anyone":
-                problems.append(
-                    pb.Problem(
-                        typ.Type.SECURITY,
-                        sev.Severity.HIGH,
-                        "Group 'Anyone' should not have any global permission",
-                    )
-                )
-            if gr["name"] == "sonar-users" and (
-                "admin" in gr["permissions"]
-                or "gateadmin" in gr["permissions"]
-                or "profileadmin" in gr["permissions"]
-                or "provisioning" in gr["permissions"]
-            ):
+            msg = f"Too many ({len(groups)}) groups with global permissions"
+            problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg))
+
+        for gr_name, gr_perms in groups.items():
+            if gr_name == "Anyone":
+                problems.append(pb.Problem(typ.Type.SECURITY, sev.Severity.HIGH, "Group 'Anyone' should not have any global permission"))
+            if gr_name == "sonar-users" and ("admin" in gr_perms or "gateadmin" in gr_perms or "profileadmin" in gr_perms or "provisioning" in gr_perms):
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
 
-        maxis = {
-            "admin": 2,
-            "gateadmin": 2,
-            "profileadmin": 2,
-            "scan": 2,
-            "provisioning": 3,
-        }
+        maxis = {"admin": 2, "gateadmin": 2, "profileadmin": 2, "scan": 2, "provisioning": 3}
         for key, name in permissions.GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="groups", perm_filter=(key))
             if key in maxis and counter > maxis[key]:
-                problems.append(
-                    pb.Problem(
-                        typ.Type.BAD_PRACTICE,
-                        sev.Severity.MEDIUM,
-                        f"Too many ({counter}) groups with permission '{name}', {maxis[key]} max recommended",
-                    )
-                )
+                msg = f"Too many ({counter}) groups with permission '{name}', {maxis[key]} max recommended"
+                problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg))
         return problems
 
     def __audit_user_permissions(self):
@@ -354,30 +328,15 @@ class Environment:
         problems = []
         users = self.global_permissions().users()
         if len(users) > 10:
-            problems.append(
-                pb.Problem(
-                    typ.Type.BAD_PRACTICE,
-                    sev.Severity.MEDIUM,
-                    f"Too many ({len(users)}) users with direct global permissions, use groups instead",
-                )
-            )
-        maxis = {
-            "admin": 3,
-            "gateadmin": 3,
-            "profileadmin": 3,
-            "scan": 3,
-            "provisioning": 3,
-        }
+            msg = f"Too many ({len(users)}) users with direct global permissions, use groups instead"
+            problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg))
+
+        maxis = {"admin": 3, "gateadmin": 3, "profileadmin": 3, "scan": 3, "provisioning": 3}
         for key, name in permissions.GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="users", perm_filter=(key))
             if key in maxis and counter > maxis[key]:
-                problems.append(
-                    pb.Problem(
-                        typ.Type.BAD_PRACTICE,
-                        sev.Severity.MEDIUM,
-                        f"Too many ({counter}) users with permission '{name}', use groups instead",
-                    )
-                )
+                msg = f"Too many ({counter}) users with permission '{name}', use groups instead"
+                problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg))
         return problems
 
     def _audit_global_permissions(self):
