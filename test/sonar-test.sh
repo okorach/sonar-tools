@@ -25,7 +25,7 @@ DEFAULT_OPTS='-e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true \
               -e SONAR_CE_JAVAOPTS="-Xmx512m -Xms128m" \
               -e SONAR_SEARCH_JAVAOPTS="-Xmx512m -Xms512m'
 
-usage() { echo "Usage: $0 [-e ce|de|ee] [-v lts|latest][-p <port>] [-s|-S]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-e ce|de|ee] [-v lts|latest] [-p <port>] [-s|-S]" 1>&2; exit 1; }
 
 edition="enterprise"
 port=""
@@ -52,10 +52,10 @@ while getopts ":e:p:v:sS" o; do
             fi
             version=${OPTARG}
             ;;
-        stop)
+        S)
             op="stop"
             ;;
-        start)
+        s)
             op="start"
             ;;
         *)
@@ -93,4 +93,5 @@ if [ "$op" = "start" ]; then
     docker run -d --name sonar-$version-$edition "$DEFAULT_OPTS" -p $port:9000 sonarqube:${pfx}${edition}
 else
     docker stop sonar-$version-$edition
+    docker rm sonar-$version-$edition
 fi
