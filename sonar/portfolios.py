@@ -286,9 +286,12 @@ class Portfolio(aggregations.Aggregation):
                 util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
             for branch in util.csv_to_list(branches):
                 if branch != options.DEFAULT and branch not in util.csv_to_list(current_projects[proj]):
-                    util.logger.debug("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
-                    r = self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch}, exit_on_error=False)
-                    ok = ok and r.ok
+                    if self.endpoint.version() >= (9, 2, 0):
+                        util.logger.debug("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
+                        r = self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch}, exit_on_error=False)
+                        ok = ok and r.ok
+                    else:
+                        util.logger.warning("Can't add branch '%s' of project '%s' in a portfolio on SonarQube < 9.2", branch, proj)
                 else:
                     util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
         return ok
@@ -327,13 +330,19 @@ class Portfolio(aggregations.Aggregation):
         self._selection_mode = selection_mode
         return self
 
-    def add_subportfolio(self, key):
+    def add_subportfolio(self, key, name=None, by_ref=False):
         if not exists(key, self.endpoint):
             util.logger.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
             return False
-        r = self.post("views/add_portfolio", params={"portfolio": self.key, "reference": key})
-        self.recompute()
-        time.sleep(1)
+        if self.endpoint.version() >= (9, 3, 0):
+            r = self.post("views/add_portfolio", params={"portfolio": self.key, "reference": key})
+        elif by_ref:
+            r = self.post("views/add_local_view", params={"key": self.key, "ref_key": key})
+        else:
+            r = self.post("views/add_sub_view", params={"key": self.key, "name": key, "subKey": key})
+        if not by_ref:
+            self.recompute()
+            time.sleep(0.5)
         return r.ok
 
     def recompute(self):
@@ -359,7 +368,7 @@ class Portfolio(aggregations.Aggregation):
                 o_subp = get_object(key=key, endpoint=self.endpoint)
                 if o_subp is not None:
                     if o_subp.key not in key_list:
-                        self.add_subportfolio(o_subp.key)
+                        self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
                     o_subp.update(subp, root_key)
             else:
                 name = subp.pop("name")
@@ -369,7 +378,7 @@ class Portfolio(aggregations.Aggregation):
                     util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
                     o = Portfolio.create(name=name, endpoint=self.endpoint, parent=self.key, root_key=root_key, **subp)
                     if o is None:
-                        util.logger.info("Can't create subport %s to parent %s", name, self.key)
+                        util.logger.info("Can't create sub-portfolio '%s' to parent %s", name, self.key)
                 o.set_parent(self.key)
                 o.update(subp, root_key)
 
