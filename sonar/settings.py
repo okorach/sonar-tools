@@ -327,7 +327,7 @@ def set_visibility(endpoint, visibility, component=None):
 
 
 def __is_cobol_setting(key):
-    return  re.match(r"^sonar\.cobol\..*$", key)
+    return re.match(r"^sonar\.cobol\..*$", key)
 
 
 def set_setting(endpoint, key, value, component=None):

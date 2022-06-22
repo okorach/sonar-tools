@@ -446,7 +446,7 @@ def import_config(endpoint, config_data):
         for name, qp_data in lang_data.items():
             if not languages.exists(endpoint=endpoint, language=lang):
                 util.logger.warning("Language '%s' does not exist, quality profile '%s' import skipped", lang, name)
-                return None
+                continue
             o = get_object(name=name, language=lang, endpoint=endpoint)
             if o is None:
                 o = QualityProfile.create(name=name, language=lang, endpoint=endpoint)

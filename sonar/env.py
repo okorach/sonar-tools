@@ -311,7 +311,8 @@ class Environment:
         for gr_name, gr_perms in groups.items():
             if gr_name == "Anyone":
                 problems.append(pb.Problem(typ.Type.SECURITY, sev.Severity.HIGH, "Group 'Anyone' should not have any global permission"))
-            if gr_name == "sonar-users" and ("admin" in gr_perms or "gateadmin" in gr_perms or "profileadmin" in gr_perms or "provisioning" in gr_perms):
+            if (gr_name == "sonar-users" and
+                    ("admin" in gr_perms or "gateadmin" in gr_perms or "profileadmin" in gr_perms or "provisioning" in gr_perms)):
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
 
