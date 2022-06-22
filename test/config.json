@@ -4,7 +4,8 @@
          "branches": {
             "break": {
                "projects": {
-                  "training:branches": "break"
+                  "training:branches": "break",
+                  "missing-project": "main"
                }
             },
             "master": {
@@ -819,7 +820,8 @@
             "BANK-RETAIL-401K": "__default__",
             "BANK-RETAIL-CREDITRATING": "__default__",
             "BANK-RETAIL-LOANSCALC": "__default__",
-            "BANK-RETAIL-MOBILEAPP": "__default__"
+            "BANK-RETAIL-MOBILEAPP": "__default__",
+            "nonexisting-proj": "__default__"
          },
          "visibility": "private"
       },

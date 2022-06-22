@@ -192,7 +192,9 @@ class Application(aggr.Aggregation):
                 util.logger.debug("Won't add project '%s' to %s, it's already added", proj, str(self))
                 continue
             util.logger.debug("Adding project '%s' to %s", proj, str(self))
-            self.post("applications/add_project", params={"application": self.key, "project": proj})
+            r = self.post("applications/add_project", params={"application": self.key, "project": proj}, exit_on_error=False)
+            if r.status_code == 404:
+                util.logger.warning("Can't add non-existing project '%s' to %s,", proj, str(self))
 
     def update(self, data):
         self.set_permissions(data)
