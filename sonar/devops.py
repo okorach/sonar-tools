@@ -162,7 +162,7 @@ def create_or_update_devops_platform(name, data, endpoint):
     o = _OBJECTS.get(name, None)
     if o:
         o.update(data)
-        return
+        return o
     if endpoint.edition() == "developer" and count(data["type"]) >= 1:
         util.logger.warning("Can't create a 2nd DevOps platform of type '%s' on a developer edition", data["type"])
         return None

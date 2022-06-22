@@ -115,8 +115,7 @@ class PermissionTemplate(sqobject.SqObject):
         for d in what_list:
             qual = _QUALIFIER_REVERSE_MAP.get(d, d)
             if (ed == "community" and qual in ("VW", "APP")) or (ed == "developer" and qual == "VW"):
-                utilities.logger.warning("Can't set permission template as default for %s on a %s edition",
-                    qual, ed)
+                utilities.logger.warning("Can't set permission template as default for %s on a %s edition", qual, ed)
                 continue
             self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
 

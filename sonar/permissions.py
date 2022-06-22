@@ -30,8 +30,8 @@ COMMUNITY_GLOBAL_PERMISSIONS = {
     "provisioning": "Create Projects",
     "scan": "Execute Analysis",
 }
-DEVELOPER_GLOBAL_PERMISSIONS = { **COMMUNITY_GLOBAL_PERMISSIONS, **{"applicationcreator": "Create Applications"}}
-ENTERPRISE_GLOBAL_PERMISSIONS = { **DEVELOPER_GLOBAL_PERMISSIONS, **{"portfoliocreator": "Create Portfolios"}}
+DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, **{"applicationcreator": "Create Applications"}}
+ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, **{"portfoliocreator": "Create Portfolios"}}
 
 PROJECT_PERMISSIONS = {
     "user": "Browse",
@@ -240,15 +240,13 @@ class GlobalPermissions(Permissions):
             decoded_perms = {k: decode(v) for k, v in new_perms[perm_type].items()}
             to_remove = diff(self.permissions[perm_type], decoded_perms)
             for p in to_remove.copy():
-                if (ed == "community" and p in ("portfoliocreator", "applicationcreator") or
-                    ed == "developer" and p == "portfoliocreator"):
+                if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
                     utilities.logger.warning("Can't remove permission '%s' on a %s edition", perm_type, ed)
                     to_remove.remove(p)
             self._post_api(GlobalPermissions.API_REMOVE[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_remove)
             to_add = diff(decoded_perms, self.permissions[perm_type])
             for p in to_add.copy():
-                if (ed == "community" and p in ("portfoliocreator", "applicationcreator") or
-                    ed == "developer" and p == "portfoliocreator"):
+                if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
                     utilities.logger.warning("Can't add permission '%s' on a %s edition", perm_type, ed)
                     to_add.remove(p)
             self._post_api(GlobalPermissions.API_SET[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_add)
