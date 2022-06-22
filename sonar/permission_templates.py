@@ -117,9 +117,7 @@ class PermissionTemplate(sqobject.SqObject):
     def set_pattern(self, pattern):
         if pattern is None:
             return None
-        r = self.post(_UPDATE_API, params={"id": self.key, "projectKeyPattern": pattern})
-        self.project_key_pattern = pattern
-        return r
+        return self.update(pattern=pattern)
 
     def to_json(self, full_specs=False):
         json_data = {
