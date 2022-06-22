@@ -226,6 +226,8 @@ def count(endpoint=None):
 
 
 def search(endpoint, params=None):
+    if endpoint.edition() == "community":
+        return {}
     app_list = {}
     edition = endpoint.edition()
     if edition == "community":
@@ -246,6 +248,8 @@ def search(endpoint, params=None):
 
 
 def get_list(endpoint, key_list=None):
+    if endpoint.edition() == "community":
+        return {}
     if key_list is None:
         util.logger.info("Listing applications")
         return search(endpoint=endpoint)
@@ -294,6 +298,8 @@ def get_object_by_key(key, endpoint=None):
 
 
 def create(endpoint, name, key, data=None):
+    if endpoint.edition() == "community":
+        return None
     if key not in _OBJECTS:
         get_list(endpoint)
     o = _OBJECTS.get(key)
@@ -305,6 +311,9 @@ def create(endpoint, name, key, data=None):
 
 
 def create_or_update(endpoint, name, key, data):
+    if endpoint.edition() == "community":
+        util.logger.warning("Can't create applications on a community edition")
+        return
     if key not in _OBJECTS:
         get_list(endpoint)
     o = _OBJECTS.get(key, None)
@@ -317,6 +326,9 @@ def create_or_update(endpoint, name, key, data):
 def import_config(endpoint, config_data, key_list=None):
     if "applications" not in config_data:
         util.logger.info("No applications to import")
+        return
+    if endpoint.edition() == "community":
+        util.logger.warning("Can't be import applications in a community edition")
         return
     util.logger.info("Importing applications")
     search(endpoint=endpoint)
