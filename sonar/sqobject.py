@@ -50,7 +50,7 @@ class SqObject:
 
     def delete(self, api, params=None):
         resp = self.endpoint.delete(api, params)
-        return (resp.status_code // 100) == 2
+        return resp.ok
 
 
 def search_objects(api, endpoint, key_field, returned_field, object_class, params):

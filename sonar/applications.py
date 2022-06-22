@@ -23,6 +23,7 @@
 
 """
 import json
+from http import HTTPStatus
 from sonar import measures, permissions, components, branches, projects, options
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -194,7 +195,7 @@ class Application(aggr.Aggregation):
                 continue
             util.logger.debug("Adding project '%s' to %s", proj, str(self))
             r = self.post("applications/add_project", params={"application": self.key, "project": proj}, exit_on_error=False)
-            if r.status_code == 404:
+            if r.status_code == HTTPStatus.NOT_FOUND:
                 util.logger.warning("Project '%s' not found, can't be added to %s", proj, self)
             else:
                 ok = ok and r.ok

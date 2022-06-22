@@ -24,6 +24,7 @@
 """
 import datetime
 import json
+from http import HTTPStatus
 import pytz
 from sonar import rules, permissions, languages
 import sonar.sqobject as sq
@@ -190,11 +191,11 @@ class QualityProfile(sq.SqObject):
             if "params" in r_data:
                 params["params"] = ";".join([f"{k}={v}" for k, v in r_data["params"].items()])
             r = self.post("qualityprofiles/activate_rule", params=params, exit_on_error=False)
-            if r.status_code == 404:
+            if r.status_code == HTTPStatus.NOT_FOUND:
                 util.logger.error("Rule %s not found, can't activate it in %s", r_key, str(self))
-            elif r.status_code == 400:
-                util.logger.error("HTTP error 400 while trying to activate rule %s in %s", r_key, str(self))
-            elif r.status_code // 100 != 2:
+            elif r.status_code == HTTPStatus.BAD_REQUEST:
+                util.logger.error("HTTP error %d while trying to activate rule %s in %s",r.status_code, r_key, str(self))
+            elif not r.ok:
                 util.log_and_exit(r)
 
     def update(self, data):
