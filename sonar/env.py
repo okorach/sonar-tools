@@ -318,7 +318,7 @@ class Environment:
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg))
 
         maxis = {"admin": 2, "gateadmin": 2, "profileadmin": 2, "scan": 2, "provisioning": 3}
-        for key, name in permissions.GLOBAL_PERMISSIONS.items():
+        for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="groups", perm_filter=(key))
             if key in maxis and counter > maxis[key]:
                 msg = f"Too many ({counter}) groups with permission '{name}', {maxis[key]} max recommended"
@@ -334,7 +334,7 @@ class Environment:
             problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg))
 
         maxis = {"admin": 3, "gateadmin": 3, "profileadmin": 3, "scan": 3, "provisioning": 3}
-        for key, name in permissions.GLOBAL_PERMISSIONS.items():
+        for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="users", perm_filter=(key))
             if key in maxis and counter > maxis[key]:
                 msg = f"Too many ({counter}) users with permission '{name}', use groups instead"

@@ -35,6 +35,8 @@ class PermissionTemplate(sqobject.SqObject):
         super().__init__(name, endpoint)
         self.key = None
         self.name = name
+        self.description = None
+        self.project_key_pattern = None
         self._permissions = None
         if create_data is not None:
             utilities.logger.info("Creating permission template '%s'", name)
@@ -108,12 +110,15 @@ class PermissionTemplate(sqobject.SqObject):
         return self._permissions
 
     def set_as_default(self, what_list):
-        params = {"templateId": self.key}
         utilities.logger.debug("Setting %s as default for %s", str(self), str(what_list))
+        ed = self.endpoint.edition()
         for d in what_list:
-            # utilities.logger.debug("Setting %s as default for %s", str(self), d)
-            params["qualifier"] = _QUALIFIER_REVERSE_MAP.get(d, d)
-            self.post("permissions/set_default_template", params=params)
+            qual = _QUALIFIER_REVERSE_MAP.get(d, d)
+            if (ed == "community" and qual in ("VW", "APP")) or (ed == "developer" and qual == "VW"):
+                utilities.logger.warning("Can't set permission template as default for %s on a %s edition",
+                    qual, ed)
+                continue
+            self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
 
     def set_pattern(self, pattern):
         if pattern is None:

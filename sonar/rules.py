@@ -69,7 +69,7 @@ class Rule(sq.SqObject):
 
     def instantiate(self, key, data):
         if get_object(key, self.endpoint) is not None:
-            utilities.logger.warning("Rule key '%s' already exists, creation skipped...", key)
+            utilities.logger.info("Rule key '%s' already exists, creation skipped...", key)
             return
         utilities.logger.info("Creating rule key '%s' from template key '%s'", key, self.key)
         rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
@@ -148,9 +148,9 @@ def export(endpoint, instantiated=True, extended=True, standard=False):
 
 def import_config(endpoint, config_data):
     if "rules" not in config_data:
-        utilities.logger.info("No customized (Custom tags, extended description) to import")
+        utilities.logger.info("No customized rules (custom tags, extended description) to import")
         return
-    utilities.logger.info("Importing rules")
+    utilities.logger.info("Importing customized (custom tags, extended description) rules")
     for key, custom in config_data["rules"].get("extended", {}).items():
         rule = get_object(key, endpoint=endpoint)
         if rule is None:
@@ -160,6 +160,7 @@ def import_config(endpoint, config_data):
         rule.set_tags(custom.get("tags", None))
 
     get_list(endpoint=endpoint, templates=True)
+    utilities.logger.info("Importing custom rules (instantiated from rule templates)")
     for key, instantiation_data in config_data["rules"].get("instantiated", {}).items():
         template_rule = get_object(instantiation_data["templateKey"], endpoint=endpoint)
         if template_rule is None:

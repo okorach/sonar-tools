@@ -507,6 +507,10 @@ def import_config(endpoint, config_data, key_list=None):
     if "portfolios" not in config_data:
         util.logger.info("No portfolios to import")
         return
+    if endpoint.edition() in ("community", "developer"):
+        util.logger.warning("Can't import portfolios on a %s edition", endpoint.edition())
+        return
+
     util.logger.info("Importing portfolios - pass 1: Create all top level portfolios")
     search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced

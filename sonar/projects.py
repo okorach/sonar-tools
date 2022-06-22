@@ -174,13 +174,9 @@ class Project(components.Component):
 
     def binding(self):
         if self._binding["has_binding"] and self._binding["binding"] is None:
-            resp = self.get(
-                "alm_settings/get_binding",
-                params={"project": self.key},
-                exit_on_error=False,
-            )
+            resp = self.get("alm_settings/get_binding", params={"project": self.key}, exit_on_error=False)
             # Hack: 8.9 returns 404, 9.x returns 400
-            if resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+            if resp.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 self._binding["has_binding"] = False
             elif resp.ok:
                 self._binding["has_binding"] = True
@@ -836,7 +832,7 @@ class Project(components.Component):
         if "binding" in data:
             self.set_devops_binding(data["binding"])
         else:
-            util.logger.debug("%s has no devops binding, skipped")
+            util.logger.debug("%s has no devops binding, skipped", str(self))
         settings_to_apply = {
             k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
         }
