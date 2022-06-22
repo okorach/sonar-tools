@@ -247,7 +247,7 @@ class TemplatePermissions(Permissions):
                 TemplatePermissions.API_GET[p],
                 p,
                 TemplatePermissions.API_GET_FIELD[p],
-                templateName=self.concerned_object.name,
+                templateId=self.concerned_object.key,
                 ps=MAX_PERMS,
             )
         self._remove_aggregations_creator()
@@ -263,10 +263,10 @@ class TemplatePermissions(Permissions):
             decoded_perms = {k: decode(v) for k, v in new_perms[p].items()}
             to_remove = diff(self.permissions[p], decoded_perms)
             self._post_api(
-                TemplatePermissions.API_REMOVE[p], TemplatePermissions.API_SET_FIELD[p], to_remove, templateName=self.concerned_object.name
+                TemplatePermissions.API_REMOVE[p], TemplatePermissions.API_SET_FIELD[p], to_remove, templateId=self.concerned_object.key
             )
             to_add = diff(decoded_perms, self.permissions[p])
-            self._post_api(TemplatePermissions.API_SET[p], TemplatePermissions.API_SET_FIELD[p], to_add, templateName=self.concerned_object.name)
+            self._post_api(TemplatePermissions.API_SET[p], TemplatePermissions.API_SET_FIELD[p], to_add, templateId=self.concerned_object.key)
         return self.read()
 
 

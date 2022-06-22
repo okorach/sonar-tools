@@ -590,7 +590,7 @@
                }
             }
          },
-         "Training permissions": {
+         "Permissions françaises équipe X": {
             "pattern": "training:.*",
             "permissions": {
                "groups": {

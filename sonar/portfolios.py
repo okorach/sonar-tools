@@ -303,7 +303,11 @@ class Portfolio(aggregations.Aggregation):
         self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
 
     def none(self):
-        self.post("views/set_none_mode", params={"portfolio": self.key})
+        # Hack: API change between 9.0 and 9.1
+        if self.endpoint.version() < (9, 1, 0):
+            self.post("views/mode", params={"key": self.key, "selectionMode": "NONE"})
+        else:
+            self.post("views/set_none_mode", params={"portfolio": self.key})
 
     def set_selection_mode(self, selection_mode, projects=None, regexp=None, tags=None, branch=None):
         util.logger.debug("Setting selection mode %s for %s", str(selection_mode), str(self))

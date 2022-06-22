@@ -25,7 +25,7 @@
 import datetime
 import json
 import pytz
-from sonar import rules, permissions
+from sonar import rules, permissions, languages
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -46,6 +46,9 @@ _CHILDREN_KEY = "children"
 class QualityProfile(sq.SqObject):
     @classmethod
     def read(cls, name, language, endpoint):
+        if not languages.exists(endpoint=endpoint, language=language):
+            util.logger.error("Language '%s' does not exist, quality profile creation aborted")
+            return None
         util.logger.debug("Reading quality profile '%s'  of language '%s'", name, language)
         key = name_to_key(name, language)
         if key in _OBJECTS:
@@ -55,6 +58,9 @@ class QualityProfile(sq.SqObject):
 
     @classmethod
     def create(cls, name, language, endpoint, **kwargs):
+        if not languages.exists(endpoint=endpoint, language=language):
+            util.logger.error("Language '%s' does not exist, quality profile creation aborted")
+            return None
         params = {"name": name, "language": language}
         util.logger.debug("Creating quality profile '%s' of language '%s'", name, language)
         r = endpoint.post(_CREATE_API, params=params)
@@ -438,6 +444,9 @@ def import_config(endpoint, config_data):
     get_list(endpoint=endpoint)
     for lang, lang_data in config_data["qualityProfiles"].items():
         for name, qp_data in lang_data.items():
+            if not languages.exists(endpoint=endpoint, language=lang):
+                util.logger.warning("Language '%s' does not exist, quality profile '%s' import skipped", lang, name)
+                continue
             o = get_object(name=name, language=lang, endpoint=endpoint)
             if o is None:
                 o = QualityProfile.create(name=name, language=lang, endpoint=endpoint)

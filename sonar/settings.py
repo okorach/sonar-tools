@@ -243,7 +243,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
     settings_type_list += ["settings"]
     for setting_type in settings_type_list:
         util.logger.debug("Looking at %s", setting_type)
-        for s in data[setting_type]:
+        for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
             nb_priv = sum([1 for p in _PRIVATE_SETTINGS if key.startswith(p)])
             if nb_priv > 0:
@@ -326,6 +326,10 @@ def set_visibility(endpoint, visibility, component=None):
         return r
 
 
+def __is_cobol_setting(key):
+    return re.match(r"^sonar\.cobol\..*$", key)
+
+
 def set_setting(endpoint, key, value, component=None):
     if value is None or value == "":
         # return endpoint.reset_setting(key)
@@ -333,7 +337,10 @@ def set_setting(endpoint, key, value, component=None):
     if key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
         return set_visibility(endpoint=endpoint, component=component, visibility=value)
 
-    value = decode(key, value)
+    # Heck: in 8.9 cobol settings are comma separated mono-valued, in 9.x they are multi-valued
+    if endpoint.version() > (9, 0, 0) or not __is_cobol_setting(key):
+        value = decode(key, value)
+
     util.logger.debug("Setting setting '%s' to value '%s'", key, str(value))
     params = {"key": key, "component": component.key if component else None}
     if isinstance(value, list):

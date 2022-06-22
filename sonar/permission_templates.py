@@ -21,14 +21,13 @@
 import json
 from sonar import sqobject, utilities, permissions
 
-_PERMISSION_TEMPLATES = {}
+_OBJECTS = {}
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
 _QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios": "VW"}
 _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
-
 
 class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint, name, data=None, create_data=None):
@@ -47,6 +46,7 @@ class PermissionTemplate(sqobject.SqObject):
             self.set_permissions(create_data.pop("permissions", None))
         elif data is None:
             data = search_by_name(endpoint, name)
+            self.key = data.get("id", None)
             self.permissions().read()
             utilities.logger.info("Creating permission template '%s'", name)
             utilities.logger.debug("from sync data %s", utilities.json_dump(data))
@@ -58,12 +58,14 @@ class PermissionTemplate(sqobject.SqObject):
         self.creation_date = utilities.string_to_date(data.get("createdAt", None))
         self.last_update = utilities.string_to_date(data.get("updatedAt", None))
         self.__set_hash()
+        _OBJECTS[self.key] = self
+        _MAP[self.name.lower()] = self.key
 
     def __str__(self):
         return f"permission template '{self.name}'"
 
     def __set_hash(self):
-        _PERMISSION_TEMPLATES[self.key] = self
+        _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
 
     def is_default_for(self, qualifier):
@@ -84,20 +86,18 @@ class PermissionTemplate(sqobject.SqObject):
         self.permissions().set(perms)
 
     def update(self, **pt_data):
-        name = pt_data.get("name", None)
-        desc = pt_data.get("description", None)
-        pattern = pt_data.get("pattern", None)
-        params = {"id": self.key, "name": name, "description": desc, "projectKeyPattern": pattern}
-        utilities.logger.info("Updating %s", str(self))
+        params = {"id": self.key}
+        # Hack: On SQ 8.9 if you pass all params otherwise SQ does NPE
+        params["name"] = pt_data.get("name", self.name if self.name else "")
+        params["description"] = pt_data.get("description", self.description if self.description else "")
+        params["projectKeyPattern"] = pt_data.get("pattern", self.project_key_pattern)
+        utilities.logger.info("Updating %s with %s", str(self), str(params))
         self.post(_UPDATE_API, params=params)
-        if name is not None:
-            _MAP.pop(self.name, None)
-            self.name = name
-            _MAP[self.name] = self.key
-        if desc is not None:
-            self.description = desc
-        if pattern is not None:
-            self.project_key_pattern = pattern
+        _MAP.pop(self.name, None)
+        self.name = params["name"]
+        _MAP[self.name] = self.key
+        self.description = params["description"]
+        self.project_key_pattern = params["projectKeyPattern"]
         self.permissions().set(pt_data.get("permissions", None))
         return self
 
@@ -147,11 +147,12 @@ class PermissionTemplate(sqobject.SqObject):
 
 
 def get_object(name, endpoint=None):
-    if len(_PERMISSION_TEMPLATES) == 0:
+    if len(_OBJECTS) == 0:
         get_list(endpoint)
-    if name not in _MAP:
+    lowername = name.lower()
+    if lowername not in _MAP:
         return None
-    return _PERMISSION_TEMPLATES[_MAP[name]]
+    return _OBJECTS.get(_MAP[lowername], None)
 
 
 def create_or_update(name, endpoint, kwargs):
