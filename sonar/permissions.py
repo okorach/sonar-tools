@@ -23,15 +23,15 @@ from http import HTTPStatus
 from abc import ABC, abstractmethod
 from sonar import utilities, options
 
-GLOBAL_PERMISSIONS = {
+COMMUNITY_GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
     "gateadmin": "Administer Quality Gates",
     "profileadmin": "Administer Quality Profiles",
     "provisioning": "Create Projects",
-    "portfoliocreator": "Create Portfolios",
-    "applicationcreator": "Create Applications",
     "scan": "Execute Analysis",
 }
+DEVELOPER_GLOBAL_PERMISSIONS = {**COMMUNITY_GLOBAL_PERMISSIONS, **{"applicationcreator": "Create Applications"}}
+ENTERPRISE_GLOBAL_PERMISSIONS = {**DEVELOPER_GLOBAL_PERMISSIONS, **{"portfoliocreator": "Create Portfolios"}}
 
 PROJECT_PERMISSIONS = {
     "user": "Browse",
@@ -145,6 +145,21 @@ class Permissions(ABC):
             for u, perms in self.permissions[p].items():
                 self.permissions[p][u] = _permission_filter(perms, ("applicationcreator", "portfoliocreator"), black_list=True)
 
+    def _filter_permissions_for_edition(self, perms):
+        ed = self.endpoint.edition()
+        allowed_perms = list(PROJECT_PERMISSIONS.keys())
+        if ed == "community":
+            allowed_perms += list(COMMUNITY_GLOBAL_PERMISSIONS.keys())
+        elif ed == "developer":
+            allowed_perms += list(DEVELOPER_GLOBAL_PERMISSIONS.keys())
+        else:
+            allowed_perms += list(ENTERPRISE_GLOBAL_PERMISSIONS.keys())
+        for p in perms.copy():
+            if p not in allowed_perms:
+                utilities.logger.warning("Can't set permission '%s' on a %s edition", ENTERPRISE_GLOBAL_PERMISSIONS[p], ed)
+                perms.remove(p)
+        return perms
+
     def count(self, perm_type=None, perm_filter=None):
         perms = PERMISSION_TYPES if perm_type is None else (perm_type)
         elem_counter, perm_counter = 0, 0
@@ -190,7 +205,8 @@ class Permissions(ABC):
         params = extra_params.copy()
         for u, perms in perms_dict.items():
             params[set_field] = u
-            for p in perms:
+            filtered_perms = self._filter_permissions_for_edition(perms)
+            for p in filtered_perms:
                 params["permission"] = p
                 r = self.endpoint.post(api, params=params)
                 result = result and r.ok
@@ -217,14 +233,23 @@ class GlobalPermissions(Permissions):
         utilities.logger.debug("Setting %s to %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
-        for p in PERMISSION_TYPES:
-            if new_perms is None or p not in new_perms:
+        ed = self.endpoint.edition()
+        for perm_type in PERMISSION_TYPES:
+            if new_perms is None or perm_type not in new_perms:
                 continue
-            decoded_perms = {k: decode(v) for k, v in new_perms[p].items()}
-            to_remove = diff(self.permissions[p], decoded_perms)
-            self._post_api(GlobalPermissions.API_REMOVE[p], GlobalPermissions.API_SET_FIELD[p], to_remove)
-            to_add = diff(decoded_perms, self.permissions[p])
-            self._post_api(GlobalPermissions.API_SET[p], GlobalPermissions.API_SET_FIELD[p], to_add)
+            decoded_perms = {k: decode(v) for k, v in new_perms[perm_type].items()}
+            to_remove = diff(self.permissions[perm_type], decoded_perms)
+            for p in to_remove.copy():
+                if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
+                    utilities.logger.warning("Can't remove permission '%s' on a %s edition", perm_type, ed)
+                    to_remove.remove(p)
+            self._post_api(GlobalPermissions.API_REMOVE[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_remove)
+            to_add = diff(decoded_perms, self.permissions[perm_type])
+            for p in to_add.copy():
+                if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
+                    utilities.logger.warning("Can't add permission '%s' on a %s edition", perm_type, ed)
+                    to_add.remove(p)
+            self._post_api(GlobalPermissions.API_SET[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_add)
         return self.read()
 
 

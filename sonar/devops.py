@@ -21,6 +21,7 @@
     Abstraction of the SonarQube ALM/DevOps Platform concept
 """
 
+from http import HTTPStatus
 import json
 from sonar import sqobject
 import sonar.utilities as util
@@ -40,27 +41,31 @@ class DevopsPlatform(sqobject.SqObject):
         super().__init__(key, endpoint)
         self.type = devops_platform_type
         if create_data is not None:
+            exit_on_error = self.endpoint.edition() in ("enterprise", "datacenter")
             self.type = create_data.pop("type")
             params = create_data
             params["key"] = self.key
             if self.type == "github":
                 params["clientSecret"] = "TO_BE_SET"
                 params["privateKey"] = "TO_BE_SET"
-                self.post(_CREATE_API_GITHUB, params=params)
+                r = self.post(_CREATE_API_GITHUB, params=params, exit_on_error=exit_on_error)
             elif self.type == "azure":
                 # TODO: pass secrets on the cmd line
                 params["personalAccessToken"] = "TO_BE_SET"
-                self.post(_CREATE_API_AZURE, params=params)
+                r = self.post(_CREATE_API_AZURE, params=params, exit_on_error=exit_on_error)
             elif self.type == "gitlab":
                 params["personalAccessToken"] = "TO_BE_SET"
-                self.post(_CREATE_API_GITLAB, params=params)
+                r = self.post(_CREATE_API_GITLAB, params=params, exit_on_error=exit_on_error)
             elif self.type == "bitbucket":
                 params["personalAccessToken"] = "TO_BE_SET"
-                self.post(_CREATE_API_BITBUCKET, params=params)
+                r = self.post(_CREATE_API_BITBUCKET, params=params, exit_on_error=exit_on_error)
             elif self.type == "bitbucketcloud":
                 params["clientSecret"] = "TO_BE_SET"
-                self.post(_CREATE_API_BBCLOUD, params=params)
-            self.read()
+                r = self.post(_CREATE_API_BBCLOUD, params=params, exit_on_error=exit_on_error)
+            if r.status_code == HTTPStatus.BAD_REQUEST and self.endpoint.edition() == "developer":
+                util.logger.warning("Can't set DevOps platform %s, don't you have more that 1 of that type?", self.key)
+            else:
+                self.read()
         elif data is None:
             self.read()
         else:
@@ -109,8 +114,17 @@ class DevopsPlatform(sqobject.SqObject):
         return self.post(f"alm_settings/update_{alm_type}", params=params).ok
 
 
+def count(platf_type=None):
+    if platf_type is None:
+        return len(_OBJECTS)
+    # Hack: check first 5 chars to that bitbucket cloud and bitbucket server match
+    return sum(1 for o in _OBJECTS.values() if o.type[0:4] == platf_type[0:4])
+
+
 def get_list(endpoint):
     """Gets several settings as bulk (returns a dict)"""
+    if endpoint.edition() == "community":
+        return _OBJECTS
     data = json.loads(endpoint.get(_LIST_API).text)
     for alm_type in _DEVOPS_PLATFORM_TYPES:
         for alm_data in data.get(alm_type, {}):
@@ -146,10 +160,14 @@ def export(endpoint):
 
 def create_or_update_devops_platform(name, data, endpoint):
     o = _OBJECTS.get(name, None)
-    if o is None:
-        o = DevopsPlatform(key=name, devops_platform_type=data["type"], endpoint=endpoint, create_data=data)
-    else:
+    if o:
         o.update(data)
+        return o
+    if endpoint.edition() == "developer" and count(data["type"]) >= 1:
+        util.logger.warning("Can't create a 2nd DevOps platform of type '%s' on a developer edition", data["type"])
+        return None
+    else:
+        o = DevopsPlatform(key=name, devops_platform_type=data["type"], endpoint=endpoint, create_data=data)
     return o
 
 
@@ -157,6 +175,9 @@ def import_config(endpoint, config_data):
     devops_settings = config_data.get("devopsIntegration", {})
     if len(devops_settings) == 0:
         util.logger.info("No devops integration settings in config, skipping import...")
+        return
+    if endpoint.edition() == "community":
+        util.logger.warning("Can't import devops integration settings on a community edition")
         return
     util.logger.info("Importing devops integration settings")
     if len(_OBJECTS) == 0:

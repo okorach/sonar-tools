@@ -78,7 +78,7 @@ class User(sqobject.SqObject):
         self.nb_tokens = data.get("tokenCount", None)
         self.tokens_list = None
         self._last_login_date = None
-        util.logger.info("Created %s", str(self))
+        util.logger.debug("Created %s", str(self))
         _USERS[_uuid(self.login)] = self
 
     def __str__(self):
