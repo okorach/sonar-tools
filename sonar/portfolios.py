@@ -148,10 +148,10 @@ class Portfolio(aggregations.Aggregation):
         self._projects = {}
         util.logger.debug("%s: Read projects %s", str(self), str(self._projects))
         if self.endpoint.version() < (9, 3, 0):
-            for p in self._json["projects"]:
+            for p in self._json.get("projects", {}):
                 self._projects[p] = options.DEFAULT
             return self._projects
-        for p in self._json["selectedProjects"]:
+        for p in self._json.get("selectedProjects", {}):
             if "selectedBranches" in p:
                 self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
@@ -581,7 +581,7 @@ def _find_sub_portfolio(key, data):
         child = _find_sub_portfolio(key, subp)
         if child is not None:
             return child
-    return None
+    return []
 
 
 def __create_portfolio_hierarchy(endpoint, data, parent_key):
