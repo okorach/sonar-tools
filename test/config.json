@@ -4,7 +4,8 @@
          "branches": {
             "break": {
                "projects": {
-                  "training:branches": "break"
+                  "training:branches": "break",
+                  "missing-project": "main"
                }
             },
             "master": {
@@ -35,7 +36,9 @@
                   "demo:azdo-mono-cli": "master",
                   "demo:azdo-mono-dotnet": "master",
                   "demo:azdo-mono-gradle": "master",
-                  "demo:azdo-mono-maven": "master"
+                  "demo:azdo-mono-maven": "master",
+                  "demo:github-actions-cli": "non-existing-branch",
+                  "non-existing-proj": "main"
                }
             }
          },
@@ -764,7 +767,9 @@
             "WEBSITE-TIER1-WEB": "__default__",
             "WEBSITE-TIER2-BIZLOGIC": "__default__",
             "WEBSITE-TIER3-DBLAYER": "__default__",
-            "training:branches": "release-1.1, develop"
+            "training:branches": "release-1.1, develop",
+            "demo:github-actions-cli": "non-existing-branch",
+            "non-existing-proj": "main"
          },
          "subPortfolios": {
             "PORTFOLIO-CORPORATE-BANKING": {
@@ -819,7 +824,8 @@
             "BANK-RETAIL-401K": "__default__",
             "BANK-RETAIL-CREDITRATING": "__default__",
             "BANK-RETAIL-LOANSCALC": "__default__",
-            "BANK-RETAIL-MOBILEAPP": "__default__"
+            "BANK-RETAIL-MOBILEAPP": "__default__",
+            "nonexisting-proj": "__default__"
          },
          "visibility": "private"
       },

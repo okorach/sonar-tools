@@ -25,6 +25,7 @@
 import datetime
 import re
 import json
+from http import HTTPStatus
 import pytz
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops
 from sonar import pull_requests, branches, measures, custom_measures
@@ -178,10 +179,10 @@ class Project(components.Component):
                 params={"project": self.key},
                 exit_on_error=False,
             )
-            # 8.9 returns 404, 9.x returns 400
-            if resp.status_code in (400, 404):
+            # Hack: 8.9 returns 404, 9.x returns 400
+            if resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 self._binding["has_binding"] = False
-            elif resp.status_code // 100 == 2:
+            elif resp.ok:
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
             else:
@@ -421,20 +422,13 @@ class Project(components.Component):
             )
             return []
         resp = self.get("alm_settings/validate_binding", params={"project": self.key}, exit_on_error=False)
-        if resp.status_code // 100 == 2:
+        if resp.ok:
             util.logger.debug("%s binding is valid", str(self))
             return []
-        # 8.9 returns 404, 9.x returns 400
-        elif resp.status_code in (400, 404):
+        # Hack: 8.9 returns 404, 9.x returns 400
+        elif resp.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
             rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
-            return [
-                pb.Problem(
-                    rule.type,
-                    rule.severity,
-                    rule.msg.format(str(self)),
-                    concerned_object=self,
-                )
-            ]
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         else:
             util.exit_fatal(
                 f"alm_settings/get_binding returning status code {resp.status_code}, exiting",
@@ -462,7 +456,7 @@ class Project(components.Component):
                 "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
             )
         resp = self.post("project_dump/export", params={"key": self.key})
-        if resp.status_code != 200:
+        if not resp.ok:
             return {"status": f"HTTP_ERROR {resp.status_code}"}
         data = json.loads(resp.text)
         status = tasks.Task(data["taskId"], endpoint=self.endpoint, data=data).wait_for_completion(timeout=timeout)

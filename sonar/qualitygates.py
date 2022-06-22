@@ -23,6 +23,7 @@
 
 """
 
+from http import HTTPStatus
 import json
 import sonar.sqobject as sq
 from sonar import permissions, options, measures
@@ -96,7 +97,7 @@ class QualityGate(sq.SqObject):
         while page <= nb_pages:
             params["p"] = page
             resp = self.get("qualitygates/search", params=params, exit_on_error=False)
-            if resp.status_code // 100 == 2:
+            if resp.ok:
                 data = json.loads(resp.text)
                 for prj in data:
                     if "key" in prj:
@@ -104,8 +105,8 @@ class QualityGate(sq.SqObject):
                     else:
                         self._projects[prj["id"]] = prj
                 nb_pages = util.nbr_pages(data)
-            elif resp.status_code not in (400, 404):
-                # For no projects, 8.9 returns 404, 9.x returns 400
+            elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                # Hack: For no projects, 8.9 returns 404, 9.x returns 400
                 util.exit_fatal(
                     f"alm_settings/get_binding returning status code {resp.status_code}, exiting",
                     options.ERR_SONAR_API,

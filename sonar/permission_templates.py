@@ -29,6 +29,7 @@ _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
+
 class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint, name, data=None, create_data=None):
         super().__init__(name, endpoint)
@@ -117,9 +118,7 @@ class PermissionTemplate(sqobject.SqObject):
     def set_pattern(self, pattern):
         if pattern is None:
             return None
-        r = self.post(_UPDATE_API, params={"id": self.key, "projectKeyPattern": pattern})
-        self.project_key_pattern = pattern
-        return r
+        return self.update(pattern=pattern)
 
     def to_json(self, full_specs=False):
         json_data = {

@@ -23,6 +23,7 @@
 
 """
 import json
+from http import HTTPStatus
 from sonar import measures, permissions, components, branches, projects, options
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -99,7 +100,7 @@ class Application(aggr.Aggregation):
                 br_obj = branches.get_object(bname, pkey, self.endpoint)
                 branch_list.append("" if br_obj.is_main() else bname)
             else:
-                util.logger.warning("Branch '%s' or project '%s' does not exist, cannot create application branch", bname, pkey)
+                util.logger.warning("Branch '%s' or project '%s' not found, cannot add to %s branch", bname, pkey, str(self))
 
         if len(project_list) > 0:
             params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
@@ -187,12 +188,18 @@ class Application(aggr.Aggregation):
 
     def add_projects(self, project_list):
         current_projects = self.projects().keys()
+        ok = True
         for proj in project_list:
             if proj in current_projects:
                 util.logger.debug("Won't add project '%s' to %s, it's already added", proj, str(self))
                 continue
             util.logger.debug("Adding project '%s' to %s", proj, str(self))
-            self.post("applications/add_project", params={"application": self.key, "project": proj})
+            r = self.post("applications/add_project", params={"application": self.key, "project": proj}, exit_on_error=False)
+            if r.status_code == HTTPStatus.NOT_FOUND:
+                util.logger.warning("Project '%s' not found, can't be added to %s", proj, self)
+            else:
+                ok = ok and r.ok
+        return ok
 
     def update(self, data):
         self.set_permissions(data)

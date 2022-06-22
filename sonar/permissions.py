@@ -19,6 +19,7 @@
 #
 
 import json
+from http import HTTPStatus
 from abc import ABC, abstractmethod
 from sonar import utilities, options
 
@@ -174,7 +175,8 @@ class Permissions(ABC):
                         counter = 0
                     else:
                         counter += 1
-            elif resp.status_code not in (400, 404):
+            elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                # Hack: Different versions of SonarQube return different codes (400 or 404)
                 utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
             page, nbr_pages = page + 1, utilities.nbr_pages(data)
             if counter > 5 or not resp.ok:
@@ -262,9 +264,7 @@ class TemplatePermissions(Permissions):
                 continue
             decoded_perms = {k: decode(v) for k, v in new_perms[p].items()}
             to_remove = diff(self.permissions[p], decoded_perms)
-            self._post_api(
-                TemplatePermissions.API_REMOVE[p], TemplatePermissions.API_SET_FIELD[p], to_remove, templateId=self.concerned_object.key
-            )
+            self._post_api(TemplatePermissions.API_REMOVE[p], TemplatePermissions.API_SET_FIELD[p], to_remove, templateId=self.concerned_object.key)
             to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(TemplatePermissions.API_SET[p], TemplatePermissions.API_SET_FIELD[p], to_add, templateId=self.concerned_object.key)
         return self.read()
@@ -354,7 +354,8 @@ class QualityGatePermissions(Permissions):
             if resp.ok:
                 data = json.loads(resp.text)
                 perms += [p[ret_field] for p in data[perm_type]]
-            elif resp.status_code not in (400, 404):
+            elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                # Hack: Different versions of SonarQube return different codes (400 or 404)
                 utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
             else:
                 break
@@ -388,7 +389,8 @@ class QualityProfilePermissions(Permissions):
             if resp.ok:
                 data = json.loads(resp.text)
                 perms += [p[ret_field] for p in data[perm_type]]
-            elif resp.status_code not in (400, 404):
+            elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                # Hack: Different versions of SonarQube return different codes (400 or 404)
                 utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
             else:
                 break

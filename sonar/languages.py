@@ -25,19 +25,23 @@ API_LIST = "languages/list"
 
 _OBJECTS = {}
 
+
 def read_list(endpoint):
     data = json.loads(endpoint.get(API_LIST).text)
     for lang in data["languages"]:
         _OBJECTS[lang["key"]] = lang["name"]
     return _OBJECTS
 
+
 def get_list(endpoint):
     if len(_OBJECTS) == 0:
         read_list(endpoint)
     return _OBJECTS
 
+
 def exists(endpoint, language):
     return language in get_list(endpoint)
+
 
 def get_object(endpoint, language):
     get_list(endpoint)
