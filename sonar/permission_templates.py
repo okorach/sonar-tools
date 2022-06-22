@@ -29,6 +29,7 @@ _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
+
 class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint, name, data=None, create_data=None):
         super().__init__(name, endpoint)

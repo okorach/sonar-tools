@@ -194,7 +194,7 @@ class QualityProfile(sq.SqObject):
             if r.status_code == HTTPStatus.NOT_FOUND:
                 util.logger.error("Rule %s not found, can't activate it in %s", r_key, str(self))
             elif r.status_code == HTTPStatus.BAD_REQUEST:
-                util.logger.error("HTTP error %d while trying to activate rule %s in %s",r.status_code, r_key, str(self))
+                util.logger.error("HTTP error %d while trying to activate rule %s in %s", r.status_code, r_key, str(self))
             elif not r.ok:
                 util.log_and_exit(r)
 

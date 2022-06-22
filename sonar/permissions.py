@@ -264,9 +264,7 @@ class TemplatePermissions(Permissions):
                 continue
             decoded_perms = {k: decode(v) for k, v in new_perms[p].items()}
             to_remove = diff(self.permissions[p], decoded_perms)
-            self._post_api(
-                TemplatePermissions.API_REMOVE[p], TemplatePermissions.API_SET_FIELD[p], to_remove, templateId=self.concerned_object.key
-            )
+            self._post_api(TemplatePermissions.API_REMOVE[p], TemplatePermissions.API_SET_FIELD[p], to_remove, templateId=self.concerned_object.key)
             to_add = diff(decoded_perms, self.permissions[p])
             self._post_api(TemplatePermissions.API_SET[p], TemplatePermissions.API_SET_FIELD[p], to_add, templateId=self.concerned_object.key)
         return self.read()
