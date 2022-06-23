@@ -253,12 +253,9 @@ Exports or imports all or part of a SonarQube platform configuration.
 Basic Usage: `sonar-config --export -f <file.json>`  
 - `-f`: Define the output file, if not specified `stdout` is used
 - `-e` or `--export`: Specify the export operation
-- `-w` or `--what`: Specify what to export (everything by default). See See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
-
-Basic Usage: `sonar-config --import -f <file.json>`  
-- `-f`: Define the input file where the configuration is described (manually or from a prio export operation), if not specified `stdin` is used
-- `-i` or `--import`: Specify the import operation
-- `-w` or `--what`: Specify what to import (everything by default). See See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
+- `-w` or `--what`: Specify what to export (everything by default)
+- `k "<key1>,<key2>,...,<keyn>"`: Will only import/export projects, apps or portfolios with matching keys
+See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
 
 ## Required Permissions
 
