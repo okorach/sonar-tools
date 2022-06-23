@@ -408,7 +408,6 @@ class Project(components.Component):
     def __audit_binding_valid(self, audit_settings):
         if (
             self.endpoint.edition() == "community"
-            or not audit_settings["audit.projects.bindings"]
             or not audit_settings["audit.projects.bindings.validation"]
             or not self.has_binding()
         ):
