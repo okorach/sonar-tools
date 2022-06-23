@@ -39,7 +39,7 @@ setuptools.setup(
         "Source Code": "https://github.com/okorach/sonar-tools",
     },
     packages=setuptools.find_packages(),
-    package_data={"sonar": ["LICENSE", "audit/rules.json", "sonar-audit.properties"]},
+    package_data={"sonar": ["LICENSE", "audit/rules.json", "audit/sonar-audit.properties"]},
     install_requires=[
         "pytz",
         "argparse",
