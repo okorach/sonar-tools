@@ -18,7 +18,7 @@ During import:
 
 ## Usage
 
-`sonar-config [-u <url>] [-t <token>] [-e|--export] [-i|--import] [-w|--what <configSelection>] [-f <file>] [-h] [-v <debugLevel>]`
+`sonar-config [-u <url>] [-t <token>] [-e|--export] [-i|--import] [-w|--what <configSelection>] [-f <file>] [-h] [-v <debugLevel>] [-k "<key1>,<key2>,...,<keyn>"]`
 
 `--what` can be followed by a list of comma separated items to export or import
 When `--what` is not specified, everything is exported or 
@@ -33,6 +33,7 @@ When `--what` is not specified, everything is exported or
 - `--what portfolios`: Exports/Imports all portfolios definition and settings. This can be a fairly long operation if there are a lot of portfolios
 - `--what applications`: Exports/Imports all applications definition and settings. This can be a fairly long operation if there are a lot of applications
 - `-f <file>`: Sends export to or read import from `<file>`, `stdout` for export and `stdin` for import is the default.
+- `-k "<key1>,<key2>,...,<keyn>"`: Limits the export or import operation to projects, apps or portfolios matching these keys
 - `-h`: Displays help and exits
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
@@ -55,6 +56,9 @@ sonar-config -e -f config.json
 
 # Imports everything defined in config.json
 sonar-config -i -f config.json
+
+# Imports only data about project keys projectkey1, myprojectkey and anotherprojectkey 
+sonar-config -i --what projects -k "projectkey1, myprojectkey, anotherprojectkey" -f config.json 
 
 # Export global settings, users and groups, send results to stdout in JSON format (redirected in myconf.json)
 sonar-config -e -w "settings, users, groups" >myconf.json
