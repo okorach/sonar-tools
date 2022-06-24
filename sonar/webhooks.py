@@ -27,6 +27,8 @@ import json
 import sonar.utilities as util
 import sonar.sqobject as sq
 
+from sonar.audit import rules, problem
+
 _OBJECTS = {}
 
 
@@ -55,6 +57,12 @@ class WebHook(sq.SqObject):
         params = util.remove_nones(kwargs)
         params.update({"webhook": self.key})
         self.post("webhooks/update", params=params)
+
+    def audit(self):
+        if self._json["latestDelivery"]["success"]:
+            return []
+        rule = rules.get_rule(rules.RuleId.FAILED_WEBHOOK)
+        return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)))]
 
     def to_json(self):
         json_data = {
@@ -122,3 +130,11 @@ def get_object(name, endpoint, project_key=None, data=None):
 def _uuid(name, project_key):
     p = "" if project_key is None else f":PROJECT:{project_key}"
     return f"{name}{p}"
+
+
+def audit(endpoint):
+    util.logger.info("Auditing webhooks")
+    problems = []
+    for wh in search(endpoint=endpoint).values():
+        problems += wh.audit()
+    return problems
