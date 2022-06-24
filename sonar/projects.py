@@ -369,7 +369,7 @@ class Project(components.Component):
             (lang, ncloc) = lang.split("=")
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
-        utility_locs = sum(languages[l] for l in languages if l in ("xml", "json"))
+        utility_locs = sum(lcount for lang, lcount in languages if lang in ("xml", "json"))
         if total_locs > 100000 and (utility_locs / total_locs) > 0.5:
             rule = rules.get_rule(rules.RuleId.PROJ_UTILITY_LOCS)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), utility_locs), concerned_object=self)]
