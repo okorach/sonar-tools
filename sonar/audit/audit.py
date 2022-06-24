@@ -24,21 +24,12 @@
 
 """
 import sys
+import datetime
 import json
 
 import sonar.portfolios as pf
 import sonar.applications as apps
-from sonar import (
-    users,
-    groups,
-    version,
-    env,
-    qualityprofiles,
-    qualitygates,
-    projects,
-    sif,
-    options,
-)
+from sonar import users, groups, version, env, qualityprofiles, qualitygates, projects, sif, options
 import sonar.utilities as util
 from sonar.audit import problem, config
 
@@ -126,6 +117,8 @@ def main():
     sq = env.Environment(some_url=args.url, some_token=args.token)
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    start_time = datetime.datetime.today()
+
     settings = config.load("sonar-audit")
 
     if kwargs.get("config", False):
@@ -161,6 +154,7 @@ def main():
     args.format = __deduct_format__(args.format, args.file)
     problem.dump_report(problems, args.file, args.format, args.csvSeparator)
 
+    util.logger.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
     if problems:
         util.logger.warning("%d issues found during audit", len(problems))
     else:
