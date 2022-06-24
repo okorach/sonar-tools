@@ -71,13 +71,7 @@ def __parse_args(desc):
     parser = utilities.set_common_args(desc)
     parser = utilities.set_project_args(parser)
     parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
-    parser.add_argument(
-        "-w",
-        "--what",
-        required=False,
-        default="",
-        help=f"What to export or import {','.join(_EVERYTHING)}",
-    )
+    parser = utilities.set_what(parser, what_list=_EVERYTHING, operation="export or import")
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "-e",

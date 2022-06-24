@@ -149,6 +149,17 @@ def set_output_file_args(parser, json_fmt=True, csv_fmt=True):
     return parser
 
 
+def set_what(parser, what_list, operation):
+    parser.add_argument(
+        "-w",
+        "--what",
+        required=False,
+        default="",
+        help=f"What to {operation} {','.join(what_list)}",
+    )
+    return parser
+
+
 def get_logging_level(level):
     if level == "DEBUG":
         lvl = logging.DEBUG

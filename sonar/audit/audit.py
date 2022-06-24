@@ -72,7 +72,7 @@ def _audit_sif(sysinfo):
     return sif.Sif(sysinfo).audit()
 
 
-def _audit_sq(sq, settings, what_to_audit=None):
+def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
     problems = []
     if options.WHAT_PROJECTS in what_to_audit:
         problems += projects.audit(endpoint=sq, audit_settings=settings)
@@ -95,14 +95,9 @@ def _audit_sq(sq, settings, what_to_audit=None):
 
 def __parser_args(desc):
     parser = util.set_common_args(desc)
+    parser = util.set_project_args(parser)
     parser = util.set_output_file_args(parser)
-    parser.add_argument(
-        "-w",
-        "--what",
-        required=False,
-        default="",
-        help=f"What to audit {','.join(_ALL_AUDITABLE)}",
-    )
+    parser = util.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
     parser.add_argument(
         "--config",
