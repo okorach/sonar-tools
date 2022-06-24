@@ -26,17 +26,17 @@ import datetime
 from sonar import env, version, projects, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities
 
 
-_SETTINGS = "settings"
-_USERS = "users"
-_GROUPS = "groups"
-_GATES = "qualitygates"
-_RULES = "rules"
-_PROFILES = "qualityprofiles"
-_PROJECTS = "projects"
-_APPS = "applications"
-_PORTFOLIOS = "portfolios"
-
-_EVERYTHING = [_SETTINGS, _USERS, _GROUPS, _GATES, _RULES, _PROFILES, _PROJECTS, _APPS, _PORTFOLIOS]
+_EVERYTHING = [
+    options.WHAT_SETTINGS,
+    options.WHAT_USERS,
+    options.WHAT_GROUPS,
+    options.WHAT_GATES,
+    options.WHAT_RULES,
+    options.WHAT_PROFILES,
+    options.WHAT_PROJECTS,
+    options.WHAT_APPS,
+    options.WHAT_PORTFOLIOS,
+]
 
 __JSON_KEY_PLATFORM = "platform"
 
@@ -51,15 +51,15 @@ __JSON_KEY_APPS = "applications"
 __JSON_KEY_PORTFOLIOS = "portfolios"
 
 __MAP = {
-    _SETTINGS: __JSON_KEY_SETTINGS,
-    _USERS: __JSON_KEY_USERS,
-    _GROUPS: __JSON_KEY_GROUPS,
-    _GATES: __JSON_KEY_GATES,
-    _RULES: __JSON_KEY_RULES,
-    _PROFILES: __JSON_KEY_PROFILES,
-    _PROJECTS: __JSON_KEY_PROJECTS,
-    _APPS: __JSON_KEY_APPS,
-    _PORTFOLIOS: __JSON_KEY_PORTFOLIOS,
+    options.WHAT_SETTINGS: __JSON_KEY_SETTINGS,
+    options.WHAT_USERS: __JSON_KEY_USERS,
+    options.WHAT_GROUPS: __JSON_KEY_GROUPS,
+    options.WHAT_GATES: __JSON_KEY_GATES,
+    options.WHAT_RULES: __JSON_KEY_RULES,
+    options.WHAT_PROFILES: __JSON_KEY_PROFILES,
+    options.WHAT_PROJECTS: __JSON_KEY_PROJECTS,
+    options.WHAT_APPS: __JSON_KEY_APPS,
+    options.WHAT_PORTFOLIOS: __JSON_KEY_PORTFOLIOS,
 }
 
 
@@ -105,25 +105,25 @@ def __export_config(endpoint, what, args):
     utilities.logger.info("Exporting configuration from %s", args.url)
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
-    if _SETTINGS in what:
+    if options.WHAT_SETTINGS in what:
         sq_settings[__JSON_KEY_SETTINGS] = endpoint.export()
-    if _RULES in what:
+    if options.WHAT_RULES in what:
         sq_settings[__JSON_KEY_RULES] = rules.export(endpoint)
-    if _PROFILES in what:
-        if _RULES not in what:
+    if options.WHAT_PROFILES in what:
+        if options.WHAT_RULES not in what:
             sq_settings[__JSON_KEY_RULES] = rules.export(endpoint)
         sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint)
-    if _GATES in what:
+    if options.WHAT_GATES in what:
         sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint)
-    if _PROJECTS in what:
+    if options.WHAT_PROJECTS in what:
         sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys)
-    if _APPS in what:
+    if options.WHAT_APPS in what:
         sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys)
-    if _PORTFOLIOS in what:
+    if options.WHAT_PORTFOLIOS in what:
         sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=args.projectKeys)
-    if _USERS in what:
+    if options.WHAT_USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint)
-    if _GROUPS in what:
+    if options.WHAT_GROUPS in what:
         sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint)
 
     utilities.remove_nones(sq_settings)
@@ -135,25 +135,25 @@ def __export_config(endpoint, what, args):
 def __import_config(endpoint, what, args):
     utilities.logger.info("Importing configuration to %s", args.url)
     data = utilities.load_json_file(args.file)
-    if _GROUPS in what:
+    if options.WHAT_GROUPS in what:
         groups.import_config(endpoint, data)
-    if _USERS in what:
+    if options.WHAT_USERS in what:
         users.import_config(endpoint, data)
-    if _GATES in what:
+    if options.WHAT_GATES in what:
         qualitygates.import_config(endpoint, data)
-    if _RULES in what:
+    if options.WHAT_RULES in what:
         rules.import_config(endpoint, data)
-    if _PROFILES in what:
-        if _RULES not in what:
+    if options.WHAT_PROFILES in what:
+        if options.WHAT_RULES not in what:
             rules.import_config(endpoint, data)
         qualityprofiles.import_config(endpoint, data)
-    if _SETTINGS in what:
+    if options.WHAT_SETTINGS in what:
         endpoint.import_config(data["globalSettings"])
-    if _PROJECTS in what:
+    if options.WHAT_PROJECTS in what:
         projects.import_config(endpoint, data, key_list=args.projectKeys)
-    if _APPS in what:
+    if options.WHAT_APPS in what:
         applications.import_config(endpoint, data, key_list=args.projectKeys)
-    if _PORTFOLIOS in what:
+    if options.WHAT_PORTFOLIOS in what:
         portfolios.import_config(endpoint, data, key_list=args.projectKeys)
     utilities.logger.info("Importing configuration to %s completed", args.url)
 
@@ -166,18 +166,7 @@ def main():
 
     start_time = datetime.datetime.today()
     endpoint = env.Environment(some_url=args.url, some_token=args.token)
-    what = args.what
-    if args.what == "":
-        what = _EVERYTHING
-    else:
-        what = utilities.csv_to_list(what)
-    for w in what:
-        if w not in _EVERYTHING:
-            utilities.exit_fatal(
-                f"'{w}' is not something that can be imported or exported, chose among {','.join(_EVERYTHING)}",
-                exit_code=options.ERR_ARGS_ERROR,
-            )
-
+    what = utilities.check_what(args.what, _EVERYTHING, "exported or imported")
     if kwargs["export"]:
         try:
             __export_config(endpoint, what, args)

@@ -479,3 +479,17 @@ def object_key(key_or_obj):
         return key_or_obj
     else:
         return key_or_obj.key
+
+
+def check_what(what, allowed_values, operation="processed"):
+    if what == "":
+        return allowed_values
+    what = csv_to_list(what)
+    for w in what:
+        if w in allowed_values:
+            continue
+        exit_fatal(
+            f"'{w}' is not something that can be {operation}, chose among {','.join(allowed_values)}",
+            exit_code=options.ERR_ARGS_ERROR,
+        )
+    return what
