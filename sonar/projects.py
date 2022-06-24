@@ -231,17 +231,12 @@ class Project(components.Component):
         problems = []
         groups = self.permissions().read().to_json(perm_type="groups")
         for gr_name, gr_perms in groups.items():
-            # -- Checks for Anyone, sonar-user
-            if gr_name not in ("Anyone", "sonar-users"):
-                continue
-            if "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms:
-                if gr_name == "Anyone":
-                    rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
-                else:
-                    rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
+            if gr_name == "Anyone":
+                rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
-            else:
-                util.logger.info("Group '%s' has browse permissions on %s. Is this normal?", gr_name, str(self))
+            if gr_name == "sonar-users" and "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms:
+                rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
 
         max_perms = audit_settings["audit.projects.permissions.maxGroups"]
         counter = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
