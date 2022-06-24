@@ -78,7 +78,6 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "message": "Maintainability rating threshold of '{}' for {} rating is outside of recommended range [{}-{}]"
-
     },
     "SETTING_SLB_RETENTION": {
         "severity": "MEDIUM",
@@ -134,6 +133,16 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "message": "Time to develop 1 line of code '{} min' is outside of recommended range [{}-{}]"
+    },
+    "ANYONE_WITH_GLOBAL_PERMS": {
+        "severity": "CRITICAL",
+        "type": "GOVERNANCE",
+        "message": "Group 'Anyone' should not have any global permissions, this is a critical security risk"
+    },
+    "SONAR_USERS_WITH_ELEVATED_PERMS": {
+        "severity": "CRITICAL",
+        "type": "GOVERNANCE",
+        "message": "Group 'sonar-users' has global admin, admin QG, admin QP or create project permissions, this is a critical security risk"
     },
     "BACKGROUND_TASKS_FAILURE_RATE_HIGH": {
         "severity": "HIGH",
@@ -300,7 +309,7 @@
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
         "object": "Project",
-        "message": "Group 'sonar-users' should not have admin, admin QG, admin QP or create project permissions"
+        "message": "Group 'sonar-users' has admin, admin QG, admin QP or create project permissions on {}, this is not recommended"
     },
     "PROJ_PERM_ANYONE": {
         "severity": "HIGH",
