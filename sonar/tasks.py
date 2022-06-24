@@ -193,9 +193,10 @@ class Task(sq.SqObject):
         return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(proj)), concerned_object=proj)]
 
     def __audit_warnings(self, audit_settings):
+        if not audit_settings["audit.projects.analysisWarnings"]:
+            util.logger.info("Project analysis warnings auditing disabled, skipping...")
+            return []
         warnings = self.warnings()
-        util.logger.debug("Auditing analysis warnings of %s from %s",
-            str(self.component()), str(warnings))
         if len(warnings) == 0:
             return []
         rule = rules.get_rule(rules.RuleId.PROJ_ANALYSIS_WARNING)
