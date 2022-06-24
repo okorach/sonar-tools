@@ -273,7 +273,6 @@ def audit(audit_settings, endpoint=None, key_list=None):
         util.logger.debug("Auditing applications is disabled, skipping...")
         return []
     util.logger.info("--- Auditing applications ---")
-    objects_list = search(endpoint=endpoint)
     problems = []
     for obj in get_list(endpoint, key_list=key_list).values():
         problems += obj.audit(audit_settings)
