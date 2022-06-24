@@ -18,7 +18,9 @@ audit.globalSettings = yes
 audit.projects = yes
 audit.qualityGates = yes
 audit.qualityProfiles = yes
-audit.tokens = yes
+audit.users = yes
+audit.groups = yes
+# Portfolios and application audit (for DE (Apps) and EE, DCE (Apps, and Portfolios))
 audit.portfolios = yes
 audit.applications = yes
 
@@ -66,8 +68,9 @@ audit.globalSettings.range.4 = sonar.dbcleaner.weeksBeforeKeepingOnlyOneSnapshot
 # Audit DB Cleaner min/max time before deleting all snapshots
 audit.globalSettings.range.5 = sonar.dbcleaner.weeksBeforeDeletingAllSnapshots, 104, 260, MEDIUM, PERFORMANCE
 
-# Audit DB Cleaner min/max time before deleting inactive branches
+# Audit DB Cleaner min/max time before deleting inactive branches (and PRs)
 audit.globalSettings.range.6 = sonar.dbcleaner.daysBeforeDeletingInactiveBranches, 10, 60, MEDIUM, PERFORMANCE
+audit.globalSettings.range.7 = sonar.dbcleaner.daysBeforeDeletingInactiveBranchesAndPRs, 10, 60, MEDIUM, PERFORMANCE
 
 #------------------- TECH DEBT SETTINGS AUDIT CONFIGURATION -------------------
 
@@ -90,6 +93,9 @@ audit.globalSettings.maintainabilityRating.D.range.2 = 0.30, 0.60, HIGH, CONFIGU
 #======================= PERMISSIONS AUDIT CONFIGURATION ======================
 
 #----------------------------- GLOBAL PERMISSIONS -----------------------------
+# Audit (and warn) for suspicious global permissions
+audit.globalSettings.permissions = yes
+
 # Max allowed number of users/groups with global admin permission
 audit.globalSettings.permissions.maxAdminUsers = 3
 audit.globalSettings.permissions.maxAdminGroups = 2
@@ -139,16 +145,41 @@ audit.projects.permissions = yes
 
 # Audit (and warn) for suspicious projects exclusions
 audit.projects.exclusions = yes
-audit.projects.suspiciousExclusionsPatterns = \*\*/[^\/]+/\*\*, \*\*\/\*\.\w+, **/*\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)
-audit.projects.suspiciousExclusionsExceptions = \*\*/(__pycache__|lib|lib|vendor|node_modules)\/\*\*
-
+# In the below:
+# - All * . and ? symbols that relate to the SonarQube exclusion pattern should be escaped with \\
+# - All symbols that have a special meaning for regex pattern matching shall not be escaped
+audit.projects.suspiciousExclusionsPatterns = \\*\\*/[^\/]+/\\*\\*, \\*\\*/\\*[\.\w]*, \\*\\*/\\*, \\*\\*/\\*\\.(java|jav|cs|csx|py|php|js|ts|sql|html|css|cpp|c|h|hpp)\\*?
+audit.projects.suspiciousExclusionsExceptions = \\*\\*/(__pycache__|libs|lib|vendor|node_modules)/\\*\\*
 
 # Audit (and warn) for projects whose last analysis date is older than maxLastAnalysisAge
-audit.projects.lastAnalysisDate = yes
+# Set property to 0 to turn off the check
 audit.projects.maxLastAnalysisAge = 180
 
-# Audit (and warn) for suspicious global permissions
-audit.globalSettings.permissions = yes
+# Audit branches for zero LoC and last analysis date
+audit.projects.branches = yes
+
+# Audits for branches whose last analysis is older than a given number of days
+# This parameter is only considered for branches not marked as "keep when inactive" 
+# Set property to 0 to turn off the check
+audit.projects.branches.maxLastAnalysisAge = 30
+
+# Audits for PR whose last analysis is older than a given number of days
+# Set property to 0 to turn off the check
+audit.projects.pullRequests.maxLastAnalysisAge = 30
+
+# Audits duplicate projects bound to same DevOps platform repo
+audit.projects.bindings = yes
+
+# Audits that projects with bindings have valid bindings
+# Off by default since each project binding validation takes 1 to 3 seconds by project (with ALM bindings)
+# which can be too time consuming for platform with large number of bound projects
+audit.projects.bindings.validation = no
+
+# Audits projects for disabled SCM
+audit.project.scm.disabled = yes
+
+# Audits projects with suspiciously high proportion of utility LoCs (XML, JSON...)
+audit.projects.utilityLocs = yes
 
 #====================== QUALITY GATES AUDIT CONFIGURATION =====================
 
@@ -197,28 +228,47 @@ audit.qualitygates.reliability_rating.range = 4, 4
 audit.qualitygates.security_rating.range = 3, 4
 audit.qualitygates.hotspot_rating.range = 4, 4
 
-#========================= USERS AND TOKENS AUDIT CONFIGURATION =========================
 
-# Audit (and warn) for empty portfolios
-audit.groups.empty = yes
+#===================== QUALITY PROFILES AUDIT CONFIGURATION ===================
+
+# Audit QP not changed since a given number of days
+audit.qualityProfiles.maxLastChangeAge = 180
+
+# Audit quality profiles with too few rules (0.5 = 50% of all rules)
+audit.qualityProfiles.minNumberOfRules = 0.5
+
+# Audit quality profiles not used for a given number of days
+audit.qualityProfiles.maxUnusedAge = 60
+
+# Audit quality profiles for usage of deprecated rules
+audit.qualityProfiles.checkDeprecatedRules = yes
+
+#========================= USERS AND GROUPS AUDIT CONFIGURATION =========================
 
 # Audit for users that have not logged in for a given number of days
 audit.users.maxLoginAge = 180
 
+# Audit for days after which a token should be revoked (and potentially renewed)
+audit.tokens.maxAge = 90
+
+# Audit  for days after which an unused token should be revoked (and potentially renewed)
+audit.tokens.maxUnusedAge = 30
+
 # Comma separated list of SonarQube users whose tokens are not considered for expiration
 audit.tokens.neverExpire =
 
-# Audit today for days after which a token should be revoked (and potentially renewed)
-audit.tokens.maxAge = 90
+# Audit (and warn) for empty groups
+audit.groups.empty = yes
 
-# Audit today for days after which an unused token should be revoked (and potentially renewed)
-audit.tokens.maxUnusedAge = 30
+#========================= PORTFOLIOS AND APPS AUDIT CONFIGURATION ========================
 
-#========================= PORTFOLIOS AND APPS AUDIT CONFIGURATION =========================
 
-# Audit (and warn) for empty portfolios
+# Audit (and warn) for portfolios composed of 0 or/and 1 projects
 audit.portfolios.empty = yes
+audit.portfolios.singleton = yes
 
-# Audit (and warn) for empty portfolios
+# Audit (and warn) for applications composed of 0 or/and 1 projects
 audit.applications.empty = yes
+audit.applications.singleton = yes
+
 ```
