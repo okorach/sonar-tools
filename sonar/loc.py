@@ -115,7 +115,7 @@ def __dump_loc(object_list, file, **kwargs):
 
 def __parse_args(desc):
     parser = util.set_common_args(desc)
-    parser = util.set_project_args(parser)
+    parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
     parser.add_argument(
         "-n",

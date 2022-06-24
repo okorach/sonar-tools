@@ -96,7 +96,7 @@ def set_common_args(desc):
     return parser
 
 
-def set_project_args(parser):
+def set_key_arg(parser):
     parser.add_argument(
         "-k",
         "--projectKeys",
@@ -146,6 +146,17 @@ def set_output_file_args(parser, json_fmt=True, csv_fmt=True):
             help=f"CSV separator (for CSV output), default {CSV_SEPARATOR}",
         )
 
+    return parser
+
+
+def set_what(parser, what_list, operation):
+    parser.add_argument(
+        "-w",
+        "--what",
+        required=False,
+        default="",
+        help=f"What to {operation} {','.join(what_list)}",
+    )
     return parser
 
 
@@ -479,3 +490,17 @@ def object_key(key_or_obj):
         return key_or_obj
     else:
         return key_or_obj.key
+
+
+def check_what(what, allowed_values, operation="processed"):
+    if what == "":
+        return allowed_values
+    what = csv_to_list(what)
+    for w in what:
+        if w in allowed_values:
+            continue
+        exit_fatal(
+            f"'{w}' is not something that can be {operation}, chose among {','.join(allowed_values)}",
+            exit_code=options.ERR_ARGS_ERROR,
+        )
+    return what

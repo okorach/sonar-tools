@@ -33,6 +33,17 @@ from sonar import users, groups, version, env, qualityprofiles, qualitygates, pr
 import sonar.utilities as util
 from sonar.audit import problem, config
 
+_ALL_AUDITABLE = [
+    options.WHAT_SETTINGS,
+    options.WHAT_USERS,
+    options.WHAT_GROUPS,
+    options.WHAT_GATES,
+    options.WHAT_PROFILES,
+    options.WHAT_PROJECTS,
+    options.WHAT_APPS,
+    options.WHAT_PORTFOLIOS,
+]
+
 
 def __deduct_format__(fmt, file):
     if fmt is not None:
@@ -61,39 +72,32 @@ def _audit_sif(sysinfo):
     return sif.Sif(sysinfo).audit()
 
 
-def _audit_sq(sq, settings, what=None):
-    if what is None:
-        what = "qp,qg,settings,projects,users,portfolios,apps,groups"
-    what_to_audit = util.csv_to_list(what)
+def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
     problems = []
-    if "projects" in what_to_audit:
-        problems += projects.audit(endpoint=sq, audit_settings=settings)
-    if "qp" in what_to_audit:
+    if options.WHAT_PROJECTS in what_to_audit:
+        problems += projects.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+    if options.WHAT_PROFILES in what_to_audit:
         problems += qualityprofiles.audit(endpoint=sq, audit_settings=settings)
-    if "qg" in what_to_audit:
+    if options.WHAT_GATES in what_to_audit:
         problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
-    if "settings" in what_to_audit:
+    if options.WHAT_SETTINGS in what_to_audit:
         problems += sq.audit(audit_settings=settings)
-    if "users" in what_to_audit:
+    if options.WHAT_SETTINGS in what_to_audit:
         problems += users.audit(endpoint=sq, audit_settings=settings)
-    if "groups" in what_to_audit:
+    if options.WHAT_GROUPS in what_to_audit:
         problems += groups.audit(endpoint=sq, audit_settings=settings)
-    if "portfolios" in what_to_audit:
-        problems += pf.audit(endpoint=sq, audit_settings=settings)
-    if "apps" in what_to_audit:
-        problems += apps.audit(endpoint=sq, audit_settings=settings)
+    if options.WHAT_PORTFOLIOS in what_to_audit:
+        problems += pf.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+    if options.WHAT_APPS in what_to_audit:
+        problems += apps.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
     return problems
 
 
 def __parser_args(desc):
     parser = util.set_common_args(desc)
+    parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
-    parser.add_argument(
-        "-w",
-        "--what",
-        required=False,
-        help="What to audit (qp,qg,settings,projects,users,groups,portfolios,apps) comma separated, everything by default",
-    )
+    parser = util.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
     parser.add_argument(
         "--config",
@@ -148,8 +152,12 @@ def main():
                 f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...",
                 options.ERR_SIF_AUDIT_ERROR,
             )
-    else:
-        problems = _audit_sq(sq, settings, args.what)
+
+    key_list = util.csv_to_list(args.projectKeys)
+    try:
+        problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
+    except options.NonExistingObjectError as e:
+        util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
     args.format = __deduct_format__(args.format, args.file)
     problem.dump_report(problems, args.file, args.format, args.csvSeparator)

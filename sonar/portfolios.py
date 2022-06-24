@@ -26,7 +26,7 @@
 import time
 import json
 
-from sonar import aggregations, env, measures, options, permissions
+from sonar import aggregations, measures, options, permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules
@@ -401,9 +401,8 @@ def get_list(endpoint, key_list=None):
 
 def search(endpoint, params=None):
     portfolio_list = {}
-    edition = env.edition(ctxt=endpoint)
-    if edition not in ("enterprise", "datacenter"):
-        util.logger.info("No portfolios in %s edition", edition)
+    if endpoint.edition() not in ("enterprise", "datacenter"):
+        util.logger.info("No portfolios in %s edition", endpoint.edition())
     else:
         portfolio_list = sq.search_objects(
             api=_SEARCH_API,
@@ -416,13 +415,13 @@ def search(endpoint, params=None):
     return portfolio_list
 
 
-def audit(audit_settings, endpoint=None):
+def audit(audit_settings, endpoint=None, key_list=None):
     if not audit_settings["audit.portfolios"]:
         util.logger.debug("Auditing portfolios is disabled, skipping...")
         return []
     util.logger.info("--- Auditing portfolios ---")
     problems = []
-    for _, p in search(endpoint, params={"qualifiers": "VW"}).items():
+    for p in get_list(endpoint=endpoint, key_list=key_list).values():
         problems += p.audit(audit_settings)
     return problems
 

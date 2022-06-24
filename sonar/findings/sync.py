@@ -36,7 +36,7 @@ _WITH_COMMENTS = {"additionalFields": "comments"}
 
 def __parse_args(desc):
     parser = util.set_common_args(desc)
-    parser = util.set_project_args(parser)
+    parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
     parser = util.set_target_sonar_args(parser)
     parser.add_argument(
