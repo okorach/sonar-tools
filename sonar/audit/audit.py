@@ -152,9 +152,12 @@ def main():
                 f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...",
                 options.ERR_SIF_AUDIT_ERROR,
             )
-    else:
-        key_list = util.csv_to_list(args.projectKeys)
+
+    key_list = util.csv_to_list(args.projectKeys)
+    try:
         problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
+    except options.NonExistingObjectError as e:
+        util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
     args.format = __deduct_format__(args.format, args.file)
     problem.dump_report(problems, args.file, args.format, args.csvSeparator)
