@@ -239,9 +239,9 @@ class Project(components.Component):
                     rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
                 else:
                     rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(gr_name, str(self)), concerned_object=self))
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
             else:
-                util.logger.info("Group '%s' has browse permissions on %s. Is this normal ?", gr_name, str(self))
+                util.logger.info("Group '%s' has browse permissions on %s. Is this normal?", gr_name, str(self))
 
         max_perms = audit_settings["audit.projects.permissions.maxGroups"]
         counter = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
@@ -369,7 +369,7 @@ class Project(components.Component):
             (lang, ncloc) = lang.split("=")
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
-        utility_locs = sum(lcount for lang, lcount in languages if lang in ("xml", "json"))
+        utility_locs = sum(lcount for lang, lcount in languages.items() if lang in ("xml", "json"))
         if total_locs > 100000 and (utility_locs / total_locs) > 0.5:
             rule = rules.get_rule(rules.RuleId.PROJ_UTILITY_LOCS)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), utility_locs), concerned_object=self)]
