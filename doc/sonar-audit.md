@@ -155,6 +155,8 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
     - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
+    - `sonar-users` group with elevated project permissions
+    - `Anyone` group with any project permissions
   - Project bindings (if `audit.projects.bindings = yes`, default `yes`)
     - 2 projects (not part of same monorepo) bound to the same DevOps platform repository
     - Invalid project binding (if `audit.projects.bindings = yes`, default `false`).

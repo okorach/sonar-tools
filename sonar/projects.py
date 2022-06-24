@@ -229,19 +229,14 @@ class Project(components.Component):
 
     def __audit_group_permissions__(self, audit_settings):
         problems = []
-        groups = counts = self.permissions().read().to_json(perm_type="groups")
+        groups = self.permissions().read().to_json(perm_type="groups")
         for gr_name, gr_perms in groups.items():
-            # -- Checks for Anyone, sonar-user
-            if gr_name not in ("Anyone", "sonar-users"):
-                continue
-            if "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms:
-                if gr_name == "Anyone":
-                    rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
-                else:
-                    rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(gr_name, str(self)), concerned_object=self))
-            else:
-                util.logger.info("Group '%s' has browse permissions on %s. Is this normal ?", gr_name, str(self))
+            if gr_name == "Anyone":
+                rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
+            if gr_name == "sonar-users" and "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms:
+                rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
 
         max_perms = audit_settings["audit.projects.permissions.maxGroups"]
         counter = self.permissions().count(perm_type="groups", perm_filter=perms.PROJECT_PERMISSIONS)
@@ -254,14 +249,14 @@ class Project(components.Component):
         counter = self.permissions().count(perm_type="groups", perm_filter=("scan"))
         if counter > max_scan:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_SCAN_GROUPS)
-            msg = rule.msg.format(str(self), counts["scan"], max_scan)
+            msg = rule.msg.format(str(self), counter, max_scan)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_issue_adm = audit_settings["audit.projects.permissions.maxIssueAdminGroups"]
         counter = self._permissions.count(perm_type="groups", perm_filter=("issueadmin"))
         if counter > max_issue_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
-            msg = rule.msg.format(str(self), counts["issueadmin"], max_issue_adm)
+            msg = rule.msg.format(str(self), counter, max_issue_adm)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_spots_adm = audit_settings["audit.projects.permissions.maxHotspotAdminGroups"]
@@ -355,10 +350,10 @@ class Project(components.Component):
         return []
 
     def __audit_languages__(self, audit_settings):
-        if not audit_settings.get("audit.xmlLoc.suspicious", False):
-            util.logger.debug("XML LoCs count audit disabled by configuration, skipping")
+        if not audit_settings.get("audit.projects.utilityLocs", False):
+            util.logger.debug("Utility LoCs audit disabled by configuration, skipping")
             return []
-        util.logger.debug("Auditing %s suspicious XML LoC count", str(self))
+        util.logger.debug("Auditing %s utility LoC count", str(self))
 
         total_locs = 0
         languages = {}
@@ -369,17 +364,11 @@ class Project(components.Component):
             (lang, ncloc) = lang.split("=")
             languages[lang] = int(ncloc)
             total_locs += int(ncloc)
-        if total_locs > 100000 and "xml" in languages and (languages["xml"] / total_locs) > 0.5:
-            rule = rules.get_rule(rules.RuleId.PROJ_XML_LOCS)
-            return [
-                pb.Problem(
-                    rule.type,
-                    rule.severity,
-                    rule.format(str(self), languages["xml"]),
-                    concerned_object=self,
-                )
-            ]
-        util.logger.debug("%s XML LoCs count seems reasonable", str(self))
+        utility_locs = sum(lcount for lang, lcount in languages.items() if lang in ("xml", "json"))
+        if total_locs > 100000 and (utility_locs / total_locs) > 0.5:
+            rule = rules.get_rule(rules.RuleId.PROJ_UTILITY_LOCS)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), utility_locs), concerned_object=self)]
+        util.logger.debug("%s utility LoCs count (%d) seems reasonable", str(self), utility_locs)
         return []
 
     def __audit_bg_tasks(self, audit_settings):
