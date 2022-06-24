@@ -166,6 +166,8 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
       (Exceptions: `__pycache__`, `node_modules`, `vendor`, `lib`, `libs` directories)
     - Above patterns and exceptions are configurable
   - sonar.scm.disabled=true
+  - Projects with both a `main` and a `master` branch
+  - Projects with analysis warnings on main branch analysis
 - Portfolios: (if `audit.applications = yes`, default `yes`)
   - Empty portfolios (with no projects) if `audit.portfolios.empty` is `yes`
   - Portfolios composed of a single project if `audit.portfolios.singleton` is `yes`

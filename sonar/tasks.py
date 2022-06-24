@@ -99,6 +99,13 @@ class Task(sq.SqObject):
         self.__load()
         return self._json.get("hasScannerContext", False)
 
+    def warnings(self):
+        if not self._json.get("warnings", None):
+            data = json.loads(self.get("ce/task", params={"id": self.key, "additionalFields": "warnings"}).text)
+            self._json["warnings"] = []
+            self._json.update(data["task"])
+        return self._json["warnings"]
+
     def warning_count(self):
         return self.__json_field("warningCount")
 
@@ -168,8 +175,9 @@ class Task(sq.SqObject):
                     break
             if not is_exception:
                 rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
-                msg = rule.msg.format(f"project key '{self.component()}'", exclusion_pattern)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                proj = self.component()
+                msg = rule.msg.format(str(proj), exclusion_pattern)
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=proj))
                 break  # Report only on the 1st suspicious match
         return problems
 
@@ -182,17 +190,22 @@ class Task(sq.SqObject):
             return []
         rule = rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED)
         proj = self.component()
-        return [
-            problem.Problem(
-                rule.type,
-                rule.severity,
-                rule.msg.format(f"{str(proj)}'"),
-                concerned_object=proj,
-            )
-        ]
+        return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(proj)), concerned_object=proj)]
+
+    def __audit_warnings(self, audit_settings):
+        if not audit_settings.get("audit.projects.analysisWarnings", True):
+            util.logger.info("Project analysis warnings auditing disabled, skipping...")
+            return []
+        warnings = self.warnings()
+        if len(warnings) == 0:
+            return []
+        rule = rules.get_rule(rules.RuleId.PROJ_ANALYSIS_WARNING)
+        proj = self.component()
+        msg = rule.msg.format(str(proj), " --- ".join(warnings))
+        return [problem.Problem(rule.type, rule.severity, msg, concerned_object=proj)]
 
     def audit(self, audit_settings):
-        if not audit_settings["audit.projects.exclusions"]:
+        if not audit_settings.get("audit.projects.exclusions", True):
             util.logger.info("Project exclusions auditing disabled, skipping...")
             return []
         util.logger.debug("Auditing %s", str(self))
@@ -204,8 +217,8 @@ class Task(sq.SqObject):
             return []
         problems = []
         context = self.scanner_context()
-        susp_exclusions = _get_suspicious_exclusions(audit_settings["audit.projects.suspiciousExclusionsPatterns"])
-        susp_exceptions = _get_suspicious_exceptions(audit_settings["audit.projects.suspiciousExclusionsExceptions"])
+        susp_exclusions = _get_suspicious_exclusions(audit_settings.get("audit.projects.suspiciousExclusionsPatterns", ""))
+        susp_exceptions = _get_suspicious_exceptions(audit_settings.get("audit.projects.suspiciousExclusionsExceptions", ""))
         for prop in ("sonar.exclusions", "sonar.global.exclusions"):
             if context.get(prop, None) is None:
                 continue
@@ -213,11 +226,13 @@ class Task(sq.SqObject):
                 util.logger.debug("Pattern = '%s'", excl)
                 problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
         problems += self.__audit_disabled_scm(audit_settings, context)
+        problems += self.__audit_warnings(audit_settings)
+
         return problems
 
 
 def search(endpoint, only_current=False, component_key=None):
-    params = {"status": ",".join(STATUSES)}
+    params = {"status": ",".join(STATUSES), "additionalFields": "warnings"}
     if only_current:
         params["onlyCurrents"] = "true"
     if component_key is not None:
