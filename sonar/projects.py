@@ -234,12 +234,8 @@ class Project(components.Component):
             if gr_name == "Anyone":
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
-            if (
-                gr_name == "sonar-users"
-                and "issueadmin" in gr_perms
-                or "scan" in gr_perms
-                or "securityhotspotadmin" in gr_perms
-                or "admin" in gr_perms
+            if gr_name == "sonar-users" and (
+                "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms
             ):
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
