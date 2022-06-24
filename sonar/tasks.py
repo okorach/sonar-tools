@@ -193,7 +193,7 @@ class Task(sq.SqObject):
         return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(proj)), concerned_object=proj)]
 
     def __audit_warnings(self, audit_settings):
-        if not audit_settings["audit.projects.analysisWarnings"]:
+        if not audit_settings.get("audit.projects.analysisWarnings", True):
             util.logger.info("Project analysis warnings auditing disabled, skipping...")
             return []
         warnings = self.warnings()
@@ -205,7 +205,7 @@ class Task(sq.SqObject):
         return [problem.Problem(rule.type, rule.severity, msg, concerned_object=proj)]
 
     def audit(self, audit_settings):
-        if not audit_settings["audit.projects.exclusions"]:
+        if not audit_settings.get("audit.projects.exclusions", True):
             util.logger.info("Project exclusions auditing disabled, skipping...")
             return []
         util.logger.debug("Auditing %s", str(self))
@@ -217,8 +217,8 @@ class Task(sq.SqObject):
             return []
         problems = []
         context = self.scanner_context()
-        susp_exclusions = _get_suspicious_exclusions(audit_settings["audit.projects.suspiciousExclusionsPatterns"])
-        susp_exceptions = _get_suspicious_exceptions(audit_settings["audit.projects.suspiciousExclusionsExceptions"])
+        susp_exclusions = _get_suspicious_exclusions(audit_settings.get("audit.projects.suspiciousExclusionsPatterns", ""))
+        susp_exceptions = _get_suspicious_exceptions(audit_settings.get("audit.projects.suspiciousExclusionsExceptions", ""))
         for prop in ("sonar.exclusions", "sonar.global.exclusions"):
             if context.get(prop, None) is None:
                 continue
