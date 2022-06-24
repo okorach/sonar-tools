@@ -323,6 +323,12 @@
         "object": "Project",
         "message": "{} has {} LoCs of utility languages (XML, JSON), this is suspiciously high, verify scanning settings"
     },
+    "PROJ_MAIN_AND_MASTER": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "object": "Project",
+        "message": "{} has both a 'main' and a 'master' branch, this is suspicious"
+    },
     "PROJ_SUSPICIOUS_EXCLUSION": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
