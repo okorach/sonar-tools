@@ -359,6 +359,12 @@
         "object": "Project",
         "message": "{} has SCM integration disabled, issue timestamping may not be accurate for these project"
     },
+    "PROJ_ANALYSIS_WARNING": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "object": "Project",
+        "message": "{} last analysis had the following warnings: {}"
+    },
     "NOT_USING_BRANCH_ANALYSIS": {
         "severity": "LOW",
         "type": "GOVERNANCE",
