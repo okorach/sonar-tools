@@ -229,7 +229,7 @@ class Project(components.Component):
 
     def __audit_group_permissions__(self, audit_settings):
         problems = []
-        groups = counts = self.permissions().read().to_json(perm_type="groups")
+        groups = self.permissions().read().to_json(perm_type="groups")
         for gr_name, gr_perms in groups.items():
             # -- Checks for Anyone, sonar-user
             if gr_name not in ("Anyone", "sonar-users"):
