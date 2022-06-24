@@ -197,7 +197,7 @@ class Task(sq.SqObject):
             return []
         util.logger.debug("Auditing %s", str(self))
         if not self.has_scanner_context():
-            util.logger.info(
+            util.logger.debug(
                 "Last background task of project key '%s' has no scanner context, can't audit scanner context",
                 self.component(),
             )
