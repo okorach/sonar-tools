@@ -308,11 +308,11 @@
         "object": "Project",
         "message": "Group 'Anyone' has permissions on {}, this is a security risk"
     },
-    "PROJ_XML_LOCS": {
+    "PROJ_UTILITY_LOCS": {
         "severity": "LOW",
         "type": "PERFORMANCE",
         "object": "Project",
-        "message": "{} has {} XML LoCs, this is suspiciously high, verify scanning settings"
+        "message": "{} has {} LoCs of utility languages (XML, JSON), this is suspiciously high, verify scanning settings"
     },
     "PROJ_SUSPICIOUS_EXCLUSION": {
         "severity": "MEDIUM",
