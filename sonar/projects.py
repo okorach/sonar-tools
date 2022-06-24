@@ -234,7 +234,13 @@ class Project(components.Component):
             if gr_name == "Anyone":
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
-            if gr_name == "sonar-users" and "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms:
+            if (
+                gr_name == "sonar-users"
+                and "issueadmin" in gr_perms
+                or "scan" in gr_perms
+                or "securityhotspotadmin" in gr_perms
+                or "admin" in gr_perms
+            ):
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
                 problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
 
@@ -395,11 +401,7 @@ class Project(components.Component):
         return []
 
     def __audit_binding_valid(self, audit_settings):
-        if (
-            self.endpoint.edition() == "community"
-            or not audit_settings["audit.projects.bindings.validation"]
-            or not self.has_binding()
-        ):
+        if self.endpoint.edition() == "community" or not audit_settings["audit.projects.bindings.validation"] or not self.has_binding():
             util.logger.info(
                 "Community edition, binding validation disabled or %s has no binding, skipping binding validation...",
                 str(self),
@@ -849,7 +851,7 @@ def search(endpoint, params=None):
 
 
 def get_list(endpoint, key_list=None):
-    if key_list is None:
+    if key_list is None or len(key_list) == 0:
         util.logger.info("Listing projects")
         return search(endpoint=endpoint)
     object_list = {}
@@ -875,9 +877,9 @@ def get_object(key, endpoint):
     return _OBJECTS[key]
 
 
-def audit(audit_settings, endpoint=None):
+def audit(audit_settings, endpoint=None, key_list=None):
     util.logger.info("--- Auditing projects ---")
-    plist = search(endpoint)
+    plist = get_list(endpoint, key_list)
     is_community = endpoint.edition() == "community"
     problems = []
     bindings = {}

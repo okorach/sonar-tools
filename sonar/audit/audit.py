@@ -75,7 +75,7 @@ def _audit_sif(sysinfo):
 def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
     problems = []
     if options.WHAT_PROJECTS in what_to_audit:
-        problems += projects.audit(endpoint=sq, audit_settings=settings)
+        problems += projects.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
     if options.WHAT_PROFILES in what_to_audit:
         problems += qualityprofiles.audit(endpoint=sq, audit_settings=settings)
     if options.WHAT_GATES in what_to_audit:
@@ -153,7 +153,8 @@ def main():
                 options.ERR_SIF_AUDIT_ERROR,
             )
     else:
-        problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"))
+        key_list = util.csv_to_list(args.projectKeys)
+        problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
 
     args.format = __deduct_format__(args.format, args.file)
     problem.dump_report(problems, args.file, args.format, args.csvSeparator)
