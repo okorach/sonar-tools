@@ -254,14 +254,14 @@ class Project(components.Component):
         counter = self.permissions().count(perm_type="groups", perm_filter=("scan"))
         if counter > max_scan:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_SCAN_GROUPS)
-            msg = rule.msg.format(str(self), counts["scan"], max_scan)
+            msg = rule.msg.format(str(self), counter, max_scan)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_issue_adm = audit_settings["audit.projects.permissions.maxIssueAdminGroups"]
         counter = self._permissions.count(perm_type="groups", perm_filter=("issueadmin"))
         if counter > max_issue_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
-            msg = rule.msg.format(str(self), counts["issueadmin"], max_issue_adm)
+            msg = rule.msg.format(str(self), counter, max_issue_adm)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         max_spots_adm = audit_settings["audit.projects.permissions.maxHotspotAdminGroups"]
