@@ -89,7 +89,7 @@ def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
     if options.WHAT_PORTFOLIOS in what_to_audit:
         problems += pf.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
     if options.WHAT_APPS in what_to_audit:
-        problems += apps.audit(endpoint=sq, audit_settings=settings)
+        problems += apps.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
     return problems
 
 

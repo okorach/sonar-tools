@@ -268,14 +268,14 @@ def export(endpoint, key_list=None):
     return apps_settings
 
 
-def audit(audit_settings, endpoint=None):
+def audit(audit_settings, endpoint=None, key_list=None):
     if not audit_settings["audit.applications"]:
         util.logger.debug("Auditing applications is disabled, skipping...")
         return []
     util.logger.info("--- Auditing applications ---")
     objects_list = search(endpoint=endpoint)
     problems = []
-    for _, obj in objects_list.items():
+    for obj in get_list(endpoint, key_list=key_list).values():
         problems += obj.audit(audit_settings)
     return problems
 
