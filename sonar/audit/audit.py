@@ -95,7 +95,7 @@ def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
 
 def __parser_args(desc):
     parser = util.set_common_args(desc)
-    parser = util.set_project_args(parser)
+    parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
     parser = util.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")

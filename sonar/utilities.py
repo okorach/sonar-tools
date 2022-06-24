@@ -96,7 +96,7 @@ def set_common_args(desc):
     return parser
 
 
-def set_project_args(parser):
+def set_key_arg(parser):
     parser.add_argument(
         "-k",
         "--projectKeys",
