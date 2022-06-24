@@ -28,6 +28,17 @@ WITH_NAME = "withName"
 WITH_LAST_ANALYSIS = "withLastAnalysis"
 WITH_BRANCHES = "withBranches"
 
+WHAT_SETTINGS = "settings"
+WHAT_USERS = "users"
+WHAT_GROUPS = "groups"
+WHAT_GATES = "qualitygates"
+WHAT_RULES = "rules"
+WHAT_PROFILES = "qualityprofiles"
+WHAT_PROJECTS = "projects"
+WHAT_APPS = "applications"
+WHAT_PORTFOLIOS = "portfolios"
+WHAT_AUDITABLE = [WHAT_SETTINGS, WHAT_USERS, WHAT_GROUPS, WHAT_GATES, WHAT_PROFILES, WHAT_PROJECTS, WHAT_APPS, WHAT_PORTFOLIOS]
+
 CSV_SEPARATOR = "csvSeparator"
 FORMAT = "format"
 
