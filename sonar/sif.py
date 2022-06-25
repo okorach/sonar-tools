@@ -71,7 +71,7 @@ class Sif:
             if self.concerned_object:
                 self._url = self.concerned_object.url
             else:
-                self._url = self.json.get("Settings", {}).get("sonar.core.serverBaseURL","")
+                self._url = self.json.get("Settings", {}).get("sonar.core.serverBaseURL", "")
         return self._url
 
     def edition(self):
