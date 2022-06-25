@@ -365,6 +365,11 @@
         "object": "Project",
         "message": "{} last analysis had the following warnings: {}"
     },
+    "BG_TASK_FAILED": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "{} last background task FAILED"
+    },
     "NOT_USING_BRANCH_ANALYSIS": {
         "severity": "LOW",
         "type": "GOVERNANCE",
