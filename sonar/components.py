@@ -25,7 +25,7 @@
 
 import json
 import sonar.sqobject as sq
-from sonar import settings
+from sonar import settings, tasks
 import sonar.utilities as util
 
 SEARCH_API = "components/search"
@@ -167,6 +167,14 @@ class Component(sq.SqObject):
     def set_visibility(self, visibility):
         settings.set_visibility(self.endpoint, visibility=visibility, component=self)
         self._visibility = visibility
+
+    def _audit_bg_task(self, audit_settings):
+        util.logger.debug("Auditing last background task of %s", str(self))
+        last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
+        if last_task:
+            last_task.concerned_object = self
+            return last_task.audit(audit_settings)
+        return []
 
 
 def get_components(component_types, endpoint):
