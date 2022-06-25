@@ -379,13 +379,6 @@ class Project(components.Component):
         util.logger.debug("%s utility LoCs count (%d) seems reasonable", str(self), utility_locs)
         return []
 
-    def __audit_bg_tasks(self, audit_settings):
-        last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
-        last_task.concerned_object = self
-        if last_task is not None:
-            return last_task.audit(audit_settings)
-        return []
-
     def __audit_zero_loc(self, audit_settings):
         if (
             (not audit_settings["audit.projects.branches"] or self.endpoint.edition() == "community")
@@ -433,7 +426,7 @@ class Project(components.Component):
             + self.__audit_visibility__(audit_settings)
             + self.__audit_languages__(audit_settings)
             + self.__audit_permissions__(audit_settings)
-            + self.__audit_bg_tasks(audit_settings)
+            + self._audit_bg_task(audit_settings)
             + self.__audit_binding_valid(audit_settings)
             + self.__audit_zero_loc(audit_settings)
         )

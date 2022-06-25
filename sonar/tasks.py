@@ -205,29 +205,40 @@ class Task(sq.SqObject):
         msg = rule.msg.format(str(self.concerned_object), " --- ".join(warnings))
         return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self)]
 
+    def __audit_failed_task(self, audit_settings):
+        if not audit_settings.get("audit.projects.failedTasks", True):
+            util.logger.info("Project failed background tasks auditing disabled, skipping...")
+            return []
+        if self._json["status"] != "FAILED":
+            util.logger.info("Last bg task of %s has status %s...", str(self.concerned_object), self._json["status"])
+            return []
+        rule = rules.get_rule(rules.RuleId.BG_TASK_FAILED)
+        msg = rule.msg.format(str(self.concerned_object))
+        return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self)]
+
     def audit(self, audit_settings):
         if not audit_settings.get("audit.projects.exclusions", True):
             util.logger.info("Project exclusions auditing disabled, skipping...")
             return []
         util.logger.debug("Auditing %s", str(self))
-        if not self.has_scanner_context():
-            util.logger.debug(
-                "Last background task of project key '%s' has no scanner context, can't audit scanner context",
-                self.component(),
-            )
-            return []
         problems = []
-        context = self.scanner_context()
-        susp_exclusions = _get_suspicious_exclusions(audit_settings.get("audit.projects.suspiciousExclusionsPatterns", ""))
-        susp_exceptions = _get_suspicious_exceptions(audit_settings.get("audit.projects.suspiciousExclusionsExceptions", ""))
-        for prop in ("sonar.exclusions", "sonar.global.exclusions"):
-            if context.get(prop, None) is None:
-                continue
-            for excl in util.csv_to_list(context[prop]):
-                util.logger.debug("Pattern = '%s'", excl)
-                problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
-        problems += self.__audit_disabled_scm(audit_settings, context)
+        if self.has_scanner_context():
+            problems = []
+            context = self.scanner_context()
+            susp_exclusions = _get_suspicious_exclusions(audit_settings.get("audit.projects.suspiciousExclusionsPatterns", ""))
+            susp_exceptions = _get_suspicious_exceptions(audit_settings.get("audit.projects.suspiciousExclusionsExceptions", ""))
+            for prop in ("sonar.exclusions", "sonar.global.exclusions"):
+                if context.get(prop, None) is None:
+                    continue
+                for excl in util.csv_to_list(context[prop]):
+                    util.logger.debug("Pattern = '%s'", excl)
+                    problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
+            problems += self.__audit_disabled_scm(audit_settings, context)
+        elif type(self.concerned_object).__name__ == "Project":
+            util.logger.debug("Last background task of %s has no scanner context, can't audit it", str(self.concerned_object))
+
         problems += self.__audit_warnings(audit_settings)
+        problems += self.__audit_failed_task(audit_settings)
 
         return problems
 

@@ -24,7 +24,7 @@
 """
 import json
 import sonar.components as comp
-import sonar.utilities as util
+from sonar import utilities
 from sonar.audit import rules, problem
 
 
@@ -46,6 +46,7 @@ class Aggregation(comp.Component):
 
     def nbr_projects(self):
         if self._nbr_projects is None:
+            self._nbr_projects = 0
             data = json.loads(self.get("measures/component", params={"component": self.key, "metricKeys": "projects,ncloc"},).text)[
                 "component"
             ]["measures"]
@@ -64,7 +65,7 @@ class Aggregation(comp.Component):
             msg = rule.msg.format(str(self))
             problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         else:
-            util.logger.debug("%s has %d projects", str(self), n)
+            utilities.logger.debug("%s has %d projects", str(self), n)
         return problems
 
     def _audit_empty_aggregation(self, broken_rule):

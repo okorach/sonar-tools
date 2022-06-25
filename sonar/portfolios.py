@@ -212,7 +212,7 @@ class Portfolio(aggregations.Aggregation):
 
     def audit(self, audit_settings):
         util.logger.info("Auditing %s", str(self))
-        return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings)
+        return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
     def get_measures(self, metrics_list):
         m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
@@ -388,7 +388,7 @@ def count(endpoint=None):
 
 
 def get_list(endpoint, key_list=None):
-    if key_list is None:
+    if key_list is None or len(key_list) == 0:
         util.logger.info("Listing portfolios")
         return search(endpoint=endpoint)
     object_list = {}

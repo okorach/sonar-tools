@@ -25,6 +25,7 @@
 import datetime
 import json
 from http import HTTPStatus
+import requests.utils
 import pytz
 from sonar import rules, permissions, languages
 import sonar.sqobject as sq
@@ -109,7 +110,7 @@ class QualityProfile(sq.SqObject):
         return f"quality profile '{self.name}' of language '{self.language}'"
 
     def url(self):
-        return f"{self.endpoint.url}/profiles/show?language={self.language}&name={self.name}"
+        return f"{self.endpoint.url}/profiles/show?language={self.language}&name={requests.utils.quote(self.name)}"
 
     def last_use(self, as_days=False):
         if self.last_used is None:
