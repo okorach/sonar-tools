@@ -25,6 +25,7 @@
 
 import datetime
 import pytz
+import requests.utils
 from sonar import projects, measures, components
 import sonar.utilities as util
 from sonar.audit import rules, problem
@@ -49,7 +50,7 @@ class PullRequest(components.Component):
         return f"pull request key '{self.key}' of {str(self.project)}"
 
     def url(self):
-        return f"{self.endpoint.url}/dashboard?id={self.project.key}&pullRequest={self.key}"
+        return f"{self.endpoint.url}/dashboard?id={self.project.key}&pullRequest={requests.utils.quote(self.key)}"
 
     def _uuid(self):
         return _uuid(self.project.key, self.key)
