@@ -46,9 +46,10 @@ __SUSPICIOUS_EXCEPTIONS = None
 
 
 class Task(sq.SqObject):
-    def __init__(self, task_id, endpoint, data=None):
+    def __init__(self, task_id, endpoint, concerned_object=None, data=None):
         super().__init__(task_id, endpoint)
         self._json = data
+        self.concerned_object = concerned_object
         self._context = None
         self._error = None
         self._submitted_at = None
@@ -57,6 +58,9 @@ class Task(sq.SqObject):
 
     def __str__(self):
         return f"background task '{self.key}'"
+
+    def url(self):
+        return f"{self.endpoint.url}/project/background_tasks?id={self.concerned_object.key}"
 
     def __load(self):
         if self._json is not None:
@@ -189,8 +193,7 @@ class Task(sq.SqObject):
         if scan_context.get("sonar.scm.disabled", "false") == "false":
             return []
         rule = rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED)
-        proj = self.component()
-        return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(proj)), concerned_object=proj)]
+        return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self.concerned_object)), concerned_object=self)]
 
     def __audit_warnings(self, audit_settings):
         if not audit_settings.get("audit.projects.analysisWarnings", True):
@@ -200,9 +203,8 @@ class Task(sq.SqObject):
         if len(warnings) == 0:
             return []
         rule = rules.get_rule(rules.RuleId.PROJ_ANALYSIS_WARNING)
-        proj = self.component()
-        msg = rule.msg.format(str(proj), " --- ".join(warnings))
-        return [problem.Problem(rule.type, rule.severity, msg, concerned_object=proj)]
+        msg = rule.msg.format(str(self.concerned_object), " --- ".join(warnings))
+        return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self)]
 
     def audit(self, audit_settings):
         if not audit_settings.get("audit.projects.exclusions", True):
