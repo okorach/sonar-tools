@@ -167,13 +167,16 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - Above patterns and exceptions are configurable
   - sonar.scm.disabled=true
   - Projects with both a `main` and a `master` branch
-  - Projects with analysis warnings on main branch analysis
+  - Analysis warnings on main branch analysis
+  - Last background task on main branch `FAILED`
 - Portfolios: (if `audit.applications = yes`, default `yes`)
   - Empty portfolios (with no projects) if `audit.portfolios.empty` is `yes`
   - Portfolios composed of a single project if `audit.portfolios.singleton` is `yes`
+  - Last recomputation `FAILED`
 - Applications: (if `audit.applications = yes`, default `yes`)
   - Empty applications (with no projects) if `audit.applications.empty` is `yes`
   - Applications composed of a single project if `audit.applications.singleton` is `yes`
+  - Last recomputation `FAILED` 
 - Users: (if `audit.users = yes`, default `yes`)
   - Users that did not login on the platform since `audit.users.maxLoginAge` days (default 180 days)
   - Tokens older than `audit.tokens.maxAge` days (default 90 days)
