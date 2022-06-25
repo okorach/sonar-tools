@@ -37,15 +37,14 @@ class Problem:
     def to_json(self, with_url=False):
         d = vars(self).copy()
         d.pop("concerned_object")
+        for k in ("severity", "type"):
+            d[k] = str(d[k])
         if with_url:
             try:
                 d["url"] = self.concerned_object.url()
             except AttributeError:
                 d["url"] = str(self.concerned_object)
         return d
-
-    def to_csv(self, separator=",", with_url=False):
-        return f'{self.severity}{separator}{self.type}{separator}"{self.message}"'
 
 
 def dump_report(problems, file, **kwargs):
