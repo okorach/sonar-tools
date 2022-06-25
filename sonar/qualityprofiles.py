@@ -108,6 +108,9 @@ class QualityProfile(sq.SqObject):
     def __str__(self):
         return f"quality profile '{self.name}' of language '{self.language}'"
 
+    def url(self):
+        return f"{self.endpoint.url}/profiles/show?language={self.language}&name={self.name}"
+
     def last_use(self, as_days=False):
         if self.last_used is None:
             return None
@@ -322,23 +325,23 @@ class QualityProfile(sq.SqObject):
         if age > audit_settings["audit.qualityProfiles.maxLastChangeAge"]:
             rule = arules.get_rule(arules.RuleId.QP_LAST_CHANGE_DATE)
             msg = rule.msg.format(str(self), age)
-            problems.append(pb.Problem(rule.type, rule.severity, msg))
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         total_rules = rules.count(endpoint=self.endpoint, params={"languages": self.language})
         if self.nbr_rules < int(total_rules * audit_settings["audit.qualityProfiles.minNumberOfRules"]):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
             msg = rule.msg.format(str(self), self.nbr_rules, total_rules)
-            problems.append(pb.Problem(rule.type, rule.severity, msg))
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         age = self.last_use(as_days=True)
         if self.project_count == 0 or age is None:
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
             msg = rule.msg.format(str(self))
-            problems.append(pb.Problem(rule.type, rule.severity, msg))
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         elif age > audit_settings["audit.qualityProfiles.maxUnusedAge"]:
             rule = arules.get_rule(arules.RuleId.QP_LAST_USED_DATE)
             msg = rule.msg.format(str(self), age)
-            problems.append(pb.Problem(rule.type, rule.severity, msg))
+            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         if audit_settings["audit.qualityProfiles.checkDeprecatedRules"]:
             max_deprecated_rules = 0
             parent_qp = self.get_built_in_parent()
@@ -347,7 +350,7 @@ class QualityProfile(sq.SqObject):
             if self.nbr_deprecated_rules > max_deprecated_rules:
                 rule = arules.get_rule(arules.RuleId.QP_USE_DEPRECATED_RULES)
                 msg = rule.msg.format(str(self), self.nbr_deprecated_rules)
-                problems.append(pb.Problem(rule.type, rule.severity, msg))
+                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         return problems
 
@@ -379,7 +382,8 @@ def audit(endpoint=None, audit_settings=None):
     for lang, nb_qp in langs.items():
         if nb_qp > 5:
             rule = arules.get_rule(arules.RuleId.QP_TOO_MANY_QP)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5)))
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5),
+                concerned_object=f"{endpoint.url}/profiles?language={lang}"))
     return problems
 
 

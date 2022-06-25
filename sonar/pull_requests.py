@@ -48,6 +48,9 @@ class PullRequest(components.Component):
     def __str__(self):
         return f"pull request key '{self.key}' of {str(self.project)}"
 
+    def url(self):
+        return f"{self.endpoint.url}/dashboard?id={self.project.key}&pullRequest={self.key}"
+
     def _uuid(self):
         return _uuid(self.project.key, self.key)
 
@@ -93,12 +96,7 @@ class PullRequest(components.Component):
         if age > max_age:
             rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
             problems.append(
-                problem.Problem(
-                    rule.type,
-                    rule.severity,
-                    rule.msg.format(str(self), age),
-                    concerned_object=self,
-                )
+                problem.Problem(rule.type, rule.severity, rule.msg.format(str(self), age), concerned_object=self)
             )
         else:
             util.logger.debug("%s age is %d days", str(self), age)
