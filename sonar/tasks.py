@@ -179,9 +179,8 @@ class Task(sq.SqObject):
                     break
             if not is_exception:
                 rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
-                proj = self.component()
-                msg = rule.msg.format(str(proj), exclusion_pattern)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=proj))
+                msg = rule.msg.format(str(self.concerned_object), exclusion_pattern)
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self.concerned_object))
                 break  # Report only on the 1st suspicious match
         return problems
 
