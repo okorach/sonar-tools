@@ -72,6 +72,9 @@ class Group(sq.SqObject):
     def __str__(self):
         return f"group '{self.name}'"
 
+    def url(self):
+        return f"{self.endpoint.url}/admin/groups"
+
     def audit(self, settings=None):
         util.logger.debug("Auditing %s", str(self))
         problems = []
