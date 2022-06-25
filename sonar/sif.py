@@ -73,7 +73,7 @@ class Sif:
             else:
                 self._url = self.json.get("Settings", {}).get("sonar.core.serverBaseURL","")
         return self._url
-    
+
     def edition(self):
         try:
             ed = self.json[_STATS]["edition"]
