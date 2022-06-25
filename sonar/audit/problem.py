@@ -17,10 +17,9 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-import sys
-import sonar.utilities as util
 
-# Using enum class create enumerations
+import csv
+from sonar import utilities, options
 
 
 class Problem:
@@ -30,43 +29,41 @@ class Problem:
         self.type = problem_type
         self.severity = severity
         self.message = msg
-        util.logger.warning(msg)
+        utilities.logger.warning(msg)
 
     def __str__(self):
         return f"Type: {self.type} - Severity: {self.severity} - Description: {self.message}"
 
-    def to_json(self):
-        d = vars(self)
-        d["type"] = str(self.type)
-        d["severity"] = str(self.severity)
-        d["concerned_object"] = str(d["concerned_object"])
-        return util.json_dump(d)
+    def to_json(self, with_url=False):
+        d = vars(self).copy()
+        d.pop("concerned_object")
+        if with_url:
+            try:
+                d["url"] = self.concerned_object.url()
+            except AttributeError:
+                d["url"] = str(self.concerned_object)
+        return d
 
-    def to_csv(self, separator=","):
+    def to_csv(self, separator=",", with_url=False):
         return f'{self.severity}{separator}{self.type}{separator}"{self.message}"'
 
 
-def dump_report(problems, file, file_format, separator=","):
-    if file is None:
-        f = sys.stdout
-        util.logger.info("Dumping report to stdout")
+def dump_report(problems, file, **kwargs):
+    utilities.logger.info("Writing report to %s", f"file '{file}'" if file else "stdout")
+    if kwargs.get("format", "csv") == "json":
+        __dump_json(problems=problems, file=file, **kwargs)
     else:
-        f = open(file, "w", encoding="utf-8")
-        util.logger.info("Dumping report to file '%s'", file)
-    if file_format == "json":
-        print("[", file=f)
-    is_first = True
-    for p in problems:
-        if file_format is not None and file_format == "json":
-            pfx = "" if is_first else ",\n"
-            p_dump = pfx + p.to_json()
-            print(p_dump, file=f, end="")
-            is_first = False
-        else:
-            p_dump = p.to_csv(separator)
-            print(p_dump, file=f)
+        __dump_csv(problems=problems, file=file, **kwargs)
 
-    if file_format == "json":
-        print("\n]", file=f)
-    if file is not None:
-        f.close()
+
+def __dump_csv(problems, file, **kwargs):
+    with utilities.open_file(file, 'w') as fd:
+        csvwriter = csv.writer(fd, delimiter=kwargs.get("separator", ","))
+        for p in problems:
+            csvwriter.writerow(list(p.to_json(kwargs.get(options.WITH_URL, False)).values()))
+
+
+def __dump_json(problems, file, **kwargs):
+    json = [p.to_json(kwargs.get(options.WITH_URL, False)) for p in problems]
+    with utilities.open_file(file) as fd:
+        print(utilities.json_dump(json), file=fd)
