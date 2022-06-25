@@ -82,7 +82,7 @@ def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
         problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
     if options.WHAT_SETTINGS in what_to_audit:
         problems += sq.audit(audit_settings=settings)
-    if options.WHAT_SETTINGS in what_to_audit:
+    if options.WHAT_USERS in what_to_audit:
         problems += users.audit(endpoint=sq, audit_settings=settings)
     if options.WHAT_GROUPS in what_to_audit:
         problems += groups.audit(endpoint=sq, audit_settings=settings)

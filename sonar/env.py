@@ -264,6 +264,7 @@ class Environment:
             + self._audit_global_permissions()
             + self._audit_lts_latest()
             + sif.Sif(self.sys_info()).audit()
+            + webhooks.audit(self)
         )
         return problems
 

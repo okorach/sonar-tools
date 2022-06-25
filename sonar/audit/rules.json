@@ -500,5 +500,11 @@
         "type": "OPERATIONS",
         "object": "Group",
         "message": "{} is empty, it should have members added or be deleted"
+    },
+    "FAILED_WEBHOOK": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "object": "Webhook",
+        "message": "{} last delivery was failed"
     }
 }
