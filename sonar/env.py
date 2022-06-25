@@ -284,8 +284,7 @@ class Environment:
         util.logger.info("Project default visibility is '%s'", visi)
         if config.get_property("checkDefaultProjectVisibility") and visi != "private":
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msq.format(visi),
-                concerned_object=f"{self.url}/admin/projects_management"))
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msq.format(visi), concerned_object=f"{self.url}/admin/projects_management"))
         return problems
 
     def _audit_admin_password(self):
@@ -425,14 +424,7 @@ def _audit_setting_value(key, platform_settings, audit_settings, url):
     s = platform_settings.get(v[0], "")
     if s == v[1]:
         return []
-    return [
-        pb.Problem(
-            v[2],
-            v[3],
-            f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'",
-            concerned_object=url
-        )
-    ]
+    return [pb.Problem(v[2], v[3], f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'", concerned_object=url)]
 
 
 def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, url):
@@ -456,12 +448,7 @@ def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, 
     if min_v <= value <= max_v:
         return []
     return [
-        pb.Problem(
-            v[4],
-            v[3],
-            f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]",
-            concerned_object=url
-        )
+        pb.Problem(v[4], v[3], f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]", concerned_object=url)
     ]
 
 

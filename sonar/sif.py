@@ -296,7 +296,7 @@ class Sif:
                     types.Type.PERFORMANCE,
                     severities.Severity.CRITICAL,
                     "Log level set to TRACE, this does very negatively affect platform performance, reverting to INFO is required",
-                    concerned_object=self
+                    concerned_object=self,
                 )
             ]
         if log_level == "DEBUG":
@@ -305,7 +305,7 @@ class Sif:
                     types.Type.PERFORMANCE,
                     severities.Severity.HIGH,
                     "Log level is set to DEBUG, this may affect platform performance, reverting to INFO is recommended",
-                    concerned_object=self
+                    concerned_object=self,
                 )
             ]
         return []
@@ -376,9 +376,7 @@ class Sif:
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self))
         elif ce_ram < 512 * ce_workers or ce_ram > 2048 * ce_workers:
             rule = rules.get_rule(rules.RuleId.SETTING_CE_HEAP)
-            problems.append(
-                pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers), concerned_object=self)
-            )
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers), concerned_object=self))
         else:
             util.logger.debug(
                 "sonar.ce.javaOpts -Xmx memory setting value is %d MB, within recommended range ([512-2048] x %d workers)",

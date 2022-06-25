@@ -382,8 +382,9 @@ def audit(endpoint=None, audit_settings=None):
     for lang, nb_qp in langs.items():
         if nb_qp > 5:
             rule = arules.get_rule(arules.RuleId.QP_TOO_MANY_QP)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5),
-                concerned_object=f"{endpoint.url}/profiles?language={lang}"))
+            problems.append(
+                pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qp, lang, 5), concerned_object=f"{endpoint.url}/profiles?language={lang}")
+            )
     return problems
 
 

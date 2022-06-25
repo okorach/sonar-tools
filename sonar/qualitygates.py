@@ -235,8 +235,7 @@ def audit(endpoint=None, audit_settings=None):
     util.logger.debug("Auditing that there are no more than %s quality gates", str(max_qg))
     if nb_qg > max_qg:
         rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_GATES)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qg, 5),
-            concerned_object=f"{endpoint.url}/quality_gates"))
+        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qg, 5), concerned_object=f"{endpoint.url}/quality_gates"))
     for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
     return problems

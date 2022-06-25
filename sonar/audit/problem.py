@@ -56,7 +56,7 @@ def dump_report(problems, file, **kwargs):
 
 
 def __dump_csv(problems, file, **kwargs):
-    with utilities.open_file(file, 'w') as fd:
+    with utilities.open_file(file, "w") as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs.get("separator", ","))
         for p in problems:
             csvwriter.writerow(list(p.to_json(kwargs.get(options.WITH_URL, False)).values()))
