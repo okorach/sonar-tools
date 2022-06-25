@@ -381,6 +381,7 @@ class Project(components.Component):
 
     def __audit_bg_tasks(self, audit_settings):
         last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
+        last_task.concerned_object = self
         if last_task is not None:
             return last_task.audit(audit_settings)
         return []
@@ -447,7 +448,7 @@ class Project(components.Component):
         if not resp.ok:
             return {"status": f"HTTP_ERROR {resp.status_code}"}
         data = json.loads(resp.text)
-        status = tasks.Task(data["taskId"], endpoint=self.endpoint, data=data).wait_for_completion(timeout=timeout)
+        status = tasks.Task(data["taskId"], endpoint=self.endpoint, concerned_object=self, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
             util.logger.error("%s export %s", str(self), status)
             return {"status": status}

@@ -97,6 +97,7 @@ def __parser_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
+    parser = options.set_url_arg(parser)
     parser = util.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
     parser.add_argument(
@@ -159,8 +160,9 @@ def main():
     except options.NonExistingObjectError as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
-    args.format = __deduct_format__(args.format, args.file)
-    problem.dump_report(problems, args.file, args.format, args.csvSeparator)
+    kwargs["format"] = __deduct_format__(args.format, args.file)
+    file = kwargs.pop("file", None)
+    problem.dump_report(problems, file, **kwargs)
 
     util.logger.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
     if problems:

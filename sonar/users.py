@@ -84,6 +84,9 @@ class User(sqobject.SqObject):
     def __str__(self):
         return f"user '{self.login}'"
 
+    def url(self):
+        return f"{self.endpoint.url}/admin/users"
+
     def deactivate(self):
         self.post(_DEACTIVATE_API, {"name": self.name, "login": self.login})
         return True
@@ -163,10 +166,7 @@ class User(sqobject.SqObject):
 
         protected_users = util.csv_to_list(settings["audit.tokens.neverExpire"])
         if self.login in protected_users:
-            util.logger.info(
-                "%s is protected, last connection date is ignored, tokens never expire",
-                str(self),
-            )
+            util.logger.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
         today = dt.datetime.today().replace(tzinfo=pytz.UTC)
@@ -177,18 +177,18 @@ class User(sqobject.SqObject):
             if age > settings["audit.tokens.maxAge"]:
                 rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
                 msg = rule.msg.format(str(t), age)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
             if t.last_connection_date is None and age > settings["audit.tokens.maxUnusedAge"]:
                 rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
                 msg = rule.msg.format(str(t), age)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
             if t.last_connection_date is None:
                 continue
             last_cnx_age = abs((today - t.last_connection_date).days)
             if last_cnx_age > settings["audit.tokens.maxUnusedAge"]:
                 rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
                 msg = rule.msg.format(str(t), last_cnx_age)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=t))
+                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         cnx = self.last_login_date()
         if cnx is not None:

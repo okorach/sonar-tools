@@ -41,7 +41,7 @@ class WebHook(sq.SqObject):
         self._json = data
         self.name = data["name"]
         self.key = data["key"]
-        self.url = data["url"]
+        self.webhook_url = data["url"]
         self.secret = data.get("secret", None)
         self.project = project
         self.last_delivery = data.get("latestDelivery", None)
@@ -49,6 +49,9 @@ class WebHook(sq.SqObject):
 
     def __str__(self):
         return f"webhook '{self.name}'"
+
+    def url(self):
+        return f"{self.endpoint.url}/admin/webhooks"
 
     def uuid(self):
         return _uuid(self.name, self.project)
@@ -62,13 +65,13 @@ class WebHook(sq.SqObject):
         if self._json["latestDelivery"]["success"]:
             return []
         rule = rules.get_rule(rules.RuleId.FAILED_WEBHOOK)
-        return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)))]
+        return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
 
     def to_json(self):
         json_data = {
             "name": self.name,
             "key": self.key,
-            "url": self.url,
+            "url": self.webhook_url,
             "secret": self.secret,
         }
         if self.last_delivery is not None:
