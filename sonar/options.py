@@ -57,6 +57,9 @@ ERR_SIF_AUDIT_ERROR = 9
 
 ERR_ARGS_ERROR = 10
 
+def set_url_arg(parser):
+    parser.add_argument("--" + WITH_URL, action="store_true", default=False, required=False, help="Add objects URLs in report")
+    return parser
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):
