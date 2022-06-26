@@ -27,14 +27,13 @@ import os
 import re
 import datetime
 import json
+import tempfile
 import requests
 import jprops
-import tempfile
 
 import sonar.utilities as util
-import sonar.version as vers
 
-from sonar import options, settings, permissions, permission_templates, devops, webhooks
+from sonar import options, settings, permissions, permission_templates, devops, webhooks, version
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -46,7 +45,7 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
-_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {vers.PACKAGE_VERSION}"}
+_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
 _UPDATE_CENTER = "https://github.com/SonarSource/sonar-update-center-properties/blob/master/update-center-source.properties"
 
 LTS = None
@@ -78,8 +77,7 @@ class Environment:
         if digits < 1 or digits > 3:
             digits = 3
         if self._version is None:
-            resp = self.get("/api/server/version")
-            self._version = resp.text.split(".")
+            self._version = self.get("/api/server/version").text.split(".")
         if as_string:
             return ".".join(self._version[0:digits])
         else:
@@ -119,10 +117,10 @@ class Environment:
         global LATEST
         if LTS is None:
             util.logger.debug("Attempting to read update-center.properties")
-            tmpfile = tempfile.gettempdir() + os.sep + next(tempfile._get_candidate_names())
+            _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
             try:
                 with open(tmpfile, "w", encoding="utf-8") as fp:
-                    print(self.get(_UPDATE_CENTER).text, file=fp)
+                    print(self.get(_UPDATE_CENTER, exit_on_error=False).text, file=fp)
                 upd_center_props = jprops.load_properties(tmpfile)
                 v = upd_center_props.get("ltsVersion", "8.9.9").split(".")
                 if len(v) == 2:
@@ -132,11 +130,14 @@ class Environment:
                 if len(v) == 2:
                     v.append("0")
                 LATEST = tuple(int(n) for n in v)
-            except:
+            except (EnvironmentError, requests.exceptions.HTTPError):
                 util.logger.debug("Read failed, hardcoding LTS and LATEST")
                 LTS = _HARDCODED_LTS
                 LATEST = _HARDCODED_LATEST
-            os.remove(tmpfile)
+            try:
+                os.remove(tmpfile)
+            except EnvironmentError:
+                pass
         return (LTS, LATEST)
 
     def lts(self, digits=3):
@@ -448,12 +449,6 @@ def edition(ctxt=None):
     return ctxt.edition()
 
 
-def version(ctxt=None):
-    if ctxt is None:
-        ctxt = this.context
-    return ctxt.version()
-
-
 def delete(api, params=None, ctxt=None):
     if ctxt is None:
         ctxt = this.context
@@ -579,5 +574,5 @@ def _get_multiple_values(n, setting, severity, domain):
     return values
 
 
-def _version_as_string(vers):
-    return ".".join([str(n) for n in vers])
+def _version_as_string(a_version):
+    return ".".join([str(n) for n in a_version])
