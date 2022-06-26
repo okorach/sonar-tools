@@ -396,17 +396,20 @@ class Environment:
         return self.__audit_user_permissions() + self.__audit_group_permissions()
 
     def _audit_lts_latest(self):
-        problems = []
-        sq_vers = self.version(3)
-        if sq_vers < self.lts(3):
+        sq_vers, v = self.version(3), None
+        if sq_vers < self.lts(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-            msg = rule.msg.format(_version_as_string(sq_vers), _version_as_string(self.lts(3)))
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url))
+            v = self.lts()
+        elif sq_vers < self.lts(3):
+            rule = rules.get_rule(rules.RuleId.LTS_PATCH_MISSING)
+            v = self.lts()
         elif sq_vers < self.latest(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
-            msg = rule.msg.format(_version_as_string(sq_vers), _version_as_string(self.latest(2)))
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url))
-        return problems
+            v = self.latest()
+        if not v:
+            return []
+        msg = rule.msg.format(_version_as_string(sq_vers), _version_as_string(v))
+        return [pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url)]
 
 
 # --------------------- Static methods -----------------

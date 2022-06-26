@@ -9,6 +9,11 @@
         "type": "OPERATIONS",
         "message": "SonarQube version ({}) is lower than the Long Term Support version {}"
     },
+    "LTS_PATCH_MISSING": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "message": "SonarQube version ({}) missed a Long Term Support patch ({})"
+    },
     "BELOW_LATEST": {
         "severity": "LOW",
         "type": "OPERATIONS",
