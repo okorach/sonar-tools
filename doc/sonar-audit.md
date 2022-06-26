@@ -76,6 +76,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - SonarQube instance is not an official distribution
   - The `admin` user password is the default value `admin`
   - The platform is of version lower than LTS
+  - The platform is not on most recent LTS patch level
   - The instance is not an official distribution
   - The log4shell fix is has not been implemented (either with recent enough SonarQube patch level or the `-Dlog4j2.formatMsgNoLookups=true` option)
   - Commercial edition but not using branch analysis

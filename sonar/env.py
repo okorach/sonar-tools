@@ -23,15 +23,17 @@
 
 """
 import sys
+import os
 import re
 import datetime
 import json
+import tempfile
 import requests
+import jprops
 
 import sonar.utilities as util
-import sonar.version as vers
 
-from sonar import options, settings, permissions, permission_templates, devops, webhooks
+from sonar import options, settings, permissions, permission_templates, devops, webhooks, version
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -43,8 +45,13 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
-_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {vers.PACKAGE_VERSION}"}
+_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
+_UPDATE_CENTER = "https://github.com/SonarSource/sonar-update-center-properties/blob/master/update-center-source.properties"
 
+LTS = None
+LATEST = None
+_HARDCODED_LTS = (8, 9, 9)
+_HARDCODED_LATEST = (9, 5, 0)
 
 class Environment:
     def __init__(self, some_url, some_token):
@@ -67,9 +74,10 @@ class Environment:
         return (self.token, "")
 
     def version(self, digits=3, as_string=False):
+        if digits < 1 or digits > 3:
+            digits = 3
         if self._version is None:
-            resp = self.get("/api/server/version")
-            self._version = resp.text.split(".")
+            self._version = self.get("/api/server/version").text.split(".")
         if as_string:
             return ".".join(self._version[0:digits])
         else:
@@ -103,6 +111,44 @@ class Environment:
 
     def plugins(self):
         return self.sys_info()["Statistics"]["plugins"]
+
+    def __lts_and_latest(self):
+        global LTS
+        global LATEST
+        if LTS is None:
+            util.logger.debug("Attempting to read update-center.properties")
+            _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
+            try:
+                with open(tmpfile, "w", encoding="utf-8") as fp:
+                    print(self.get(_UPDATE_CENTER, exit_on_error=False).text, file=fp)
+                upd_center_props = jprops.load_properties(tmpfile)
+                v = upd_center_props.get("ltsVersion", "8.9.9").split(".")
+                if len(v) == 2:
+                    v.append("0")
+                LTS = tuple(int(n) for n in v)
+                v = upd_center_props.get("publicVersions", "9.5").split(",")[-1].spli(".")
+                if len(v) == 2:
+                    v.append("0")
+                LATEST = tuple(int(n) for n in v)
+            except (EnvironmentError, requests.exceptions.HTTPError):
+                util.logger.debug("Read failed, hardcoding LTS and LATEST")
+                LTS = _HARDCODED_LTS
+                LATEST = _HARDCODED_LATEST
+            try:
+                os.remove(tmpfile)
+            except EnvironmentError:
+                pass
+        return (LTS, LATEST)
+
+    def lts(self, digits=3):
+        if digits < 1 or digits > 3:
+            digits = 3
+        return self.__lts_and_latest()[0][0:digits]
+
+    def latest(self, digits=3):
+        if digits < 1 or digits > 3:
+            digits = 3
+        return self.__lts_and_latest()[1][0:digits]
 
     def get(self, api, params=None, exit_on_error=True):
         api = _normalize_api(api)
@@ -351,17 +397,20 @@ class Environment:
         return self.__audit_user_permissions() + self.__audit_group_permissions()
 
     def _audit_lts_latest(self):
-        problems = []
-        sq_vers = self.version()
-        if sq_vers < (8, 9, 0):
+        sq_vers, v = self.version(3), None
+        if sq_vers < self.lts(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-            msg = rule.msg.format(str(self))
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url))
-        elif sq_vers < (9, 5, 0):
+            v = self.lts()
+        elif sq_vers < self.lts(3):
+            rule = rules.get_rule(rules.RuleId.LTS_PATCH_MISSING)
+            v = self.lts()
+        elif sq_vers < self.latest(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
-            msg = rule.msg.format(str(self))
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url))
-        return problems
+            v = self.latest()
+        if not v:
+            return []
+        msg = rule.msg.format(_version_as_string(sq_vers), _version_as_string(v))
+        return [pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url)]
 
 
 # --------------------- Static methods -----------------
@@ -398,12 +447,6 @@ def edition(ctxt=None):
     if ctxt is None:
         ctxt = this.context
     return ctxt.edition()
-
-
-def version(ctxt=None):
-    if ctxt is None:
-        ctxt = this.context
-    return ctxt.version()
 
 
 def delete(api, params=None, ctxt=None):
@@ -529,3 +572,7 @@ def _get_multiple_values(n, setting, severity, domain):
     values[n - 1] = typ.to_type(values[n - 1])
     # TODO Handle case of too many values
     return values
+
+
+def _version_as_string(a_version):
+    return ".".join([str(n) for n in a_version])
