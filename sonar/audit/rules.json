@@ -7,12 +7,12 @@
     "BELOW_LTS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
-        "message": "Platform is version is lower than the Long Term Support version of the given date"
+        "message": "SonarQube version ({}) is lower than the Long Term Support version {}"
     },
     "BELOW_LATEST": {
         "severity": "LOW",
         "type": "OPERATIONS",
-        "message": "Platform is version is greater than the LTS version bu not on LATEST"
+        "message": "SonarQube version ({}) is greater than the LTS version but not on LATEST {}"
     },
     "LOG4SHELL_ES": {
         "severity": "CRITICAL",

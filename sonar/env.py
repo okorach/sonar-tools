@@ -23,10 +23,13 @@
 
 """
 import sys
+import os
 import re
 import datetime
 import json
 import requests
+import jprops
+import tempfile
 
 import sonar.utilities as util
 import sonar.version as vers
@@ -44,7 +47,12 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
 _SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {vers.PACKAGE_VERSION}"}
+_UPDATE_CENTER = "https://github.com/SonarSource/sonar-update-center-properties/blob/master/update-center-source.properties"
 
+LTS = None
+LATEST = None
+_HARDCODED_LTS = (8, 9, 9)
+_HARDCODED_LATEST = (9, 5, 0)
 
 class Environment:
     def __init__(self, some_url, some_token):
@@ -67,6 +75,8 @@ class Environment:
         return (self.token, "")
 
     def version(self, digits=3, as_string=False):
+        if digits < 1 or digits > 3:
+            digits = 3
         if self._version is None:
             resp = self.get("/api/server/version")
             self._version = resp.text.split(".")
@@ -103,6 +113,41 @@ class Environment:
 
     def plugins(self):
         return self.sys_info()["Statistics"]["plugins"]
+
+    def __lts_and_latest(self):
+        global LTS
+        global LATEST
+        if LTS is None:
+            util.logger.debug("Attempting to read update-center.properties")
+            tmpfile = tempfile.gettempdir() + os.sep + next(tempfile._get_candidate_names())
+            try:
+                with open(tmpfile, "w", encoding="utf-8") as fp:
+                    print(self.get(_UPDATE_CENTER).text, file=fp)
+                upd_center_props = jprops.load_properties(tmpfile)
+                v = upd_center_props.get("ltsVersion", "8.9.9").split(".")
+                if len(v) == 2:
+                    v.append("0")
+                LTS = tuple(int(n) for n in v)
+                v = upd_center_props.get("publicVersions", "9.5").split(",")[-1].spli(".")
+                if len(v) == 2:
+                    v.append("0")
+                LATEST = tuple(int(n) for n in v)
+            except:
+                util.logger.debug("Read failed, hardcoding LTS and LATEST")
+                LTS = _HARDCODED_LTS
+                LATEST = _HARDCODED_LATEST
+            os.remove(tmpfile)
+        return (LTS, LATEST)
+
+    def lts(self, digits=3):
+        if digits < 1 or digits > 3:
+            digits = 3
+        return self.__lts_and_latest()[0][0:digits]
+
+    def latest(self, digits=3):
+        if digits < 1 or digits > 3:
+            digits = 3
+        return self.__lts_and_latest()[1][0:digits]
 
     def get(self, api, params=None, exit_on_error=True):
         api = _normalize_api(api)
@@ -352,14 +397,14 @@ class Environment:
 
     def _audit_lts_latest(self):
         problems = []
-        sq_vers = self.version()
-        if sq_vers < (8, 9, 0):
+        sq_vers = self.version(3)
+        if sq_vers < self.lts(3):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-            msg = rule.msg.format(str(self))
+            msg = rule.msg.format(_version_as_string(sq_vers), _version_as_string(self.lts(3)))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url))
-        elif sq_vers < (9, 5, 0):
+        elif sq_vers < self.latest(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
-            msg = rule.msg.format(str(self))
+            msg = rule.msg.format(_version_as_string(sq_vers), _version_as_string(self.latest(2)))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url))
         return problems
 
@@ -529,3 +574,7 @@ def _get_multiple_values(n, setting, severity, domain):
     values[n - 1] = typ.to_type(values[n - 1])
     # TODO Handle case of too many values
     return values
+
+
+def _version_as_string(vers):
+    return ".".join([str(n) for n in vers])
