@@ -315,6 +315,7 @@ class Environment:
             + self._audit_lts_latest()
             + sif.Sif(self.sys_info(), self).audit()
             + webhooks.audit(self)
+            + permission_templates.audit(self, audit_settings)
         )
         return problems
 

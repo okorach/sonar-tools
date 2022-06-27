@@ -75,7 +75,7 @@ class ProjectPermissions(permissions.Permissions):
         if not audit_settings["audit.projects.permissions"]:
             utilities.logger.debug("Auditing project permissions is disabled by configuration, skipping")
             return []
-        utilities.logger.debug("Auditing %s permissions", str(self))
+        utilities.logger.debug("Auditing %s", str(self))
         return self.__audit_user_permissions(audit_settings) + self.__audit_group_permissions(audit_settings)
 
     def __audit_user_permissions(self, audit_settings):
