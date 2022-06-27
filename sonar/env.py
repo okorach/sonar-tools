@@ -117,7 +117,7 @@ class Environment:
         global LTS
         global LATEST
         if LTS is None:
-            util.logger.debug("Attempting to read update-center.properties")
+            util.logger.debug("Attempting to reach Sonar update center")
             _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
             try:
                 with open(tmpfile, "w", encoding="utf-8") as fp:
@@ -132,11 +132,11 @@ class Environment:
                 if len(v) == 2:
                     v.append("0")
                 LATEST = tuple(int(n) for n in v)
-                util.logger.debug("From update center: LTS = %s, LATEST = %s", str(LTS), str(LATEST))
+                util.logger.debug("Sonar update center says LTS = %s, LATEST = %s", str(LTS), str(LATEST))
             except (EnvironmentError, requests.exceptions.HTTPError):
-                util.logger.debug("Read failed, hardcoding LTS and LATEST")
                 LTS = _HARDCODED_LTS
                 LATEST = _HARDCODED_LATEST
+                util.logger.debug("Sonar update center read failed, hardcoding LTS = %s, LATEST = %s", str(LTS), str(LATEST))
             try:
                 os.remove(tmpfile)
             except EnvironmentError:
