@@ -26,7 +26,8 @@
 import time
 import json
 
-from sonar import aggregations, measures, options, permissions
+from sonar import aggregations, measures, options
+from sonar.permissions import portfolio_permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules
@@ -256,7 +257,7 @@ class Portfolio(aggregations.Aggregation):
     def permissions(self):
         if self._permissions is None and self.portfolio_type == "VW":
             # No permissions for SVW
-            self._permissions = permissions.PortfolioPermissions(self)
+            self._permissions = portfolio_permissions.PortfolioPermissions(self)
         return self._permissions
 
     def set_permissions(self, portfolio_perms):
