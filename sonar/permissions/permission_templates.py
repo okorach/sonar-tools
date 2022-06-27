@@ -19,7 +19,8 @@
 #
 
 import json
-from sonar import sqobject, utilities, permissions
+from sonar import sqobject, utilities
+from sonar.permissions import template_permissions
 
 _OBJECTS = {}
 _MAP = {}
@@ -106,7 +107,7 @@ class PermissionTemplate(sqobject.SqObject):
 
     def permissions(self):
         if self._permissions is None:
-            self._permissions = permissions.TemplatePermissions(self)
+            self._permissions = template_permissions.TemplatePermissions(self)
         return self._permissions
 
     def set_as_default(self, what_list):
@@ -147,6 +148,10 @@ class PermissionTemplate(sqobject.SqObject):
             json_data["creationDate"] = utilities.date_to_string(self.creation_date)
             json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
         return utilities.remove_nones(json_data)
+
+    def audit(self, audit_settings):
+        utilities.logger.debug("Auditing %s", str(self))
+        return self.permissions().audit(audit_settings)
 
 
 def get_object(name, endpoint=None):
@@ -226,3 +231,11 @@ def import_config(endpoint, config_data):
         defs = data.get("defaultFor", None)
         if defs is not None and defs != "":
             o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
+
+
+def audit(endpoint, audit_settings):
+    utilities.logger.info("--- Auditing permission templates ---")
+    problems = []
+    for pt in get_list(endpoint=endpoint).values():
+        problems += pt.audit(audit_settings)
+    return problems

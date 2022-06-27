@@ -26,7 +26,8 @@
 from http import HTTPStatus
 import json
 import sonar.sqobject as sq
-from sonar import permissions, options, measures
+from sonar import options, measures
+import sonar.permissions.qualitygate_permissions as permissions
 import sonar.utilities as util
 
 from sonar.audit import rules, severities, types
