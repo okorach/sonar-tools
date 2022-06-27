@@ -102,7 +102,7 @@ class ProjectPermissions(permissions.Permissions):
         for gr_name, gr_perms in groups.items():
             if gr_name == "Anyone":
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_ANYONE)
-                problems.append(problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
+                problems.append(problem.Problem(rule.type, rule.severity, rule.msg.format(str(self.concerned_object)), concerned_object=self))
             if gr_name == "sonar-users" and (
                 "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms
             ):
