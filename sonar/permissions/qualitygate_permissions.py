@@ -18,9 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-import json
-from http import HTTPStatus
-from sonar import utilities, options
+from sonar import utilities
 from sonar.permissions import permissions, quality_permissions
 
 
