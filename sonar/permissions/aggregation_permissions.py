@@ -27,16 +27,14 @@ AGGREGATION_PERMISSIONS = {
 
 
 class AggregationPermissions(project_permissions.ProjectPermissions):
+
     def read(self, perm_type=None):
         super().read(perm_type)
-        self._remove_non_aggregation_permissions(perm_type)
-        return self
-
-    def set(self, new_perms):
-        return super().set(permissions.white_list(new_perms, AGGREGATION_PERMISSIONS))
-
-    def _remove_non_aggregation_permissions(self, perm_type=None):
         # Hack: SonarQube return permissions for aggregations that do not exist
         for ptype in permissions.normalize(perm_type):
             for u, perms in self.permissions[ptype].items():
                 self.permissions[ptype][u] = permissions.white_list(perms, AGGREGATION_PERMISSIONS)
+        return self
+
+    def set(self, new_perms):
+        return super().set(permissions.white_list(new_perms, AGGREGATION_PERMISSIONS))
