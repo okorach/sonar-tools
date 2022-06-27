@@ -23,6 +23,7 @@ from http import HTTPStatus
 from sonar import utilities, options
 from sonar.permissions import permissions, quality_permissions
 
+
 class QualityGatePermissions(quality_permissions.QualityPermissions):
     API_GET = {"users": "qualitygates/search_users", "groups": "qualitygates/search_groups"}
     API_SET = {"users": "qualitygates/add_user", "groups": "qualitygates/add_group"}

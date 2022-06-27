@@ -54,6 +54,7 @@ LATEST = None
 _HARDCODED_LTS = (8, 9, 9)
 _HARDCODED_LATEST = (9, 5, 0)
 
+
 class Environment:
     def __init__(self, some_url, some_token):
         self.url = some_url

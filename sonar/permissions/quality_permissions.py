@@ -25,6 +25,7 @@ from sonar.permissions import permissions
 
 MAX_PERMS = 25
 
+
 class QualityPermissions(permissions.Permissions):
     def __init__(self, concerned_object):
         self.concerned_object = concerned_object

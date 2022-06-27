@@ -27,7 +27,6 @@ AGGREGATION_PERMISSIONS = {
 
 
 class AggregationPermissions(project_permissions.ProjectPermissions):
-
     def read(self, perm_type=None):
         super().read(perm_type)
         # Hack: SonarQube return permissions for aggregations that do not exist

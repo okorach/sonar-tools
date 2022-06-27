@@ -35,7 +35,9 @@ class GlobalPermissions(permissions.Permissions):
     def read(self, perm_type=None):
         self.permissions = permissions.NO_PERMISSIONS
         for ptype in permissions.normalize(perm_type):
-            self.permissions[ptype] = self._get_api(GlobalPermissions.API_GET[ptype], ptype, GlobalPermissions.API_GET_FIELD[ptype], ps=permissions.MAX_PERMS)
+            self.permissions[ptype] = self._get_api(
+                GlobalPermissions.API_GET[ptype], ptype, GlobalPermissions.API_GET_FIELD[ptype], ps=permissions.MAX_PERMS
+            )
         return self
 
     def set(self, new_perms):
@@ -60,7 +62,6 @@ class GlobalPermissions(permissions.Permissions):
                     to_add.remove(p)
             self._post_api(GlobalPermissions.API_SET[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_add)
         return self.read()
-
 
     def _post_api(self, api, set_field, perms_dict, **extra_params):
         if perms_dict is None:

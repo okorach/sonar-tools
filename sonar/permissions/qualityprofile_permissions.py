@@ -116,5 +116,9 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
     def to_json(self, perm_type=None, csv=False):
         if not csv:
             return self.permissions[perm_type] if permissions.is_valid(perm_type) else self.permissions
-        perms = {p: utilities.list_to_csv(self.permissions.get(p, None), ", ") for p in permissions.normalize(perm_type) if len(self.permissions.get(p, {})) > 0}
+        perms = {
+            p: utilities.list_to_csv(self.permissions.get(p, None), ", ")
+            for p in permissions.normalize(perm_type)
+            if len(self.permissions.get(p, {})) > 0
+        }
         return perms if len(perms) > 0 else None

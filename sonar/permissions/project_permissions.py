@@ -107,7 +107,9 @@ class ProjectPermissions(permissions.Permissions):
                 "issueadmin" in gr_perms or "scan" in gr_perms or "securityhotspotadmin" in gr_perms or "admin" in gr_perms
             ):
                 rule = rules.get_rule(rules.RuleId.PROJ_PERM_SONAR_USERS_ELEVATED_PERMS)
-                problems.append(problem.Problem(rule.type, rule.severity, rule.msg.format(str(self.concerned_object)), concerned_object=self.concerned_object))
+                problems.append(
+                    problem.Problem(rule.type, rule.severity, rule.msg.format(str(self.concerned_object)), concerned_object=self.concerned_object)
+                )
 
         max_perms = audit_settings["audit.projects.permissions.maxGroups"]
         counter = self.count(perm_type="groups", perm_filter=permissions.PROJECT_PERMISSIONS)

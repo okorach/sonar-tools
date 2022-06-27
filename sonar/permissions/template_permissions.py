@@ -21,6 +21,7 @@
 from sonar import utilities
 from sonar.permissions import permissions, project_permissions
 
+
 class TemplatePermissions(project_permissions.ProjectPermissions):
     API_GET = {"users": "permissions/template_users", "groups": "permissions/template_groups"}
     API_SET = {"users": "permissions/add_user_to_template", "groups": "permissions/add_group_to_template"}
