@@ -169,7 +169,7 @@ class QualityProfile(sq.SqObject):
         params = {"activation": "true", "qprofile": self.key, "s": "key", "languages": self.language, "ps": 500}
         while page <= nb_pages:
             params["p"] = page
-            data = json.loads(self.get("rules/search", params=params).text)
+            data = json.loads(self.get(rules.API_RULES_SEARCH, params=params).text)
             if full_specs:
                 self._rules += data["rules"]
             else:
