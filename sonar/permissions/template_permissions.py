@@ -19,21 +19,14 @@
 #
 
 from sonar import utilities
-from sonar.permissions import permissions
+from sonar.permissions import permissions, project_permissions
 
-class TemplatePermissions(permissions.Permissions):
+class TemplatePermissions(project_permissions.ProjectPermissions):
     API_GET = {"users": "permissions/template_users", "groups": "permissions/template_groups"}
     API_SET = {"users": "permissions/add_user_to_template", "groups": "permissions/add_group_to_template"}
     API_REMOVE = {"users": "permissions/remove_user_from_template", "groups": "permissions/remove_group_from_template"}
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
-
-    def __init__(self, concerned_object):
-        self.concerned_object = concerned_object
-        super().__init__(concerned_object.endpoint)
-
-    def __str__(self):
-        return f"permissions of {str(self.concerned_object)}"
 
     def read(self, perm_type=None):
         self.permissions = permissions.NO_PERMISSIONS
@@ -45,7 +38,9 @@ class TemplatePermissions(permissions.Permissions):
                 templateId=self.concerned_object.key,
                 ps=permissions.MAX_PERMS,
             )
-        self._remove_aggregations_creator()
+        # Hack: SonarQube returns application/portfoliocreator even for objects that don't have this permission
+        # so these perms needs to be removed manually
+        self.white_list(tuple(project_permissions.PROJECT_PERMISSIONS.keys()))
         return self
 
     def set(self, new_perms):
