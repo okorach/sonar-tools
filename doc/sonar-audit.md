@@ -105,6 +105,16 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - More than 2 groups with global `admin`, `admin quality gates`, `admin quality profiles` permissions
   - More than 3 groups with `create project` permission
   - More than 10 groups with any global permissions
+- Permission Templates: (if `audit.projects.permissions = yes`, default `yes`)
+    - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
+    - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
+    - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
+    - More than `audit.projects.permissions.maxScanGroups` group with execute analysis permission (default 1)
+    - More than `audit.projects.permissions.maxIssueAdminGroups` groups with issue admin permission (default 2)
+    - More than `audit.projects.permissions.maxHotspotAdminGroups` groups with hotspot admin permission (default 2)
+    - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
+    - `sonar-users` group with elevated project permissions
+    - `Anyone` group with any project permissions
 - DB Cleaner: (if `audit.globalSettings = yes`, default `yes`)
   - Delay to delete inactive short lived branches (7.9) or branches (8.0+) not between 10 and 60 days
   - Delay to delete closed issues not between 10 and 60 days
