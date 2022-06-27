@@ -33,7 +33,8 @@ import jprops
 
 import sonar.utilities as util
 
-from sonar import options, settings, permissions, permission_templates, devops, webhooks, version
+from sonar import options, settings, devops, webhooks, version
+from sonar.permissions import permissions, global_permissions, permission_templates
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
@@ -46,7 +47,7 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 
 _SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
-_UPDATE_CENTER = "https://github.com/SonarSource/sonar-update-center-properties/blob/master/update-center-source.properties"
+_UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
 
 LTS = None
 LATEST = None
@@ -85,7 +86,7 @@ class Environment:
 
     def global_permissions(self):
         if self._permissions is None:
-            self._permissions = permissions.GlobalPermissions(self)
+            self._permissions = global_permissions.GlobalPermissions(self)
         return self._permissions
 
     def server_id(self):
@@ -120,16 +121,18 @@ class Environment:
             _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
             try:
                 with open(tmpfile, "w", encoding="utf-8") as fp:
-                    print(self.get(_UPDATE_CENTER, exit_on_error=False).text, file=fp)
-                upd_center_props = jprops.load_properties(tmpfile)
+                    print(requests.get(_UPDATE_CENTER, headers=_SONAR_TOOLS_AGENT).text, file=fp)
+                with open(tmpfile, "r", encoding="utf-8") as fp:
+                    upd_center_props = jprops.load_properties(fp)
                 v = upd_center_props.get("ltsVersion", "8.9.9").split(".")
                 if len(v) == 2:
                     v.append("0")
                 LTS = tuple(int(n) for n in v)
-                v = upd_center_props.get("publicVersions", "9.5").split(",")[-1].spli(".")
+                v = upd_center_props.get("publicVersions", "9.5").split(",")[-1].split(".")
                 if len(v) == 2:
                     v.append("0")
                 LATEST = tuple(int(n) for n in v)
+                util.logger.debug("From update center: LTS = %s, LATEST = %s", str(LTS), str(LATEST))
             except (EnvironmentError, requests.exceptions.HTTPError):
                 util.logger.debug("Read failed, hardcoding LTS and LATEST")
                 LTS = _HARDCODED_LTS
@@ -263,7 +266,7 @@ class Environment:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
             settings.set_new_code_period(self, nc_type, nc_val)
         permission_templates.import_config(self, config_data)
-        permissions.import_config(self, config_data)
+        global_permissions.import_config(self, config_data)
         devops.import_config(self, config_data)
 
     def basics(self):
