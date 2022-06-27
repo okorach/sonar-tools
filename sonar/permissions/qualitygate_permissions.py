@@ -34,17 +34,6 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
 
-    def _post_api(self, api, set_field, perms_dict, **extra_params):
-        if perms_dict is None:
-            return True
-        result = False
-        params = extra_params.copy()
-        for u in perms_dict:
-            params[set_field] = u
-            r = self.endpoint.post(api, params=params)
-            result = result and r.ok
-        return result
-
     def read(self, perm_type=None):
         self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
         if self.concerned_object.is_built_in:
