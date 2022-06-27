@@ -337,8 +337,8 @@ def set_setting(endpoint, key, value, component=None):
     if key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
         return set_visibility(endpoint=endpoint, component=component, visibility=value)
 
-    # Heck: in 8.9 cobol settings are comma separated mono-valued, in 9.x they are multi-valued
-    if endpoint.version() > (9, 0, 0) or not __is_cobol_setting(key):
+    # Hack: Up to 9.4 cobol settings are comma separated mono-valued, in 9.5+ they are multi-valued
+    if endpoint.version() > (9, 4, 0) or not __is_cobol_setting(key):
         value = decode(key, value)
 
     util.logger.debug("Setting setting '%s' to value '%s'", key, str(value))
