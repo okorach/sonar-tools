@@ -26,7 +26,7 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
     APIS = {
         "get": {"users": "qualitygates/search_users", "groups": "qualitygates/search_groups"},
         "add": {"users": "qualitygates/add_user", "groups": "qualitygates/add_group"},
-        "remove": {"users": "qualitygates/remove_user", "groups": "qualitygates/remove_group"}
+        "remove": {"users": "qualitygates/remove_user", "groups": "qualitygates/remove_group"},
     }
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
@@ -45,4 +45,6 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
         if self.endpoint.version() < (9, 2, 0):
             utilities.logger.debug("Can't set %s on SonarQube < 9.2", str(self))
             return self
-        return self._set_perms(new_perms, QualityGatePermissions.APIS, QualityGatePermissions.API_SET_FIELD, permissions.diffarray, gateName=self.concerned_object.name)
+        return self._set_perms(
+            new_perms, QualityGatePermissions.APIS, QualityGatePermissions.API_SET_FIELD, permissions.diffarray, gateName=self.concerned_object.name
+        )

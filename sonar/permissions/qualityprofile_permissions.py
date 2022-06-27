@@ -27,7 +27,7 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
     APIS = {
         "get": {"users": "qualityprofiles/search_users", "groups": "qualityprofiles/search_groups"},
         "add": {"users": "qualityprofiles/add_user", "groups": "qualityprofiles/add_group"},
-        "remove": {"users": "qualityprofiles/remove_user", "groups": "qualityprofiles/remove_group"}
+        "remove": {"users": "qualityprofiles/remove_user", "groups": "qualityprofiles/remove_group"},
     }
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "group"}
@@ -36,13 +36,23 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
         if self.endpoint.version() < (9, 2, 0):
             utilities.logger.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
-        self._read_perms(QualityProfilePermissions.APIS, QualityProfilePermissions.API_GET_FIELD,  qualityProfile=self.concerned_object.name,
-                language=self.concerned_object.language)
+        self._read_perms(
+            QualityProfilePermissions.APIS,
+            QualityProfilePermissions.API_GET_FIELD,
+            qualityProfile=self.concerned_object.name,
+            language=self.concerned_object.language,
+        )
         return self
 
     def set(self, new_perms):
         if self.endpoint.version() < (6, 6, 0):
             utilities.logger.debug("Can set %s on SonarQube < 6.6", str(self))
             return self
-        return self._set_perms(new_perms, QualityProfilePermissions.APIS, QualityProfilePermissions.API_SET_FIELD, permissions.diffarray, qualityProfile=self.concerned_object.name,
-                language=self.concerned_object.language)
+        return self._set_perms(
+            new_perms,
+            QualityProfilePermissions.APIS,
+            QualityProfilePermissions.API_SET_FIELD,
+            permissions.diffarray,
+            qualityProfile=self.concerned_object.name,
+            language=self.concerned_object.language,
+        )

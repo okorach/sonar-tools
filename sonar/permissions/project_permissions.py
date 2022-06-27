@@ -36,7 +36,7 @@ class ProjectPermissions(permissions.Permissions):
     APIS = {
         "get": {"users": "permissions/users", "groups": "permissions/groups"},
         "add": {"users": "permissions/add_user", "groups": "permissions/add_group"},
-        "remove": {"users": "permissions/remove_user", "groups": "permissions/remove_group"}
+        "remove": {"users": "permissions/remove_user", "groups": "permissions/remove_group"},
     }
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
@@ -52,7 +52,11 @@ class ProjectPermissions(permissions.Permissions):
         self.permissions = permissions.NO_PERMISSIONS
         for p in permissions.normalize(perm_type):
             self.permissions[p] = self._get_api(
-                ProjectPermissions.APIS["get"][p], p, ProjectPermissions.API_GET_FIELD[p], projectKey=self.concerned_object.key, ps=permissions.MAX_PERMS
+                ProjectPermissions.APIS["get"][p],
+                p,
+                ProjectPermissions.API_GET_FIELD[p],
+                projectKey=self.concerned_object.key,
+                ps=permissions.MAX_PERMS,
             )
         # Hack: SonarQube returns application/portfoliocreator even for objects that don't have this permission
         # so these perms needs to be removed manually
@@ -74,7 +78,9 @@ class ProjectPermissions(permissions.Permissions):
         return self.read()
 
     def set(self, new_perms):
-        return self._set_perms(new_perms, ProjectPermissions.APIS, ProjectPermissions.API_SET_FIELD, permissions.diff, projectKey=self.concerned_object.key)
+        return self._set_perms(
+            new_perms, ProjectPermissions.APIS, ProjectPermissions.API_SET_FIELD, permissions.diff, projectKey=self.concerned_object.key
+        )
 
     def audit(self, audit_settings):
         if not audit_settings["audit.projects.permissions"]:
