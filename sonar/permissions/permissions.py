@@ -82,7 +82,7 @@ class Permissions(ABC):
         pass
 
     @abstractmethod
-    def read(self, perm_type=None):
+    def read(self):
         pass
 
     @abstractmethod

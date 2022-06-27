@@ -32,9 +32,9 @@ class GlobalPermissions(permissions.Permissions):
     def __str__(self):
         return "global permissions"
 
-    def read(self, perm_type=None):
+    def read(self):
         self.permissions = permissions.NO_PERMISSIONS
-        for ptype in permissions.normalize(perm_type):
+        for ptype in permissions.PERMISSION_TYPES:
             self.permissions[ptype] = self._get_api(
                 GlobalPermissions.API_GET[ptype], ptype, GlobalPermissions.API_GET_FIELD[ptype], ps=permissions.MAX_PERMS
             )
@@ -49,33 +49,11 @@ class GlobalPermissions(permissions.Permissions):
             if new_perms is None or perm_type not in new_perms:
                 continue
             decoded_perms = {k: permissions.decode(v) for k, v in new_perms[perm_type].items()}
-            to_remove = permissions.diff(self.permissions[perm_type], decoded_perms)
-            for p in to_remove.copy():
-                if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
-                    utilities.logger.warning("Can't remove permission '%s' on a %s edition", perm_type, ed)
-                    to_remove.remove(p)
+            to_remove = edition_filter(permissions.diff(self.permissions[perm_type], decoded_perms), ed)
             self._post_api(GlobalPermissions.API_REMOVE[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_remove)
-            to_add = permissions.diff(decoded_perms, self.permissions[perm_type])
-            for p in to_add.copy():
-                if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
-                    utilities.logger.warning("Can't add permission '%s' on a %s edition", perm_type, ed)
-                    to_add.remove(p)
+            to_add = edition_filter(permissions.diff(decoded_perms, self.permissions[perm_type]), ed)
             self._post_api(GlobalPermissions.API_SET[perm_type], GlobalPermissions.API_SET_FIELD[perm_type], to_add)
         return self.read()
-
-    def _post_api(self, api, set_field, perms_dict, **extra_params):
-        if perms_dict is None:
-            return True
-        result = False
-        params = extra_params.copy()
-        for u, perms in perms_dict.items():
-            params[set_field] = u
-            filtered_perms = self._filter_permissions_for_edition(perms)
-            for p in filtered_perms:
-                params["permission"] = p
-                r = self.endpoint.post(api, params=params)
-                result = result and r.ok
-        return result
 
 
 def import_config(endpoint, config_data):
@@ -86,3 +64,11 @@ def import_config(endpoint, config_data):
     utilities.logger.info("Importing global permissions")
     global_perms = GlobalPermissions(endpoint)
     global_perms.set(my_permissions)
+
+
+def edition_filter(perms, ed):
+    for p in perms.copy():
+        if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
+            utilities.logger.warning("Can't remove permission '%s' on a %s edition", p, ed)
+            perms.remove(p)
+    return perms

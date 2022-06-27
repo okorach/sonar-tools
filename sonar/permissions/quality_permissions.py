@@ -73,3 +73,30 @@ class QualityPermissions(permissions.Permissions):
                 break
             page, nbr_pages = page + 1, utilities.nbr_pages(data)
         return perms
+
+    def _set_perms(self, new_perms, apis, field, diff_func, **kwargs):
+        if self.concerned_object.is_built_in:
+            utilities.logger.debug("Can't set %s because it's built-in", str(self))
+            self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
+            return self
+        utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
+        if self.permissions is None:
+            self.read()
+        for p in permissions.PERMISSION_TYPES:
+            if new_perms is None or p not in new_perms:
+                continue
+            decoded_perms = permissions.decode(new_perms[p])
+            to_remove = diff_func(self.permissions[p], decoded_perms)
+            self._post_api(apis["remove"][p], field[p], to_remove, **kwargs)
+            to_add = diff_func(decoded_perms, self.permissions[p])
+            self._post_api(apis["add"][p], field[p], to_add, **kwargs)
+        return self.read()
+
+    def _read_perms(self, apis, field, **kwargs):
+        self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
+        if self.concerned_object.is_built_in:
+            utilities.logger.debug("Won't read %s because it's built-in", str(self))
+        else:
+            for p in permissions.PERMISSION_TYPES:
+                self.permissions[p] = self._get_api(apis["get"][p], p, field[p], **kwargs)
+        return self.permissions

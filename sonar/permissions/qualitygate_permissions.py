@@ -23,49 +23,26 @@ from sonar.permissions import permissions, quality_permissions
 
 
 class QualityGatePermissions(quality_permissions.QualityPermissions):
-    API_GET = {"users": "qualitygates/search_users", "groups": "qualitygates/search_groups"}
-    API_SET = {"users": "qualitygates/add_user", "groups": "qualitygates/add_group"}
-    API_REMOVE = {"users": "qualitygates/remove_user", "groups": "qualitygates/remove_group"}
+    APIS = {
+        "get": {"users": "qualitygates/search_users", "groups": "qualitygates/search_groups"},
+        "add": {"users": "qualitygates/add_user", "groups": "qualitygates/add_group"},
+        "remove": {"users": "qualitygates/remove_user", "groups": "qualitygates/remove_group"}
+    }
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
 
-    def read(self, perm_type=None):
-        self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
-        if self.concerned_object.is_built_in:
-            utilities.logger.debug("Won't read %s because it's built-in", str(self))
-            return self
+    def read(self):
         if self.endpoint.version() < (9, 2, 0):
-            utilities.logger.debug("Won't read %s on SonarQube < 9.2", str(self))
+            utilities.logger.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
-        for p in permissions.normalize(perm_type):
-            self.permissions[p] = self._get_api(
-                QualityGatePermissions.API_GET[p], p, QualityGatePermissions.API_GET_FIELD[p], gateName=self.concerned_object.name
-            )
+        self._read_perms(QualityGatePermissions.APIS, QualityGatePermissions.API_GET_FIELD, gateName=self.concerned_object.name)
         return self
 
     def set(self, new_perms):
-        if self.concerned_object.is_built_in:
-            utilities.logger.debug("Can't set %s because it's built-in", str(self))
-            self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
-            return self
         if self.endpoint.version() < (9, 2, 0):
-            utilities.logger.debug("Can set %s on SonarQube < 9.2", str(self))
-            self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
+            utilities.logger.debug("Can't set %s on SonarQube < 9.2", str(self))
             return self
-        utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        if self.permissions is None:
-            self.read()
-        for p in permissions.PERMISSION_TYPES:
-            if new_perms is None or p not in new_perms:
-                continue
-            decoded_perms = permissions.decode(new_perms[p])
-            to_remove = permissions.diffarray(self.permissions[p], decoded_perms)
-            self._post_api(
-                QualityGatePermissions.API_REMOVE[p], QualityGatePermissions.API_SET_FIELD[p], to_remove, gateName=self.concerned_object.name
-            )
-            to_add = permissions.diffarray(decoded_perms, self.permissions[p])
-            self._post_api(QualityGatePermissions.API_SET[p], QualityGatePermissions.API_SET_FIELD[p], to_add, gateName=self.concerned_object.name)
-        return self.read()
+        return self._set_perms(new_perms, QualityGatePermissions.APIS, QualityGatePermissions.API_SET_FIELD, permissions.diffarray, gateName=self.concerned_object.name)

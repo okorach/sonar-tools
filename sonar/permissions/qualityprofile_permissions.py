@@ -24,59 +24,25 @@ from sonar.permissions import permissions, quality_permissions
 
 class QualityProfilePermissions(quality_permissions.QualityPermissions):
 
-    API_GET = {"users": "qualityprofiles/search_users", "groups": "qualityprofiles/search_groups"}
-    API_SET = {"users": "qualityprofiles/add_user", "groups": "qualityprofiles/add_group"}
-    API_REMOVE = {"users": "qualityprofiles/remove_user", "groups": "qualityprofiles/remove_group"}
-    API_GET_ID = "qualityProfile"
+    APIS = {
+        "get": {"users": "qualityprofiles/search_users", "groups": "qualityprofiles/search_groups"},
+        "add": {"users": "qualityprofiles/add_user", "groups": "qualityprofiles/add_group"},
+        "remove": {"users": "qualityprofiles/remove_user", "groups": "qualityprofiles/remove_group"}
+    }
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "group"}
 
-    def read(self, perm_type=None):
-        self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
-        if self.concerned_object.is_built_in:
-            utilities.logger.debug("Won't read %s since it is built-in", str(self))
+    def read(self):
+        if self.endpoint.version() < (9, 2, 0):
+            utilities.logger.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
-        if self.endpoint.version() < (6, 6, 0):
-            utilities.logger.debug("Won't read %s on SonarQube < 6.6", str(self))
-            return self
-        for p in permissions.normalize(perm_type):
-            self.permissions[p] = self._get_api(
-                QualityProfilePermissions.API_GET[p],
-                p,
-                QualityProfilePermissions.API_GET_FIELD[p],
-                qualityProfile=self.concerned_object.name,
-                language=self.concerned_object.language,
-            )
+        self._read_perms(QualityProfilePermissions.APIS, QualityProfilePermissions.API_GET_FIELD,  qualityProfile=self.concerned_object.name,
+                language=self.concerned_object.language)
         return self
 
     def set(self, new_perms):
-        if self.concerned_object.is_built_in:
-            utilities.logger.debug("Can set %s because it's built-in", str(self))
-            return self
         if self.endpoint.version() < (6, 6, 0):
             utilities.logger.debug("Can set %s on SonarQube < 6.6", str(self))
             return self
-        utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
-        if self.permissions is None:
-            self.read()
-        for p in permissions.PERMISSION_TYPES:
-            if new_perms is None or p not in new_perms:
-                continue
-            decoded_perms = permissions.decode(new_perms[p])
-            to_remove = permissions.diffarray(self.permissions[p], decoded_perms)
-            self._post_api(
-                QualityProfilePermissions.API_REMOVE[p],
-                QualityProfilePermissions.API_SET_FIELD[p],
-                to_remove,
-                qualityProfile=self.concerned_object.name,
-                language=self.concerned_object.language,
-            )
-            to_add = permissions.diffarray(decoded_perms, self.permissions[p])
-            return self._post_api(
-                QualityProfilePermissions.API_SET[p],
-                QualityProfilePermissions.API_SET_FIELD[p],
-                to_add,
-                qualityProfile=self.concerned_object.name,
-                language=self.concerned_object.language,
-            )
-        return self.read()
+        return self._set_perms(new_perms, QualityProfilePermissions.APIS, QualityProfilePermissions.API_SET_FIELD, permissions.diffarray, qualityProfile=self.concerned_object.name,
+                language=self.concerned_object.language)

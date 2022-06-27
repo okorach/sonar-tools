@@ -33,9 +33,11 @@ PROJECT_PERMISSIONS = {
 
 
 class ProjectPermissions(permissions.Permissions):
-    API_GET = {"users": "permissions/users", "groups": "permissions/groups"}
-    API_SET = {"users": "permissions/add_user", "groups": "permissions/add_group"}
-    API_REMOVE = {"users": "permissions/remove_user", "groups": "permissions/remove_group"}
+    APIS = {
+        "get": {"users": "permissions/users", "groups": "permissions/groups"},
+        "add": {"users": "permissions/add_user", "groups": "permissions/add_group"},
+        "remove": {"users": "permissions/remove_user", "groups": "permissions/remove_group"}
+    }
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
@@ -50,14 +52,14 @@ class ProjectPermissions(permissions.Permissions):
         self.permissions = permissions.NO_PERMISSIONS
         for p in permissions.normalize(perm_type):
             self.permissions[p] = self._get_api(
-                ProjectPermissions.API_GET[p], p, ProjectPermissions.API_GET_FIELD[p], projectKey=self.concerned_object.key, ps=permissions.MAX_PERMS
+                ProjectPermissions.APIS["get"][p], p, ProjectPermissions.API_GET_FIELD[p], projectKey=self.concerned_object.key, ps=permissions.MAX_PERMS
             )
         # Hack: SonarQube returns application/portfoliocreator even for objects that don't have this permission
         # so these perms needs to be removed manually
         self.white_list(tuple(PROJECT_PERMISSIONS.keys()))
         return self
 
-    def set(self, new_perms):
+    def _set_perms(self, new_perms, apis, field, diff_func, **kwargs):
         utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
@@ -65,11 +67,14 @@ class ProjectPermissions(permissions.Permissions):
             if new_perms is None or p not in new_perms:
                 continue
             decoded_perms = {k: permissions.decode(v) for k, v in new_perms[p].items()}
-            to_remove = permissions.diff(self.permissions[p], decoded_perms)
-            self._post_api(ProjectPermissions.API_REMOVE[p], ProjectPermissions.API_SET_FIELD[p], to_remove, projectKey=self.concerned_object.key)
-            to_add = permissions.diff(decoded_perms, self.permissions[p])
-            self._post_api(ProjectPermissions.API_SET[p], ProjectPermissions.API_SET_FIELD[p], to_add, projectKey=self.concerned_object.key)
+            to_remove = diff_func(self.permissions[p], decoded_perms)
+            self._post_api(apis["remove"][p], field[p], to_remove, **kwargs)
+            to_add = diff_func(decoded_perms, self.permissions[p])
+            self._post_api(apis["add"][p], field[p], to_add, **kwargs)
         return self.read()
+
+    def set(self, new_perms):
+        return self._set_perms(new_perms, ProjectPermissions.APIS, ProjectPermissions.API_SET_FIELD, permissions.diff, projectKey=self.concerned_object.key)
 
     def audit(self, audit_settings):
         if not audit_settings["audit.projects.permissions"]:
