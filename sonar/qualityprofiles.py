@@ -27,7 +27,8 @@ import json
 from http import HTTPStatus
 import requests.utils
 import pytz
-from sonar import rules, permissions, languages
+from sonar import rules, languages
+import sonar.permissions.qualityprofile_permissions as permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
 

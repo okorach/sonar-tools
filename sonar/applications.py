@@ -24,7 +24,8 @@
 """
 import json
 from http import HTTPStatus
-from sonar import measures, permissions, components, branches, projects, options
+from sonar import measures, components, branches, projects, options
+from sonar.permissions import application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
@@ -67,7 +68,7 @@ class Application(aggr.Aggregation):
 
     def permissions(self):
         if self._permissions is None:
-            self._permissions = permissions.ApplicationPermissions(self)
+            self._permissions = application_permissions.ApplicationPermissions(self)
         return self._permissions
 
     def projects(self):

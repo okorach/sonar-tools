@@ -31,7 +31,7 @@ from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, op
 from sonar import pull_requests, branches, measures, custom_measures
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
-import sonar.permissions as perms
+import sonar.permissions.project_permissions as perms
 
 from sonar.audit import rules, severities
 import sonar.audit.problem as pb

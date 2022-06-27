@@ -19,7 +19,8 @@
 #
 
 import json
-from sonar import sqobject, utilities, permissions
+from sonar import sqobject, utilities
+from sonar.permissions import template_permissions
 
 _OBJECTS = {}
 _MAP = {}
@@ -106,7 +107,7 @@ class PermissionTemplate(sqobject.SqObject):
 
     def permissions(self):
         if self._permissions is None:
-            self._permissions = permissions.TemplatePermissions(self)
+            self._permissions = template_permissions.TemplatePermissions(self)
         return self._permissions
 
     def set_as_default(self, what_list):
