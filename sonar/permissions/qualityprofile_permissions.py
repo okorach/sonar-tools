@@ -33,25 +33,6 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "group"}
 
-    def _get_api(self, api, perm_type, ret_field, **extra_params):
-        perms = []
-        params = extra_params.copy()
-        params["ps"] = quality_permissions.MAX_PERMS
-        page, nbr_pages = 1, 1
-        while page <= nbr_pages:
-            params["p"] = page
-            resp = self.endpoint.get(api, params=params)
-            if resp.ok:
-                data = json.loads(resp.text)
-                perms += [p[ret_field] for p in data[perm_type]]
-            elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                # Hack: Different versions of SonarQube return different codes (400 or 404)
-                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
-            else:
-                break
-            page, nbr_pages = page + 1, utilities.nbr_pages(data)
-        return perms
-
     def read(self, perm_type=None):
         self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
         if self.concerned_object.is_built_in:
@@ -102,12 +83,3 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
             )
         return self.read()
 
-    def to_json(self, perm_type=None, csv=False):
-        if not csv:
-            return self.permissions[perm_type] if permissions.is_valid(perm_type) else self.permissions
-        perms = {
-            p: utilities.list_to_csv(self.permissions.get(p, None), ", ")
-            for p in permissions.normalize(perm_type)
-            if len(self.permissions.get(p, {})) > 0
-        }
-        return perms if len(perms) > 0 else None
