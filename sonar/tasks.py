@@ -207,10 +207,10 @@ class Task(sq.SqObject):
 
     def __audit_failed_task(self, audit_settings):
         if not audit_settings.get("audit.projects.failedTasks", True):
-            util.logger.info("Project failed background tasks auditing disabled, skipping...")
+            util.logger.debug("Project failed background tasks auditing disabled, skipping...")
             return []
         if self._json["status"] != "FAILED":
-            util.logger.info("Last bg task of %s has status %s...", str(self.concerned_object), self._json["status"])
+            util.logger.debug("Last bg task of %s has status %s...", str(self.concerned_object), self._json["status"])
             return []
         rule = rules.get_rule(rules.RuleId.BG_TASK_FAILED)
         msg = rule.msg.format(str(self.concerned_object))
@@ -218,7 +218,7 @@ class Task(sq.SqObject):
 
     def audit(self, audit_settings):
         if not audit_settings.get("audit.projects.exclusions", True):
-            util.logger.info("Project exclusions auditing disabled, skipping...")
+            util.logger.debug("Project exclusions auditing disabled, skipping...")
             return []
         util.logger.debug("Auditing %s", str(self))
         problems = []
