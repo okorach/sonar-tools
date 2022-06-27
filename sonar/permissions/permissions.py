@@ -192,6 +192,20 @@ class Permissions(ABC):
                 break
         return perms
 
+    def _post_api(self, api, set_field, perms_dict, **extra_params):
+        if perms_dict is None:
+            return True
+        result = False
+        params = extra_params.copy()
+        for u, perms in perms_dict.items():
+            params[set_field] = u
+            filtered_perms = self._filter_permissions_for_edition(perms)
+            for p in filtered_perms:
+                params["permission"] = p
+                r = self.endpoint.post(api, params=params)
+                result = result and r.ok
+        return result
+
 
 def simplify(perms_dict):
     if perms_dict is None or len(perms_dict) == 0:
