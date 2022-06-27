@@ -163,24 +163,7 @@ class QualityProfile(sq.SqObject):
         if self._rules is not None:
             # Assume nobody changed QP during execution
             return self._rules
-        self._rules = {}
-        page, nb_pages = 1, 1
-        # TODO: Filter on QP key for speed
-        params = {"activation": "true", "qprofile": self.key, "s": "key", "languages": self.language, "ps": 500}
-        while page <= nb_pages:
-            params["p"] = page
-            data = json.loads(self.get(rules.API_RULES_SEARCH, params=params).text)
-            if full_specs:
-                self._rules += data["rules"]
-            else:
-                for r in data["rules"]:
-                    if "templateKey" in r:
-                        r.pop("params")
-                    r.pop("tags", None)
-                    r.pop("mdNote", None)
-                    self._rules[r["key"]] = rules.convert_for_export(r, self.language, with_template_key=False, full_specs=full_specs)
-            nb_pages = util.nbr_pages(data)
-            page += 1
+        self._rules = rules.search(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
         return self._rules
 
     def set_rules(self, ruleset):
@@ -243,7 +226,7 @@ class QualityProfile(sq.SqObject):
                 }
             )
         if include_rules:
-            json_data["rules"] = self.rules(full_specs=full_specs)
+            json_data["rules"] = {k: v.export() for k, v in self.rules(full_specs=full_specs).items()}
         json_data["permissions"] = self.permissions().export()
         return util.remove_nones(json_data)
 
@@ -256,13 +239,17 @@ class QualityProfile(sq.SqObject):
         return data
 
     def diff(self, another_qp):
+        util.logger.debug("Comparing %s and %s", str(self), str(another_qp))
         comp = self.compare(another_qp)
         my_rules = self.rules()
         diff_rules = {}
-        util.json_dump_debug(comp, "Comparing 2 QP ")
+        util.json_dump_debug(comp, "Compare output =")
         for r in comp["inLeft"]:
             r_key = r.pop("key")
-            diff_rules[r_key] = my_rules.get(r_key, r)
+            if r_key in my_rules:
+                diff_rules[r_key] = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)
+            else:
+                diff_rules[r_key] = r
             if "severity" in r:
                 if isinstance(diff_rules[r_key], str):
                     diff_rules[r_key] = r["severity"]
@@ -277,9 +264,12 @@ class QualityProfile(sq.SqObject):
             if "params" in r["left"] and len(r["left"]["params"]) > 0:
                 diff_rules[r_key]["params"] = r["left"]["params"]
                 parms = r["left"]["params"]
-            if "templateKey" in my_rules.get(r["key"], {}):
-                diff_rules[r_key]["templateKey"] = my_rules[r_key]["templateKey"]
-                diff_rules[r_key]["params"] = my_rules[r_key]["params"]
+            if r_key not in my_rules:
+                continue
+            data = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)
+            if "templateKey" in data:
+                diff_rules[r_key]["templateKey"] = data["templateKey"]
+                diff_rules[r_key]["params"] = data["params"]
                 if parms is not None:
                     diff_rules[r_key]["params"].update(parms)
         return diff_rules

@@ -23,14 +23,65 @@
 
 """
 import json
+from http import HTTPStatus
 import sonar.sqobject as sq
-from sonar import utilities
+from sonar import utilities, options
 
-_RULES = {}
-API_RULES_SEARCH = "rules/search"
+_OBJECTS = {}
+SEARCH_API = "rules/search"
+_DETAILS_API = "rules/show"
+_CREATE_API = "rules/create"
 
 
 class Rule(sq.SqObject):
+    @classmethod
+    def read(cls, key, endpoint):
+        if key in _OBJECTS:
+            return _OBJECTS[key]
+        utilities.logger.debug("Reading rule key '%s'", key)
+        r = endpoint.get(_DETAILS_API, params={"key": key}, exit_on_error=False)
+        if r.ok:
+            return Rule(key, endpoint, json.loads(r.text)["rule"])
+        elif r.status_code == HTTPStatus.NOT_FOUND:
+            raise options.NonExistingObjectError(key=key, message=f"Rule key '{key}' does not exist")
+        else:
+            utilities.log_and_exit(r)
+
+    @classmethod
+    def create(cls, key, endpoint, **kwargs):
+        params = kwargs.copy()
+        (_, params["custom_key"]) = key.split(":")
+        utilities.logger.debug("Creating rule key '%s'", key)
+        r = endpoint.post(_CREATE_API, params=params)
+        if not r.ok:
+            return None
+        o = cls.read(key=key, endpoint=endpoint)
+        return o
+
+    @classmethod
+    def load(cls, key, endpoint, data):
+        return cls(key=key, endpoint=endpoint, data=data)
+
+    @classmethod
+    def instantiate(cls, key, template_key, endpoint, data):
+        try:
+            rule = Rule.read(key, endpoint)
+            utilities.logger.info("Rule key '%s' already exists, instantiation skipped...", key)
+            return rule
+        except options.NonExistingObjectError:
+            pass
+        utilities.logger.info("Instantiating rule key '%s' from template key '%s'", key, template_key)
+        rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
+        return Rule.create(
+            key=key,
+            endpoint=endpoint,
+            template_key=template_key,
+            name=data.get("name", key),
+            severity=data.get("severity", "MAJOR"),
+            params=rule_params,
+            markdown_description=data.get("description", "NO DESCRIPTION")
+        )
+
     def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
         utilities.logger.debug("Creating rule %s", key)  # utilities.json_dump(data))
@@ -45,13 +96,16 @@ class Rule(sq.SqObject):
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
         self.template_key = data.get("templateKey", None)
-        _RULES[self.key] = self
+        _OBJECTS[self.key] = self
 
     def __str__(self):
         return f"rule key '{self.key}'"
 
     def to_json(self):
         return self._json
+
+    def export(self):
+        return convert_for_export(self.to_json(), self.language)
 
     def set_tags(self, tags):
         if tags is None:
@@ -67,64 +121,55 @@ class Rule(sq.SqObject):
         utilities.logger.debug("Settings custom description '%s' to %s", description, str(self))
         self.post("rules/update", params={"key": self.key, "markdown_note": description})
 
-    def instantiate(self, key, data):
-        if get_object(key, self.endpoint) is not None:
-            utilities.logger.info("Rule key '%s' already exists, creation skipped...", key)
-            return
-        utilities.logger.info("Creating rule key '%s' from template key '%s'", key, self.key)
-        rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
-        (_, key) = key.split(":")
-        self.post(
-            "rules/create",
-            params={
-                "custom_key": key,
-                "template_key": self.key,
-                "name": data.get("name", key),
-                "severity": data.get("severity", "MAJOR"),
-                "params": rule_params,
-                "markdown_description": data.get("description", "NO DESCRIPTION"),
-            },
-        )
-
 
 def get_facet(facet, endpoint):
-    data = json.loads(endpoint.get(API_RULES_SEARCH, params={"ps": 1, "facets": facet}).text)
+    data = json.loads(endpoint.get(SEARCH_API, params={"ps": 1, "facets": facet}).text)
     facet_dict = {}
     for f in data["facets"][0]["values"]:
         facet_dict[f["val"]] = f["count"]
     return facet_dict
 
 
-def count(endpoint, params=None):
+def search(endpoint, **params):
     new_params = {} if params is None else params.copy()
-    new_params.update({"ps": 1, "p": 1})
-    data = json.loads(endpoint.get(API_RULES_SEARCH, params=new_params).text)
-    return data["total"]
-
-
-def get_list(endpoint, templates=False):
-    new_params = {"is_template": str(templates).lower(), "include_external": "true", "ps": 500}
+    if "ps" not in new_params:
+        new_params["ps"] = 500
     page, nb_pages = 1, 1
     rule_list = {}
     while page <= nb_pages:
         new_params["p"] = page
-        data = json.loads(endpoint.get(API_RULES_SEARCH, params=new_params).text)
+        data = json.loads(endpoint.get(SEARCH_API, params=new_params).text)
         for r in data["rules"]:
-            rule_list[r["key"]] = Rule(r["key"], endpoint=endpoint, data=r)
+            rule_list[r["key"]] = Rule.load(r["key"], endpoint=endpoint, data=r)
         nb_pages = utilities.int_div_ceil(data["total"], data["ps"])
         page += 1
     return rule_list
 
 
+def count(endpoint, params=None):
+    new_params = {} if params is None else params.copy()
+    new_params.update({"ps": 1, "p": 1})
+    data = json.loads(endpoint.get(SEARCH_API, params=new_params).text)
+    return data["total"]
+
+
+def get_list(endpoint, templates=False):
+    return search(endpoint, is_template=str(templates).lower(), include_external="true")
+
+
 def get_object(key, endpoint):
-    if key not in _RULES:
-        get_list(endpoint=endpoint)
-    return _RULES.get(key, None)
+    if key in _OBJECTS:
+        return _OBJECTS[key]
+    try:
+        return Rule.read(key, endpoint)
+    except options.NonExistingObjectError:
+        return None
 
 
 def export(endpoint, instantiated=True, extended=True, standard=False):
     utilities.logger.info("Exporting rules")
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
+    utilities.logger.debug("get_list from export")
     for rule_key, rule in get_list(endpoint=endpoint).items():
         rule_export = convert_for_export(rule.to_json(), rule.language)
         if instantiated and rule.template_key is not None:
@@ -151,6 +196,7 @@ def import_config(endpoint, config_data):
         utilities.logger.info("No customized rules (custom tags, extended description) to import")
         return
     utilities.logger.info("Importing customized (custom tags, extended description) rules")
+    get_list(endpoint=endpoint)
     for key, custom in config_data["rules"].get("extended", {}).items():
         rule = get_object(key, endpoint=endpoint)
         if rule is None:
@@ -159,14 +205,18 @@ def import_config(endpoint, config_data):
         rule.set_description(custom.get("description", None))
         rule.set_tags(custom.get("tags", None))
 
+    utilities.logger.debug("get_list from import")
     get_list(endpoint=endpoint, templates=True)
     utilities.logger.info("Importing custom rules (instantiated from rule templates)")
     for key, instantiation_data in config_data["rules"].get("instantiated", {}).items():
-        template_rule = get_object(instantiation_data["templateKey"], endpoint=endpoint)
+        if get_object(key, endpoint) is not None:
+            utilities.logger.debug("Instantiated rule key '%s' already exists, instantiation skipped", key)
+            continue
+        template_rule = get_object(instantiation_data["templateKey"], endpoint)
         if template_rule is None:
             utilities.logger.warning("Rule template key '%s' does not exist, can't instantiate it", key)
             continue
-        template_rule.instantiate(key, instantiation_data)
+        Rule.instantiate(key, template_rule.key, endpoint, instantiation_data)
 
 
 def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
