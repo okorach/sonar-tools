@@ -52,7 +52,9 @@ class ProjectPermissions(permissions.Permissions):
             self.permissions[p] = self._get_api(
                 ProjectPermissions.API_GET[p], p, ProjectPermissions.API_GET_FIELD[p], projectKey=self.concerned_object.key, ps=permissions.MAX_PERMS
             )
-        self._remove_aggregations_creator()
+        # Hack: SonarQube returns application/portfoliocreator even for objects that don't have this permission
+        # so these perms needs to be removed manually
+        self.white_list(tuple(PROJECT_PERMISSIONS.keys()))
         return self
 
     def set(self, new_perms):

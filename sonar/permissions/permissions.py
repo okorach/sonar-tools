@@ -132,12 +132,15 @@ class Permissions(ABC):
     def compare(self, other_perms):
         return {"added": diff(self.permissions, other_perms), "removed": diff(other_perms, self.permissions)}
 
-    def _remove_aggregations_creator(self):
-        # Hack: SonarQube returns application/portfoliocreator even for objects that don't have this permission
-        # so these perms needs to be removed manually
+    def black_list(self, disallowed_perms):
         for p in PERMISSION_TYPES:
             for u, perms in self.permissions[p].items():
-                self.permissions[p][u] = black_list(perms, ("applicationcreator", "portfoliocreator"))
+                self.permissions[p][u] = black_list(perms, disallowed_perms)
+
+    def white_list(self, allowed_perms):
+        for p in PERMISSION_TYPES:
+            for u, perms in self.permissions[p].items():
+                self.permissions[p][u] = white_list(perms, allowed_perms)
 
     def _filter_permissions_for_edition(self, perms):
         ed = self.endpoint.edition()
@@ -274,8 +277,9 @@ def diffarray(perms_1, perms_2):
     return diff_perms
 
 
-def white_list(permissions, allowed_list):
-    return [p for p in permissions if p in allowed_list]
+def white_list(perms, allowed_perms):
+    return [p for p in perms if p in allowed_perms]
 
-def black_list(permissions, disallowed_list):
-    return [p for p in permissions if p not in disallowed_list]
+
+def black_list(perms, disallowed_perms):
+    return [p for p in perms if p not in disallowed_perms]
