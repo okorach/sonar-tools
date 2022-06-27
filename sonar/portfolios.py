@@ -347,6 +347,7 @@ class Portfolio(aggregations.Aggregation):
         return r.ok
 
     def recompute(self):
+        util.logger.debug("Recomputing %s", str(self))
         self.post("views/refresh", params={"key": self.root_key})
 
     def update(self, data, root_key):
