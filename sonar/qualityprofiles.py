@@ -352,7 +352,7 @@ def audit(endpoint=None, audit_settings=None):
     return problems
 
 
-def hierarchize(qp_list, strip_rules=True):
+def hierarchize(qp_list):
     """Organize a flat list of QP in hierarchical (inheritance) fashion"""
     util.logger.info("Organizing quality profiles in hierarchy")
     for lang, qpl in qp_list.copy().items():
@@ -363,12 +363,12 @@ def hierarchize(qp_list, strip_rules=True):
             util.logger.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_value["parentName"])
             if _CHILDREN_KEY not in qp_list[lang][qp_value["parentName"]]:
                 qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY] = {}
-            if strip_rules:
-                parent_qp = get_object(qp_value["parentName"], lang)
-                this_qp = get_object(name=qp_name, language=lang)
-                qp_value["rules"] = {}
-                for k, v in this_qp.diff(parent_qp).items():
-                    qp_value["rules"][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
+
+            parent_qp = get_object(qp_value["parentName"], lang)
+            this_qp = get_object(name=qp_name, language=lang)
+            qp_value["rules"] = {}
+            for k, v in this_qp.diff(parent_qp).items():
+                qp_value["rules"][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
 
             qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY][qp_name] = qp_value
             qp_list[lang].pop(qp_name)
@@ -447,13 +447,14 @@ def _treat_added_rules(my_rules, added_rules):
         r_key = r.pop("key")
         diff_rules[r_key] = r
         if r_key in my_rules:
-            diff_rules[r_key] = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)  
+            diff_rules[r_key] = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)
         if "severity" in r:
             if isinstance(diff_rules[r_key], str):
                 diff_rules[r_key] = r["severity"]
             else:
                 diff_rules[r_key]["severity"] = r["severity"]
     return diff_rules
+
 
 def _treat_modified_rules(my_rules, modified_rules):
     diff_rules = {}
