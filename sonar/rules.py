@@ -60,6 +60,9 @@ class Rule(sq.SqObject):
 
     @classmethod
     def load(cls, key, endpoint, data):
+        if key in _OBJECTS:
+            _OBJECTS[key]._json.update(data)
+            return _OBJECTS[key]
         return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
@@ -84,7 +87,7 @@ class Rule(sq.SqObject):
 
     def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
-        utilities.logger.debug("Creating rule %s", key)  # utilities.json_dump(data))
+        utilities.logger.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
         self._json = data
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
