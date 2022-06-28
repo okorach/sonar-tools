@@ -272,6 +272,7 @@ class QualityProfile(sq.SqObject):
                 diff_rules[r_key]["params"] = data["params"]
                 if parms is not None:
                     diff_rules[r_key]["params"].update(parms)
+        util.logger.debug("DIFF RETURN = %s", util.json_dump(diff_rules))
         return diff_rules
 
     def projects(self):
@@ -382,8 +383,10 @@ def audit(endpoint=None, audit_settings=None):
 
 def hierarchize(qp_list, strip_rules=True):
     """Organize a flat list of QP in hierarchical (inheritance) fashion"""
+    util.logger.info("Organizing quality profiles in hierarchy")
     for lang, qpl in qp_list.copy().items():
         for qp_name, qp_value in qpl.copy().items():
+            util.logger.debug("Treating %s:%s", lang, qp_name)
             if "parentName" not in qp_value:
                 continue
             util.logger.debug("QP name %s has parent %s", qp_name, qp_value["parentName"])
@@ -392,7 +395,10 @@ def hierarchize(qp_list, strip_rules=True):
             if strip_rules:
                 parent_qp = get_object(qp_value["parentName"], lang)
                 this_qp = get_object(name=qp_name, language=lang)
-                qp_value["rules"] = this_qp.diff(parent_qp)
+                qp_value["rules"] = {}
+                for k, v in this_qp.diff(parent_qp).items():
+                    qp_value["rules"][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
+
             qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY][qp_name] = qp_value
             qp_list[lang].pop(qp_name)
             qp_value.pop("parentName")
