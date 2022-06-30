@@ -45,6 +45,7 @@ _MAP = {}
 _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
 
+_IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "key", "rules", "permissions")
 
 class QualityProfile(sq.SqObject):
     @classmethod
@@ -206,29 +207,18 @@ class QualityProfile(sq.SqObject):
         _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}))
         return self
 
-    def to_json(self, full_specs=False, include_rules=False):
-        json_data = {"name": self.name, "language": self.language, "parentName": self.parent_name}
+    def to_json(self, include_rules=False, full=False):
+        json_data = self._json.copy()
+        json_data.update({"name": self.name, "language": self.language, "parentName": self.parent_name})
         if self.is_built_in:
             json_data["isBuiltIn"] = True
             include_rules = False
         if self.is_default:
             json_data["isDefault"] = True
-        if full_specs:
-            json_data.update(
-                {
-                    "key": self.key,
-                    "lastUpdated": self.last_updated,
-                    "rulesCount": self.nbr_rules,
-                    "projectsCount": self.project_count,
-                    "deprecatedRulesCount": self.nbr_deprecated_rules,
-                    "lastUsed": self.last_used,
-                    "languageName": self.language_name,
-                }
-            )
         if include_rules:
-            json_data["rules"] = {k: v.export() for k, v in self.rules(full_specs=full_specs).items()}
+            json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
         json_data["permissions"] = self.permissions().export()
-        return util.remove_nones(json_data)
+        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def compare(self, another_qp):
         params = {"leftKey": self.key, "rightKey": another_qp.key}
@@ -376,12 +366,12 @@ def hierarchize(qp_list):
     return qp_list
 
 
-def export(endpoint, in_hierarchy=True):
+def export(endpoint, in_hierarchy=True, full=False):
     util.logger.info("Exporting quality profiles")
     qp_list = {}
     for qp in get_list(endpoint=endpoint).values():
         util.logger.info("Exporting %s", str(qp))
-        json_data = qp.to_json(include_rules=True)
+        json_data = qp.to_json(include_rules=True, full=full)
         lang = json_data.pop("language")
         name = json_data.pop("name")
         if lang not in qp_list:

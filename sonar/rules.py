@@ -248,6 +248,7 @@ def convert_for_export(rule, qp_lang, with_template_key=True, full=False):
         for k, v in rule.items():
             if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "templateKey", "lang"):
                 d[f"_{k}"] = v
+        d.pop("_key", None)
     if len(d) == 1:
         return d["severity"]
     return d
