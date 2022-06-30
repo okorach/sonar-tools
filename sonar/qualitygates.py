@@ -60,6 +60,7 @@ GOOD_QG_CONDITIONS = {
     "security_rating": (4, 4, "Threshold on overall code should not be too strict or passing the QG will be often impossible"),
 }
 
+_IMPORTABLE_PROPERTIES = ("isDefault", "isBuiltIn", "conditions", "permissions")
 
 class QualityGate(sq.SqObject):
     def __init__(self, name, endpoint, data=None, create_data=None):
@@ -77,8 +78,9 @@ class QualityGate(sq.SqObject):
             data = search_by_name(endpoint, name)
         elif data is None:
             data = search_by_name(endpoint, name)
-        self.key = data["id"]
-        self.name = data["name"]
+        self._json = data
+        self.key = data.pop("id")
+        self.name = data.pop("name")
         self.is_default = data.get("isDefault", False)
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
@@ -215,8 +217,8 @@ class QualityGate(sq.SqObject):
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
 
-    def to_json(self):
-        json_data = {}
+    def to_json(self, full=False):
+        json_data = self._json
         if self.is_default:
             json_data["isDefault"] = True
         if self.is_built_in:
@@ -224,7 +226,7 @@ class QualityGate(sq.SqObject):
         else:
             json_data["conditions"] = self.conditions(encoded=True)
             json_data["permissions"] = self.permissions().export()
-        return util.remove_nones(json_data)
+        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
 def audit(endpoint=None, audit_settings=None):
@@ -262,11 +264,11 @@ def get_object(name, endpoint=None):
     return _QUALITY_GATES[_uuid(name, _MAP[name])]
 
 
-def export(endpoint):
+def export(endpoint, full=False):
     util.logger.info("Exporting quality gates")
     qg_list = {}
     for k, qg in get_list(endpoint).items():
-        qg_list[k] = qg.to_json()
+        qg_list[k] = qg.to_json(full)
     return qg_list
 
 
