@@ -54,6 +54,7 @@ _PROJECT_SELECTION_BRANCH = "projectSelectionBranch"
 _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
 _PROJECT_SELECTION_TAGS = "projectSelectionTags"
 
+_IMPORTABLE_PROPERTIES = ("key", "name", "description", _PROJECT_SELECTION_MODE, "visibility", _PROJECT_SELECTION_REGEXP, _PROJECT_SELECTION_BRANCH, _PROJECT_SELECTION_TAGS, "permissions", "subPortfolios")
 
 class Portfolio(aggregations.Aggregation):
     @classmethod
@@ -94,13 +95,13 @@ class Portfolio(aggregations.Aggregation):
         super().__init__(key, endpoint)
         self._json = data
         self.name = data.get("name")
-        self._selection_mode = self._json.get("selectionMode", None)
-        self._selection_branch = self._json.get("branch", None)
+        self._selection_mode = self._json.pop("selectionMode", None)
+        self._selection_branch = self._json.pop("branch", None)
         self._regexp = self._json.get("regexp", None)
         self._description = self._json.get("desc", self._json.get("description", None))
         self.portfolio_type = self._json.get("qualifier", None)
         self._projects = None
-        self._tags = None
+        self._tags = util.list_to_csv(self._json.pop("tags", []))
         self._sub_portfolios = None
         self._permissions = None
         self.parent_key = data.get("parentKey")
@@ -117,10 +118,11 @@ class Portfolio(aggregations.Aggregation):
             self._json.update(data)
         else:
             self._json.update(_find_sub_portfolio(self.key, data))
-        self._selection_mode = self._json.get("selectionMode", None)
-        self._selection_branch = self._json.get("branch", None)
+        self._selection_mode = self._json.pop("selectionMode", None)
+        self._selection_branch = self._json.pop("branch", None)
         self._regexp = self._json.get("regexp", None)
-        self._description = self._json.get("desc", self._json.get("description", None))
+        self._description = self._json.pop("desc", self._json.pop("description", None))
+        self._tags = util.list_to_csv(self._json.pop("tags", []))
         self.portfolio_type = self._json.get("qualifier", None)
 
     def set_parent(self, parent_key):
@@ -175,7 +177,7 @@ class Portfolio(aggregations.Aggregation):
         if self.selection_mode() != SELECTION_MODE_TAGS:
             self._tags = None
         elif self._tags is None:
-            self._tags = util.list_to_csv(self._json["tags"], ", ")
+            self._tags = util.list_to_csv(self._json.pop("tags"), ", ")
         return self._tags
 
     def get_components(self):
@@ -235,10 +237,11 @@ class Portfolio(aggregations.Aggregation):
             data["lastAnalysis"] = self.last_analysis()
         return data
 
-    def export(self):
+    def export(self, full=False):
         util.logger.info("Exporting %s", str(self))
         self.get_details()
-        json_data = {
+        json_data = self._json
+        json_data.update({
             "key": self.key,
             "name": self.name,
             "description": None if self._description == "" else self._description,
@@ -249,10 +252,10 @@ class Portfolio(aggregations.Aggregation):
             _PROJECT_SELECTION_BRANCH: self._selection_branch,
             _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
             "permissions": self.permissions().export(),
-        }
+        })
         json_data.update(self.sub_portfolios())
 
-        return util.remove_nones(json_data)
+        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def permissions(self):
         if self._permissions is None and self.portfolio_type == "VW":
@@ -552,7 +555,7 @@ def search_by_key(endpoint, key):
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
-def export(endpoint, key_list=None):
+def export(endpoint, key_list=None, full=False):
     if endpoint.edition() in ("community", "developer"):
         util.logger.info("No portfolios in community and developer editions")
         return None
@@ -565,7 +568,7 @@ def export(endpoint, key_list=None):
     exported_portfolios = {}
     for k, p in get_list(endpoint=endpoint, key_list=key_list).items():
         if not p.is_sub_portfolio():
-            exported_portfolios[k] = p.export()
+            exported_portfolios[k] = p.export(full)
             exported_portfolios[k].pop("key")
         else:
             util.logger.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
