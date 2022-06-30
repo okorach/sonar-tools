@@ -97,6 +97,7 @@ def set_common_args(desc):
         "-c",
         "--clientCert",
         required=False,
+        default=None,
         help="Optional client certificate file (as .pem file)",
     )
     return parser
