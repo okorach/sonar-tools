@@ -25,25 +25,26 @@
         Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 """
 
-from sonar import env
-import sonar.custom_measures as cust_measures
-import sonar.utilities as utils
+from sonar import env, custom_measures, utilities, options
 
 
 def parse_args(desc):
-    parser = utils.set_common_args(desc)
-    parser = utils.set_key_arg(parser)
+    parser = utilities.set_common_args(desc)
+    parser = utilities.set_key_arg(parser)
     parser.add_argument("-m", "--metricKey", required=True, help="What custom metric to work on")
     parser.add_argument("--value", required=False, help="Updates the value of the metric")
     parser.add_argument("--description", required=False, help="Updates the description of the metric")
-    return utils.parse_and_check_token(parser)
+    return utilities.parse_and_check_token(parser)
 
 
 def main():
     args = parse_args("Manipulate custom metrics")
     sqenv = env.Environment(some_url=args.url, some_token=args.token)
     env.set_env(args.url, args.token)
-
+    if sqenv.version() >= (9, 0, 0):
+        utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", options.UnsupportedOperation)
+    else:
+        utilities.logger.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
     # Remove unset params from the dict
     params = vars(args)
     for key in params.copy():
@@ -53,7 +54,7 @@ def main():
     params.update({"env": sqenv})
 
     if params.get("value", None) is not None:
-        cust_measures.update(
+        custom_measures.update(
             project_key=params["componentKeys"],
             metric_key=params["metricKey"],
             value=params["value"],
