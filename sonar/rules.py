@@ -107,8 +107,8 @@ class Rule(sq.SqObject):
     def to_json(self):
         return self._json
 
-    def export(self):
-        return convert_for_export(self.to_json(), self.language)
+    def export(self, full=False):
+        return convert_for_export(self.to_json(), self.language, full=full)
 
     def set_tags(self, tags):
         if tags is None:
@@ -169,20 +169,23 @@ def get_object(key, endpoint):
         return None
 
 
-def export(endpoint, instantiated=True, extended=True, standard=False):
+def export(endpoint, instantiated=True, extended=True, standard=False, full=False):
     utilities.logger.info("Exporting rules")
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
     utilities.logger.debug("get_list from export")
     for rule_key, rule in get_list(endpoint=endpoint).items():
-        rule_export = convert_for_export(rule.to_json(), rule.language)
+        rule_export = rule.export(full)
         if instantiated and rule.template_key is not None:
             instantiated_rules[rule_key] = rule_export
         elif extended and rule.tags is not None or rule.custom_desc is not None:
-            extended_rules[rule_key] = {}
-            if rule.tags is not None:
-                extended_rules[rule_key].update({"tags": rule_export["tags"]})
-            if rule.custom_desc is not None:
-                extended_rules[rule_key].update({"description": rule_export["description"]})
+            if full:
+                extended_rules[rule_key] = rule_export
+            else:
+                extended_rules[rule_key] = {}
+                if rule.tags is not None:
+                    extended_rules[rule_key].update({"tags": rule_export["tags"]})
+                if rule.custom_desc is not None:
+                    extended_rules[rule_key].update({"description": rule_export["description"]})
         elif standard:
             other_rules[rule_key] = rule_export
     if len(instantiated_rules) > 0:
@@ -222,10 +225,10 @@ def import_config(endpoint, config_data):
         Rule.instantiate(key, template_rule.key, endpoint, instantiation_data)
 
 
-def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
+def convert_for_export(rule, qp_lang, with_template_key=True, full=False):
     d = {"severity": rule.get("severity", "")}
     if len(rule.get("params", {})) > 0:
-        if not full_specs:
+        if not full:
             d["params"] = {}
             for p in rule["params"]:
                 d["params"][p["key"]] = p.get("defaultValue", "")
@@ -241,6 +244,10 @@ def convert_for_export(rule, qp_lang, with_template_key=True, full_specs=False):
         d["templateKey"] = rule["templateKey"]
     if "lang" in rule and rule["lang"] != qp_lang:
         d["language"] = rule["lang"]
+    if full:
+        for k, v in rule.items():
+            if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "templateKey", "lang"):
+                d[f"_{k}"] = v
     if len(d) == 1:
         return d["severity"]
     return d
