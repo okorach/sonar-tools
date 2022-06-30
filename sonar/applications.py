@@ -37,6 +37,7 @@ _MAP = {}
 _GET_API = "applications/show"
 _CREATE_API = "applications/create"
 
+_IMPORTABLE_PROPERTIES = ("key", "name","description", "visibility", "branches", "permissions", "tags")
 
 class Application(aggr.Aggregation):
     def __init__(self, key, endpoint, data=None, name=None, create_data=None):
@@ -159,10 +160,11 @@ class Application(aggr.Aggregation):
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
-    def export(self):
+    def export(self, full=False):
         util.logger.info("Exporting %s", str(self))
         self._load_full()
-        json_data = {
+        json_data = self._json.copy()
+        json_data.update({
             "key": self.key,
             "name": self.name,
             "description": None if self._description == "" else self._description,
@@ -171,8 +173,8 @@ class Application(aggr.Aggregation):
             "branches": self.branches(),
             "permissions": self.permissions().export(),
             "tags": util.list_to_csv(self.tags(), separator=", "),
-        }
-        return util.remove_nones(json_data)
+        })
+        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def set_permissions(self, data):
         self.permissions().set(data.get("permissions", None))
@@ -262,8 +264,8 @@ def get_list(endpoint, key_list=None):
     return object_list
 
 
-def export(endpoint, key_list=None):
-    apps_settings = {k: app.export() for k, app in get_list(endpoint, key_list).items()}
+def export(endpoint, key_list=None, full=False):
+    apps_settings = {k: app.export(full) for k, app in get_list(endpoint, key_list).items()}
     for k in apps_settings:
         apps_settings[k].pop("key")
     return apps_settings
