@@ -54,7 +54,7 @@ _PROJECT_SELECTION_BRANCH = "projectSelectionBranch"
 _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
 _PROJECT_SELECTION_TAGS = "projectSelectionTags"
 
-_IMPORTABLE_PROPERTIES = ("key", "name", "description", _PROJECT_SELECTION_MODE, "visibility", _PROJECT_SELECTION_REGEXP, _PROJECT_SELECTION_BRANCH, _PROJECT_SELECTION_TAGS, "permissions", "subPortfolios")
+_IMPORTABLE_PROPERTIES = ("key", "name", "description", _PROJECT_SELECTION_MODE, "visibility", _PROJECT_SELECTION_REGEXP, _PROJECT_SELECTION_BRANCH, _PROJECT_SELECTION_TAGS, "permissions", "subPortfolios", "projects")
 
 class Portfolio(aggregations.Aggregation):
     @classmethod
@@ -101,7 +101,7 @@ class Portfolio(aggregations.Aggregation):
         self._description = self._json.get("desc", self._json.get("description", None))
         self.portfolio_type = self._json.get("qualifier", None)
         self._projects = None
-        self._tags = util.list_to_csv(self._json.pop("tags", []))
+        self._tags = util.list_to_csv(self._json.pop("tags", []), ", ")
         self._sub_portfolios = None
         self._permissions = None
         self.parent_key = data.get("parentKey")
@@ -247,13 +247,14 @@ class Portfolio(aggregations.Aggregation):
             "description": None if self._description == "" else self._description,
             _PROJECT_SELECTION_MODE: self.selection_mode(),
             "visibility": self.visibility(),
-            # 'projects': self.projects(),
             _PROJECT_SELECTION_REGEXP: self.regexp(),
             _PROJECT_SELECTION_BRANCH: self._selection_branch,
             _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
             "permissions": self.permissions().export(),
         })
         json_data.update(self.sub_portfolios())
+        if self.selection_mode() == SELECTION_MODE_MANUAL:
+            json_data["projects"] = self.projects()
 
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 

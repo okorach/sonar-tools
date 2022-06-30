@@ -553,13 +553,9 @@ class Project(components.Component):
 
     def export(self, settings_list=None, include_inherited=False, full=False):
         util.logger.info("Exporting %s", str(self))
-        settings_dict = settings.get_bulk(endpoint=self, component=self, settings_list=settings_list, include_not_set=False)
         json_data = self._json.copy()
         json_data.update({"key": self.key, "name": self.name})
-        for s in settings_dict.values():
-            if not include_inherited and s.inherited:
-                continue
-            json_data.update(s.to_json())
+
 
         json_data["binding"] = self.__export_get_binding()
         json_data[settings.NEW_CODE_PERIOD] = self.new_code()
@@ -574,7 +570,14 @@ class Project(components.Component):
             json_data.pop("qualityGate")
 
         json_data["webhooks"] = webhooks.export(self.endpoint, self.key)
-        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
+        json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
+        settings_dict = settings.get_bulk(endpoint=self, component=self, settings_list=settings_list, include_not_set=False)
+        #json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
+        for s in settings_dict.values():
+            if not include_inherited and s.inherited:
+                continue
+            json_data.update(s.to_json())
+        return util.remove_nones(json_data)
 
     def new_code(self, include_branches=False):
         nc = {}
