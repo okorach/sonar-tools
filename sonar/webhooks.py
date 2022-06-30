@@ -98,13 +98,16 @@ def get_list(endpoint, project_key=None):
     return search(endpoint, params)
 
 
-def export(endpoint, project_key=None):
+def export(endpoint, project_key=None, full=False):
     json_data = {}
     for wb in get_list(endpoint, project_key).values():
         j = wb.to_json()
         for k in j.copy().keys():
-            if k.startswith("lastDelivery") or k in ("name", "key"):
+            if not full and (k.startswith("lastDelivery") or k == "key"):
                 j.pop(k)
+            else:
+                j[f"_{k}"] = j.pop(k)
+        j.pop("name", None)
         json_data[wb.name] = util.remove_nones(j)
     return json_data if len(json_data) > 0 else None
 
