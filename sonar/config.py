@@ -89,7 +89,7 @@ def __parse_args(desc):
         action="store_true",
         help="to import configuration (exclusive of --export)",
     )
-    group.add_argument(
+    parser.add_argument(
         "--fullExport",
         required=False,
         default=False,
