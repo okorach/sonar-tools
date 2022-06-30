@@ -34,6 +34,7 @@ When `--what` is not specified, everything is exported or
 - `--what applications`: Exports/Imports all applications definition and settings. This can be a fairly long operation if there are a lot of applications
 - `-f <file>`: Sends export to or read import from `<file>`, `stdout` for export and `stdin` for import is the default.
 - `-k "<key1>,<key2>,...,<keyn>"`: Limits the export or import operation to projects, apps or portfolios matching these keys
+- `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
 - `-h`: Displays help and exits
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
