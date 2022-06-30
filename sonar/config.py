@@ -126,7 +126,7 @@ def __export_config(endpoint, what, args):
     if options.WHAT_USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint, full=args.fullExport)
     if options.WHAT_GROUPS in what:
-        sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint, full=args.fullExport)
+        sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint)
 
     utilities.remove_nones(sq_settings)
     with utilities.open_file(args.file) as fd:

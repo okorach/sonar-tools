@@ -208,7 +208,7 @@ class QualityProfile(sq.SqObject):
         _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}))
         return self
 
-    def to_json(self, include_rules=False, full=False):
+    def to_json(self, full=False):
         json_data = self._json.copy()
         json_data.update({"name": self.name, "language": self.language, "parentName": self.parent_name})
         if not self.is_default:
@@ -370,7 +370,7 @@ def export(endpoint, in_hierarchy=True, full=False):
     qp_list = {}
     for qp in get_list(endpoint=endpoint).values():
         util.logger.info("Exporting %s", str(qp))
-        json_data = qp.to_json(include_rules=True, full=full)
+        json_data = qp.to_json(full=full)
         lang = json_data.pop("language")
         name = json_data.pop("name")
         if lang not in qp_list:

@@ -275,7 +275,6 @@ class Portfolio(aggregations.Aggregation):
 
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
-
     def permissions(self):
         if self._permissions is None and self.portfolio_type == "VW":
             # No permissions for SVW
