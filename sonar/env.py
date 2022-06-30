@@ -232,7 +232,7 @@ class Environment:
             util.update_json(json_data, categ, subcateg, s.to_json())
 
         json_data[settings.GENERAL_SETTINGS].update({"webhooks": webhooks.export(self, full=full)})
-        json_data["permissions"] = self.global_permissions().export(full=full)
+        json_data["permissions"] = self.global_permissions().export()
         json_data["permissionTemplates"] = permission_templates.export(self, full=full)
         json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, full=full)
         return json_data
