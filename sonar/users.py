@@ -74,7 +74,7 @@ class User(sqobject.SqObject):
         self.name = data.get("name", None)
         self.is_local = data.get("local", False)
         self.email = data.get("email", None)
-        self.scmAccounts = data.get("scmAccounts", None)
+        self.scmAccounts = data.pop("scmAccounts", None)
         self.groups = data.get("groups", None)
         self.nb_tokens = data.get("tokenCount", None)
         self.tokens_list = None
@@ -201,10 +201,14 @@ class User(sqobject.SqObject):
         return problems
 
     def to_json(self, full=False):
-        json_data = self._json
+        json_data = self._json.copy()
+        scm = self.scmAccounts
+        json_data["scmAccounts"] = util.list_to_csv(scm) if scm else None
         my_groups = self.groups.copy()
         my_groups.remove("sonar-users")
         json_data["groups"] = util.list_to_csv(my_groups, ", ", True)
+        if not full and not json_data["local"]:
+            json_data.pop("local")
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 

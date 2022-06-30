@@ -45,7 +45,7 @@ _MAP = {}
 _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
 
-_IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "key", "rules", "permissions")
+_IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions")
 
 class QualityProfile(sq.SqObject):
     @classmethod
@@ -210,12 +210,10 @@ class QualityProfile(sq.SqObject):
     def to_json(self, include_rules=False, full=False):
         json_data = self._json.copy()
         json_data.update({"name": self.name, "language": self.language, "parentName": self.parent_name})
-        if self.is_built_in:
-            json_data["isBuiltIn"] = True
-            include_rules = False
-        if self.is_default:
-            json_data["isDefault"] = True
-        if include_rules:
+        if not self.is_default:
+            json_data.pop("isDefault", None)
+        if not self.is_built_in:
+            json_data.pop("isBuiltIn", None)
             json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
         json_data["permissions"] = self.permissions().export()
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))

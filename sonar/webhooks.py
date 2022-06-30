@@ -29,7 +29,7 @@ import sonar.sqobject as sq
 
 from sonar.audit import rules, problem
 
-_IMPORTABLE_PROPERTIES = ("name", "key", "url", "secret")
+_IMPORTABLE_PROPERTIES = ("name", "url", "secret")
 
 _OBJECTS = {}
 
