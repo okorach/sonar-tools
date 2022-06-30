@@ -159,7 +159,7 @@ def __parse_args(desc):
 
 def main():
     args = __parse_args("Extract projects or portfolios lines of code, as computed for the licence")
-    endpoint = env.Environment(some_url=args.url, some_token=args.token)
+    endpoint = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     kwargs = vars(args)
     util.check_environment(kwargs)
     file = kwargs.pop("file", None)

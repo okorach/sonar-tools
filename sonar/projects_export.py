@@ -40,7 +40,7 @@ def main():
     )
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
-    sq = env.Environment(some_url=args.url, some_token=args.token)
+    sq = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
 
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
         util.exit_fatal(

@@ -56,9 +56,10 @@ _HARDCODED_LATEST = (9, 5, 0)
 
 
 class Environment:
-    def __init__(self, some_url, some_token):
+    def __init__(self, some_url, some_token, cert_file=None):
         self.url = some_url
         self.token = some_token
+        self.cert_file = cert_file
         self._version = None
         self._sys_info = None
         self._server_id = None
@@ -67,9 +68,10 @@ class Environment:
     def __str__(self):
         return f"{util.redacted_token(self.token)}@{self.url}"
 
-    def set_env(self, some_url, some_token):
+    def set_env(self, some_url, some_token, cert_file=None):
         self.url = some_url
         self.token = some_token
+        self.cert_file = cert_file
         util.logger.debug("Setting environment: %s", str(self))
 
     def credentials(self):
@@ -158,7 +160,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("GET: %s", self.urlstring(api, params))
         try:
-            r = requests.get(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, params=params)
+            r = requests.get(url=self.url + api, auth=self.credentials(), verify=self.cert_file, headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -171,7 +173,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
-            r = requests.post(url=self.url + api, auth=self.credentials(), headers=_SONAR_TOOLS_AGENT, data=params)
+            r = requests.post(url=self.url + api, auth=self.credentials(), verify=self.cert_file, headers=_SONAR_TOOLS_AGENT, data=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -184,7 +186,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("DELETE: %s", self.urlstring(api, params))
         try:
-            r = requests.delete(url=self.url + api, auth=self.credentials(), params=params, headers=_SONAR_TOOLS_AGENT)
+            r = requests.delete(url=self.url + api, auth=self.credentials(), verify=self.cert_file, params=params, headers=_SONAR_TOOLS_AGENT)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             util.log_and_exit(r)
