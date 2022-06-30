@@ -119,7 +119,7 @@ def __parser_args(desc):
 def main():
     args = __parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)")
     kwargs = vars(args)
-    sq = env.Environment(some_url=args.url, some_token=args.token)
+    sq = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     start_time = datetime.datetime.today()

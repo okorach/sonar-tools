@@ -93,6 +93,13 @@ def set_common_args(desc):
         default="INFO",
         help="Logging verbosity level",
     )
+    parser.add_argument(
+        "-c",
+        "--clientCert",
+        required=False,
+        default=None,
+        help="Optional client certificate file (as .pem file)",
+    )
     return parser
 
 

@@ -284,7 +284,7 @@ def __get_project_findings(key, params, endpoint):
 
 def main():
     kwargs = vars(parse_args("Sonar findings extractor"))
-    sqenv = env.Environment(some_url=kwargs["url"], some_token=kwargs["token"])
+    sqenv = env.Environment(some_url=kwargs["url"], some_token=kwargs["token"], cert_file=kwargs["clientCert"])
     del kwargs["token"]
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)

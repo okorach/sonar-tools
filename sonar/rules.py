@@ -156,8 +156,8 @@ def count(endpoint, params=None):
     return data["total"]
 
 
-def get_list(endpoint, templates=False):
-    return search(endpoint, is_template=str(templates).lower(), include_external="true")
+def get_list(endpoint, templates=False, language=None):
+    return search(endpoint, is_template=str(templates).lower(), languages=language, include_external="false")
 
 
 def get_object(key, endpoint):
