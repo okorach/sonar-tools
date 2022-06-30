@@ -24,7 +24,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-issues-sync](#sonar-issues-sync): Synchronizes issue changelog between branches, projects or even SonarQube instances
 - [sonar-projects-export](#sonar-projects-export): Exports all projects from a SonarQube instance (EE and higher)
 - [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
-- [sonar-config](#sonar-config): Exports a SonarQube platform as configuration as code (JSON file). Will soon allow to import the JSON to reconfigure a platform
+- [sonar-config](#sonar-config): Exports or Imports a SonarQube platform configuration to/from configuration as code file (JSON file).
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 8.9.x) and LATEST versions**
 
