@@ -54,7 +54,20 @@ _PROJECT_SELECTION_BRANCH = "projectSelectionBranch"
 _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
 _PROJECT_SELECTION_TAGS = "projectSelectionTags"
 
-_IMPORTABLE_PROPERTIES = ("key", "name", "description", _PROJECT_SELECTION_MODE, "visibility", _PROJECT_SELECTION_REGEXP, _PROJECT_SELECTION_BRANCH, _PROJECT_SELECTION_TAGS, "permissions", "subPortfolios", "projects")
+_IMPORTABLE_PROPERTIES = (
+    "key",
+    "name",
+    "description",
+    _PROJECT_SELECTION_MODE,
+    "visibility",
+    _PROJECT_SELECTION_REGEXP,
+    _PROJECT_SELECTION_BRANCH,
+    _PROJECT_SELECTION_TAGS,
+    "permissions",
+    "subPortfolios",
+    "projects",
+)
+
 
 class Portfolio(aggregations.Aggregation):
     @classmethod
@@ -101,7 +114,8 @@ class Portfolio(aggregations.Aggregation):
         self._description = self._json.get("desc", self._json.get("description", None))
         self.portfolio_type = self._json.get("qualifier", None)
         self._projects = None
-        self._tags = util.list_to_csv(self._json.pop("tags", []), ", ")
+        self._tags = self._json.pop("tags", [])
+        self._visibility = self._json.get("visibility")
         self._sub_portfolios = None
         self._permissions = None
         self.parent_key = data.get("parentKey")
@@ -121,9 +135,10 @@ class Portfolio(aggregations.Aggregation):
         self._selection_mode = self._json.pop("selectionMode", None)
         self._selection_branch = self._json.pop("branch", None)
         self._regexp = self._json.get("regexp", None)
-        self._description = self._json.pop("desc", self._json.pop("description", None))
-        self._tags = util.list_to_csv(self._json.pop("tags", []))
+        self._description = self._json.get("desc", self._json.get("description", None))
+        self._tags = self._json.pop("tags", [])
         self.portfolio_type = self._json.get("qualifier", None)
+        # self._visibility = self._json.get("visibility")
 
     def set_parent(self, parent_key):
         util.logger.debug("Setting parent of %s to '%s'", str(self), parent_key)
@@ -177,7 +192,7 @@ class Portfolio(aggregations.Aggregation):
         if self.selection_mode() != SELECTION_MODE_TAGS:
             self._tags = None
         elif self._tags is None:
-            self._tags = util.list_to_csv(self._json.pop("tags"), ", ")
+            self._tags = self._json.pop("tags", [])
         return self._tags
 
     def get_components(self):
@@ -241,22 +256,25 @@ class Portfolio(aggregations.Aggregation):
         util.logger.info("Exporting %s", str(self))
         self.get_details()
         json_data = self._json
-        json_data.update({
-            "key": self.key,
-            "name": self.name,
-            "description": None if self._description == "" else self._description,
-            _PROJECT_SELECTION_MODE: self.selection_mode(),
-            "visibility": self.visibility(),
-            _PROJECT_SELECTION_REGEXP: self.regexp(),
-            _PROJECT_SELECTION_BRANCH: self._selection_branch,
-            _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
-            "permissions": self.permissions().export(),
-        })
         json_data.update(self.sub_portfolios())
+        json_data.update(
+            {
+                "key": self.key,
+                "name": self.name,
+                "description": None if self._description == "" else self._description,
+                _PROJECT_SELECTION_MODE: self.selection_mode(),
+                "visibility": self._visibility,
+                _PROJECT_SELECTION_REGEXP: self.regexp(),
+                _PROJECT_SELECTION_BRANCH: self._selection_branch,
+                _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
+                "permissions": self.permissions().export(),
+            }
+        )
         if self.selection_mode() == SELECTION_MODE_MANUAL:
             json_data["projects"] = self.projects()
 
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
+
 
     def permissions(self):
         if self._permissions is None and self.portfolio_type == "VW":
