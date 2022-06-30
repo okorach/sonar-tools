@@ -40,6 +40,7 @@ _DEACTIVATE_API = "users/deactivate"
 _ADD_GROUP_API = "user_groups/add_user"
 _UPDATE_LOGIN_API = "users/update_login"
 
+_IMPORTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
 
 class User(sqobject.SqObject):
     def __init__(self, login, endpoint, data=None, create_data=None):
@@ -199,24 +200,12 @@ class User(sqobject.SqObject):
                 problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
         return problems
 
-    def to_json(self, full_specs=False):
-        if full_specs:
-            json_data = self._json
-        else:
-            my_groups = self.groups.copy()
-            my_groups.remove("sonar-users")
-            json_data = {
-                "login": self.login,
-                "name": self.name,
-                "scmAccounts": util.list_to_csv(self.scmAccounts, ", ", True),
-                "email": self.email,
-                "groups": util.list_to_csv(my_groups, ", ", True),
-            }
-            if self.is_local:
-                json_data["local"] = True
-            if not self._json["active"]:
-                json_data["active"] = False
-        return util.remove_nones(json_data)
+    def to_json(self, full=False):
+        json_data = self._json
+        my_groups = self.groups.copy()
+        my_groups.remove("sonar-users")
+        json_data["groups"] = util.list_to_csv(my_groups, ", ", True)
+        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
 def search(endpoint, params=None):
@@ -235,11 +224,11 @@ def get_list(endpoint, params=None):
     return search(params=params, endpoint=endpoint)
 
 
-def export(endpoint, full_specs=False):
+def export(endpoint, full=False):
     util.logger.info("Exporting users")
     u_list = {}
     for u_login, u_obj in search(endpoint=endpoint).items():
-        u_list[u_login] = u_obj.to_json(full_specs=full_specs)
+        u_list[u_login] = u_obj.to_json(full)
         u_list[u_login].pop("login", None)
     return u_list
 
