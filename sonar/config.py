@@ -89,6 +89,14 @@ def __parse_args(desc):
         action="store_true",
         help="to import configuration (exclusive of --export)",
     )
+    parser.add_argument(
+        "--fullExport",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Also exports informative data that would be ignored as part of an import. Informative field are prefixed with _."
+        "This option is ignored in case of import",
+    )
     args = utilities.parse_and_check_token(parser)
     utilities.check_environment(vars(args))
     utilities.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
@@ -100,23 +108,23 @@ def __export_config(endpoint, what, args):
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
     if options.WHAT_SETTINGS in what:
-        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export()
+        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(full=args.fullExport)
     if options.WHAT_RULES in what:
-        sq_settings[__JSON_KEY_RULES] = rules.export(endpoint)
+        sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=args.fullExport)
     if options.WHAT_PROFILES in what:
         if options.WHAT_RULES not in what:
-            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint)
-        sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint)
+            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=args.fullExport)
+        sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, full=args.fullExport)
     if options.WHAT_GATES in what:
-        sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint)
+        sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, full=args.fullExport)
     if options.WHAT_PROJECTS in what:
-        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys)
+        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
     if options.WHAT_APPS in what:
-        sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys)
+        sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
     if options.WHAT_PORTFOLIOS in what:
-        sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=args.projectKeys)
+        sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
     if options.WHAT_USERS in what:
-        sq_settings[__JSON_KEY_USERS] = users.export(endpoint)
+        sq_settings[__JSON_KEY_USERS] = users.export(endpoint, full=args.fullExport)
     if options.WHAT_GROUPS in what:
         sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint)
 

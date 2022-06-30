@@ -35,6 +35,8 @@ _CREATE_API_BITBUCKET = "alm_settings/create_bitbucket"
 _CREATE_API_BBCLOUD = "alm_settings/create_bitbucketcloud"
 _LIST_API = "alm_settings/list_definitions"
 
+_IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "clientId", "appId")
+
 
 class DevopsPlatform(sqobject.SqObject):
     def __init__(self, key, devops_platform_type, endpoint, data=None, create_data=None):
@@ -94,10 +96,10 @@ class DevopsPlatform(sqobject.SqObject):
             break
         return self._json
 
-    def to_json(self):
+    def to_json(self, full=False):
         json_data = self._json.copy()
         json_data.update({"key": self.key, "type": self.type, "url": self.url})
-        return json_data
+        return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
 
     def update(self, data):
         alm_type = data["type"]
@@ -149,11 +151,11 @@ def settings(endpoint):
     return get_list(endpoint)
 
 
-def export(endpoint):
+def export(endpoint, full=False):
     util.logger.info("Exporting DevOps integration settings")
     json_data = {}
     for s in settings(endpoint).values():
-        json_data[s.uuid()] = s.to_json()
+        json_data[s.uuid()] = s.to_json(full)
         json_data[s.uuid()].pop("key")
     return json_data
 

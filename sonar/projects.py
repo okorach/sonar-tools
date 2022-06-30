@@ -46,6 +46,21 @@ APP_QUALIFIER = "APP"
 
 _BIND_SEP = ":::"
 
+_IMPORTABLE_PROPERTIES = (
+    "key",
+    "name",
+    "binding",
+    settings.NEW_CODE_PERIOD,
+    "qualityProfiles",
+    "links",
+    "permissions",
+    "branches",
+    "tags",
+    "visibility",
+    "qualityGate",
+    "webhooks",
+)
+
 
 class Project(components.Component):
     def __init__(self, key, endpoint=None, data=None, create_data=None):
@@ -80,6 +95,7 @@ class Project(components.Component):
             if not data["components"]:
                 raise options.NonExistingObjectError(self.key, "Project key does not exist")
             data = data["components"][0]
+        self._json = data
         self.name = data["name"]
         self._visibility = data["visibility"]
         if "lastAnalysisDate" in data:
@@ -266,17 +282,10 @@ class Project(components.Component):
             util.logger.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
         util.logger.debug("Auditing %s visibility", str(self))
-        if self.visibility() != "private":
+        visi = self.visibility()
+        if visi != "private":
             rule = rules.get_rule(rules.RuleId.PROJ_VISIBILITY)
-            return [
-                pb.Problem(
-                    rule.type,
-                    rule.severity,
-                    rule.msg.format(str(self), self.visibility()),
-                    concerned_object=self,
-                )
-            ]
-
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), visi), concerned_object=self)]
         util.logger.debug("%s visibility is 'private'", str(self))
         return []
 
@@ -548,15 +557,10 @@ class Project(components.Component):
             return None
         return util.remove_nones(branch_data)
 
-    def export(self, settings_list=None, include_inherited=False, full_export=False):
+    def export(self, settings_list=None, include_inherited=False, full=False):
         util.logger.info("Exporting %s", str(self))
-        settings_dict = settings.get_bulk(endpoint=self, component=self, settings_list=settings_list, include_not_set=False)
-        json_data = {"key": self.key, "name": self.name}
-        for s in settings_dict.values():
-            if not include_inherited and s.inherited:
-                continue
-            json_data.update(s.to_json())
-
+        json_data = self._json.copy()
+        json_data.update({"key": self.key, "name": self.name})
         json_data["binding"] = self.__export_get_binding()
         json_data[settings.NEW_CODE_PERIOD] = self.new_code()
         json_data["qualityProfiles"] = self.__export_get_qp()
@@ -570,11 +574,13 @@ class Project(components.Component):
             json_data.pop("qualityGate")
 
         json_data["webhooks"] = webhooks.export(self.endpoint, self.key)
-
-        if full_export:
-            pass
-            # self.__add_optional_export(json_data)
-
+        json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
+        settings_dict = settings.get_bulk(endpoint=self, component=self, settings_list=settings_list, include_not_set=False)
+        # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
+        for s in settings_dict.values():
+            if not include_inherited and s.inherited:
+                continue
+            json_data.update(s.to_json())
         return util.remove_nones(json_data)
 
     def new_code(self, include_branches=False):
@@ -838,8 +844,8 @@ def audit(audit_settings, endpoint=None, key_list=None):
     return problems
 
 
-def export(endpoint, key_list=None):
-    project_settings = {k: p.export() for k, p in get_list(endpoint=endpoint, key_list=key_list).items()}
+def export(endpoint, key_list=None, full=False):
+    project_settings = {k: p.export(full=full) for k, p in get_list(endpoint=endpoint, key_list=key_list).items()}
     for k in project_settings:
         project_settings[k].pop("key")
     return project_settings

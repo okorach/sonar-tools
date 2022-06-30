@@ -30,6 +30,8 @@ _SEARCH_API = "permissions/search_templates"
 _CREATE_API = "permissions/create_template"
 _UPDATE_API = "permissions/update_template"
 
+_IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "permissions", "defaultFor")
+
 
 class PermissionTemplate(sqobject.SqObject):
     def __init__(self, endpoint, name, data=None, create_data=None):
@@ -56,11 +58,12 @@ class PermissionTemplate(sqobject.SqObject):
             utilities.logger.debug("from sync data %s", utilities.json_dump(data))
         self._json = data
         self.name = name
-        self.key = data.get("id", None)
+        data.pop("name")
+        self.key = data.pop("id", None)
         self.description = data.get("description", None)
-        self.project_key_pattern = data.get("projectKeyPattern", "")
-        self.creation_date = utilities.string_to_date(data.get("createdAt", None))
-        self.last_update = utilities.string_to_date(data.get("updatedAt", None))
+        self.project_key_pattern = data.pop("projectKeyPattern", "")
+        self.creation_date = utilities.string_to_date(data.pop("createdAt", None))
+        self.last_update = utilities.string_to_date(data.pop("updatedAt", None))
         self.__set_hash()
         _OBJECTS[self.key] = self
         _MAP[self.name.lower()] = self.key
@@ -125,14 +128,17 @@ class PermissionTemplate(sqobject.SqObject):
             return None
         return self.update(pattern=pattern)
 
-    def to_json(self, full_specs=False):
-        json_data = {
-            "key": self.key,
-            "name": self.name,
-            "description": self.description if self.description != "" else None,
-            "pattern": self.project_key_pattern,
-            "permissions": self.permissions().export(),
-        }
+    def to_json(self, full=False):
+        json_data = self._json.copy()
+        json_data.update(
+            {
+                "key": self.key,
+                "name": self.name,
+                "description": self.description if self.description != "" else None,
+                "pattern": self.project_key_pattern,
+                "permissions": self.permissions().export(),
+            }
+        )
 
         defaults = []
         if self.is_projects_default():
@@ -144,10 +150,9 @@ class PermissionTemplate(sqobject.SqObject):
         if len(defaults) > 0:
             json_data["defaultFor"] = utilities.list_to_csv(defaults, ", ")
 
-        if full_specs:
-            json_data["creationDate"] = utilities.date_to_string(self.creation_date)
-            json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
-        return utilities.remove_nones(json_data)
+        json_data["creationDate"] = utilities.date_to_string(self.creation_date)
+        json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
+        return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def audit(self, audit_settings):
         utilities.logger.debug("Auditing %s", str(self))
@@ -187,7 +192,8 @@ def search(endpoint, params=None):
     objects_list = {}
     data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
     for obj in data["permissionTemplates"]:
-        objects_list[obj["id"]] = PermissionTemplate(name=obj["name"], endpoint=endpoint, data=obj)
+        o = PermissionTemplate(name=obj["name"], endpoint=endpoint, data=obj)
+        objects_list[o.key] = o
     _load_default_templates(data=data)
     return objects_list
 
@@ -207,13 +213,13 @@ def _load_default_templates(data=None, endpoint=None):
         _DEFAULT_TEMPLATES[d["qualifier"]] = d["templateId"]
 
 
-def export(endpoint, full_specs=False):
+def export(endpoint, full=False):
     utilities.logger.info("Exporting permission templates")
     pt_list = get_list(endpoint)
     json_data = {}
     for pt in pt_list.values():
-        json_data[pt.name] = pt.to_json(full_specs)
-        if not full_specs:
+        json_data[pt.name] = pt.to_json(full)
+        if not full:
             for k in ("name", "id", "key"):
                 json_data[pt.name].pop(k, None)
     return json_data

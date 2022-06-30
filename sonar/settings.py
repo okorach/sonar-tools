@@ -130,10 +130,7 @@ class Setting(sqobject.SqObject):
         if not data:
             return
         if self.key == NEW_CODE_PERIOD:
-            if data["type"] == "NUMBER_OF_DAYS":
-                self.value = int(data["value"])
-            else:
-                self.value = data["type"]
+            self.value = new_code_to_string(data)
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data["visibility"]
         elif self.key.startswith("sonar.issue."):

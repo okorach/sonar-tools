@@ -29,6 +29,8 @@ import sonar.sqobject as sq
 
 from sonar.audit import rules, problem
 
+_IMPORTABLE_PROPERTIES = ("name", "url", "secret")
+
 _OBJECTS = {}
 
 
@@ -67,23 +69,8 @@ class WebHook(sq.SqObject):
         rule = rules.get_rule(rules.RuleId.FAILED_WEBHOOK)
         return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
 
-    def to_json(self):
-        json_data = {
-            "name": self.name,
-            "key": self.key,
-            "url": self.webhook_url,
-            "secret": self.secret,
-        }
-        if self.last_delivery is not None:
-            json_data.update(
-                {
-                    "lastDeliveryDate": self.last_delivery.get("at", None),
-                    "lastDeliverySuccess": self.last_delivery.get("success", None),
-                    "lastDeliveryHttpStatus": self.last_delivery.get("httpStatus", None),
-                    "lastDeliveryDuration": self.last_delivery.get("durationMs", None),
-                }
-            )
-        return json_data
+    def to_json(self, full=False):
+        return util.filter_export(self._json, _IMPORTABLE_PROPERTIES, full)
 
 
 def search(endpoint, params=None):
@@ -98,13 +85,11 @@ def get_list(endpoint, project_key=None):
     return search(endpoint, params)
 
 
-def export(endpoint, project_key=None):
+def export(endpoint, project_key=None, full=False):
     json_data = {}
     for wb in get_list(endpoint, project_key).values():
-        j = wb.to_json()
-        for k in j.copy().keys():
-            if k.startswith("lastDelivery") or k in ("name", "key"):
-                j.pop(k)
+        j = wb.to_json(full)
+        j.pop("name", None)
         json_data[wb.name] = util.remove_nones(j)
     return json_data if len(json_data) > 0 else None
 

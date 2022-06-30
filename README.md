@@ -255,6 +255,7 @@ Basic Usage: `sonar-config --export -f <file.json>`
 - `-e` or `--export`: Specify the export operation
 - `-w` or `--what`: Specify what to export (everything by default)
 - `k "<key1>,<key2>,...,<keyn>"`: Will only import/export projects, apps or portfolios with matching keys
+- `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
 See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
 
 ## Required Permissions

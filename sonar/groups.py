@@ -147,7 +147,7 @@ def get_list(endpoint, params=None):
     return search(params=params, endpoint=endpoint)
 
 
-def export(endpoint, full_specs=False):
+def export(endpoint):
     util.logger.info("Exporting groups")
     g_list = {}
     for g_name, g_obj in search(endpoint=endpoint).items():

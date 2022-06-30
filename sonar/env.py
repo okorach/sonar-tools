@@ -224,17 +224,17 @@ class Environment:
         util.logger.info("getting global settings")
         return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
 
-    def export(self):
+    def export(self, full=False):
         util.logger.info("Exporting platform global settings")
         json_data = {}
         for s in self.settings(include_not_set=True).values():
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
 
-        json_data[settings.GENERAL_SETTINGS].update({"webhooks": webhooks.export(self)})
+        json_data[settings.GENERAL_SETTINGS].update({"webhooks": webhooks.export(self, full=full)})
         json_data["permissions"] = self.global_permissions().export()
-        json_data["permissionTemplates"] = permission_templates.export(self)
-        json_data[settings.DEVOPS_INTEGRATION] = devops.export(self)
+        json_data["permissionTemplates"] = permission_templates.export(self, full=full)
+        json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, full=full)
         return json_data
 
     def set_webhooks(self, webhooks_data):

@@ -511,3 +511,23 @@ def check_what(what, allowed_values, operation="processed"):
             exit_code=options.ERR_ARGS_ERROR,
         )
     return what
+
+
+def __prefix(value):
+    if isinstance(value, dict):
+        return {f"_{k}": __prefix(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        return [__prefix(v) for v in value]
+    else:
+        return value
+
+
+def filter_export(json_data, key_properties, full):
+    new_json_data = json_data.copy()
+    for k in json_data:
+        if k not in key_properties:
+            if full and k != "actions":
+                new_json_data[f"_{k}"] = __prefix(new_json_data.pop(k))
+            else:
+                new_json_data.pop(k)
+    return new_json_data
