@@ -523,12 +523,10 @@ def __prefix(value):
 
 def filter_export(json_data, key_properties, full):
     new_json_data = json_data.copy()
-    for k, v in json_data.items():
-        logger.debug("Treating key = %s", k)
+    for k in json_data:
         if k not in key_properties:
-            if full:
+            if full and k != "actions":
                 new_json_data[f"_{k}"] = __prefix(new_json_data.pop(k))
             else:
                 new_json_data.pop(k)
-        logger.debug("New data = %s", json_dump(new_json_data))
     return new_json_data
