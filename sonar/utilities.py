@@ -516,6 +516,8 @@ def check_what(what, allowed_values, operation="processed"):
 def __prefix(value):
     if isinstance(value, dict):
         return {f"_{k}": __prefix(v) for k, v in value.items()}
+    elif isinstance(value, list):
+        return [__prefix(v) for v in value]
     else:
         return value
 
