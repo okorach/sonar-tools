@@ -46,7 +46,20 @@ APP_QUALIFIER = "APP"
 
 _BIND_SEP = ":::"
 
-_IMPORTABLE_PROPERTIES = ("key", "name", "binding", settings.NEW_CODE_PERIOD, "qualityProfiles", "links", "permissions", "branches", "tags", "visibility", "qualityGate", "webhooks")
+_IMPORTABLE_PROPERTIES = (
+    "key",
+    "name",
+    "binding",
+    settings.NEW_CODE_PERIOD,
+    "qualityProfiles",
+    "links",
+    "permissions",
+    "branches",
+    "tags",
+    "visibility",
+    "qualityGate",
+    "webhooks",
+)
 
 
 class Project(components.Component):
@@ -269,17 +282,10 @@ class Project(components.Component):
             util.logger.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
         util.logger.debug("Auditing %s visibility", str(self))
-        if self.visibility() != "private":
+        visi = self.visibility()
+        if visi != "private":
             rule = rules.get_rule(rules.RuleId.PROJ_VISIBILITY)
-            return [
-                pb.Problem(
-                    rule.type,
-                    rule.severity,
-                    rule.msg.format(str(self), self.visibility()),
-                    concerned_object=self,
-                )
-            ]
-
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), visi), concerned_object=self)]
         util.logger.debug("%s visibility is 'private'", str(self))
         return []
 
@@ -555,8 +561,6 @@ class Project(components.Component):
         util.logger.info("Exporting %s", str(self))
         json_data = self._json.copy()
         json_data.update({"key": self.key, "name": self.name})
-
-
         json_data["binding"] = self.__export_get_binding()
         json_data[settings.NEW_CODE_PERIOD] = self.new_code()
         json_data["qualityProfiles"] = self.__export_get_qp()
@@ -572,7 +576,7 @@ class Project(components.Component):
         json_data["webhooks"] = webhooks.export(self.endpoint, self.key)
         json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
         settings_dict = settings.get_bulk(endpoint=self, component=self, settings_list=settings_list, include_not_set=False)
-        #json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
+        # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
         for s in settings_dict.values():
             if not include_inherited and s.inherited:
                 continue

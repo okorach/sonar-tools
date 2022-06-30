@@ -47,6 +47,7 @@ _CHILDREN_KEY = "children"
 
 _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions")
 
+
 class QualityProfile(sq.SqObject):
     @classmethod
     def read(cls, name, language, endpoint):

@@ -37,6 +37,7 @@ _LIST_API = "alm_settings/list_definitions"
 
 _IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "clientId", "appId")
 
+
 class DevopsPlatform(sqobject.SqObject):
     def __init__(self, key, devops_platform_type, endpoint, data=None, create_data=None):
         super().__init__(key, endpoint)

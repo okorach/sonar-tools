@@ -42,6 +42,7 @@ _UPDATE_LOGIN_API = "users/update_login"
 
 _IMPORTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
 
+
 class User(sqobject.SqObject):
     def __init__(self, login, endpoint, data=None, create_data=None):
         super().__init__(login, endpoint)

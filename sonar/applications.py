@@ -37,7 +37,8 @@ _MAP = {}
 _GET_API = "applications/show"
 _CREATE_API = "applications/create"
 
-_IMPORTABLE_PROPERTIES = ("key", "name","description", "visibility", "branches", "permissions", "tags")
+_IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
+
 
 class Application(aggr.Aggregation):
     def __init__(self, key, endpoint, data=None, name=None, create_data=None):
@@ -164,16 +165,18 @@ class Application(aggr.Aggregation):
         util.logger.info("Exporting %s", str(self))
         self._load_full()
         json_data = self._json.copy()
-        json_data.update({
-            "key": self.key,
-            "name": self.name,
-            "description": None if self._description == "" else self._description,
-            "visibility": self.visibility(),
-            # 'projects': self.projects(),
-            "branches": self.branches(),
-            "permissions": self.permissions().export(),
-            "tags": util.list_to_csv(self.tags(), separator=", "),
-        })
+        json_data.update(
+            {
+                "key": self.key,
+                "name": self.name,
+                "description": None if self._description == "" else self._description,
+                "visibility": self.visibility(),
+                # 'projects': self.projects(),
+                "branches": self.branches(),
+                "permissions": self.permissions().export(),
+                "tags": util.list_to_csv(self.tags(), separator=", "),
+            }
+        )
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def set_permissions(self, data):

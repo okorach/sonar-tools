@@ -82,7 +82,7 @@ class Rule(sq.SqObject):
             name=data.get("name", key),
             severity=data.get("severity", "MAJOR"),
             params=rule_params,
-            markdown_description=data.get("description", "NO DESCRIPTION")
+            markdown_description=data.get("description", "NO DESCRIPTION"),
         )
 
     def __init__(self, key, endpoint, data):

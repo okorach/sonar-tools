@@ -72,6 +72,7 @@ class WebHook(sq.SqObject):
     def to_json(self, full=False):
         return util.filter_export(self._json, _IMPORTABLE_PROPERTIES, full)
 
+
 def search(endpoint, params=None):
     return sq.search_objects(api="webhooks/list", params=params, returned_field="webhooks", key_field="key", object_class=WebHook, endpoint=endpoint)
 

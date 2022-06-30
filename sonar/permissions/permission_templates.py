@@ -130,13 +130,15 @@ class PermissionTemplate(sqobject.SqObject):
 
     def to_json(self, full=False):
         json_data = self._json.copy()
-        json_data.update({
-            "key": self.key,
-            "name": self.name,
-            "description": self.description if self.description != "" else None,
-            "pattern": self.project_key_pattern,
-            "permissions": self.permissions().export(),
-        })
+        json_data.update(
+            {
+                "key": self.key,
+                "name": self.name,
+                "description": self.description if self.description != "" else None,
+                "pattern": self.project_key_pattern,
+                "permissions": self.permissions().export(),
+            }
+        )
 
         defaults = []
         if self.is_projects_default():

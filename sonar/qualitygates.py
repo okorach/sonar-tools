@@ -62,6 +62,7 @@ GOOD_QG_CONDITIONS = {
 
 _IMPORTABLE_PROPERTIES = ("isDefault", "isBuiltIn", "conditions", "permissions")
 
+
 class QualityGate(sq.SqObject):
     def __init__(self, name, endpoint, data=None, create_data=None):
         super().__init__(name, endpoint)

@@ -95,7 +95,7 @@ def __parse_args(desc):
         default=False,
         action="store_true",
         help="Also exports informative data that would be ignored as part of an import. Informative field are prefixed with _."
-             "This option is ignored in case of import",
+        "This option is ignored in case of import",
     )
     args = utilities.parse_and_check_token(parser)
     utilities.check_environment(vars(args))

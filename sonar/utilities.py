@@ -521,6 +521,7 @@ def __prefix(value):
     else:
         return value
 
+
 def filter_export(json_data, key_properties, full):
     new_json_data = json_data.copy()
     for k in json_data:
