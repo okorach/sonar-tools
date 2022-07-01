@@ -167,20 +167,8 @@ class Project(components.Component):
         return None
 
     def get_pull_requests(self):
-        if self.endpoint.edition() == "community":
-            util.logger.debug("Pull requests not available in Community Edition")
-            return []
-
         if self.pull_requests is None:
-            data = json.loads(
-                self.get(
-                    "project_pull_requests/list",
-                    params={"project": self.key},
-                ).text
-            )
-            self.pull_requests = []
-            for p in data["pullRequests"]:
-                self.pull_requests.append(pull_requests.get_object(p["key"], self, p))
+            self.pull_requests = pull_requests.get_list(self)
         return self.pull_requests
 
     def delete(self, api="projects/delete", params=None):
