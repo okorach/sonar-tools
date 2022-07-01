@@ -316,9 +316,3 @@ class Finding(sq.SqObject):
 
 def to_csv_header(separator=","):
     return "# " + separator.join(_CSV_FIELDS)
-
-
-def export(project_key, endpoint):
-    if endpoint.version() < (9, 1, 0) or endpoint.edition() not in ("enterprise", "datacenter"):
-        return {}
-    return projects.get_object(project_key, endpoint)
