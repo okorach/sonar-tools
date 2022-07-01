@@ -86,6 +86,7 @@ _API_LIST = "settings/list_definitions"
 _API_NEW_CODE_GET = "new_code_periods/show"
 _API_NEW_CODE_SET = "new_code_periods/set"
 
+VALID_SETTINGS = set()
 
 class Setting(sqobject.SqObject):
     @classmethod
@@ -163,9 +164,29 @@ class Setting(sqobject.SqObject):
             return f"setting '{self.key}' of {str(self.component)}"
 
     def set(self, value):
-        params = {}
-        if self.component:
-            params["component"] = self.component.key
+        if not is_valid(self.key, self.endpoint):
+            util.logger.error("Setting '%s' does not seem to be a valid setting, trying to set anyway...", str(self))
+        if value is None or value == "":
+            # return endpoint.reset_setting(key)
+            return None
+        if self.key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
+            return set_visibility(endpoint=self.endpoint, component=self.component, visibility=value)
+
+        # Hack: Up to 9.4 cobol settings are comma separated mono-valued, in 9.5+ they are multi-valued
+        if self.endpoint.version() > (9, 4, 0) or not __is_cobol_setting(self.key):
+            value = decode(self.key, value)
+
+        util.logger.debug("Setting %s to value '%s'", str(self), str(value))
+        params = {"key": self.key, "component": self.component.key if self.component else None}
+        if isinstance(value, list):
+            if isinstance(value[0], str):
+                params["values"] = value
+            else:
+                params["fieldValues"] = [util.json.dumps(v) for v in value]
+        else:
+            if isinstance(value, bool):
+                value = "true" if value else "false"
+            params["value"] = value
         return self.post(_API_SET, params=params)
 
     def to_json(self):
@@ -225,7 +246,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
             o = Setting.load(key=s["key"], endpoint=endpoint, data=s, component=component)
-            settings_dict[o.uuid()] = o
+            settings_dict[o.key] = o
     if settings_list is None:
         pass
     elif isinstance(settings_list, list):
@@ -242,8 +263,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
         util.logger.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            nb_priv = sum([1 for p in _PRIVATE_SETTINGS if key.startswith(p)])
-            if nb_priv > 0:
+            if is_private(key) > 0:
                 util.logger.debug("Skipping private setting %s", s["key"])
                 continue
             o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
@@ -255,6 +275,8 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
 
     o = get_new_code_period(endpoint, component)
     settings_dict[o.key] = o
+    VALID_SETTINGS.update(set(settings_dict.keys()))
+    VALID_SETTINGS.update({"sonar.scm.provider"})
     return settings_dict
 
 
@@ -328,30 +350,7 @@ def __is_cobol_setting(key):
 
 
 def set_setting(endpoint, key, value, component=None):
-    if value is None or value == "":
-        # return endpoint.reset_setting(key)
-        return None
-    if key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
-        return set_visibility(endpoint=endpoint, component=component, visibility=value)
-
-    # Hack: Up to 9.4 cobol settings are comma separated mono-valued, in 9.5+ they are multi-valued
-    if endpoint.version() > (9, 4, 0) or not __is_cobol_setting(key):
-        value = decode(key, value)
-
-    util.logger.debug("Setting setting '%s' to value '%s'", key, str(value))
-    params = {"key": key, "component": component.key if component else None}
-    if isinstance(value, list):
-        if isinstance(value[0], str):
-            params["values"] = value
-            return endpoint.post(_API_SET, params=params)
-        else:
-            params["fieldValues"] = [util.json.dumps(v) for v in value]
-            return endpoint.post(_API_SET, params=params)
-    else:
-        if isinstance(value, bool):
-            value = "true" if value else "false"
-        params["value"] = value
-        return endpoint.post(_API_SET, params=params)
+    return Setting.load(key, endpoint=endpoint, component=component, data=None).set(value)
 
 
 def encode(setting_key, setting_value):
@@ -402,3 +401,18 @@ def get_component_params(component, name="component"):
         return {name: component.project.key, "branch": component.key} if component else {}
     else:
         return {name: component.key}
+
+
+def is_valid(setting_key, endpoint):
+    if len(VALID_SETTINGS) == 0:
+        get_bulk(endpoint=endpoint, include_not_set=True)
+    if setting_key not in VALID_SETTINGS:
+        return False
+    return not is_private(setting_key)
+
+
+def is_private(setting_key):
+    for prefix in _PRIVATE_SETTINGS:
+        if setting_key.startswith(prefix):
+            return True
+    return False
