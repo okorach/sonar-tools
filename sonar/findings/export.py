@@ -35,6 +35,7 @@
 """
 import sys
 import os
+import datetime
 from sonar import version, env, options
 from sonar.projects import projects
 import sonar.utilities as util
@@ -286,7 +287,7 @@ def main():
     del kwargs["token"]
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
-
+    start_time = datetime.datetime.today()
     project_key = kwargs.get("projectKeys", None)
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
@@ -335,7 +336,7 @@ def main():
         __dump_findings(all_findings, file, fmt, **kwargs)
         nbr_findings += len(all_findings)
     __write_footer(file, fmt)
-    util.logger.info("Returned findings: %d", nbr_findings)
+    util.logger.info("Returned findings: %d - Total execution time: %s", nbr_findings, str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
 
