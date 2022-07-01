@@ -113,7 +113,7 @@ def get_object(pull_request_key, project, data=None):
         return None
     p_id = _uuid(project.key, pull_request_key)
     if p_id not in _PULL_REQUESTS:
-        _ = PullRequest(project, pull_request_key, endpoint=endpoint, data=data)
+        _ = PullRequest(project, pull_request_key, endpoint=project.endpoint, data=data)
     return _PULL_REQUESTS[p_id]
 
 
