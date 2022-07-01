@@ -98,7 +98,7 @@ class Application(aggr.Aggregation):
                 util.logger.warning("Project '%s' not found, cannot add to %s branch", pkey, str(self))
                 continue
             if bname == settings.DEFAULT_SETTING:
-                bname = o_proj.main_branch()
+                bname = o_proj.main_branch().name
             if branches.exists(bname, pkey, self.endpoint):
                 project_list.append(pkey)
                 branch_list.append(bname)
