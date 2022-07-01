@@ -849,17 +849,6 @@ def exists(key, endpoint):
     return get_object(key, endpoint) is not None
 
 
-def get_measures(key, metrics_list, branch=None, pull_request=None, endpoint=None):
-    if branch is not None:
-        obj = branches.get_object(key, branch, endpoint=endpoint)
-    elif pull_request is not None:
-        obj = pull_requests.get_object(key, pull_request, endpoint=endpoint)
-    else:
-        obj = get_object(key, endpoint=endpoint)
-
-    return obj.get_measures(metrics_list)
-
-
 def loc_csv_header(**kwargs):
     arr = ["# Project Key"]
     if kwargs[options.WITH_NAME]:
