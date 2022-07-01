@@ -169,10 +169,7 @@ def __dump_compact(finding_list, file, **kwargs):
 
 def __get_list(project, list_str, list_type):
     if list_str == "*":
-        if list_type == "branch":
-            list_array = project.branches()
-        else:
-            project.pull_requests()
+        list_array = project.branches() if list_type == "branch" else project.pull_requests()
     elif list_str is not None:
         list_array = util.csv_to_list(list_str)
     else:
