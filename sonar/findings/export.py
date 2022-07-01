@@ -35,7 +35,9 @@
 """
 import sys
 import os
-from sonar import version, env, projects, options
+import datetime
+from sonar import version, env, options
+from sonar.projects import projects
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
 
@@ -169,10 +171,7 @@ def __dump_compact(finding_list, file, **kwargs):
 
 def __get_list(project, list_str, list_type):
     if list_str == "*":
-        if list_type == "branch":
-            list_array = project.get_branches()
-        else:
-            project.get_pull_requests()
+        list_array = project.branches() if list_type == "branch" else project.pull_requests()
     elif list_str is not None:
         list_array = util.csv_to_list(list_str)
     else:
@@ -288,7 +287,7 @@ def main():
     del kwargs["token"]
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
-
+    start_time = datetime.datetime.today()
     project_key = kwargs.get("projectKeys", None)
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
@@ -337,7 +336,7 @@ def main():
         __dump_findings(all_findings, file, fmt, **kwargs)
         nbr_findings += len(all_findings)
     __write_footer(file, fmt)
-    util.logger.info("Returned findings: %d", nbr_findings)
+    util.logger.info("Returned findings: %d - Total execution time: %s", nbr_findings, str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
 

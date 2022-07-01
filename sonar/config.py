@@ -23,8 +23,8 @@
 """
 import sys
 import datetime
-from sonar import env, version, projects, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities
-
+from sonar import env, version, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities
+from sonar.projects import projects
 
 _EVERYTHING = [
     options.WHAT_SETTINGS,

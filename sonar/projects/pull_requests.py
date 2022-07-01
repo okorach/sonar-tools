@@ -107,13 +107,13 @@ def _uuid(project_key, pull_request_key):
     return f"{project_key} {pull_request_key}"
 
 
-def get_object(pull_request_key, project, data=None, endpoint=None):
-    if endpoint.edition() == "community":
+def get_object(pull_request_key, project, data=None):
+    if project.endpoint.edition() == "community":
         util.logger.debug("Pull requests not available in Community Edition")
         return None
     p_id = _uuid(project.key, pull_request_key)
     if p_id not in _PULL_REQUESTS:
-        _ = PullRequest(project, pull_request_key, endpoint=endpoint, data=data)
+        _ = PullRequest(project, pull_request_key, endpoint=project.endpoint, data=data)
     return _PULL_REQUESTS[p_id]
 
 

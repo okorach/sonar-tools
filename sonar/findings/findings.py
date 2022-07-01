@@ -26,7 +26,7 @@
 import re
 import sonar.sqobject as sq
 import sonar.utilities as util
-from sonar import projects
+from sonar.projects import projects
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
@@ -316,12 +316,3 @@ class Finding(sq.SqObject):
 
 def to_csv_header(separator=","):
     return "# " + separator.join(_CSV_FIELDS)
-
-
-def export(project_key, endpoint):
-    if endpoint.version() < (9, 1, 0) or endpoint.edition() not in (
-        "enterprise",
-        "datacenter",
-    ):
-        return {}
-    return projects.get_object(project_key, endpoint)

@@ -25,7 +25,8 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 """
 import sys
-from sonar import measures, metrics, projects, env, version, options
+from sonar import measures, metrics, env, version, options
+from sonar.projects import projects
 import sonar.utilities as util
 
 RATINGS = "letters"
@@ -218,7 +219,7 @@ def main():
     obj_list = []
     if with_branches:
         for project in project_list.values():
-            obj_list += project.get_branches()
+            obj_list += project.branches()
     else:
         obj_list = project_list.values()
     nb_branches = len(obj_list)

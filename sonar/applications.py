@@ -24,7 +24,8 @@
 """
 import json
 from http import HTTPStatus
-from sonar import measures, components, branches, projects, options, settings
+from sonar import measures, components, options, settings
+from sonar.projects import projects, branches
 from sonar.permissions import application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
