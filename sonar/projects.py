@@ -737,9 +737,7 @@ class Project(components.Component):
         self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))
         for lang, qp_name in data.get("qualityProfiles", {}).items():
-            res = qp_name.split(" ", maxsplit=1)
-            profile = " ".join(res[1:]) if len(res) > 1 else qp_name
-            self.set_quality_profile(language=lang, profile_name=profile)
+            self.set_quality_profile(language=lang, profile_name=qp_name)
         for bname, bdata in data.get("branches", {}).items():
             if bdata.get("isMain", False):
                 self.rename_main_branch(bname)
