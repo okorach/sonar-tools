@@ -229,20 +229,23 @@ def _uuid(project_key, branch_name):
     return f"{project_key} {branch_name}"
 
 
-def get_object(branch, project_key_or_obj, data=None, endpoint=None):
-    (p_key, p_obj) = projects.key_obj(project_key_or_obj)
-    b_id = _uuid(p_key, branch)
+def get_object(branch, project, data=None, endpoint=None):
+    if project.endpoint.edition() == "community":
+        util.logger.debug("Branches not available in Community Edition")
+        return None
+    b_id = _uuid(project.key, branch)
     if b_id not in _OBJECTS:
-        _ = Branch(p_obj, branch, data=data, endpoint=endpoint)
+        _ = Branch(project, branch, data=data, endpoint=endpoint)
     return _OBJECTS[b_id]
 
 
-def get_list(project_key, endpoint):
-    data = json.loads(endpoint.get("project_branches/list", params={"project": project_key}).text)
-    for branch in data.get("branches", {}):
-        get_object(branch=branch["name"], project_key_or_obj=project_key, data=branch, endpoint=endpoint)
+def get_list(project, endpoint):
+    if project.endpoint.edition() == "community":
+        util.logger.debug("branches not available in Community Edition")
+        return {}
+    data = json.loads(endpoint.get("project_branches/list", params={"project": project.key}).text)
+    return {branch["name"]: get_object(branch=branch["name"], project=project, data=branch, endpoint=endpoint) for branch in data.get("branches", {})}
 
 
 def exists(branch_name, project_key, endpoint):
-    get_list(project_key=project_key, endpoint=endpoint)
-    return _uuid(project_key, branch_name) in _OBJECTS
+    return branch_name in get_list(project=projects.get_object(project_key, endpoint), endpoint=endpoint)
