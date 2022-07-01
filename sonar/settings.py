@@ -86,7 +86,7 @@ _API_LIST = "settings/list_definitions"
 _API_NEW_CODE_GET = "new_code_periods/show"
 _API_NEW_CODE_SET = "new_code_periods/set"
 
-VALID_SETTINGS = []
+VALID_SETTINGS = set()
 
 class Setting(sqobject.SqObject):
     @classmethod
@@ -164,9 +164,7 @@ class Setting(sqobject.SqObject):
             return f"setting '{self.key}' of {str(self.component)}"
 
     def set(self, value):
-        if len(VALID_SETTINGS) == 0:
-            get_bulk(endpoint=self.endpoint)
-        if self.key not in VALID_SETTINGS:
+        if not is_valid(self.key, self.endpoint):
             util.logger.error("Setting '%s' does not seem to be a valid setting, trying to set anyway...", str(self))
         if value is None or value == "":
             # return endpoint.reset_setting(key)
@@ -240,18 +238,15 @@ def get_object(key, component=None):
 
 def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False):
     """Gets several settings as bulk (returns a dict)"""
-    global VALID_SETTINGS
     settings_dict = {}
     params = get_component_params(component)
-    VALID_SETTINGS = []
     if include_not_set:
         data = json.loads(endpoint.get(_API_LIST, params=params).text)
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
             o = Setting.load(key=s["key"], endpoint=endpoint, data=s, component=component)
-            VALID_SETTINGS.append(s["key"])
-            settings_dict[o.uuid()] = o
+            settings_dict[o.key] = o
     if settings_list is None:
         pass
     elif isinstance(settings_list, list):
@@ -268,7 +263,6 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
         util.logger.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            VALID_SETTINGS.append(key)
             if is_private(key) > 0:
                 util.logger.debug("Skipping private setting %s", s["key"])
                 continue
@@ -281,6 +275,9 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
 
     o = get_new_code_period(endpoint, component)
     settings_dict[o.key] = o
+    #global VALID_SETTINGS
+    VALID_SETTINGS.update(set(settings_dict.keys()))
+    VALID_SETTINGS.update({"sonar.scm.provider"})
     return settings_dict
 
 
@@ -354,13 +351,11 @@ def __is_cobol_setting(key):
 
 
 def set_setting(endpoint, key, value, component=None):
-    if len(VALID_SETTINGS) == 0:
-        get_bulk(endpoint=endpoint)
+    if not is_valid(key, endpoint):
+        util.logger.error("Setting '%s' of %s does not seem to be a valid setting, trying to set anyway...", key, str(component))
     if value is None or value == "":
         # return endpoint.reset_setting(key)
         return None
-    if not is_valid(key, endpoint):
-        util.logger.error("Setting '%s' does not seem to be a valid setting, trying to set anyway...", key)
     if key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
         return set_visibility(endpoint=endpoint, component=component, visibility=value)
 
@@ -436,7 +431,7 @@ def get_component_params(component, name="component"):
 
 def is_valid(setting_key, endpoint):
     if len(VALID_SETTINGS) == 0:
-        get_bulk(endpoint=endpoint)
+        get_bulk(endpoint=endpoint, include_not_set=True)
     if setting_key not in VALID_SETTINGS:
         return False
     return not is_private(setting_key)
