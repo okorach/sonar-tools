@@ -144,7 +144,7 @@ class Project(components.Component):
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
-    def get_branches(self, include_main=True):
+    def get_branches(self):
         if self.branches is None:
             self.branches = branches.get_list(self)
         return self.branches
@@ -530,17 +530,14 @@ class Project(components.Component):
     def __get_branch_export(self):
         branch_data = {}
         my_branches = self.get_branches()
-        nb_branches = len(my_branches)
         for branch in my_branches:
             exp = branch.export(full_export=False)
-            if nb_branches == 1 and branch.is_main() and len(exp) <= 1:
+            if len(my_branches) == 1 and branch.is_main() and len(exp) <= 1:
                 # Don't export main branch with no data
                 continue
             branch_data[branch.name] = exp
-        if len(branch_data) == 0:
-            return None
         # If there is only 1 branch with no specific config except being main, don't return anything
-        if len(branch_data) == 1 and len(exp) <= 1:
+        if len(branch_data) == 0 or (len(branch_data) == 1 and len(exp) <= 1):
             return None
         return util.remove_nones(branch_data)
 
@@ -630,9 +627,9 @@ class Project(components.Component):
         return r.ok
 
     def rename_main_branch(self, main_branch_name):
-        for b in self.get_branches():
-            if b.is_main():
-                return b.rename(main_branch_name)
+        br = self.main_branch()
+        if br:
+            return br.rename(main_branch_name)
         util.logger.warning("No main branch to rename found for %s", str(self))
         return False
 

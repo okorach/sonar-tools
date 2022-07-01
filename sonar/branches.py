@@ -34,7 +34,7 @@ import sonar.utilities as util
 from sonar.audit import rules, problem
 
 _OBJECTS = {}
-
+_LIST_API = "project_branches/list"
 
 class Branch(components.Component):
     def __init__(self, project, name, data=None, endpoint=None):
@@ -57,7 +57,7 @@ class Branch(components.Component):
         return f"branch '{self.name}' of {str(self.project)}"
 
     def read(self):
-        data = json.loads(self.get("api/project_branches/list", params={"project": self.project.key}).text)
+        data = json.loads(self.get(_LIST_API, params={"project": self.project.key}).text)
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self.__load(br)
@@ -243,8 +243,8 @@ def get_list(project):
     if project.endpoint.edition() == "community":
         util.logger.debug("branches not available in Community Edition")
         return {}
-    data = json.loads(project.endpoint.get("project_branches/list", params={"project": project.key}).text)
-    return {branch["name"]: get_object(branch=branch["name"], project=project, data=branch) for branch in data.get("branches", {})}
+    data = json.loads(project.endpoint.get(_LIST_API, params={"project": project.key}).text)
+    return [get_object(branch=branch["name"], project=project, data=branch) for branch in data.get("branches", {})]
 
 
 def exists(branch_name, project_key, endpoint):
