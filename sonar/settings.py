@@ -86,6 +86,7 @@ _API_LIST = "settings/list_definitions"
 _API_NEW_CODE_GET = "new_code_periods/show"
 _API_NEW_CODE_SET = "new_code_periods/set"
 
+VALID_SETTINGS = []
 
 class Setting(sqobject.SqObject):
     @classmethod
@@ -166,7 +167,17 @@ class Setting(sqobject.SqObject):
         params = {}
         if self.component:
             params["component"] = self.component.key
+        if isinstance(value, list):
+            if isinstance(value[0], str):
+                params["values"] = value
+            else:
+                params["fieldValues"] = [util.json.dumps(v) for v in value]
+        else:
+            if isinstance(value, bool):
+                value = "true" if value else "false"
+            params["value"] = value
         return self.post(_API_SET, params=params)
+
 
     def to_json(self):
         return {self.key: encode(self.key, self.value)}
@@ -225,6 +236,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
             o = Setting.load(key=s["key"], endpoint=endpoint, data=s, component=component)
+            VALID_SETTINGS.append(s["key"])
             settings_dict[o.uuid()] = o
     if settings_list is None:
         pass
