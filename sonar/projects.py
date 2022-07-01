@@ -158,6 +158,14 @@ class Project(components.Component):
                 self.branches.append(branches.get_object(b["name"], self, data=b, endpoint=self.endpoint))
         return self.branches
 
+    def main_branch(self):
+        for b in self.get_branches():
+            if b.is_main():
+                return b
+        if self.endpoint.edition() != "community":
+            util.logger.warning("Could not find main branch for %s", str(self))
+        return None
+
     def get_pull_requests(self):
         if self.endpoint.edition() == "community":
             util.logger.debug("Pull requests not available in Community Edition")
@@ -850,7 +858,7 @@ def export(endpoint, key_list=None, full=False):
 
 
 def exists(key, endpoint):
-    return len(search(params={"projects": key}, endpoint=endpoint)) > 0
+    return get_object(key, endpoint) is not None
 
 
 def get_measures(key, metrics_list, branch=None, pull_request=None, endpoint=None):
