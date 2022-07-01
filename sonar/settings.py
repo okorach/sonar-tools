@@ -351,32 +351,7 @@ def __is_cobol_setting(key):
 
 
 def set_setting(endpoint, key, value, component=None):
-    if not is_valid(key, endpoint):
-        util.logger.error("Setting '%s' of %s does not seem to be a valid setting, trying to set anyway...", key, str(component))
-    if value is None or value == "":
-        # return endpoint.reset_setting(key)
-        return None
-    if key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
-        return set_visibility(endpoint=endpoint, component=component, visibility=value)
-
-    # Hack: Up to 9.4 cobol settings are comma separated mono-valued, in 9.5+ they are multi-valued
-    if endpoint.version() > (9, 4, 0) or not __is_cobol_setting(key):
-        value = decode(key, value)
-
-    util.logger.debug("Setting setting '%s' to value '%s'", key, str(value))
-    params = {"key": key, "component": component.key if component else None}
-    if isinstance(value, list):
-        if isinstance(value[0], str):
-            params["values"] = value
-            return endpoint.post(_API_SET, params=params)
-        else:
-            params["fieldValues"] = [util.json.dumps(v) for v in value]
-            return endpoint.post(_API_SET, params=params)
-    else:
-        if isinstance(value, bool):
-            value = "true" if value else "false"
-        params["value"] = value
-        return endpoint.post(_API_SET, params=params)
+    return Setting.load(key, endpoint=endpoint, component=component, data=None).set(value)
 
 
 def encode(setting_key, setting_value):
