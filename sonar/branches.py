@@ -33,7 +33,7 @@ import sonar.utilities as util
 
 from sonar.audit import rules, problem
 
-_BRANCHES = {}
+_OBJECTS = {}
 
 
 class Branch(components.Component):
@@ -50,7 +50,7 @@ class Branch(components.Component):
         self._last_analysis = None
         self._keep_when_inactive = None
         self._ncloc = None
-        _BRANCHES[self.uuid()] = self
+        _OBJECTS[self.uuid()] = self
         util.logger.debug("Created %s", str(self))
 
     def __str__(self):
@@ -232,17 +232,17 @@ def _uuid(project_key, branch_name):
 def get_object(branch, project_key_or_obj, data=None, endpoint=None):
     (p_key, p_obj) = projects.key_obj(project_key_or_obj)
     b_id = _uuid(p_key, branch)
-    if b_id not in _BRANCHES:
+    if b_id not in _OBJECTS:
         _ = Branch(p_obj, branch, data=data, endpoint=endpoint)
-    return _BRANCHES[b_id]
+    return _OBJECTS[b_id]
 
 
 def get_list(project_key, endpoint):
-    data = json.loads(endpoint.post("project_branches/list", params={"project": project_key}).text)
+    data = json.loads(endpoint.get("project_branches/list", params={"project": project_key}).text)
     for branch in data.get("branches", {}):
         get_object(branch=branch["name"], project_key_or_obj=project_key, data=branch, endpoint=endpoint)
 
 
 def exists(branch_name, project_key, endpoint):
     get_list(project_key=project_key, endpoint=endpoint)
-    return _uuid(project_key, branch_name) in _BRANCHES
+    return _uuid(project_key, branch_name) in _OBJECTS
