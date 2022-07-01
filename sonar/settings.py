@@ -275,7 +275,6 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
 
     o = get_new_code_period(endpoint, component)
     settings_dict[o.key] = o
-    #global VALID_SETTINGS
     VALID_SETTINGS.update(set(settings_dict.keys()))
     VALID_SETTINGS.update({"sonar.scm.provider"})
     return settings_dict
