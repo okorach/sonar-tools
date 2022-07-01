@@ -24,7 +24,7 @@
 """
 import json
 from http import HTTPStatus
-from sonar import measures, components, branches, projects, options
+from sonar import measures, components, branches, projects, options, settings
 from sonar.permissions import application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -92,18 +92,18 @@ class Application(aggr.Aggregation):
     def set_branch(self, branch_name, branch_data):
         project_list, branch_list = [], []
         for p in branch_data.get("projects", []):
-            if isinstance(p, dict):
-                pkey = p["projectKey"]
-                bname = p["branch"]
-            else:
-                pkey = p
-                bname = branch_data["projects"][p]
-            if projects.exists(pkey, self.endpoint) and branches.exists(bname, pkey, self.endpoint):
+            (pkey, bname) = (p["projectKey"], p["branch"]) if isinstance(p, dict) else (p, branch_data["projects"][p])
+            o_proj = projects.get_object(pkey, self.endpoint)
+            if not o_proj:
+                util.logger.warning("Project '%s' not found, cannot add to %s branch", pkey, str(self))
+                continue
+            if bname == settings.DEFAULT_SETTING:
+                bname = o_proj.main_branch().name
+            if branches.exists(bname, pkey, self.endpoint):
                 project_list.append(pkey)
-                br_obj = branches.get_object(bname, pkey, self.endpoint)
-                branch_list.append("" if br_obj.is_main() else bname)
+                branch_list.append(bname)
             else:
-                util.logger.warning("Branch '%s' or project '%s' not found, cannot add to %s branch", bname, pkey, str(self))
+                util.logger.warning("Branch '%s' not found, cannot add to %s branch", bname, str(self))
 
         if len(project_list) > 0:
             params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
