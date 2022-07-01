@@ -27,8 +27,8 @@ import re
 import json
 from http import HTTPStatus
 import pytz
-from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops
-from sonar import pull_requests, branches, measures, custom_measures
+from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, custom_measures
+from sonar.projects import pull_requests, branches
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
 import sonar.permissions.project_permissions as perms
