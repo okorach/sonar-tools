@@ -229,22 +229,22 @@ def _uuid(project_key, branch_name):
     return f"{project_key} {branch_name}"
 
 
-def get_object(branch, project, data=None, endpoint=None):
+def get_object(branch, project, data=None):
     if project.endpoint.edition() == "community":
         util.logger.debug("Branches not available in Community Edition")
         return None
     b_id = _uuid(project.key, branch)
     if b_id not in _OBJECTS:
-        _ = Branch(project, branch, data=data, endpoint=endpoint)
+        _ = Branch(project, branch, data=data, endpoint=project.endpoint)
     return _OBJECTS[b_id]
 
 
-def get_list(project, endpoint):
+def get_list(project):
     if project.endpoint.edition() == "community":
         util.logger.debug("branches not available in Community Edition")
         return {}
-    data = json.loads(endpoint.get("project_branches/list", params={"project": project.key}).text)
-    return {branch["name"]: get_object(branch=branch["name"], project=project, data=branch, endpoint=endpoint) for branch in data.get("branches", {})}
+    data = json.loads(project.endpoint.get("project_branches/list", params={"project": project.key}).text)
+    return {branch["name"]: get_object(branch=branch["name"], project=project, data=branch) for branch in data.get("branches", {})}
 
 
 def exists(branch_name, project_key, endpoint):

@@ -145,17 +145,8 @@ class Project(components.Component):
         return m
 
     def get_branches(self, include_main=True):
-        if self.endpoint.edition() == "community":
-            util.logger.debug("Branches not available in Community Edition")
-            return []
-
         if self.branches is None:
-            data = json.loads(self.get("project_branches/list", params={"project": self.key}).text)
-            self.branches = []
-            for b in data["branches"]:
-                if b.get("isMain", False) and not include_main:
-                    continue
-                self.branches.append(branches.get_object(b["name"], self, data=b, endpoint=self.endpoint))
+            self.branches = branches.get_list(self)
         return self.branches
 
     def main_branch(self):
