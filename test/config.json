@@ -520,7 +520,7 @@
             "sonar.vbnet.file.suffixes": ".vb",
             "sonar.vbnet.ignoreHeaderComments": true,
             "sonar.vbnet.roslyn.bugCategories": "",
-            "sonar.vbnet.roslyn.codeSmellCategories": "",
+            "sonar.vbnet.roslyn.codeSmellCategoriess": "",
             "sonar.vbnet.roslyn.ignoreIssues": false,
             "sonar.vbnet.roslyn.vulnerabilityCategories": ""
          },
@@ -632,7 +632,7 @@
          "sonar.dependencyCheck.severity.major": 4.0,
          "sonar.dependencyCheck.severity.minor": 0.0,
          "sonar.dependencyCheck.skip": false,
-         "sonar.dependencyCheck.summarize": false,
+         "sonar.dependencyChecks.summarize": false,
          "sonar.dependencyCheck.xmlReportPath": "target/dependency-check-report.xml"
       }
    },
@@ -1318,7 +1318,7 @@
             }
          },
          "qualityGate": "Sonar way w/o Hotspots",
-         "sonar.coverage.exclusions": "**/gen/**/*, **/*DAO.java",
+         "sonare.coverage.exclusions": "**/gen/**/*, **/*DAO.java",
          "sonar.cpd.exclusions": "**/gen/**/*, **/*DAO.java",
          "sonar.exclusions": "**/node_modules/**/*, fileThatCrashesAnalysis.cs",
          "sonar.issue.ignore.allfile": [
