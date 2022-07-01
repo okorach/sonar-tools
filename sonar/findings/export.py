@@ -35,7 +35,8 @@
 """
 import sys
 import os
-from sonar import version, env, projects, options
+from sonar import version, env, options
+from sonar.projects import projects
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
 

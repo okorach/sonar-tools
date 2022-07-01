@@ -27,9 +27,8 @@ import sys
 import datetime
 import json
 
-import sonar.portfolios as pf
-import sonar.applications as apps
-from sonar import users, groups, version, env, qualityprofiles, qualitygates, projects, sif, options
+from sonar import users, groups, version, env, qualityprofiles, qualitygates, sif, options, portfolios, applications
+from sonar.projects import projects
 import sonar.utilities as util
 from sonar.audit import problem, config
 
@@ -87,9 +86,9 @@ def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
     if options.WHAT_GROUPS in what_to_audit:
         problems += groups.audit(endpoint=sq, audit_settings=settings)
     if options.WHAT_PORTFOLIOS in what_to_audit:
-        problems += pf.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+        problems += portfolios.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
     if options.WHAT_APPS in what_to_audit:
-        problems += apps.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+        problems += applications.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
     return problems
 
 

@@ -25,12 +25,12 @@
 """
 import sys
 import os
-from sonar import env, projects, options
-import sonar.utilities as util
+from sonar import env, options, utilities
+from sonar.projects import projects
 
 
 def main():
-    parser = util.set_common_args("Exports all projects of a SonarQube platform")
+    parser = utilities.set_common_args("Exports all projects of a SonarQube platform")
     parser.add_argument(
         "--exportTimeout",
         required=False,
@@ -38,19 +38,19 @@ def main():
         default=180,
         help="Maximum wait time for export",
     )
-    args = util.parse_and_check_token(parser)
-    util.check_environment(vars(args))
+    args = utilities.parse_and_check_token(parser)
+    utilities.check_environment(vars(args))
     sq = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
 
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
-        util.exit_fatal(
+        utilities.exit_fatal(
             "Can't export projects on Community and Developer Edition before 9.2, aborting...",
             options.ERR_UNSUPPORTED_OPERATION,
         )
 
     project_list = projects.search(sq)
     nb_projects = len(project_list)
-    util.logger.info("%d projects to export", nb_projects)
+    utilities.logger.info("%d projects to export", nb_projects)
     statuses = {}
     exports = []
 
@@ -58,7 +58,7 @@ def main():
         try:
             dump = p.export_zip(timeout=args.exportTimeout)
         except options.UnsupportedOperation as e:
-            util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+            utilities.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
 
         status = dump["status"]
         if status in statuses:
@@ -72,7 +72,7 @@ def main():
             data["path"] = dump["file"]
 
         exports.append(data)
-        util.logger.info(
+        utilities.logger.info(
             "%d/%d exports (%d%%) - Latest: %s - %s",
             len(exports),
             nb_projects,
@@ -84,10 +84,10 @@ def main():
         summary = ""
         for k, v in statuses.items():
             summary += f"{k}:{v}, "
-        util.logger.info("%s", summary[:-2])
+        utilities.logger.info("%s", summary[:-2])
 
     print(
-        util.json_dump(
+        utilities.json_dump(
             {
                 "sonarqube_environment": {
                     "version": sq.version(digits=2, as_string=True),
@@ -97,7 +97,7 @@ def main():
             }
         )
     )
-    util.logger.info("%s", summary)
+    utilities.logger.info("%s", summary)
     sys.exit(0)
 
 

@@ -27,10 +27,8 @@
 
 """
 import sys
-from sonar import projects, users, groups, env, version
-from sonar.branches import Branch
-from sonar.pull_requests import PullRequest
-from sonar.user_tokens import UserToken
+from sonar import users, groups, env, version, user_tokens
+from sonar.projects import projects, branches, pull_requests
 import sonar.utilities as util
 from sonar.audit import config, problem
 
@@ -172,17 +170,17 @@ def _delete_objects(problems, mode):
             if mode != "delete" or obj.delete():
                 deleted_projects[obj.key] = obj
                 deleted_loc += loc
-        if isinstance(obj, Branch):
+        if isinstance(obj, branches.Branch):
             if obj.project.key in deleted_projects:
                 util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
             elif mode != "delete" or obj.delete():
                 deleted_branch_count += 1
-        if isinstance(obj, PullRequest):
+        if isinstance(obj, pull_requests.PullRequest):
             if obj.project.key in deleted_projects:
                 util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
             elif mode != "delete" or obj.delete():
                 deleted_pr_count += 1
-        if isinstance(obj, UserToken) and (mode != "delete" or obj.revoke()):
+        if isinstance(obj, user_tokens.UserToken) and (mode != "delete" or obj.revoke()):
             revoked_token_count += 1
     return (
         len(deleted_projects),

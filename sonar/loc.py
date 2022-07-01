@@ -24,7 +24,8 @@
 import sys
 import csv
 
-from sonar import projects, portfolios, env, version, options
+from sonar import portfolios, env, version, options
+from sonar.projects import projects
 import sonar.utilities as util
 
 
