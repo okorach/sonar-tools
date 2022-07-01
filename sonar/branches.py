@@ -33,8 +33,8 @@ import sonar.utilities as util
 
 from sonar.audit import rules, problem
 
-_BRANCHES = {}
-
+_OBJECTS = {}
+_LIST_API = "project_branches/list"
 
 class Branch(components.Component):
     def __init__(self, project, name, data=None, endpoint=None):
@@ -50,14 +50,14 @@ class Branch(components.Component):
         self._last_analysis = None
         self._keep_when_inactive = None
         self._ncloc = None
-        _BRANCHES[self.uuid()] = self
+        _OBJECTS[self.uuid()] = self
         util.logger.debug("Created %s", str(self))
 
     def __str__(self):
         return f"branch '{self.name}' of {str(self.project)}"
 
     def read(self):
-        data = json.loads(self.get("api/project_branches/list", params={"project": self.project.key}).text)
+        data = json.loads(self.get(_LIST_API, params={"project": self.project.key}).text)
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self.__load(br)
@@ -229,20 +229,23 @@ def _uuid(project_key, branch_name):
     return f"{project_key} {branch_name}"
 
 
-def get_object(branch, project_key_or_obj, data=None, endpoint=None):
-    (p_key, p_obj) = projects.key_obj(project_key_or_obj)
-    b_id = _uuid(p_key, branch)
-    if b_id not in _BRANCHES:
-        _ = Branch(p_obj, branch, data=data, endpoint=endpoint)
-    return _BRANCHES[b_id]
+def get_object(branch, project, data=None):
+    if project.endpoint.edition() == "community":
+        util.logger.debug("Branches not available in Community Edition")
+        return None
+    b_id = _uuid(project.key, branch)
+    if b_id not in _OBJECTS:
+        _ = Branch(project, branch, data=data, endpoint=project.endpoint)
+    return _OBJECTS[b_id]
 
 
-def get_list(project_key, endpoint):
-    data = json.loads(endpoint.post("project_branches/list", params={"project": project_key}).text)
-    for branch in data.get("branches", {}):
-        get_object(branch=branch["name"], project_key_or_obj=project_key, data=branch, endpoint=endpoint)
+def get_list(project):
+    if project.endpoint.edition() == "community":
+        util.logger.debug("branches not available in Community Edition")
+        return {}
+    data = json.loads(project.endpoint.get(_LIST_API, params={"project": project.key}).text)
+    return [get_object(branch=branch["name"], project=project, data=branch) for branch in data.get("branches", {})]
 
 
 def exists(branch_name, project_key, endpoint):
-    get_list(project_key=project_key, endpoint=endpoint)
-    return _uuid(project_key, branch_name) in _BRANCHES
+    return branch_name in get_list(project=projects.get_object(project_key, endpoint))

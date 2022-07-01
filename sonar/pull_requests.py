@@ -24,9 +24,10 @@
 """
 
 import datetime
+import json
 import pytz
 import requests.utils
-from sonar import projects, measures, components
+from sonar import measures, components
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
@@ -106,9 +107,22 @@ def _uuid(project_key, pull_request_key):
     return f"{project_key} {pull_request_key}"
 
 
-def get_object(pull_request_key, project_key_or_obj, data=None, endpoint=None):
-    (p_key, p_obj) = projects.key_obj(project_key_or_obj)
-    p_id = _uuid(p_key, pull_request_key)
+def get_object(pull_request_key, project, data=None, endpoint=None):
+    if endpoint.edition() == "community":
+        util.logger.debug("Pull requests not available in Community Edition")
+        return None
+    p_id = _uuid(project.key, pull_request_key)
     if p_id not in _PULL_REQUESTS:
-        _ = PullRequest(p_obj, pull_request_key, endpoint=endpoint, data=data)
+        _ = PullRequest(project, pull_request_key, endpoint=endpoint, data=data)
     return _PULL_REQUESTS[p_id]
+
+
+def get_list(project):
+    if project.endpoint.edition() == "community":
+        util.logger.debug("Pull requests not available in Community Edition")
+        return []
+    data = json.loads(project.get("project_pull_requests/list", params={"project": project.key}).text)
+    pr_list = []
+    for pr in data["pullRequests"]:
+        pr_list.append(get_object(pr["key"], project, pr))
+    return pr_list

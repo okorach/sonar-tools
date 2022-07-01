@@ -144,18 +144,9 @@ class Project(components.Component):
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
-    def get_branches(self, include_main=True):
-        if self.endpoint.edition() == "community":
-            util.logger.debug("Branches not available in Community Edition")
-            return []
-
+    def get_branches(self):
         if self.branches is None:
-            data = json.loads(self.get("project_branches/list", params={"project": self.key}).text)
-            self.branches = []
-            for b in data["branches"]:
-                if b.get("isMain", False) and not include_main:
-                    continue
-                self.branches.append(branches.get_object(b["name"], self, data=b, endpoint=self.endpoint))
+            self.branches = branches.get_list(self)
         return self.branches
 
     def main_branch(self):
@@ -167,20 +158,8 @@ class Project(components.Component):
         return None
 
     def get_pull_requests(self):
-        if self.endpoint.edition() == "community":
-            util.logger.debug("Pull requests not available in Community Edition")
-            return []
-
         if self.pull_requests is None:
-            data = json.loads(
-                self.get(
-                    "project_pull_requests/list",
-                    params={"project": self.key},
-                ).text
-            )
-            self.pull_requests = []
-            for p in data["pullRequests"]:
-                self.pull_requests.append(pull_requests.get_object(p["key"], self, p))
+            self.pull_requests = pull_requests.get_list(self)
         return self.pull_requests
 
     def delete(self, api="projects/delete", params=None):
@@ -551,17 +530,14 @@ class Project(components.Component):
     def __get_branch_export(self):
         branch_data = {}
         my_branches = self.get_branches()
-        nb_branches = len(my_branches)
         for branch in my_branches:
             exp = branch.export(full_export=False)
-            if nb_branches == 1 and branch.is_main() and len(exp) <= 1:
+            if len(my_branches) == 1 and branch.is_main() and len(exp) <= 1:
                 # Don't export main branch with no data
                 continue
             branch_data[branch.name] = exp
-        if len(branch_data) == 0:
-            return None
         # If there is only 1 branch with no specific config except being main, don't return anything
-        if len(branch_data) == 1 and len(exp) <= 1:
+        if len(branch_data) == 0 or (len(branch_data) == 1 and len(exp) <= 1):
             return None
         return util.remove_nones(branch_data)
 
@@ -651,9 +627,9 @@ class Project(components.Component):
         return r.ok
 
     def rename_main_branch(self, main_branch_name):
-        for b in self.get_branches():
-            if b.is_main():
-                return b.rename(main_branch_name)
+        br = self.main_branch()
+        if br:
+            return br.rename(main_branch_name)
         util.logger.warning("No main branch to rename found for %s", str(self))
         return False
 
@@ -859,17 +835,6 @@ def export(endpoint, key_list=None, full=False):
 
 def exists(key, endpoint):
     return get_object(key, endpoint) is not None
-
-
-def get_measures(key, metrics_list, branch=None, pull_request=None, endpoint=None):
-    if branch is not None:
-        obj = branches.get_object(key, branch, endpoint=endpoint)
-    elif pull_request is not None:
-        obj = pull_requests.get_object(key, pull_request, endpoint=endpoint)
-    else:
-        obj = get_object(key, endpoint=endpoint)
-
-    return obj.get_measures(metrics_list)
 
 
 def loc_csv_header(**kwargs):
