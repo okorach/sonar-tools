@@ -165,7 +165,7 @@ class Setting(sqobject.SqObject):
 
     def set(self, value):
         if len(VALID_SETTINGS) == 0:
-            get_bulk(endpoint=endpoint)
+            get_bulk(endpoint=self.endpoint)
         if self.key not in VALID_SETTINGS:
             util.logger.error("Setting '%s' does not seem to be a valid setting, trying to set anyway...", str(self))
         if value is None or value == "":
