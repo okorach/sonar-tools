@@ -248,4 +248,4 @@ def get_list(project):
 
 
 def exists(branch_name, project_key, endpoint):
-    return branch_name in get_list(project=projects.get_object(project_key, endpoint), endpoint=endpoint)
+    return branch_name in get_list(project=projects.get_object(project_key, endpoint))
