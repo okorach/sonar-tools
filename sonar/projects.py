@@ -68,8 +68,8 @@ class Project(components.Component):
         self.main_branch_last_analysis_date = "undefined"
         self.all_branches_last_analysis_date = "undefined"
         self._permissions = None
-        self.branches = None
-        self.pull_requests = None
+        self._branches = None
+        self._pull_requests = None
         self._ncloc_with_branches = None
         self._binding = {"has_binding": True, "binding": None}
         super().__init__(key, endpoint)
@@ -120,7 +120,7 @@ class Project(components.Component):
             # Starting from 9.2 project last analysis date takes into account branches and PR
             return self.all_branches_last_analysis_date
 
-        for b in self.get_branches() + self.get_pull_requests():
+        for b in self.branches() + self.pull_requests():
             if b.last_analysis_date() is None:
                 continue
             b_ana_date = b.last_analysis_date()
@@ -133,7 +133,7 @@ class Project(components.Component):
             return self._ncloc_with_branches
         self._ncloc_with_branches = self.ncloc()
         if self.endpoint.edition() != "community":
-            for b in self.get_branches() + self.get_pull_requests():
+            for b in self.branches() + self.pull_requests():
                 if b.ncloc() > self._ncloc_with_branches:
                     self._ncloc_with_branches = b.ncloc()
         return self._ncloc_with_branches
@@ -144,23 +144,23 @@ class Project(components.Component):
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
-    def get_branches(self):
-        if self.branches is None:
-            self.branches = branches.get_list(self)
-        return self.branches
+    def branches(self):
+        if self._branches is None:
+            self._branches = branches.get_list(self)
+        return self._branches
 
     def main_branch(self):
-        for b in self.get_branches():
+        for b in self.branches():
             if b.is_main():
                 return b
         if self.endpoint.edition() != "community":
             util.logger.warning("Could not find main branch for %s", str(self))
         return None
 
-    def get_pull_requests(self):
-        if self.pull_requests is None:
-            self.pull_requests = pull_requests.get_list(self)
-        return self.pull_requests
+    def pull_requests(self):
+        if self._pull_requests is None:
+            self._pull_requests = pull_requests.get_list(self)
+        return self._pull_requests
 
     def delete(self, api="projects/delete", params=None):
         loc = int(self.get_measure("ncloc", fallback="0"))
@@ -245,7 +245,7 @@ class Project(components.Component):
         util.logger.debug("Auditing %s branches", str(self))
         problems = []
         main_br_count = 0
-        for branch in self.get_branches():
+        for branch in self.branches():
             if branch.name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
@@ -260,7 +260,7 @@ class Project(components.Component):
             util.logger.debug("Auditing of pull request last analysis age is disabled, skipping...")
             return []
         problems = []
-        for pr in self.get_pull_requests():
+        for pr in self.pull_requests():
             problems += pr.audit(audit_settings)
         return problems
 
@@ -461,10 +461,10 @@ class Project(components.Component):
         return data
 
     def sync(self, another_project, sync_settings):
-        tgt_branches = another_project.get_branches()
+        tgt_branches = another_project.branches()
         report = []
         counters = {}
-        for b_src in self.get_branches():
+        for b_src in self.branches():
             for b_tgt in tgt_branches:
                 if b_src.name == b_tgt.name:
                     (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
@@ -473,7 +473,7 @@ class Project(components.Component):
         return (report, counters)
 
     def sync_branches(self, sync_settings):
-        my_branches = self.get_branches()
+        my_branches = self.branches()
         report = []
         counters = {}
         for b_src in my_branches:
@@ -529,7 +529,7 @@ class Project(components.Component):
 
     def __get_branch_export(self):
         branch_data = {}
-        my_branches = self.get_branches()
+        my_branches = self.branches()
         for branch in my_branches:
             exp = branch.export(full_export=False)
             if len(my_branches) == 1 and branch.is_main() and len(exp) <= 1:
