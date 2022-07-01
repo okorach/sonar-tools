@@ -56,8 +56,8 @@ setuptools.setup(
     entry_points={
         "console_scripts": [
             "sonar-audit = sonar.audit.audit:main",
-            "sonar-projects-export = sonar.projects_export:main",
-            "sonar-projects-import = sonar.projects_import:main",
+            "sonar-projects-export = sonar.project.export:main",
+            "sonar-projects-import = sonar.project.import:main",
             "sonar-measures-export = sonar.measures_export:main",
             "sonar-housekeeper = sonar.housekeeper:main",
             "sonar-issues-sync = sonar.findings.sync:main",
