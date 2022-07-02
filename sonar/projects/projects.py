@@ -72,6 +72,7 @@ class Project(components.Component):
         self._pull_requests = None
         self._ncloc_with_branches = None
         self._binding = {"has_binding": True, "binding": None}
+        self._new_code = None
         super().__init__(key, endpoint)
         if create_data is not None:
             util.logger.info("Creating %s", str(self))
@@ -567,20 +568,22 @@ class Project(components.Component):
             json_data.update(s.to_json())
         return util.remove_nones(json_data)
 
-    def new_code(self, include_branches=False):
-        nc = {}
-        data = json.loads(self.get(api="new_code_periods/show", params={"project": self.key}).text)
+    def new_code(self):
+        if self._new_code is not None:
+            return self._new_code
+        self._new_code = {}
+        data = json.loads(self.get(api=settings.API_NEW_CODE_GET, params={"project": self.key}).text)
         new_code = settings.new_code_to_string(data)
-        if new_code is None or not include_branches:
-            return new_code
-        nc[settings.DEFAULT_SETTING] = new_code
+        if new_code is None:
+            return self._new_code
+        self._new_code[settings.DEFAULT_SETTING] = new_code
         data = json.loads(self.get(api="new_code_periods/list", params={"project": self.key}).text)
         for b in data["newCodePeriods"]:
             new_code = settings.new_code_to_string(b)
             if new_code is None:
                 continue
-            nc[b["branchKey"]] = new_code
-        return nc
+            self._new_code[b["branchKey"]] = new_code
+        return self._new_code
 
     def permissions(self):
         if self._permissions is None:
