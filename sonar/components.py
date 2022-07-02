@@ -69,6 +69,7 @@ class Component(sq.SqObject):
             else:
                 self._json.update(data["component"])
             self._tags = self._json["tags"]
+            settings.Setting.load(key=settings.COMPONENT_VISIBILITY, endpoint=self.endpoint, component=self, data=data["component"])
         return self._tags if len(self._tags) > 0 else None
 
     def get_subcomponents(self, strategy="children", with_issues=False):

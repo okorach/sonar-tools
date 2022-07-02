@@ -330,6 +330,9 @@ def set_new_code_period(endpoint, nc_type, nc_value, project_key=None, branch=No
 
 
 def get_visibility(endpoint, component):
+    uu = uuid(COMPONENT_VISIBILITY, component.key) if component else uuid(PROJECT_DEFAULT_VISIBILITY)
+    if uu in _OBJECTS:
+        return _OBJECTS[uu]
     if component:
         data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
         return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])
