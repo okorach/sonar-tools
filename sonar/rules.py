@@ -197,7 +197,7 @@ def export_all(endpoint, full=False):
 
 def export_instantiated(endpoint, full=False):
     rule_list = {}
-    for template_key in [rulekey for rulekey in get_list(endpoint=endpoint, is_template="true")]:
+    for template_key in get_list(endpoint=endpoint, is_template="true"):
         for rule_key, rule in get_list(endpoint=endpoint, template_key=template_key).items():
             rule_list[rule_key] = rule.export(full)
     return rule_list if len(rule_list) > 0 else None
