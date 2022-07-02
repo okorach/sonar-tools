@@ -32,7 +32,6 @@ SEARCH_API = "rules/search"
 _DETAILS_API = "rules/show"
 _CREATE_API = "rules/create"
 
-
 class Rule(sq.SqObject):
     @classmethod
     def read(cls, key, endpoint):
@@ -156,8 +155,8 @@ def count(endpoint, params=None):
     return data["total"]
 
 
-def get_list(endpoint, templates=False, language=None):
-    return search(endpoint, is_template=str(templates).lower(), languages=language, include_external="false")
+def get_list(endpoint, **params):
+    return search(endpoint, include_external="false", **params)
 
 
 def get_object(key, endpoint):
@@ -169,24 +168,23 @@ def get_object(key, endpoint):
         return None
 
 
-def export(endpoint, instantiated=True, extended=True, standard=False, full=False):
+def export_all(endpoint, full=False):
     utilities.logger.info("Exporting rules")
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
-    utilities.logger.debug("get_list from export")
     for rule_key, rule in get_list(endpoint=endpoint).items():
         rule_export = rule.export(full)
-        if instantiated and rule.template_key is not None:
+        if rule.template_key is not None:
             instantiated_rules[rule_key] = rule_export
-        elif extended and rule.tags is not None or rule.custom_desc is not None:
+        elif rule.tags is not None or rule.custom_desc is not None:
             if full:
                 extended_rules[rule_key] = rule_export
-            else:
-                extended_rules[rule_key] = {}
-                if rule.tags is not None:
-                    extended_rules[rule_key].update({"tags": rule_export["tags"]})
-                if rule.custom_desc is not None:
-                    extended_rules[rule_key].update({"description": rule_export["description"]})
-        elif standard:
+                continue
+            extended_rules[rule_key] = {}
+            if rule.tags is not None:
+                extended_rules[rule_key]["tags"] = rule_export["tags"]
+            if rule.custom_desc is not None:
+                extended_rules[rule_key]["description"] = rule_export["description"]
+        else:
             other_rules[rule_key] = rule_export
     if len(instantiated_rules) > 0:
         rule_list["instantiated"] = instantiated_rules
@@ -195,6 +193,46 @@ def export(endpoint, instantiated=True, extended=True, standard=False, full=Fals
     if len(other_rules) > 0:
         rule_list["standard"] = other_rules
     return rule_list
+
+
+def export_instantiated(endpoint, full=False):
+    rule_list = {}
+    for template_key in get_list(endpoint=endpoint, is_template="true"):
+        for rule_key, rule in get_list(endpoint=endpoint, template_key=template_key).items():
+            rule_list[rule_key] = rule.export(full)
+    return rule_list if len(rule_list) > 0 else None
+
+def export_customized(endpoint, full=False):
+    rule_list = {}
+    for rule_key, rule in get_list(endpoint=endpoint, is_template="false").items():
+        if rule.tags is None and rule.custom_desc is None:
+            continue
+        if full:
+            rule_list[rule_key] = rule.export(full)
+            continue
+        rule_list[rule_key] = {}
+        if rule.tags:
+            rule_list[rule_key]["tags"] = utilities.list_to_csv(rule.tags, ", ")
+        if rule.custom_desc:
+            rule_list[rule_key]["description"] = rule.custom_desc
+    return rule_list if len(rule_list) > 0 else None
+
+
+def export_needed(endpoint, instantiated=True, extended=True, full=False):
+    rule_list = {}
+    if instantiated:
+        rule_list["instantiated"] = export_instantiated(endpoint, full)
+    if extended:
+        rule_list["extended"] = export_customized(endpoint, full)
+    return utilities.remove_nones(rule_list)
+
+
+def export(endpoint, instantiated=True, extended=True, standard=False, full=False):
+    utilities.logger.info("Exporting rules")
+    if standard:
+        return export_all(endpoint, full)
+    else:
+        return export_needed(endpoint, instantiated, extended, full)
 
 
 def import_config(endpoint, config_data):

@@ -83,7 +83,7 @@ _API_SET = "settings/set"
 _CREATE_API = "settings/set"
 _API_GET = "settings/values"
 _API_LIST = "settings/list_definitions"
-_API_NEW_CODE_GET = "new_code_periods/show"
+API_NEW_CODE_GET = "new_code_periods/show"
 _API_NEW_CODE_SET = "new_code_periods/set"
 
 VALID_SETTINGS = set()
@@ -91,10 +91,13 @@ VALID_SETTINGS = set()
 class Setting(sqobject.SqObject):
     @classmethod
     def read(cls, key, endpoint, component=None):
-        util.logger.debug("Reading setting '%s' for project '%s'", key, str(component))
+        util.logger.debug("Reading setting '%s' for %s", key, str(component))
+        uu = _uuid_p(key, component)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         if key == NEW_CODE_PERIOD:
             params = get_component_params(component, name="project")
-            data = json.loads(endpoint.get(_API_NEW_CODE_GET, params=params).text)
+            data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)
         else:
             params = get_component_params(component)
             params.update({"keys": key})
@@ -327,6 +330,9 @@ def set_new_code_period(endpoint, nc_type, nc_value, project_key=None, branch=No
 
 
 def get_visibility(endpoint, component):
+    uu = uuid(COMPONENT_VISIBILITY, component.key) if component else uuid(PROJECT_DEFAULT_VISIBILITY)
+    if uu in _OBJECTS:
+        return _OBJECTS[uu]
     if component:
         data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
         return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])

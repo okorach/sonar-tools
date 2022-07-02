@@ -51,6 +51,8 @@ class Branch(components.Component):
         self._last_analysis = None
         self._keep_when_inactive = None
         self._ncloc = None
+        if data:
+            self.__load(data)
         _OBJECTS[self.uuid()] = self
         util.logger.debug("Created %s", str(self))
 
@@ -78,7 +80,8 @@ class Branch(components.Component):
         return _uuid(self.project.key, self.name)
 
     def last_analysis_date(self):
-        self.read()
+        if self._last_analysis is None:
+            self.read()
         return self._last_analysis
 
     def last_analysis_age(self, rounded_to_days=True):
@@ -111,10 +114,14 @@ class Branch(components.Component):
 
     def new_code(self):
         if self._new_code is None:
-            project_nc = self.project.new_code(include_branches=True)
-            if project_nc is not None:
-                self._new_code = project_nc.get(self.name, None)
-        util.logger.debug("Returning branch new code %s", str(self._new_code))
+            data = json.loads(self.get(api="new_code_periods/list", params={"project": self.project.key}).text)
+            for b in data["newCodePeriods"]:
+                new_code = settings.new_code_to_string(b)
+                if b["branchKey"] == self.name:
+                    self._new_code = new_code
+                else:
+                    b_obj = get_object(b["branchKey"], self.project)
+                    b_obj._new_code = new_code
         return self._new_code
 
     def export(self, full_export=True):
@@ -124,6 +131,8 @@ class Branch(components.Component):
             data["isMain"] = True
         if self.is_kept_when_inactive() and not self.is_main():
             data["keepWhenInactive"] = True
+        if self.new_code():
+            data[settings.NEW_CODE_PERIOD] = self.new_code()
         if full_export:
             data.update({"name": self.name, "project": self.project.key})
         data = util.remove_nones(data)
@@ -244,6 +253,7 @@ def get_list(project):
     if project.endpoint.edition() == "community":
         util.logger.debug("branches not available in Community Edition")
         return {}
+    util.logger.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(_LIST_API, params={"project": project.key}).text)
     return [get_object(branch=branch["name"], project=project, data=branch) for branch in data.get("branches", {})]
 
