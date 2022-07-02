@@ -114,10 +114,14 @@ class Branch(components.Component):
 
     def new_code(self):
         if self._new_code is None:
-            project_nc = self.project.new_code()
-            if project_nc is not None:
-                self._new_code = project_nc.get(self.name, None)
-        util.logger.debug("Returning branch new code %s", str(self._new_code))
+            data = json.loads(self.get(api="new_code_periods/list", params={"project": self.project.key}).text)
+            for b in data["newCodePeriods"]:
+                new_code = settings.new_code_to_string(b)
+                if b["branchKey"] == self.name:
+                    self._new_code = new_code
+                else:
+                    b_obj = get_object(b["branchKey"], self.project)
+                    b_obj._new_code = new_code
         return self._new_code
 
     def export(self, full_export=True):
@@ -127,6 +131,8 @@ class Branch(components.Component):
             data["isMain"] = True
         if self.is_kept_when_inactive() and not self.is_main():
             data["keepWhenInactive"] = True
+        if self.new_code():
+            data[settings.NEW_CODE_PERIOD] = self.new_code()
         if full_export:
             data.update({"name": self.name, "project": self.project.key})
         data = util.remove_nones(data)

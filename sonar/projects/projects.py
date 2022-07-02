@@ -547,7 +547,9 @@ class Project(components.Component):
         json_data = self._json.copy()
         json_data.update({"key": self.key, "name": self.name})
         json_data["binding"] = self.__export_get_binding()
-        json_data[settings.NEW_CODE_PERIOD] = self.new_code()
+        nc = self.new_code()
+        if nc != "":
+            json_data[settings.NEW_CODE_PERIOD] = nc
         json_data["qualityProfiles"] = self.__export_get_qp()
         json_data["links"] = self.links()
         json_data["permissions"] = self.permissions().to_json(csv=True)
@@ -569,19 +571,10 @@ class Project(components.Component):
         return util.remove_nones(json_data)
 
     def new_code(self):
-        if self._new_code is not None:
-            return self._new_code
-        self._new_code = {}
-        new_code = settings.Setting.read(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
-        if new_code is None:
-            return self._new_code
-        self._new_code[settings.DEFAULT_SETTING] = new_code.value
-        data = json.loads(self.get(api="new_code_periods/list", params={"project": self.key}).text)
-        for b in data["newCodePeriods"]:
-            new_code = settings.new_code_to_string(b)
-            if new_code is None:
-                continue
-            self._new_code[b["branchKey"]] = new_code
+        if self._new_code is None:
+            new_code = settings.Setting.read(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
+            self._new_code = new_code.value if new_code else ""
+        util.logger.debug("Project new code = %s", new_code.value)
         return self._new_code
 
     def permissions(self):
