@@ -111,7 +111,7 @@ class Branch(components.Component):
 
     def new_code(self):
         if self._new_code is None:
-            project_nc = self.project.new_code(include_branches=True)
+            project_nc = self.project.new_code()
             if project_nc is not None:
                 self._new_code = project_nc.get(self.name, None)
         util.logger.debug("Returning branch new code %s", str(self._new_code))
