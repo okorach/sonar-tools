@@ -83,7 +83,7 @@ _API_SET = "settings/set"
 _CREATE_API = "settings/set"
 _API_GET = "settings/values"
 _API_LIST = "settings/list_definitions"
-_API_NEW_CODE_GET = "new_code_periods/show"
+API_NEW_CODE_GET = "new_code_periods/show"
 _API_NEW_CODE_SET = "new_code_periods/set"
 
 VALID_SETTINGS = set()
@@ -94,7 +94,7 @@ class Setting(sqobject.SqObject):
         util.logger.debug("Reading setting '%s' for project '%s'", key, str(component))
         if key == NEW_CODE_PERIOD:
             params = get_component_params(component, name="project")
-            data = json.loads(endpoint.get(_API_NEW_CODE_GET, params=params).text)
+            data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)
         else:
             params = get_component_params(component)
             params.update({"keys": key})
