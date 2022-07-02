@@ -91,7 +91,10 @@ VALID_SETTINGS = set()
 class Setting(sqobject.SqObject):
     @classmethod
     def read(cls, key, endpoint, component=None):
-        util.logger.debug("Reading setting '%s' for project '%s'", key, str(component))
+        util.logger.debug("Reading setting '%s' for %s", key, str(component))
+        uu = _uuid_p(key, component)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         if key == NEW_CODE_PERIOD:
             params = get_component_params(component, name="project")
             data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)

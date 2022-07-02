@@ -572,11 +572,10 @@ class Project(components.Component):
         if self._new_code is not None:
             return self._new_code
         self._new_code = {}
-        data = json.loads(self.get(api=settings.API_NEW_CODE_GET, params={"project": self.key}).text)
-        new_code = settings.new_code_to_string(data)
+        new_code = settings.Setting.read(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
         if new_code is None:
             return self._new_code
-        self._new_code[settings.DEFAULT_SETTING] = new_code
+        self._new_code[settings.DEFAULT_SETTING] = new_code.value
         data = json.loads(self.get(api="new_code_periods/list", params={"project": self.key}).text)
         for b in data["newCodePeriods"]:
             new_code = settings.new_code_to_string(b)
