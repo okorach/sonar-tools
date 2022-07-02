@@ -51,6 +51,8 @@ class Branch(components.Component):
         self._last_analysis = None
         self._keep_when_inactive = None
         self._ncloc = None
+        if data:
+            self.__load(data)
         _OBJECTS[self.uuid()] = self
         util.logger.debug("Created %s", str(self))
 
@@ -78,7 +80,8 @@ class Branch(components.Component):
         return _uuid(self.project.key, self.name)
 
     def last_analysis_date(self):
-        self.read()
+        if self._last_analysis is None:
+            self.read()
         return self._last_analysis
 
     def last_analysis_age(self, rounded_to_days=True):
@@ -244,6 +247,7 @@ def get_list(project):
     if project.endpoint.edition() == "community":
         util.logger.debug("branches not available in Community Edition")
         return {}
+    util.logger.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(_LIST_API, params={"project": project.key}).text)
     return [get_object(branch=branch["name"], project=project, data=branch) for branch in data.get("branches", {})]
 
