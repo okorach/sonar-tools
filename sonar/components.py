@@ -63,7 +63,7 @@ class Component(sq.SqObject):
         elif self._json is not None and "tags" in self._json:
             self._tags = self._json["tags"]
         else:
-            data = json.loads(self.post(_DETAILS_API, params={"component": self.key}).text)
+            data = json.loads(self.get(_DETAILS_API, params={"component": self.key}).text)
             if self._json is None:
                 self._json = data["component"]
             else:
