@@ -49,7 +49,7 @@ class ProjectPermissions(permissions.Permissions):
         return f"permissions of {str(self.concerned_object)}"
 
     def read(self):
-        self.permissions = permissions.NO_PERMISSIONS
+        self.permissions = permissions.NO_PERMISSIONS.copy()
         for p in permissions.PERMISSION_TYPES:
             self.permissions[p] = self._get_api(
                 ProjectPermissions.APIS["get"][p],
