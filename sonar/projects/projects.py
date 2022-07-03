@@ -824,10 +824,10 @@ def audit(audit_settings, endpoint=None, key_list=None):
     return problems
 
 
-def export_thread(queue, results):
+def export_thread(queue, results, full):
     while not queue.empty():
         project = queue.get()
-        results[project.key] = project.export()
+        results[project.key] = project.export(full=full)
         results[project.key].pop("key")
         queue.task_done()
 
@@ -840,7 +840,7 @@ def export(endpoint, key_list=None, full=False, threads=1):
     project_settings = {}
     for i in range(threads):
         util.logger.debug("Starting project export thread %d", i)
-        worker = Thread(target=export_thread, args=(q, project_settings))
+        worker = Thread(target=export_thread, args=(q, project_settings, full))
         worker.setDaemon(True)
         worker.start()
     q.join()
