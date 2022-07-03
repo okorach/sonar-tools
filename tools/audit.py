@@ -97,6 +97,7 @@ def __parser_args(desc):
     parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
     parser = options.set_url_arg(parser)
+    parser = options.add_thread_arg(parser, "project audit")
     parser = util.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
     parser.add_argument(
@@ -124,7 +125,7 @@ def main():
     start_time = datetime.datetime.today()
 
     settings = config.load("sonar-audit")
-
+    settings["threads"] = kwargs["threads"]
     if kwargs.get("config", False):
         config.configure()
         sys.exit(0)

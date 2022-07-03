@@ -26,6 +26,8 @@ import datetime
 import re
 import json
 from http import HTTPStatus
+from threading import Thread
+from queue import Queue
 import pytz
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, custom_measures
 from sonar.projects import pull_requests, branches
@@ -779,52 +781,69 @@ def get_object(key, endpoint):
     return _OBJECTS[key]
 
 
+def audit_thread(queue, results, audit_settings, bindings):
+    audit_bindings = audit_settings["audit.projects.bindings"]
+    while not queue.empty():
+        project = queue.get()
+        results += project.audit(audit_settings)
+        if project.endpoint.edition() == "community" or not audit_bindings or project.is_part_of_monorepo():
+            queue.task_done()
+            continue
+        bindkey = project.binding_key()
+        if bindkey and bindkey in bindings:
+            rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE_BINDING)
+            results.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(project), str(bindings[bindkey])), concerned_object=project))
+        else:
+            bindings[bindkey] = project
+        queue.task_done()
+
+
 def audit(audit_settings, endpoint=None, key_list=None):
     util.logger.info("--- Auditing projects ---")
     plist = get_list(endpoint, key_list)
-    is_community = endpoint.edition() == "community"
     problems = []
+    q = Queue(maxsize=0)
+    for p in plist.values():
+        q.put(p)
     bindings = {}
+    for i in range(audit_settings["threads"]):
+        util.logger.debug("Starting project audit thread %d", i)
+        worker = Thread(target=audit_thread, args=(q, problems, audit_settings, bindings))
+        worker.setDaemon(True)
+        worker.start()
+    q.join()
+    if not audit_settings["audit.projects.duplicates"]:
+        util.logger.info("Project duplicates auditing was disabled by configuration")
+        return problems
     for key, p in plist.items():
-        problems += p.audit(audit_settings)
-        if not is_community and audit_settings["audit.projects.bindings"] and not p.is_part_of_monorepo():
-            bindkey = p.binding_key()
-            if bindkey is not None and bindkey in bindings:
-                rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE_BINDING)
-                problems.append(
-                    pb.Problem(
-                        rule.type,
-                        rule.severity,
-                        rule.msg.format(str(p), str(bindings[bindkey])),
-                        concerned_object=p,
-                    )
-                )
-            else:
-                bindings[bindkey] = p
-        if not audit_settings["audit.projects.duplicates"]:
-            continue
         util.logger.debug("Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key2, key):
                 rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE)
-                problems.append(
-                    pb.Problem(
-                        rule.type,
-                        rule.severity,
-                        rule.msg.format(str(p), key2),
-                        concerned_object=p,
-                    )
-                )
-
-    if not audit_settings.get("audit.projects.duplicates", False):
-        util.logger.info("Project duplicates auditing was disabled by configuration")
+                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(p), key2), concerned_object=p))
     return problems
 
 
-def export(endpoint, key_list=None, full=False):
-    project_settings = {k: p.export(full=full) for k, p in get_list(endpoint=endpoint, key_list=key_list).items()}
-    for k in project_settings:
-        project_settings[k].pop("key")
+def export_thread(queue, results, full):
+    while not queue.empty():
+        project = queue.get()
+        results[project.key] = project.export(full=full)
+        results[project.key].pop("key")
+        queue.task_done()
+
+
+def export(endpoint, key_list=None, full=False, threads=1):
+    qualityprofiles.get_list(endpoint)
+    q = Queue(maxsize=0)
+    for p in get_list(endpoint=endpoint, key_list=key_list).values():
+        q.put(p)
+    project_settings = {}
+    for i in range(threads):
+        util.logger.debug("Starting project export thread %d", i)
+        worker = Thread(target=export_thread, args=(q, project_settings, full))
+        worker.setDaemon(True)
+        worker.start()
+    q.join()
     return project_settings
 
 
