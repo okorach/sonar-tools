@@ -62,6 +62,9 @@ def set_url_arg(parser):
     parser.add_argument("--" + WITH_URL, action="store_true", default=False, required=False, help="Add objects URLs in report")
     return parser
 
+def add_thread_arg(parser, action):
+    parser.add_argument("--threads", required=False, type=int, default=1, help=f"Define number of threads for {action}")
+    return parser
 
 class UnsupportedOperation(Exception):
     def __init__(self, message):

@@ -97,6 +97,7 @@ def __parser_args(desc):
     parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
     parser = options.set_url_arg(parser)
+    parser = options.add_thread_arg(parser, "project audit")
     parser = util.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
     parser.add_argument(
@@ -105,13 +106,6 @@ def __parser_args(desc):
         dest="config",
         action="store_true",
         help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
-    )
-    parser.add_argument(
-        "--threads",
-        required=False,
-        type=int,
-        default=1,
-        help="Define number of threads for projects audit",
     )
     args = parser.parse_args()
     if args.sif is None and args.config is None and args.token is None:
