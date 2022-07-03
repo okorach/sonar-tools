@@ -71,6 +71,7 @@ def __parse_args(desc):
     parser = utilities.set_common_args(desc)
     parser = utilities.set_key_arg(parser)
     parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
+    parser = options.add_thread_arg(parser, "project export")
     parser = utilities.set_what(parser, what_list=_EVERYTHING, operation="export or import")
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -118,7 +119,7 @@ def __export_config(endpoint, what, args):
     if options.WHAT_GATES in what:
         sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, full=args.fullExport)
     if options.WHAT_PROJECTS in what:
-        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
+        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys, full=args.fullExport, threads=args.threads)
     if options.WHAT_APPS in what:
         sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
     if options.WHAT_PORTFOLIOS in what:

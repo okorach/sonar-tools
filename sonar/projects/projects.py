@@ -807,7 +807,7 @@ def audit(audit_settings, endpoint=None, key_list=None):
         q.put(p)
     bindings = {}
     for i in range(audit_settings["threads"]):
-        util.logger.debug('Starting audit thread %d', i)
+        util.logger.debug("Starting project audit thread %d", i)
         worker = Thread(target=audit_thread, args=(q, problems, audit_settings, bindings))
         worker.setDaemon(True)
         worker.start()
@@ -832,13 +832,13 @@ def export_thread(queue, results):
         queue.task_done()
 
 
-def export(endpoint, key_list=None, full=False):
+def export(endpoint, key_list=None, full=False, threads=1):
     q = Queue(maxsize=0)
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
         q.put(p)
     project_settings = {}
-    for i in range(20):
-        util.logger.debug('Starting thread %d', i)
+    for i in range(threads):
+        util.logger.debug("Starting project export thread %d", i)
         worker = Thread(target=export_thread, args=(q, project_settings))
         worker.setDaemon(True)
         worker.start()
