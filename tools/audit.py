@@ -106,6 +106,13 @@ def __parser_args(desc):
         action="store_true",
         help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
     )
+    parser.add_argument(
+        "--threads",
+        required=False,
+        type=int,
+        default=1,
+        help="Define number of threads for projects audit",
+    )
     args = parser.parse_args()
     if args.sif is None and args.config is None and args.token is None:
         util.exit_fatal(
@@ -124,7 +131,7 @@ def main():
     start_time = datetime.datetime.today()
 
     settings = config.load("sonar-audit")
-
+    settings["threads"]  = kwargs["threads"]
     if kwargs.get("config", False):
         config.configure()
         sys.exit(0)

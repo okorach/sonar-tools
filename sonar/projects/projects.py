@@ -806,8 +806,8 @@ def audit(audit_settings, endpoint=None, key_list=None):
     for p in plist.values():
         q.put(p)
     bindings = {}
-    for i in range(20):
-        util.logger.debug('Starting thread %d', i)
+    for i in range(audit_settings["threads"]):
+        util.logger.debug('Starting audit thread %d', i)
         worker = Thread(target=audit_thread, args=(q, problems, audit_settings, bindings))
         worker.setDaemon(True)
         worker.start()
