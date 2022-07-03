@@ -125,7 +125,7 @@ def main():
     start_time = datetime.datetime.today()
 
     settings = config.load("sonar-audit")
-    settings["threads"]  = kwargs["threads"]
+    settings["threads"] = kwargs["threads"]
     if kwargs.get("config", False):
         config.configure()
         sys.exit(0)
