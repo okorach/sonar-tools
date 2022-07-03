@@ -833,6 +833,7 @@ def export_thread(queue, results):
 
 
 def export(endpoint, key_list=None, full=False, threads=1):
+    qualityprofiles.get_list(endpoint)
     q = Queue(maxsize=0)
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
         q.put(p)
