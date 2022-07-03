@@ -26,6 +26,8 @@ import datetime
 import re
 import json
 from http import HTTPStatus
+from threading import Thread
+from queue import Queue
 import pytz
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, custom_measures
 from sonar.projects import pull_requests, branches
@@ -821,10 +823,25 @@ def audit(audit_settings, endpoint=None, key_list=None):
     return problems
 
 
+def export_thread(queue, results):
+    while not queue.empty():
+        project = queue.get()
+        results[project.key] = project.export()
+        results[project.key].pop("key")
+        queue.task_done()
+
+
 def export(endpoint, key_list=None, full=False):
-    project_settings = {k: p.export(full=full) for k, p in get_list(endpoint=endpoint, key_list=key_list).items()}
-    for k in project_settings:
-        project_settings[k].pop("key")
+    q = Queue(maxsize=0)
+    for p in get_list(endpoint=endpoint, key_list=key_list).values():
+        q.put(p)
+    project_settings = {}
+    for i in range(20):
+        util.logger.debug('Starting thread %d', i)
+        worker = Thread(target=export_thread, args=(q, project_settings))
+        worker.setDaemon(True)
+        worker.start()
+    q.join()
     return project_settings
 
 
