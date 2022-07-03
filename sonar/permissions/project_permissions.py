@@ -48,9 +48,9 @@ class ProjectPermissions(permissions.Permissions):
     def __str__(self):
         return f"permissions of {str(self.concerned_object)}"
 
-    def read(self, perm_type=None):
+    def read(self):
         self.permissions = permissions.NO_PERMISSIONS
-        for p in permissions.normalize(perm_type):
+        for p in permissions.PERMISSION_TYPES:
             self.permissions[p] = self._get_api(
                 ProjectPermissions.APIS["get"][p],
                 p,

@@ -29,9 +29,9 @@ class TemplatePermissions(project_permissions.ProjectPermissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def read(self, perm_type=None):
+    def read(self):
         self.permissions = permissions.NO_PERMISSIONS
-        for p in permissions.normalize(perm_type):
+        for p in permissions.PERMISSION_TYPES:
             self.permissions[p] = self._get_api(
                 TemplatePermissions.API_GET[p],
                 p,
