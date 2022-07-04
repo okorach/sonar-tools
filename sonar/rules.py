@@ -134,19 +134,7 @@ def get_facet(facet, endpoint):
 
 
 def search(endpoint, **params):
-    new_params = {} if params is None else params.copy()
-    if "ps" not in new_params:
-        new_params["ps"] = 500
-    page, nb_pages = 1, 1
-    rule_list = {}
-    while page <= nb_pages:
-        new_params["p"] = page
-        data = json.loads(endpoint.get(SEARCH_API, params=new_params).text)
-        for r in data["rules"]:
-            rule_list[r["key"]] = Rule.load(r["key"], endpoint=endpoint, data=r)
-        nb_pages = utilities.int_div_ceil(data["total"], data["ps"])
-        page += 1
-    return rule_list
+    return sq.search_objects(SEARCH_API, endpoint, "key", "rules", Rule, params, threads=4)
 
 
 def count(endpoint, params=None):
