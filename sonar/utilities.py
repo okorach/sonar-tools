@@ -435,7 +435,8 @@ def nbr_pages(sonar_api_json):
 @contextlib.contextmanager
 def open_file(file=None, mode="w"):
     if file and file != "-":
-        logger.info("Writing to file '%s'", file)
+        op = "Adding" if "a" in mode else "Opening" if "r" in mode else "Writing"
+        logger.info("%s to file '%s'", op, file)
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
     else:
         logger.info("Writing to stdout")
