@@ -415,7 +415,7 @@ def __import_thread(queue, ingore):
         queue.task_done()
 
 
-def import_config(endpoint, config_data, threads=1):
+def import_config(endpoint, config_data, threads=8):
     if "qualityProfiles" not in config_data:
         util.logger.info("No quality profiles to import")
         return
