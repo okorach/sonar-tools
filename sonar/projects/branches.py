@@ -37,6 +37,7 @@ from sonar.audit import rules, problem
 _OBJECTS = {}
 _LIST_API = "project_branches/list"
 
+
 class Branch(components.Component):
     def __init__(self, project, name, data=None, endpoint=None):
         if endpoint is not None:
