@@ -833,7 +833,7 @@ def __export_thread(queue, results, full):
         queue.task_done()
 
 
-def export(endpoint, key_list=None, full=False, threads=1):
+def export(endpoint, key_list=None, full=False, threads=8):
     qualityprofiles.get_list(endpoint)
     q = Queue(maxsize=0)
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
@@ -921,7 +921,7 @@ def __export_zip_thread(queue, results, statuses, export_timeout):
         queue.task_done()
 
 
-def export_zip(endpoint, key_list=None, threads=5, export_timeout=30):
+def export_zip(endpoint, key_list=None, threads=8, export_timeout=30):
     statuses, exports = {}, []
     projects_list = get_list(endpoint, key_list)
     nbr_projects = len(projects_list)
