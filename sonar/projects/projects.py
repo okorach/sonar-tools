@@ -914,10 +914,7 @@ def __export_zip_thread(queue, results, statuses, export_timeout):
             data["file"] = os.path.basename(dump["file"])
             data["path"] = dump["file"]
         results.append(data)
-        summary = ""
-        for k, v in statuses.items():
-            summary += f"{k}:{v}, "
-        util.logger.info("%s", summary[:-2])
+        util.logger.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
         queue.task_done()
 
 
