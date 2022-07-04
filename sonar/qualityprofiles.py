@@ -25,6 +25,8 @@
 import datetime
 import json
 from http import HTTPStatus
+from queue import Queue
+from threading import Thread
 import requests.utils
 import pytz
 from sonar import rules, languages
@@ -141,7 +143,7 @@ class QualityProfile(sq.SqObject):
             params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
             self.post("qualityprofiles/change_parent", params=params)
         else:
-            util.logger.info("Won't set parent of %s. It's the same as currently", str(self))
+            util.logger.debug("Won't set parent of %s. It's the same as currently", str(self))
 
     def is_child(self):
         return self.parent_name is not None
@@ -188,7 +190,7 @@ class QualityProfile(sq.SqObject):
             elif not r.ok:
                 util.log_and_exit(r)
 
-    def update(self, data):
+    def update(self, data, queue):
         if self.is_built_in:
             util.logger.debug("Not updating built-in %s", str(self))
         else:
@@ -205,7 +207,7 @@ class QualityProfile(sq.SqObject):
             self.is_built_in = data.get("isBuiltIn", False)
             self.is_default = data.get("isDefault", False)
 
-        _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}))
+        _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}), queue=queue)
         return self
 
     def to_json(self, full=False):
@@ -390,32 +392,48 @@ def get_object(name, language, endpoint=None):
     return _OBJECTS[_MAP[fmt]]
 
 
-def _create_or_update_children(name, language, endpoint, children):
+def _create_or_update_children(name, language, endpoint, children, queue):
     for qp_name, qp_data in children.items():
         qp_data[_KEY_PARENT] = name
-        util.logger.debug("Updating child '%s' with %s", qp_name, util.json_dump(qp_data))
-        o = get_object(name=qp_name, language=language, endpoint=endpoint)
+        util.logger.debug("Adding child profile '%s' to update queue", qp_name)
+        queue.put((qp_name, language, endpoint, qp_data))
+        #o = get_object(name=qp_name, language=language, endpoint=endpoint)
+        #if o is None:
+        #    o = QualityProfile.create(name=qp_name, language=language, endpoint=endpoint)
+        #o.update(qp_data)
+
+
+def __import_thread(queue, ingore):
+    while not queue.empty():
+        (name, lang, endpoint, qp_data) = queue.get()
+        o = get_object(name=name, language=lang, endpoint=endpoint)
         if o is None:
-            o = QualityProfile.create(name=qp_name, language=language, endpoint=endpoint)
-        o.update(qp_data)
+            o = QualityProfile.create(name=name, language=lang, endpoint=endpoint)
+        util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
+        o.update(qp_data, queue)
+        util.logger.info("Imported quality profile '%s' of language '%s'", name, lang)
+        queue.task_done()
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint, config_data, threads=1):
     if "qualityProfiles" not in config_data:
         util.logger.info("No quality profiles to import")
         return
     util.logger.info("Importing quality profiles")
+    q = Queue(maxsize=0)
     get_list(endpoint=endpoint)
     for lang, lang_data in config_data["qualityProfiles"].items():
+        if not languages.exists(endpoint=endpoint, language=lang):
+            util.logger.warning("Language '%s' does not exist, quality profile '%s' import skipped", lang, name)
+            continue
         for name, qp_data in lang_data.items():
-            if not languages.exists(endpoint=endpoint, language=lang):
-                util.logger.warning("Language '%s' does not exist, quality profile '%s' import skipped", lang, name)
-                continue
-            o = get_object(name=name, language=lang, endpoint=endpoint)
-            if o is None:
-                o = QualityProfile.create(name=name, language=lang, endpoint=endpoint)
-            util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
-            o.update(qp_data)
+            q.put((name, lang, endpoint, qp_data))
+    for i in range(threads):
+        util.logger.debug("Starting quality profile import thread %d", i)
+        worker = Thread(target=__import_thread, args=(q, "val"))
+        worker.setDaemon(True)
+        worker.start()
+    q.join()
 
 
 def _format(name, lang):
