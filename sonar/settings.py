@@ -88,6 +88,7 @@ _API_NEW_CODE_SET = "new_code_periods/set"
 
 VALID_SETTINGS = set()
 
+
 class Setting(sqobject.SqObject):
     @classmethod
     def read(cls, key, endpoint, component=None):

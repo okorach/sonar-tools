@@ -24,13 +24,16 @@
 
 """
 import sys
-import os
+import datetime
 from sonar import env, options, utilities
 from sonar.projects import projects
 
 
 def main():
     parser = utilities.set_common_args("Exports all projects of a SonarQube platform")
+    parser = utilities.set_key_arg(parser)
+    parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
+    parser = options.add_thread_arg(parser, "projects zip export")
     parser.add_argument(
         "--exportTimeout",
         required=False,
@@ -40,6 +43,7 @@ def main():
     )
     args = utilities.parse_and_check_token(parser)
     utilities.check_environment(vars(args))
+    start_time = datetime.datetime.today()
     sq = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
 
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
@@ -48,56 +52,12 @@ def main():
             options.ERR_UNSUPPORTED_OPERATION,
         )
 
-    project_list = projects.search(sq)
-    nb_projects = len(project_list)
-    utilities.logger.info("%d projects to export", nb_projects)
-    statuses = {}
-    exports = []
-
-    for key, p in project_list.items():
-        try:
-            dump = p.export_zip(timeout=args.exportTimeout)
-        except options.UnsupportedOperation as e:
-            utilities.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
-
-        status = dump["status"]
-        if status in statuses:
-            statuses[status] += 1
-        else:
-            statuses[status] = 1
-
-        data = {"key": key, "status": status}
-        if status == "SUCCESS":
-            data["file"] = os.path.basename(dump["file"])
-            data["path"] = dump["file"]
-
-        exports.append(data)
-        utilities.logger.info(
-            "%d/%d exports (%d%%) - Latest: %s - %s",
-            len(exports),
-            nb_projects,
-            int(len(exports) * 100 / nb_projects),
-            key,
-            status,
+    with utilities.open_file(args.file) as fd:
+        print(
+            utilities.json_dump(projects.export_zip(endpoint=sq, key_list=args.projectKeys, export_timeout=args.exportTimeout, threads=args.threads)),
+            file=fd,
         )
-
-        summary = ""
-        for k, v in statuses.items():
-            summary += f"{k}:{v}, "
-        utilities.logger.info("%s", summary[:-2])
-
-    print(
-        utilities.json_dump(
-            {
-                "sonarqube_environment": {
-                    "version": sq.version(digits=2, as_string=True),
-                    "plugins": sq.plugins(),
-                },
-                "project_exports": exports,
-            }
-        )
-    )
-    utilities.logger.info("%s", summary)
+    utilities.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
 

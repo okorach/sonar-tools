@@ -22,6 +22,7 @@
     Abstraction of the SonarQube "project" concept
 
 """
+import os
 import datetime
 import re
 import json
@@ -824,7 +825,7 @@ def audit(audit_settings, endpoint=None, key_list=None):
     return problems
 
 
-def export_thread(queue, results, full):
+def __export_thread(queue, results, full):
     while not queue.empty():
         project = queue.get()
         results[project.key] = project.export(full=full)
@@ -832,7 +833,7 @@ def export_thread(queue, results, full):
         queue.task_done()
 
 
-def export(endpoint, key_list=None, full=False, threads=1):
+def export(endpoint, key_list=None, full=False, threads=8):
     qualityprofiles.get_list(endpoint)
     q = Queue(maxsize=0)
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
@@ -840,7 +841,7 @@ def export(endpoint, key_list=None, full=False, threads=1):
     project_settings = {}
     for i in range(threads):
         util.logger.debug("Starting project export thread %d", i)
-        worker = Thread(target=export_thread, args=(q, project_settings, full))
+        worker = Thread(target=__export_thread, args=(q, project_settings, full))
         worker.setDaemon(True)
         worker.start()
     q.join()
@@ -897,3 +898,45 @@ def import_config(endpoint, config_data, key_list=None):
         i += 1
         if i % 20 == 0 or i == nb_projects:
             util.logger.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))
+
+
+def __export_zip_thread(queue, results, statuses, export_timeout):
+    while not queue.empty():
+        project = queue.get()
+        try:
+            dump = project.export_zip(timeout=export_timeout)
+        except options.UnsupportedOperation as e:
+            util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+        status = dump["status"]
+        statuses[status] = 1 if status not in statuses else statuses[status] + 1
+        data = {"key": project.key, "status": status}
+        if status == "SUCCESS":
+            data["file"] = os.path.basename(dump["file"])
+            data["path"] = dump["file"]
+        results.append(data)
+        util.logger.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
+        queue.task_done()
+
+
+def export_zip(endpoint, key_list=None, threads=8, export_timeout=30):
+    statuses, exports = {}, []
+    projects_list = get_list(endpoint, key_list)
+    nbr_projects = len(projects_list)
+    util.logger.info("Exporting %d projects to export", nbr_projects)
+    q = Queue(maxsize=0)
+    for p in projects_list.values():
+        q.put(p)
+    for i in range(threads):
+        util.logger.debug("Starting project export thread %d", i)
+        worker = Thread(target=__export_zip_thread, args=(q, exports, statuses, export_timeout))
+        worker.setDaemon(True)
+        worker.start()
+    q.join()
+
+    return {
+        "sonarqube_environment": {
+            "version": endpoint.version(digits=2, as_string=True),
+            "plugins": endpoint.plugins(),
+        },
+        "project_exports": exports,
+    }

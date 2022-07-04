@@ -32,6 +32,7 @@ SEARCH_API = "rules/search"
 _DETAILS_API = "rules/show"
 _CREATE_API = "rules/create"
 
+
 class Rule(sq.SqObject):
     @classmethod
     def read(cls, key, endpoint):
@@ -201,6 +202,7 @@ def export_instantiated(endpoint, full=False):
         for rule_key, rule in get_list(endpoint=endpoint, template_key=template_key).items():
             rule_list[rule_key] = rule.export(full)
     return rule_list if len(rule_list) > 0 else None
+
 
 def export_customized(endpoint, full=False):
     rule_list = {}

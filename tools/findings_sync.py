@@ -125,14 +125,8 @@ def main():
         elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
             # Sync 2 branches of a given project
             if source_branch != target_branch:
-                src_branch = branches.get_object(
-                    branch=source_branch,
-                    project=projects.get_object(source_key, source_env)
-                )
-                tgt_branch = branches.get_object(
-                    branch=target_branch,
-                    project=projects.get_object(source_key, source_env)
-                )
+                src_branch = branches.get_object(branch=source_branch, project=projects.get_object(source_key, source_env))
+                tgt_branch = branches.get_object(branch=target_branch, project=projects.get_object(source_key, source_env))
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
@@ -153,14 +147,8 @@ def main():
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
             if source_branch is not None or target_branch is not None:
                 # sync main 2 branches of 2 projects on different platforms
-                src_branch = branches.get_object(
-                    branch=source_branch,
-                    project=projects.get_object(source_key, endpoint=source_env)
-                )
-                tgt_branch = branches.get_object(
-                    branch=target_branch,
-                    project=projects.get_object(target_key, endpoint=target_env)
-                )
+                src_branch = branches.get_object(branch=source_branch, project=projects.get_object(source_key, endpoint=source_env))
+                tgt_branch = branches.get_object(branch=target_branch, project=projects.get_object(target_key, endpoint=target_env))
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 # sync main all branches of 2 projects on different platforms
