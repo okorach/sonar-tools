@@ -23,10 +23,12 @@
 import datetime
 import json
 import re
-
+from queue import Queue
+from threading import Thread
 import requests.utils
 
-from sonar import projects, users, syncer
+from sonar.projects import projects
+from sonar import users, syncer
 from sonar.findings import findings, changelog
 import sonar.utilities as util
 
@@ -453,48 +455,43 @@ class Issue(findings.Finding):
 
 def __search_all_by_directories(params, endpoint=None):
     new_params = params.copy()
-    facets = _get_facets(
-        new_params["componentKeys"],
-        facets="directories",
-        params=new_params,
-        endpoint=endpoint,
-    )
+    facets = _get_facets(new_params["componentKeys"], facets="directories", params=new_params, endpoint=endpoint)
     issue_list = {}
+    util.logger.info("Splitting search by directories")
     for d in facets["directories"]:
-        util.logger.info("Search by directory %s", d["val"])
         new_params["directories"] = d["val"]
         issue_list.update(search(endpoint=endpoint, params=new_params, raise_error=False))
-    util.logger.info("Search by directory ALL: %d issues found", len(issue_list))
+    util.logger.debug("Search by directory ALL: %d issues found", len(issue_list))
     return issue_list
 
 
 def __search_all_by_types(params, endpoint=None):
     issue_list = {}
     new_params = params.copy()
+    util.logger.info("Splitting search by issue types")
     for issue_type in ("BUG", "VULNERABILITY", "CODE_SMELL"):
         try:
-            util.logger.info("Search by type %s", issue_type)
             new_params["types"] = issue_type
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(__search_all_by_directories(params=new_params, endpoint=endpoint))
-    util.logger.info("Search by type ALL: %d issues found", len(issue_list))
+    util.logger.debug("Search by type ALL: %d issues found", len(issue_list))
     return issue_list
 
 
 def __search_all_by_severities(params, endpoint=None):
     issue_list = {}
     new_params = params.copy()
+    util.logger.info("Splitting search by severities")
     for sev in ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"):
         try:
-            util.logger.info("Search by severity %s", sev)
             new_params["severities"] = sev
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list.update(__search_all_by_types(params=new_params, endpoint=endpoint))
-    util.logger.info("Search by severity ALL: %d issues found", len(issue_list))
+    util.logger.debug("Search by severity ALL: %d issues found", len(issue_list))
     return issue_list
 
 
@@ -504,17 +501,13 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
         date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
     if date_stop is None:
         date_stop = get_newest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
-    util.logger.info(
-        "Search by date between [%s - %s]",
-        util.date_to_string(date_start, False),
-        util.date_to_string(date_stop, False),
-    )
+    util.logger.info("Splitting search by date between [%s - %s]", util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
     issue_list = {}
     new_params.update({"createdAfter": date_start, "createdBefore": date_stop})
     try:
         issue_list = search(endpoint=endpoint, params=new_params)
     except TooManyIssuesError as e:
-        util.logger.info("Too many issues (%d), splitting time window", e.nbr_issues)
+        util.logger.debug("Too many issues (%d), splitting time window", e.nbr_issues)
         diff = (date_stop - date_start).days
         if diff == 0:
             util.logger.info(_TOO_MANY_ISSUES_MSG)
@@ -575,6 +568,7 @@ def _search_all_by_project(project_key, params, endpoint=None):
     issue_list = {}
     for k in key_list:
         new_params["componentKeys"] = k
+        util.logger.debug("Searching for issues of project '%s'", k)
         try:
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
@@ -592,18 +586,13 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
         key_list = util.csv_to_list(project_key)
     issue_list = {}
     for k in key_list:
-        util.logger.debug("Issue search by project %s, with params %s", k, str(params))
+        util.logger.info("Project '%s' issue search", k)
         if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ("enterprise", "datacenter") and search_findings:
             util.logger.info("Using new export findings to speed up issue export")
             issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(params.get("branch", None), params.get("pullRequest", None)))
         else:
             issue_list.update(_search_all_by_project(k, params=params, endpoint=endpoint))
-    util.logger.info(
-        "Search by project %s params %s returned %d issues",
-        project_key,
-        str(params),
-        len(issue_list),
-    )
+        util.logger.info("Project '%s' has %d issues", k, len(issue_list))
     return issue_list
 
 
@@ -620,34 +609,60 @@ def search_all(endpoint, params=None):
     return issue_list
 
 
-def search(endpoint, params=None, raise_error=True):
+def __search_thread(queue):
+    while not queue.empty():
+        (endpoint, api, issue_list, params, page) = queue.get()
+        page_params = params.copy()
+        page_params["p"] = page
+        util.logger.debug("Threaded issue search params = %s", str(page_params))
+        data = json.loads(endpoint.get(api, params=page_params).text)
+        for i in data["issues"]:
+            i["branch"] = page_params.get("branch", None)
+            i["pullRequest"] = page_params.get("pullRequest", None)
+            issue_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
+        util.logger.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
+        queue.task_done()
+
+
+def search_first(endpoint, **params):
+    data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)
+    if len(data) == 0:
+        return None
+    i = data["issues"][0]
+    return get_object(i["key"], endpoint=endpoint, data=i)
+
+
+def search(endpoint, params=None, raise_error=True, threads=8):
     new_params = {} if params is None else params.copy()
     util.logger.debug("Search params = %s", str(new_params))
     if "ps" not in new_params:
         new_params["ps"] = Issue.MAX_PAGE_SIZE
-    p = 1
     issue_list = {}
-    while True:
-        new_params["p"] = p
-        data = json.loads(endpoint.get(Issue.SEARCH_API, params=new_params).text)
-        nbr_issues = data["paging"]["total"]
-        nbr_pages = min(20, (nbr_issues + new_params["ps"] - 1) // new_params["ps"])
-        util.logger.debug("Number of issues: %d - Page: %d/%d", nbr_issues, new_params["p"], nbr_pages)
-        if nbr_issues > Issue.MAX_SEARCH and raise_error:
-            raise TooManyIssuesError(
-                nbr_issues,
-                f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, this is more than the max {Issue.MAX_SEARCH} possible",
-            )
-        # TODO Add critical log when no raise error
 
-        for i in data["issues"]:
-            i["branch"] = new_params.get("branch", None)
-            i["pullRequest"] = new_params.get("pullRequest", None)
-            issue_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
-
-        if p >= nbr_pages:
-            break
-        p += 1
+    data = json.loads(endpoint.get(Issue.SEARCH_API, params=new_params).text)
+    nbr_issues = data["paging"]["total"]
+    nbr_pages = util.nbr_pages(data)
+    util.logger.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
+    if nbr_pages > 20 and raise_error:
+        raise TooManyIssuesError(
+            nbr_issues,
+            f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, this is more than the max {Issue.MAX_SEARCH} possible",
+        )
+    for i in data["issues"]:
+        i["branch"] = new_params.get("branch", None)
+        i["pullRequest"] = new_params.get("pullRequest", None)
+        issue_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
+    if nbr_pages == 1:
+        return issue_list
+    q = Queue(maxsize=0)
+    for page in range(2, nbr_pages+1):
+        q.put((endpoint, Issue.SEARCH_API, issue_list, new_params, page))
+    for i in range(threads):
+        util.logger.debug("Starting issue search thread %d", i)
+        worker = Thread(target=__search_thread, args=[q])
+        worker.setDaemon(True)
+        worker.start()
+    q.join()
     return issue_list
 
 
@@ -666,18 +681,10 @@ def _get_facets(project_key, facets="directories", endpoint=None, params=None):
 
 def __get_one_issue_date(endpoint=None, asc_sort="false", params=None):
     """Returns the date of one issue found"""
-    new_params = {} if params is None else params.copy()
-    new_params["s"] = "CREATION_DATE"
-    new_params["asc"] = asc_sort
-    new_params["ps"] = 1
-    issue_list = search(endpoint=endpoint, params=new_params, raise_error=False)
-    if not issue_list:
+    issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, ps=1, **params)
+    if not issue:
         return None
-    for _, i in issue_list.items():
-        date = i.creation_date
-        util.logger.debug("Date: %s Issue %s", str(date), str(i))
-        break
-    return date
+    return issue.creation_date
 
 
 def get_oldest_issue(endpoint=None, params=None):
