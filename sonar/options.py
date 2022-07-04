@@ -63,7 +63,7 @@ def set_url_arg(parser):
     return parser
 
 def add_thread_arg(parser, action):
-    parser.add_argument("--threads", required=False, type=int, default=1, help=f"Define number of threads for {action}")
+    parser.add_argument("--threads", required=False, type=int, default=8, help=f"Define number of threads for {action}, default 8")
     return parser
 
 class UnsupportedOperation(Exception):
