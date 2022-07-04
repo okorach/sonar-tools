@@ -22,6 +22,7 @@
     Abstraction of the SonarQube "project" concept
 
 """
+import os
 import datetime
 import re
 import json
@@ -897,3 +898,45 @@ def import_config(endpoint, config_data, key_list=None):
         i += 1
         if i % 20 == 0 or i == nb_projects:
             util.logger.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))
+
+
+def export_zip(endpoint, key_list=None, export_timeout=30):
+    statuses, exports = {}, []
+    projects_list = get_list(endpoint, key_list)
+    nbr_projects = len(projects_list)
+    util.logger.info("Exporting %d projects to export", nbr_projects)
+    for key, p in get_list(endpoint, key_list).items():
+        try:
+            dump = p.export_zip(timeout=export_timeout)
+        except options.UnsupportedOperation as e:
+            util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+
+        status = dump["status"]
+        statuses[status] = 1 if status not in statuses else statuses[status] + 1
+        data = {"key": key, "status": status}
+        if status == "SUCCESS":
+            data["file"] = os.path.basename(dump["file"])
+            data["path"] = dump["file"]
+
+        exports.append(data)
+        util.logger.info(
+            "%d/%d exports (%d%%) - Latest: %s - %s",
+            len(exports),
+            nbr_projects,
+            int(len(exports) * 100 / nbr_projects),
+            key,
+            status,
+        )
+
+        summary = ""
+        for k, v in statuses.items():
+            summary += f"{k}:{v}, "
+        util.logger.info("%s", summary[:-2])
+
+    return {
+                "sonarqube_environment": {
+                    "version": endpoint.version(digits=2, as_string=True),
+                    "plugins": endpoint.plugins(),
+                },
+                "project_exports": exports,
+            }
