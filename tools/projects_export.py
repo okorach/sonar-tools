@@ -32,6 +32,7 @@ from sonar.projects import projects
 def main():
     parser = utilities.set_common_args("Exports all projects of a SonarQube platform")
     parser = utilities.set_key_arg(parser)
+    parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
     parser = options.add_thread_arg(parser, "projects zip export")
     parser.add_argument(
         "--exportTimeout",
@@ -51,7 +52,8 @@ def main():
             options.ERR_UNSUPPORTED_OPERATION,
         )
 
-    print(utilities.json_dump(projects.export_zip(endpoint=sq, key_list=args.projectKeys, export_timeout=args.exportTimeout, threads=args.threads)))
+    with utilities.open_file(args.file) as fd:
+        print(utilities.json_dump(projects.export_zip(endpoint=sq, key_list=args.projectKeys, export_timeout=args.exportTimeout, threads=args.threads)), file=fd)
     utilities.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
