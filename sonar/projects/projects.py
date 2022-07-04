@@ -937,9 +937,9 @@ def export_zip(endpoint, key_list=None, threads=5, export_timeout=30):
     q.join()
 
     return {
-                "sonarqube_environment": {
-                    "version": endpoint.version(digits=2, as_string=True),
-                    "plugins": endpoint.plugins(),
-                },
-                "project_exports": exports,
-            }
+        "sonarqube_environment": {
+            "version": endpoint.version(digits=2, as_string=True),
+            "plugins": endpoint.plugins(),
+        },
+        "project_exports": exports,
+    }
