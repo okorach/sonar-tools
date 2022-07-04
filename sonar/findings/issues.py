@@ -23,7 +23,8 @@
 import datetime
 import json
 import re
-
+from queue import Queue
+from threading import Thread
 import requests.utils
 
 from sonar import projects, users, syncer
@@ -620,13 +621,54 @@ def search_all(endpoint, params=None):
     return issue_list
 
 
-def search(endpoint, params=None, raise_error=True):
+def __search_thread(queue, foo):
+    while not queue.empty():
+        (endpoint, api, issue_list, params, page) = queue.get()
+        page_params = params.copy()
+        page_params["page"] = page
+        util.logger.debug("Threaded issue search params = %s", str(params))
+        data = json.loads(endpoint.get(api, params=params).text)
+        for i in data["issues"]:
+            i["branch"] = page_params.get("branch", None)
+            i["pullRequest"] = page_params.get("pullRequest", None)
+            issue_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
+        queue.task_done()
+
+
+def search(endpoint, params=None, raise_error=True, threads=8):
     new_params = {} if params is None else params.copy()
     util.logger.debug("Search params = %s", str(new_params))
     if "ps" not in new_params:
         new_params["ps"] = Issue.MAX_PAGE_SIZE
     p = 1
     issue_list = {}
+
+    data = json.loads(endpoint.get(Issue.SEARCH_API, params=new_params).text)
+    nbr_issues = data["paging"]["total"]
+    nbr_pages = min(20, util.nbr_pages(data))
+    util.logger.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
+    if nbr_issues > Issue.MAX_SEARCH and raise_error:
+        raise TooManyIssuesError(
+            nbr_issues,
+            f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, this is more than the max {Issue.MAX_SEARCH} possible",
+        )
+    for i in data["issues"]:
+        i["branch"] = new_params.get("branch", None)
+        i["pullRequest"] = new_params.get("pullRequest", None)
+        issue_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
+    if nbr_pages == 1:
+        return issue_list
+    q = Queue(maxsize=0)
+    for page in range(2, nbr_pages+1):
+        q.put((endpoint, Issue.SEARCH_API, issue_list, params, page))
+    for i in range(threads):
+        util.logger.debug("Starting issue search thread %d", i)
+        worker = Thread(target=__search_thread, args=(q, "foo"))
+        worker.setDaemon(True)
+        worker.start()
+    q.join()
+    return issue_list
+
     while True:
         new_params["p"] = p
         data = json.loads(endpoint.get(Issue.SEARCH_API, params=new_params).text)
