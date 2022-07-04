@@ -55,7 +55,7 @@ class SqObject:
         return resp.ok
 
 
-def __search_thread(queue, foo):
+def __search_thread(queue):
     while not queue.empty():
         (endpoint, api, objects, key_field, returned_field, object_class, params, page) = queue.get()
         page_params = params.copy()
@@ -95,7 +95,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         q.put((endpoint, api, objects_list, key_field, returned_field, object_class, params, page))
     for i in range(threads):
         utilities.logger.debug("Starting %s search thread %d", object_class.__name__, i)
-        worker = Thread(target=__search_thread, args=(q, "foo"))
+        worker = Thread(target=__search_thread, args=[q])
         worker.setDaemon(True)
         worker.start()
     q.join()

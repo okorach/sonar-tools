@@ -397,13 +397,9 @@ def _create_or_update_children(name, language, endpoint, children, queue):
         qp_data[_KEY_PARENT] = name
         util.logger.debug("Adding child profile '%s' to update queue", qp_name)
         queue.put((qp_name, language, endpoint, qp_data))
-        #o = get_object(name=qp_name, language=language, endpoint=endpoint)
-        #if o is None:
-        #    o = QualityProfile.create(name=qp_name, language=language, endpoint=endpoint)
-        #o.update(qp_data)
 
 
-def __import_thread(queue, ingore):
+def __import_thread(queue):
     while not queue.empty():
         (name, lang, endpoint, qp_data) = queue.get()
         o = get_object(name=name, language=lang, endpoint=endpoint)
@@ -430,7 +426,7 @@ def import_config(endpoint, config_data, threads=8):
             q.put((name, lang, endpoint, qp_data))
     for i in range(threads):
         util.logger.debug("Starting quality profile import thread %d", i)
-        worker = Thread(target=__import_thread, args=(q, "val"))
+        worker = Thread(target=__import_thread, args=[q])
         worker.setDaemon(True)
         worker.start()
     q.join()

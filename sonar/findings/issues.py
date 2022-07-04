@@ -608,7 +608,7 @@ def search_all(endpoint, params=None):
     return issue_list
 
 
-def __search_thread(queue, foo):
+def __search_thread(queue):
     while not queue.empty():
         (endpoint, api, issue_list, params, page) = queue.get()
         page_params = params.copy()
@@ -658,7 +658,7 @@ def search(endpoint, params=None, raise_error=True, threads=8):
         q.put((endpoint, Issue.SEARCH_API, issue_list, new_params, page))
     for i in range(threads):
         util.logger.debug("Starting issue search thread %d", i)
-        worker = Thread(target=__search_thread, args=(q, "foo"))
+        worker = Thread(target=__search_thread, args=[q])
         worker.setDaemon(True)
         worker.start()
     q.join()
