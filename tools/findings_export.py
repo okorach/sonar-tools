@@ -273,17 +273,14 @@ def store_findings(project_list, params, endpoint, file, format, threads=8):
             for b in branches:
                 params["branch"] = b
                 my_queue.put((key, endpoint, params.copy()))
-                #all_findings.update(__get_project_findings(key, endpoint=endpoint, params=params))
         params.pop("branch", None)
         if prs:
             for p in prs:
                 params["pullRequest"] = p
                 my_queue.put((key, endpoint, params.copy()))
-                #all_findings.update(__get_project_findings(key, endpoint=endpoint, params=params))
         params.pop("pullRequest", None)
         if not (branches or prs):
             my_queue.put((key, endpoint, params.copy()))
-            #all_findings.update(__get_project_findings(key, endpoint=endpoint, params=params))
 
     for i in range(threads):
         util.logger.debug("Starting finding search thread 'findingSearch%d'", i)
@@ -299,7 +296,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=8):
     write_worker.start()
 
     my_queue.join()
-    # Teel the writer thread that writing is complete
+    # Tell the writer thread that writing is complete
     write_queue.put((WRITE_END, True))
     write_queue.join()
 
