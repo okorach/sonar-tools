@@ -190,7 +190,7 @@ def __dump_compact(finding_list, file, **kwargs):
 
 def __get_list(project, list_str, list_type):
     if list_str == "*":
-        list_array = project.branches() if list_type == "branch" else project.pull_requests()
+        list_array = [b.name for b in project.branches()] if list_type == "branch" else [p.key for p in project.pull_requests()]
     elif list_str is not None:
         list_array = util.csv_to_list(list_str)
     else:
@@ -271,13 +271,13 @@ def store_findings(project_list, params, endpoint, file, format, threads=8):
         prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
         if branches:
             for b in branches:
-                params["branch"] = b.name
+                params["branch"] = b
                 my_queue.put((key, endpoint, params.copy()))
                 #all_findings.update(__get_project_findings(key, endpoint=endpoint, params=params))
         params.pop("branch", None)
         if prs:
             for p in prs:
-                params["pullRequest"] = p.key
+                params["pullRequest"] = p
                 my_queue.put((key, endpoint, params.copy()))
                 #all_findings.update(__get_project_findings(key, endpoint=endpoint, params=params))
         params.pop("pullRequest", None)
