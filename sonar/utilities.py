@@ -46,7 +46,7 @@ SQ_TIME_FORMAT = "%H:%M:%S"
 CSV_SEPARATOR = ","
 
 logger = logging.getLogger("sonar-tools")
-formatter = logging.Formatter("%(asctime)s | %(name)s | %(levelname)-7s | %(message)s")
+formatter = logging.Formatter("%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s")
 fh = logging.FileHandler("sonar-tools.log")
 ch = logging.StreamHandler()
 logger.addHandler(fh)
