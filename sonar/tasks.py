@@ -305,7 +305,7 @@ class Task(sq.SqObject):
             rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER)
             msg = rule.msg.format(str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False))
             return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self.concerned_object)]
-
+        return []
 
     def audit(self, audit_settings):
         if not audit_settings.get("audit.projects.exclusions", True):
