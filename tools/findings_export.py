@@ -47,6 +47,7 @@ import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
 
 WRITE_END = object()
+TOTAL_FINDINGS = 0
 
 def parse_args(desc):
     parser = util.set_common_args(desc)
@@ -152,12 +153,12 @@ def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
                     comma = ""
                 print(f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end="")
             else:
-                if False:   #kwargs[options.WITH_URL]:
+                if kwargs[options.WITH_URL]:
                     url = f'{sep}"{finding.url()}"'
                 print(f"{finding.to_csv(sep)}{url}", file=f)
 
 
-def __write_findings(queue, file_to_write, file_format):
+def __write_findings(queue, file_to_write, file_format, with_url):
     while True:
         while queue.empty():
             time.sleep(0.5)
@@ -166,7 +167,9 @@ def __write_findings(queue, file_to_write, file_format):
             queue.task_done()
             break
         else:
-            __dump_findings(data, file_to_write, file_format, is_last)
+            global TOTAL_FINDINGS
+            TOTAL_FINDINGS += len(data)
+            __dump_findings(data, file_to_write, file_format, is_last, withURL=with_url)
             queue.task_done()
 
 def __dump_compact(finding_list, file, **kwargs):
@@ -263,7 +266,7 @@ def __get_project_findings(queue, write_queue):
         queue.task_done()
 
 
-def store_findings(project_list, params, endpoint, file, format, threads=8):
+def store_findings(project_list, params, endpoint, file, format, threads=8, with_url=False):
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
     for key, project in project_list.items():
@@ -290,7 +293,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=8):
         worker.start()
 
     util.logger.info("Starting finding writer thread 'findingWriter'")
-    write_worker = Thread(target=__write_findings, args=[write_queue, file, format])
+    write_worker = Thread(target=__write_findings, args=[write_queue, file, format, with_url])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
@@ -328,11 +331,10 @@ def main():
             fmt = ext
 
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
-    nbr_findings = 0
     __write_header(file, fmt)
-    store_findings(project_list, params=params, endpoint=sqenv, file=file, format=fmt)
+    store_findings(project_list, params=params, endpoint=sqenv, file=file, format=fmt, with_url=kwargs[options.WITH_URL])
     __write_footer(file, fmt)
-    util.logger.info("Returned findings: %d - Total execution time: %s", nbr_findings, str(datetime.datetime.today() - start_time))
+    util.logger.info("Returned findings: %d - Total execution time: %s", TOTAL_FINDINGS, str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
 
