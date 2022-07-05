@@ -33,19 +33,28 @@
     [--types <types>] Comma separated findings types (VULNERABILITY,BUG,CODE_SMELL,SECURITY_HOTSPOT)
     [--tags]
 """
+
 import sys
 import os
+import time
 import datetime
+from queue import Queue
+from threading import Thread
+
 from sonar import version, env, options
 from sonar.projects import projects
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
+
+WRITE_END = object()
+TOTAL_FINDINGS = 0
 
 
 def parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
+    parser = options.add_thread_arg(parser, "findings search")
     parser.add_argument(
         "-b",
         "--branches",
@@ -111,15 +120,9 @@ def parse_args(desc):
 
 
 def __write_header(file, format):
-    if file is None:
-        util.logger.info("Dumping report to stdout")
-    else:
-        util.logger.info("Dumping report to file '%s'", file)
+    util.logger.info("Dumping report to %s", f"file '{file}'" if file else "stdout")
     with util.open_file(file) as f:
-        if format == "json":
-            print("[", file=f)
-        else:
-            print(findings.to_csv_header(), file=f)
+        print("[" if format == "json" else findings.to_csv_header(), file=f)
 
 
 def __write_footer(file, format):
@@ -130,10 +133,11 @@ def __write_footer(file, format):
 
 
 def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
+    i = len(findings_list)
+    util.logger.info("Writing %d more findings to %s", i, f"file '{file}'" if file else "stdout")
     with util.open_file(file, mode="a") as f:
         url = ""
-        sep = kwargs[options.CSV_SEPARATOR]
-        i = len(findings_list)
+        sep = kwargs.get(options.CSV_SEPARATOR, ",")
         comma = ","
         for _, finding in findings_list.items():
             i -= 1
@@ -148,6 +152,21 @@ def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
                 if kwargs[options.WITH_URL]:
                     url = f'{sep}"{finding.url()}"'
                 print(f"{finding.to_csv(sep)}{url}", file=f)
+
+
+def __write_findings(queue, file_to_write, file_format, with_url, separator):
+    while True:
+        while queue.empty():
+            time.sleep(0.5)
+        (data, is_last) = queue.get()
+        if data == WRITE_END:
+            queue.task_done()
+            break
+
+        global TOTAL_FINDINGS
+        TOTAL_FINDINGS += len(data)
+        __dump_findings(data, file_to_write, file_format, is_last, withURL=with_url, csvSeparator=separator)
+        queue.task_done()
 
 
 def __dump_compact(finding_list, file, **kwargs):
@@ -171,7 +190,7 @@ def __dump_compact(finding_list, file, **kwargs):
 
 def __get_list(project, list_str, list_type):
     if list_str == "*":
-        list_array = project.branches() if list_type == "branch" else project.pull_requests()
+        list_array = [b.name for b in project.branches()] if list_type == "branch" else [p.key for p in project.pull_requests()]
     elif list_str is not None:
         list_array = util.csv_to_list(list_str)
     else:
@@ -180,35 +199,17 @@ def __get_list(project, list_str, list_type):
 
 
 def __verify_inputs(params):
-    diff = util.difference(
-        util.csv_to_list(params.get("resolutions", None)),
-        issues.RESOLUTIONS + hotspots.RESOLUTIONS,
-    )
+    diff = util.difference(util.csv_to_list(params.get("resolutions", None)), issues.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
-        util.exit_fatal(
-            f"Resolutions {str(diff)} are not legit resolutions",
-            options.ERR_WRONG_SEARCH_CRITERIA,
-        )
+        util.exit_fatal(f"Resolutions {str(diff)} are not legit resolutions", options.ERR_WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(
-        util.csv_to_list(params.get("statuses", None)),
-        issues.STATUSES + hotspots.STATUSES,
-    )
+    diff = util.difference(util.csv_to_list(params.get("statuses", None)), issues.STATUSES + hotspots.STATUSES)
     if diff:
-        util.exit_fatal(
-            f"Statuses {str(diff)} are not legit statuses",
-            options.ERR_WRONG_SEARCH_CRITERIA,
-        )
+        util.exit_fatal(f"Statuses {str(diff)} are not legit statuses", options.ERR_WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(
-        util.csv_to_list(params.get("severities", None)),
-        issues.SEVERITIES + hotspots.SEVERITIES,
-    )
+    diff = util.difference(util.csv_to_list(params.get("severities", None)), issues.SEVERITIES + hotspots.SEVERITIES)
     if diff:
-        util.exit_fatal(
-            f"Severities {str(diff)} are not legit severities",
-            options.ERR_WRONG_SEARCH_CRITERIA,
-        )
+        util.exit_fatal(f"Severities {str(diff)} are not legit severities", options.ERR_WRONG_SEARCH_CRITERIA)
 
     diff = util.difference(util.csv_to_list(params.get("types", None)), issues.TYPES + hotspots.TYPES)
     if diff:
@@ -217,68 +218,85 @@ def __verify_inputs(params):
     return True
 
 
-def __get_project_findings(key, params, endpoint):
+def __get_project_findings(queue, write_queue):
+    while not queue.empty():
+        (key, endpoint, params) = queue.get()
+        search_findings = params["useFindings"]
+        status_list = util.csv_to_list(params.get("statuses", None))
+        i_statuses = util.intersection(status_list, issues.STATUSES)
+        h_statuses = util.intersection(status_list, hotspots.STATUSES)
+        resol_list = util.csv_to_list(params.get("resolutions", None))
+        i_resols = util.intersection(resol_list, issues.RESOLUTIONS)
+        h_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
+        type_list = util.csv_to_list(params.get("types", None))
+        i_types = util.intersection(type_list, issues.TYPES)
+        h_types = util.intersection(type_list, hotspots.TYPES)
+        sev_list = util.csv_to_list(params.get("severities", None))
+        i_sevs = util.intersection(sev_list, issues.SEVERITIES)
+        h_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
 
-    search_findings = params["useFindings"]
-    status_list = util.csv_to_list(params.get("statuses", None))
-    issues_statuses = util.intersection(status_list, issues.STATUSES)
-    hotspot_statuses = util.intersection(status_list, hotspots.STATUSES)
-    resol_list = util.csv_to_list(params.get("resolutions", None))
-    issues_resols = util.intersection(resol_list, issues.RESOLUTIONS)
-    hotspot_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
-    type_list = util.csv_to_list(params.get("types", None))
-    issues_types = util.intersection(type_list, issues.TYPES)
-    hotspot_types = util.intersection(type_list, hotspots.TYPES)
-    sev_list = util.csv_to_list(params.get("severities", None))
-    issues_sevs = util.intersection(sev_list, issues.SEVERITIES)
-    hotspot_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
+        if status_list or resol_list or type_list or sev_list:
+            search_findings = False
 
-    if status_list or resol_list or type_list or sev_list:
-        search_findings = False
+        new_params = issues.get_search_criteria(params)
+        new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
+        util.logger.debug("Searching issues with paramas = %s", str(new_params))
+        if search_findings:
+            findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint, search_findings=search_findings)
+            write_queue.put([findings_list, queue.empty()])
+        else:
+            findings_list = {}
+            if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
+                findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
+            else:
+                util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
+                util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
 
-    if search_findings:
-        findings_list = issues.search_by_project(
-            key,
-            params=issues.get_search_criteria(params),
-            endpoint=endpoint,
-            search_findings=search_findings,
-        )
-        return findings_list
+            if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
+                new_params = hotspots.get_search_criteria(params)
+                new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
+                findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=new_params))
+            else:
+                util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
+                util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
+            write_queue.put([findings_list, queue.empty()])
+        queue.task_done()
 
-    findings_list = {}
-    if (
-        (issues_statuses or not status_list)
-        and (issues_resols or not resol_list)
-        and (issues_types or not type_list)
-        and (issues_sevs or not sev_list)
-    ):
-        findings_list = issues.search_by_project(key, params=issues.get_search_criteria(params), endpoint=endpoint)
-    else:
-        util.logger.debug(
-            "Status = %s, Types = %s, Resol = %s, Sev = %s",
-            str(issues_statuses),
-            str(issues_types),
-            str(issues_resols),
-            str(issues_sevs),
-        )
-        util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
-    if (
-        (hotspot_statuses or not status_list)
-        and (hotspot_resols or not resol_list)
-        and (hotspot_types or not type_list)
-        and (hotspot_sevs or not sev_list)
-    ):
-        findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=hotspots.get_search_criteria(params)))
-    else:
-        util.logger.debug(
-            "Status = %s, Types = %s, Resol = %s, Sev = %s",
-            str(hotspot_statuses),
-            str(hotspot_types),
-            str(hotspot_resols),
-            str(hotspot_sevs),
-        )
-        util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
-    return findings_list
+
+def store_findings(project_list, params, endpoint, file, format, threads=4, with_url=False, csv_separator=","):
+    my_queue = Queue(maxsize=0)
+    write_queue = Queue(maxsize=0)
+    for key, project in project_list.items():
+        branches = __get_list(project, params.pop("branches", None), "branch")
+        prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
+        for b in branches:
+            params["branch"] = b
+            my_queue.put((key, endpoint, params.copy()))
+        params.pop("branch", None)
+        for p in prs:
+            params["pullRequest"] = p
+            my_queue.put((key, endpoint, params.copy()))
+        params.pop("pullRequest", None)
+        if not (branches or prs):
+            my_queue.put((key, endpoint, params.copy()))
+
+    for i in range(threads):
+        util.logger.debug("Starting finding search thread 'findingSearch%d'", i)
+        worker = Thread(target=__get_project_findings, args=[my_queue, write_queue])
+        worker.setDaemon(True)
+        worker.setName(f"findingSearch{i}")
+        worker.start()
+
+    util.logger.info("Starting finding writer thread 'findingWriter'")
+    write_worker = Thread(target=__write_findings, args=[write_queue, file, format, with_url, csv_separator])
+    write_worker.setDaemon(True)
+    write_worker.setName("findingWriter")
+    write_worker.start()
+
+    my_queue.join()
+    # Tell the writer thread that writing is complete
+    write_queue.put((WRITE_END, True))
+    write_queue.join()
 
 
 def main():
@@ -288,7 +306,6 @@ def main():
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     start_time = datetime.datetime.today()
-    project_key = kwargs.get("projectKeys", None)
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
 
@@ -298,9 +315,9 @@ def main():
                 util.logger.warning("Selected search criteria %s will disable --useFindings", params[p])
             params["useFindings"] = False
             break
-    project_list = projects.get_list(endpoint=sqenv, key_list=project_key)
+    project_list = projects.get_list(endpoint=sqenv, key_list=util.csv_to_list(kwargs.get("projectKeys", None)))
 
-    fmt = kwargs["format"]
+    fmt = kwargs.pop("format", None)
     file = kwargs.pop("file", None)
     if file is not None:
         ext = file.split(".")[-1].lower()
@@ -309,34 +326,20 @@ def main():
         if ext in ("csv", "json"):
             fmt = ext
 
-    util.logger.info(
-        "Exporting findings for %d projects with params %s",
-        len(project_list),
-        str(params),
-    )
-    nbr_findings = 0
+    util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
     __write_header(file, fmt)
-    for project in project_list.values():
-        all_findings = {}
-        branches = __get_list(project, kwargs.get("branches", None), "branch")
-        prs = __get_list(project, kwargs.get("pullRequests", None), "pullrequest")
-        if branches:
-            for b in branches:
-                params["branch"] = b.name
-                all_findings.update(__get_project_findings(project.key, params=params, endpoint=sqenv))
-        params.pop("branch", None)
-        if prs:
-            for p in prs:
-                params["pullRequest"] = p.key
-                all_findings.update(__get_project_findings(project.key, params=params, endpoint=sqenv))
-        params.pop("pullRequest", None)
-        if not (branches or prs):
-            all_findings.update(__get_project_findings(project.key, params=params, endpoint=sqenv))
-
-        __dump_findings(all_findings, file, fmt, **kwargs)
-        nbr_findings += len(all_findings)
+    store_findings(
+        project_list,
+        params=params,
+        endpoint=sqenv,
+        file=file,
+        format=fmt,
+        threads=kwargs[options.NBR_THREADS],
+        with_url=kwargs[options.WITH_URL],
+        csv_separator=kwargs[options.CSV_SEPARATOR],
+    )
     __write_footer(file, fmt)
-    util.logger.info("Returned findings: %d - Total execution time: %s", nbr_findings, str(datetime.datetime.today() - start_time))
+    util.logger.info("Returned findings: %d - Total execution time: %s", TOTAL_FINDINGS, str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
 

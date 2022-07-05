@@ -27,6 +27,7 @@ WITH_URL = "withURL"
 WITH_NAME = "withName"
 WITH_LAST_ANALYSIS = "withLastAnalysis"
 WITH_BRANCHES = "withBranches"
+NBR_THREADS = "threads"
 
 WHAT_SETTINGS = "settings"
 WHAT_USERS = "users"
@@ -59,12 +60,12 @@ ERR_ARGS_ERROR = 10
 
 
 def set_url_arg(parser):
-    parser.add_argument("--" + WITH_URL, action="store_true", default=False, required=False, help="Add objects URLs in report")
+    parser.add_argument(f"--{WITH_URL}", action="store_true", default=False, required=False, help="Add objects URLs in report")
     return parser
 
 
 def add_thread_arg(parser, action):
-    parser.add_argument("--threads", required=False, type=int, default=8, help=f"Define number of threads for {action}, default 8")
+    parser.add_argument(f"--{NBR_THREADS}", required=False, type=int, default=8, help=f"Define number of threads for {action}, default 8")
     return parser
 
 

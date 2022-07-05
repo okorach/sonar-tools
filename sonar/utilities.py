@@ -46,7 +46,7 @@ SQ_TIME_FORMAT = "%H:%M:%S"
 CSV_SEPARATOR = ","
 
 logger = logging.getLogger("sonar-tools")
-formatter = logging.Formatter("%(asctime)s | %(name)s | %(levelname)-7s | %(message)s")
+formatter = logging.Formatter("%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s")
 fh = logging.FileHandler("sonar-tools.log")
 ch = logging.StreamHandler()
 logger.addHandler(fh)
@@ -435,11 +435,10 @@ def nbr_pages(sonar_api_json):
 @contextlib.contextmanager
 def open_file(file=None, mode="w"):
     if file and file != "-":
-        op = "Adding" if "a" in mode else ("Opening" if "r" in mode else "Writing")
-        logger.info("%s to file '%s'", op, file)
+        logger.debug("Opening file '%s'", file)
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
     else:
-        logger.info("Writing to stdout")
+        logger.debug("Writing to stdout")
         fd = sys.stdout
     try:
         yield fd
