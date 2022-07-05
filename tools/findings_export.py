@@ -140,7 +140,7 @@ def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
     util.logger.debug("Dumping findings in %s", file)
     with util.open_file(file, mode="a") as f:
         url = ""
-        sep = ","
+        sep = kwargs.get(options.CSV_SEPARATOR, ",")
         i = len(findings_list)
         comma = ","
         for _, finding in findings_list.items():
@@ -158,7 +158,7 @@ def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
                 print(f"{finding.to_csv(sep)}{url}", file=f)
 
 
-def __write_findings(queue, file_to_write, file_format, with_url):
+def __write_findings(queue, file_to_write, file_format, with_url, separator):
     while True:
         while queue.empty():
             time.sleep(0.5)
@@ -169,7 +169,7 @@ def __write_findings(queue, file_to_write, file_format, with_url):
         else:
             global TOTAL_FINDINGS
             TOTAL_FINDINGS += len(data)
-            __dump_findings(data, file_to_write, file_format, is_last, withURL=with_url)
+            __dump_findings(data, file_to_write, file_format, is_last, withURL=with_url, csvSeparator=separator)
             queue.task_done()
 
 def __dump_compact(finding_list, file, **kwargs):
@@ -266,7 +266,7 @@ def __get_project_findings(queue, write_queue):
         queue.task_done()
 
 
-def store_findings(project_list, params, endpoint, file, format, threads=8, with_url=False):
+def store_findings(project_list, params, endpoint, file, format, threads=8, with_url=False, csv_separator=","):
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
     for key, project in project_list.items():
@@ -293,7 +293,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=8, with
         worker.start()
 
     util.logger.info("Starting finding writer thread 'findingWriter'")
-    write_worker = Thread(target=__write_findings, args=[write_queue, file, format, with_url])
+    write_worker = Thread(target=__write_findings, args=[write_queue, file, format, with_url, csv_separator])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
@@ -332,7 +332,7 @@ def main():
 
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
     __write_header(file, fmt)
-    store_findings(project_list, params=params, endpoint=sqenv, file=file, format=fmt, with_url=kwargs[options.WITH_URL])
+    store_findings(project_list, params=params, endpoint=sqenv, file=file, format=fmt, with_url=kwargs[options.WITH_URL], csv_separator=kwargs[options.CSV_SEPARATOR])
     __write_footer(file, fmt)
     util.logger.info("Returned findings: %d - Total execution time: %s", TOTAL_FINDINGS, str(datetime.datetime.today() - start_time))
     sys.exit(0)
