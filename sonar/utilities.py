@@ -438,7 +438,7 @@ def open_file(file=None, mode="w"):
         logger.debug("Opening file '%s'", file)
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
     else:
-        logger.info("Writing to stdout")
+        logger.debug("Writing to stdout")
         fd = sys.stdout
     try:
         yield fd
