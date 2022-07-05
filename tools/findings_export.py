@@ -132,10 +132,11 @@ def __write_footer(file, format):
 
 
 def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
+    i = len(findings_list)
+    util.logger.info("Writing %d more findings to %s", i, f"file '{file}'" if file else "stdout")
     with util.open_file(file, mode="a") as f:
         url = ""
         sep = kwargs.get(options.CSV_SEPARATOR, ",")
-        i = len(findings_list)
         comma = ","
         for _, finding in findings_list.items():
             i -= 1
