@@ -375,6 +375,11 @@
         "type": "OPERATIONS",
         "message": "{} last background task FAILED"
     },
+    "OBSOLETE_SCANNER": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "{} was last analyzed with an obsolete {} version {} released on {}"
+    },
     "NOT_USING_BRANCH_ANALYSIS": {
         "severity": "LOW",
         "type": "GOVERNANCE",

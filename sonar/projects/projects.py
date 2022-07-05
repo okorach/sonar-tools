@@ -785,10 +785,12 @@ def get_object(key, endpoint):
 def audit_thread(queue, results, audit_settings, bindings):
     audit_bindings = audit_settings["audit.projects.bindings"]
     while not queue.empty():
+        util.logger.debug("Picking from the queue")
         project = queue.get()
         results += project.audit(audit_settings)
         if project.endpoint.edition() == "community" or not audit_bindings or project.is_part_of_monorepo():
             queue.task_done()
+            util.logger.debug("%s audit done", str(project))
             continue
         bindkey = project.binding_key()
         if bindkey and bindkey in bindings:
@@ -797,6 +799,8 @@ def audit_thread(queue, results, audit_settings, bindings):
         else:
             bindings[bindkey] = project
         queue.task_done()
+        util.logger.debug("%s audit done", str(project))
+    util.logger.debug("Queue empty, exiting thread")
 
 
 def audit(audit_settings, endpoint=None, key_list=None):
@@ -811,6 +815,7 @@ def audit(audit_settings, endpoint=None, key_list=None):
         util.logger.debug("Starting project audit thread %d", i)
         worker = Thread(target=audit_thread, args=(q, problems, audit_settings, bindings))
         worker.setDaemon(True)
+        worker.setName(f"ProjectAudit{i}")
         worker.start()
     q.join()
     if not audit_settings["audit.projects.duplicates"]:

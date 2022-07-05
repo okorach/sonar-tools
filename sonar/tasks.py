@@ -25,6 +25,7 @@
 """
 
 import time
+import datetime
 import json
 import re
 from sonar.audit import rules, problem
@@ -44,6 +45,71 @@ STATUSES = (SUCCESS, PENDING, IN_PROGRESS, FAILED, CANCELED)
 __SUSPICIOUS_EXCLUSIONS = None
 __SUSPICIOUS_EXCEPTIONS = None
 
+SCANNER_VERSIONS = {
+    "ScannerCLI": {
+        "4.7.0": datetime.datetime(2022, 2, 22),
+        "4.6.2": datetime.datetime(2021, 5, 7),
+        "4.6.1": datetime.datetime(2021, 4, 30),
+        "4.6.0": datetime.datetime(2021, 1, 13),
+        "4.5.0": datetime.datetime(2020, 10, 5),
+        "4.4.0": datetime.datetime(2020, 7, 3),
+        "4.3.0": datetime.datetime(2019, 3, 9),
+        "4.2.0": datetime.datetime(2019, 10, 1),
+        "4.1.0": datetime.datetime(2019, 9, 9),
+    },
+    "ScannerMaven": {
+        "3.9.1": datetime.datetime(2021, 11, 1),
+        "3.9.0": datetime.datetime(2021, 4, 1),
+        "3.8.0": datetime.datetime(2021, 1, 1),
+        "3.7.0": datetime.datetime(2019, 10, 1),
+        "3.6.1": datetime.datetime(2019, 8, 1),
+        "3.6.0": datetime.datetime(2019, 1, 1),
+        "3.5.0": datetime.datetime(2018, 9, 1),
+        "3.4.1": datetime.datetime(2018, 6, 1),
+        "3.4.0": datetime.datetime(2017, 11, 1),
+        "3.3.0": datetime.datetime(2017, 3, 1),
+        "3.2.0": datetime.datetime(2016, 9, 1),
+        "3.1.1": datetime.datetime(2016, 9, 1),
+        "3.1.0": datetime.datetime(2016, 9, 1),
+        "3.0.2": datetime.datetime(2016, 4, 1),
+        "3.0.1": datetime.datetime(2016, 1, 1),
+        "3.0.0": datetime.datetime(2016, 1, 1),
+    },
+    "ScannerGradle": {
+        "3.4.0": datetime.datetime(2022, 6, 8),
+        "3.3.0": datetime.datetime(2021, 6, 10),
+        "3.2.0": datetime.datetime(2021, 4, 30),
+        "3.1.1": datetime.datetime(2021, 1, 25),
+        "3.1.0": datetime.datetime(2021, 1, 13),
+        "3.0.0": datetime.datetime(2020, 6, 20),
+        "2.8.0": datetime.datetime(2019, 10, 1),
+    },
+    "ScannerMSBuild": {
+        "5.7.1": datetime.datetime(2022, 6, 21),
+        "5.7.0": datetime.datetime(2022, 6, 20),
+        "5.6.0": datetime.datetime(2022, 5, 30),
+        "5.5.3": datetime.datetime(2022, 2, 14),
+        "5.5.2": datetime.datetime(2022, 2, 10),
+        "5.5.1": datetime.datetime(2022, 2, 8),
+        "5.5.0": datetime.datetime(2022, 2, 7),
+        "5.4.1": datetime.datetime(2021, 12, 23),
+        "5.4.0": datetime.datetime(2021, 11, 26),
+        "5.3.2": datetime.datetime(2021, 10, 28),
+        "5.3.1": datetime.datetime(2021, 9, 1),
+        "5.2.2": datetime.datetime(2021, 6, 24),
+        "5.2.1": datetime.datetime(2021, 4, 30),
+        "5.2.0": datetime.datetime(2021, 4, 9),
+        "5.1.0": datetime.datetime(2021, 3, 9),
+        "5.0.4": datetime.datetime(2020, 11, 11),
+        "5.0.3": datetime.datetime(2020, 11, 10),
+        "5.0.0": datetime.datetime(2020, 11, 5),
+        "4.10.0": datetime.datetime(2020, 6, 29),
+        "4.9.0": datetime.datetime(2020, 5, 5),
+        "4.8.0": datetime.datetime(2019, 11, 6),
+        "4.7.1": datetime.datetime(2019, 9, 10),
+        "4.7.0": datetime.datetime(2019, 9, 3),
+    }
+}
 
 class Task(sq.SqObject):
     def __init__(self, task_id, endpoint, concerned_object=None, data=None):
@@ -216,6 +282,31 @@ class Task(sq.SqObject):
         msg = rule.msg.format(str(self.concerned_object))
         return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self)]
 
+    def __audit_scanner_version(self, audit_settings):
+        if not self.has_scanner_context():
+            return []
+        context = self.scanner_context()
+        scanner_type = context.get("sonar.scanner.app", None)
+        scanner_version = context.get("sonar.scanner.appVersion", None)
+        util.logger.debug("Scanner type = %s, Scanner version = %s", scanner_type, scanner_version)
+        if not scanner_version:
+            return []
+
+        if scanner_type in ("ScannerGradle", "ScannerMaven"):
+            (scanner_version, build_tool_version) = scanner_version.split("/")
+            scanner_version = scanner_version.replace("-SNAPSHOT", "")
+        scanner_version = scanner_version.split(".")
+        if len(scanner_version) == 2:
+            scanner_version.append("0")
+        str_version = ".".join(scanner_version[0:3])
+        release_date = SCANNER_VERSIONS[scanner_type][str_version]
+        delta_days = (datetime.datetime.today() - release_date).days
+        if delta_days > 365*2:
+            rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER)
+            msg = rule.msg.format(str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False))
+            return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self.concerned_object)]
+
+
     def audit(self, audit_settings):
         if not audit_settings.get("audit.projects.exclusions", True):
             util.logger.debug("Project exclusions auditing disabled, skipping...")
@@ -239,6 +330,7 @@ class Task(sq.SqObject):
 
         problems += self.__audit_warnings(audit_settings)
         problems += self.__audit_failed_task(audit_settings)
+        problems += self.__audit_scanner_version(audit_settings)
 
         return problems
 
