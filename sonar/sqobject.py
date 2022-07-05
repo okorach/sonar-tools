@@ -91,7 +91,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
     if nb_pages == 1:
         return objects_list
     q = Queue(maxsize=0)
-    for page in range(2, nb_pages+1):
+    for page in range(2, nb_pages + 1):
         q.put((endpoint, api, objects_list, key_field, returned_field, object_class, params, page))
     for i in range(threads):
         utilities.logger.debug("Starting %s search thread %d", object_class.__name__, i)

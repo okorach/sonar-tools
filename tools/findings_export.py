@@ -49,6 +49,7 @@ from sonar.findings import findings, issues, hotspots
 WRITE_END = object()
 TOTAL_FINDINGS = 0
 
+
 def parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_key_arg(parser)
@@ -161,11 +162,12 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
         if data == WRITE_END:
             queue.task_done()
             break
-        else:
-            global TOTAL_FINDINGS
-            TOTAL_FINDINGS += len(data)
-            __dump_findings(data, file_to_write, file_format, is_last, withURL=with_url, csvSeparator=separator)
-            queue.task_done()
+
+        global TOTAL_FINDINGS
+        TOTAL_FINDINGS += len(data)
+        __dump_findings(data, file_to_write, file_format, is_last, withURL=with_url, csvSeparator=separator)
+        queue.task_done()
+
 
 def __dump_compact(finding_list, file, **kwargs):
     new_dict = {}
@@ -207,7 +209,7 @@ def __verify_inputs(params):
 
     diff = util.difference(util.csv_to_list(params.get("severities", None)), issues.SEVERITIES + hotspots.SEVERITIES)
     if diff:
-        util.exit_fatal( f"Severities {str(diff)} are not legit severities", options.ERR_WRONG_SEARCH_CRITERIA)
+        util.exit_fatal(f"Severities {str(diff)} are not legit severities", options.ERR_WRONG_SEARCH_CRITERIA)
 
     diff = util.difference(util.csv_to_list(params.get("types", None)), issues.TYPES + hotspots.TYPES)
     if diff:
@@ -244,13 +246,13 @@ def __get_project_findings(queue, write_queue):
             write_queue.put([findings_list, queue.empty()])
         else:
             findings_list = {}
-            if ((i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list)):
+            if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
             else:
-                util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s",str(i_statuses),str(i_types),str(i_resols),str(i_sevs))
+                util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
                 util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
 
-            if ((h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list)):
+            if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
                 new_params = hotspots.get_search_criteria(params)
                 new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
                 findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=new_params))
@@ -296,6 +298,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
     write_queue.put((WRITE_END, True))
     write_queue.join()
 
+
 def main():
     kwargs = vars(parse_args("Sonar findings extractor"))
     sqenv = env.Environment(some_url=kwargs["url"], some_token=kwargs["token"], cert_file=kwargs["clientCert"])
@@ -325,7 +328,16 @@ def main():
 
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
     __write_header(file, fmt)
-    store_findings(project_list, params=params, endpoint=sqenv, file=file, format=fmt, threads=kwargs[options.NBR_THREADS], with_url=kwargs[options.WITH_URL], csv_separator=kwargs[options.CSV_SEPARATOR])
+    store_findings(
+        project_list,
+        params=params,
+        endpoint=sqenv,
+        file=file,
+        format=fmt,
+        threads=kwargs[options.NBR_THREADS],
+        with_url=kwargs[options.WITH_URL],
+        csv_separator=kwargs[options.CSV_SEPARATOR],
+    )
     __write_footer(file, fmt)
     util.logger.info("Returned findings: %d - Total execution time: %s", TOTAL_FINDINGS, str(datetime.datetime.today() - start_time))
     sys.exit(0)

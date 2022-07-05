@@ -655,7 +655,7 @@ def search(endpoint, params=None, raise_error=True, threads=8):
     if nbr_pages == 1:
         return issue_list
     q = Queue(maxsize=0)
-    for page in range(2, nbr_pages+1):
+    for page in range(2, nbr_pages + 1):
         q.put((endpoint, Issue.SEARCH_API, issue_list, new_params, page))
     for i in range(threads):
         util.logger.debug("Starting issue search thread %d", i)
