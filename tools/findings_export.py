@@ -118,15 +118,9 @@ def parse_args(desc):
 
 
 def __write_header(file, format):
-    if file is None:
-        util.logger.info("Dumping report to stdout")
-    else:
-        util.logger.info("Dumping report to file '%s'", file)
+    util.logger.info("Dumping report to %s", f"file '{file}'" if file else "stdout")
     with util.open_file(file) as f:
-        if format == "json":
-            print("[", file=f)
-        else:
-            print(findings.to_csv_header(), file=f)
+        print("[" if format == "json" else findings.to_csv_header(), file=f)
 
 
 def __write_footer(file, format):
@@ -137,7 +131,6 @@ def __write_footer(file, format):
 
 
 def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
-    util.logger.debug("Dumping findings in %s", file)
     with util.open_file(file, mode="a") as f:
         url = ""
         sep = kwargs.get(options.CSV_SEPARATOR, ",")
