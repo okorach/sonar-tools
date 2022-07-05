@@ -182,6 +182,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Projects with both a `main` and a `master` branch
   - Analysis warnings on main branch analysis
   - Last background task on main branch `FAILED`
+  - Last analysis with an obsolete scanner version (by default more than 2 years old)
 - Portfolios: (if `audit.applications = yes`, default `yes`)
   - Empty portfolios (with no projects) if `audit.portfolios.empty` is `yes`
   - Portfolios composed of a single project if `audit.portfolios.singleton` is `yes`
