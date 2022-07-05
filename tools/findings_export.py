@@ -53,6 +53,7 @@ def parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
+    parser = options.add_thread_arg(parser, "findings search")
     parser.add_argument(
         "-b",
         "--branches",
@@ -265,15 +266,13 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
     for key, project in project_list.items():
         branches = __get_list(project, params.pop("branches", None), "branch")
         prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
-        if branches:
-            for b in branches:
-                params["branch"] = b
-                my_queue.put((key, endpoint, params.copy()))
+        for b in branches:
+            params["branch"] = b
+            my_queue.put((key, endpoint, params.copy()))
         params.pop("branch", None)
-        if prs:
-            for p in prs:
-                params["pullRequest"] = p
-                my_queue.put((key, endpoint, params.copy()))
+        for p in prs:
+            params["pullRequest"] = p
+            my_queue.put((key, endpoint, params.copy()))
         params.pop("pullRequest", None)
         if not (branches or prs):
             my_queue.put((key, endpoint, params.copy()))
@@ -325,7 +324,7 @@ def main():
 
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
     __write_header(file, fmt)
-    store_findings(project_list, params=params, endpoint=sqenv, file=file, format=fmt, with_url=kwargs[options.WITH_URL], csv_separator=kwargs[options.CSV_SEPARATOR])
+    store_findings(project_list, params=params, endpoint=sqenv, file=file, format=fmt, threads=kwargs[options.NBR_THREADS], with_url=kwargs[options.WITH_URL], csv_separator=kwargs[options.CSV_SEPARATOR])
     __write_footer(file, fmt)
     util.logger.info("Returned findings: %d - Total execution time: %s", TOTAL_FINDINGS, str(datetime.datetime.today() - start_time))
     sys.exit(0)
