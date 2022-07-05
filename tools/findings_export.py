@@ -266,7 +266,7 @@ def __get_project_findings(queue, write_queue):
         queue.task_done()
 
 
-def store_findings(project_list, params, endpoint, file, format, threads=8, with_url=False, csv_separator=","):
+def store_findings(project_list, params, endpoint, file, format, threads=4, with_url=False, csv_separator=","):
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
     for key, project in project_list.items():
