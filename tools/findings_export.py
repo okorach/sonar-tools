@@ -223,88 +223,66 @@ def __get_project_findings(queue, write_queue):
         (key, endpoint, params) = queue.get()
         search_findings = params["useFindings"]
         status_list = util.csv_to_list(params.get("statuses", None))
-        issues_statuses = util.intersection(status_list, issues.STATUSES)
-        hotspot_statuses = util.intersection(status_list, hotspots.STATUSES)
+        i_statuses = util.intersection(status_list, issues.STATUSES)
+        h_statuses = util.intersection(status_list, hotspots.STATUSES)
         resol_list = util.csv_to_list(params.get("resolutions", None))
-        issues_resols = util.intersection(resol_list, issues.RESOLUTIONS)
-        hotspot_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
+        i_resols = util.intersection(resol_list, issues.RESOLUTIONS)
+        h_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
         type_list = util.csv_to_list(params.get("types", None))
-        issues_types = util.intersection(type_list, issues.TYPES)
-        hotspot_types = util.intersection(type_list, hotspots.TYPES)
+        i_types = util.intersection(type_list, issues.TYPES)
+        h_types = util.intersection(type_list, hotspots.TYPES)
         sev_list = util.csv_to_list(params.get("severities", None))
-        issues_sevs = util.intersection(sev_list, issues.SEVERITIES)
-        hotspot_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
+        i_sevs = util.intersection(sev_list, issues.SEVERITIES)
+        h_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
 
         if status_list or resol_list or type_list or sev_list:
             search_findings = False
 
+        new_params = issues.get_search_criteria(params)
+        new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
+        util.logger.debug("Searching issues with paramas = %s", str(new_params))
         if search_findings:
-            findings_list = issues.search_by_project(
-                key,
-                params=issues.get_search_criteria(params),
-                endpoint=endpoint,
-                search_findings=search_findings,
-            )
+            findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint, search_findings=search_findings)
             write_queue.put([findings_list, queue.empty()])
-            queue.task_done()
-
-        findings_list = {}
-        if (
-            (issues_statuses or not status_list)
-            and (issues_resols or not resol_list)
-            and (issues_types or not type_list)
-            and (issues_sevs or not sev_list)
-        ):
-            findings_list = issues.search_by_project(key, params=issues.get_search_criteria(params), endpoint=endpoint)
         else:
-            util.logger.debug(
-                "Status = %s, Types = %s, Resol = %s, Sev = %s",
-                str(issues_statuses),
-                str(issues_types),
-                str(issues_resols),
-                str(issues_sevs),
-            )
-            util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
-        if (
-            (hotspot_statuses or not status_list)
-            and (hotspot_resols or not resol_list)
-            and (hotspot_types or not type_list)
-            and (hotspot_sevs or not sev_list)
-        ):
-            findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=hotspots.get_search_criteria(params)))
-        else:
-            util.logger.debug(
-                "Status = %s, Types = %s, Resol = %s, Sev = %s",
-                str(hotspot_statuses),
-                str(hotspot_types),
-                str(hotspot_resols),
-                str(hotspot_sevs),
-            )
-            util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
+            findings_list = {}
+            if ((i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list)):
+                findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
+            else:
+                util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s",str(i_statuses),str(i_types),str(i_resols),str(i_sevs))
+                util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
 
-        write_queue.put([findings_list, queue.empty()])
+            if ((h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list)):
+                new_params = hotspots.get_search_criteria(params)
+                new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
+                findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=new_params))
+            else:
+                util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
+                util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
+            write_queue.put([findings_list, queue.empty()])
         queue.task_done()
 
 
-def store_findings(project_keys, params, endpoint, file, format, threads=8):
+def store_findings(project_list, params, endpoint, file, format, threads=8):
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
-    for key in project_keys:
-        all_findings = {}
-        branches = None # __get_list(project, kwargs.get("branches", None), "branch")
-        prs = None # __get_list(project, kwargs.get("pullRequests", None), "pullrequest")
+    for key, project in project_list.items():
+        branches = __get_list(project, params.pop("branches", None), "branch")
+        prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
         if branches:
             for b in branches:
                 params["branch"] = b.name
+                my_queue.put((key, endpoint, params.copy()))
                 #all_findings.update(__get_project_findings(key, endpoint=endpoint, params=params))
         params.pop("branch", None)
         if prs:
             for p in prs:
                 params["pullRequest"] = p.key
+                my_queue.put((key, endpoint, params.copy()))
                 #all_findings.update(__get_project_findings(key, endpoint=endpoint, params=params))
         params.pop("pullRequest", None)
         if not (branches or prs):
-            my_queue.put((key, endpoint, params))
+            my_queue.put((key, endpoint, params.copy()))
             #all_findings.update(__get_project_findings(key, endpoint=endpoint, params=params))
 
     for i in range(threads):
@@ -332,7 +310,6 @@ def main():
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     start_time = datetime.datetime.today()
-    project_key = kwargs.get("projectKeys", None)
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
 
@@ -342,9 +319,9 @@ def main():
                 util.logger.warning("Selected search criteria %s will disable --useFindings", params[p])
             params["useFindings"] = False
             break
-    project_list = projects.get_list(endpoint=sqenv, key_list=project_key)
+    project_list = projects.get_list(endpoint=sqenv, key_list=util.csv_to_list(kwargs.get("projectKeys", None)))
 
-    fmt = kwargs["format"]
+    fmt = kwargs.pop("format", None)
     file = kwargs.pop("file", None)
     if file is not None:
         ext = file.split(".")[-1].lower()
@@ -356,7 +333,7 @@ def main():
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
     nbr_findings = 0
     __write_header(file, fmt)
-    store_findings(project_list.keys(), params=params, endpoint=sqenv, file=file, format=fmt)
+    store_findings(project_list, params=params, endpoint=sqenv, file=file, format=fmt)
     __write_footer(file, fmt)
     util.logger.info("Returned findings: %d - Total execution time: %s", nbr_findings, str(datetime.datetime.today() - start_time))
     sys.exit(0)
