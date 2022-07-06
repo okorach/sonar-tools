@@ -100,8 +100,8 @@ def __get_sysinfo_from_ticket(**kwargs):
                 util.exit_fatal(f"ERROR: Ticket {ticket} get attachment status code {r.status_code}", options.ERR_SONAR_API)
             try:
                 sif_list[attachment_file] = json.loads(r.text)
-            except:
-                util.logger.info("Ticket %s: Attachment '%s' is not a SIF, skipping", ticket, attachment_file)
+            except json.decoder.JSONDecodeError:
+                util.logger.info("Ticket %s: Attachment '%s' is not a JSON file, skipping", ticket, attachment_file)
                 continue
     return sif_list
 
@@ -128,7 +128,7 @@ def main():
                 util.logger.info("%d issues found during audit", len(problems))
                 print("No issues found is SIFs")
             problem.dump_report(problems, None, format="csv")
-        except (json.decoder.JSONDecodeError, sif.NotSystemInfo):
+        except sif.NotSystemInfo:
             util.logger.info("File %s does not seem to be a legit JSON file, skipped", file)
 
     sys.exit(1 if found_problems else 0)
