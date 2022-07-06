@@ -30,8 +30,11 @@ import json
 import argparse
 import requests
 from sonar import version, sif, options
+from sonar.audit import severities
 import sonar.utilities as util
 from sonar.audit import problem
+
+PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]
 
 
 def __get_args(desc):
@@ -61,6 +64,15 @@ def __get_args(desc):
         default="ERROR",
         help="Logging verbosity level, default is ERROR",
     )
+    parser.add_argument(
+        "-c",
+        "--comment",
+        required=False,
+        dest="comment",
+        action="store_true",
+        default=False,
+        help="Post a comment in the ticket after audit",
+    )
     parser.add_argument("-t", "--ticket", required=True, help="Support ticket to audit, in format SUPPORT-XXXXX or XXXXX")
     args = parser.parse_args()
     if not args.login or not args.password:
@@ -68,22 +80,38 @@ def __get_args(desc):
     return args
 
 
-def __get_sysinfo_from_ticket(**kwargs):
-    ROOT = f'{kwargs["url"]}/rest/servicedeskapi/request'
-    creds = (kwargs["login"], kwargs["password"])
-
-    ticket = kwargs["ticket"] if kwargs["ticket"].startswith("SUPPORT-") else f'SUPPORT-{kwargs["ticket"]}'
-    util.logger.debug("Check %s - URL %s", ticket, f"{ROOT}/{ticket}")
-    r = requests.get(f"{ROOT}/{ticket}", auth=creds)
+def __get_issue_id(**kwargs):
+    """Converts a ticket number into issue id needed to post on the issue"""
+    tix = kwargs["ticket"]
+    url = f'{kwargs["url"]}/rest/servicedeskapi/request/{tix}'
+    r = requests.get(url, auth=kwargs["creds"])
     if not r.ok:
         if r.status_code == HTTPStatus.NOT_FOUND:
-            print(f"Ticket {ticket} not found")
+            return None
+        else:
+            util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", options.ERR_SONAR_API)
+    return json.loads(r.text)["issueId"]
+
+
+def __add_comment(comment, **kwargs):
+    url = f'{kwargs["url"]}/rest/api/2/issue/{__get_issue_id(**kwargs)}/comment'
+    requests.post(url, auth=kwargs["creds"], json={"body": comment, "properties": PRIVATE_COMMENT})
+
+
+def __get_sysinfo_from_ticket(**kwargs):
+    tix = kwargs["ticket"]
+    url = f"{kwargs['url']}/rest/servicedeskapi/request/{tix}"
+    util.logger.debug("Check %s - URL %s", kwargs["ticket"], url)
+    r = requests.get(url, auth=kwargs["creds"])
+    if not r.ok:
+        if r.status_code == HTTPStatus.NOT_FOUND:
+            print(f"Ticket {tix} not found")
             sys.exit(3)
         else:
-            util.exit_fatal(f"Ticket {ticket}: URL '{ROOT}/{ticket}' status code {r.status_code}", options.ERR_SONAR_API)
+            util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", options.ERR_SONAR_API)
 
     data = json.loads(r.text)
-    util.logger.debug("Ticket %s found: searching SIF", ticket)
+    util.logger.debug("Ticket %s found: searching SIF", tix)
     sif_list = {}
     for d in data["requestFieldValues"]:
         if d.get("fieldId", "") != "attachment":
@@ -94,14 +122,14 @@ def __get_sysinfo_from_ticket(**kwargs):
                 continue
             attachment_url = v["content"]
             attachment_file = attachment_url.split("/")[-1]
-            util.logger.info("Ticket %s: Verifying attachment '%s' found", ticket, attachment_file)
-            r = requests.get(attachment_url, auth=creds)
+            util.logger.info("Ticket %s: Verifying attachment '%s' found", tix, attachment_file)
+            r = requests.get(attachment_url, auth=kwargs["creds"])
             if not r.ok:
-                util.exit_fatal(f"ERROR: Ticket {ticket} get attachment status code {r.status_code}", options.ERR_SONAR_API)
+                util.exit_fatal(f"ERROR: Ticket {tix} get attachment status code {r.status_code}", options.ERR_SONAR_API)
             try:
                 sif_list[attachment_file] = json.loads(r.text)
             except json.decoder.JSONDecodeError:
-                util.logger.info("Ticket %s: Attachment '%s' is not a JSON file, skipping", ticket, attachment_file)
+                util.logger.info("Ticket %s: Attachment '%s' is not a JSON file, skipping", tix, attachment_file)
                 continue
     return sif_list
 
@@ -110,25 +138,38 @@ def main():
     kwargs = vars(__get_args("Audits a Sonar ServiceDesk ticket (Searches for SIF attachment and audits SIF)"))
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    kwargs["creds"] = (kwargs.pop("login"), kwargs.pop("password"))
+    if not kwargs["ticket"].startswith("SUPPORT-"):
+        kwargs["ticket"] = f'SUPPORT-{kwargs["ticket"]}'
     sif_list = __get_sysinfo_from_ticket(**kwargs)
     if len(sif_list) == 0:
         print(f"No SIF found in ticket {kwargs['ticket']}")
         sys.exit(2)
     problems = []
     found_problems = False
+    comment = ""
     for file, sysinfo in sif_list.items():
         try:
             problems = sif.Sif(sysinfo).audit()
+            comment += f"h3. SIF *[^{file}]* audit:\n"
             print(f"SIF file '{file}' audit:")
             if problems:
-                util.logger.warning("%d issues found during audit", len(problems))
-            else:
                 found_problems = True
+                util.logger.warning("%d issues found during audit", len(problems))
+                problem.dump_report(problems, None, format="csv")
+                for p in problems:
+                    sev = "(x)" if p.severity in (severities.Severity.HIGH, severities.Severity.CRITICAL) else "(!)"
+                    comment += f"{sev} {p.message}\n"
+            else:
                 util.logger.info("%d issues found during audit", len(problems))
                 print("No issues found is SIFs")
-            problem.dump_report(problems, None, format="csv")
+                comment += "(y) No issues found\n"
+
         except sif.NotSystemInfo:
-            util.logger.info("File %s does not seem to be a legit JSON file, skipped", file)
+            util.logger.info("File '%s' does not seem to be a legit JSON file, skipped", file)
+
+    if kwargs.pop("comment"):
+        __add_comment(comment, **kwargs)
 
     sys.exit(1 if found_problems else 0)
 
