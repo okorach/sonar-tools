@@ -102,7 +102,7 @@ def __get_sysinfo_from_ticket(**kwargs):
 
 
 def main():
-    args = __get_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)")
+    args = __get_args("Audits a Sonar ServiceDesk ticket (Searches for SIF attachment and audits SIF)")
     kwargs = vars(args)
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
