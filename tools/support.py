@@ -105,7 +105,7 @@ def __get_sysinfo_from_ticket(**kwargs):
     r = requests.get(url, auth=kwargs["creds"])
     if not r.ok:
         if r.status_code == HTTPStatus.NOT_FOUND:
-            print(f'Ticket {tix} not found')
+            print(f"Ticket {tix} not found")
             sys.exit(3)
         else:
             util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", options.ERR_SONAR_API)
@@ -164,7 +164,6 @@ def main():
                 util.logger.info("%d issues found during audit", len(problems))
                 print("No issues found is SIFs")
                 comment += "(y) No issues found\n"
-
 
         except sif.NotSystemInfo:
             util.logger.info("File '%s' does not seem to be a legit JSON file, skipped", file)
