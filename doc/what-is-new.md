@@ -7,15 +7,17 @@
 
 ## sonar-audit
 - `sonar-audit` is now multi-threaded, this can dramatically increase speed of audit on large platforms with a lot of projects (which is the object consuming most of the auditing time)
-- `sonar-audit` now uses dynamic data Sonar update center (instead of hardcoding versions) to check for LTS and LATEST
+- `sonar-audit` now uses dynamic data for Sonar update center (instead of hardcoding versions) to check for LTS and LATEST
 - `sonar-audit` now allows to audit a selection of project or portfolios (chosen by their key)
-- `sonar-audit` gracefully fails when a non existing project key is specified 
+- `sonar-audit` now gracefully fails when a non existing project key is specified 
+- `sonar-audit` now allows to add a link to the concerned object in the audit report (makes it easy to navigate to the object to fix)
 - New audited stuff
   - Audits the version of scanner used and raise a warning if too old
   - Audits for portfolios and application background tasks failures
   - Audits permission templates (with same rules as project permissions)
   - Audits for warnings in last project scan (on main branch)
   - Audits when proportion of JSON code in a project is too high (More than 50% of JSON LoC for projects bigger than 100K LoC total). The same check already existed for XML before
+  - Audits for global webhook delivery failures
   - Audits when a project both have a `main` and a `master` branch. This is a sign of potential misconfiguration
 - Fixes:
   - Fixes a crash when some projects have too many users with admin permissions
@@ -24,7 +26,7 @@
 ## sonar-config
 - `sonar-config` export is now multi-threaded, this can dramatically increase speed of export on large platforms with a lot of projects (which is the object consuming most of the auditing time)
 - `sonar-config` export now offers the option to export all object attributes, including thos that are useless for future import. Those attributes are prefixed by `_`
-- `sonar-config` import now issue a warning when applying an unknown setting (typo in setting key?)
+- `sonar-config` import now issues a warning when applying an unknown setting (typo in setting key?)
 - Fixes:
   - Fix in export for permissions that could be incorrect in some cases
   - Fix in export of branch new code period definition export that was incorrect in some cases
