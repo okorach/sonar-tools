@@ -28,14 +28,16 @@ deletes tokens created since more than a certain number of days
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 8.9.x) and LATEST versions**
 
-# Release notes
-See: https://github.com/okorach/sonar-tools/releases
+# What's New - Release notes
+- [What's new](https://github.com/okorach/sonar-tools/blob/master/doc/what-is-new.md)
+- [Release notes](https://github.com/okorach/sonar-tools/releases)
 
 # Requirements and Installation
 - `sonar-tools` requires python 3.6 or higher
 - Installation is based on [pip](/https://pypi.org/project/pip/).
 - Online installation.
-  - Run: `python3 -m pip install sonar-tools`
+  - Run: `python3 -m pip install sonar-tools` (or `python3 -m pip upgrade sonar-tools`)
+  If install does not behave as expected you can try the **pip** `--force-reinstall` option (see **pip** documentation)
 - Offline installation: If you have no access to the internet on the install machine, you can:
   - Download the `.whl` file from https://pypi.org/project/sonar-tools or attached to the release at https://github.com/okorach/sonar-tools/releases. The file should be something like. **sonar_tools-\<VERSION\>-py3-none-any.whl**
   - Copy the downloaded file on the install machine
