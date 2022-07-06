@@ -29,7 +29,6 @@ import os
 import json
 import argparse
 import requests
-from yaml import full_load
 from sonar import version, sif, options
 from sonar.audit import severities
 import sonar.utilities as util
@@ -140,7 +139,7 @@ def main():
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     kwargs["creds"] = (kwargs.pop("login"), kwargs.pop("password"))
-    if not kwargs.pop("ticket").startswith("SUPPORT-"):
+    if not kwargs["ticket"].startswith("SUPPORT-"):
         kwargs["ticket"] = f'SUPPORT-{kwargs["ticket"]}'
     sif_list = __get_sysinfo_from_ticket(**kwargs)
     if len(sif_list) == 0:
@@ -152,7 +151,7 @@ def main():
     for file, sysinfo in sif_list.items():
         try:
             problems = sif.Sif(sysinfo).audit()
-            comment += f"SIF file '{file}' audit:\n"
+            comment += f"h3. SIF *[^{file}]* audit:\n"
             print(f"SIF file '{file}' audit:")
             if problems:
                 found_problems = True
@@ -164,7 +163,7 @@ def main():
             else:
                 util.logger.info("%d issues found during audit", len(problems))
                 print("No issues found is SIFs")
-                comment += "No issues found\n"
+                comment += "(y) No issues found\n"
 
 
         except sif.NotSystemInfo:
