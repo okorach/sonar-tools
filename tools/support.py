@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 #
 # sonar-tools
-# Copyright (C) 2019-2022 Olivier Korach
+# Copyright (C) 2022 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -36,25 +36,25 @@ from sonar.audit import problem
 def __get_args(desc):
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument(
-        "-p", "--password",
+        "-p",
+        "--password",
         required=False,
         default=os.getenv("JIRA_PASSWORD", None),
-        help="Password to authenticate to JIRA, default is environment variable $JIRA_PASSWORD"
+        help="Password to authenticate to JIRA, default is environment variable $JIRA_PASSWORD",
     )
     parser.add_argument(
-        "-l", "--login",
+        "-l",
+        "--login",
         required=False,
         default=os.getenv("JIRA_LOGIN"),
-        help="Password to authenticate to JIRA, default is environment variable $JIRA_LOGIN"
+        help="Password to authenticate to JIRA, default is environment variable $JIRA_LOGIN",
     )
     parser.add_argument(
-        "-u", "--url",
-        required=False,
-        default="https://services.sonarsource.com",
-        help="ServiceDesk URL, default is https://services.sonarsource.com"
+        "-u", "--url", required=False, default="https://services.sonarsource.com", help="ServiceDesk URL, default is https://services.sonarsource.com"
     )
     parser.add_argument(
-        "-v", "--" + util.OPT_VERBOSE,
+        "-v",
+        "--" + util.OPT_VERBOSE,
         required=False,
         choices=["ERROR", "WARN", "INFO", "DEBUG"],
         default="ERROR",
@@ -81,11 +81,11 @@ def __get_sysinfo_from_ticket(**kwargs):
     util.logger.debug("Ticket %s found: searching SIF", ticket)
     sif_list = {}
     for d in data["requestFieldValues"]:
-        if d.get('fieldId', '') != 'attachment':
+        if d.get("fieldId", "") != "attachment":
             continue
         for v in d["value"]:
-            file_type = v["filename"].split('.')[-1].lower()
-            if file_type not in ('json', 'txt'):
+            file_type = v["filename"].split(".")[-1].lower()
+            if file_type not in ("json", "txt"):
                 continue
             attachment_url = v["content"]
             attachment_file = attachment_url.split("/")[-1]
@@ -96,9 +96,10 @@ def __get_sysinfo_from_ticket(**kwargs):
             try:
                 sif_list[attachment_file] = json.loads(r.text)
             except:
-                print(f"Ticket {ticket}: Attachment \'{attachment_file}\' is not a SIF, skipping")
+                print(f"Ticket {ticket}: Attachment '{attachment_file}' is not a SIF, skipping")
                 continue
     return sif_list
+
 
 def main():
     args = __get_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)")
