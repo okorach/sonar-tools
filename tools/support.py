@@ -30,9 +30,16 @@ import json
 import argparse
 import requests
 from sonar import version, sif, options
+from sonar.audit import severities
 import sonar.utilities as util
 from sonar.audit import problem
 
+PRIVATE_COMMENT = [
+            {
+                "key":"sd.public.comment",
+                "value":{"internal":"true"}
+            }
+        ]
 
 def __get_args(desc):
     parser = argparse.ArgumentParser(description=desc)
@@ -61,12 +68,38 @@ def __get_args(desc):
         default="ERROR",
         help="Logging verbosity level, default is ERROR",
     )
+    parser.add_argument(
+        "-c",
+        "--comment",
+        required=False,
+        dest="comment",
+        action="store_true",
+        default=False,
+        help="Post a comment in the ticket after audit",
+    )
     parser.add_argument("-t", "--ticket", required=True, help="Support ticket to audit, in format SUPPORT-XXXXX or XXXXX")
     args = parser.parse_args()
     if not args.login or not args.password:
         util.exit_fatal("Login and Password are required to authenticate to ServiceDesk", options.ERR_TOKEN_MISSING)
     return args
 
+
+def __get_issue_id(**kwargs):
+    ROOT = f'{kwargs["url"]}/rest/servicedeskapi/request'
+    creds = (kwargs["login"], kwargs["password"])
+    ticket = kwargs["ticket"] if kwargs["ticket"].startswith("SUPPORT-") else f'SUPPORT-{kwargs["ticket"]}'
+    r = requests.get(f"{ROOT}/{ticket}", auth=creds)
+    if not r.ok:
+        if r.status_code == HTTPStatus.NOT_FOUND:
+            return None
+        else:
+            util.exit_fatal(f"Ticket {ticket}: URL '{ROOT}/{ticket}' status code {r.status_code}", options.ERR_SONAR_API)
+    return json.loads(r.text)["issueId"]
+
+def __add_comment(comment, **kwargs):
+    url = f'{kwargs["url"]}/rest/api/2/issue/{__get_issue_id(**kwargs)}/comment'
+    creds = (kwargs["login"], kwargs["password"])
+    requests.post(url, auth=creds, json={"body": comment, "properties": PRIVATE_COMMENT})
 
 def __get_sysinfo_from_ticket(**kwargs):
     ROOT = f'{kwargs["url"]}/rest/servicedeskapi/request'
@@ -116,19 +149,29 @@ def main():
         sys.exit(2)
     problems = []
     found_problems = False
+    comment = ""
     for file, sysinfo in sif_list.items():
         try:
             problems = sif.Sif(sysinfo).audit()
+            comment += f"SIF file '{file}' audit:\n"
             print(f"SIF file '{file}' audit:")
             if problems:
-                util.logger.warning("%d issues found during audit", len(problems))
-            else:
                 found_problems = True
+                util.logger.warning("%d issues found during audit", len(problems))
+            else: 
                 util.logger.info("%d issues found during audit", len(problems))
                 print("No issues found is SIFs")
+                comment += "No issues found\n"
             problem.dump_report(problems, None, format="csv")
+
+            for p in problems:
+                sev = "(x)" if p.severity in (severities.Severity.HIGH, severities.Severity.CRITICAL) else "(!)"
+                comment += f"{sev} {p.message}\n"
         except sif.NotSystemInfo:
             util.logger.info("File %s does not seem to be a legit JSON file, skipped", file)
+
+    if kwargs.pop("comment"):
+        __add_comment(comment, **kwargs)
 
     sys.exit(1 if found_problems else 0)
 
