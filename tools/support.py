@@ -34,12 +34,8 @@ from sonar.audit import severities
 import sonar.utilities as util
 from sonar.audit import problem
 
-PRIVATE_COMMENT = [
-            {
-                "key":"sd.public.comment",
-                "value":{"internal":"true"}
-            }
-        ]
+PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]
+
 
 def __get_args(desc):
     parser = argparse.ArgumentParser(description=desc)
@@ -96,10 +92,12 @@ def __get_issue_id(**kwargs):
             util.exit_fatal(f"Ticket {ticket}: URL '{ROOT}/{ticket}' status code {r.status_code}", options.ERR_SONAR_API)
     return json.loads(r.text)["issueId"]
 
+
 def __add_comment(comment, **kwargs):
     url = f'{kwargs["url"]}/rest/api/2/issue/{__get_issue_id(**kwargs)}/comment'
     creds = (kwargs["login"], kwargs["password"])
     requests.post(url, auth=creds, json={"body": comment, "properties": PRIVATE_COMMENT})
+
 
 def __get_sysinfo_from_ticket(**kwargs):
     ROOT = f'{kwargs["url"]}/rest/servicedeskapi/request'
@@ -158,7 +156,7 @@ def main():
             if problems:
                 found_problems = True
                 util.logger.warning("%d issues found during audit", len(problems))
-            else: 
+            else:
                 util.logger.info("%d issues found during audit", len(problems))
                 print("No issues found is SIFs")
                 comment += "No issues found\n"
