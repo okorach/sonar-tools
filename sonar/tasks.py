@@ -300,7 +300,7 @@ class Task(sq.SqObject):
             scanner_version.append("0")
         str_version = ".".join(scanner_version[0:3])
         release_date = SCANNER_VERSIONS[scanner_type][str_version]
-ck'ing        delta_days = (datetime.datetime.today() - release_date).days
+        delta_days = (datetime.datetime.today() - release_date).days
         if delta_days > audit_settings["audit.projects.scannerMaxAge"]:
             rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER)
             msg = rule.msg.format(str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False))
