@@ -67,6 +67,7 @@ setuptools.setup(
             "sonar-findings-export = tools.findings_export:main",
             "sonar-loc = tools.loc:main",
             "sonar-config = tools.config:main",
+            "support-audit = tools.support:main",
         ]
     },
     python_requires=">=3.6",
