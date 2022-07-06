@@ -295,14 +295,25 @@ class Task(sq.SqObject):
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
             (scanner_version, build_tool_version) = scanner_version.split("/")
             scanner_version = scanner_version.replace("-SNAPSHOT", "")
-        scanner_version = scanner_version.split(".")
+        scanner_version = [int(n) for n in scanner_version.split(".")]
         if len(scanner_version) == 2:
-            scanner_version.append("0")
-        str_version = ".".join(scanner_version[0:3])
+            scanner_version.append(0)
+        scanner_version = tuple(scanner_version[0:3])
+
+        str_version = ".".join([str(n) for n in scanner_version])
         release_date = SCANNER_VERSIONS[scanner_type][str_version]
         delta_days = (datetime.datetime.today() - release_date).days
+        versions_list = SCANNER_VERSIONS[scanner_type].keys()
+        util.logger.debug("versions = %s", str(versions_list))
+        tuple_version_list = []
+        for v in versions_list:
+            tuple_version_list.append(tuple([int(n) for n in v.split(".")]))
+
+        tuple_version_list.sort(reverse=True)
+        index = tuple_version_list.index(scanner_version)
+        util.logger.debug("Scanner used is %d versions old", index)
         if delta_days > audit_settings["audit.projects.scannerMaxAge"]:
-            rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER)
+            rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER) if index >= 3 else rules.get_rule(rules.RuleId.NOT_LATEST_SCANNER)
             msg = rule.msg.format(str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False))
             return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self.concerned_object)]
         return []
