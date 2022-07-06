@@ -23,6 +23,7 @@
     Audits a SUPPORT ticket SIF
 
 """
+from http import HTTPStatus
 import sys
 import os
 import json
@@ -58,9 +59,9 @@ def __get_args(desc):
         required=False,
         choices=["ERROR", "WARN", "INFO", "DEBUG"],
         default="ERROR",
-        help="Logging verbosity level",
+        help="Logging verbosity level, default is ERROR",
     )
-    parser.add_argument("-t", "--ticket", required=True, help="Support ticket to audit")
+    parser.add_argument("-t", "--ticket", required=True, help="Support ticket to audit, in format SUPPORT-XXXXX or XXXXX")
     args = parser.parse_args()
     if not args.login or not args.password:
         util.exit_fatal("Login and Password are required to authenticate to ServiceDesk", options.ERR_TOKEN_MISSING)
@@ -75,7 +76,11 @@ def __get_sysinfo_from_ticket(**kwargs):
     util.logger.debug("Check %s - URL %s", ticket, f"{ROOT}/{ticket}")
     r = requests.get(f"{ROOT}/{ticket}", auth=creds)
     if not r.ok:
-        util.exit_fatal(f"Ticket {ticket}: URL '{ROOT}/{ticket}' status code {r.status_code}", options.ERR_SONAR_API)
+        if r.status_code == HTTPStatus.NOT_FOUND:
+            print(f"Ticket {ticket} not found")
+            sys.exit(3)
+        else:
+            util.exit_fatal(f"Ticket {ticket}: URL '{ROOT}/{ticket}' status code {r.status_code}", options.ERR_SONAR_API)
 
     data = json.loads(r.text)
     util.logger.debug("Ticket %s found: searching SIF", ticket)
@@ -89,14 +94,14 @@ def __get_sysinfo_from_ticket(**kwargs):
                 continue
             attachment_url = v["content"]
             attachment_file = attachment_url.split("/")[-1]
-            util.logger.debug("Ticket %s: Verifying attachment '%s' found", ticket, attachment_file)
+            util.logger.info("Ticket %s: Verifying attachment '%s' found", ticket, attachment_file)
             r = requests.get(attachment_url, auth=creds)
             if not r.ok:
                 util.exit_fatal(f"ERROR: Ticket {ticket} get attachment status code {r.status_code}", options.ERR_SONAR_API)
             try:
                 sif_list[attachment_file] = json.loads(r.text)
             except:
-                print(f"Ticket {ticket}: Attachment '{attachment_file}' is not a SIF, skipping")
+                util.logger.info("Ticket %s: Attachment '%s' is not a SIF, skipping", ticket, attachment_file)
                 continue
     return sif_list
 
@@ -107,20 +112,26 @@ def main():
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     sif_list = __get_sysinfo_from_ticket(**kwargs)
+    if len(sif_list) == 0:
+        print(f"No SIF found in ticket {kwargs['ticket']}")
+        sys.exit(2)
     problems = []
+    found_problems = False
     for file, sysinfo in sif_list.items():
         try:
-            problems += sif.Sif(sysinfo).audit()
+            problems = sif.Sif(sysinfo).audit()
+            print(f"SIF file '{file}' audit:")
+            if problems:
+                util.logger.warning("%d issues found during audit", len(problems))
+            else:
+                found_problems = True
+                util.logger.info("%d issues found during audit", len(problems))
+                print("No issues found is SIFs")
+            problem.dump_report(problems, None, format="csv")
         except (json.decoder.JSONDecodeError, sif.NotSystemInfo):
             util.logger.info("File %s does not seem to be a legit JSON file, skipped", file)
 
-    kwargs["format"] = "csv"
-    if problems:
-        util.logger.warning("%d issues found during audit", len(problems))
-    else:
-        util.logger.info("%d issues found during audit", len(problems))
-    problem.dump_report(problems, None, **kwargs)
-    sys.exit(0)
+    sys.exit(1 if found_problems else 0)
 
 
 if __name__ == "__main__":
