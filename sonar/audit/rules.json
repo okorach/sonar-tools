@@ -376,9 +376,14 @@
         "message": "{} last background task FAILED"
     },
     "OBSOLETE_SCANNER": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "message": "{} was last analyzed with {} version {} released on {}, it is obsolete, strongly consider updating the scanner"
+    },
+    "NOT_LATEST_SCANNER": {
         "severity": "MEDIUM",
         "type": "OPERATIONS",
-        "message": "{} was last analyzed with an obsolete {} version {} released on {}"
+        "message": "{} was last analyzed with {} version {} that is not the most recent version, consider updating the scanner"
     },
     "NOT_USING_BRANCH_ANALYSIS": {
         "severity": "LOW",
