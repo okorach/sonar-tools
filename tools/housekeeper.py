@@ -216,7 +216,7 @@ def main():
         op = "deleted"
     (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
 
-    util.logger.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, args.projects,  deleted_loc, op)
+    util.logger.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, args.projects, deleted_loc, op)
     util.logger.info("%d branches older than %d days %s", deleted_branches, args.branches, op)
     util.logger.info("%d pull requests older than %d days %s", deleted_prs, args.pullrequests, op)
     util.logger.info("%d tokens older than %d days revoked", revoked_tokens, args.tokens)

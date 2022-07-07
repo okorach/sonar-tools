@@ -307,7 +307,7 @@ def main():
     start_time = datetime.datetime.today()
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
-        
+
     for p in ("statuses", "createdAfter", "createdBefore", "resolutions", "severities", "types", "tags"):
         if params.get(p, None) is not None:
             if params["useFindings"]:
