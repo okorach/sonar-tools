@@ -78,7 +78,7 @@ class Branch(components.Component):
     def uuid(self):
         return _uuid(self.project.key, self.name)
 
-    def last_analysis(self):
+    def last_analysis(self, include_branches=False):
         if self._last_analysis is None:
             self.read()
         return self._last_analysis
