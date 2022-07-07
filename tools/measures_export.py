@@ -41,7 +41,7 @@ def __diff(first, second):
 
 
 def __last_analysis(project_or_branch):
-    last_analysis = project_or_branch.last_analysis_date()
+    last_analysis = project_or_branch.last_analysis()
     with_time = True
     if CONVERT_OPTIONS["dates"] == "dateonly":
         with_time = False
