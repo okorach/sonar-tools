@@ -306,7 +306,7 @@ def csv_to_list(string, separator=","):
 
 def list_to_csv(array, separator=",", check_for_separator=False):
     if isinstance(array, str):
-        return array
+        return csv_normalize(array, separator) if " " in array else array
     if array is None:
         return None
     if check_for_separator:
