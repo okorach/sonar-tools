@@ -93,7 +93,7 @@ do
     sonar-audit -f $f
     check $f
     f="$IT_ROOT/audit-$env-2.json"
-    sonar-audit --format json --what qp,qg,settings >$f
+    sonar-audit --format json --what qualitygates,qualityprofiles,settings >$f
     check $f
     f="$IT_ROOT/audit-$env-3.csv"
     sonar-audit  --csvSeparator '+' --format csv >$f
