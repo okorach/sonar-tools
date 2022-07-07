@@ -49,6 +49,8 @@ class QualityPermissions(permissions.Permissions):
         if not csv:
             return self.permissions[perm_type] if permissions.is_valid(perm_type) else self.permissions
         perms = {}
+        if not self.permissions:
+            return None
         for p in permissions.normalize(perm_type):
             dperms = self.permissions.get(p, None)
             if dperms is not None and len(dperms) > 0:
@@ -95,7 +97,7 @@ class QualityPermissions(permissions.Permissions):
     def _read_perms(self, apis, field, **kwargs):
         self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
         if self.concerned_object.is_built_in:
-            utilities.logger.debug("Won't read %s because it's built-in", str(self))
+            utilities.logger.debug("No permissions for %s because it's built-in", str(self))
         else:
             for p in permissions.PERMISSION_TYPES:
                 self.permissions[p] = self._get_api(apis["get"][p], p, field[p], **kwargs)
