@@ -252,7 +252,7 @@ def main():
     util.logger.info("Computing LoCs")
     nb_loc = 0
     for project in project_list.values():
-        nb_loc += project.ncloc_with_branches()
+        nb_loc += project.ncloc()
 
     util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)
     sys.exit(0)
