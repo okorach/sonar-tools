@@ -32,7 +32,7 @@ check() {
 
 [ $# -eq 0 ] && echo "Usage: $0 <env1> [... <envN>]" && exit 1
 
-IT_ROOT="../tmp"
+IT_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd ../tmp ; pwd -P )"
 IT_LOG_FILE="$IT_ROOT/it.log"
 mkdir -p $IT_ROOT
 rm -f $IT_ROOT/*
