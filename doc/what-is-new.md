@@ -40,6 +40,9 @@
 - Tool is now multi-threaded, this can dramatically increase speed of export on large platforms with a lot of projects and a lot of issues
 - Tool gracefully fails when a non existing project key is specified 
 
+## sonar-findings-sync
+- Fix regression. tool was broken in v2.3
+
 # Version 2.3
 
 ## General changes
