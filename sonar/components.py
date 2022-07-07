@@ -149,7 +149,7 @@ class Component(sq.SqObject):
             self._ncloc = int(self.get_measure("ncloc", fallback=0))
         return self._ncloc
 
-    def last_analysis(self):
+    def last_analysis(self, include_branches=False):
         if self._last_analysis is not None:
             return self._last_analysis
         resp = self.endpoint.get("navigation/component", params={"component": self.key})
