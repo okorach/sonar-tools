@@ -132,29 +132,22 @@ def main():
 
     if kwargs.get("sif", None) is not None:
         try:
+            err = options.ERR_SIF_AUDIT_ERROR
             problems = _audit_sif(kwargs["sif"])
         except json.decoder.JSONDecodeError:
-            util.exit_fatal(
-                f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...",
-                options.ERR_SIF_AUDIT_ERROR,
-            )
+            util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", err)
         except FileNotFoundError:
-            util.exit_fatal(
-                f"File {kwargs['sif']} does not exist, aborting...",
-                options.ERR_SIF_AUDIT_ERROR,
-            )
+            util.exit_fatal(f"File {kwargs['sif']} does not exist, aborting...", err)
         except PermissionError:
-            util.exit_fatal(
-                f"No permissiont to open file {kwargs['sif']}, aborting...",
-                options.ERR_SIF_AUDIT_ERROR,
-            )
+            util.exit_fatal(f"No permissiont to open file {kwargs['sif']}, aborting...", err)
         except sif.NotSystemInfo:
-            util.exit_fatal(
-                f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...",
-                options.ERR_SIF_AUDIT_ERROR,
-            )
+            util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
 
     key_list = util.csv_to_list(args.projectKeys)
+    if len(key_list) > 0 and "projects" in util.csv_to_list(args.what):
+        for key in key_list:
+            if not projects.exists(key, sq):
+                util.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
     try:
         problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
     except options.NonExistingObjectError as e:

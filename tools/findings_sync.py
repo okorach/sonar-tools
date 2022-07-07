@@ -102,8 +102,8 @@ def main():
     source_env = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     params = vars(args)
     util.check_environment(params)
-    source_key = params["componentKeys"]
-    target_key = params.get("targetComponentKeys", None)
+    source_key = params["projectKeys"]
+    target_key = params.get("targetProjectKey", None)
     source_branch = params.get("sourceBranch", None)
     target_branch = params.get("targetBranch", None)
     target_url = params.get("urlTarget", None)

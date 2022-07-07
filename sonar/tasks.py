@@ -108,8 +108,9 @@ SCANNER_VERSIONS = {
         "4.8.0": datetime.datetime(2019, 11, 6),
         "4.7.1": datetime.datetime(2019, 9, 10),
         "4.7.0": datetime.datetime(2019, 9, 3),
-    }
+    },
 }
+
 
 class Task(sq.SqObject):
     def __init__(self, task_id, endpoint, concerned_object=None, data=None):

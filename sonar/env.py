@@ -22,9 +22,11 @@
     Abstraction of the SonarQube "platform" concept
 
 """
+from http import HTTPStatus
 import sys
 import os
 import re
+import time
 import datetime
 import json
 import tempfile
@@ -103,8 +105,21 @@ class Environment:
 
     def sys_info(self):
         if self._sys_info is None:
-            resp = self.get("system/info")
-            self._sys_info = json.loads(resp.text)
+            success, counter = False, 0
+            while not success and counter < 10:
+                resp = self.get("system/info", exit_on_error=False)
+                if resp.ok:
+                    self._sys_info = json.loads(resp.text)
+                    success = True
+                else:
+                    # Hack: SonarQube randomly returns Error 500, retry in that case
+                    if resp.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+                        util.logger.error("HTTP Error 500 for api/system/info, retrying...")
+                        counter += 1
+                        time.sleep(1)
+                    else:
+                        util.logger.error("HTTP Error %d for api/system/info", resp.status_code)
+                        success = True
         return self._sys_info
 
     def edition(self):
