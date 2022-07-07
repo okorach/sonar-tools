@@ -30,6 +30,7 @@ import logging
 import argparse
 import json
 import datetime
+import pytz
 from sonar import options
 
 OPT_VERBOSE = "verbosity"
@@ -223,6 +224,11 @@ def date_to_string(date, with_time=True):
     if not with_time:
         fmt = SQ_DATE_FORMAT
     return date.strftime(fmt)
+
+
+def age(some_date, rounded=True):
+    delta = datetime.datetime.today().replace(tzinfo=pytz.UTC) - some_date
+    return delta.days if rounded else delta
 
 
 def get_setting(settings, key, default):
