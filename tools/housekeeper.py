@@ -27,13 +27,13 @@
 
 """
 import sys
-from sonar import users, groups, env, version, user_tokens
+from sonar import users, groups, env, version, user_tokens, options
 from sonar.projects import projects, branches, pull_requests
 import sonar.utilities as util
 from sonar.audit import config, problem
 
 
-def get_project_problems(max_days_proj, max_days_branch, max_days_pr, endpoint):
+def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads, endpoint):
     problems = []
     if max_days_proj < 90:
         util.logger.error("As a safety measure, can't delete projects more recent than 90 days")
@@ -49,6 +49,7 @@ def get_project_problems(max_days_proj, max_days_branch, max_days_pr, endpoint):
         "audit.projects.permissions": False,
     }
     settings = config.load(config_name="sonar-audit", settings=settings)
+    settings["threads"] = nb_threads
     problems = projects.audit(endpoint=endpoint, audit_settings=settings)
     nb_proj = 0
     total_loc = 0
@@ -106,6 +107,7 @@ def _parse_arguments():
     _DEFAULT_PR_OBSOLESCENCE = 30
     _DEFAULT_TOKEN_OBSOLESCENCE = 365
     parser = util.set_common_args("Deletes projects not analyzed since a given numbr of days")
+    parser = options.add_thread_arg(parser, "auditing before housekeeping")
     parser.add_argument(
         "--mode",
         required=False,
@@ -202,7 +204,7 @@ def main():
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     problems = []
     if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:
-        problems = get_project_problems(args.projects, args.branches, args.pullrequests, sq)
+        problems = get_project_problems(args.projects, args.branches, args.pullrequests, args.threads, sq)
 
     if args.tokens:
         problems += get_user_problems(args.tokens, sq)
@@ -212,28 +214,11 @@ def main():
     op = "to delete"
     if mode == "delete":
         op = "deleted"
-    (
-        deleted_proj,
-        deleted_loc,
-        deleted_branches,
-        deleted_prs,
-        revoked_tokens,
-    ) = _delete_objects(problems, mode)
+    (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
 
-    util.logger.info(
-        "%d projects older than %d days (%d LoCs) %s",
-        deleted_proj,
-        args.projects,
-        deleted_loc,
-        op,
-    )
+    util.logger.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, args.projects,  deleted_loc, op)
     util.logger.info("%d branches older than %d days %s", deleted_branches, args.branches, op)
-    util.logger.info(
-        "%d pull requests older than %d days deleted %s",
-        deleted_prs,
-        args.pullrequests,
-        op,
-    )
+    util.logger.info("%d pull requests older than %d days %s", deleted_prs, args.pullrequests, op)
     util.logger.info("%d tokens older than %d days revoked", revoked_tokens, args.tokens)
     sys.exit(0)
 
