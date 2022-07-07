@@ -158,6 +158,15 @@ class Permissions(ABC):
         return perms
 
     def count(self, perm_type=None, perm_filter=None):
+        """Counts number of permissions of an object
+
+        :param perm_type: Optional "users" or "groups", both assumed if not specified.
+        :type perm_type: str, optional
+        :param perm_filter: Optional filter to count only specific types of permissions, defaults to None.
+        :type perm_type: str, Optional
+        :return: The number of permissions.
+        :rtype: int
+        """
         perms = PERMISSION_TYPES if perm_type is None else (perm_type)
         elem_counter, perm_counter = 0, 0
         for ptype in perms:
