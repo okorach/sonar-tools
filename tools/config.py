@@ -105,6 +105,12 @@ def __parse_args(desc):
 
 
 def __export_config(endpoint, what, args):
+    key_list = utilities.csv_to_list(args.projectKeys)
+    if len(key_list) > 0:
+        if "projects" in utilities.csv_to_list(args.what):
+            for key in key_list:
+                if not projects.exists(key, endpoint):
+                    utilities.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
     utilities.logger.info("Exporting configuration from %s", args.url)
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()

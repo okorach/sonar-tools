@@ -240,7 +240,6 @@ def __get_project_findings(queue, write_queue):
 
         new_params = issues.get_search_criteria(params)
         new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
-        util.logger.debug("Searching issues with paramas = %s", str(new_params))
         if search_findings:
             findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint, search_findings=search_findings)
             write_queue.put([findings_list, queue.empty()])
@@ -308,15 +307,17 @@ def main():
     start_time = datetime.datetime.today()
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
-
+        
     for p in ("statuses", "createdAfter", "createdBefore", "resolutions", "severities", "types", "tags"):
         if params.get(p, None) is not None:
             if params["useFindings"]:
                 util.logger.warning("Selected search criteria %s will disable --useFindings", params[p])
             params["useFindings"] = False
             break
-    project_list = projects.get_list(endpoint=sqenv, key_list=util.csv_to_list(kwargs.get("projectKeys", None)))
-
+    try:
+        project_list = projects.get_list(endpoint=sqenv, key_list=util.csv_to_list(kwargs.get("projectKeys", None)))
+    except options.NonExistingObjectError as e:
+        util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     fmt = kwargs.pop("format", None)
     file = kwargs.pop("file", None)
     if file is not None:

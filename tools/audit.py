@@ -155,6 +155,11 @@ def main():
             )
 
     key_list = util.csv_to_list(args.projectKeys)
+    if len(key_list) > 0:
+        if "projects" in util.csv_to_list(args.what):
+            for key in key_list:
+                if not projects.exists(key, sq):
+                    util.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
     try:
         problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
     except options.NonExistingObjectError as e:

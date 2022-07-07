@@ -213,8 +213,10 @@ def main():
     wanted_metrics = __get_wanted_metrics(args, endpoint)
     (fmt, file) = __get_fmt_and_file(args)
 
-    project_list = projects.get_list(endpoint=endpoint, key_list=args.projectKeys)
-
+    try:
+        project_list = projects.get_list(endpoint=endpoint, key_list=args.projectKeys)
+    except options.NonExistingObjectError as e:
+        util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     is_first = True
     obj_list = []
     if with_branches:
