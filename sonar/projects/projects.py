@@ -23,13 +23,11 @@
 
 """
 import os
-import datetime
 import re
 import json
 from http import HTTPStatus
 from threading import Thread
 from queue import Queue
-import pytz
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, custom_measures
 from sonar.projects import pull_requests, branches
 from sonar.findings import issues, hotspots
@@ -68,8 +66,8 @@ _IMPORTABLE_PROPERTIES = (
 class Project(components.Component):
     def __init__(self, key, endpoint=None, data=None, create_data=None):
         super().__init__(key, endpoint)
-        self.main_branch_last_analysis_date = "undefined"
-        self.all_branches_last_analysis_date = "undefined"
+        self._last_analysis = "undefined"
+        self._branches_last_analysis = "undefined"
         self._permissions = None
         self._branches = None
         self._pull_requests = None
@@ -103,34 +101,34 @@ class Project(components.Component):
         self.name = data["name"]
         self._visibility = data["visibility"]
         if "lastAnalysisDate" in data:
-            self.main_branch_last_analysis_date = util.string_to_date(data["lastAnalysisDate"])
+            self._last_analysis = util.string_to_date(data["lastAnalysisDate"])
         else:
-            self.main_branch_last_analysis_date = None
+            self._last_analysis = None
         self.revision = data.get("revision", None)
 
     def url(self):
         return f"{self.endpoint.url}/dashboard?id={self.key}"
 
-    def last_analysis_date(self, include_branches=False):
-        if self.main_branch_last_analysis_date == "undefined":
+    def last_analysis(self, include_branches=False):
+        if self._last_analysis == "undefined":
             self.__load()
         if not include_branches:
-            return self.main_branch_last_analysis_date
-        if self.all_branches_last_analysis_date != "undefined":
-            return self.all_branches_last_analysis_date
+            return self._last_analysis
+        if self._branches_last_analysis != "undefined":
+            return self._branches_last_analysis
 
-        self.all_branches_last_analysis_date = self.main_branch_last_analysis_date
+        self._branches_last_analysis = self._last_analysis
         if self.endpoint.version() >= (9, 2, 0):
             # Starting from 9.2 project last analysis date takes into account branches and PR
-            return self.all_branches_last_analysis_date
+            return self._branches_last_analysis
 
         for b in self.branches() + self.pull_requests():
-            if b.last_analysis_date() is None:
+            if b.last_analysis() is None:
                 continue
-            b_ana_date = b.last_analysis_date()
-            if self.all_branches_last_analysis_date is None or b_ana_date > self.all_branches_last_analysis_date:
-                self.all_branches_last_analysis_date = b_ana_date
-        return self.all_branches_last_analysis_date
+            b_ana_date = b.last_analysis()
+            if self._branches_last_analysis is None or b_ana_date > self._branches_last_analysis:
+                self._branches_last_analysis = b_ana_date
+        return self._branches_last_analysis
 
     def ncloc_with_branches(self):
         if self._ncloc_with_branches is not None:
@@ -209,17 +207,10 @@ class Project(components.Component):
             key += _BIND_SEP + p_bind["slug"]
         return key
 
-    def age_of_last_analysis(self):
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        last_analysis = self.last_analysis_date(include_branches=True)
-        if last_analysis is None:
-            return None
-        return abs(today - last_analysis).days
-
     def __audit_last_analysis__(self, audit_settings):
         util.logger.debug("Auditing %s last analysis date", str(self))
         problems = []
-        age = self.age_of_last_analysis()
+        age = util.age(self.last_analysis(include_branches=True), True)
         if age is None:
             if not audit_settings["audit.projects.neverAnalyzed"]:
                 util.logger.debug("Auditing of never analyzed projects is disabled, skipping")
@@ -305,7 +296,7 @@ class Project(components.Component):
     def __audit_zero_loc(self, audit_settings):
         if (
             (not audit_settings["audit.projects.branches"] or self.endpoint.edition() == "community")
-            and self.last_analysis_date() is not None
+            and self.last_analysis() is not None
             and self.ncloc() == 0
         ):
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)

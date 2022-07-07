@@ -23,9 +23,7 @@
 
 """
 
-import datetime
 import json
-import pytz
 import requests.utils
 from sonar import measures, components, syncer, settings
 from sonar.projects import projects
@@ -80,20 +78,10 @@ class Branch(components.Component):
     def uuid(self):
         return _uuid(self.project.key, self.name)
 
-    def last_analysis_date(self):
+    def last_analysis(self):
         if self._last_analysis is None:
             self.read()
         return self._last_analysis
-
-    def last_analysis_age(self, rounded_to_days=True):
-        last_analysis = self.last_analysis_date()
-        if last_analysis is None:
-            return None
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        if rounded_to_days:
-            return (today - last_analysis).days
-        else:
-            return today - last_analysis
 
     def is_kept_when_inactive(self):
         if self._keep_when_inactive is None or self._json is None:
@@ -158,7 +146,7 @@ class Branch(components.Component):
         return True
 
     def __audit_zero_loc(self):
-        if self.last_analysis_date() is not None and self.ncloc() == 0:
+        if self.last_analysis() and self.ncloc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
             return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return []
@@ -215,7 +203,7 @@ class Branch(components.Component):
         return (report, counters)
 
     def __audit_last_analysis(self, audit_settings):
-        age = self.last_analysis_age()
+        age = util.age(self.last_analysis())
         if self.is_main() or age is None:
             # Main branch (not purgeable) or branch not analyzed yet
             return []
