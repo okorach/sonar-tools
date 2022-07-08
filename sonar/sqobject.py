@@ -64,9 +64,9 @@ def __search_thread(queue):
         data = json.loads(endpoint.get(api, params=params).text)
         for obj in data[returned_field]:
             if object_class.__name__ in ("Portfolio", "Groups"):
-                objects[obj[key_field]] = object_class.load(name=obj[key_field], endpoint=endpoint, data=obj)
+                objects[obj[key_field]] = object_class.load(endpoint=endpoint, name=obj[key_field], data=obj)
             elif object_class.__name__ == "QualityProfile":
-                objects[obj[key_field]] = object_class.load(name=obj["name"], language=obj["language"], endpoint=endpoint, data=obj)
+                objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
             else:
                 objects[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
         queue.task_done()
@@ -82,9 +82,9 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
     data = json.loads(endpoint.get(api, params=new_params).text)
     for obj in data[returned_field]:
         if object_class.__name__ in ("Portfolio", "Groups"):
-            objects_list[obj[key_field]] = object_class.load(name=obj[key_field], endpoint=endpoint, data=obj)
+            objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, name=obj[key_field], data=obj)
         elif object_class.__name__ == "QualityProfile":
-            objects_list[obj[key_field]] = object_class.load(name=obj["name"], language=obj["language"], endpoint=endpoint, data=obj)
+            objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
         else:
             objects_list[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
     nb_pages = utilities.nbr_pages(data)

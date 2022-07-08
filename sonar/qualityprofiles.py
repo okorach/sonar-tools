@@ -17,11 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
 
-    Abstraction of the SonarQube "quality profile" concept
-
-"""
 import datetime
 import json
 from http import HTTPStatus
@@ -51,39 +47,13 @@ _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefa
 
 
 class QualityProfile(sq.SqObject):
-    @classmethod
-    def read(cls, name, language, endpoint):
-        if not languages.exists(endpoint=endpoint, language=language):
-            util.logger.error("Language '%s' does not exist, quality profile creation aborted")
-            return None
-        util.logger.debug("Reading quality profile '%s'  of language '%s'", name, language)
-        key = name_to_key(name, language)
-        if key in _OBJECTS:
-            return _OBJECTS[key]
-        data = search_by_name(endpoint=endpoint, name=name, language=language)
-        return cls(key=data["key"], endpoint=endpoint, data=data)
-
-    @classmethod
-    def create(cls, name, language, endpoint, **kwargs):
-        if not languages.exists(endpoint=endpoint, language=language):
-            util.logger.error("Language '%s' does not exist, quality profile creation aborted")
-            return None
-        params = {"name": name, "language": language}
-        util.logger.debug("Creating quality profile '%s' of language '%s'", name, language)
-        r = endpoint.post(_CREATE_API, params=params)
-        if not r.ok:
-            return None
-        o = cls.read(name=name, language=language, endpoint=endpoint)
-        return o
-
-    @classmethod
-    def load(cls, name, language, endpoint, data):
-        util.logger.debug("Loading quality profile '%s' of language '%s'", name, language)
-        key = data["key"]  # name_to_key(name, language)
-        o = cls(key=key, endpoint=endpoint, data=data)
-        return o
+    """
+    Abstraction of the SonarQube "quality profile" concept
+    Objects of this class must be created with one of the 3 available class methods. Don't use __init__
+    """
 
     def __init__(self, key, endpoint, data=None):
+        """Do not use, use class methods to create objects"""
         super().__init__(key, endpoint)
 
         self._json = data
@@ -110,6 +80,55 @@ class QualityProfile(sq.SqObject):
         util.logger.info("Created %s", str(self))
         _MAP[_format(self.name, self.language)] = self.key
         _OBJECTS[self.key] = self
+
+    @classmethod
+    def read(cls, endpoint, name, language):
+        """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
+        :param endpoint: Reference to the SonarQube platform
+        :type endpoint: Env
+        :param name: Quality profile name
+        :type name: str
+        :param name: Quality profile language
+        :type name: str
+        :return: The quality profile object
+        :rtype: QualityProfile or None if not found
+        """
+        if not languages.exists(endpoint=endpoint, language=language):
+            util.logger.error("Language '%s' does not exist, quality profile creation aborted")
+            return None
+        util.logger.debug("Reading quality profile '%s'  of language '%s'", name, language)
+        key = name_to_key(name, language)
+        if key in _OBJECTS:
+            return _OBJECTS[key]
+        data = search_by_name(endpoint=endpoint, name=name, language=language)
+        return cls(key=data["key"], endpoint=endpoint, data=data)
+
+    @classmethod
+    def create(cls, endpoint, name, language):
+        """Creates a new quality profile in SonarQube and returns the corresponding QualityProfile object
+
+        :param endpoint: Reference to the SonarQube platform
+        :type endpoint: Env
+        :param name: Quality profile name
+        :type name: str
+        :param description: Quality profile language
+        :type description: str
+        :return: The group object
+        :rtype: Group or None if creation failed
+        """
+        if not languages.exists(endpoint=endpoint, language=language):
+            util.logger.error("Language '%s' does not exist, quality profile creation aborted")
+            return None
+        util.logger.debug("Creating quality profile '%s' of language '%s'", name, language)
+        r = endpoint.post(_CREATE_API, params={"name": name, "language": language}, exit_on_error=False)
+        if not r.ok:
+            return None
+        return cls.read(endpoint=endpoint, name=name, language=language)
+
+    @classmethod
+    def load(cls, endpoint, data):
+        util.logger.debug("Loading quality profile '%s' of language '%s'", data["name"], data["language"])
+        return cls(endpoint=endpoint, key=data["key"], data=data)
 
     def __str__(self):
         return f"quality profile '{self.name}' of language '{self.language}'"
@@ -404,7 +423,7 @@ def __import_thread(queue):
         (name, lang, endpoint, qp_data) = queue.get()
         o = get_object(name=name, language=lang, endpoint=endpoint)
         if o is None:
-            o = QualityProfile.create(name=name, language=lang, endpoint=endpoint)
+            o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
         util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
         o.update(qp_data, queue)
         util.logger.info("Imported quality profile '%s' of language '%s'", name, lang)
