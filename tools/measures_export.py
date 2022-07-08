@@ -25,7 +25,7 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 """
 import sys
-from sonar import measures, metrics, env, version, options
+from sonar import measures, metrics, platform, version, options
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -204,7 +204,7 @@ def __parse_args(desc):
 
 def main():
     args = __parse_args("Extract measures of projects")
-    endpoint = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    endpoint = platform.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
 
     with_branches = args.withBranches
     if endpoint.edition() == "community":

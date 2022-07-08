@@ -41,7 +41,7 @@ import datetime
 from queue import Queue
 from threading import Thread
 
-from sonar import version, env, options
+from sonar import platform, version, options
 from sonar.projects import projects
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
@@ -300,7 +300,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 
 def main():
     kwargs = vars(parse_args("Sonar findings extractor"))
-    sqenv = env.Environment(some_url=kwargs["url"], some_token=kwargs["token"], cert_file=kwargs["clientCert"])
+    sqenv = platform.Environment(some_url=kwargs["url"], some_token=kwargs["token"], cert_file=kwargs["clientCert"])
     del kwargs["token"]
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)

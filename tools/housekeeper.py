@@ -27,7 +27,7 @@
 
 """
 import sys
-from sonar import users, groups, env, version, user_tokens, options
+from sonar import platform, users, groups, version, user_tokens, options
 from sonar.projects import projects, branches, pull_requests
 import sonar.utilities as util
 from sonar.audit import config, problem
@@ -196,7 +196,7 @@ def _delete_objects(problems, mode):
 def main():
     args = _parse_arguments()
 
-    sq = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    sq = platform.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     kwargs = vars(args)
     mode = args.mode
     util.check_environment(kwargs)

@@ -24,7 +24,7 @@
 import sys
 import csv
 
-from sonar import portfolios, env, version, options
+from sonar import platform, portfolios, version, options
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -160,7 +160,7 @@ def __parse_args(desc):
 
 def main():
     args = __parse_args("Extract projects or portfolios lines of code, as computed for the licence")
-    endpoint = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    endpoint = platform.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     kwargs = vars(args)
     util.check_environment(kwargs)
     file = kwargs.pop("file", None)
