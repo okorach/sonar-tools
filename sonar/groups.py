@@ -129,6 +129,16 @@ class Group(sq.SqObject):
         """
         return f"{self.endpoint.url}/admin/groups"
 
+    def add_user(self, user_login):
+        """Adds a user in the group
+
+        :param user_login: User login
+        :type user_login: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        return self.post(ADD_USER_API, params={"login": user_login, "name": self.name}, exit_on_error=False).ok
+
     def audit(self, audit_settings=None):
         """Audits a group and return list of problems found
         Current audit is limited to verifying that the group is not empty
