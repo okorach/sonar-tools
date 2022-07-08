@@ -17,11 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
 
-    Abstraction of the SonarQube "group" concept
-
-"""
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -36,11 +32,26 @@ _MAP = {}
 
 
 class Group(sq.SqObject):
+    """
+    Abstraction of the SonarQube "group" concept.
+    Objects of this class must be created with one of thr 3 available class methods. Don't use __init__
+    """
+    def __init__(self, name, endpoint, data):
+        """Do not use, use class methos to create object
+        """
+        super().__init__(data["id"], endpoint)
+        self.name = name                                        #: Group name
+        self.description = data.get("description", "")          #: Group description
+        self.members_count = data.get("membersCount", None)     #: Group number of members - Read only
+        self.is_default = data.get("default", None)             #: Group is default (sonar-users) - Read only
+        self._json = data
+        _GROUPS[self.key] = self
+        _MAP[self.name] = self.key
+        util.logger.debug("Created %s object", str(self))
+
     @classmethod
-
     def read(cls, name, endpoint):
-        """Reads a group from SonarQube, and create object
-
+        """Creates a Group object corresponding to the group with same name in SonarQube
         :param name: Group name
         :type name: str
         :param endpoint: Reference to the SonarQube platform
@@ -49,7 +60,7 @@ class Group(sq.SqObject):
         :rtype: Group or None
         """
         util.logger.debug("Reading group '%s'", name)
-        data = search_by_name(endpoint=endpoint, name=name)
+        data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
         if data is None:
             return None
         key = data["id"]
@@ -58,15 +69,15 @@ class Group(sq.SqObject):
         return cls(name, endpoint, data=data)
 
     @classmethod
-    def create(cls, name, endpoint, description=None):
-        """Creates a group in SonarQube
+    def create(cls, endpoint, name, description=None):
+        """Creates a new group in SonarQube and returns the corresponding Group object
 
-        :param name: Group name
-        :type name: str
         :param endpoint: Reference to the SonarQube platform
         :type endpoint: Env
+        :param name: Group name
+        :type name: str
         :param description: Group description
-        :type description: str
+        :type description: str, optional
         :return: The group object
         :rtype: Group or None
         """
@@ -76,7 +87,7 @@ class Group(sq.SqObject):
 
     @classmethod
     def load(cls, name, endpoint, data):
-        """Reads a group from previously retrieved API call (JSON)
+        """Creates a Group object from the result of a SonarQube API group search data
 
         :param name: Group name
         :type name: str
@@ -90,23 +101,15 @@ class Group(sq.SqObject):
         util.logger.debug("Loading group '%s'", name)
         return cls(name=name, endpoint=endpoint, data=data)
 
-    def __init__(self, name, endpoint, data):
-        super().__init__(data["id"], endpoint)
-        self.name = name
-        self._json = data
-        self.members_count = data.get("membersCount", None)
-        self.is_default = data.get("default", None)
-        self.description = data.get("description", "")
-        _GROUPS[self.key] = self
-        _MAP[self.name] = self.key
-        util.logger.info("Created %s", str(self))
-
     def __str__(self):
+        """String formatting of the object
+        """
         return f"group '{self.name}'"
 
     def url(self):
         """
-        :return: the SonarQube permalink to the group
+        :return: the SonarQube permalink to the group, actually the group page only
+                 since this is a close as we can get to the precise group definition
         :rtype: str
         """
         return f"{self.endpoint.url}/admin/groups"
@@ -139,8 +142,7 @@ class Group(sq.SqObject):
             json_data = {self.name: self._json}
         else:
             json_data = {"name": self.name}
-            if self.description is not None and self.description != "":
-                json_data["description"] = self.description
+            json_data["description"] = self.description if self.description and self.description != "" else None
             if self.is_default:
                 json_data["default"] = True
         return util.remove_nones(json_data)
@@ -150,34 +152,36 @@ class Group(sq.SqObject):
 
         :param description: The new group description
         :type description: str
-        :return: self
-        :rtype: Group
+        :return: Whether the new description was successfully set
+        :rtype: bool
         """
         if description is None or description == self.description:
             util.logger.debug("No description to update for %s", str(self))
-            return self
+            return True
         util.logger.debug("Updating %s with description = %s", str(self), description)
-        self.post(_UPDATE_API, params={"id": self.key, "description": description})
-        self.description = description
-        return self
+        r = self.post(_UPDATE_API, params={"id": self.key, "description": description}, exit_on_error=False)
+        if r.ok:
+            self.description = description
+        return r.ok
 
     def set_name(self, name):
         """Set a group name
 
         :param name: The new group name
         :type name: str
-        :return: self
-        :rtype: Group
+        :return: Whether the new description was successfully set
+        :rtype: bool
         """
         if name is None or name == self.name:
             util.logger.debug("No name to update for %s", str(self))
-            return self
+            return True
         util.logger.debug("Updating %s with name = %s", str(self), name)
-        self.post(_UPDATE_API, params={"id": self.key, "name": name})
-        _MAP.pop(self.name, None)
-        self.name = name
-        _MAP[self.name] = self.key
-        return self
+        r = self.post(_UPDATE_API, params={"id": self.key, "name": name}, exit_on_error=False)
+        if r.ok:
+            _MAP.pop(self.name, None)
+            self.name = name
+            _MAP[self.name] = self.key
+        return r.ok
 
 
 def search(endpoint, params=None):
@@ -185,25 +189,12 @@ def search(endpoint, params=None):
 
     :params endpoint: Reference to the SonarQube platform
     :type endpoint: Env
-    :param params: List of parameters to narrow down the search, defaults to None 
+    :param params: List of parameters to narrow down the search, defaults to None
     :type params: dict, optional
     :return: dict of groups with group name as key
     :rtype: dict{name: Group}
     """
     return sq.search_objects(api=_SEARCH_API, params=params, key_field="name", returned_field="groups", endpoint=endpoint, object_class=Group)
-
-
-def search_by_name(endpoint, name):
-    """Search a group by its name
-
-    :params endpoint: Reference to the SonarQube platform
-    :type endpoint: Env
-    :param name: The group name
-    :type name: str
-    :return: The group data as dict
-    :rtype: dict
-    """
-    return util.search_by_name(endpoint, name, _SEARCH_API, "groups")
 
 
 def get_list(endpoint, params=None):
@@ -290,7 +281,7 @@ def create_or_update(endpoint, name, description):
     o = get_object(endpoint=endpoint, name=name)
     if o is None:
         util.logger.debug("Group '%s' does not exist, creating...", name)
-        return Group.create(name, endpoint, description)
+        return Group.create(endpoint, name, description)
     else:
         return o.set_description(description)
 

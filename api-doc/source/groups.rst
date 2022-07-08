@@ -1,6 +1,8 @@
 Groups
-========
+======
 
 .. automodule:: sonar.groups
     :members:
-    :undoc-members:
+    :show-inheritance:
+
+.. autoattribute::
