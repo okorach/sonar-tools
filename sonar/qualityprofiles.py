@@ -175,9 +175,9 @@ class QualityProfile(sq.SqObject):
         :rtype: bool
         """
         if parent_name is None:
-            return
+            return False
         if get_object(name=parent_name, language=self.language) is None:
-            util.logger.warning("Can't set parent name '%s' to %s", str(parent_name), str(self))
+            util.logger.warning("Can't set parent name '%s' to %s, parent not found", str(parent_name), str(self))
             return False
         if self.parent_name is None or self.parent_name != parent_name:
             params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
