@@ -89,8 +89,6 @@ class Group(sq.SqObject):
     def load(cls, endpoint, data):
         """Creates a Group object from the result of a SonarQube API group search data
 
-        :param name: Group name
-        :type name: str
         :param endpoint: Reference to the SonarQube platform
         :type endpoint: Env
         :param data: The JSON data corresponding to the group
