@@ -70,7 +70,7 @@ class Environment:
         """
         self.url = some_url #: SonarQube URL
         self.__token = some_token
-        self._cert_file = cert_file
+        self.__cert_file = cert_file
         self._version = None
         self.__sys_info = None
         self._server_id = None
@@ -171,50 +171,6 @@ class Environment:
         :rtype: dict
         """
         return self.sys_info()["Statistics"]["plugins"]
-
-    def __lts_and_latest(self):
-        global LTS
-        global LATEST
-        if LTS is None:
-            util.logger.debug("Attempting to reach Sonar update center")
-            _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
-            try:
-                with open(tmpfile, "w", encoding="utf-8") as fp:
-                    print(requests.get(_UPDATE_CENTER, headers=_SONAR_TOOLS_AGENT).text, file=fp)
-                with open(tmpfile, "r", encoding="utf-8") as fp:
-                    upd_center_props = jprops.load_properties(fp)
-                v = upd_center_props.get("ltsVersion", "8.9.9").split(".")
-                if len(v) == 2:
-                    v.append("0")
-                LTS = tuple(int(n) for n in v)
-                v = upd_center_props.get("publicVersions", "9.5").split(",")[-1].split(".")
-                if len(v) == 2:
-                    v.append("0")
-                LATEST = tuple(int(n) for n in v)
-                util.logger.debug("Sonar update center says LTS = %s, LATEST = %s", str(LTS), str(LATEST))
-            except (EnvironmentError, requests.exceptions.HTTPError):
-                LTS = _HARDCODED_LTS
-                LATEST = _HARDCODED_LATEST
-                util.logger.debug("Sonar update center read failed, hardcoding LTS = %s, LATEST = %s", str(LTS), str(LATEST))
-            try:
-                os.remove(tmpfile)
-            except EnvironmentError:
-                pass
-        return (LTS, LATEST)
-
-    def lts(self, digits=3):
-        """
-        :returns: the SonarQube platform plugins
-        :rtype: dict
-        """
-        if digits < 1 or digits > 3:
-            digits = 3
-        return self.__lts_and_latest()[0][0:digits]
-
-    def latest(self, digits=3):
-        if digits < 1 or digits > 3:
-            digits = 3
-        return self.__lts_and_latest()[1][0:digits]
 
     def get(self, api, params=None, exit_on_error=True):
         api = _normalize_api(api)
@@ -469,15 +425,15 @@ class Environment:
 
     def _audit_lts_latest(self):
         sq_vers, v = self.version(3), None
-        if sq_vers < self.lts(2):
+        if sq_vers < lts(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-            v = self.lts()
-        elif sq_vers < self.lts(3):
+            v = lts()
+        elif sq_vers < lts(3):
             rule = rules.get_rule(rules.RuleId.LTS_PATCH_MISSING)
-            v = self.lts()
-        elif sq_vers < self.latest(2):
+            v = lts()
+        elif sq_vers < latest(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
-            v = self.latest()
+            v = latest()
         if not v:
             return []
         msg = rule.msg.format(_version_as_string(sq_vers), _version_as_string(v))
@@ -644,3 +600,56 @@ def _get_multiple_values(n, setting, severity, domain):
 
 def _version_as_string(a_version):
     return ".".join([str(n) for n in a_version])
+
+
+def __lts_and_latest():
+    global LTS
+    global LATEST
+    if LTS is None:
+        util.logger.debug("Attempting to reach Sonar update center")
+        _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
+        try:
+            with open(tmpfile, "w", encoding="utf-8") as fp:
+                print(requests.get(_UPDATE_CENTER, headers=_SONAR_TOOLS_AGENT).text, file=fp)
+            with open(tmpfile, "r", encoding="utf-8") as fp:
+                upd_center_props = jprops.load_properties(fp)
+            v = upd_center_props.get("ltsVersion", "8.9.9").split(".")
+            if len(v) == 2:
+                v.append("0")
+            LTS = tuple(int(n) for n in v)
+            v = upd_center_props.get("publicVersions", "9.5").split(",")[-1].split(".")
+            if len(v) == 2:
+                v.append("0")
+            LATEST = tuple(int(n) for n in v)
+            util.logger.debug("Sonar update center says LTS = %s, LATEST = %s", str(LTS), str(LATEST))
+        except (EnvironmentError, requests.exceptions.HTTPError):
+            LTS = _HARDCODED_LTS
+            LATEST = _HARDCODED_LATEST
+            util.logger.debug("Sonar update center read failed, hardcoding LTS = %s, LATEST = %s", str(LTS), str(LATEST))
+        try:
+            os.remove(tmpfile)
+        except EnvironmentError:
+            pass
+    return (LTS, LATEST)
+
+def lts(digits=3):
+    """
+    :returns: the current SonarQube LTS version
+    :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
+    :type digits: int, optional
+    :rtype: tuple (x, y, z)
+    """
+    if digits < 1 or digits > 3:
+        digits = 3
+    return __lts_and_latest()[0][0:digits]
+
+def latest(digits=3):
+    """
+    :returns: the current SonarQube LATEST version
+    :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
+    :type digits: int, optional
+    :rtype: tuple (x, y, z)
+    """
+    if digits < 1 or digits > 3:
+        digits = 3
+    return __lts_and_latest()[1][0:digits]
