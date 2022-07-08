@@ -38,9 +38,6 @@ class SqObject:
     def uuid(self):
         return self.key
 
-    def set_env(self, endpoint):
-        self.endpoint = endpoint
-
     def get_env(self):
         return self.endpoint
 

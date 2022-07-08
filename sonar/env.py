@@ -79,12 +79,6 @@ class Environment:
     def __str__(self):
         return f"{util.redacted_token(self.token)}@{self.url}"
 
-    def set_env(self, some_url, some_token, cert_file=None):
-        self.url = some_url
-        self.token = some_token
-        self.cert_file = cert_file
-        util.logger.debug("Setting environment: %s", str(self))
-
     def credentials(self):
         return (self.token, "")
 
