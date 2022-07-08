@@ -96,7 +96,7 @@ class User(sqobject.SqObject):
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local
         self.nb_tokens = data.get("tokenCount", None)
-        self.tokens_list = None
+        self.__tokens = None
         self._json = data
         self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login
         util.logger.debug("Created %s", str(self))
@@ -129,9 +129,9 @@ class User(sqobject.SqObject):
         :return: The list of tokens of the user
         :rtype: list[Token]
         """
-        if self.tokens_list is None:
-            self.tokens_list = tokens.search(self.endpoint, self.login)
-        return self.tokens_list
+        if self.__tokens is None:
+            self.__tokens = tokens.search(self.endpoint, self.login)
+        return self.__tokens
 
     def update(self, **kwargs):
         """Updates a user with name, email, login, SCM accounts, group memberships
