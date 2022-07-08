@@ -180,6 +180,8 @@ class Environment:
         except requests.exceptions.HTTPError:
             if exit_on_error:
                 util.log_and_exit(r)
+            else:
+                util.logger.error("GET Error: %s HTTP status code %d", self.urlstring(api, params), r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
@@ -193,6 +195,8 @@ class Environment:
         except requests.exceptions.HTTPError:
             if exit_on_error:
                 util.log_and_exit(r)
+            else:
+                util.logger.error("POST Error: %s HTTP status code %d", self.urlstring(api, params), r.status_code)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
