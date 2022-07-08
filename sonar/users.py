@@ -90,8 +90,8 @@ class User(sqobject.SqObject):
 
     def url(self):
         """
-        :return: the SonarQube permalink to the user, actually the user page only
-                 since this is a close as we can get to the precise group definition
+        :return: the SonarQube permalink to the user, actually the global users page only
+                 since this is as close as we can get to the precise user definition
         :rtype: str
         """
         return f"{self.endpoint.url}/admin/users"
@@ -123,6 +123,7 @@ class User(sqobject.SqObject):
 
     def update(self, **kwargs):
         """Updates a user with name, email, login, group memberships
+
         :param name: New name of the user
         :type name: str, optional
         :param email: New email of the user
@@ -155,6 +156,7 @@ class User(sqobject.SqObject):
 
     def add_groups(self, group_list):
         """Adds groups membership to the user
+
         :param group_list: List of groups to add membership
         :type group_list: list[str]
         :return: Whether all group membership additions were OK
@@ -183,6 +185,7 @@ class User(sqobject.SqObject):
 
     def add_scm_accounts(self, accounts_list):
         """Adds SCM accounts to the user (on top of existing ones)
+
         :param accounts_list: List of SCM accounts to add
         :type accounts_list: list[str]
         :return: Whether SCM accounts were successfully set
@@ -253,6 +256,7 @@ class User(sqobject.SqObject):
 
     def to_json(self, full=False):
         """Exports the user data (login, email, groups, SCM accounts local or not) as dict
+
         :return: User data
         :rtype: dict
         """
