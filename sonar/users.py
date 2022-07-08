@@ -25,23 +25,22 @@ import sonar.utilities as util
 from sonar.audit import rules, problem
 
 
-_USERS = {}
+_OBJECTS = {}
 
-_SEARCH_API = "users/search"
-_CREATE_API = "users/create"
-_UPDATE_API = "users/update"
-_DEACTIVATE_API = "users/deactivate"
-_ADD_GROUP_API = "user_groups/add_user"
-_UPDATE_LOGIN_API = "users/update_login"
+SEARCH_API = "users/search"
+CREATE_API = "users/create"
+UPDATE_API = "users/update"
+DEACTIVATE_API = "users/deactivate"
+ADD_GROUP_API = "user_groups/add_user"
+UPDATE_LOGIN_API = "users/update_login"
 
-_IMPORTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
+SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
 
 
 class User(sqobject.SqObject):
     """
     Abstraction of the SonarQube "user" concept
     """
-
 
     @classmethod
     def load(cls, endpoint, data):
@@ -71,7 +70,7 @@ class User(sqobject.SqObject):
         :rtype: User or None
         """
         util.logger.debug("Creating user '%s'", login)
-        endpoint.post(_CREATE_API, params={"login": login, "description": description})
+        endpoint.post(CREATE_API, params={"login": login, "description": description})
         return cls.read(endpoint=endpoint, login=login)
 
     @classmethod
@@ -101,7 +100,7 @@ class User(sqobject.SqObject):
         self._json = data
         self._last_login_date = None
         util.logger.debug("Created %s", str(self))
-        _USERS[self.login] = self
+        _OBJECTS[self.login] = self
 
     def __str__(self):
         """
@@ -123,7 +122,7 @@ class User(sqobject.SqObject):
         :return: Whether the deactivation succeeded
         :rtype: bool
         """
-        return self.post(_DEACTIVATE_API, {"name": self.name, "login": self.login}).ok
+        return self.post(DEACTIVATE_API, {"name": self.name, "login": self.login}).ok
 
     def tokens(self):
         """
@@ -144,7 +143,7 @@ class User(sqobject.SqObject):
         return self._last_login_date
 
     def update(self, **kwargs):
-        """Updates a user with name, email, login, group memberships
+        """Updates a user with name, email, login, SCM accounts, group memberships
 
         :param name: New name of the user
         :type name: str, optional
@@ -164,15 +163,15 @@ class User(sqobject.SqObject):
             if p in kwargs and kwargs[p] != my_data[p]:
                 params[p] = kwargs[p]
         if len(params) > 1:
-            self.post(_UPDATE_API, params=params)
-        self.add_scm_accounts(kwargs.get("scmAccounts", ""))
+            self.post(UPDATE_API, params=params)
+        self.set_scm_accounts(kwargs.get("scmAccounts", ""))
         if "login" in kwargs:
             new_login = kwargs["login"]
-            if new_login not in _USERS:
-                self.post(_UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
-                _USERS.pop(self.login, None)
+            if new_login not in _OBJECTS:
+                self.post(UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
+                _OBJECTS.pop(self.login, None)
                 self.login = new_login
-                _USERS[self.login] = self
+                _OBJECTS[self.login] = self
         self.add_groups(kwargs.get("groups", ""))
         return self
 
@@ -187,15 +186,14 @@ class User(sqobject.SqObject):
         ok = True
         if self.groups is None:
             self.groups = ["sonar-users"]
-        for g in util.csv_to_list(group_list):
-            if g in self.groups:
-                continue
+        groups_to_add = [g for g in util.csv_to_list(group_list) if g not in self.groups]
+        for g in groups_to_add:
             if not groups.exists(g, self.endpoint):
                 util.logger.warning("Group '%s' does not exists, can't add membership for %s", g, str(self))
                 ok = False
                 continue
             util.logger.debug("Adding group '%s' to %s", g, str(self))
-            ok = ok and self.post(_ADD_GROUP_API, params={"login": self.login, "name": g}).ok
+            ok = ok and self.post(ADD_GROUP_API, params={"login": self.login, "name": g}).ok
         return ok
 
     def add_scm_accounts(self, accounts_list):
@@ -210,17 +208,23 @@ class User(sqobject.SqObject):
         if len(accounts_list) == 0:
             return False
         util.logger.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
-        if self.scmAccounts is None:
+        return self.set_scm_accounts(list(set(self.scmAccounts) | set(accounts_list)))
+
+    def set_scm_accounts(self, accounts_list):
+        """Sets SCM accounts to the user (on top of existing ones)
+
+        :param accounts_list: List of SCM accounts to set
+        :type accounts_list: list[str]
+        :return: Whether SCM accounts were successfully set
+        :rtype: bool
+        """
+        accounts_list = util.csv_to_list(accounts_list)
+        util.logger.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
+        r = self.post(UPDATE_API, params={"login": self.login, "scmAccount": accounts_list})
+        if not r.ok:
             self.scmAccounts = []
-        new_scms = list(set(self.scmAccounts) | set(accounts_list))
-        if len(new_scms) > len(self.scmAccounts):
-            util.logger.debug("Setting SCM accounts '%s' to %s", str(new_scms), str(self))
-            r = self.post(_UPDATE_API, params={"login": self.login, "scmAccount": new_scms})
-            if not r.ok:
-                return False
-            self.scmAccounts = new_scms
-        else:
-            util.logger.debug("No SCM accounts to add to %s current is %s", str(self), str(self.scmAccounts))
+            return False
+        self.scmAccounts = accounts_list
         return True
 
     def audit(self, settings=None):
@@ -281,7 +285,7 @@ class User(sqobject.SqObject):
         json_data["groups"] = util.list_to_csv(my_groups, ", ", True)
         if not full and not json_data["local"]:
             json_data.pop("local")
-        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
+        return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, full))
 
 
 def search(endpoint, params=None):
@@ -295,7 +299,7 @@ def search(endpoint, params=None):
     :rtype: dict{login: User}
     """
     util.logger.debug("Searching users with params %s", str(params))
-    return sqobject.search_objects(api=_SEARCH_API, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
+    return sqobject.search_objects(api=SEARCH_API, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
 
 
 def export(endpoint, full=False):
@@ -387,6 +391,6 @@ def get_object(endpoint, login):
     :type login: dict
     :return: Nothing
     """
-    if len(_USERS) == 0:
+    if len(_OBJECTS) == 0:
         search(endpoint)
-    return _USERS.get(login, None)
+    return _OBJECTS.get(login, None)
