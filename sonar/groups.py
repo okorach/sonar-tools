@@ -31,7 +31,7 @@ _UPDATE_API = "user_groups/update"
 ADD_USER_API = "user_groups/add_user"
 REMOVE_USER_API = "user_groups/remove_user"
 
-_GROUPS = {}
+_OBJECTS = {}
 _MAP = {}
 
 
@@ -49,7 +49,7 @@ class Group(sq.SqObject):
         self.__members_count = data.get("membersCount", None)
         self.__is_default = data.get("default", None)
         self._json = data
-        _GROUPS[self.key] = self
+        _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
         util.logger.debug("Created %s object", str(self))
 
@@ -65,13 +65,13 @@ class Group(sq.SqObject):
         """
         util.logger.debug("Reading group '%s'", name)
         if name in _MAP:
-            return _GROUPS[_MAP[name]]
+            return _OBJECTS[_MAP[name]]
         data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
         if data is None:
             return None
         key = data["id"]
-        if key in _GROUPS:
-            return _GROUPS[key]
+        if key in _OBJECTS:
+            return _OBJECTS[key]
         return cls(endpoint, name, data=data)
 
     @classmethod
@@ -299,11 +299,11 @@ def get_object(name, endpoint=None):
     :return: The group
     :rtype: Group
     """
-    if len(_GROUPS) == 0 or name not in _MAP:
+    if len(_OBJECTS) == 0 or name not in _MAP:
         get_list(endpoint)
     if name not in _MAP:
         return None
-    return _GROUPS[_MAP[name]]
+    return _OBJECTS[_MAP[name]]
 
 
 def create_or_update(endpoint, name, description):
