@@ -46,15 +46,15 @@ class User(sqobject.SqObject):
         """
         super().__init__(login, endpoint)
         self.login = login  #: User login
-        self.name = data["name"]  #: User name
-        self.groups = data.get("groups", None)  #: User groups
-        self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
-        self.email = data.get("email", None)  #: User email
-        self.is_local = data.get("local", False)  #: User is local - read-only
-        self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login - read-only
-        self.nb_tokens = data.get("tokenCount", None) #: Nbr of tokens - read-only
+        self.name = None  #: User name
+        self.groups = None  #: User groups
+        self.scm_accounts = None  #: User SCM accounts
+        self.email = None  #: User email
+        self.is_local = None  #: User is local - read-only
+        self.last_login = None  #: User last login - read-only
+        self.nb_tokens = None #: Nbr of tokens - read-only
         self.__tokens = None
-        self._json = data
+        self.__load(data)
         util.logger.debug("Created %s", str(self))
         _OBJECTS[self.login] = self
 
@@ -115,6 +115,28 @@ class User(sqobject.SqObject):
         """
         return f"user '{self.login}'"
 
+    def __load(self, data):
+        self.name = data["name"]  #: User name
+        self.groups = data.get("groups", [])  #: User groups
+        self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
+        self.email = data.get("email", None)  #: User email
+        self.is_local = data.get("local", False)  #: User is local - read-only
+        self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login - read-only
+        self.nb_tokens = data.get("tokenCount", None) #: Nbr of tokens - read-only
+        self.__tokens = None
+        self._json = data
+
+    def refresh(self):
+        """Refreshes a User object from SonarQube data
+
+        :return:  Nothing
+        """
+        data = self.get(SEARCH_API, params={"q": self.login})
+        for d in data["users"]:
+            if d["login"] == self.login:
+                self.__load(d)
+                break
+
     def url(self):
         """
         :return: the SonarQube permalink to the user, actually the global users page only
@@ -171,7 +193,7 @@ class User(sqobject.SqObject):
                 _OBJECTS.pop(self.login, None)
                 self.login = new_login
                 _OBJECTS[self.login] = self
-        self.add_groups(kwargs.get("groups", ""))
+        self.set_groups(kwargs.get("groups", ""))
         return self
 
     def add_to_group(self, group_name):
@@ -182,8 +204,9 @@ class User(sqobject.SqObject):
         :return: Whether operation succeeded
         :rtype: bool
         """
-        group = groups.get_object(endpoint=self.endpoint, name=group_name)
+        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
         if not group:
+            util.logger.warning("Group '%s' does not exists, can't add membership for %s", group_name, str(self))
             return False
         return group.add_user(self.login)
 
@@ -195,52 +218,30 @@ class User(sqobject.SqObject):
         :return: Whether operation succeeded
         :rtype: bool
         """
-        group = groups.get_object(endpoint=self.endpoint, name=group_name)
+        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
         if not group:
+            util.logger.warning("Group '%s' does not exists, can't remove membership for %s", group_name, str(self))
             return False
         return group.remove_user(self.login)
 
 
-    def add_groups(self, group_list):
-        """Adds groups membership to the user
+    def set_groups(self, group_list):
+        """Set the user group membership (replaces current groups)
 
-        :param group_list: List of groups to add membership
+        :param group_list: List of groups to set membership
         :type group_list: list[str]
-        :return: Whether all group membership additions were OK
+        :return: Whether all group membership were OK
         :rtype: bool
         """
         ok = True
-        if self.groups is None:
-            self.groups = ["sonar-users"]
-        groups_to_add = [g for g in util.csv_to_list(group_list) if g not in self.groups]
-        for g in groups_to_add:
-            if not groups.exists(g, self.endpoint):
-                util.logger.warning("Group '%s' does not exists, can't add membership for %s", g, str(self))
-                ok = False
-                continue
-            util.logger.debug("Adding group '%s' to %s", g, str(self))
-            ok = ok and self.post(groups.ADD_USER_API, params={"login": self.login, "name": g}).ok
-        return ok
-
-    def remove_groups(self, group_list):
-        """Adds groups membership to the user
-
-        :param group_list: List of groups to add membership
-        :type group_list: list[str]
-        :return: Whether all group membership additions were OK
-        :rtype: bool
-        """
-        ok = True
-        if self.groups is None:
-            self.groups = ["sonar-users"]
-        groups_to_add = [g for g in util.csv_to_list(group_list) if g not in self.groups]
-        for g in groups_to_add:
-            if not groups.exists(g, self.endpoint):
-                util.logger.warning("Group '%s' does not exists, can't add membership for %s", g, str(self))
-                ok = False
-                continue
-            util.logger.debug("Adding group '%s' to %s", g, str(self))
-            ok = ok and self.post(groups.ADD_USER_API, params={"login": self.login, "name": g}).ok
+        for g in list(set(group_list) - set(self.groups)):
+            ok = ok and self.add_to_group(g)
+        for g in list(set(self.groups) - set(group_list)):
+            ok = ok and self.remove_from_group(g)
+        if ok:
+            self.groups = group_list
+        else:
+            self.refresh()
         return ok
 
     def add_scm_accounts(self, accounts_list):
