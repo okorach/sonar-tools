@@ -92,7 +92,7 @@ class User(sqobject.SqObject):
         self.login = login  #: User login
         self.name = data["name"]  #: User name
         self.groups = data.get("groups", None)  #: User groups
-        self.scmAccounts = data.pop("scmAccounts", None)  #: User SCM accounts
+        self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local
         self.nb_tokens = data.get("tokenCount", None)
@@ -208,7 +208,7 @@ class User(sqobject.SqObject):
         if len(accounts_list) == 0:
             return False
         util.logger.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
-        return self.set_scm_accounts(list(set(self.scmAccounts) | set(accounts_list)))
+        return self.set_scm_accounts(list(set(self.scm_accounts) | set(accounts_list)))
 
     def set_scm_accounts(self, accounts_list):
         """Sets SCM accounts to the user (on top of existing ones)
@@ -222,9 +222,9 @@ class User(sqobject.SqObject):
         util.logger.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
         r = self.post(UPDATE_API, params={"login": self.login, "scmAccount": accounts_list})
         if not r.ok:
-            self.scmAccounts = []
+            self.scm_accounts = []
             return False
-        self.scmAccounts = accounts_list
+        self.scm_accounts = accounts_list
         return True
 
     def audit(self, settings=None):
@@ -278,7 +278,7 @@ class User(sqobject.SqObject):
         :rtype: dict
         """
         json_data = self._json.copy()
-        scm = self.scmAccounts
+        scm = self.scm_accounts
         json_data["scmAccounts"] = util.list_to_csv(scm) if scm else None
         my_groups = self.groups.copy()
         my_groups.remove("sonar-users")
