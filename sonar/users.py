@@ -17,11 +17,6 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-    Abstraction of the SonarQube "user" concept
-
-"""
 
 import datetime as dt
 import pytz
@@ -43,6 +38,10 @@ _IMPORTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "lo
 
 
 class User(sqobject.SqObject):
+    """
+    Abstraction of the SonarQube "user" concept
+    """
+
     def __init__(self, login, endpoint, data=None, create_data=None):
         super().__init__(login, endpoint)
         self.login = login
@@ -80,29 +79,61 @@ class User(sqobject.SqObject):
         self.tokens_list = None
         self._last_login_date = None
         util.logger.debug("Created %s", str(self))
-        _USERS[_uuid(self.login)] = self
+        _USERS[self.login] = self
 
     def __str__(self):
+        """
+        :return: String formatting of the object
+        :rtype: str
+        """
         return f"user '{self.login}'"
 
     def url(self):
+        """
+        :return: the SonarQube permalink to the user, actually the user page only
+                 since this is a close as we can get to the precise group definition
+        :rtype: str
+        """
         return f"{self.endpoint.url}/admin/users"
 
     def deactivate(self):
-        self.post(_DEACTIVATE_API, {"name": self.name, "login": self.login})
-        return True
+        """Deactivates the user
+        :return: Whether the deactivation succeeded
+        :rtype: bool
+        """
+        return self.post(_DEACTIVATE_API, {"name": self.name, "login": self.login}).ok
 
     def tokens(self):
+        """
+        :return: The list of tokens of the user
+        :rtype: list[Token]
+        """
         if self.tokens_list is None:
             self.tokens_list = tokens.search(self.endpoint, self.login)
         return self.tokens_list
 
-    def last_login_date(self):
+    def last_login(self):
+        """
+        :return: The last login date of the user
+        :rtype: datetime
+        """
         if self._last_login_date is None and "lastConnectionDate" in self._json:
             self._last_login_date = util.string_to_date(self._json["lastConnectionDate"])
         return self._last_login_date
 
     def update(self, **kwargs):
+        """Updates a user with name, email, login, group memberships
+        :param name: New name of the user
+        :type name: str, optional
+        :param email: New email of the user
+        :type email: str, optional
+        :param login: New login of the user
+        :type login: str, optional
+        :param groups: List of groups to add membership
+        :type groups: list[str]
+        :return: self
+        :rtype: User
+        """
         util.logger.debug("Updating %s with %s", str(self), str(kwargs))
         params = {"login": self.login}
         my_data = vars(self)
@@ -123,13 +154,20 @@ class User(sqobject.SqObject):
         return self
 
     def add_groups(self, group_list):
+        """Adds groups membership to the user
+        :param group_list: List of groups to add membership
+        :type group_list: list[str]
+        :return: Whether all group membership additions were OK
+        :rtype: bool
+        """
         if group_list is None:
-            return
+            return False
         if isinstance(group_list, str):
             group_list = util.csv_to_list(group_list)
+        ok = True
+        if self.groups is None:
+            self.groups = []
         for g in group_list:
-            if self.groups is None:
-                self.groups = []
             if g in self.groups:
                 continue
             if g == "sonar-users":
@@ -137,34 +175,48 @@ class User(sqobject.SqObject):
                 continue
             if not groups.exists(g, self.endpoint):
                 util.logger.warning("Group '%s' does not exists, can't add membership for %s", g, str(self))
+                ok = False
                 continue
             util.logger.debug("Adding group '%s' to %s", g, str(self))
-            self.post(_ADD_GROUP_API, params={"login": self.login, "name": g})
+            ok = ok and self.post(_ADD_GROUP_API, params={"login": self.login, "name": g}).ok
+        return ok
 
     def add_scm_accounts(self, accounts_list):
+        """Adds SCM accounts to the user (on top of existing ones)
+        :param accounts_list: List of SCM accounts to add
+        :type accounts_list: list[str]
+        :return: Whether SCM accounts were successfully set
+        :rtype: bool
+        """
         if accounts_list is None:
-            return
-        if isinstance(accounts_list, str):
-            accounts_list = util.csv_to_list(accounts_list)
+            return False
+        accounts_list = util.csv_to_list(accounts_list)
         if len(accounts_list) == 0:
-            return
+            return False
         util.logger.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
         if self.scmAccounts is None:
             self.scmAccounts = []
-        new_scms = self.scmAccounts.copy()
-        for a in accounts_list:
-            if a not in self.scmAccounts:
-                new_scms.append(a)
+        new_scms = self.scmAccounts.copy() + [a for a in accounts_list if a not in self.scmAccounts]
         if len(new_scms) > len(self.scmAccounts):
             util.logger.debug("Setting SCM accounts '%s' to %s", str(new_scms), str(self))
-            self.post(_UPDATE_API, params={"login": self.login, "scmAccount": new_scms})
+            r = self.post(_UPDATE_API, params={"login": self.login, "scmAccount": new_scms})
+            if not r.ok:
+                return False
             self.scmAccounts = new_scms
         else:
             util.logger.debug("No SCM accounts to add to %s current is %s", str(self), str(self.scmAccounts))
+        return True
 
     def audit(self, settings=None):
-        util.logger.debug("Auditing %s", str(self))
+        """Audits a user (user last connection date and tokens) and
+        returns the list of problems found (too old)
 
+        :param settings: Options of what to audit and thresholds to raise problems
+        :type settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
+        util.logger.debug("Auditing %s", str(self))
         protected_users = util.csv_to_list(settings["audit.tokens.neverExpire"])
         if self.login in protected_users:
             util.logger.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
@@ -172,7 +224,6 @@ class User(sqobject.SqObject):
 
         today = dt.datetime.today().replace(tzinfo=pytz.UTC)
         problems = []
-
         for t in self.tokens():
             age = abs((today - t.created_at).days)
             if age > settings["audit.tokens.maxAge"]:
@@ -191,7 +242,7 @@ class User(sqobject.SqObject):
                 msg = rule.msg.format(str(t), last_cnx_age)
                 problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        cnx = self.last_login_date()
+        cnx = self.last_login()
         if cnx is not None:
             age = abs((today - cnx).days)
             if age > settings["audit.users.maxLoginAge"]:
@@ -201,6 +252,10 @@ class User(sqobject.SqObject):
         return problems
 
     def to_json(self, full=False):
+        """Exports the user data (login, email, groups, SCM accounts local or not) as dict
+        :return: User data
+        :rtype: dict
+        """
         json_data = self._json.copy()
         scm = self.scmAccounts
         json_data["scmAccounts"] = util.list_to_csv(scm) if scm else None
@@ -213,22 +268,29 @@ class User(sqobject.SqObject):
 
 
 def search(endpoint, params=None):
-    return sqobject.search_objects(
-        api=_SEARCH_API,
-        params=params,
-        returned_field="users",
-        key_field="login",
-        object_class=User,
-        endpoint=endpoint,
-    )
+    """Searches users in SonarQube
 
-
-def get_list(endpoint, params=None):
-    util.logger.info("Listing users")
-    return search(params=params, endpoint=endpoint)
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param params: list of parameters to narrow down the search
+    :type params: dict
+    :return: list of projects
+    :rtype: dict{login: User}
+    """
+    util.logger.debug("Searching users with params %s", str(params))
+    return sqobject.search_objects(api=_SEARCH_API, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
 
 
 def export(endpoint, full=False):
+    """Exports all users as dict
+
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Env
+    :param full: Whether to export all settings including those useless for re-import, defaults to False
+    :type full: bool, optional
+    :return: list of projects
+    :rtype: dict{key: Project}
+    """
     util.logger.info("Exporting users")
     u_list = {}
     for u_login, u_obj in search(endpoint=endpoint).items():
@@ -237,7 +299,16 @@ def export(endpoint, full=False):
     return u_list
 
 
-def audit(audit_settings, endpoint=None):
+def audit(endpoint, audit_settings):
+    """Audits all users for last login date and too old tokens
+
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Platform
+    :param audit_settings: Configuration of audit
+    :type audit_settings: dict
+    :return: list of problems found
+    :rtype: list[Problem]
+    """
     if not audit_settings["audit.users"]:
         util.logger.info("Auditing users is disabled, skipping...")
         return []
@@ -249,20 +320,22 @@ def audit(audit_settings, endpoint=None):
 
 
 def get_login_from_name(name, endpoint):
-    u_list = search(params={"q": name}, endpoint=endpoint)
+    """Returns the login corresponding to name
+    If more than one login matches the name, the first occurence is returned
+
+    :param name: User name
+    :type name: str
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Platform
+    :return: User login or None if name not found
+    :rtype: str or None
+    """
+    u_list = search(endpoint=endpoint, params={"q": name})
     if not u_list:
         return None
     if len(u_list) > 1:
         util.logger.warning("More than 1 user with name '%s', will return the 1st one", name)
     return list(u_list.keys()).pop(0)
-
-
-def update(login, endpoint, **kwargs):
-    o = get_object(login=login, endpoint=endpoint)
-    if o is None:
-        util.logger.warning("Can't update user '%s', it does not exists", login)
-        return None
-    return o.update(**kwargs)
 
 
 def create(login, endpoint=None, **kwargs):
@@ -279,10 +352,18 @@ def create_or_update(endpoint, login, **kwargs):
         util.logger.debug("User '%s' does not exist, creating...", login)
         return create(login, endpoint, **kwargs)
     else:
-        return update(login, endpoint, **kwargs)
+        return o.update(**kwargs)
 
 
 def import_config(endpoint, config_data):
+    """Imports in SonarQube a complete users configuration described from a JSON
+
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Platform
+    :param config_data: the configuration to import
+    :type config_data: dict
+    :return: Nothing
+    """
     if "users" not in config_data:
         util.logger.info("No users to import")
         return
@@ -292,14 +373,16 @@ def import_config(endpoint, config_data):
         create_or_update(endpoint, login, **data)
 
 
-def get_object(login, endpoint=None):
+def get_object(endpoint, login):
+    """Returns the User object corresponding to a particular login
+    Returns None if login is not found
+
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Platform
+    :param login: the configuration to import
+    :type login: dict
+    :return: Nothing
+    """
     if len(_USERS) == 0:
-        get_list(endpoint)
-    u = _uuid(login)
-    if u not in _USERS:
-        return None
-    return _USERS[u]
-
-
-def _uuid(login):
-    return login
+        search(endpoint)
+    return _USERS.get(login, None)
