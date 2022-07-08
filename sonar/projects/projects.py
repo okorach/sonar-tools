@@ -421,7 +421,7 @@ class Project(components.Component):
             )
 
     def audit(self, audit_settings):
-        """Audits a project and return list of problems found
+        """Audits a project and returns the list of problems found
 
         :param audit_settings: Options of what to audit and thresholds to raise problems
         :type audit_settings: dict
