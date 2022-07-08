@@ -100,7 +100,10 @@ class Group(sq.SqObject):
         return cls(name=data["name"], endpoint=endpoint, data=data)
 
     def __str__(self):
-        """String formatting of the object"""
+        """
+        :return: String formatting of the object
+        :rtype: str
+        """
         return f"group '{self.name}'"
 
     def is_default(self):
