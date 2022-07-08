@@ -99,8 +99,8 @@ class Portfolio(aggregations.Aggregation):
         return o
 
     @classmethod
-    def load(cls, name, endpoint, data, root_key=None):
-        util.logger.debug("Loading portfolio '%s'", name)
+    def load(cls, endpoint, data, root_key=None):
+        util.logger.debug("Loading portfolio '%s'", data["name"])
         o = cls(key=data["key"], endpoint=endpoint, data=data, root_key=root_key)
         return o
 
@@ -517,7 +517,7 @@ def get_object(key, endpoint=None):
         return _OBJECTS.get(key, None)
     data = search_by_key(endpoint=endpoint, key=key)
     if data is not None:
-        return Portfolio.load(name=data["name"], endpoint=endpoint, data=data)
+        return Portfolio.load(endpoint=endpoint, data=data)
     return None
 
 

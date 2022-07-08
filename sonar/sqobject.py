@@ -63,9 +63,7 @@ def __search_thread(queue):
         utilities.logger.debug("Threaded search: API = %s params = %s", api, str(params))
         data = json.loads(endpoint.get(api, params=params).text)
         for obj in data[returned_field]:
-            if object_class.__name__ == "Portfolio":
-                objects[obj[key_field]] = object_class.load(endpoint=endpoint, name=obj[key_field], data=obj)
-            elif object_class.__name__ in ("QualityProfile", "Groups"):
+            if object_class.__name__ in ("QualityProfile", "Groups", "Portfolio"):
                 objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
             else:
                 objects[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
@@ -81,9 +79,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
     objects_list = {}
     data = json.loads(endpoint.get(api, params=new_params).text)
     for obj in data[returned_field]:
-        if object_class.__name__ in ("Portfolio", "Groups"):
-            objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, name=obj[key_field], data=obj)
-        elif object_class.__name__ == "QualityProfile":
+        if object_class.__name__ == ("Portfolio", "Groups", "QualityProfile"):
             objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
         else:
             objects_list[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
