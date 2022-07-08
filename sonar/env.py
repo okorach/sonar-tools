@@ -78,7 +78,7 @@ class Environment:
 
     def __str__(self):
         """
-        :return: string representation of the SonarQube connection, token largely redacted
+        :return: string representation of the SonarQube connection, with the token recognizable but largely redacted
         :rtype: str
         """
         return f"{util.redacted_token(self.__token)}@{self.url}"
