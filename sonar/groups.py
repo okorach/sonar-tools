@@ -62,6 +62,8 @@ class Group(sq.SqObject):
         :rtype: Group or None if not found
         """
         util.logger.debug("Reading group '%s'", name)
+        if name in _MAP:
+            return _GROUPS[_MAP[name]]
         data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
         if data is None:
             return None
