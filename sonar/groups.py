@@ -90,7 +90,7 @@ class Group(sq.SqObject):
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param data: The JSON data corresponding to the group
         :type data: dict
         :return: The group object
