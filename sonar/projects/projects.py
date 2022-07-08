@@ -88,6 +88,10 @@ class Project(components.Component):
         util.logger.debug("Created %s", str(self))
 
     def __str__(self):
+        """
+        :return: String formatting of the object
+        :rtype: str
+        """
         return f"project '{self.key}'"
 
     def __load(self, data=None):
@@ -1012,7 +1016,9 @@ def count(endpoint, params=None):
 def search(endpoint, params=None):
     """Searches projects in SonarQube
 
-    :param params: list of parameters to filter projects to search
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param params: list of parameters to narrow down the search
     :type params: dict
     :return: list of projects
     :rtype: dict{key: Project}
@@ -1077,13 +1083,13 @@ def __audit_thread(queue, results, audit_settings, bindings):
     util.logger.debug("Queue empty, exiting thread")
 
 
-def audit(audit_settings, endpoint=None, key_list=None):
+def audit(endpoint, audit_settings, key_list=None):
     """Audits all or a list of projects
 
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Platform
     :param audit_settings: Configuration of audit
     :type audit_settings: dict
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
     :param key_list: List of project keys to audit, defaults to None (all projects)
     :type key_list: str, optional
     :return: list of problems found
@@ -1196,7 +1202,7 @@ def import_config(endpoint, config_data, key_list=None):
     """Imports a configuration in SonarQube
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param config_data: the configuration to import
     :type config_data: dict
     :param key_list: List of project keys to be considered for the import, defaults to None (all projects)
