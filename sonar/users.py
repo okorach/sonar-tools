@@ -97,8 +97,9 @@ class User(sqobject.SqObject):
     @classmethod
     def read(cls, endpoint, login):
         """Creates a User object corresponding to the user with same login in SonarQube
+
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param login: User login
         :type login: str
         :return: The user object
@@ -147,6 +148,7 @@ class User(sqobject.SqObject):
 
     def deactivate(self):
         """Deactivates the user
+
         :return: Whether the deactivation succeeded
         :rtype: bool
         """
@@ -171,9 +173,9 @@ class User(sqobject.SqObject):
         :param login: New login of the user
         :type login: str, optional
         :param groups: List of groups to add membership
-        :type groups: list[str]
+        :type groups: list[str], optional
         :param scm_accounts: List of SCM accounts
-        :type scm_accounts: list[str]
+        :type scm_accounts: list[str], optional
         :return: self
         :rtype: User
         """
