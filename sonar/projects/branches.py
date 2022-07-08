@@ -59,11 +59,17 @@ class Branch(components.Component):
         return f"branch '{self.name}' of {str(self.project)}"
 
     def read(self):
+        """Reads a branch in SonarQube (refresh with latest data)
+
+        :return: itself
+        :rtype: Branch
+        """
         data = json.loads(self.get(_LIST_API, params={"project": self.project.key}).text)
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self.__load(br)
                 break
+        return self
 
     def __load(self, data):
         if self._json is None:
@@ -76,32 +82,60 @@ class Branch(components.Component):
         self._is_main = self._json.get("isMain", False)
 
     def uuid(self):
+        """Computes a uuid for the branch that can serve as index
+        :return: the UUID
+        :rtype: str
+        """
         return _uuid(self.project.key, self.name)
 
     def last_analysis(self, include_branches=False):
+        """
+        :param include_branches: Unused, present for inheritance reasons
+        :type include_branches: bool, optional
+        :return: Datetime of last analysis
+        :rtype: datetime
+        """
         if self._last_analysis is None:
             self.read()
         return self._last_analysis
 
     def is_kept_when_inactive(self):
+        """
+        :return: Whether the branch is kept when inactive
+        :rtype: bool
+        """
         if self._keep_when_inactive is None or self._json is None:
             self.read()
         return self._keep_when_inactive
 
     def is_main(self):
+        """
+        :return: Whether the branch is the project main branch
+        :rtype: bool
+        """
         if self._is_main is None or self._json is None:
             self.read()
         return self._is_main
 
     def delete(self, api=None, params=None):
+        """Deletes a branch
+
+        :return: Whether the deletion was successful
+        :rtype: bool
+        """
         util.logger.info("Deleting %s", str(self))
-        if not self.post("project_branches/delete", params={"branch": self.name, "project": self.project.key}):
-            util.logger.error("%s: deletion failed", str(self))
-            return False
-        util.logger.info("%s: Successfully deleted", str(self))
-        return True
+        r = self.post("project_branches/delete", params={"branch": self.name, "project": self.project.key})
+        if r.ok:
+            util.logger.info("%s: Successfully deleted", str(self))
+        else:
+            util.logger.error("%s: deletion failed", str(self))   
+        return r.ok
 
     def new_code(self):
+        """
+        :return: The branch new code period definition
+        :rtype: str
+        """
         if self._new_code is None:
             data = json.loads(self.get(api="new_code_periods/list", params={"project": self.project.key}).text)
             for b in data["newCodePeriods"]:
@@ -114,6 +148,13 @@ class Branch(components.Component):
         return self._new_code
 
     def export(self, full_export=True):
+        """Exports a branch configuration (is main, keep when inactive, optionally name, project)
+
+        :param full_export: Also export branches attributes that are not needed for import, defaults to True
+        :type include_branches: bool, optional
+        :return: The branch new code period definition
+        :rtype: str
+        """
         util.logger.debug("Exporting %s", str(self))
         data = {settings.NEW_CODE_PERIOD: self.new_code()}
         if self.is_main():
@@ -128,9 +169,20 @@ class Branch(components.Component):
         return None if len(data) == 0 else data
 
     def url(self):
+        """
+        :return: The branch URL in SonarQube as permalink
+        :rtype: str
+        """
         return f"{self.endpoint.url}/dashboard?id={self.project.key}&branch={requests.utils.quote(self.name)}"
 
     def rename(self, new_name):
+        """Renames a branch
+
+        :param new_name: New branch name
+        :type new_name: str
+        :return: Whether the branch was renamed
+        :rtype: bool
+        """
         if not self.is_main():
             util.logger.error("Can't rename any other branch than the main branch")
             return False
@@ -152,6 +204,13 @@ class Branch(components.Component):
         return []
 
     def get_measures(self, metrics_list):
+        """Retrieves a branch list of measures
+
+        :param metrics_list: List of metrics to return
+        :type metrics_list: str (comma separated)
+        :return: List of measures of a projects
+        :rtype: dict
+        """
         m = measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
         if "ncloc" in m:
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
@@ -160,6 +219,11 @@ class Branch(components.Component):
         return m
 
     def get_issues(self):
+        """Returns a branch list of issues
+
+        :return: dict of Issues, with issue key as key
+        :rtype: dict{key: Issue}
+        """
         return issues.search_all(
             endpoint=self.endpoint,
             params={
@@ -170,6 +234,11 @@ class Branch(components.Component):
         )
 
     def get_hotspots(self):
+        """Returns a branch list of hotspots
+
+        :return: dict of Hotspots, with hotspot key as key
+        :rtype: dict{key: Hotspot}
+        """
         return hotspots.search(
             endpoint=self.endpoint,
             params={
@@ -180,9 +249,23 @@ class Branch(components.Component):
         )
 
     def get_findings(self):
+        """Returns a branch list of findings
+
+        :return: dict of Findings, with finding key as key
+        :rtype: dict{key: Finding}
+        """
         return self.get_issues() + self.get_hotspots()
 
     def sync(self, another_branch, sync_settings):
+        """Syncs branch findings with another branch
+
+        :param another_branch: other branch to sync issues into (not necesssarily of same project)
+        :type another_branch: Branch
+        :param sync_settings: Parameters to configure the sync
+        :type sync_settings: dict
+        :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
+        :rtype: tuple(report, counters)
+        """
         report, counters = [], {}
         (report, counters) = syncer.sync_lists(
             self.get_issues(),
@@ -220,6 +303,13 @@ class Branch(components.Component):
         return problems
 
     def audit(self, audit_settings):
+        """Audits a branch and return list of problems found
+
+        :param audit_settings: Options of what to audit and thresholds to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         util.logger.debug("Auditing %s", str(self))
         return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc()
 
@@ -229,6 +319,15 @@ def _uuid(project_key, branch_name):
 
 
 def get_object(branch, project, data=None):
+    """Retrieves a branch
+
+    :param branch: Branch name
+    :type branch: str
+    :param project: Project the branch belongs to
+    :type project: Project
+    :return: The Branch object
+    :rtype: Branch
+    """
     if project.endpoint.edition() == "community":
         util.logger.debug("Branches not available in Community Edition")
         return None
@@ -239,6 +338,15 @@ def get_object(branch, project, data=None):
 
 
 def get_list(project):
+    """Retrieves a branch
+
+    :param branch: Branch name
+    :type branch: str
+    :param project: Project the branch belongs to
+    :type project: Project
+    :return: The Branch object
+    :rtype: Branch
+    """
     if project.endpoint.edition() == "community":
         util.logger.debug("branches not available in Community Edition")
         return {}
@@ -248,4 +356,12 @@ def get_list(project):
 
 
 def exists(branch_name, project_key, endpoint):
+    """
+    :param branch_name: Branch name
+    :type branch_name: str
+    :param project_key: Project key
+    :type project_key: str
+    :return: Whether the branch exists in SonarQube
+    :rtype: bool
+    """
     return branch_name in get_list(project=projects.get_object(project_key, endpoint))
