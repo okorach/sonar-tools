@@ -78,7 +78,7 @@ class Environment:
 
     def __str__(self):
         """
-        :returns: string representation of the SonarQube connection, token largely redacted
+        :return: string representation of the SonarQube connection, token largely redacted
         :rtype: str
         """
         return f"{util.redacted_token(self.__token)}@{self.url}"
@@ -93,7 +93,7 @@ class Environment:
         :type digits: int, optional
         :param as_string: Whether to return the version as string or tuple, default to False (ie returns a tuple)
         :type as_string: bool, optional
-        :returns: the SonarQube platform version
+        :return: the SonarQube platform version
         :rtype: tuple or str
         """
         if digits < 1 or digits > 3:
@@ -105,19 +105,16 @@ class Environment:
         else:
             return tuple(int(n) for n in self._version[0:digits])
 
-    def global_permissions(self):
-        """Returns the SonarQube platform global permissions
-
-        :returns: dict{"users": {<login>: <permissions comma separated>, ...}, "groups"; {<name>: <permissions comma separated>, ...}}}
-        :rtype: dict
+    def edition(self):
         """
-        if self._permissions is None:
-            self._permissions = global_permissions.GlobalPermissions(self)
-        return self._permissions
+        :return: the SonarQube platform edition
+        :rtype: str ("community", "developer", "enterprise" or "datacenter")
+        """
+        return self.sys_info()["Statistics"]["edition"]
 
     def server_id(self):
         """
-        :returns: the SonarQube platform server id
+        :return: the SonarQube platform server id
         :rtype: str
         """
         if self._server_id is not None:
@@ -128,9 +125,103 @@ class Environment:
             self._server_id = json.loads(self.get("system/status").text)["id"]
         return self._server_id
 
+    def basics(self):
+        """
+        :return: the 3 basic information of the platform: ServerId, Edition and Version
+        :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>}
+        """
+        return {
+            "version": self.version(as_string=True),
+            "edition": self.edition(),
+            "serverId": self.server_id(),
+        }
+
+
+    def get(self, api, params=None, exit_on_error=True):
+        """Makes an HTTP GET request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :type api: str
+        :param params: params to pass in the HTTP request, defaults to None
+        :type params: dict, optional
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :return: the result of the HTTP request
+        :rtype: request.Response
+        """
+        api = _normalize_api(api)
+        util.logger.debug("GET: %s", self.__urlstring(api, params))
+        try:
+            r = requests.get(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError:
+            if exit_on_error:
+                util.log_and_exit(r)
+            else:
+                util.logger.error("GET Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+        except requests.RequestException as e:
+            util.exit_fatal(str(e), options.ERR_SONAR_API)
+        return r
+
+    def post(self, api, params=None, exit_on_error=True):
+        """Makes an HTTP POST request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :type api: str
+        :param params: params to pass in the HTTP request, defaults to None
+        :type params: dict, optional
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :return: the result of the HTTP request
+        :rtype: request.Response
+        """
+        api = _normalize_api(api)
+        util.logger.debug("POST: %s", self.__urlstring(api, params))
+        try:
+            r = requests.post(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, data=params)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError:
+            if exit_on_error:
+                util.log_and_exit(r)
+            else:
+                util.logger.error("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+        except requests.RequestException as e:
+            util.exit_fatal(str(e), options.ERR_SONAR_API)
+        return r
+
+    def delete(self, api, params=None):
+        """Makes an HTTP DELETE request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :type api: str
+        :param params: params to pass in the HTTP request, defaults to None
+        :type params: dict, optional
+        :return: the result of the HTTP request
+        :rtype: request.Response
+        """
+        api = _normalize_api(api)
+        util.logger.debug("DELETE: %s", self.__urlstring(api, params))
+        try:
+            r = requests.delete(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError:
+            util.log_and_exit(r)
+        except requests.RequestException as e:
+            util.exit_fatal(str(e), options.ERR_SONAR_API)
+
+    def global_permissions(self):
+        """Returns the SonarQube platform global permissions
+
+        :return: dict{"users": {<login>: <permissions comma separated>, ...}, "groups"; {<name>: <permissions comma separated>, ...}}}
+        :rtype: dict
+        """
+        if self._permissions is None:
+            self._permissions = global_permissions.GlobalPermissions(self)
+        return self._permissions
+
     def sys_info(self):
         """
-        :returns: the SonarQube platform system info file
+        :return: the SonarQube platform system info file
         :rtype: dict
         """
         if self.__sys_info is None:
@@ -151,105 +242,26 @@ class Environment:
                         success = True
         return self.__sys_info
 
-    def edition(self):
-        """
-        :returns: the SonarQube platform edition
-        :rtype: str ("community", "developer", "enterprise" or "datacenter")
-        """
-        return self.sys_info()["Statistics"]["edition"]
-
     def database(self):
         """
-        :returns: the SonarQube platform backend database
+        :return: the SonarQube platform backend database
         :rtype: str
         """
         return self.sys_info()["Statistics"]["database"]["name"]
 
     def plugins(self):
         """
-        :returns: the SonarQube platform plugins
+        :return: the SonarQube platform plugins
         :rtype: dict
         """
         return self.sys_info()["Statistics"]["plugins"]
-
-    def get(self, api, params=None, exit_on_error=True):
-        """Makes an HTTP GET request to SonarQube
-
-        :param api: API to invoke (without the platform base URL)
-        :type api: str
-        :param params: params to pass in the HTTP request, defaults to None
-        :type params: dict, optional
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
-        :returns: the result of the HTTP request
-        :rtype: request.Response
-        """
-        api = _normalize_api(api)
-        util.logger.debug("GET: %s", self.urlstring(api, params))
-        try:
-            r = requests.get(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params)
-            r.raise_for_status()
-        except requests.exceptions.HTTPError:
-            if exit_on_error:
-                util.log_and_exit(r)
-            else:
-                util.logger.error("GET Error: %s HTTP status code %d", self.urlstring(api, params), r.status_code)
-        except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
-        return r
-
-    def post(self, api, params=None, exit_on_error=True):
-        """Makes an HTTP POST request to SonarQube
-
-        :param api: API to invoke (without the platform base URL)
-        :type api: str
-        :param params: params to pass in the HTTP request, defaults to None
-        :type params: dict, optional
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
-        :returns: the result of the HTTP request
-        :rtype: request.Response
-        """
-        api = _normalize_api(api)
-        util.logger.debug("POST: %s", self.urlstring(api, params))
-        try:
-            r = requests.post(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, data=params)
-            r.raise_for_status()
-        except requests.exceptions.HTTPError:
-            if exit_on_error:
-                util.log_and_exit(r)
-            else:
-                util.logger.error("POST Error: %s HTTP status code %d", self.urlstring(api, params), r.status_code)
-        except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
-        return r
-
-    def delete(self, api, params=None):
-        """Makes an HTTP DELETE request to SonarQube
-
-        :param api: API to invoke (without the platform base URL)
-        :type api: str
-        :param params: params to pass in the HTTP request, defaults to None
-        :type params: dict, optional
-        :returns: the result of the HTTP request
-        :rtype: request.Response
-        """
-        api = _normalize_api(api)
-        util.logger.debug("DELETE: %s", self.urlstring(api, params))
-        try:
-            r = requests.delete(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT)
-            r.raise_for_status()
-        except requests.exceptions.HTTPError:
-            util.log_and_exit(r)
-        except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
 
     def get_settings(self, settings_list=None):
         """Returns a list of (or all) platform global settings value from their key
 
         :param key: settings_list
         :type key: list or str (comma separated)
-        :returns: the list of settings values
+        :return: the list of settings values
         :rtype: dict{<key>: <value>, ...}
         """
         params = util.remove_nones({"keys": util.list_to_csv(settings_list)})
@@ -265,23 +277,45 @@ class Environment:
                 platform_settings[s["key"]] = s["fieldValues"]
         return platform_settings
 
+    def __settings(self, settings_list=None, include_not_set=False):
+        util.logger.info("getting global settings")
+        return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
+
     def get_setting(self, key):
         """Returns a platform global setting value from its key
 
         :param key: Setting key
         :type key: str
-        :returns: the setting value
+        :return: the setting value
         :rtype: str or dict
         """
         return self.get_settings(key).get(key, None)
 
     def reset_setting(self, key):
-        return settings.reset_setting(self, key)
+        """Resets a platform global setting to the SonarQube internal default value
+
+        :param key: Setting key
+        :type key: str
+        :return: Whether the reset was successful or not
+        :rtype: bool
+        """
+        return settings.reset_setting(self, key).ok
 
     def set_setting(self, key, value):
-        return settings.set_setting(self, key, value)
+        """Sets a platform global setting
 
-    def urlstring(self, api, params):
+        :param key: Setting key
+        :type key: str
+        :param key: value
+        :type key: str
+        :return: Whether setting the value was successful or not
+        :rtype: bool
+        """
+        return settings.set_setting(self, key, value).ok
+
+    def __urlstring(self, api, params):
+        """Returns a string corresponding to the URL and parameters
+        """
         first = True
         url_prefix = f"{str(self)}{api}"
         if params is None:
@@ -297,16 +331,23 @@ class Environment:
         return url_prefix
 
     def webhooks(self):
+        """
+        :return: the list of global webhooks
+        :rtype: dict{<webhook_name>: <webhook_data>, ...}
+        """
         return webhooks.get_list(self)
 
-    def settings(self, settings_list=None, include_not_set=False):
-        util.logger.info("getting global settings")
-        return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
-
     def export(self, full=False):
+        """Exports the global platform properties as JSON
+
+        :param full: Whether to also export properties thatc annot be set, defaults to False
+        :type full: bool, optional
+        :return: dict of all properties with their values
+        :rtype: dict
+        """
         util.logger.info("Exporting platform global settings")
         json_data = {}
-        for s in self.settings(include_not_set=True).values():
+        for s in self.__settings(include_not_set=True).values():
             (categ, subcateg) = s.category()
             util.update_json(json_data, categ, subcateg, s.to_json())
 
@@ -317,6 +358,12 @@ class Environment:
         return json_data
 
     def set_webhooks(self, webhooks_data):
+        """Sets global webhooks with a list of webhooks represented as JSON
+
+        :param webhooks_data: the webhooks representation
+        :type webhooks_data: dict
+        :return: Nothing
+        """
         current_wh = self.webhooks()
         # FIXME: Handle several webhooks with same name
         current_wh_names = [wh.name for wh in current_wh.values()]
@@ -330,6 +377,12 @@ class Environment:
                 webhooks.update(name=wh_name, endpoint=self, project=None, **wh)
 
     def import_config(self, config_data):
+        """Imports a whole SonarQube platform global configuration represented as JSON
+
+        :param config_data: the configuration representation
+        :type config_data: dict
+        :return: Nothing
+        """
         for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
             if section not in config_data:
                 continue
@@ -351,14 +404,14 @@ class Environment:
         global_permissions.import_config(self, config_data)
         devops.import_config(self, config_data)
 
-    def basics(self):
-        return {
-            "version": self.version(as_string=True),
-            "edition": self.edition(),
-            "serverId": self.server_id(),
-        }
-
     def audit(self, audit_settings=None):
+        """Audits a global platform configuration and returns the list of problems found
+
+        :param audit_settings: Options of what to audit and thresholds to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         util.logger.info("--- Auditing global settings ---")
         problems = []
         platform_settings = self.get_settings()
@@ -502,24 +555,6 @@ def _normalize_api(api):
     else:
         api = "/api/" + api
     return api
-
-
-def post(api, params=None, ctxt=None):
-    if ctxt is None:
-        ctxt = this.context
-    return ctxt.post(api, params)
-
-
-def edition(ctxt=None):
-    if ctxt is None:
-        ctxt = this.context
-    return ctxt.edition()
-
-
-def delete(api, params=None, ctxt=None):
-    if ctxt is None:
-        ctxt = this.context
-    return ctxt.delete(api, params)
 
 
 def _audit_setting_value(key, platform_settings, audit_settings, url):
@@ -677,7 +712,7 @@ def __lts_and_latest():
 
 def lts(digits=3):
     """
-    :returns: the current SonarQube LTS version
+    :return: the current SonarQube LTS version
     :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
     :type digits: int, optional
     :rtype: tuple (x, y, z)
@@ -688,7 +723,7 @@ def lts(digits=3):
 
 def latest(digits=3):
     """
-    :returns: the current SonarQube LATEST version
+    :return: the current SonarQube LATEST version
     :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
     :type digits: int, optional
     :rtype: tuple (x, y, z)
