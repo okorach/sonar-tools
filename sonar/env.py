@@ -54,8 +54,8 @@ _HARDCODED_LATEST = (9, 5, 0)
 
 
 class Environment:
-    """Abstraction of the SonarQube "platform" concept
-    """
+    """Abstraction of the SonarQube "platform" concept"""
+
     def __init__(self, some_url, some_token, cert_file=None):
         """Creates a SonarQube platform object
 
@@ -68,7 +68,7 @@ class Environment:
         :return: the SonarQube object
         :rtype: Env
         """
-        self.url = some_url #: SonarQube URL
+        self.url = some_url  #: SonarQube URL
         self.__token = some_token
         self.__cert_file = cert_file
         self._version = None
@@ -135,7 +135,6 @@ class Environment:
             "edition": self.edition(),
             "serverId": self.server_id(),
         }
-
 
     def get(self, api, params=None, exit_on_error=True):
         """Makes an HTTP GET request to SonarQube
@@ -314,8 +313,7 @@ class Environment:
         return settings.set_setting(self, key, value).ok
 
     def __urlstring(self, api, params):
-        """Returns a string corresponding to the URL and parameters
-        """
+        """Returns a string corresponding to the URL and parameters"""
         first = True
         url_prefix = f"{str(self)}{api}"
         if params is None:
@@ -539,10 +537,8 @@ class Environment:
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
-this.context = Environment(
-    os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
-    os.getenv("SONAR_TOKEN", "")
-)
+this.context = Environment(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os.getenv("SONAR_TOKEN", ""))
+
 
 def _normalize_api(api):
     api = api.lower()
@@ -710,6 +706,7 @@ def __lts_and_latest():
             pass
     return (LTS, LATEST)
 
+
 def lts(digits=3):
     """
     :return: the current SonarQube LTS version
@@ -720,6 +717,7 @@ def lts(digits=3):
     if digits < 1 or digits > 3:
         digits = 3
     return __lts_and_latest()[0][0:digits]
+
 
 def latest(digits=3):
     """

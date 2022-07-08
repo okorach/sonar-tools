@@ -54,10 +54,10 @@ class QualityProfile(sq.SqObject):
         """Do not use, use class methods to create objects"""
         super().__init__(key, endpoint)
 
-        self.name = data["name"] #: Quality profile name
+        self.name = data["name"]  #: Quality profile name
         self.language = data["language"]  #: Quality profile language
-        self.is_default = data["isDefault"] #: Quality profile is default
-        self.is_built_in = data["isBuiltIn"] #: Quality profile is built-in - read-only
+        self.is_default = data["isDefault"]  #: Quality profile is default
+        self.is_built_in = data["isBuiltIn"]  #: Quality profile is built-in - read-only
         self._json = data
         self._permissions = None
         self._rules = None
@@ -65,12 +65,12 @@ class QualityProfile(sq.SqObject):
         self.__last_update = None
 
         self._rules = self.rules()
-        self.nbr_rules = int(data["activeRuleCount"]) #: Number of rules in the quality profile
+        self.nbr_rules = int(data["activeRuleCount"])  #: Number of rules in the quality profile
         self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])  #: Number of deprecated rules in the quality profile
 
         self._projects = None
-        self.project_count = data.get("projectCount", None) #: Number of projects using this quality profile
-        self.parent_name = data.get("parentName", None) #: Name of parent profile, or None if none
+        self.project_count = data.get("projectCount", None)  #: Number of projects using this quality profile
+        self.parent_name = data.get("parentName", None)  #: Name of parent profile, or None if none
 
         self.__last_use = util.string_to_date(data.get("lastUsed", None))
         self.__last_update = util.string_to_date(data.get("rulesUpdatedAt", None))
@@ -82,7 +82,7 @@ class QualityProfile(sq.SqObject):
     @classmethod
     def read(cls, endpoint, name, language):
         """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
-    
+
         :param endpoint: Reference to the SonarQube platform
         :type endpoint: Env
         :param name: Quality profile name
