@@ -25,9 +25,8 @@
 
 import datetime as dt
 import pytz
-from sonar import groups, sqobject
+from sonar import groups, sqobject, tokens
 import sonar.utilities as util
-import sonar.tokens as tok
 from sonar.audit import rules, problem
 
 
@@ -95,7 +94,7 @@ class User(sqobject.SqObject):
 
     def tokens(self):
         if self.tokens_list is None:
-            self.tokens_list = tok.search(self.endpoint, self.login)
+            self.tokens_list = tokens.search(self.endpoint, self.login)
         return self.tokens_list
 
     def last_login_date(self):
