@@ -42,8 +42,8 @@ class Group(sq.SqObject):
         super().__init__(data["id"], endpoint)
         self.name = name                                        #: Group name
         self.description = data.get("description", "")          #: Group description
-        self.members_count = data.get("membersCount", None)     #: Group number of members - Read only
-        self.is_default = data.get("default", None)             #: Group is default (sonar-users) - Read only
+        self.__members_count = data.get("membersCount", None)
+        self.__is_default = data.get("default", None)
         self._json = data
         _GROUPS[self.key] = self
         _MAP[self.name] = self.key
@@ -106,6 +106,20 @@ class Group(sq.SqObject):
         """
         return f"group '{self.name}'"
 
+    def is_default(self):
+        """
+        :return: whether the group is a default group (sonar-users only for now) or not
+        :rtype: bool
+        """
+        return self.__is_default
+
+    def size(self):
+        """
+        :return: Number of users members of the group
+        :rtype: int
+        """
+        return self.__members_count
+
     def url(self):
         """
         :return: the SonarQube permalink to the group, actually the group page only
@@ -125,7 +139,7 @@ class Group(sq.SqObject):
         """
         util.logger.debug("Auditing %s", str(self))
         problems = []
-        if audit_settings["audit.groups.empty"] and self.members_count == 0:
+        if audit_settings["audit.groups.empty"] and self.__members_count == 0:
             rule = rules.get_rule(rules.RuleId.GROUP_EMPTY)
             problems = [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return problems
@@ -143,7 +157,7 @@ class Group(sq.SqObject):
         else:
             json_data = {"name": self.name}
             json_data["description"] = self.description if self.description and self.description != "" else None
-            if self.is_default:
+            if self.__is_default:
                 json_data["default"] = True
         return util.remove_nones(json_data)
 
