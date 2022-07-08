@@ -59,7 +59,7 @@ class User(sqobject.SqObject):
                     params[p] = create_data[p]
             self.post(_CREATE_API, params=params)
             self.add_groups(create_data.get("groups", None))
-            self.add_scm_accounts(create_data.get("scmAccounts", None))
+            self.add_scm_accounts(create_data.get("scmAccounts", ""))
             data = create_data
         elif data is None:
             for d in search(endpoint, params={"q": login}):
@@ -143,7 +143,7 @@ class User(sqobject.SqObject):
                 params[p] = kwargs[p]
         if len(params) > 1:
             self.post(_UPDATE_API, params=params)
-        self.add_scm_accounts(kwargs.get("scmAccounts", None))
+        self.add_scm_accounts(kwargs.get("scmAccounts", ""))
         if "login" in kwargs:
             new_login = kwargs["login"]
             if new_login not in _USERS:
@@ -151,7 +151,7 @@ class User(sqobject.SqObject):
                 _USERS.pop(self.login, None)
                 self.login = new_login
                 _USERS[self.login] = self
-        self.add_groups(kwargs.get("groups", None))
+        self.add_groups(kwargs.get("groups", ""))
         return self
 
     def add_groups(self, group_list):
@@ -162,18 +162,11 @@ class User(sqobject.SqObject):
         :return: Whether all group membership additions were OK
         :rtype: bool
         """
-        if group_list is None:
-            return False
-        if isinstance(group_list, str):
-            group_list = util.csv_to_list(group_list)
         ok = True
         if self.groups is None:
-            self.groups = []
-        for g in group_list:
+            self.groups = ["sonar-users"]
+        for g in util.csv_to_list(group_list):
             if g in self.groups:
-                continue
-            if g == "sonar-users":
-                self.groups.append(g)
                 continue
             if not groups.exists(g, self.endpoint):
                 util.logger.warning("Group '%s' does not exists, can't add membership for %s", g, str(self))
@@ -191,15 +184,13 @@ class User(sqobject.SqObject):
         :return: Whether SCM accounts were successfully set
         :rtype: bool
         """
-        if accounts_list is None:
-            return False
         accounts_list = util.csv_to_list(accounts_list)
         if len(accounts_list) == 0:
             return False
         util.logger.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
         if self.scmAccounts is None:
             self.scmAccounts = []
-        new_scms = self.scmAccounts.copy() + [a for a in accounts_list if a not in self.scmAccounts]
+        new_scms = list(set(self.scmAccounts) | set(accounts_list))
         if len(new_scms) > len(self.scmAccounts):
             util.logger.debug("Setting SCM accounts '%s' to %s", str(new_scms), str(self))
             r = self.post(_UPDATE_API, params={"login": self.login, "scmAccount": new_scms})
