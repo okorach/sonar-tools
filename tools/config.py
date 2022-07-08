@@ -23,7 +23,7 @@
 """
 import sys
 import datetime
-from sonar import env, version, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities
+from sonar import platform, version, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities
 from sonar.projects import projects
 
 _EVERYTHING = [
@@ -173,7 +173,7 @@ def main():
         utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
 
     start_time = datetime.datetime.today()
-    endpoint = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    endpoint = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     what = utilities.check_what(args.what, _EVERYTHING, "exported or imported")
     if kwargs["export"]:
         try:

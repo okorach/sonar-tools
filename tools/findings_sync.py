@@ -28,7 +28,7 @@
     Only issues with a 100% match are synchronized. When there's a doubt, nothing is done
 """
 
-from sonar import env, version, syncer, options
+from sonar import platform, version, syncer, options
 from sonar.projects import projects, branches
 import sonar.utilities as util
 
@@ -99,7 +99,7 @@ def main():
     )
 
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
-    source_env = env.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    source_env = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     params = vars(args)
     util.check_environment(params)
     source_key = params["projectKeys"]
@@ -141,7 +141,7 @@ def main():
             (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
 
         elif target_url is not None and target_key is not None:
-            target_env = env.Environment(some_url=args.urlTarget, some_token=args.tokenTarget, cert_file=args.clientCert)
+            target_env = platform.Platform(some_url=args.urlTarget, some_token=args.tokenTarget, cert_file=args.clientCert)
             if not projects.exists(target_key, endpoint=target_env):
                 raise options.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key

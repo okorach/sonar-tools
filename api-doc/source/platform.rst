@@ -1,7 +1,7 @@
 Environment
 ===========
 
-.. automodule:: sonar.env
+.. automodule:: sonar.platform
     :members:
     :undoc-members:
     :show-inheritance:

@@ -25,7 +25,7 @@
         Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 """
 
-from sonar import env, custom_measures, utilities, options
+from sonar import custom_measures, platform, utilities, options
 
 
 def parse_args(desc):
@@ -39,7 +39,7 @@ def parse_args(desc):
 
 def main():
     args = parse_args("Manipulate custom metrics")
-    sqenv = env.Environment(some_url=args.url, some_token=args.token)
+    sqenv = platform.Platform(some_url=args.url, some_token=args.token)
     if sqenv.version() >= (9, 0, 0):
         utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", options.UnsupportedOperation)
     else:

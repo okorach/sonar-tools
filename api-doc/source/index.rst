@@ -10,6 +10,7 @@ Welcome to sonar-tools documentation
 
 .. toctree::
    object
+   platform
    components
    projects
    branches
