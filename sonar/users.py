@@ -253,9 +253,8 @@ class User(sqobject.SqObject):
                 msg = rule.msg.format(str(t), last_cnx_age)
                 problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        cnx = self.last_login()
-        if cnx is not None:
-            age = abs((today - cnx).days)
+        if self.last_login:
+            age = abs((today - self.last_login).days)
             if age > settings["audit.users.maxLoginAge"]:
                 rule = rules.get_rule(rules.RuleId.USER_UNUSED)
                 msg = rule.msg.format(str(self), age)
