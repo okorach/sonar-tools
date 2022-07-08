@@ -355,7 +355,7 @@ def export(endpoint, full=False):
     """Exports all users as dict
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param full: Whether to export all settings including those useless for re-import, defaults to False
     :type full: bool, optional
     :return: list of projects

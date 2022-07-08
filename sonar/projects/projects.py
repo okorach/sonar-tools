@@ -1133,7 +1133,7 @@ def export(endpoint, key_list=None, full=False, threads=8):
     """Exports all or a list of projects configuration as dict
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param key_list: List of project keys to export, defaults to None (all projects)
     :type key_list: str
     :param full: Whether to export all settings including those useless for re-import, defaults to False
@@ -1162,7 +1162,7 @@ def exists(key, endpoint):
     :param key: project key to check
     :type key: str
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: whether the project exists
     :rtype: bool
     """
@@ -1249,7 +1249,7 @@ def export_zip(endpoint, key_list=None, threads=8, export_timeout=30):
     """Export as zip all or a list of projects
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param key_list: List of project keys to export, defaults to None (all projects)
     :type key_list: str, optional
     :param threads: Number of parallel threads for export, defaults to 8

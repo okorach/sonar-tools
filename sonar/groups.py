@@ -57,7 +57,7 @@ class Group(sq.SqObject):
     def read(cls, endpoint, name):
         """Creates a Group object corresponding to the group with same name in SonarQube
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param name: Group name
         :type name: str
         :return: The group object
@@ -79,7 +79,7 @@ class Group(sq.SqObject):
         """Creates a new group in SonarQube and returns the corresponding Group object
 
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param name: Group name
         :type name: str
         :param description: Group description
@@ -228,7 +228,7 @@ def search(endpoint, params=None):
     """Search groups
 
     :params endpoint: Reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param params: List of parameters to narrow down the search, defaults to None
     :type params: dict, optional
     :return: dict of groups with group name as key
@@ -241,7 +241,7 @@ def get_list(endpoint, params=None):
     """Returns the list of groups
 
     :params endpoint: Reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param params: The group name
     :type name: str
     :return: The group data as dict
@@ -256,7 +256,7 @@ def export(endpoint):
     Default groups (sonar-users) are not exported
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: list of groups
     :rtype: dict{name: description}
     """
@@ -275,7 +275,7 @@ def audit(audit_settings, endpoint=None):
     :param audit_settings: Configuration of audit
     :type audit_settings: dict
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: list of problems found
     :rtype: list[Problem]
     """
@@ -295,7 +295,7 @@ def get_object(name, endpoint=None):
     :param name: group name
     :type name: str
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: The group
     :rtype: Group
     """
@@ -310,7 +310,7 @@ def create_or_update(endpoint, name, description):
     """Creates or updates a group
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param name: group name
     :type name: str
     :param description: group description
@@ -330,7 +330,7 @@ def import_config(endpoint, config_data):
     """Imports a group configuration in SonarQube
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param config_data: the configuration to import
     :type config_data: dict
     :return: Nothing
@@ -352,7 +352,7 @@ def exists(group_name, endpoint):
     :param group_name: group name to check
     :type group_name: str
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: whether the project exists
     :rtype: bool
     """
