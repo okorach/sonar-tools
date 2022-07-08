@@ -27,7 +27,7 @@ import datetime as dt
 import pytz
 from sonar import groups, sqobject
 import sonar.utilities as util
-import sonar.user_tokens as tok
+import sonar.tokens as tok
 from sonar.audit import rules, problem
 
 

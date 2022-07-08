@@ -27,7 +27,7 @@
 
 """
 import sys
-from sonar import platform, users, groups, version, user_tokens, options
+from sonar import platform, tokens, users, groups, version, options
 from sonar.projects import projects, branches, pull_requests
 import sonar.utilities as util
 from sonar.audit import config, problem
@@ -182,7 +182,7 @@ def _delete_objects(problems, mode):
                 util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
             elif mode != "delete" or obj.delete():
                 deleted_pr_count += 1
-        if isinstance(obj, user_tokens.UserToken) and (mode != "delete" or obj.revoke()):
+        if isinstance(obj, tokens.UserToken) and (mode != "delete" or obj.revoke()):
             revoked_token_count += 1
     return (
         len(deleted_projects),
