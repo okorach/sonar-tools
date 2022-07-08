@@ -56,24 +56,24 @@ class QualityProfile(sq.SqObject):
         """Do not use, use class methods to create objects"""
         super().__init__(key, endpoint)
 
+        self.name = data["name"] #: Quality profile name
+        self.language = data["language"]  #: Quality profile language
+        self.is_default = data["isDefault"] #: Quality profile is default
+        self.is_built_in = data["isBuiltIn"] #: Quality profile is built-in - read-only
         self._json = data
         self._permissions = None
         self._rules = None
         self.__last_use = None
         self.__last_update = None
-        self.name = data["name"]
-        self.language = data["language"]
-        self.is_default = data["isDefault"]
-        self.is_built_in = data["isBuiltIn"]
 
         self._rules = self.rules()
-        self.nbr_rules = int(data["activeRuleCount"])
-        self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])
+        self.nbr_rules = int(data["activeRuleCount"]) #: Number of rules in the quality profile
+        self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])  #: Number of deprecated rules in the quality profile
 
         self._projects = None
-        self.project_count = data.get("projectCount", None)
-        self.parent_name = data.get("parentName", None)
-        self.language_name = data["languageName"]
+        self.project_count = data.get("projectCount", None) #: Number of projects using this quality profile
+        self.parent_name = data.get("parentName", None) #: Name of parent profile, or None if none
+
         self.__last_use = util.string_to_date(data.get("lastUsed", None))
         self.__last_update = util.string_to_date(data.get("rulesUpdatedAt", None))
 
@@ -166,31 +166,51 @@ class QualityProfile(sq.SqObject):
         return self.__last_update
 
     def set_parent(self, parent_name):
+        """Sets the parent quality profile of the current profile
+
+        :param parent_name: Name of the parent quality profile
+        :type parent_name: str
+        :return: Whether setting the parent was successful or not
+        :rtype: bool
+        """
         if parent_name is None:
             return
         if get_object(name=parent_name, language=self.language) is None:
             util.logger.warning("Can't set parent name '%s' to %s", str(parent_name), str(self))
-            return
+            return False
         if self.parent_name is None or self.parent_name != parent_name:
             params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
-            self.post("qualityprofiles/change_parent", params=params)
+            r = self.post("qualityprofiles/change_parent", params=params, exit_on_error=False)
+            return r.ok
         else:
             util.logger.debug("Won't set parent of %s. It's the same as currently", str(self))
+            return True
 
     def is_child(self):
+        """
+        :return: returns whether the quality profile has a parent
+        :rtype: bool
+        """
         return self.parent_name is not None
 
     def inherits_from_built_in(self):
+        """
+        :return: returns whether the quality profile inherits from a built-in profile (following parents of parents)
+        :rtype: bool
+        """
         return self.get_built_in_parent() is not None
 
     def get_built_in_parent(self):
+        """
+        :return: The built-in parent profile of the profile, or None
+        :rtype: QualityProfile or None if profile does not inherit from a built-in profile
+        """
         self.is_built_in = self._json.get("isBuiltIn", False)
         if self.is_built_in:
             return self
         if self.parent_name is None:
             return None
-        parent_qp = get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language)
-        return parent_qp.get_built_in_parent()
+        return get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language).get_built_in_parent()
 
     def has_deprecated_rules(self):
         return self.nbr_deprecated_rules > 0
