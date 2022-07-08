@@ -27,6 +27,7 @@ class UserToken(sq.SqObject):
     """
     Abstraction of the SonarQube "user token" concept
     """
+
     API_ROOT = "user_tokens"
     API_REVOKE = API_ROOT + "/revoke"
     API_SEARCH = API_ROOT + "/search"

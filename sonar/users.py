@@ -42,8 +42,7 @@ class User(sqobject.SqObject):
     """
 
     def __init__(self, login, endpoint, data):
-        """Do not use to create users, use on of the constructor class methods
-        """
+        """Do not use to create users, use on of the constructor class methods"""
         super().__init__(login, endpoint)
         self.login = login  #: User login (str)
         self.name = None  #: User name (str)
@@ -52,7 +51,7 @@ class User(sqobject.SqObject):
         self.email = None  #: User email (str)
         self.is_local = None  #: Whether user is local (bool) - read-only
         self.last_login = None  #: User last login (datetime) - read-only
-        self.nb_tokens = None #: Nbr of tokens (int) - read-only
+        self.nb_tokens = None  #: Nbr of tokens (int) - read-only
         self.__tokens = None
         self.__load(data)
         util.logger.debug("Created %s", str(self))
@@ -106,7 +105,7 @@ class User(sqobject.SqObject):
         :rtype: User or None if not found
         """
         util.logger.debug("Reading user '%s'", login)
-        data = search(endpoint, params={"q":login})
+        data = search(endpoint, params={"q": login})
         return data.get(login, None)
 
     def __str__(self):
@@ -123,7 +122,7 @@ class User(sqobject.SqObject):
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local - read-only
         self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login - read-only
-        self.nb_tokens = data.get("tokenCount", None) #: Nbr of tokens - read-only
+        self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
         self.__tokens = None
         self._json = data
 
@@ -225,7 +224,6 @@ class User(sqobject.SqObject):
             util.logger.warning("Group '%s' does not exists, can't remove membership for %s", group_name, str(self))
             return False
         return group.remove_user(self.login)
-
 
     def set_groups(self, group_list):
         """Set the user group membership (replaces current groups)
@@ -444,6 +442,7 @@ def get_object(endpoint, login):
     if len(_OBJECTS) == 0:
         search(endpoint)
     return _OBJECTS.get(login, None)
+
 
 def _decode(data):
     data["scm_accounts"] = util.csv_to_list(data.pop("scmAccounts", ""))
