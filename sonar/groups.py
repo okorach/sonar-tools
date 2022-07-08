@@ -36,12 +36,12 @@ class Group(sq.SqObject):
     Abstraction of the SonarQube "group" concept.
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
-    def __init__(self, name, endpoint, data):
-        """Do not use, use class methods to create objects
-        """
+
+    def __init__(self, endpoint, name, data):
+        """Do not use, use class methods to create objects"""
         super().__init__(data["id"], endpoint)
-        self.name = name                                        #: Group name
-        self.description = data.get("description", "")          #: Group description
+        self.name = name  #: Group name
+        self.description = data.get("description", "")  #: Group description
         self.__members_count = data.get("membersCount", None)
         self.__is_default = data.get("default", None)
         self._json = data
@@ -57,7 +57,7 @@ class Group(sq.SqObject):
         :param name: Group name
         :type name: str
         :return: The group object
-        :rtype: Group or None
+        :rtype: Group or None if not found
         """
         util.logger.debug("Reading group '%s'", name)
         data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
@@ -66,7 +66,7 @@ class Group(sq.SqObject):
         key = data["id"]
         if key in _GROUPS:
             return _GROUPS[key]
-        return cls(name, endpoint, data=data)
+        return cls(endpoint, name, data=data)
 
     @classmethod
     def create(cls, endpoint, name, description=None):
@@ -86,7 +86,7 @@ class Group(sq.SqObject):
         return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
-    def load(cls, name, endpoint, data):
+    def load(cls, endpoint, data):
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param name: Group name
@@ -98,12 +98,11 @@ class Group(sq.SqObject):
         :return: The group object
         :rtype: Group or None
         """
-        util.logger.debug("Loading group '%s'", name)
-        return cls(name=name, endpoint=endpoint, data=data)
+        util.logger.debug("Loading group '%s'", data["name"])
+        return cls(name=data["name"], endpoint=endpoint, data=data)
 
     def __str__(self):
-        """String formatting of the object
-        """
+        """String formatting of the object"""
         return f"group '{self.name}'"
 
     def is_default(self):
