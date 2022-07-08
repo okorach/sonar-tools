@@ -227,6 +227,17 @@ def date_to_string(date, with_time=True):
 
 
 def age(some_date, rounded=True):
+    """returns the age (in days) of a date
+
+    :param some_date: date
+    :type date: datetime
+    :param rounded: Whether to rounddown to nearest day
+    :type rounded: bool
+    :return: The age in days, or by the second if not rounded
+    :rtype: timedelta or int if rounded
+    """
+    if not some_date:
+        return None
     delta = datetime.datetime.today().replace(tzinfo=pytz.UTC) - some_date
     return delta.days if rounded else delta
 
