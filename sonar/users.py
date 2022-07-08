@@ -42,41 +42,63 @@ class User(sqobject.SqObject):
     Abstraction of the SonarQube "user" concept
     """
 
-    def __init__(self, login, endpoint, data=None, create_data=None):
-        super().__init__(login, endpoint)
-        self.login = login
-        self.groups = None
-        self.scmAccounts = None
-        if create_data is not None:
-            util.logger.info("Creating %s", str(self))
-            params = {"login": login}
-            local = create_data.get("local", False)
-            params["local"] = str(local).lower()
-            if local:
-                params["password"] = create_data.get("password", login)
-            for p in ("name", "email"):
-                if p in create_data:
-                    params[p] = create_data[p]
-            self.post(_CREATE_API, params=params)
-            self.add_groups(create_data.get("groups", None))
-            self.add_scm_accounts(create_data.get("scmAccounts", ""))
-            data = create_data
-        elif data is None:
-            for d in search(endpoint, params={"q": login}):
-                if d["login"] == login:
-                    data = d
-                    break
-        if create_data is None:
-            util.logger.debug("Sync'ing %s", str(self))
 
-        self._json = data
-        self.name = data.get("name", None)
-        self.is_local = data.get("local", False)
-        self.email = data.get("email", None)
-        self.scmAccounts = data.pop("scmAccounts", None)
-        self.groups = data.get("groups", None)
+    @classmethod
+    def load(cls, endpoint, data):
+        """Creates a user object from the result of a SonarQube API user search data
+
+        :param endpoint: Reference to the SonarQube platform
+        :type endpoint: Platform
+        :param data: The JSON data corresponding to the group
+        :type data: dict
+        :return: The user object
+        :rtype: User or None
+        """
+        util.logger.debug("Loading user '%s'", data["login"])
+        return cls(login=data["login"], endpoint=endpoint, data=data)
+
+    @classmethod
+    def create(cls, endpoint, login, description=None):
+        """Creates a new user in SonarQube and returns the corresponding User object
+
+        :param endpoint: Reference to the SonarQube platform
+        :type endpoint: Platform
+        :param login: User login
+        :type login: str
+        :param description: User description
+        :type description: str, optional
+        :return: The user object
+        :rtype: User or None
+        """
+        util.logger.debug("Creating user '%s'", login)
+        endpoint.post(_CREATE_API, params={"login": login, "description": description})
+        return cls.read(endpoint=endpoint, login=login)
+
+    @classmethod
+    def read(cls, endpoint, login):
+        """Creates a User object corresponding to the user with same login in SonarQube
+        :param endpoint: Reference to the SonarQube platform
+        :type endpoint: Env
+        :param login: User login
+        :type login: str
+        :return: The user object
+        :rtype: User or None if not found
+        """
+        util.logger.debug("Reading user '%s'", login)
+        data = search(endpoint, params={"q":login})
+        return data.get(login, None)
+
+    def __init__(self, login, endpoint, data):
+        super().__init__(login, endpoint)
+        self.login = login  #: User login
+        self.name = data["name"]  #: User name
+        self.groups = data.get("groups", None)  #: User groups
+        self.scmAccounts = data.pop("scmAccounts", None)  #: User SCM accounts
+        self.email = data.get("email", None)  #: User email
+        self.is_local = data.get("local", False)  #: User is local
         self.nb_tokens = data.get("tokenCount", None)
         self.tokens_list = None
+        self._json = data
         self._last_login_date = None
         util.logger.debug("Created %s", str(self))
         _USERS[self.login] = self
@@ -333,23 +355,6 @@ def get_login_from_name(name, endpoint):
     return list(u_list.keys()).pop(0)
 
 
-def create(login, endpoint=None, **kwargs):
-    util.logger.debug("Creating user '%s' with data %s", login, str(kwargs))
-    o = get_object(login=login, endpoint=endpoint)
-    if o is None:
-        o = User(login=login, endpoint=endpoint, create_data=kwargs)
-    return o
-
-
-def create_or_update(endpoint, login, **kwargs):
-    o = get_object(endpoint=endpoint, login=login)
-    if o is None:
-        util.logger.debug("User '%s' does not exist, creating...", login)
-        return create(login, endpoint, **kwargs)
-    else:
-        return o.update(**kwargs)
-
-
 def import_config(endpoint, config_data):
     """Imports in SonarQube a complete users configuration described from a JSON
 
@@ -365,7 +370,11 @@ def import_config(endpoint, config_data):
     util.logger.info("Importing users")
     for login, data in config_data["users"].items():
         data.pop("login", None)
-        create_or_update(endpoint, login, **data)
+        o = get_object(endpoint=endpoint, login=login)
+        if o is None:
+            util.logger.debug("User '%s' does not exist, creating...", login)
+            o = User.create(endpoint, login, data.get("description", None))
+        o.update(**data)
 
 
 def get_object(endpoint, login):
