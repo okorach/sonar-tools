@@ -127,13 +127,28 @@ class QualityProfile(sq.SqObject):
 
     @classmethod
     def load(cls, endpoint, data):
+        """Creates a QualityProfile object from the result of a SonarQube API quality profile search data
+
+        :param endpoint: Reference to the SonarQube platform
+        :type endpoint: Env
+        :param data: The JSON data corresponding to the group
+        :type data: dict
+        :return: The quality profile object
+        :rtype: QualityProfile
+        """
         util.logger.debug("Loading quality profile '%s' of language '%s'", data["name"], data["language"])
         return cls(endpoint=endpoint, key=data["key"], data=data)
 
     def __str__(self):
+        """String formatting of the object
+        :rtype: str"""
         return f"quality profile '{self.name}' of language '{self.language}'"
 
     def url(self):
+        """
+        :return: the SonarQube permalink to the quality profile
+        :rtype: str
+        """
         return f"{self.endpoint.url}/profiles/show?language={self.language}&name={requests.utils.quote(self.name)}"
 
     def last_use(self, as_days=False):
