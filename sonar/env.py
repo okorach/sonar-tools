@@ -17,11 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
 
-    Abstraction of the SonarQube "platform" concept
-
-"""
 from http import HTTPStatus
 import sys
 import os
@@ -58,8 +54,21 @@ _HARDCODED_LATEST = (9, 5, 0)
 
 
 class Environment:
+    """Abstraction of the SonarQube "platform" concept
+    """
     def __init__(self, some_url, some_token, cert_file=None):
-        self.url = some_url
+        """Creates a SonarQube platform object
+
+        :param some_url: base URL of the SonarQube platform
+        :type some_url: str
+        :param some_token: token to connect to the platform
+        :type some_token: str
+        :param cert_file: Client certificate, if any needed, defaults to None
+        :type cert_file: str, optional
+        :return: the SonarQube object
+        :rtype: Env
+        """
+        self.url = some_url #: SonarQube URL
         self.token = some_token
         self.cert_file = cert_file
         self._version = None
@@ -442,13 +451,10 @@ class Environment:
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
-this.context = Environment("http://localhost:9000", "")
-
-
-def set_env(some_url, some_token):
-    this.context = Environment(some_url, some_token)
-    util.logger.debug("Setting GLOBAL environment: %s@%s", util.redacted_token(some_token), some_url)
-
+this.context = Environment(
+    os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
+    os.getenv("SONAR_TOKEN", "")
+)
 
 def _normalize_api(api):
     api = api.lower()
