@@ -489,7 +489,7 @@
         "severity": "MEDIUM",
         "type": "SECURITY",
         "object": "User",
-        "message": "{} has not connected since {} days, it should be deactivated"
+        "message": "{} did not connect since {} days, it should be deactivated"
     },
     "PORTFOLIO_EMPTY": {
         "severity": "LOW",
