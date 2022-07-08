@@ -84,7 +84,7 @@ class QualityProfile(sq.SqObject):
         """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
 
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param name: Quality profile name
         :type name: str
         :param name: Quality profile language
@@ -107,7 +107,7 @@ class QualityProfile(sq.SqObject):
         """Creates a new quality profile in SonarQube and returns the corresponding QualityProfile object
 
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param name: Quality profile name
         :type name: str
         :param description: Quality profile language
@@ -129,7 +129,7 @@ class QualityProfile(sq.SqObject):
         """Creates a QualityProfile object from the result of a SonarQube API quality profile search data
 
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param data: The JSON data corresponding to the quality profile
         :type data: dict
         :return: The quality profile object
@@ -437,7 +437,7 @@ def search(endpoint, params=None):
 def get_list(endpoint):
     """
     :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: the list of all quality profiles
     :rtype: dict{key: QualityProfile}
     """
@@ -453,7 +453,7 @@ def audit(endpoint, audit_settings=None):
     :param audit_settings: Configuration of audit
     :type audit_settings: dict
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: list of problems found
     :rtype: list[Problem]
     """
@@ -507,7 +507,7 @@ def export(endpoint, in_hierarchy=True, full=False):
     """Exports all quality profiles configuration as dict
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param in_hierarchy: Whether quality profiles dict should be organized hierarchically (following inheritance)
     :type in_hierarchy: bool, optional
     :param full: Whether to export all settings including those that can't be set, defaults to False
@@ -538,7 +538,7 @@ def get_object(name, language, endpoint=None):
     :param language: Quality profile language
     :type language: str
     :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: The quality profile object, of None if not found
     :rtype: QualityProfile or None
     """
@@ -573,7 +573,7 @@ def import_config(endpoint, config_data, threads=8):
     """Imports a configuration in SonarQube
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param config_data: the configuration to import
     :type config_data: dict
     :param threads: Number of threads (quality profiles import) to run in parallel
@@ -624,7 +624,7 @@ def get_id(name, language):
 def exists(endpoint, name, language):
     """
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param name: Quality profile name
     :type name: str
     :param language: Quality profile language

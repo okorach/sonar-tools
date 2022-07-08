@@ -23,11 +23,15 @@ import sonar.utilities as util
 
 from sonar.audit import rules, problem
 
+SONAR_USERS = "sonar-users"
+
 _SEARCH_API = "user_groups/search"
 _CREATE_API = "user_groups/create"
 _UPDATE_API = "user_groups/update"
+ADD_USER_API = "user_groups/add_user"
+REMOVE_USER_API = "user_groups/remove_user"
 
-_GROUPS = {}
+_OBJECTS = {}
 _MAP = {}
 
 
@@ -45,7 +49,7 @@ class Group(sq.SqObject):
         self.__members_count = data.get("membersCount", None)
         self.__is_default = data.get("default", None)
         self._json = data
-        _GROUPS[self.key] = self
+        _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
         util.logger.debug("Created %s object", str(self))
 
@@ -53,19 +57,21 @@ class Group(sq.SqObject):
     def read(cls, endpoint, name):
         """Creates a Group object corresponding to the group with same name in SonarQube
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param name: Group name
         :type name: str
         :return: The group object
         :rtype: Group or None if not found
         """
         util.logger.debug("Reading group '%s'", name)
+        if name in _MAP:
+            return _OBJECTS[_MAP[name]]
         data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
         if data is None:
             return None
         key = data["id"]
-        if key in _GROUPS:
-            return _GROUPS[key]
+        if key in _OBJECTS:
+            return _OBJECTS[key]
         return cls(endpoint, name, data=data)
 
     @classmethod
@@ -73,7 +79,7 @@ class Group(sq.SqObject):
         """Creates a new group in SonarQube and returns the corresponding Group object
 
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param name: Group name
         :type name: str
         :param description: Group description
@@ -90,7 +96,7 @@ class Group(sq.SqObject):
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Env
+        :type endpoint: Platform
         :param data: The JSON data corresponding to the group
         :type data: dict
         :return: The group object
@@ -100,7 +106,10 @@ class Group(sq.SqObject):
         return cls(name=data["name"], endpoint=endpoint, data=data)
 
     def __str__(self):
-        """String formatting of the object"""
+        """
+        :return: String formatting of the object
+        :rtype: str
+        """
         return f"group '{self.name}'"
 
     def is_default(self):
@@ -119,11 +128,31 @@ class Group(sq.SqObject):
 
     def url(self):
         """
-        :return: the SonarQube permalink to the group, actually the group page only
-                 since this is a close as we can get to the precise group definition
+        :return: the SonarQube permalink to the group, actually the global groups page only
+                 since this is as close as we can get to the precise group definition
         :rtype: str
         """
         return f"{self.endpoint.url}/admin/groups"
+
+    def add_user(self, user_login):
+        """Adds a user in the group
+
+        :param user_login: User login
+        :type user_login: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        return self.post(ADD_USER_API, params={"login": user_login, "name": self.name}, exit_on_error=False).ok
+
+    def remove_user(self, user_login):
+        """Removes a user from the group
+
+        :param user_login: User login
+        :type user_login: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        return self.post(REMOVE_USER_API, params={"login": user_login, "name": self.name}, exit_on_error=False).ok
 
     def audit(self, audit_settings=None):
         """Audits a group and return list of problems found
@@ -199,7 +228,7 @@ def search(endpoint, params=None):
     """Search groups
 
     :params endpoint: Reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param params: List of parameters to narrow down the search, defaults to None
     :type params: dict, optional
     :return: dict of groups with group name as key
@@ -212,7 +241,7 @@ def get_list(endpoint, params=None):
     """Returns the list of groups
 
     :params endpoint: Reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param params: The group name
     :type name: str
     :return: The group data as dict
@@ -227,7 +256,7 @@ def export(endpoint):
     Default groups (sonar-users) are not exported
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: list of groups
     :rtype: dict{name: description}
     """
@@ -246,7 +275,7 @@ def audit(audit_settings, endpoint=None):
     :param audit_settings: Configuration of audit
     :type audit_settings: dict
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: list of problems found
     :rtype: list[Problem]
     """
@@ -266,22 +295,22 @@ def get_object(name, endpoint=None):
     :param name: group name
     :type name: str
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: The group
     :rtype: Group
     """
-    if len(_GROUPS) == 0 or name not in _MAP:
+    if len(_OBJECTS) == 0 or name not in _MAP:
         get_list(endpoint)
     if name not in _MAP:
         return None
-    return _GROUPS[_MAP[name]]
+    return _OBJECTS[_MAP[name]]
 
 
 def create_or_update(endpoint, name, description):
     """Creates or updates a group
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param name: group name
     :type name: str
     :param description: group description
@@ -301,7 +330,7 @@ def import_config(endpoint, config_data):
     """Imports a group configuration in SonarQube
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param config_data: the configuration to import
     :type config_data: dict
     :return: Nothing
@@ -323,7 +352,7 @@ def exists(group_name, endpoint):
     :param group_name: group name to check
     :type group_name: str
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: whether the project exists
     :rtype: bool
     """

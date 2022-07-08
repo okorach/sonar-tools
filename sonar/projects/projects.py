@@ -88,6 +88,10 @@ class Project(components.Component):
         util.logger.debug("Created %s", str(self))
 
     def __str__(self):
+        """
+        :return: String formatting of the object
+        :rtype: str
+        """
         return f"project '{self.key}'"
 
     def __load(self, data=None):
@@ -1012,7 +1016,9 @@ def count(endpoint, params=None):
 def search(endpoint, params=None):
     """Searches projects in SonarQube
 
-    :param params: list of parameters to filter projects to search
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param params: list of parameters to narrow down the search
     :type params: dict
     :return: list of projects
     :rtype: dict{key: Project}
@@ -1077,13 +1083,13 @@ def __audit_thread(queue, results, audit_settings, bindings):
     util.logger.debug("Queue empty, exiting thread")
 
 
-def audit(audit_settings, endpoint=None, key_list=None):
+def audit(endpoint, audit_settings, key_list=None):
     """Audits all or a list of projects
 
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Platform
     :param audit_settings: Configuration of audit
     :type audit_settings: dict
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
     :param key_list: List of project keys to audit, defaults to None (all projects)
     :type key_list: str, optional
     :return: list of problems found
@@ -1127,7 +1133,7 @@ def export(endpoint, key_list=None, full=False, threads=8):
     """Exports all or a list of projects configuration as dict
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param key_list: List of project keys to export, defaults to None (all projects)
     :type key_list: str
     :param full: Whether to export all settings including those useless for re-import, defaults to False
@@ -1156,7 +1162,7 @@ def exists(key, endpoint):
     :param key: project key to check
     :type key: str
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :return: whether the project exists
     :rtype: bool
     """
@@ -1196,7 +1202,7 @@ def import_config(endpoint, config_data, key_list=None):
     """Imports a configuration in SonarQube
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param config_data: the configuration to import
     :type config_data: dict
     :param key_list: List of project keys to be considered for the import, defaults to None (all projects)
@@ -1243,7 +1249,7 @@ def export_zip(endpoint, key_list=None, threads=8, export_timeout=30):
     """Export as zip all or a list of projects
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Env
+    :type endpoint: Platform
     :param key_list: List of project keys to export, defaults to None (all projects)
     :type key_list: str, optional
     :param threads: Number of parallel threads for export, defaults to 8

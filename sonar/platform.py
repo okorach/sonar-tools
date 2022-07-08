@@ -66,7 +66,7 @@ class Platform:
         :param cert_file: Client certificate, if any needed, defaults to None
         :type cert_file: str, optional
         :return: the SonarQube object
-        :rtype: Env
+        :rtype: Platform
         """
         self.url = some_url  #: SonarQube URL
         self.__token = some_token
