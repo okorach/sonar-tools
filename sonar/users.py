@@ -42,6 +42,23 @@ class User(sqobject.SqObject):
     Abstraction of the SonarQube "user" concept
     """
 
+    def __init__(self, login, endpoint, data):
+        """Do not use to create users, use on of the constructor class methods
+        """
+        super().__init__(login, endpoint)
+        self.login = login  #: User login
+        self.name = data["name"]  #: User name
+        self.groups = data.get("groups", None)  #: User groups
+        self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
+        self.email = data.get("email", None)  #: User email
+        self.is_local = data.get("local", False)  #: User is local
+        self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login
+        self.nb_tokens = data.get("tokenCount", None) #: Nbr of tokens
+        self.__tokens = None
+        self._json = data
+        util.logger.debug("Created %s", str(self))
+        _OBJECTS[self.login] = self
+
     @classmethod
     def load(cls, endpoint, data):
         """Creates a user object from the result of a SonarQube API user search data
@@ -86,21 +103,6 @@ class User(sqobject.SqObject):
         util.logger.debug("Reading user '%s'", login)
         data = search(endpoint, params={"q":login})
         return data.get(login, None)
-
-    def __init__(self, login, endpoint, data):
-        super().__init__(login, endpoint)
-        self.login = login  #: User login
-        self.name = data["name"]  #: User name
-        self.groups = data.get("groups", None)  #: User groups
-        self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
-        self.email = data.get("email", None)  #: User email
-        self.is_local = data.get("local", False)  #: User is local
-        self.nb_tokens = data.get("tokenCount", None)
-        self.__tokens = None
-        self._json = data
-        self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login
-        util.logger.debug("Created %s", str(self))
-        _OBJECTS[self.login] = self
 
     def __str__(self):
         """
