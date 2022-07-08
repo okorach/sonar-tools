@@ -87,7 +87,7 @@ class User(sqobject.SqObject):
         :rtype: User or None
         """
         util.logger.debug("Creating user '%s'", login)
-        endpoint.post(CREATE_API, params={"login": login, "description": description})
+        endpoint.post(CREATE_API, params={"login": login, "local": is_local})
         return cls.read(endpoint=endpoint, login=login)
 
     @classmethod
