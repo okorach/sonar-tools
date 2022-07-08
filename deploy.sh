@@ -20,6 +20,7 @@
 #
 rm -rf build dist
 python3 setup.py bdist_wheel
+sphinx-build -b html api-doc/source api-doc/build
 
 # Deploy locally for tests
 echo "y" | python3 -m pip uninstall sonar-tools
