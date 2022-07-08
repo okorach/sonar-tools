@@ -74,7 +74,7 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint, login, is_local=True):
+    def create(cls, endpoint, login, is_local=True, password=None):
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param endpoint: Reference to the SonarQube platform
@@ -83,11 +83,16 @@ class User(sqobject.SqObject):
         :type login: str
         :param is_local: Whether the user is local, defaults to True
         :type is_local: bool, optional
+        :param password: The password if user is local, defaults to login
+        :type password: str, optional
         :return: The user object
         :rtype: User or None
         """
         util.logger.debug("Creating user '%s'", login)
-        endpoint.post(CREATE_API, params={"login": login, "local": is_local})
+        params = {"login": login, "local": is_local}
+        if is_local:
+            params["password"] = password if password else login
+        endpoint.post(CREATE_API, params=params)
         return cls.read(endpoint=endpoint, login=login)
 
     @classmethod
