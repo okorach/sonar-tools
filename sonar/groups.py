@@ -23,6 +23,8 @@ import sonar.utilities as util
 
 from sonar.audit import rules, problem
 
+SONAR_USERS = "sonar-users"
+
 _SEARCH_API = "user_groups/search"
 _CREATE_API = "user_groups/create"
 _UPDATE_API = "user_groups/update"
