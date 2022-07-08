@@ -18,6 +18,8 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+black --line-length=150 .
 rm -rf build dist
 python3 setup.py bdist_wheel
 
