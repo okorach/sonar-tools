@@ -45,14 +45,14 @@ class User(sqobject.SqObject):
         """Do not use to create users, use on of the constructor class methods
         """
         super().__init__(login, endpoint)
-        self.login = login  #: User login
-        self.name = None  #: User name
-        self.groups = None  #: User groups
-        self.scm_accounts = None  #: User SCM accounts
-        self.email = None  #: User email
-        self.is_local = None  #: User is local - read-only
-        self.last_login = None  #: User last login - read-only
-        self.nb_tokens = None #: Nbr of tokens - read-only
+        self.login = login  #: User login (str)
+        self.name = None  #: User name (str)
+        self.groups = None  #: User groups (list)
+        self.scm_accounts = None  #: User SCM accounts (list)
+        self.email = None  #: User email (str)
+        self.is_local = None  #: Whether user is local (bool) - read-only
+        self.last_login = None  #: User last login (datetime) - read-only
+        self.nb_tokens = None #: Nbr of tokens (int) - read-only
         self.__tokens = None
         self.__load(data)
         util.logger.debug("Created %s", str(self))
