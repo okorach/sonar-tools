@@ -59,8 +59,8 @@ class QualityProfile(sq.SqObject):
         self._json = data
         self._permissions = None
         self._rules = None
-        self.last_used = None
-        self.last_updated = None
+        self.__last_use = None
+        self.__last_update = None
         self.name = data["name"]
         self.language = data["language"]
         self.is_default = data["isDefault"]
@@ -74,8 +74,8 @@ class QualityProfile(sq.SqObject):
         self.project_count = data.get("projectCount", None)
         self.parent_name = data.get("parentName", None)
         self.language_name = data["languageName"]
-        self.last_used = util.string_to_date(data.get("lastUsed", None))
-        self.last_updated = util.string_to_date(data.get("rulesUpdatedAt", None))
+        self.__last_use = util.string_to_date(data.get("lastUsed", None))
+        self.__last_update = util.string_to_date(data.get("rulesUpdatedAt", None))
 
         util.logger.info("Created %s", str(self))
         _MAP[_format(self.name, self.language)] = self.key
@@ -151,21 +151,19 @@ class QualityProfile(sq.SqObject):
         """
         return f"{self.endpoint.url}/profiles/show?language={self.language}&name={requests.utils.quote(self.name)}"
 
-    def last_use(self, as_days=False):
-        if self.last_used is None:
-            return None
-        if not as_days:
-            return self.last_used
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        return abs(today - self.last_used).days
+    def last_use(self):
+        """
+        :return: When the quality profile was last used
+        :rtype: datetime or None if never
+        """
+        return self.__last_use
 
-    def last_update(self, as_days=False):
-        if self.last_updated is None:
-            return None
-        if not as_days:
-            return self.last_updated
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        return abs(today - self.last_updated).days
+    def last_update(self):
+        """
+        :return: When the quality profile was last updated
+        :rtype: datetime or None
+        """
+        return self.__last_update
 
     def set_parent(self, parent_name):
         if parent_name is None:
@@ -310,7 +308,7 @@ class QualityProfile(sq.SqObject):
 
         util.logger.debug("Auditing %s (key '%s')", str(self), self.key)
         problems = []
-        age = self.last_update(as_days=True)
+        age = util.age(self.last_update(), rounded=True)
         if age > audit_settings["audit.qualityProfiles.maxLastChangeAge"]:
             rule = arules.get_rule(arules.RuleId.QP_LAST_CHANGE_DATE)
             msg = rule.msg.format(str(self), age)
@@ -322,7 +320,7 @@ class QualityProfile(sq.SqObject):
             msg = rule.msg.format(str(self), self.nbr_rules, total_rules)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        age = self.last_use(as_days=True)
+        age = util.age(self.last_use(), rounded=True)
         if self.project_count == 0 or age is None:
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
             msg = rule.msg.format(str(self))
