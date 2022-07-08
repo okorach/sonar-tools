@@ -174,18 +174,32 @@ class User(sqobject.SqObject):
         self.add_groups(kwargs.get("groups", ""))
         return self
 
-    def add_group(self, group_name):
+    def add_to_group(self, group_name):
         """Adds group membership to the user
 
-        :param group_name: List of groups to add membership
-        :type group_name: list[str]
-        :return: Whether all group membership additions were OK
+        :param group_name: Group to add membership
+        :type group_name: str
+        :return: Whether operation succeeded
         :rtype: bool
         """
         group = groups.get_object(endpoint=self.endpoint, name=group_name)
         if not group:
             return False
         return group.add_user(self.login)
+
+    def remove_from_group(self, group_name):
+        """Removes group membership to the user
+
+        :param group_name: Group to remove membership
+        :type group_name: str
+        :return: Whether operation succeeded
+        :rtype: bool
+        """
+        group = groups.get_object(endpoint=self.endpoint, name=group_name)
+        if not group:
+            return False
+        return group.remove_user(self.login)
+
 
     def add_groups(self, group_list):
         """Adds groups membership to the user
