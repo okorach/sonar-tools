@@ -9,6 +9,30 @@ Welcome to sonar-tools documentation
 :doc:`/usage`
 
 .. toctree::
+   object
+   components
+   projects
+   branches
+   pullrequests
+   aggregations
+   applications
+   portfolios
+   findings
+   issues
+   hotspots
+   metrics
+   measures
+   qualitygates
+   qualityprofiles
+   groups
+   users
+   tokens
+   devops
+   languages
+   rules
+   webhooks
+   tasks
+   permissions/permissions
    :maxdepth: 2
    :caption: Contents:
 
