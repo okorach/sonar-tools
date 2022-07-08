@@ -98,7 +98,7 @@ class User(sqobject.SqObject):
         self.nb_tokens = data.get("tokenCount", None)
         self.tokens_list = None
         self._json = data
-        self._last_login_date = None
+        self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login
         util.logger.debug("Created %s", str(self))
         _OBJECTS[self.login] = self
 
@@ -132,15 +132,6 @@ class User(sqobject.SqObject):
         if self.tokens_list is None:
             self.tokens_list = tokens.search(self.endpoint, self.login)
         return self.tokens_list
-
-    def last_login(self):
-        """
-        :return: The last login date of the user
-        :rtype: datetime
-        """
-        if self._last_login_date is None and "lastConnectionDate" in self._json:
-            self._last_login_date = util.string_to_date(self._json["lastConnectionDate"])
-        return self._last_login_date
 
     def update(self, **kwargs):
         """Updates a user with name, email, login, SCM accounts, group memberships
