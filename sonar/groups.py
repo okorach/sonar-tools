@@ -34,10 +34,10 @@ _MAP = {}
 class Group(sq.SqObject):
     """
     Abstraction of the SonarQube "group" concept.
-    Objects of this class must be created with one of thr 3 available class methods. Don't use __init__
+    Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
     def __init__(self, name, endpoint, data):
-        """Do not use, use class methos to create object
+        """Do not use, use class methods to create objects
         """
         super().__init__(data["id"], endpoint)
         self.name = name                                        #: Group name
@@ -50,12 +50,12 @@ class Group(sq.SqObject):
         util.logger.debug("Created %s object", str(self))
 
     @classmethod
-    def read(cls, name, endpoint):
+    def read(cls, endpoint, name):
         """Creates a Group object corresponding to the group with same name in SonarQube
-        :param name: Group name
-        :type name: str
         :param endpoint: Reference to the SonarQube platform
         :type endpoint: Env
+        :param name: Group name
+        :type name: str
         :return: The group object
         :rtype: Group or None
         """
@@ -83,7 +83,7 @@ class Group(sq.SqObject):
         """
         util.logger.debug("Creating group '%s'", name)
         endpoint.post(_CREATE_API, params={"name": name, "description": description})
-        return cls.read(name=name, endpoint=endpoint)
+        return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
     def load(cls, name, endpoint, data):
