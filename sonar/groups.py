@@ -27,6 +27,7 @@ _SEARCH_API = "user_groups/search"
 _CREATE_API = "user_groups/create"
 _UPDATE_API = "user_groups/update"
 ADD_USER_API = "user_groups/add_user"
+REMOVE_USER_API = "user_groups/remove_user"
 
 _GROUPS = {}
 _MAP = {}
@@ -138,6 +139,16 @@ class Group(sq.SqObject):
         :rtype: bool
         """
         return self.post(ADD_USER_API, params={"login": user_login, "name": self.name}, exit_on_error=False).ok
+
+    def remove_user(self, user_login):
+        """Removes a user from the group
+
+        :param user_login: User login
+        :type user_login: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        return self.post(REMOVE_USER_API, params={"login": user_login, "name": self.name}, exit_on_error=False).ok
 
     def audit(self, audit_settings=None):
         """Audits a group and return list of problems found
