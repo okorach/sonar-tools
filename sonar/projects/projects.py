@@ -23,14 +23,12 @@
 
 """
 import os
-import datetime
 import re
 import json
 from http import HTTPStatus
 from threading import Thread
 from queue import Queue
-import pytz
-from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, custom_measures
+from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures
 from sonar.projects import pull_requests, branches
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
@@ -68,8 +66,8 @@ _IMPORTABLE_PROPERTIES = (
 class Project(components.Component):
     def __init__(self, key, endpoint=None, data=None, create_data=None):
         super().__init__(key, endpoint)
-        self.main_branch_last_analysis_date = "undefined"
-        self.all_branches_last_analysis_date = "undefined"
+        self._last_analysis = "undefined"
+        self._branches_last_analysis = "undefined"
         self._permissions = None
         self._branches = None
         self._pull_requests = None
@@ -103,39 +101,53 @@ class Project(components.Component):
         self.name = data["name"]
         self._visibility = data["visibility"]
         if "lastAnalysisDate" in data:
-            self.main_branch_last_analysis_date = util.string_to_date(data["lastAnalysisDate"])
+            self._last_analysis = util.string_to_date(data["lastAnalysisDate"])
         else:
-            self.main_branch_last_analysis_date = None
+            self._last_analysis = None
         self.revision = data.get("revision", None)
 
     def url(self):
+        """
+        :return: the SonarQube permalink to the project
+        :rtype: str
+        """
         return f"{self.endpoint.url}/dashboard?id={self.key}"
 
-    def last_analysis_date(self, include_branches=False):
-        if self.main_branch_last_analysis_date == "undefined":
+    def last_analysis(self, include_branches=False):
+        """
+        :param include_branches: Take into account branch to determine last analysis, defaults to False
+        :type include_branches: bool, optional
+        :return: List of branches of the project
+        :rtype: list[Branch]
+        """
+        if self._last_analysis == "undefined":
             self.__load()
         if not include_branches:
-            return self.main_branch_last_analysis_date
-        if self.all_branches_last_analysis_date != "undefined":
-            return self.all_branches_last_analysis_date
+            return self._last_analysis
+        if self._branches_last_analysis != "undefined":
+            return self._branches_last_analysis
 
-        self.all_branches_last_analysis_date = self.main_branch_last_analysis_date
+        self._branches_last_analysis = self._last_analysis
         if self.endpoint.version() >= (9, 2, 0):
             # Starting from 9.2 project last analysis date takes into account branches and PR
-            return self.all_branches_last_analysis_date
+            return self._branches_last_analysis
 
         for b in self.branches() + self.pull_requests():
-            if b.last_analysis_date() is None:
+            if b.last_analysis() is None:
                 continue
-            b_ana_date = b.last_analysis_date()
-            if self.all_branches_last_analysis_date is None or b_ana_date > self.all_branches_last_analysis_date:
-                self.all_branches_last_analysis_date = b_ana_date
-        return self.all_branches_last_analysis_date
+            b_ana_date = b.last_analysis()
+            if self._branches_last_analysis is None or b_ana_date > self._branches_last_analysis:
+                self._branches_last_analysis = b_ana_date
+        return self._branches_last_analysis
 
-    def ncloc_with_branches(self):
+    def ncloc(self):
+        """
+        :return: Number of Lines of code of the project, taking into account branches and pull requests, if any
+        :rtype: list[Branches]
+        """
         if self._ncloc_with_branches is not None:
             return self._ncloc_with_branches
-        self._ncloc_with_branches = self.ncloc()
+        self._ncloc_with_branches = super().ncloc()
         if self.endpoint.edition() != "community":
             for b in self.branches() + self.pull_requests():
                 if b.ncloc() > self._ncloc_with_branches:
@@ -143,17 +155,32 @@ class Project(components.Component):
         return self._ncloc_with_branches
 
     def get_measures(self, metrics_list):
+        """Retrieves a project list of measures
+
+        :param metrics_list: List of metrics to return
+        :type metrics_list: str (comma separated)
+        :return: List of measures of a projects
+        :rtype: dict
+        """
         m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
         if "ncloc" in m:
             self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
     def branches(self):
+        """
+        :return: List of branches of the project
+        :rtype: list[Branches]
+        """
         if self._branches is None:
             self._branches = branches.get_list(self)
         return self._branches
 
     def main_branch(self):
+        """
+        :return: Main branch of the project
+        :rtype: Branch
+        """
         for b in self.branches():
             if b.is_main():
                 return b
@@ -162,11 +189,20 @@ class Project(components.Component):
         return None
 
     def pull_requests(self):
+        """
+        :return: List of pull requests of the project
+        :rtype: list[PullRequest]
+        """
         if self._pull_requests is None:
             self._pull_requests = pull_requests.get_list(self)
         return self._pull_requests
 
     def delete(self, api="projects/delete", params=None):
+        """Deletes a project in SonarQube
+
+        :return: List of pull requests of the project
+        :rtype: list[PullRequest]
+        """
         loc = int(self.get_measure("ncloc", fallback="0"))
         util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
         if not super().post("projects/delete", params={"project": self.key}):
@@ -176,10 +212,18 @@ class Project(components.Component):
         return True
 
     def has_binding(self):
+        """
+        :return: Whether the project has a DevOps platform binding
+        :rtype: bool
+        """
         _ = self.binding()
         return self._binding["has_binding"]
 
     def binding(self):
+        """
+        :return: The project DevOps platform binding
+        :rtype: dict
+        """
         if self._binding["has_binding"] and self._binding["binding"] is None:
             resp = self.get("alm_settings/get_binding", params={"project": self.key}, exit_on_error=False)
             # Hack: 8.9 returns 404, 9.x returns 400
@@ -196,11 +240,19 @@ class Project(components.Component):
         return self._binding["binding"]
 
     def is_part_of_monorepo(self):
+        """
+        :return: From the DevOps binding, Whether the project is part of a monorepo
+        :rtype: bool
+        """
         if self.binding() is None:
             return False
         return self.binding()["monorepo"]
 
     def binding_key(self):
+        """Computes a unique project binding key
+
+        :meta private:
+        """
         p_bind = self.binding()
         if p_bind is None:
             return None
@@ -209,17 +261,17 @@ class Project(components.Component):
             key += _BIND_SEP + p_bind["slug"]
         return key
 
-    def age_of_last_analysis(self):
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        last_analysis = self.last_analysis_date(include_branches=True)
-        if last_analysis is None:
-            return None
-        return abs(today - last_analysis).days
+    def __audit_last_analysis(self, audit_settings):
+        """Audits whether the last analysis of the project is too old or not
 
-    def __audit_last_analysis__(self, audit_settings):
+        :param audit_settings: Settings (thresholds) to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         util.logger.debug("Auditing %s last analysis date", str(self))
         problems = []
-        age = self.age_of_last_analysis()
+        age = util.age(self.last_analysis(include_branches=True), True)
         if age is None:
             if not audit_settings["audit.projects.neverAnalyzed"]:
                 util.logger.debug("Auditing of never analyzed projects is disabled, skipping")
@@ -243,6 +295,13 @@ class Project(components.Component):
         return problems
 
     def __audit_branches(self, audit_settings):
+        """Audits project branches
+
+        :param audit_settings: Settings (thresholds) to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         if not audit_settings["audit.projects.branches"]:
             util.logger.debug("Auditing of branchs is disabled, skipping...")
             return []
@@ -259,6 +318,13 @@ class Project(components.Component):
         return problems
 
     def __audit_pull_requests(self, audit_settings):
+        """Audits project pul requests
+
+        :param audit_settings: Settings (thresholds) to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         max_age = audit_settings["audit.projects.pullRequests.maxLastAnalysisAge"]
         if max_age == 0:
             util.logger.debug("Auditing of pull request last analysis age is disabled, skipping...")
@@ -268,7 +334,14 @@ class Project(components.Component):
             problems += pr.audit(audit_settings)
         return problems
 
-    def __audit_visibility__(self, audit_settings):
+    def __audit_visibility(self, audit_settings):
+        """Audits project visibility and return problems if project is public
+
+        :param audit_settings: Options and Settings (thresholds) to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         if not audit_settings.get("audit.projects.visibility", True):
             util.logger.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
@@ -280,7 +353,14 @@ class Project(components.Component):
         util.logger.debug("%s visibility is 'private'", str(self))
         return []
 
-    def __audit_languages__(self, audit_settings):
+    def __audit_languages(self, audit_settings):
+        """Audits project utility languages and returns problems if too many LoCs of these
+
+        :param audit_settings: Settings (thresholds) to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         if not audit_settings.get("audit.projects.utilityLocs", False):
             util.logger.debug("Utility LoCs audit disabled by configuration, skipping")
             return []
@@ -303,20 +383,20 @@ class Project(components.Component):
         return []
 
     def __audit_zero_loc(self, audit_settings):
+        """Audits project utility projects with 0 LoCs
+
+        :param audit_settings: Settings (thresholds) to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         if (
             (not audit_settings["audit.projects.branches"] or self.endpoint.edition() == "community")
-            and self.last_analysis_date() is not None
+            and self.last_analysis() is not None
             and self.ncloc() == 0
         ):
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
-            return [
-                pb.Problem(
-                    rule.type,
-                    rule.severity,
-                    rule.msg.format(str(self)),
-                    concerned_object=self,
-                )
-            ]
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return []
 
     def __audit_binding_valid(self, audit_settings):
@@ -341,13 +421,20 @@ class Project(components.Component):
             )
 
     def audit(self, audit_settings):
+        """Audits a project and returns the list of problems found
+
+        :param audit_settings: Options of what to audit and thresholds to raise problems
+        :type audit_settings: dict
+        :return: List of problems found, or empty list
+        :rtype: list[Problem]
+        """
         util.logger.debug("Auditing %s", str(self))
         return (
-            self.__audit_last_analysis__(audit_settings)
+            self.__audit_last_analysis(audit_settings)
             + self.__audit_branches(audit_settings)
             + self.__audit_pull_requests(audit_settings)
-            + self.__audit_visibility__(audit_settings)
-            + self.__audit_languages__(audit_settings)
+            + self.__audit_visibility(audit_settings)
+            + self.__audit_languages(audit_settings)
             + self.permissions().audit(audit_settings)
             + self._audit_bg_task(audit_settings)
             + self.__audit_binding_valid(audit_settings)
@@ -355,6 +442,13 @@ class Project(components.Component):
         )
 
     def export_zip(self, timeout=180):
+        """Exports project as zip file, synchronously
+
+        :param timeout: timeout in seconds to complete the export operation
+        :type timeout: int
+        :return: export status (success/failure/timeout), and zip file path
+        :rtype: dict
+        """
         util.logger.info("Exporting %s (synchronously)", str(self))
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in ("enterprise", "datacenter"):
             raise options.UnsupportedOperation(
@@ -374,6 +468,11 @@ class Project(components.Component):
         return {"status": status, "file": dump_file}
 
     def export_async(self):
+        """Export project as zip file, synchronously
+
+        :return: export taskId
+        :rtype: str
+        """
         util.logger.info("Exporting %s (asynchronously)", str(self))
         resp = self.post("project_dump/export", params={"key": self.key})
         if resp.ok:
@@ -382,16 +481,27 @@ class Project(components.Component):
         return None
 
     def import_zip(self):
+        """Imports a project zip file in SonarQube
+
+        :return: status code of the HTTP import request
+        :rtype: int
+        """
         util.logger.info("Importing %s (asynchronously)", str(self))
         if self.endpoint.edition() not in ["enterprise", "datacenter"]:
             raise options.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         resp = self.post("project_dump/import", params={"key": self.key})
         return resp.status_code
 
-    def search_custom_measures(self):
-        return custom_measures.search(self.endpoint, self.key)
-
     def get_findings(self, branch=None, pr=None):
+        """Returns a project list of findings (issues and hotspots)
+
+        :param branch: branch name to consider, if any
+        :type branch: str
+        :param pr: PR key to consider, if any
+        :type pr: str
+        :return: dict of all findings, with finding key as key
+        :rtype: dict{key: Finding}
+        """
         if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ("enterprise", "datacenter"):
             return {}
 
@@ -404,18 +514,8 @@ class Project(components.Component):
 
         resp = self.get("projects/export_findings", params=params)
         data = json.loads(resp.text)["export_findings"]
-        findings_conflicts = {
-            "SECURITY_HOTSPOT": 0,
-            "BUG": 0,
-            "CODE_SMELL": 0,
-            "VULNERABILITY": 0,
-        }
-        nbr_findings = {
-            "SECURITY_HOTSPOT": 0,
-            "BUG": 0,
-            "CODE_SMELL": 0,
-            "VULNERABILITY": 0,
-        }
+        findings_conflicts = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
+        nbr_findings = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
         util.logger.debug(util.json_dump(data))
         for i in data:
             key = i["key"]
@@ -434,18 +534,8 @@ class Project(components.Component):
                 findings_list[key] = issues.get_object(key, endpoint=self.endpoint, data=i, from_export=True)
         for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
             if findings_conflicts[t] > 0:
-                util.logger.warning(
-                    "%d %s findings missed because of JSON conflict",
-                    findings_conflicts[t],
-                    t,
-                )
-        util.logger.info(
-            "%d findings exported for %s branch %s PR %s",
-            len(findings_list),
-            str(self),
-            branch,
-            pr,
-        )
+                util.logger.warning("%d %s findings missed because of JSON conflict", findings_conflicts[t], t)
+        util.logger.info("%d findings exported for %s branch %s PR %s", len(findings_list), str(self), branch, pr)
         for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
             util.logger.info("%d %s exported", nbr_findings[t], t)
 
@@ -456,7 +546,7 @@ class Project(components.Component):
             "type": "project",
             "key": self.key,
             "name": self.name,
-            "ncloc": self.ncloc_with_branches(),
+            "ncloc": self.ncloc(),
         }
         if opts.get(options.WITH_URL, False):
             data["url"] = self.url()
@@ -465,6 +555,15 @@ class Project(components.Component):
         return data
 
     def sync(self, another_project, sync_settings):
+        """Syncs project issues with another project
+
+        :param another_project: other porject to sync issues into
+        :type another_project: Project
+        :param sync_settings: Parameters to configure the sync
+        :type sync_settings: dict
+        :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
+        :rtype: tuple(report, counters)
+        """
         tgt_branches = another_project.branches()
         report = []
         counters = {}
@@ -477,6 +576,13 @@ class Project(components.Component):
         return (report, counters)
 
     def sync_branches(self, sync_settings):
+        """Syncs project issues across all its branches
+
+        :param sync_settings: Parameters to configure the sync
+        :type sync_settings: dict
+        :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
+        :rtype: tuple(report, counters)
+        """
         my_branches = self.branches()
         report = []
         counters = {}
@@ -490,23 +596,42 @@ class Project(components.Component):
         return (report, counters)
 
     def quality_profiles(self):
+        """Returns the project quality profiles
+
+        :return: dict of quality profiles indexed by language
+        :rtype: dict{language: QualityProfile}
+        """
         util.logger.debug("Exporting quality profiles for %s", str(self))
         qp_list = qualityprofiles.get_list(self.endpoint)
         projects_qp = {}
         for qp in qp_list.values():
-            if qp.selected_for_project(self.key):
-                projects_qp[qp.key] = qp
+            if qp.used_by_project(self):
+                projects_qp[qp.language] = qp
         return projects_qp
 
     def quality_gate(self):
+        """Returns the project quality gate
+
+        :return: name of quality gate and whether it's the default
+        :rtype: tuple(name, is_default)
+        """
         data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
         return (data["qualityGate"]["name"], data["qualityGate"]["default"])
 
     def webhooks(self):
-        util.logger.debug("Getting PROJ webhooks for %s")
+        """Returns the project webhooks
+
+        :return: dict of webhooks indexed by their key
+        :rtype: dict{key: WebHook}
+        """
+        util.logger.debug("Getting %s webhooks", str(self))
         return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
 
     def links(self):
+        """
+        :return: list of project links
+        :rtype: list[{type, name, url}]
+        """
         data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
         link_list = None
         for link in data["links"]:
@@ -546,6 +671,11 @@ class Project(components.Component):
         return util.remove_nones(branch_data)
 
     def export(self, settings_list=None, include_inherited=False, full=False):
+        """Exports the entire project configuration as dict
+
+        :return: All project configuration settings
+        :rtype: dict
+        """
         util.logger.info("Exporting %s", str(self))
         json_data = self._json.copy()
         json_data.update({"key": self.key, "name": self.name})
@@ -574,29 +704,54 @@ class Project(components.Component):
         return util.remove_nones(json_data)
 
     def new_code(self):
+        """
+        :return: The project new code definition
+        :rtype: str
+        """
         if self._new_code is None:
             new_code = settings.Setting.read(settings.NEW_CODE_PERIOD, self.endpoint, component=self)
             self._new_code = new_code.value if new_code else ""
-        util.logger.debug("Project new code = %s", new_code.value)
         return self._new_code
 
     def permissions(self):
+        """
+        :return: The project permissions
+        :rtype: ProjectPermissions
+        """
         if self._permissions is None:
             self._permissions = perms.ProjectPermissions(self)
         return self._permissions
 
-    def set_permissions(self, data):
-        self.permissions().set(data)
+    def set_permissions(self, desired_permissions):
+        """Sets project permissions
 
-    def set_links(self, data):
+        :param desired_permissions: dict describing permissions
+        :type desired_permissions: dict
+        :return: Nothing
+        """
+        self.permissions().set(desired_permissions)
+
+    def set_links(self, desired_links):
+        """Sets project links
+
+        :param desired_links: dict describing links
+        :type desired_links: dict
+        :return: Nothing
+        """
         params = {"projectKey": self.key}
-        for link in data.get("links", {}):
+        for link in desired_links.get("links", {}):
             if "type" in link and link["type"] != "custom":
                 continue
             params.update(link)
             self.post("project_links/create", params=params)
 
     def set_tags(self, tags):
+        """Sets project tags
+
+        :param tags: list of tags
+        :type tags: list
+        :return: Nothing
+        """
         if tags is None or len(tags) == 0:
             return
         if isinstance(tags, list):
@@ -607,6 +762,13 @@ class Project(components.Component):
         self._tags = util.csv_to_list(my_tags)
 
     def set_quality_gate(self, quality_gate):
+        """Sets project quality gate
+
+        :param quality_gate: quality gate name
+        :type quality_gate: str
+        :return: Whether the operation was successful
+        :rtype: bool
+        """
         if quality_gate is None:
             return False
         if qualitygates.get_object(quality_gate, endpoint=self.endpoint) is None:
@@ -616,15 +778,31 @@ class Project(components.Component):
         r = self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
         return r.ok
 
-    def set_quality_profile(self, language, profile_name):
-        if not qualityprofiles.exists(language=language, name=profile_name, endpoint=self.endpoint):
-            util.logger.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", profile_name, language, str(self))
+    def set_quality_profile(self, language, quality_profile):
+        """Sets project quality profile for a given language
+
+        :param language: Language mnemonic, following SonarQube convention
+        :type language: str
+        :param quality_profile: Name of the quality profile in the language
+        :type quality_profile: str
+        :return: Whether the operation was successful
+        :rtype: bool
+        """
+        if not qualityprofiles.exists(endpoint=self.endpoint, language=language, name=quality_profile):
+            util.logger.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", quality_profile, language, str(self))
             return False
-        util.logger.debug("Setting quality profile '%s' of language '%s' for %s", profile_name, language, str(self))
-        r = self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": profile_name, "language": language})
+        util.logger.debug("Setting quality profile '%s' of language '%s' for %s", quality_profile, language, str(self))
+        r = self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": quality_profile, "language": language})
         return r.ok
 
     def rename_main_branch(self, main_branch_name):
+        """Renames the project main branch
+
+        :param main_branch_name: New main branch name
+        :type main_branch_name: str
+        :return: Whether the operation was successful
+        :rtype: bool
+        """
         br = self.main_branch()
         if br:
             return br.rename(main_branch_name)
@@ -632,6 +810,12 @@ class Project(components.Component):
         return False
 
     def set_webhooks(self, webhook_data):
+        """Sets project webhooks
+
+        :param webhook_data: Dict describing the webhooks
+        :type webhook_data: dict
+        :return: Nothing
+        """
         current_wh = self.webhooks()
         current_wh_names = [wh.name for wh in current_wh.values()]
         wh_map = {wh.name: k for k, wh in current_wh.items()}
@@ -643,6 +827,12 @@ class Project(components.Component):
                 webhooks.update(name=wh_name, endpoint=self.endpoint, project=self.key, **wh)
 
     def set_settings(self, data):
+        """Sets project settings (webhooks, settings, new code period)
+
+        :param data: Dict describing the settings
+        :type data: dict
+        :return: Nothing
+        """
         util.logger.debug("Setting %s settings with %s", str(self), util.json_dump(data))
         for key, value in data.items():
             if key in ("branches", settings.NEW_CODE_PERIOD):
@@ -663,6 +853,12 @@ class Project(components.Component):
         #        branches.get_object(branch, self, endpoint=self.endpoint).update(branch_data)()
 
     def set_devops_binding(self, data):
+        """Sets project devops binding settings
+
+        :param data: Dict describing the settings
+        :type data: dict
+        :return: Nothing
+        """
         util.logger.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
         alm_key = data["key"]
         if not devops.platform_exists(alm_key, self.endpoint):
@@ -672,15 +868,15 @@ class Project(components.Component):
         mono = data.get("monorepo", False)
         repo = data["repository"]
         if alm_type == "github":
-            self.set_github_binding(alm_key, repository=repo, monorepo=mono, summary_comment=data.get("summaryComment", True))
+            self.set_binding_github(alm_key, repository=repo, monorepo=mono, summary_comment=data.get("summaryComment", True))
         elif alm_type == "gitlab":
-            self.set_gitlab_binding(alm_key, repository=repo, monorepo=mono)
+            self.set_binding_gitlab(alm_key, repository=repo, monorepo=mono)
         elif alm_type == "azure":
-            self.set_azure_devops_binding(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
+            self.set_binding_azure_devops(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
         elif alm_type == "bitbucket":
-            self.set_bitbucket_binding(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
+            self.set_binding_bitbucket_server(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
         elif alm_type == "bitbucketcloud":
-            self.set_bitbucketcloud_binding(alm_key, repository=repo, monorepo=mono)
+            self.set_binding_bitbucket_cloud(alm_key, repository=repo, monorepo=mono)
         else:
             util.logger.error("Invalid devops platform type '%s' for %s, setting skipped", alm_key, str(self))
             return False
@@ -689,37 +885,101 @@ class Project(components.Component):
     def __std_binding_params(self, alm_key, repo, monorepo):
         return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
 
-    def set_github_binding(self, devops_platform_key, repository, monorepo=False, summary_comment=True):
+    def set_binding_github(self, devops_platform_key, repository, monorepo=False, summary_comment=True):
+        """Sets project devops binding for github
+
+        :param devops_platform_key: key of the platform in the global admin devops configuration
+        :type devops_platform_key: str
+        :param repository: project repository name in github
+        :type repository: str
+        :param monorepo: Whether the project is part of a monorepo, defaults to False
+        :type monorepo: bool, optional
+        :param summary_comment: Whether summary comments should be posted, defaults to True
+        :type summary_comment: bool
+        :return: Nothing
+        """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["summaryCommentEnabled"] = str(summary_comment).lower()
         self.post("alm_settings/set_github_binding", params=params)
 
-    def set_gitlab_binding(self, devops_platform_key, repository, monorepo=False):
+    def set_binding_gitlab(self, devops_platform_key, repository, monorepo=False):
+        """Sets project devops binding for gitlab
+
+        :param devops_platform_key: key of the platform in the global admin devops configuration
+        :type devops_platform_key: str
+        :param repository: project repository name in gitlab
+        :type repository: str
+        :param monorepo: Whether the project is part of a monorepo, defaults to False
+        :type monorepo: bool, optional
+        :return: Nothing
+        """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         self.post("alm_settings/set_gitlab_binding", params=params)
 
-    def set_bitbucket_binding(self, devops_platform_key, repository, slug, monorepo=False):
+    def set_binding_bitbucket_server(self, devops_platform_key, repository, slug, monorepo=False):
+        """Sets project devops binding for bitbucket server
+
+        :param devops_platform_key: key of the platform in the global admin devops configuration
+        :type devops_platform_key: str
+        :param repository: project repository name in bitbucket server
+        :type repository: str
+        :param slug: project repository SLUG
+        :type slug: str
+        :param monorepo: Whether the project is part of a monorepo, defaults to False
+        :type monorepo: bool, optional
+        :return: Nothing
+        """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["slug"] = slug
         self.post("alm_settings/set_bitbucket_binding", params=params)
 
-    def set_bitbucketcloud_binding(self, devops_platform_key, repository, monorepo=False):
+    def set_binding_bitbucket_cloud(self, devops_platform_key, repository, monorepo=False):
+        """Sets project devops binding for bitbucket cloud
+
+        :param devops_platform_key: key of the platform in the global admin devops configuration
+        :type devops_platform_key: str
+        :param repository: project repository name in bitbucket server
+        :type repository: str
+        :param slug: project repository SLUG
+        :type slug: str
+        :param monorepo: Whether the project is part of a monorepo, defaults to False
+        :type monorepo: bool, optional
+        :return: Nothing
+        """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         self.post("alm_settings/set_bitbucketcloud_binding", params=params)
 
-    def set_azure_devops_binding(self, devops_platform_key, slug, repository, monorepo=False):
+    def set_binding_azure_devops(self, devops_platform_key, slug, repository, monorepo=False):
+        """Sets project devops binding for azure devops
+
+        :param devops_platform_key: key of the platform in the global admin devops configuration
+        :type devops_platform_key: str
+        :param slug: project repository SLUG
+        :type slug: str
+        :param repository: project repository name in bitbucket server
+        :type repository: str
+        :param monorepo: Whether the project is part of a monorepo, defaults to False
+        :type monorepo: bool, optional
+        :return: Nothing
+        """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["projectName"] = slug
         params["repositoryName"] = params.pop("repository")
         self.post("alm_settings/set_azure_binding", params=params)
 
     def update(self, data):
+        """Updates a project with a whole configuration set
+
+        :param data: dict of configuration settings
+        :type data: dict
+        :return: Nothing
+        """
         self.set_permissions(data.get("permissions", None))
         self.set_links(data)
         self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))
         for lang, qp_name in data.get("qualityProfiles", {}).items():
-            self.set_quality_profile(language=lang, profile_name=qp_name)
+            self.set_quality_profile(language=lang, quality_profile=qp_name)
         for bname, bdata in data.get("branches", {}).items():
             if bdata.get("isMain", False):
                 self.rename_main_branch(bname)
@@ -736,6 +996,13 @@ class Project(components.Component):
 
 
 def count(endpoint, params=None):
+    """Counts projects
+
+    :param params: list of parameters to filter projects to search
+    :type params: dict
+    :return: Count of projects
+    :rtype: int
+    """
     new_params = {} if params is None else params.copy()
     new_params.update({"ps": 1, "p": 1})
     data = json.loads(endpoint.get(_SEARCH_API, params=params))
@@ -743,6 +1010,13 @@ def count(endpoint, params=None):
 
 
 def search(endpoint, params=None):
+    """Searches projects in SonarQube
+
+    :param params: list of parameters to filter projects to search
+    :type params: dict
+    :return: list of projects
+    :rtype: dict{key: Project}
+    """
     new_params = {} if params is None else params.copy()
     new_params["qualifiers"] = "TRK"
     return sqobject.search_objects(
@@ -782,7 +1056,7 @@ def get_object(key, endpoint):
     return _OBJECTS[key]
 
 
-def audit_thread(queue, results, audit_settings, bindings):
+def __audit_thread(queue, results, audit_settings, bindings):
     audit_bindings = audit_settings["audit.projects.bindings"]
     while not queue.empty():
         util.logger.debug("Picking from the queue")
@@ -804,6 +1078,17 @@ def audit_thread(queue, results, audit_settings, bindings):
 
 
 def audit(audit_settings, endpoint=None, key_list=None):
+    """Audits all or a list of projects
+
+    :param audit_settings: Configuration of audit
+    :type audit_settings: dict
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Env
+    :param key_list: List of project keys to audit, defaults to None (all projects)
+    :type key_list: str, optional
+    :return: list of problems found
+    :rtype: list[Problem]
+    """
     util.logger.info("--- Auditing projects ---")
     plist = get_list(endpoint, key_list)
     problems = []
@@ -813,7 +1098,7 @@ def audit(audit_settings, endpoint=None, key_list=None):
     bindings = {}
     for i in range(audit_settings["threads"]):
         util.logger.debug("Starting project audit thread %d", i)
-        worker = Thread(target=audit_thread, args=(q, problems, audit_settings, bindings))
+        worker = Thread(target=__audit_thread, args=(q, problems, audit_settings, bindings))
         worker.setDaemon(True)
         worker.setName(f"ProjectAudit{i}")
         worker.start()
@@ -839,6 +1124,19 @@ def __export_thread(queue, results, full):
 
 
 def export(endpoint, key_list=None, full=False, threads=8):
+    """Exports all or a list of projects configuration as dict
+
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Env
+    :param key_list: List of project keys to export, defaults to None (all projects)
+    :type key_list: str
+    :param full: Whether to export all settings including those useless for re-import, defaults to False
+    :type full: bool, optional
+    :param threads: Number of parallel threads for export, defaults to 8
+    :type threads: int, optional
+    :return: list of projects
+    :rtype: dict{key: Project}
+    """
     qualityprofiles.get_list(endpoint)
     q = Queue(maxsize=0)
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
@@ -854,6 +1152,14 @@ def export(endpoint, key_list=None, full=False, threads=8):
 
 
 def exists(key, endpoint):
+    """
+    :param key: project key to check
+    :type key: str
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Env
+    :return: whether the project exists
+    :rtype: bool
+    """
     return get_object(key, endpoint) is not None
 
 
@@ -887,6 +1193,16 @@ def create_or_update(endpoint, key, data):
 
 
 def import_config(endpoint, config_data, key_list=None):
+    """Imports a configuration in SonarQube
+
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Env
+    :param config_data: the configuration to import
+    :type config_data: dict
+    :param key_list: List of project keys to be considered for the import, defaults to None (all projects)
+    :type key_list: str
+    :return: Nothing
+    """
     if "projects" not in config_data:
         util.logger.info("No projects to import")
         return
@@ -924,6 +1240,19 @@ def __export_zip_thread(queue, results, statuses, export_timeout):
 
 
 def export_zip(endpoint, key_list=None, threads=8, export_timeout=30):
+    """Export as zip all or a list of projects
+
+    :param endpoint: reference to the SonarQube platform
+    :type endpoint: Env
+    :param key_list: List of project keys to export, defaults to None (all projects)
+    :type key_list: str, optional
+    :param threads: Number of parallel threads for export, defaults to 8
+    :type threads: int, optional
+    :param export_timeout: Tiemout to export the project, defaults to 30
+    :type export_timeout: int, optional
+    :return: list of exported projects and platform version
+    :rtype: dict
+    """
     statuses, exports = {}, []
     projects_list = get_list(endpoint, key_list)
     nbr_projects = len(projects_list)

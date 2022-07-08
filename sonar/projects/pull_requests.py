@@ -23,9 +23,7 @@
 
 """
 
-import datetime
 import json
-import pytz
 import requests.utils
 from sonar import measures, components
 import sonar.utilities as util
@@ -42,7 +40,7 @@ class PullRequest(components.Component):
             super().__init__(key, project.endpoint)
         self.project = project
         self.json = data
-        self._last_analysis_date = None
+        self._last_analysis = None
         self._ncloc = None
         _PULL_REQUESTS[self._uuid()] = self
         util.logger.debug("Created object %s", str(self))
@@ -56,20 +54,10 @@ class PullRequest(components.Component):
     def _uuid(self):
         return _uuid(self.project.key, self.key)
 
-    def last_analysis_date(self):
-        if self._last_analysis_date is None and "analysisDate" in self.json:
-            self._last_analysis_date = util.string_to_date(self.json["analysisDate"])
-        return self._last_analysis_date
-
-    def last_analysis_age(self, rounded_to_days=True):
-        last_analysis = self.last_analysis_date()
-        if last_analysis is None:
-            return None
-        today = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        if rounded_to_days:
-            return (today - last_analysis).days
-        else:
-            return today - last_analysis
+    def last_analysis(self):
+        if self._last_analysis is None and "analysisDate" in self.json:
+            self._last_analysis = util.string_to_date(self.json["analysisDate"])
+        return self._last_analysis
 
     def get_measures(self, metrics_list):
         util.logger.debug("self.endpoint = %s", str(self.endpoint))
@@ -90,7 +78,7 @@ class PullRequest(components.Component):
         return True
 
     def audit(self, audit_settings):
-        age = self.last_analysis_age()
+        age = util.age(self.last_analysis())
         if age is None:  # Main branch not analyzed yet
             return []
         max_age = audit_settings["audit.projects.pullRequests.maxLastAnalysisAge"]
