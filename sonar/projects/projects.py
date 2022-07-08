@@ -155,11 +155,12 @@ class Project(components.Component):
         return self._ncloc_with_branches
 
     def get_measures(self, metrics_list):
-        """
+        """Retrieves a project list of measures
+
         :param metrics_list: List of metrics to return
         :type metrics_list: str (comma separated)
         :return: List of measures of a projects
-        :rtype: list[Branches]
+        :rtype: dict
         """
         m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
         if "ncloc" in m:
@@ -499,7 +500,7 @@ class Project(components.Component):
         :param pr: PR key to consider, if any
         :type pr: str
         :return: dict of all findings, with finding key as key
-        :rtype: dict
+        :rtype: dict{key: Finding}
         """
         if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ("enterprise", "datacenter"):
             return {}
