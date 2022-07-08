@@ -51,9 +51,9 @@ class User(sqobject.SqObject):
         self.groups = data.get("groups", None)  #: User groups
         self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
         self.email = data.get("email", None)  #: User email
-        self.is_local = data.get("local", False)  #: User is local
-        self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login
-        self.nb_tokens = data.get("tokenCount", None) #: Nbr of tokens
+        self.is_local = data.get("local", False)  #: User is local - read-only
+        self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login - read-only
+        self.nb_tokens = data.get("tokenCount", None) #: Nbr of tokens - read-only
         self.__tokens = None
         self._json = data
         util.logger.debug("Created %s", str(self))
@@ -74,15 +74,15 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint, login, description=None):
+    def create(cls, endpoint, login, is_local=True):
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param endpoint: Reference to the SonarQube platform
         :type endpoint: Platform
         :param login: User login
         :type login: str
-        :param description: User description
-        :type description: str, optional
+        :param is_local: Whether the user is local, defaults to True
+        :type is_local: bool, optional
         :return: The user object
         :rtype: User or None
         """
@@ -146,6 +146,8 @@ class User(sqobject.SqObject):
         :type login: str, optional
         :param groups: List of groups to add membership
         :type groups: list[str]
+        :param scm_accounts: List of SCM accounts
+        :type scm_accounts: list[str]
         :return: self
         :rtype: User
         """
@@ -365,11 +367,12 @@ def import_config(endpoint, config_data):
         return
     util.logger.info("Importing users")
     for login, data in config_data["users"].items():
+        data = _decode(data)
         data.pop("login", None)
         o = get_object(endpoint=endpoint, login=login)
         if o is None:
             util.logger.debug("User '%s' does not exist, creating...", login)
-            o = User.create(endpoint, login, data.get("description", None))
+            o = User.create(endpoint, login, data.get("local", False))
         o.update(**data)
 
 
@@ -386,3 +389,8 @@ def get_object(endpoint, login):
     if len(_OBJECTS) == 0:
         search(endpoint)
     return _OBJECTS.get(login, None)
+
+def _decode(data):
+    data["scm_accounts"] = util.csv_to_list(data.pop("scmAccounts", ""))
+    data["groups"] = util.csv_to_list(data.pop("groups", ""))
+    return data
