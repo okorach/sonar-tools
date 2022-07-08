@@ -398,7 +398,7 @@ def decode(setting_key, setting_value):
 
 def reset_setting(endpoint, setting_key, project_key=None):
     util.logger.info("Resetting setting '%s", setting_key)
-    return endpoint.post("settings/reset", params={"key": setting_key, "component": project_key}).ok
+    return endpoint.post("settings/reset", params={"key": setting_key, "component": project_key})
 
 
 def get_component_params(component, name="component"):
