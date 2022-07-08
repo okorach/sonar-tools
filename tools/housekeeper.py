@@ -196,7 +196,7 @@ def _delete_objects(problems, mode):
 def main():
     args = _parse_arguments()
 
-    sq = platform.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     kwargs = vars(args)
     mode = args.mode
     util.check_environment(kwargs)

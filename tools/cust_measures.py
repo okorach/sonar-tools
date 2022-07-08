@@ -39,7 +39,7 @@ def parse_args(desc):
 
 def main():
     args = parse_args("Manipulate custom metrics")
-    sqenv = platform.Environment(some_url=args.url, some_token=args.token)
+    sqenv = platform.Platform(some_url=args.url, some_token=args.token)
     if sqenv.version() >= (9, 0, 0):
         utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", options.UnsupportedOperation)
     else:

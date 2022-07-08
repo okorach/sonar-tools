@@ -53,7 +53,7 @@ _HARDCODED_LTS = (8, 9, 9)
 _HARDCODED_LATEST = (9, 5, 0)
 
 
-class Environment:
+class Platform:
     """Abstraction of the SonarQube "platform" concept"""
 
     def __init__(self, some_url, some_token, cert_file=None):
@@ -537,7 +537,7 @@ class Environment:
 # --------------------- Static methods -----------------
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
-this.context = Environment(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os.getenv("SONAR_TOKEN", ""))
+this.context = Platform(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os.getenv("SONAR_TOKEN", ""))
 
 
 def _normalize_api(api):

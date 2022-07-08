@@ -44,7 +44,7 @@ def main():
     args = utilities.parse_and_check_token(parser)
     utilities.check_environment(vars(args))
     start_time = datetime.datetime.today()
-    sq = platform.Environment(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
 
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
         utilities.exit_fatal(
