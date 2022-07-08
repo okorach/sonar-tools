@@ -174,7 +174,41 @@ class User(sqobject.SqObject):
         self.add_groups(kwargs.get("groups", ""))
         return self
 
+    def add_group(self, group_name):
+        """Adds group membership to the user
+
+        :param group_name: List of groups to add membership
+        :type group_name: list[str]
+        :return: Whether all group membership additions were OK
+        :rtype: bool
+        """
+        group = groups.get_object(endpoint=self.endpoint, name=group_name)
+        if not group:
+            return False
+        return group.add_user(self.login)
+
     def add_groups(self, group_list):
+        """Adds groups membership to the user
+
+        :param group_list: List of groups to add membership
+        :type group_list: list[str]
+        :return: Whether all group membership additions were OK
+        :rtype: bool
+        """
+        ok = True
+        if self.groups is None:
+            self.groups = ["sonar-users"]
+        groups_to_add = [g for g in util.csv_to_list(group_list) if g not in self.groups]
+        for g in groups_to_add:
+            if not groups.exists(g, self.endpoint):
+                util.logger.warning("Group '%s' does not exists, can't add membership for %s", g, str(self))
+                ok = False
+                continue
+            util.logger.debug("Adding group '%s' to %s", g, str(self))
+            ok = ok and self.post(groups.ADD_USER_API, params={"login": self.login, "name": g}).ok
+        return ok
+
+    def remove_groups(self, group_list):
         """Adds groups membership to the user
 
         :param group_list: List of groups to add membership
