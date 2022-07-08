@@ -20,11 +20,11 @@
 #
 rm -rf build dist
 python3 setup.py bdist_wheel
-sphinx-build -b html api-doc/source api-doc/build
 
 # Deploy locally for tests
 echo "y" | python3 -m pip uninstall sonar-tools
 python3 -m pip install dist/*-py3-*.whl
+sphinx-build -b html api-doc/source api-doc/build
 
 # Deploy on pypi.org once released
 if [ "$1" = "pypi" ]; then
