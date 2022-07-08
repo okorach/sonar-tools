@@ -26,6 +26,7 @@ from sonar.audit import rules, problem
 _SEARCH_API = "user_groups/search"
 _CREATE_API = "user_groups/create"
 _UPDATE_API = "user_groups/update"
+ADD_USER_API = "user_groups/add_user"
 
 _GROUPS = {}
 _MAP = {}

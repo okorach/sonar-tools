@@ -31,7 +31,6 @@ SEARCH_API = "users/search"
 CREATE_API = "users/create"
 UPDATE_API = "users/update"
 DEACTIVATE_API = "users/deactivate"
-ADD_GROUP_API = "user_groups/add_user"
 UPDATE_LOGIN_API = "users/update_login"
 
 SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
@@ -193,7 +192,7 @@ class User(sqobject.SqObject):
                 ok = False
                 continue
             util.logger.debug("Adding group '%s' to %s", g, str(self))
-            ok = ok and self.post(ADD_GROUP_API, params={"login": self.login, "name": g}).ok
+            ok = ok and self.post(groups.ADD_USER_API, params={"login": self.login, "name": g}).ok
         return ok
 
     def add_scm_accounts(self, accounts_list):
