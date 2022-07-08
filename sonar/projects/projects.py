@@ -605,7 +605,7 @@ class Project(components.Component):
         qp_list = qualityprofiles.get_list(self.endpoint)
         projects_qp = {}
         for qp in qp_list.values():
-            if qp.selected_for_project(self.key):
+            if qp.used_by_project(self):
                 projects_qp[qp.language] = qp
         return projects_qp
 
@@ -788,7 +788,7 @@ class Project(components.Component):
         :return: Whether the operation was successful
         :rtype: bool
         """
-        if not qualityprofiles.exists(language=language, name=quality_profile, endpoint=self.endpoint):
+        if not qualityprofiles.exists(endpoint=self.endpoint, language=language, name=quality_profile):
             util.logger.warning("Quality profile '%s' in language '%s' does not exist, can't set it for %s", quality_profile, language, str(self))
             return False
         util.logger.debug("Setting quality profile '%s' of language '%s' for %s", quality_profile, language, str(self))
@@ -1010,7 +1010,7 @@ def count(endpoint, params=None):
 
 
 def search(endpoint, params=None):
-    """Searches projects
+    """Searches projects in SonarQube
 
     :param params: list of parameters to filter projects to search
     :type params: dict
