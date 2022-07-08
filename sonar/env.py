@@ -173,6 +173,17 @@ class Environment:
         return self.sys_info()["Statistics"]["plugins"]
 
     def get(self, api, params=None, exit_on_error=True):
+        """Makes an HTTP GET request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :type api: str
+        :param params: params to pass in the HTTP request, defaults to None
+        :type params: dict, optional
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :returns: the result of the HTTP request
+        :rtype: request.Response
+        """
         api = _normalize_api(api)
         util.logger.debug("GET: %s", self.urlstring(api, params))
         try:
@@ -188,6 +199,17 @@ class Environment:
         return r
 
     def post(self, api, params=None, exit_on_error=True):
+        """Makes an HTTP POST request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :type api: str
+        :param params: params to pass in the HTTP request, defaults to None
+        :type params: dict, optional
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :returns: the result of the HTTP request
+        :rtype: request.Response
+        """
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
@@ -203,6 +225,15 @@ class Environment:
         return r
 
     def delete(self, api, params=None):
+        """Makes an HTTP DELETE request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :type api: str
+        :param params: params to pass in the HTTP request, defaults to None
+        :type params: dict, optional
+        :returns: the result of the HTTP request
+        :rtype: request.Response
+        """
         api = _normalize_api(api)
         util.logger.debug("DELETE: %s", self.urlstring(api, params))
         try:
@@ -213,8 +244,36 @@ class Environment:
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
 
+    def get_settings(self, settings_list=None):
+        """Returns a list of (or all) platform global settings value from their key
+
+        :param key: settings_list
+        :type key: list or str (comma separated)
+        :returns: the list of settings values
+        :rtype: dict{<key>: <value>, ...}
+        """
+        params = util.remove_nones({"keys": util.list_to_csv(settings_list)})
+        resp = self.get("settings/values", params=params)
+        json_s = json.loads(resp.text)
+        platform_settings = {}
+        for s in json_s["settings"]:
+            if "value" in s:
+                platform_settings[s["key"]] = s["value"]
+            elif "values" in s:
+                platform_settings[s["key"]] = ",".join(s["values"])
+            elif "fieldValues" in s:
+                platform_settings[s["key"]] = s["fieldValues"]
+        return platform_settings
+
     def get_setting(self, key):
-        return self.__get_platform_settings(key).get(key, None)
+        """Returns a platform global setting value from its key
+
+        :param key: Setting key
+        :type key: str
+        :returns: the setting value
+        :rtype: str or dict
+        """
+        return self.get_settings(key).get(key, None)
 
     def reset_setting(self, key):
         return settings.reset_setting(self, key)
@@ -299,26 +358,10 @@ class Environment:
             "serverId": self.server_id(),
         }
 
-    def __get_platform_settings(self, settings_list=None):
-        params = None
-        if settings_list is not None:
-            params = {"keys": util.list_to_csv(settings_list)}
-        resp = self.get("settings/values", params=params)
-        json_s = json.loads(resp.text)
-        platform_settings = {}
-        for s in json_s["settings"]:
-            if "value" in s:
-                platform_settings[s["key"]] = s["value"]
-            elif "values" in s:
-                platform_settings[s["key"]] = ",".join(s["values"])
-            elif "fieldValues" in s:
-                platform_settings[s["key"]] = s["fieldValues"]
-        return platform_settings
-
     def audit(self, audit_settings=None):
         util.logger.info("--- Auditing global settings ---")
         problems = []
-        platform_settings = self.__get_platform_settings()
+        platform_settings = self.get_settings()
         settings_url = f"{self.url}/admin/settings"
         for key in audit_settings:
             if key.startswith("audit.globalSettings.range"):
