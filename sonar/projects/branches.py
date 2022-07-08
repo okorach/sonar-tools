@@ -128,7 +128,7 @@ class Branch(components.Component):
         if r.ok:
             util.logger.info("%s: Successfully deleted", str(self))
         else:
-            util.logger.error("%s: deletion failed", str(self))   
+            util.logger.error("%s: deletion failed", str(self))
         return r.ok
 
     def new_code(self):
