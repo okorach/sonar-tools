@@ -69,20 +69,33 @@ class Environment:
         :rtype: Env
         """
         self.url = some_url #: SonarQube URL
-        self.token = some_token
-        self.cert_file = cert_file
+        self.__token = some_token
+        self._cert_file = cert_file
         self._version = None
-        self._sys_info = None
+        self.__sys_info = None
         self._server_id = None
         self._permissions = None
 
     def __str__(self):
-        return f"{util.redacted_token(self.token)}@{self.url}"
+        """
+        :returns: string representation of the SonarQube connection, token largely redacted
+        :rtype: str
+        """
+        return f"{util.redacted_token(self.__token)}@{self.url}"
 
-    def credentials(self):
-        return (self.token, "")
+    def __credentials(self):
+        return (self.__token, "")
 
     def version(self, digits=3, as_string=False):
+        """Returns the SonarQube platform version
+
+        :param digits: Number of digits to include in the version, defaults to 3
+        :type digits: int, optional
+        :param as_string: Whether to return the version as string or tuple, default to False (ie returns a tuple)
+        :type as_string: bool, optional
+        :returns: the SonarQube platform version
+        :rtype: tuple or str
+        """
         if digits < 1 or digits > 3:
             digits = 3
         if self._version is None:
@@ -93,26 +106,39 @@ class Environment:
             return tuple(int(n) for n in self._version[0:digits])
 
     def global_permissions(self):
+        """Returns the SonarQube platform global permissions
+
+        :returns: dict{"users": {<login>: <permissions comma separated>, ...}, "groups"; {<name>: <permissions comma separated>, ...}}}
+        :rtype: dict
+        """
         if self._permissions is None:
             self._permissions = global_permissions.GlobalPermissions(self)
         return self._permissions
 
     def server_id(self):
+        """
+        :returns: the SonarQube platform server id
+        :rtype: str
+        """
         if self._server_id is not None:
             return self._server_id
-        if self._sys_info is not None and "Server ID" in self._sys_info["System"]:
-            self._server_id = self._sys_info["System"]["Server ID"]
+        if self.__sys_info is not None and "Server ID" in self.__sys_info["System"]:
+            self._server_id = self.__sys_info["System"]["Server ID"]
         else:
             self._server_id = json.loads(self.get("system/status").text)["id"]
         return self._server_id
 
     def sys_info(self):
-        if self._sys_info is None:
+        """
+        :returns: the SonarQube platform system info file
+        :rtype: dict
+        """
+        if self.__sys_info is None:
             success, counter = False, 0
             while not success and counter < 10:
                 resp = self.get("system/info", exit_on_error=False)
                 if resp.ok:
-                    self._sys_info = json.loads(resp.text)
+                    self.__sys_info = json.loads(resp.text)
                     success = True
                 else:
                     # Hack: SonarQube randomly returns Error 500, retry in that case
@@ -123,15 +149,27 @@ class Environment:
                     else:
                         util.logger.error("HTTP Error %d for api/system/info", resp.status_code)
                         success = True
-        return self._sys_info
+        return self.__sys_info
 
     def edition(self):
+        """
+        :returns: the SonarQube platform edition
+        :rtype: str ("community", "developer", "enterprise" or "datacenter")
+        """
         return self.sys_info()["Statistics"]["edition"]
 
     def database(self):
+        """
+        :returns: the SonarQube platform backend database
+        :rtype: str
+        """
         return self.sys_info()["Statistics"]["database"]["name"]
 
     def plugins(self):
+        """
+        :returns: the SonarQube platform plugins
+        :rtype: dict
+        """
         return self.sys_info()["Statistics"]["plugins"]
 
     def __lts_and_latest(self):
@@ -165,6 +203,10 @@ class Environment:
         return (LTS, LATEST)
 
     def lts(self, digits=3):
+        """
+        :returns: the SonarQube platform plugins
+        :rtype: dict
+        """
         if digits < 1 or digits > 3:
             digits = 3
         return self.__lts_and_latest()[0][0:digits]
@@ -178,7 +220,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("GET: %s", self.urlstring(api, params))
         try:
-            r = requests.get(url=self.url + api, auth=self.credentials(), verify=self.cert_file, headers=_SONAR_TOOLS_AGENT, params=params)
+            r = requests.get(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -193,7 +235,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.urlstring(api, params))
         try:
-            r = requests.post(url=self.url + api, auth=self.credentials(), verify=self.cert_file, headers=_SONAR_TOOLS_AGENT, data=params)
+            r = requests.post(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, data=params)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -208,7 +250,7 @@ class Environment:
         api = _normalize_api(api)
         util.logger.debug("DELETE: %s", self.urlstring(api, params))
         try:
-            r = requests.delete(url=self.url + api, auth=self.credentials(), verify=self.cert_file, params=params, headers=_SONAR_TOOLS_AGENT)
+            r = requests.delete(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             util.log_and_exit(r)
