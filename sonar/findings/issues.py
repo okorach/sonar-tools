@@ -18,8 +18,6 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""Abstraction of the SonarQube 'issue' concept"""
-
 import datetime
 import json
 import re
@@ -89,7 +87,9 @@ class TooManyIssuesError(Exception):
 
 
 class Issue(findings.Finding):
-    """SonarQube Issue."""
+    """
+    Abstraction of the SonarQube 'issue' concept
+    """  
 
     SEARCH_API = "issues/search"
     MAX_PAGE_SIZE = 500
@@ -136,6 +136,10 @@ class Issue(findings.Finding):
         _ISSUES[self.uuid()] = self
 
     def __str__(self):
+        """
+        :return: String representation of the issue
+        :rtype: str
+        """
         return f"Issue key '{self.key}'"
 
     def __format__(self, format_spec=""):
@@ -144,11 +148,11 @@ class Issue(findings.Finding):
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
 
-    def to_string(self):
-        """Dumps the object in a string."""
-        return util.json_dump(self._json)
-
     def url(self):
+        """
+        :return: A permalink URL to the issue in the SonarQube platform
+        :rtype: str
+        """
         branch = ""
         if self.branch is not None:
             branch = f"&branch={requests.utils.quote(self.branch)}"
@@ -157,6 +161,10 @@ class Issue(findings.Finding):
         return f"{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}"
 
     def debt(self):
+        """
+        :return: The remediation effort of the issue, in minutes
+        :rtype: int
+        """
         if self._debt is not None:
             return self._debt
         if "debt" in self._json:
@@ -182,19 +190,32 @@ class Issue(findings.Finding):
         return self._debt
 
     def to_json(self):
+        """
+        :return: The issue attributes as JSON
+        :rtype: dict
+        """
         data = super().to_json()
         data["url"] = self.url()
         data["effort"] = self.debt()
         return data
 
-    def read(self):
+    def refresh(self):
+        """Refreshes an issue from the SonarQube platform live data
+        :return: whether the refresh was successful
+        :rtype: bool
+        """
         resp = self.get(Issue.SEARCH_API, params={"issues": self.key, "additionalFields": "_all"})
-        self._load(resp.issues[0])
+        if resp.ok:
+            self._load(resp.issues[0])
+        return resp.ok
 
     def changelog(self):
+        """
+        :return: The issue changelog
+        :rtype: dict{"<date>_<sequence_nbr>": <event>}
+        """
         if self._changelog is None:
-            resp = self.get("issues/changelog", {"issue": self.key, "format": "json"})
-            data = json.loads(resp.text)
+            data = json.loads(self.get("issues/changelog", {"issue": self.key, "format": "json"}))
             util.json_dump_debug(data["changelog"], f"{str(self)} Changelog = ")
             self._changelog = {}
             seq = 1
@@ -209,19 +230,11 @@ class Issue(findings.Finding):
                 self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
 
-    def get_all_events(self, event_type="changelog"):
-        if event_type == "comments":
-            events = self.comments()
-            util.logger.debug("Issue %s has %d comments", self.key, len(events))
-        else:
-            events = self.changelog()
-            util.logger.debug("Issue %s has %d changelog", self.key, len(events))
-        bydate = {}
-        for e in events:
-            bydate[e["date"]] = e
-        return bydate
-
     def comments(self):
+        """
+        :return: The issue comments
+        :rtype: dict{"<date>_<sequence_nbr>": <event>}
+        """
         if "comments" not in self._json:
             self._comments = {}
         elif self._comments is None:
