@@ -238,10 +238,10 @@ def __get_project_findings(queue, write_queue):
         if status_list or resol_list or type_list or sev_list:
             search_findings = False
 
-        util.logger.debug("Queue %s handling task %s", str(queue), key)
+        util.logger.debug("WriteQueue %s task %s put", str(write_queue), key)
         if search_findings:
             findings_list = findings.export_findings(endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None))
-            util.logger.debug("WriteQueue %s task %s put", str(write_queue), key)
+
             write_queue.put([findings_list, queue.empty()])
         else:
             new_params = issues.get_search_criteria(params)
@@ -260,7 +260,6 @@ def __get_project_findings(queue, write_queue):
             else:
                 util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
-            util.logger.debug("WriteQueue %s task %s put", str(write_queue), key)
             write_queue.put([findings_list, queue.empty()])
         util.logger.debug("Queue %s task %s done", str(queue), key)
         queue.task_done()
