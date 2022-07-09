@@ -133,7 +133,7 @@ class Issue(findings.Finding):
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint, data, from_export)
         self._debt = None
-        self.tags = [] #: Issue tags
+        self.tags = []  #: Issue tags
         if data is not None:
             self.component = data.get("component", None)
         # util.logger.debug("Loaded issue: %s", util.json_dump(data))
@@ -619,7 +619,7 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
     return issue_list
 
 
-def _search_all_by_project(project_key, params, endpoint=None):
+def __search_all_by_project(project_key, params, endpoint=None):
     new_params = {} if params is None else params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
@@ -664,7 +664,7 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
             util.logger.info("Using new export findings to speed up issue export")
             issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(params.get("branch", None), params.get("pullRequest", None)))
         else:
-            issue_list.update(_search_all_by_project(k, params=params, endpoint=endpoint))
+            issue_list.update(__search_all_by_project(k, params=params, endpoint=endpoint))
         util.logger.info("Project '%s' has %d issues", k, len(issue_list))
     return issue_list
 
@@ -687,7 +687,7 @@ def search_all(endpoint, params=None):
     except TooManyIssuesError:
         util.logger.info(_TOO_MANY_ISSUES_MSG)
         for k in projects.search(endpoint):
-            issue_list.update(_search_all_by_project(k, params=new_params, endpoint=endpoint))
+            issue_list.update(__search_all_by_project(k, params=new_params, endpoint=endpoint))
     return issue_list
 
 
@@ -711,7 +711,7 @@ def search_first(endpoint, **params):
     :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
     :rtype: Issue or None if not issue found
     """
-    params["ps"] = 1 
+    params["ps"] = 1
     data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)
     if len(data) == 0:
         return None
