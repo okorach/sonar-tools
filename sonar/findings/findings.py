@@ -331,6 +331,24 @@ class Finding(sq.SqObject):
         return (exact_matches, approx_matches, match_but_modified)
 
 
+def export_findings(endpoint, project_key, branch=None, pull_request=None):
+    """Export all findings of a given project
+
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param project_key: The project key
+    :type project_key: str
+    :param branch: Branch to select for export (exclusive of pull_request), defaults to None
+    :type branch: str, optional
+    :param pull_request: Pull request to select for export (exclusive of branch), default to None
+    :type pull_request: str, optional
+    :return: list of Findings (Issues or Hotspots)
+    :rtype: dict{<key>: <Finding>}
+    """
+    util.logger.info("Using new export findings to speed up issue export")
+    return projects.Project(project_key, endpoint=endpoint).get_findings(branch, pull_request)
+
+
 def to_csv_header(separator=","):
     """
     :meta private:

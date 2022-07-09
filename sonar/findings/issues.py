@@ -662,7 +662,7 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
         util.logger.info("Project '%s' issue search", k)
         if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ("enterprise", "datacenter") and search_findings:
             util.logger.info("Using new export findings to speed up issue export")
-            issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(params.get("branch", None), params.get("pullRequest", None)))
+            issue_list.update(findings.export_findings(endpoint, k, params.get("branch", None), params.get("pullRequest", None)))
         else:
             issue_list.update(__search_all_by_project(k, params=params, endpoint=endpoint))
         util.logger.info("Project '%s' has %d issues", k, len(issue_list))
