@@ -74,17 +74,17 @@ class Finding(sq.SqObject):
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint)
         self.severity = None  #: Severity (str)
-        self.type = None   #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
-        self.author = None   #: Author (str)
-        self.assignee = None   #: Assignee (str)
-        self.status = None   #: Status (str)
-        self.resolution = None   #: Resolution (str)
-        self.rule = None   #: Rule Id (str)
+        self.type = None  #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
+        self.author = None  #: Author (str)
+        self.assignee = None  #: Assignee (str)
+        self.status = None  #: Status (str)
+        self.resolution = None  #: Resolution (str)
+        self.rule = None  #: Rule Id (str)
         self.projectKey = None  #: Project key (str)
-        self.language = None   #: Language (str)
+        self.language = None  #: Language (str)
         self._changelog = None
         self._comments = None
-        self.line = None   #: Line (int)
+        self.line = None  #: Line (int)
         self.component = None
         self.message = None  #: Message
         self.creation_date = None  #: Creation date (datetime)
@@ -256,14 +256,10 @@ class Finding(sq.SqObject):
         """
         return set([v.get("user", None) for v in self.comments() if v.get("user", None)])
 
-    def modifiers_excluding_service_users(self, service_users):
-        mods = []
-        for u in self.modifiers():
-            if u not in service_users:
-                mods.append(u)
-        return mods
-
     def can_be_synced(self, user_list):
+        """
+        :meta private:
+        """
         util.logger.debug(
             "Issue %s: Checking if modifiers %s are different from user %s",
             str(self),
@@ -278,6 +274,9 @@ class Finding(sq.SqObject):
         return True
 
     def strictly_identical_to(self, another_finding, ignore_component=False):
+        """
+        :meta private:
+        """
         return (
             self.rule == another_finding.rule
             and self.hash == another_finding.hash
@@ -287,6 +286,9 @@ class Finding(sq.SqObject):
         )
 
     def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
+        """
+        :meta private:
+        """
         if self.rule != another_finding.rule or self.hash != another_finding.hash:
             return False
         score = 0
@@ -308,6 +310,9 @@ class Finding(sq.SqObject):
         return score >= 7
 
     def search_siblings(self, findings_list, allowed_users=None, ignore_component=False, **kwargs):
+        """
+        :meta private:
+        """
         exact_matches = []
         approx_matches = []
         match_but_modified = []
@@ -332,4 +337,7 @@ class Finding(sq.SqObject):
 
 
 def to_csv_header(separator=","):
+    """
+    :meta private:
+    """
     return "# " + separator.join(_CSV_FIELDS)
