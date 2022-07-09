@@ -197,7 +197,7 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
                 str(finding),
             )
             continue
-        modifiers = finding.modifiers_and_commenters()
+        modifiers = finding.modifiers().union(finding.commenters())
         # TODO - Manage more than 1 sync account - diff the 2 lists
         syncer = sync_settings[SYNC_SERVICE_ACCOUNTS][0]
         if sync_settings is None:

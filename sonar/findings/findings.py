@@ -244,27 +244,17 @@ class Finding(sq.SqObject):
 
     def modifiers(self):
         """
-        :return: the list of users that modified the finding
-        :rtype: list[str]
+        :return: the set of users that modified the finding
+        :rtype: set(str)
         """
-        item_list = list(set([c.author() for c in self.changelog().values()]))
-        for c in self.changelog().values():
-            util.logger.debug("Checking author of changelog %s", str(c))
-            author = c.author()
-            if author is not None and author not in item_list:
-                item_list.append(author)
-        return item_list
+        return set([c.author() for c in self.changelog().values()])
 
     def commenters(self):
-        """Returns list of users that commented the issue."""
-        return util.unique_dict_field(self.comments(), "user")
-
-    def modifiers_and_commenters(self):
-        modif = self.modifiers()
-        for c in self.commenters():
-            if c not in modif:
-                modif.append(c)
-        return modif
+        """
+        :return: the set of users that commented the finding
+        :rtype: set(str)
+        """
+        return set([v.get("user", None) for v in self.comments() if v.get("user", None)])
 
     def modifiers_excluding_service_users(self, service_users):
         mods = []
