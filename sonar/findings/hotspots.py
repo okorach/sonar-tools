@@ -104,9 +104,8 @@ class Hotspot(findings.Finding):
         self.securityCategory = None
         self.type = "SECURITY_HOTSPOT"
         self._details = None
-        if data is not None:
-            self.category = data["securityCategory"]
-            self.vulnerabilityProbability = data["vulnerabilityProbability"]
+        self.category = data["securityCategory"]
+        self.vulnerabilityProbability = data["vulnerabilityProbability"]
         # FIXME: Ugly hack to fix how hotspot branches are managed
         m = re.match(r"^(.*):BRANCH:(.*)$", self.projectKey)
         if m:
@@ -117,6 +116,12 @@ class Hotspot(findings.Finding):
             self.projectKey = m.group(1)
             self.branch = m.group(2)
         _HOTSPOTS[self.uuid()] = self
+        if self.rule is None:
+            r = self.get("hotspots/show", params={"hotspot": key}, exit_on_error=False)
+            if r.ok:
+                data = json.loads(r.text)
+                self.rule = data["rule"]["key"]
+            # self._json.update(data)
 
     def __str__(self):
         return f"Hotspot key '{self.key}'"
