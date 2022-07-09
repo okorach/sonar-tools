@@ -344,74 +344,88 @@ class Issue(findings.Finding):
 
     def is_wont_fix(self):
         """
-        :return: Whether the issue has been marked as won't fix
+        :return: Whether the issue is won't fix
         :rtype: bool
         """
         return self.resolution == "WONT-FIX"
 
     def is_false_positive(self):
         """
-        :return: Whether the issue has been marked as false positive
+        :return: Whether the issue is a false positive
         :rtype: bool
         """
         return self.resolution == "FALSE-POSITIVE"
 
     def strictly_identical_to(self, another_finding, ignore_component=False):
+        """
+        :meta private:
+        """
         return super.strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
     def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
+        """
+        :meta private:
+        """
         return super.almost_identical_to(another_finding, ignore_component, **kwargs) and (
             self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False)
         )
 
     def __do_transition(self, transition):
-        return self.post("issues/do_transition", {"issue": self.key, "transition": transition})
+        return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
 
     def reopen(self):
+        """Re-opens an issue
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Reopening %s", str(self))
         return self.__do_transition("reopen")
 
     def mark_as_false_positive(self):
+        """Sets an issue as false positive
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Marking %s as false positive", str(self))
         return self.__do_transition("falsepositive")
 
     def confirm(self):
+        """Confirms an issue
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Confirming %s", str(self))
         return self.__do_transition("confirm")
 
     def unconfirm(self):
+        """Unconfirms an issue
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Unconfirming %s", str(self))
         return self.__do_transition("unconfirm")
 
     def resolve_as_fixed(self):
+        """Marks an issue as resolved as fixed
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Marking %s as fixed", str(self))
         return self.__do_transition("resolve")
 
     def mark_as_wont_fix(self):
+        """Marks an issue as resolved as won't fix
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Marking %s as won't fix", str(self))
         return self.__do_transition("wontfix")
-
-    def close(self):
-        util.logger.debug("Closing %s", str(self))
-        return self.__do_transition("close")
-
-    def mark_as_reviewed(self):
-        if self.is_hotspot():
-            util.logger.debug("Marking hotspot %s as reviewed", self.key)
-            return self.__do_transition("resolveasreviewed")
-        elif self.is_vulnerability():
-            util.logger.debug(
-                "Marking vulnerability %s as won't fix in replacement of 'reviewed'",
-                self.key,
-            )
-            self.add_comment("Vulnerability marked as won't fix to replace hotspot 'reviewed' status")
-            return self.__do_transition("wontfix")
-
-        util.logger.debug(
-            "Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed",
-            self.key,
-        )
-        return False
 
     def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
@@ -441,9 +455,6 @@ class Issue(findings.Finding):
         elif event_type == "UNCONFIRM":
             self.unconfirm()
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
-        elif event_type == "REVIEWED":
-            self.mark_as_reviewed()
-            # self.add_comment(f"Hotspot review {origin}")
         elif event_type == "ASSIGN":
             if settings[syncer.SYNC_ASSIGN]:
                 u = users.get_login_from_name(data, endpoint=self.endpoint)
