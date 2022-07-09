@@ -238,12 +238,14 @@ def __get_project_findings(queue, write_queue):
         if status_list or resol_list or type_list or sev_list:
             search_findings = False
 
-        new_params = issues.get_search_criteria(params)
-        new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
+        util.logger.debug("WriteQueue %s task %s put", str(write_queue), key)
         if search_findings:
-            findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint, search_findings=search_findings)
+            findings_list = findings.export_findings(endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None))
+
             write_queue.put([findings_list, queue.empty()])
         else:
+            new_params = issues.get_search_criteria(params)
+            new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
@@ -259,6 +261,7 @@ def __get_project_findings(queue, write_queue):
                 util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
             write_queue.put([findings_list, queue.empty()])
+        util.logger.debug("Queue %s task %s done", str(queue), key)
         queue.task_done()
 
 
@@ -270,13 +273,16 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
         prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
         for b in branches:
             params["branch"] = b
+            util.logger.debug("Queue %s task %s put", str(my_queue), key)
             my_queue.put((key, endpoint, params.copy()))
         params.pop("branch", None)
         for p in prs:
             params["pullRequest"] = p
+            util.logger.debug("Queue %s task %s put", str(my_queue), key)
             my_queue.put((key, endpoint, params.copy()))
         params.pop("pullRequest", None)
         if not (branches or prs):
+            util.logger.debug("Queue %s task %s put", str(my_queue), key)
             my_queue.put((key, endpoint, params.copy()))
 
     for i in range(threads):
@@ -294,6 +300,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 
     my_queue.join()
     # Tell the writer thread that writing is complete
+    util.logger.debug("WriteQueue %s task %s put", str(write_queue), str(WRITE_END))
     write_queue.put((WRITE_END, True))
     write_queue.join()
 

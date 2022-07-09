@@ -18,8 +18,6 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""Abstraction of the SonarQube 'issue' concept"""
-
 import datetime
 import json
 import re
@@ -31,6 +29,9 @@ from sonar.projects import projects
 from sonar import users, syncer
 from sonar.findings import findings, changelog
 import sonar.utilities as util
+
+API_SET_TAGS = "issues/set_tags"
+API_SET_TYPE = "issues/set_type"
 
 SEARCH_CRITERIAS = (
     "componentKeys",
@@ -89,7 +90,9 @@ class TooManyIssuesError(Exception):
 
 
 class Issue(findings.Finding):
-    """SonarQube Issue."""
+    """
+    Abstraction of the SonarQube 'issue' concept
+    """
 
     SEARCH_API = "issues/search"
     MAX_PAGE_SIZE = 500
@@ -130,12 +133,17 @@ class Issue(findings.Finding):
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint, data, from_export)
         self._debt = None
+        self.tags = []  #: Issue tags
         if data is not None:
             self.component = data.get("component", None)
         # util.logger.debug("Loaded issue: %s", util.json_dump(data))
         _ISSUES[self.uuid()] = self
 
     def __str__(self):
+        """
+        :return: String representation of the issue
+        :rtype: str
+        """
         return f"Issue key '{self.key}'"
 
     def __format__(self, format_spec=""):
@@ -144,11 +152,11 @@ class Issue(findings.Finding):
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
 
-    def to_string(self):
-        """Dumps the object in a string."""
-        return util.json_dump(self._json)
-
     def url(self):
+        """
+        :return: A permalink URL to the issue in the SonarQube platform
+        :rtype: str
+        """
         branch = ""
         if self.branch is not None:
             branch = f"&branch={requests.utils.quote(self.branch)}"
@@ -157,6 +165,10 @@ class Issue(findings.Finding):
         return f"{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}"
 
     def debt(self):
+        """
+        :return: The remediation effort of the issue, in minutes
+        :rtype: int
+        """
         if self._debt is not None:
             return self._debt
         if "debt" in self._json:
@@ -182,19 +194,32 @@ class Issue(findings.Finding):
         return self._debt
 
     def to_json(self):
+        """
+        :return: The issue attributes as JSON
+        :rtype: dict
+        """
         data = super().to_json()
         data["url"] = self.url()
         data["effort"] = self.debt()
         return data
 
-    def read(self):
+    def refresh(self):
+        """Refreshes an issue from the SonarQube platform live data
+        :return: whether the refresh was successful
+        :rtype: bool
+        """
         resp = self.get(Issue.SEARCH_API, params={"issues": self.key, "additionalFields": "_all"})
-        self._load(resp.issues[0])
+        if resp.ok:
+            self._load(resp.issues[0])
+        return resp.ok
 
     def changelog(self):
+        """
+        :return: The issue changelog
+        :rtype: dict{"<date>_<sequence_nbr>": <event>}
+        """
         if self._changelog is None:
-            resp = self.get("issues/changelog", {"issue": self.key, "format": "json"})
-            data = json.loads(resp.text)
+            data = json.loads(self.get("issues/changelog", {"issue": self.key, "format": "json"}))
             util.json_dump_debug(data["changelog"], f"{str(self)} Changelog = ")
             self._changelog = {}
             seq = 1
@@ -209,19 +234,11 @@ class Issue(findings.Finding):
                 self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
 
-    def get_all_events(self, event_type="changelog"):
-        if event_type == "comments":
-            events = self.comments()
-            util.logger.debug("Issue %s has %d comments", self.key, len(events))
-        else:
-            events = self.changelog()
-            util.logger.debug("Issue %s has %d changelog", self.key, len(events))
-        bydate = {}
-        for e in events:
-            bydate[e["date"]] = e
-        return bydate
-
     def comments(self):
+        """
+        :return: The issue comments
+        :rtype: dict{"<date>_<sequence_nbr>": <comment>}
+        """
         if "comments" not in self._json:
             self._comments = {}
         elif self._comments is None:
@@ -238,106 +255,177 @@ class Issue(findings.Finding):
                 }
         return self._comments
 
-    def add_comment(self, comment, really=True):
-        util.logger.debug("Adding comment %s to %s", comment, str(self))
-        if really:
-            return self.post("issues/add_comment", {"issue": self.key, "text": comment})
-        else:
-            return None
+    def add_comment(self, comment):
+        """Adds a comment to an issue
+
+        :param comment: The comment to add
+        :type comment: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Adding comment '%s' to %s", comment, str(self))
+        r = self.post("issues/add_comment", {"issue": self.key, "text": comment})
+        return r.ok
 
     def set_severity(self, severity):
-        util.logger.debug(
-            "Changing severity of issue %s from %s to %s",
-            self.key,
-            self.severity,
-            severity,
-        )
-        return self.post("issues/set_severity", {"issue": self.key, "severity": severity})
+        """Changes the severity of an issue
 
-    def assign(self, assignee):
-        util.logger.debug("Assigning issue %s to %s", self.key, assignee)
-        return self.post("issues/assign", {"issue": self.key, "assignee": assignee})
-
-    def set_tags(self, tags):
-        util.logger.debug("Setting tags %s to issue %s", tags, self.key)
-        return self.post("issues/set_tags", {"issue": self.key, "tags": tags})
-
-    def set_type(self, new_type):
-        util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
-        return self.post("issues/set_type", {"issue": self.key, "type": new_type})
-
-    def is_wont_fix(self):
-        return self.__has_been_marked_as_statuses(["WONTFIX"])
-
-    def is_false_positive(self):
-        return self.__has_been_marked_as_statuses(["FALSE-POSITIVE"])
-
-    def __has_been_marked_as_statuses(self, statuses):
-        for log in self.changelog():
-            for diff in log["diffs"]:
-                if diff["key"] != "resolution":
-                    continue
-                for status in statuses:
-                    if diff["newValue"] == status:
-                        return True
+        :param severity: The comment to add
+        :type severity: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        if severity != self.severity:
+            util.logger.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, severity)
+            return self.post("issues/set_severity", {"issue": self.key, "severity": severity}).ok
         return False
 
+    def assign(self, assignee):
+        """Assigns an issue to a user
+
+        :param assignee: The user login
+        :type assignee: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        if assignee != self.assignee:
+            util.logger.debug("Assigning %s to '%s'", str(self), assignee)
+            return self.post("issues/assign", {"issue": self.key, "assignee": assignee}).ok
+        return False
+
+    def set_tags(self, tags):
+        """Sets tags to an issue (Replacing all previous tags)
+        :param tags: Tags to set
+        :type tags: list
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Setting tags %s to %s", tags, str(self))
+        if not self.post(API_SET_TAGS, {"issue": self.key, "tags": util.list_to_csv(tags)}).ok:
+            return False
+        self.tags = tags
+        return True
+
+    def add_tag(self, tag):
+        """Adds a tag to an issue
+        :param tag: Tags to add
+        :type tag: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Adding tag '%s' to %s", tag, str(self))
+        tags = self.tags.copy()
+        if tag not in self.tags:
+            tags.append(tag)
+        return self.set_tags(tags)
+
+    def remove_tag(self, tag):
+        """Removes a tag from an issue
+        :param tag: Tags to remove
+        :type tag: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Removing tag '%s' from %s", tag, str(self))
+        tags = self.tags.copy()
+        if tag in self.tags:
+            tags.remove(tag)
+        return self.set_tags(tags)
+
+    def set_type(self, new_type):
+        """Sets an issue type
+        :param new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
+        :type tag: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
+        return self.post(API_SET_TYPE, {"issue": self.key, "type": new_type}).ok
+
+    def is_wont_fix(self):
+        """
+        :return: Whether the issue is won't fix
+        :rtype: bool
+        """
+        return self.resolution == "WONT-FIX"
+
+    def is_false_positive(self):
+        """
+        :return: Whether the issue is a false positive
+        :rtype: bool
+        """
+        return self.resolution == "FALSE-POSITIVE"
+
     def strictly_identical_to(self, another_finding, ignore_component=False):
+        """
+        :meta private:
+        """
         return super.strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
     def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
+        """
+        :meta private:
+        """
         return super.almost_identical_to(another_finding, ignore_component, **kwargs) and (
             self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False)
         )
 
     def __do_transition(self, transition):
-        return self.post("issues/do_transition", {"issue": self.key, "transition": transition})
+        return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
 
     def reopen(self):
+        """Re-opens an issue
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Reopening %s", str(self))
         return self.__do_transition("reopen")
 
     def mark_as_false_positive(self):
+        """Sets an issue as false positive
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Marking %s as false positive", str(self))
         return self.__do_transition("falsepositive")
 
     def confirm(self):
+        """Confirms an issue
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Confirming %s", str(self))
         return self.__do_transition("confirm")
 
     def unconfirm(self):
+        """Unconfirms an issue
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Unconfirming %s", str(self))
         return self.__do_transition("unconfirm")
 
     def resolve_as_fixed(self):
+        """Marks an issue as resolved as fixed
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Marking %s as fixed", str(self))
         return self.__do_transition("resolve")
 
     def mark_as_wont_fix(self):
+        """Marks an issue as resolved as won't fix
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Marking %s as won't fix", str(self))
         return self.__do_transition("wontfix")
-
-    def close(self):
-        util.logger.debug("Closing %s", str(self))
-        return self.__do_transition("close")
-
-    def mark_as_reviewed(self):
-        if self.is_hotspot():
-            util.logger.debug("Marking hotspot %s as reviewed", self.key)
-            return self.__do_transition("resolveasreviewed")
-        elif self.is_vulnerability():
-            util.logger.debug(
-                "Marking vulnerability %s as won't fix in replacement of 'reviewed'",
-                self.key,
-            )
-            self.add_comment("Vulnerability marked as won't fix to replace hotspot 'reviewed' status")
-            return self.__do_transition("wontfix")
-
-        util.logger.debug(
-            "Issue %s is neither a hotspot nor a vulnerability, cannot mark as reviewed",
-            self.key,
-        )
-        return False
 
     def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
@@ -367,9 +455,6 @@ class Issue(findings.Finding):
         elif event_type == "UNCONFIRM":
             self.unconfirm()
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
-        elif event_type == "REVIEWED":
-            self.mark_as_reviewed()
-            # self.add_comment(f"Hotspot review {origin}")
         elif event_type == "ASSIGN":
             if settings[syncer.SYNC_ASSIGN]:
                 u = users.get_login_from_name(data, endpoint=self.endpoint)
@@ -398,6 +483,9 @@ class Issue(findings.Finding):
         return True
 
     def apply_changelog(self, source_issue, settings):
+        """
+        :meta private:
+        """
         events = source_issue.changelog()
         if events is None or not events:
             util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.key)
@@ -513,41 +601,13 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
             util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list = __search_all_by_severities(new_params, endpoint=endpoint)
         elif diff == 1:
-            issue_list.update(
-                __search_all_by_date(
-                    new_params,
-                    date_start=date_start,
-                    date_stop=date_start,
-                    endpoint=endpoint,
-                )
-            )
-            issue_list.update(
-                __search_all_by_date(
-                    new_params,
-                    date_start=date_stop,
-                    date_stop=date_stop,
-                    endpoint=endpoint,
-                )
-            )
+            issue_list.update(__search_all_by_date(new_params, date_start=date_start, date_stop=date_start, endpoint=endpoint))
+            issue_list.update(__search_all_by_date(new_params, date_start=date_stop, date_stop=date_stop, endpoint=endpoint))
         else:
             date_middle = date_start + datetime.timedelta(days=diff // 2)
-            issue_list.update(
-                __search_all_by_date(
-                    new_params,
-                    date_start=date_start,
-                    date_stop=date_middle,
-                    endpoint=endpoint,
-                )
-            )
+            issue_list.update(__search_all_by_date(new_params, date_start=date_start, date_stop=date_middle, endpoint=endpoint))
             date_middle = date_middle + datetime.timedelta(days=1)
-            issue_list.update(
-                __search_all_by_date(
-                    new_params,
-                    date_start=date_middle,
-                    date_stop=date_stop,
-                    endpoint=endpoint,
-                )
-            )
+            issue_list.update(__search_all_by_date(new_params, date_start=date_middle, date_stop=date_stop, endpoint=endpoint))
     if date_start is not None and date_stop is not None:
         util.logger.debug(
             "Project %s has %d issues between %s and %s",
@@ -559,7 +619,7 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
     return issue_list
 
 
-def _search_all_by_project(project_key, params, endpoint=None):
+def __search_all_by_project(project_key, params, endpoint=None):
     new_params = {} if params is None else params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
@@ -578,6 +638,19 @@ def _search_all_by_project(project_key, params, endpoint=None):
 
 
 def search_by_project(project_key, endpoint, params=None, search_findings=False):
+    """Search all issues of a given project
+
+    :param project_key: The project key
+    :type project_key: str
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param params: List of search filters to narrow down the search, defaults to None
+    :type params: dict
+    :param search_findings: Whether to use the api/project_search/findings API or not, defaults to False
+    :type search_findings: bool, optional
+    :return: list of Issues
+    :rtype: dict{<key>: <Issue>}
+    """
     if params is None:
         params = {}
     if project_key is None:
@@ -589,14 +662,23 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
         util.logger.info("Project '%s' issue search", k)
         if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ("enterprise", "datacenter") and search_findings:
             util.logger.info("Using new export findings to speed up issue export")
-            issue_list.update(projects.Project(k, endpoint=endpoint).get_findings(params.get("branch", None), params.get("pullRequest", None)))
+            issue_list.update(findings.export_findings(endpoint, k, params.get("branch", None), params.get("pullRequest", None)))
         else:
-            issue_list.update(_search_all_by_project(k, params=params, endpoint=endpoint))
+            issue_list.update(__search_all_by_project(k, params=params, endpoint=endpoint))
         util.logger.info("Project '%s' has %d issues", k, len(issue_list))
     return issue_list
 
 
 def search_all(endpoint, params=None):
+    """Returns all issues of the platforms
+
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param params: List of search filters to narrow down the search, defaults to None
+    :type params: dict
+    :return: list of Issues
+    :rtype: dict{<key>: <Issue>}
+    """
     new_params = {} if params is None else params.copy()
     util.logger.info("Issue search all with %s", str(params))
     issue_list = {}
@@ -605,7 +687,7 @@ def search_all(endpoint, params=None):
     except TooManyIssuesError:
         util.logger.info(_TOO_MANY_ISSUES_MSG)
         for k in projects.search(endpoint):
-            issue_list.update(_search_all_by_project(k, params=new_params, endpoint=endpoint))
+            issue_list.update(__search_all_by_project(k, params=new_params, endpoint=endpoint))
     return issue_list
 
 
@@ -625,6 +707,11 @@ def __search_thread(queue):
 
 
 def search_first(endpoint, **params):
+    """
+    :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
+    :rtype: Issue or None if not issue found
+    """
+    params["ps"] = 1
     data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)
     if len(data) == 0:
         return None
@@ -633,6 +720,18 @@ def search_first(endpoint, **params):
 
 
 def search(endpoint, params=None, raise_error=True, threads=8):
+    """Multi-threaded search of issues
+
+    :param params: Search filter criteria to narrow down the search
+    :type params: dict
+    :param raise_error: Whether to raise exception if more than 10'000 issues returned, defaults to True
+    :type raise_error: bool
+    :param threads: Nbr of parallel threads for search, defaults to 8
+    :type threads: int
+    :return: List of issues found
+    :rtype: dict{<key>: <Issue>}
+    :raises: TooManyIssuesError if more than 10'000 issues found
+    """
     new_params = {} if params is None else params.copy()
     util.logger.debug("Search params = %s", str(new_params))
     if "ps" not in new_params:
@@ -681,7 +780,7 @@ def _get_facets(project_key, facets="directories", endpoint=None, params=None):
 
 def __get_one_issue_date(endpoint=None, asc_sort="false", params=None):
     """Returns the date of one issue found"""
-    issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, ps=1, **params)
+    issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
     if not issue:
         return None
     return issue.creation_date

@@ -507,8 +507,9 @@ class Project(components.Component):
         :rtype: dict{key: Finding}
         """
         if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ("enterprise", "datacenter"):
+            util.logger.warning("export_findings only available in EE and DCE starting from SonarQube 9.1, returning no issues")
             return {}
-
+        util.logger.info("Exporting findings for %s", str(self))
         findings_list = {}
         params = {"project": self.key}
         if branch is not None:

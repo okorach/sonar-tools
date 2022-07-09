@@ -23,7 +23,8 @@ import json
 import re
 import requests.utils
 import sonar.utilities as util
-from sonar import projects, syncer, users
+from sonar import syncer, users
+from sonar.projects import projects
 from sonar.findings import findings, changelog
 
 SEARCH_CRITERIAS = (
@@ -45,48 +46,12 @@ SEARCH_CRITERIAS = (
     "status",
 )
 
-TYPES = ("SECURITY_HOTSPOT", "")
+TYPES = ("SECURITY_HOTSPOT",)
 RESOLUTIONS = ("SAFE", "ACKNOWLEDGED", "FIXED")
 STATUSES = ("TO_REVIEW", "REVIEWED")
 SEVERITIES = ()
 
-_JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
-
-_JSON_FIELDS_PRIVATE = (
-    "endpoint",
-    "id",
-    "_json",
-    "_changelog",
-    "assignee",
-    "hash",
-    "sonarqube",
-    "creation_date",
-    "modification_date",
-    "_debt",
-    "component",
-    "language",
-    "resolution",
-)
-
-_CSV_FIELDS = (
-    "key",
-    "rule",
-    "type",
-    "severity",
-    "status",
-    "createdAt",
-    "updatedAt",
-    "projectKey",
-    "projectName",
-    "branch",
-    "pullRequest",
-    "file",
-    "line",
-    "effort",
-    "message",
-)
-
-_HOTSPOTS = {}
+_OBJECTS = {}
 
 
 class TooManyHotspotsError(Exception):
@@ -99,13 +64,13 @@ class TooManyHotspotsError(Exception):
 class Hotspot(findings.Finding):
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint, data, from_export)
-        self.vulnerabilityProbability = None
-        self.securityCategory = None
+        self.vulnerabilityProbability = None  #:
+        self.category = data["securityCategory"]  #:
+        self.vulnerabilityProbability = data["vulnerabilityProbability"]  #:
+        self.securityCategory = None  #:
         self.type = "SECURITY_HOTSPOT"
-        self._details = None
-        if data is not None:
-            self.category = data["securityCategory"]
-            self.vulnerabilityProbability = data["vulnerabilityProbability"]
+        self.__details = None
+
         # FIXME: Ugly hack to fix how hotspot branches are managed
         m = re.match(r"^(.*):BRANCH:(.*)$", self.projectKey)
         if m:
@@ -115,12 +80,22 @@ class Hotspot(findings.Finding):
         if m:
             self.projectKey = m.group(1)
             self.branch = m.group(2)
-        _HOTSPOTS[self.uuid()] = self
+        _OBJECTS[self.uuid()] = self
+        if self.rule is None and self.get_details() is not None:
+            self.rule = self.__details["rule"]["key"]
 
     def __str__(self):
+        """
+        :return: String representation of the hotspot
+        :rtype: str
+        """
         return f"Hotspot key '{self.key}'"
 
     def url(self):
+        """
+        :return: Permalink URL to the hotspot in the SonarQube platform
+        :rtype: str
+        """
         branch = ""
         if self.branch is not None:
             branch = f"branch={requests.utils.quote(self.branch)}&"
@@ -129,42 +104,95 @@ class Hotspot(findings.Finding):
         return f"{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
 
     def to_json(self):
+        """
+        :return: JSON representation of the hotspot
+        :rtype: dict
+        """
         data = super().to_json()
         data["url"] = self.url()
         return data
+
+    def get_details(self):
+        """Reads hotspots details in SonarQube
+        :return: The hotspot details
+        :rtype: dict or None if hotspot not found
+        """
+        if not self.__details:
+            resp = self.get("hotspots/show", {"hotspot": self.key}, exit_on_error=False)
+            if resp.ok:
+                self.__details = json.loads(resp.text)
+        return self.__details
 
     def __mark_as(self, resolution, comment=None):
         params = {"hotspot": self.key, "status": "REVIEWED", "resolution": resolution}
         if comment is not None:
             params["comment"] = comment
-        return self.post("hotspots/change_status", params=params)
+        return self.post("hotspots/change_status", params=params).ok
 
     def mark_as_safe(self):
+        """Marks a hotspot as safe
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         return self.__mark_as("SAFE")
 
     def mark_as_fixed(self):
+        """Marks a hotspot as fixed
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         return self.__mark_as("FIXED")
 
     def mark_as_acknowledged(self):
+        """Marks a hotspot as acknowledged
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         if self.endpoint.version() < (9, 4, 0):
             util.logger.warning("Platform version is < 9.4, can't acknowledge %s", str(self))
-            return True
+            return False
         return self.__mark_as("ACKNOWLEDGED")
 
     def mark_as_to_review(self):
-        return self.post(
-            "hotspots/change_status",
-            params={"hotspot": self.key, "status": "TO_REVIEW"},
-        )
+        """Marks a hotspot as to review
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        return self.post("hotspots/change_status", params={"hotspot": self.key, "status": "TO_REVIEW"}).ok
 
     def reopen(self):
+        """Reopens a hotspot as to review
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         return self.mark_as_to_review()
 
     def add_comment(self, comment):
+        """Adds a comment to a hotspot
+
+        :param comment: Comment to add, in markdown format
+        :type comment: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         params = {"hotspot": self.key, "comment": comment}
-        return self.post("hotspots/add_comment", params=params)
+        return self.post("hotspots/add_comment", params=params).ok
 
     def assign(self, assignee, comment=None):
+        """Assigns a hotspot (and optionally comment)
+
+        :param assignee: User login to assign the hotspot
+        :type assignee: str
+        :param comment: Comment to add, in markdown format, defaults to None
+        :type comment: str, optional
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         params = {"hotspot": self.key, "assignee": assignee}
         if comment is not None:
             params["comment"] = comment
@@ -203,6 +231,9 @@ class Hotspot(findings.Finding):
         return True
 
     def apply_changelog(self, source_hotspot, settings):
+        """
+        :meta private:
+        """
         events = source_hotspot.changelog()
         if events is None or not events:
             util.logger.debug("Sibling %s has no changelog, no action taken", str(source_hotspot))
@@ -210,19 +241,11 @@ class Hotspot(findings.Finding):
 
         change_nbr = 0
         start_change = len(self.changelog()) + 1
-        util.logger.debug(
-            "Applying changelog of %s to %s, from change %d",
-            str(source_hotspot),
-            str(self),
-            start_change,
-        )
+        util.logger.debug("Applying changelog of %s to %s, from change %d", str(source_hotspot), str(self), start_change)
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
-                util.logger.debug(
-                    "Skipping change already applied in a previous sync: %s",
-                    str(events[key]),
-                )
+                util.logger.debug("Skipping change already applied in a previous sync: %s", str(events[key]))
                 continue
             self.__apply_event(events[key], settings)
 
@@ -254,14 +277,17 @@ class Hotspot(findings.Finding):
         return True
 
     def changelog(self):
+        """
+        :return: The hotspot changelog
+        :rtype: dict
+        """
         if self._changelog is not None:
             return self._changelog
-        resp = self.get("hotspots/show", {"hotspot": self.key})
-        self._details = json.loads(resp.text)
-        util.json_dump_debug(self._details, f"{str(self)} Details = ")
+        self.get_details()
+        util.json_dump_debug(self.__details, f"{str(self)} Details = ")
         self._changelog = {}
         seq = 1
-        for l in self._details["changelog"]:
+        for l in self.__details["changelog"]:
             d = changelog.Changelog(l)
             if d.is_technical_change():
                 # Skip automatic changelog events generated by SonarSource itself
@@ -273,14 +299,16 @@ class Hotspot(findings.Finding):
         return self._changelog
 
     def comments(self):
+        """
+        :return: The hotspot comments
+        :rtype: dict
+        """
         if self._comments is not None:
             return self._comments
-        resp = self.get("hotspots/show", {"hotspot": self.key})
-        self._details = json.loads(resp.text)
-        util.json_dump_debug(self._details, f"{str(self)} Details = ")
+        self.get_details()
         self._comments = {}
         seq = 0
-        for c in self._details["comment"]:
+        for c in self.__details["comment"]:
             seq += 1
             self._comments[f"{c['createdAt']}_{seq:03d}"] = {
                 "date": c["createdAt"],
@@ -294,6 +322,17 @@ class Hotspot(findings.Finding):
 
 
 def search_by_project(project_key, endpoint=None, params=None):
+    """Searches hotspots of a project
+
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param project_key: Project key
+    :type project_key: str
+    :param params: Search filters to narrow down the search, defaults to None
+    :type params: dict
+    :return: List of found hotspots
+    :rtype: dict{<key>: <Hotspot>}
+    """
     new_params = {} if params is None else params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
@@ -309,6 +348,17 @@ def search_by_project(project_key, endpoint=None, params=None):
 
 
 def search(endpoint, page=None, params=None):
+    """Searches hotspots
+
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param project_key: Project key
+    :type project_key: str
+    :param params: Search filters to narrow down the search, defaults to None
+    :type params: dict
+    :return: List of found hotspots
+    :rtype: dict{<key>: <Hotspot>}
+    """
     hotspots_list = {}
     new_params = {} if params is None else params.copy()
     r_list = util.csv_to_list(params.get("resolution", None))
@@ -360,9 +410,9 @@ def search(endpoint, page=None, params=None):
 
 
 def get_object(key, data=None, endpoint=None, from_export=False):
-    if key not in _HOTSPOTS:
+    if key not in _OBJECTS:
         _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
-    return _HOTSPOTS[key]
+    return _OBJECTS[key]
 
 
 def get_search_criteria(params):

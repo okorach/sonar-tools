@@ -271,15 +271,6 @@ def convert_to_type(value):
     return value
 
 
-def unique_dict_field(data, field):
-    item_list = []
-    for k, v in data.items():
-        element = v.get(field, None)
-        if element is not None and element not in item_list:
-            item_list.append(element)
-    return item_list
-
-
 def remove_nones(d):
     if isinstance(d, dict):
         return {k: v for k, v in d.items() if v is not None}

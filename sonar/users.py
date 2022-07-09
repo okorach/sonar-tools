@@ -39,6 +39,7 @@ SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local
 class User(sqobject.SqObject):
     """
     Abstraction of the SonarQube "user" concept
+    Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
 
     def __init__(self, login, endpoint, data):

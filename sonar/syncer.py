@@ -51,7 +51,7 @@ def __get_findings(findings_list):
 
 
 def __process_exact_sibling(finding, sibling, settings):
-    if finding.has_changelog_or_comments():
+    if finding.has_changelog() or finding.has_comments():
         sibling.apply_changelog(finding, settings)
         msg = f"Source {__name(finding)} changelog applied successfully"
     else:
@@ -188,7 +188,7 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
         str(tgt_object),
     )
     for key1, finding in src_findings.items():
-        if not finding.has_changelog_or_comments():
+        if not (finding.has_changelog() or finding.has_comments()):
             util.logger.debug("%s has no changelog or comments, skipped in sync", str(finding))
             continue
         if finding.is_closed():
@@ -197,7 +197,7 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
                 str(finding),
             )
             continue
-        modifiers = finding.modifiers_and_commenters()
+        modifiers = finding.modifiers().union(finding.commenters())
         # TODO - Manage more than 1 sync account - diff the 2 lists
         syncer = sync_settings[SYNC_SERVICE_ACCOUNTS][0]
         if sync_settings is None:
