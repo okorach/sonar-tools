@@ -66,27 +66,32 @@ _CSV_FIELDS = (
 
 
 class Finding(sq.SqObject):
+    """
+    Abstraction of the SonarQube "findings" concept.
+    A finding is a general concept that can be either an issue or a security hotspot
+    """
+
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint)
-        self.severity = None
-        self.type = None
-        self.author = None
-        self.assignee = None
-        self.status = None
-        self.resolution = None
-        self.rule = None
-        self.projectKey = None
-        self.language = None
+        self.severity = None  #: Severity (str)
+        self.type = None   #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
+        self.author = None   #: Author (str)
+        self.assignee = None   #: Assignee (str)
+        self.status = None   #: Status (str)
+        self.resolution = None   #: Resolution (str)
+        self.rule = None   #: Rule Id (str)
+        self.projectKey = None  #: Project key (str)
+        self.language = None   #: Language (str)
         self._changelog = None
         self._comments = None
-        self.line = None
+        self.line = None   #: Line (int)
         self.component = None
-        self.message = None
-        self.creation_date = None
-        self.modification_date = None
-        self.hash = None
-        self.branch = None
-        self.pull_request = None
+        self.message = None  #: Message
+        self.creation_date = None  #: Creation date (datetime)
+        self.modification_date = None  #: Last modification date (datetime)
+        self.hash = None  #: Hash (str)
+        self.branch = None  #: Branch (str)
+        self.pull_request = None  #: Pull request (str)
         self._load(data, from_export)
 
     def _load(self, data, from_export=False):
@@ -140,9 +145,13 @@ class Finding(sq.SqObject):
         raise NotImplementedError()
 
     def file(self):
+        """
+        :return: The finding full file path, relative to the rpoject root directory
+        :rtype: str or None if not found
+        """
         if "component" in self._json:
             comp = self._json["component"]
-            # Fix to adapt to the ugly component structure on branches and PR
+            # Hack: Fix to adapt to the ugly component structure on branches and PR
             # "component": "src:sonar/hot.py:BRANCH:somebranch"
             m = re.search("(^.*):BRANCH:", comp)
             if m:
@@ -158,6 +167,12 @@ class Finding(sq.SqObject):
             return None
 
     def to_csv(self, separator=","):
+        """
+        :param separator: CSV separator, defaults to ,
+        :type separator: str, optional
+        :return: The finding as CSV
+        :rtype: str
+        """
         data = self.to_json()
         for field in _CSV_FIELDS:
             if data.get(field, None) is None:
@@ -168,6 +183,10 @@ class Finding(sq.SqObject):
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
+        """
+        :return: The finding as dict
+        :rtype: dict
+        """
         data = vars(self).copy()
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
@@ -209,18 +228,26 @@ class Finding(sq.SqObject):
         raise NotImplementedError()
 
     def has_changelog(self):
+        """
+        :return: Whether the finding has a changelog
+        :rtype: bool
+        """
         util.logger.debug("%s has %d changelogs", str(self), len(self.changelog()))
         return len(self.changelog()) > 0
 
     def has_comments(self):
+        """
+        :return: Whether the finding has comments
+        :rtype: bool
+        """
         return len(self.comments()) > 0
 
-    def has_changelog_or_comments(self):
-        return self.has_changelog() or self.has_comments()
-
     def modifiers(self):
-        """Returns list of users that modified the finding."""
-        item_list = []
+        """
+        :return: the list of users that modified the finding
+        :rtype: list[str]
+        """
+        item_list = list(set([c.author() for c in self.changelog().values()]))
         for c in self.changelog().values():
             util.logger.debug("Checking author of changelog %s", str(c))
             author = c.author()
