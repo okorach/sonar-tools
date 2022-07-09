@@ -17,11 +17,6 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-    Abstraction of the SonarQube "finding" concept
-
-"""
 
 import re
 import sonar.sqobject as sq
@@ -168,7 +163,7 @@ class Finding(sq.SqObject):
 
     def to_csv(self, separator=","):
         """
-        :param separator: CSV separator, defaults to ,
+        :param separator: CSV separator, defaults to ","
         :type separator: str, optional
         :return: The finding as CSV
         :rtype: str
