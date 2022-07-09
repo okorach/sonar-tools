@@ -30,6 +30,9 @@ from sonar import users, syncer
 from sonar.findings import findings, changelog
 import sonar.utilities as util
 
+API_SET_TAGS = "issues/set_tags"
+API_SET_TYPE = "issues/set_type"
+
 SEARCH_CRITERIAS = (
     "componentKeys",
     "types",
@@ -130,6 +133,7 @@ class Issue(findings.Finding):
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint, data, from_export)
         self._debt = None
+        self.tags = [] #: Issue tags
         if data is not None:
             self.component = data.get("component", None)
         # util.logger.debug("Loaded issue: %s", util.json_dump(data))
@@ -233,7 +237,7 @@ class Issue(findings.Finding):
     def comments(self):
         """
         :return: The issue comments
-        :rtype: dict{"<date>_<sequence_nbr>": <event>}
+        :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
         if "comments" not in self._json:
             self._comments = {}
@@ -251,49 +255,106 @@ class Issue(findings.Finding):
                 }
         return self._comments
 
-    def add_comment(self, comment, really=True):
-        util.logger.debug("Adding comment %s to %s", comment, str(self))
-        if really:
-            return self.post("issues/add_comment", {"issue": self.key, "text": comment})
-        else:
-            return None
+    def add_comment(self, comment):
+        """Adds a comment to an issue
+
+        :param comment: The comment to add
+        :type comment: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Adding comment '%s' to %s", comment, str(self))
+        r = self.post("issues/add_comment", {"issue": self.key, "text": comment})
+        return r.ok
 
     def set_severity(self, severity):
-        util.logger.debug(
-            "Changing severity of issue %s from %s to %s",
-            self.key,
-            self.severity,
-            severity,
-        )
-        return self.post("issues/set_severity", {"issue": self.key, "severity": severity})
+        """Changes the severity of an issue
+
+        :param severity: The comment to add
+        :type severity: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        if severity != self.severity:
+            util.logger.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, severity)
+            return self.post("issues/set_severity", {"issue": self.key, "severity": severity}).ok
+        return False
 
     def assign(self, assignee):
-        util.logger.debug("Assigning issue %s to %s", self.key, assignee)
-        return self.post("issues/assign", {"issue": self.key, "assignee": assignee})
+        """Assigns an issue to a user
+
+        :param assignee: The user login
+        :type assignee: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        if assignee != self.assignee:
+            util.logger.debug("Assigning %s to '%s'", str(self), assignee)
+            return self.post("issues/assign", {"issue": self.key, "assignee": assignee}).ok
+        return False
 
     def set_tags(self, tags):
-        util.logger.debug("Setting tags %s to issue %s", tags, self.key)
-        return self.post("issues/set_tags", {"issue": self.key, "tags": tags})
+        """Sets tags to an issue (Replacing all previous tags)
+        :param tags: Tags to set
+        :type tags: list
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Setting tags %s to %s", tags, str(self))
+        if not self.post(API_SET_TAGS, {"issue": self.key, "tags": util.list_to_csv(tags)}).ok:
+            return False
+        self.tags = tags
+        return True
+
+    def add_tag(self, tag):
+        """Adds a tag to an issue
+        :param tag: Tags to add
+        :type tag: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Adding tag '%s' to %s", tag, str(self))
+        tags = self.tags.copy()
+        if tag not in self.tags:
+            tags.append(tag)
+        return self.set_tags(tags)
+
+    def remove_tag(self, tag):
+        """Removes a tag from an issue
+        :param tag: Tags to remove
+        :type tag: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Removing tag '%s' from %s", tag, str(self))
+        tags = self.tags.copy()
+        if tag in self.tags:
+            tags.remove(tag)
+        return self.set_tags(tags)
 
     def set_type(self, new_type):
+        """Sets an issue type
+        :param new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
+        :type tag: str
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
-        return self.post("issues/set_type", {"issue": self.key, "type": new_type})
+        return self.post(API_SET_TYPE, {"issue": self.key, "type": new_type}).ok
 
     def is_wont_fix(self):
-        return self.__has_been_marked_as_statuses(["WONTFIX"])
+        """
+        :return: Whether the issue has been marked as won't fix
+        :rtype: bool
+        """
+        return self.resolution == "WONT-FIX"
 
     def is_false_positive(self):
-        return self.__has_been_marked_as_statuses(["FALSE-POSITIVE"])
-
-    def __has_been_marked_as_statuses(self, statuses):
-        for log in self.changelog():
-            for diff in log["diffs"]:
-                if diff["key"] != "resolution":
-                    continue
-                for status in statuses:
-                    if diff["newValue"] == status:
-                        return True
-        return False
+        """
+        :return: Whether the issue has been marked as false positive
+        :rtype: bool
+        """
+        return self.resolution == "FALSE-POSITIVE"
 
     def strictly_identical_to(self, another_finding, ignore_component=False):
         return super.strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
