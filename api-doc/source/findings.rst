@@ -1,6 +1,6 @@
 Findings
 ========
 
-.. automodule:: sonar.findings
+.. automodule:: sonar.findings.findings
     :members:
     :show-inheritance:
