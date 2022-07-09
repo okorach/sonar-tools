@@ -92,7 +92,7 @@ class TooManyIssuesError(Exception):
 class Issue(findings.Finding):
     """
     Abstraction of the SonarQube 'issue' concept
-    """  
+    """
 
     SEARCH_API = "issues/search"
     MAX_PAGE_SIZE = 500
@@ -483,6 +483,9 @@ class Issue(findings.Finding):
         return True
 
     def apply_changelog(self, source_issue, settings):
+        """
+        :meta private:
+        """
         events = source_issue.changelog()
         if events is None or not events:
             util.logger.debug("Sibling %s has no changelog, no action taken", source_issue.key)
@@ -598,41 +601,13 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
             util.logger.info(_TOO_MANY_ISSUES_MSG)
             issue_list = __search_all_by_severities(new_params, endpoint=endpoint)
         elif diff == 1:
-            issue_list.update(
-                __search_all_by_date(
-                    new_params,
-                    date_start=date_start,
-                    date_stop=date_start,
-                    endpoint=endpoint,
-                )
-            )
-            issue_list.update(
-                __search_all_by_date(
-                    new_params,
-                    date_start=date_stop,
-                    date_stop=date_stop,
-                    endpoint=endpoint,
-                )
-            )
+            issue_list.update(__search_all_by_date(new_params, date_start=date_start, date_stop=date_start, endpoint=endpoint))
+            issue_list.update(__search_all_by_date(new_params, date_start=date_stop, date_stop=date_stop, endpoint=endpoint))
         else:
             date_middle = date_start + datetime.timedelta(days=diff // 2)
-            issue_list.update(
-                __search_all_by_date(
-                    new_params,
-                    date_start=date_start,
-                    date_stop=date_middle,
-                    endpoint=endpoint,
-                )
-            )
+            issue_list.update(__search_all_by_date(new_params, date_start=date_start, date_stop=date_middle, endpoint=endpoint))
             date_middle = date_middle + datetime.timedelta(days=1)
-            issue_list.update(
-                __search_all_by_date(
-                    new_params,
-                    date_start=date_middle,
-                    date_stop=date_stop,
-                    endpoint=endpoint,
-                )
-            )
+            issue_list.update(__search_all_by_date(new_params, date_start=date_middle, date_stop=date_stop, endpoint=endpoint))
     if date_start is not None and date_stop is not None:
         util.logger.debug(
             "Project %s has %d issues between %s and %s",
@@ -663,6 +638,19 @@ def _search_all_by_project(project_key, params, endpoint=None):
 
 
 def search_by_project(project_key, endpoint, params=None, search_findings=False):
+    """Search all issues of a given project
+
+    :param project_key: The project key
+    :type project_key: str
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param params: List of search filters to narrow down the search, defaults to None
+    :type params: dict
+    :param search_findings: Whether to use the api/project_search/findings API or not, defaults to False
+    :type search_findings: bool, optional
+    :return: list of Issues
+    :rtype: dict{<key>: <Issue>}
+    """
     if params is None:
         params = {}
     if project_key is None:
@@ -682,6 +670,15 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
 
 
 def search_all(endpoint, params=None):
+    """Returns all issues of the platforms
+
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param params: List of search filters to narrow down the search, defaults to None
+    :type params: dict
+    :return: list of Issues
+    :rtype: dict{<key>: <Issue>}
+    """
     new_params = {} if params is None else params.copy()
     util.logger.info("Issue search all with %s", str(params))
     issue_list = {}
@@ -710,6 +707,11 @@ def __search_thread(queue):
 
 
 def search_first(endpoint, **params):
+    """
+    :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
+    :rtype: Issue or None if not issue found
+    """
+    params["ps"] = 1 
     data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)
     if len(data) == 0:
         return None
@@ -718,6 +720,18 @@ def search_first(endpoint, **params):
 
 
 def search(endpoint, params=None, raise_error=True, threads=8):
+    """Multi-threaded search of issues
+
+    :param params: Search filter criteria to narrow down the search
+    :type params: dict
+    :param raise_error: Whether to raise exception if more than 10'000 issues returned, defaults to True
+    :type raise_error: bool
+    :param threads: Nbr of parallel threads for search, defaults to 8
+    :type threads: int
+    :return: List of issues found
+    :rtype: dict{<key>: <Issue>}
+    :raises: TooManyIssuesError if more than 10'000 issues found
+    """
     new_params = {} if params is None else params.copy()
     util.logger.debug("Search params = %s", str(new_params))
     if "ps" not in new_params:
@@ -766,7 +780,7 @@ def _get_facets(project_key, facets="directories", endpoint=None, params=None):
 
 def __get_one_issue_date(endpoint=None, asc_sort="false", params=None):
     """Returns the date of one issue found"""
-    issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, ps=1, **params)
+    issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
     if not issue:
         return None
     return issue.creation_date
