@@ -46,7 +46,7 @@ SEARCH_CRITERIAS = (
     "status",
 )
 
-TYPES = ("SECURITY_HOTSPOT", )
+TYPES = ("SECURITY_HOTSPOT",)
 RESOLUTIONS = ("SAFE", "ACKNOWLEDGED", "FIXED")
 STATUSES = ("TO_REVIEW", "REVIEWED")
 SEVERITIES = ()
@@ -64,10 +64,10 @@ class TooManyHotspotsError(Exception):
 class Hotspot(findings.Finding):
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint, data, from_export)
-        self.vulnerabilityProbability = None #:
-        self.category = data["securityCategory"] #:
-        self.vulnerabilityProbability = data["vulnerabilityProbability"] #:
-        self.securityCategory = None #:
+        self.vulnerabilityProbability = None  #:
+        self.category = data["securityCategory"]  #:
+        self.vulnerabilityProbability = data["vulnerabilityProbability"]  #:
+        self.securityCategory = None  #:
         self.type = "SECURITY_HOTSPOT"
         self.__details = None
 
@@ -245,7 +245,7 @@ class Hotspot(findings.Finding):
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
-                util.logger.debug("Skipping change already applied in a previous sync: %s",str(events[key]))
+                util.logger.debug("Skipping change already applied in a previous sync: %s", str(events[key]))
                 continue
             self.__apply_event(events[key], settings)
 
