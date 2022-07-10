@@ -186,7 +186,7 @@ def is_of_type(metric_key, metric_type):
     """
     :param metric_key: The concerned metric key
     :type metric_key: str
-    param metric_type:
+    :param metric_type:
     :type metric_type: str
     :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
     :rtype: bool
