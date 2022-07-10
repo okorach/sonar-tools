@@ -29,7 +29,7 @@ from sonar import measures, components
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
-_PULL_REQUESTS = {}
+_OBJECTS = {}
 
 
 class PullRequest(components.Component):
@@ -41,7 +41,7 @@ class PullRequest(components.Component):
         self.project = project
         self.json = data
         self._last_analysis = None
-        _PULL_REQUESTS[self._uuid()] = self
+        _OBJECTS[self._uuid()] = self
         util.logger.debug("Created object %s", str(self))
 
     def __str__(self):
@@ -106,9 +106,9 @@ def get_object(pull_request_key, project, data=None):
         util.logger.debug("Pull requests not available in Community Edition")
         return None
     p_id = _uuid(project.key, pull_request_key)
-    if p_id not in _PULL_REQUESTS:
+    if p_id not in _OBJECTS:
         _ = PullRequest(project, pull_request_key, endpoint=project.endpoint, data=data)
-    return _PULL_REQUESTS[p_id]
+    return _OBJECTS[p_id]
 
 
 def get_list(project):
