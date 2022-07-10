@@ -40,7 +40,7 @@ class Component(sq.SqObject):
         self.path = None
         self.language = None
         self.nbr_issues = None
-        self._ncloc = None
+        self.ncloc = None
         self._description = None
         self._last_analysis = None
         self._tags = None
@@ -139,15 +139,12 @@ class Component(sq.SqObject):
 
     def get_measure(self, metric, fallback=None):
         meas = self.get_measures(metric)
-        if metric in meas and meas[metric] is not None:
-            return meas[metric]
-        else:
-            return fallback
+        return meas[metric] if metric in meas and meas[metric].value is not None else fallback
 
-    def ncloc(self):
-        if self._ncloc is None:
-            self._ncloc = int(self.get_measure("ncloc", fallback=0))
-        return self._ncloc
+    def loc(self):
+        if self.ncloc is None:
+            self.ncloc = int(self.get_measure("ncloc", fallback=0))
+        return self.ncloc
 
     def last_analysis(self, include_branches=False):
         if self._last_analysis is not None:
