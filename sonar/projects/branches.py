@@ -87,7 +87,7 @@ class Branch(components.Component):
         """
         return _uuid(self.project.key, self.name)
 
-    def last_analysis(self, include_branches=False):
+    def last_analysis(self):
         """
         :param include_branches: Unused, present for inheritance reasons
         :type include_branches: bool, optional

@@ -53,7 +53,7 @@ class PullRequest(components.Component):
     def _uuid(self):
         return _uuid(self.project.key, self.key)
 
-    def last_analysis(self, include_branches=False):
+    def last_analysis(self):
         if self._last_analysis is None and "analysisDate" in self.json:
             self._last_analysis = util.string_to_date(self.json["analysisDate"])
         return self._last_analysis
