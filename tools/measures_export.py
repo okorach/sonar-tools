@@ -35,11 +35,6 @@ DATEFMT = "datetime"
 CONVERT_OPTIONS = {"ratings": "letters", "percents": "float", "dates": "datetime"}
 
 
-def __diff(first, second):
-    second = set(second)
-    return [item for item in first if item not in second]
-
-
 def __last_analysis(project_or_branch):
     last_analysis = project_or_branch.last_analysis()
     with_time = True
@@ -113,8 +108,12 @@ def __get_wanted_metrics(args, endpoint):
     main_metrics = util.list_to_csv(metrics.MAIN_METRICS)
     wanted_metrics = args.metricKeys
     if wanted_metrics == "_all":
-        all_metrics = util.csv_to_list(metrics.as_csv(metrics.search(endpoint).values()))
-        wanted_metrics = main_metrics + "," + util.list_to_csv(__diff(all_metrics, metrics.MAIN_METRICS))
+        all_metrics = metrics.search(endpoint).keys()
+        # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
+        if endpoint.version() < (8, 0, 0):
+            all_metrics.pop("new_development_cost")
+        util.logger.info("Exporting %s metrics", len(all_metrics))
+        wanted_metrics = main_metrics + "," + util.list_to_csv(set(all_metrics) - set(metrics.MAIN_METRICS))
     elif wanted_metrics == "_main" or wanted_metrics is None:
         wanted_metrics = main_metrics
     return wanted_metrics
