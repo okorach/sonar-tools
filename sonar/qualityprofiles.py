@@ -393,7 +393,7 @@ class QualityProfile(sq.SqObject):
             msg = rule.msg.format(str(self), age)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        total_rules = rules.count(endpoint=self.endpoint, params={"languages": self.language})
+        total_rules = rules.count(endpoint=self.endpoint, languages=self.language)
         if self.nbr_rules < int(total_rules * audit_settings["audit.qualityProfiles.minNumberOfRules"]):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
             msg = rule.msg.format(str(self), self.nbr_rules, total_rules)
