@@ -128,7 +128,7 @@ class Group(sq.SqObject):
 
     def url(self):
         """
-        :return: the SonarQube permalink to the group, actually the global groups page only
+        :return: the SonarQube permalink URL to the group, actually the global groups page only
                  since this is as close as we can get to the precise group definition
         :rtype: str
         """
