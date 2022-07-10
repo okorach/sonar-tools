@@ -119,10 +119,3 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         worker.start()
     q.join()
     return objects_list
-
-
-def key_of(obj_or_key):
-    if isinstance(obj_or_key, str):
-        return obj_or_key
-    else:
-        return obj_or_key.key
