@@ -232,20 +232,9 @@ class Portfolio(aggregations.Aggregation):
         util.logger.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
-    def get_measures(self, metrics_list):
-        m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
-        if "ncloc" in m:
-            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
-        return m
-
     def dump_data(self, **opts):
         self.get_details()
-        data = {
-            "type": "portfolio",
-            "key": self.key,
-            "name": self.name,
-            "ncloc": self.ncloc(),
-        }
+        data = {"type": "portfolio", "key": self.key, "name": self.name, "ncloc": self.ncloc()}
         if opts.get(options.WITH_URL, False):
             data["url"] = self.url()
         if opts.get(options.WITH_LAST_ANALYSIS, False):
@@ -404,6 +393,13 @@ class Portfolio(aggregations.Aggregation):
                         util.logger.info("Can't create sub-portfolio '%s' to parent %s", name, self.key)
                 o.set_parent(self.key)
                 o.update(subp, root_key)
+
+    def search_params(self):
+        """Return params used to search for that object
+
+        :meta private:
+        """
+        return {"portfolio": self.key}
 
 
 def count(endpoint=None):

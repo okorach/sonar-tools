@@ -156,12 +156,6 @@ class Application(aggr.Aggregation):
         util.logger.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
-    def get_measures(self, metrics_list):
-        m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
-        if "ncloc" in m:
-            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
-        return m
-
     def export(self, full=False):
         util.logger.info("Exporting %s", str(self))
         self._load_full()
@@ -214,6 +208,13 @@ class Application(aggr.Aggregation):
         self.set_tags(data.get("tags", None))
         for name, branch_data in data.get("branches", {}).items():
             self.set_branch(name, branch_data)
+
+    def search_params(self):
+        """Return params used to search for that object
+
+        :meta private:
+        """
+        return {"application": self.key}
 
 
 def _project_list(data):
