@@ -34,6 +34,7 @@ _CREATE_API = "rules/create"
 
 TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
 
+
 class Rule(sq.SqObject):
     @classmethod
     def read(cls, key, endpoint):
