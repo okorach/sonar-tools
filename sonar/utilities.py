@@ -539,3 +539,10 @@ def filter_export(json_data, key_properties, full):
             else:
                 new_json_data.pop(k)
     return new_json_data
+
+
+def replace_keys(key_list, new_key, data):
+    for k in key_list:
+        if k in data:
+            data[new_key] = data.pop(k)
+    return data
