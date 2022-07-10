@@ -24,6 +24,8 @@ from sonar import metrics
 import sonar.utilities as util
 import sonar.sqobject as sq
 
+DATETIME_METRICS = ("last_analysis", "createdAt", "updatedAt", "creation_date", "modification_date")
+
 
 class Measure(sq.SqObject):
     """
@@ -44,13 +46,15 @@ class Measure(sq.SqObject):
         :return: The created measure
         :rtype: Measure
         """
+        metrics.search(concerned_object.endpoint)
         return cls(key=data["metric"], value=_search_value(data), concerned_object=concerned_object)
 
-    def __init__(self, concerned_object, key, value):
+    def __init__(self, key, value, concerned_object):
         super().__init__(key, concerned_object.endpoint)
         self.value = None  #: Measure value
+        self.metric = key  #: Measure metric
         self.concerned_object = concerned_object  #: Object concerned by the measure
-        self.value = get_rating_letter(value) if metrics.is_a_rating(self.key) else value
+        self.value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
 
     def refresh(self):
         """Refreshes a measure by re-reading it in SonarQube
@@ -66,7 +70,7 @@ class Measure(sq.SqObject):
     def count_history(self, project_key, params=None):
         if params is None:
             params = {}
-        params.update({"component": project_key, "metrics": self.key, "ps": 1})
+        params.update({"component": project_key, "metrics": self.metric, "ps": 1})
         data = json.loads(self.get(Measure.API_HISTORY, params=params).text)
         return data["paging"]["total"]
 
@@ -97,9 +101,9 @@ class Measure(sq.SqObject):
 
 
 def get(concerned_object, metrics_list, **kwargs):
-    """Reads measures of a component (project or any subcomponent)
+    """Reads a list of measures of a component (project, branch, pull request, application or portfolio)
 
-    :param concerned_object: Concerned object (project, branch, PR, application or portfolio)
+    :param concerned_object: Concerned object (project, branch, pull request, application or portfolio)
     :type concerned_object: Project, Branch, PullRequest, Application or Portfolio
     :param metrics_list: List of metrics to read
     :type metrics_list: list
@@ -161,7 +165,7 @@ def as_rating_letter(metric, value):
     :return: The measure converted from number to letter, if metric is a rating
     :rtype: str
     """
-    if metric in metrics.Metric.RATING_METRICS and value not in ("A", "B", "C", "D", "E"):
+    if metric in metrics.METRICS_BY_TYPE["RATING"] and value not in ("A", "B", "C", "D", "E"):
         return get_rating_letter(value)
     return value
 
@@ -175,7 +179,7 @@ def as_rating_number(metric, value):
     :return: The measure converted from letter to number, if metric is a rating
     :rtype: int
     """
-    if metric in metrics.Metric.RATING_METRICS:
+    if metric in metrics.METRICS_BY_TYPE["RATING"]:
         return get_rating_number(value)
     return value
 
@@ -187,14 +191,14 @@ def as_ratio(metric, value):
     :param value: Measure value to convert
     :type value: int or float
     :return: The converted ratio or density
-    :rtype: float between 0 and 1 (0% and 100%)
+    :rtype: float between 0 and 1 (0% and 100%), rounded to first decimal
     """
-    try:
-        if re.match(r".*(ratio|density|coverage)", metric):
+    if metric in metrics.METRICS_BY_TYPE["PERCENT"]:
+        try:
             # Return pct with 3 significant digits
             value = int(float(value) * 10) / 1000.0
-    except ValueError:
-        pass
+        except ValueError:
+            pass
     return value
 
 
@@ -216,8 +220,8 @@ def as_percent(metric, value):
     return value
 
 
-def convert(metric, value, ratings="letters", percents="float", dates="datetime"):
-    """Converts any metric in the teh preferred format for display
+def format(metric, value, ratings="letters", percents="float", dates="datetime"):
+    """Formats any metric in the the preferred format for display
 
     :param metric: Metric key
     :type metric: str
@@ -229,13 +233,14 @@ def convert(metric, value, ratings="letters", percents="float", dates="datetime"
     :type percents: str, "float" or "percents"
     :param dates: How to convert dates
     :type dates: str, "datetime" or "dateonly"
-    :return: The converted measure
+    :return: The formatted measure
     :rtype: str
     """
-    value = util.convert_to_type(value)
-    value = as_rating_number(metric, value) if ratings == "numbers" else as_rating_letter(metric, value)
-    value = as_percent(metric, value) if percents == "percents" else as_ratio(metric, value)
-    if dates == "dateonly" and metric in ("last_analysis", "createdAt", "updatedAt", "creation_date", "modification_date"):
+    if metrics.is_a_rating(metric):
+        value = as_rating_letter(metric, value) if ratings == "letters" else as_rating_number(metric, value)
+    elif metrics.is_a_percent(metric):
+        value = as_percent(metric, value) if percents == "percents" else as_ratio(metric, value)
+    elif dates == "dateonly" and metric in ("last_analysis", "createdAt", "updatedAt", "creation_date", "modification_date"):
         value = util.date_to_string(util.string_to_date(value), False)
     return value
 

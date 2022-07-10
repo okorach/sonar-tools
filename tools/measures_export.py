@@ -100,23 +100,21 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     line = ""
     for metric in util.csv_to_list(overall_metrics):
         val = ""
-        if metric in measures_d:
-            if measures_d[metric] is None:
-                val = ""
-            elif sep in measures_d[metric]:
+        if metric in measures_d and measures_d[metric]:
+            if isinstance(measures_d[metric], str) and sep in measures_d[metric]:
                 val = util.quote(measures_d[metric], sep)
             else:
-                val = str(measures.convert(metric, measures_d[metric], **CONVERT_OPTIONS))
+                val = str(measures.format(metric, measures_d[metric], **CONVERT_OPTIONS))
         line += val + sep
     return line[: -len(sep)]
 
 
 def __get_wanted_metrics(args, endpoint):
-    main_metrics = util.list_to_csv(metrics.Metric.MAIN_METRICS)
+    main_metrics = util.list_to_csv(metrics.MAIN_METRICS)
     wanted_metrics = args.metricKeys
     if wanted_metrics == "_all":
         all_metrics = util.csv_to_list(metrics.as_csv(metrics.search(endpoint).values()))
-        wanted_metrics = main_metrics + "," + util.list_to_csv(__diff(all_metrics, metrics.Metric.MAIN_METRICS))
+        wanted_metrics = main_metrics + "," + util.list_to_csv(__diff(all_metrics, metrics.MAIN_METRICS))
     elif wanted_metrics == "_main" or wanted_metrics is None:
         wanted_metrics = main_metrics
     return wanted_metrics
