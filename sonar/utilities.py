@@ -214,9 +214,10 @@ def format_date(somedate):
 
 
 def string_to_date(string):
-    if string is None:
-        return None
-    return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
+    try:
+        return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
+    except (ValueError, TypeError):
+        return string
 
 
 def date_to_string(date, with_time=True):
