@@ -168,7 +168,7 @@ class Project(components.Component):
         """
         m = measures.get(self, metrics_list)
         if "ncloc" in m:
-            self.ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
+            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
     def branches(self):

@@ -62,7 +62,7 @@ class PullRequest(components.Component):
         util.logger.debug("self.endpoint = %s", str(self.endpoint))
         m = measures.get(self, metrics_list)
         if "ncloc" in m:
-            self.ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
+            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
     def delete(self, api=None, params=None):
