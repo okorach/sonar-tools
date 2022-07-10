@@ -20,29 +20,81 @@
 #
 
 import json
+from sonar import sqobject, rules
 
-API_LIST = "languages/list"
+APIS = {"list": "languages/list"}
 
 _OBJECTS = {}
 
 
+class Language(sqobject.SqObject):
+    def __init__(self, endpoint, key, name):
+        super().__init__(key, endpoint)
+        self.name = name  #: Language name
+        self._nb_rules = {"ALL": None, "BUG": None, "VULNERABILITY": None, "COD_SMELL": None, "SECURITY_HOTSPOT": None}
+        _OBJECTS[key] = self
+
+    @classmethod
+    def load(cls, endpoint, data):
+        return _OBJECTS.get(data["key"], cls(endpoint=endpoint, key=data["key"], name=data["name"]))
+
+    @classmethod
+    def read(cls, endpoint, key):
+        """Reads a language and return the corresponding object
+        :return: Language object
+        :rtype: Language or None if not found
+        """
+        get_list(endpoint)
+        return _OBJECTS.get(key, None)
+
+    def number_of_rules(self, rule_type=None):
+        """Count rules in the language, optionally filtering on rule type
+
+        :param rule_type: Rule type to filter on, defaults to None
+        :type rule_type: str
+        :returns: Nbr of rules for that language (and optional type)
+        :rtype: int
+        """
+        if not rule_type or rule_type not in rules.TYPES:
+            r_ndx = "_all"
+        if not self._nb_rules[r_ndx]:
+            self._nb_rules[r_ndx] = rules.search(self.endpoint, languages=self.key, types=rule_type)
+        return self._nb_rules[r_ndx]
+
+
 def read_list(endpoint):
-    data = json.loads(endpoint.get(API_LIST).text)
+    """Reads the list of languages existing on the SonarQube platform
+    :param endpoint: Reference of the SonarQube platform
+    :type endpoint: Platform
+    :return: List of languages
+    :rtype: dict{<language_key>: <language_name>}
+    """
+    data = json.loads(endpoint.get(APIS["language"]).text)
     for lang in data["languages"]:
         _OBJECTS[lang["key"]] = lang["name"]
     return _OBJECTS
 
 
 def get_list(endpoint):
+    """Gets the list of languages existing on the SonarQube platform
+    Unlike read_list, get_list() is using a local cache if available (so no API call)
+    :param endpoint: Reference of the SonarQube platform
+    :type endpoint: Platform
+    :return: List of languages
+    :rtype: dict{<language_key>: <language_name>}
+    """
     if len(_OBJECTS) == 0:
         read_list(endpoint)
     return _OBJECTS
 
 
 def exists(endpoint, language):
+    """Returns whether a language exists
+    :param endpoint: Reference of the SonarQube platform
+    :type endpoint: Platform
+    :param language: The language key
+    :type language: str
+    :return: Whether the language exists
+    :rtype: dict{<language_key>: <language_name>}
+    """
     return language in get_list(endpoint)
-
-
-def get_object(endpoint, language):
-    get_list(endpoint)
-    return _OBJECTS.get(language, None)
