@@ -61,6 +61,9 @@ class Application(aggr.Aggregation):
         _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
 
+    def refresh(self):
+        return self.__load(json.loads(self.get(_GET_API, params={"application": self.key}).text))
+
     def __str__(self):
         return f"application key '{self.key}'"
 
