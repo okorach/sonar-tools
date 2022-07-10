@@ -295,11 +295,7 @@ class Task(sq.SqObject):
             is_exception = False
             for exception in susp_exceptions:
                 if re.search(rf"{exception}", exclusion_pattern):
-                    util.logger.debug(
-                        "Exclusion %s matches exception %s, no audit problem will be raised",
-                        exclusion_pattern,
-                        exception,
-                    )
+                    util.logger.debug("Exclusion %s matches exception %s, no audit problem will be raised", exclusion_pattern, exception)
                     is_exception = True
                     break
             if not is_exception:
