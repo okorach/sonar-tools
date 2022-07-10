@@ -49,7 +49,6 @@ class Branch(components.Component):
         self._new_code = None
         self._last_analysis = None
         self._keep_when_inactive = None
-        self._ncloc = None
         if data:
             self.__load(data)
         _OBJECTS[self.uuid()] = self
@@ -198,7 +197,7 @@ class Branch(components.Component):
         return True
 
     def __audit_zero_loc(self):
-        if self.last_analysis() and self.ncloc() == 0:
+        if self.last_analysis() and self.loc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
             return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return []
@@ -211,12 +210,7 @@ class Branch(components.Component):
         :return: List of measures of a projects
         :rtype: dict
         """
-        m = measures.get(self.project.key, metrics_list, branch=self.name, endpoint=self.endpoint)
-        if "ncloc" in m:
-            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
-            if self.is_main():
-                self.project._ncloc = self._ncloc
-        return m
+        return measures.get(self, metrics_list)
 
     def get_issues(self):
         """Returns a branch list of issues
@@ -312,6 +306,13 @@ class Branch(components.Component):
         """
         util.logger.debug("Auditing %s", str(self))
         return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc()
+
+    def search_params(self):
+        """Return params used to search for that object
+
+        :meta private:
+        """
+        return {"project": self.project.key, "branch": self.name}
 
 
 def _uuid(project_key, branch_name):
