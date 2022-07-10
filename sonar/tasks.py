@@ -18,12 +18,6 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-
-    Abstraction of the SonarQube "background task" concept
-
-"""
-
 import time
 import datetime
 import json
@@ -113,6 +107,10 @@ SCANNER_VERSIONS = {
 
 
 class Task(sq.SqObject):
+    """
+    Abstraction of the SonarQube "background task" concept
+    """
+
     def __init__(self, task_id, endpoint, concerned_object=None, data=None):
         super().__init__(task_id, endpoint)
         self._json = data
@@ -124,9 +122,17 @@ class Task(sq.SqObject):
         self._ended_at = None
 
     def __str__(self):
+        """
+        :return: String formatting of the object
+        :rtype: str
+        """
         return f"background task '{self.key}'"
 
     def url(self):
+        """
+        :return: the SonarQube permalink URL to the background task
+        :rtype: str
+        """
         return f"{self.endpoint.url}/project/background_tasks?id={self.concerned_object.key}"
 
     def __load(self):
@@ -142,6 +148,10 @@ class Task(sq.SqObject):
         self._json.update(json.loads(self.get("ce/task", params=params).text)["task"])
 
     def id(self):
+        """
+        :return: the background task id
+        :rtype: str
+        """
         return self.key
 
     def __json_field(self, field):
@@ -151,26 +161,54 @@ class Task(sq.SqObject):
         return self._json[field]
 
     def type(self):
+        """
+        :return: the background task type
+        :rtype: str
+        """
         return self.__json_field("type")
 
     def status(self):
+        """
+        :return: the background task status
+        :rtype: str
+        """
         return self.__json_field("status")
 
     def component(self):
+        """
+        :return: the background task component key or None
+        :rtype: str or None
+        """
         return self.__json_field("componentKey")
 
     def execution_time(self):
-        return self.__json_field("executionTimeMs")
+        """
+        :return: the background task execution time in millisec
+        :rtype: int
+        """
+        return int(self.__json_field("executionTimeMs"))
 
     def submitter(self):
+        """
+        :return: the background task submitter
+        :rtype: str
+        """
         self.__load()
         return self._json.get("submitterLogin", "anonymous")
 
     def has_scanner_context(self):
+        """
+        :return: Whether the background task has a scanner context
+        :rtype: bool
+        """
         self.__load()
         return self._json.get("hasScannerContext", False)
 
     def warnings(self):
+        """
+        :return: the background task warnings, if any
+        :rtype: list
+        """
         if not self._json.get("warnings", None):
             data = json.loads(self.get("ce/task", params={"id": self.key, "additionalFields": "warnings"}).text)
             self._json["warnings"] = []
@@ -178,9 +216,20 @@ class Task(sq.SqObject):
         return self._json["warnings"]
 
     def warning_count(self):
+        """
+        :return: the number of warnings in the background
+        :rtype: int
+        """
         return self.__json_field("warningCount")
 
     def wait_for_completion(self, timeout=180):
+        """Waits for a background task to complete
+
+        :param timeout: Timeout to wait in seconds, defaults to 180
+        :type timeout: int, optional
+        :return: the background task status
+        :rtype: str
+        """
         wait_time = 0
         sleep_time = 0.5
         params = {"status": ",".join(STATUSES), "type": self.type()}
@@ -204,6 +253,10 @@ class Task(sq.SqObject):
         return status
 
     def scanner_context(self):
+        """
+        :return: the background task scanner context
+        :rtype: dict
+        """
         if not self.has_scanner_context():
             return None
         self.__load_context()
@@ -219,13 +272,18 @@ class Task(sq.SqObject):
         return context
 
     def error_details(self):
+        """
+        :return: The background task error details
+        :rtype: tuple (errorMsg (str), stackTrace (str)
+        """
         self.__load_context()
-        return (
-            self._json.get("errorMessage", None),
-            self._json.get("errorStacktrace", None),
-        )
+        return (self._json.get("errorMessage", None), self._json.get("errorStacktrace", None))
 
     def error_message(self):
+        """
+        :return: The background task error message
+        :rtype: str
+        """
         self.__load_context()
         return self._json.get("errorMessage", None)
 
@@ -320,6 +378,9 @@ class Task(sq.SqObject):
         return []
 
     def audit(self, audit_settings):
+        """
+        :meta private:
+        """
         if not audit_settings.get("audit.projects.exclusions", True):
             util.logger.debug("Project exclusions auditing disabled, skipping...")
             return []
@@ -348,6 +409,15 @@ class Task(sq.SqObject):
 
 
 def search(endpoint, only_current=False, component_key=None):
+    """Searches background tasks
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param only_current: only the most recent background task of each object, defaults to False
+    :param component_key: filter for a given component key only, defaults to None
+    :param component_key: str, optional
+    :return: The list of found background tasks
+    :rtype: list[Task]
+    """
     params = {"status": ",".join(STATUSES), "additionalFields": "warnings"}
     if only_current:
         params["onlyCurrents"] = "true"
