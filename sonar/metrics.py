@@ -201,6 +201,6 @@ def count(endpoint):
     :returns: Count of public metrics
     :rtype: int
     """
-    if len(_OBJECTS) is None:
+    if len(_OBJECTS) == 0:
         search(endpoint, True)
     return len(_VISIBLE_OBJECTS)
