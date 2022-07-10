@@ -32,6 +32,8 @@ SEARCH_API = "rules/search"
 _DETAILS_API = "rules/show"
 _CREATE_API = "rules/create"
 
+TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
+
 
 class Rule(sq.SqObject):
     @classmethod
@@ -137,11 +139,8 @@ def search(endpoint, **params):
     return sq.search_objects(SEARCH_API, endpoint, "key", "rules", Rule, params, threads=4)
 
 
-def count(endpoint, params=None):
-    new_params = {} if params is None else params.copy()
-    new_params.update({"ps": 1, "p": 1})
-    data = json.loads(endpoint.get(SEARCH_API, params=new_params).text)
-    return data["total"]
+def count(endpoint, **params):
+    return json.loads(endpoint.get(SEARCH_API, params={**params, "ps": 1}).text)["total"]
 
 
 def get_list(endpoint, **params):

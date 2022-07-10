@@ -1,0 +1,4 @@
+SqObjects
+=========
+
+.. automodule:: sonar.sqobject

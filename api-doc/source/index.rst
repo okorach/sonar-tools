@@ -9,7 +9,7 @@ Welcome to sonar-tools documentation
 :doc:`/usage`
 
 .. toctree::
-   object
+   sq_object
    platform
    components
    projects

@@ -31,8 +31,8 @@ from sonar import utilities
 
 class SqObject:
     def __init__(self, key, endpoint):
-        self.key = key
-        self.endpoint = endpoint
+        self.key = key  #: Object unique key
+        self.endpoint = endpoint  #: Reference to the SonarQube platform
         self._json = None
 
     def uuid(self):
@@ -42,12 +42,35 @@ class SqObject:
         return self.endpoint
 
     def get(self, api, params=None, exit_on_error=True):
+        """Executes and HTTP GET against the SonarQube platform
+
+        :param str api: API to invoke (eg api/issues/search)
+        :param dict params: List of parameters to pass to the API
+        :param bool exit_on_error: Whether to exit on HTTP error
+        :return: The request response
+        :rtype: requests.Response
+        """
         return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error)
 
     def post(self, api, params=None, exit_on_error=True):
+        """Executes and HTTP POST against the SonarQube platform
+
+        :param str api: API to invoke (eg api/issues/search)
+        :param dict params: List of parameters to pass to the API
+        :param bool exit_on_error: Whether to exit on HTTP error
+        :return: The request response
+        :rtype: requests.Response
+        """
         return self.endpoint.post(api=api, params=params, exit_on_error=exit_on_error)
 
     def delete(self, api, params=None):
+        """Executes and HTTP DELETE against the SonarQube platform
+
+        :param str api: API to invoke (eg api/issues/search)
+        :param dict params: List of parameters to pass to the API
+        :return: The request response
+        :rtype: requests.Response
+        """
         resp = self.endpoint.delete(api, params)
         return resp.ok
 
@@ -68,6 +91,9 @@ def __search_thread(queue):
 
 
 def search_objects(api, endpoint, key_field, returned_field, object_class, params, threads=8):
+    """
+    :meta private:
+    """
     __MAX_SEARCH = 500
     new_params = {} if params is None else params.copy()
     if "ps" not in new_params:
@@ -93,10 +119,3 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         worker.start()
     q.join()
     return objects_list
-
-
-def key_of(obj_or_key):
-    if isinstance(obj_or_key, str):
-        return obj_or_key
-    else:
-        return obj_or_key.key
