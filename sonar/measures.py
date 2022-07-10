@@ -30,9 +30,8 @@ class Measure(sq.SqObject):
     Abstraction of the SonarQube "measure" concept
     """
 
-    API_ROOT = "measures"
-    API_COMPONENT = API_ROOT + "/component"
-    API_HISTORY = API_ROOT + "/search_history"
+    API_READ = "measures/component"
+    API_HISTORY = "measures/search_history"
 
     def __init__(self, key=None, value=None, endpoint=None):
         super().__init__(key, endpoint)
@@ -40,7 +39,7 @@ class Measure(sq.SqObject):
         self.value = get_rating_letter(value) if metrics.is_a_rating(self.key) else value
 
     def read(self, project_key, metric_key):
-        resp = self.get(Measure.API_COMPONENT, {"component": project_key, "metricKeys": metric_key})
+        resp = self.get(Measure.API_READ, {"component": project_key, "metricKeys": metric_key})
         data = json.loads(resp.text)
         return data["component"]["measures"]
 
@@ -108,7 +107,7 @@ def get(comp_key, metrics_list, endpoint, branch=None, pr_key=None, **kwargs):
     elif pr_key is not None:
         params["pullRequest"] = pr_key
 
-    data = json.loads(endpoint.get(Measure.API_COMPONENT, params={**kwargs, **params}).text)
+    data = json.loads(endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
     m_dict = {m: None for m in metrics_list}
     for m in data["component"]["measures"]:
         value = m.get("value", "")
