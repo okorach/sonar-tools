@@ -234,7 +234,7 @@ class Portfolio(aggregations.Aggregation):
 
     def dump_data(self, **opts):
         self.get_details()
-        data = {"type": "portfolio", "key": self.key, "name": self.name, "ncloc": self.ncloc()}
+        data = {"type": "portfolio", "key": self.key, "name": self.name, "ncloc": self.loc()}
         if opts.get(options.WITH_URL, False):
             data["url"] = self.url()
         if opts.get(options.WITH_LAST_ANALYSIS, False):

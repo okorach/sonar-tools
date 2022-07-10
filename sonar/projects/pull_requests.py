@@ -41,7 +41,6 @@ class PullRequest(components.Component):
         self.project = project
         self.json = data
         self._last_analysis = None
-        self._ncloc = None
         _PULL_REQUESTS[self._uuid()] = self
         util.logger.debug("Created object %s", str(self))
 
@@ -61,9 +60,9 @@ class PullRequest(components.Component):
 
     def get_measures(self, metrics_list):
         util.logger.debug("self.endpoint = %s", str(self.endpoint))
-        m = measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
+        m = measures.get(self, metrics_list)
         if "ncloc" in m:
-            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
+            self.ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
     def delete(self, api=None, params=None):
@@ -89,6 +88,13 @@ class PullRequest(components.Component):
         else:
             util.logger.debug("%s age is %d days", str(self), age)
         return problems
+
+    def search_params(self):
+        """Return params used to search for that object
+
+        :meta private:
+        """
+        return {"project": self.project.key, "pullRequest": self.key}
 
 
 def _uuid(project_key, pull_request_key):

@@ -144,18 +144,18 @@ class Project(components.Component):
                 self._branches_last_analysis = b_ana_date
         return self._branches_last_analysis
 
-    def ncloc(self):
+    def loc(self):
         """
         :return: Number of Lines of code of the project, taking into account branches and pull requests, if any
         :rtype: list[Branches]
         """
         if self._ncloc_with_branches is not None:
             return self._ncloc_with_branches
-        self._ncloc_with_branches = super().ncloc()
+        self._ncloc_with_branches = super().loc()
         if self.endpoint.edition() != "community":
             for b in self.branches() + self.pull_requests():
-                if b.ncloc() > self._ncloc_with_branches:
-                    self._ncloc_with_branches = b.ncloc()
+                if b.loc() > self._ncloc_with_branches:
+                    self._ncloc_with_branches = b.loc()
         return self._ncloc_with_branches
 
     def get_measures(self, metrics_list):
@@ -166,9 +166,9 @@ class Project(components.Component):
         :return: List of measures of a projects
         :rtype: dict
         """
-        m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
+        m = measures.get(self, metrics_list)
         if "ncloc" in m:
-            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
+            self.ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
         return m
 
     def branches(self):
@@ -397,7 +397,7 @@ class Project(components.Component):
         if (
             (not audit_settings["audit.projects.branches"] or self.endpoint.edition() == "community")
             and self.last_analysis() is not None
-            and self.ncloc() == 0
+            and self.loc() == 0
         ):
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
@@ -551,7 +551,7 @@ class Project(components.Component):
             "type": "project",
             "key": self.key,
             "name": self.name,
-            "ncloc": self.ncloc(),
+            "ncloc": self.loc(),
         }
         if opts.get(options.WITH_URL, False):
             data["url"] = self.url()
@@ -998,6 +998,13 @@ class Project(components.Component):
         }
         # TODO: Set branch settings
         self.set_settings(settings_to_apply)
+
+    def search_params(self):
+        """Return params used to search for that object
+
+        :meta private:
+        """
+        return {"project": self.key}
 
 
 def count(endpoint, params=None):

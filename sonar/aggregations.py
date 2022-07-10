@@ -53,13 +53,13 @@ class Aggregation(comp.Component):
                 if m["metric"] == "projects":
                     self._nbr_projects = int(m["value"])
                 elif m["metric"] == "ncloc":
-                    self._ncloc = int(m["value"])
+                    self.ncloc = int(m["value"])
         return self._nbr_projects
 
     def get_measures(self, metrics_list):
         m = measures.get(self, metrics_list)
         if "ncloc" in m:
-            self._ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
+            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
     def _audit_aggregation_cardinality(self, sizes, broken_rule):
