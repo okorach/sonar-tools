@@ -139,7 +139,7 @@ class Component(sq.SqObject):
 
     def get_measure(self, metric, fallback=None):
         meas = self.get_measures(metric)
-        return meas[metric] if metric in meas and meas[metric].value is not None else fallback
+        return meas[metric].value if metric in meas and meas[metric].value is not None else fallback
 
     def loc(self):
         if self.ncloc is None:
