@@ -26,7 +26,7 @@
 import time
 import json
 
-from sonar import aggregations, measures, options
+from sonar import aggregations, options
 from sonar.permissions import portfolio_permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
