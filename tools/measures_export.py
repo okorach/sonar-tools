@@ -67,7 +67,7 @@ def __get_csv_header(wanted_metrics, edition, **kwargs):
 
 def __get_object_measures(obj, wanted_metrics):
     util.logger.info("Getting measures for %s", str(obj))
-    measures_d = obj.get_measures(wanted_metrics)
+    measures_d = {k: v.value for k, v in obj.get_measures(wanted_metrics)}
     measures_d["lastAnalysis"] = __last_analysis(obj)
     measures_d["url"] = obj.url()
     proj = obj
@@ -252,7 +252,7 @@ def main():
     util.logger.info("Computing LoCs")
     nb_loc = 0
     for project in project_list.values():
-        nb_loc += project.ncloc()
+        nb_loc += project.loc()
 
     util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)
     sys.exit(0)

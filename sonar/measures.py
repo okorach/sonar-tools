@@ -33,22 +33,41 @@ class Measure(sq.SqObject):
     API_READ = "measures/component"
     API_HISTORY = "measures/search_history"
 
-    def __init__(self, key=None, value=None, endpoint=None):
-        super().__init__(key, endpoint)
+    @classmethod
+    def load(cls, concerned_object, data):
+        """Loads a measure from data
+
+        :param endpoint: Reference to SonarQube platform
+        :type endpoint: Platform
+        :paramm data: Data retrieved from a measure search
+        :type data: dict
+        :return: The created measure
+        :rtype: Measure
+        """
+        return cls(key=data["metric"], value=_search_value(data), concerned_object=concerned_object)
+
+    def __init__(self, concerned_object, key, value):
+        super().__init__(key, concerned_object.endpoint)
         self.value = None  #: Measure value
+        self.concerned_object = concerned_object  #: Object concerned by the measure
         self.value = get_rating_letter(value) if metrics.is_a_rating(self.key) else value
 
-    def read(self, project_key, metric_key):
-        resp = self.get(Measure.API_READ, {"component": project_key, "metricKeys": metric_key})
-        data = json.loads(resp.text)
-        return data["component"]["measures"]
+    def refresh(self):
+        """Refreshes a measure by re-reading it in SonarQube
+
+        :return: The new measure value
+        :rtype: int or float or str
+        """
+        params = util.replace_keys(("project", "application", "portfolio"), "component", self.concerned_object.search_params())
+        data = json.loads(self.get(Measure.API_READ, params=params))["component"]["measures"]
+        self.value = _search_value(data)
+        return self.value
 
     def count_history(self, project_key, params=None):
         if params is None:
             params = {}
         params.update({"component": project_key, "metrics": self.key, "ps": 1})
-        resp = self.get(Measure.API_HISTORY, params=params)
-        data = json.loads(resp.text)
+        data = json.loads(self.get(Measure.API_HISTORY, params=params).text)
         return data["paging"]["total"]
 
     def search_history(self, project_key, params=None):
@@ -77,11 +96,11 @@ class Measure(sq.SqObject):
         return measures
 
 
-def get(comp_key, metrics_list, endpoint, branch=None, pr_key=None, **kwargs):
+def get(concerned_object, metrics_list, **kwargs):
     """Reads measures of a component (project or any subcomponent)
 
-    :param comp_key: Component key
-    :type comp_key: str
+    :param concerned_object: Concerned object (project, branch, PR, application or portfolio)
+    :type concerned_object: Project, Branch, PullRequest, Application or Portfolio
     :param metrics_list: List of metrics to read
     :type metrics_list: list
     :param endpoint: Reference to the SonarQube platform
@@ -95,28 +114,14 @@ def get(comp_key, metrics_list, endpoint, branch=None, pr_key=None, **kwargs):
     :return: Dict of found measures
     :rtype: dict{<metric>: <value>}
     """
-    util.logger.debug("For component %s, branch %s, PR %s, getting measures %s", comp_key, branch, pr_key, metrics_list)
-    if isinstance(metrics_list, str):
-        metrics_str = metrics_list
-        metrics_list = util.csv_to_list(metrics_str)
-    else:
-        metrics_str = util.list_to_csv(metrics_list)
-    params = {"component": comp_key, "metricKeys": metrics_str}
-    if branch is not None:
-        params["branch"] = branch
-    elif pr_key is not None:
-        params["pullRequest"] = pr_key
+    params = util.replace_keys(("project", "application", "portfolio"), "component", concerned_object.search_params())
+    params["metricKeys"] = util.list_to_csv(metrics_list)
+    util.logger.debug("Getting measures with %s", str(params))
 
-    data = json.loads(endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
+    data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
     m_dict = {m: None for m in metrics_list}
     for m in data["component"]["measures"]:
-        value = m.get("value", "")
-        if value == "" and "periods" in m:
-            value = m["periods"][0]["value"]
-        if metrics.is_a_rating(m["metric"]):
-            value = get_rating_letter(value)
-        m_dict[m["metric"]] = value
-
+        m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
     return m_dict
 
 
@@ -231,4 +236,13 @@ def convert(metric, value, ratings="letters", percents="float", dates="datetime"
     value = as_percent(metric, value) if percents == "percents" else as_ratio(metric, value)
     if dates == "dateonly" and metric in ("last_analysis", "createdAt", "updatedAt", "creation_date", "modification_date"):
         value = util.date_to_string(util.string_to_date(value), False)
+    return value
+
+
+def _search_value(data):
+    value = data.get("value", None)
+    if not value and "periods" in data:
+        value = data["periods"][0]["value"]
+    if metrics.is_a_rating(data["metric"]):
+        value = get_rating_letter(value)
     return value
