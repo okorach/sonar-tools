@@ -125,17 +125,18 @@ def get(concerned_object, metrics_list, **kwargs):
     return m_dict
 
 
-def get_rating_letter(rating_number_str):
+def get_rating_letter(rating):
     """
-    :return: The measure converted from number to letter, if number between 1 and 5
+    :params rating:
+    :type rating: int
+    :return: The rating converted from number to letter, if number between 1 and 5, else the unchanged rating
     :rtype: str
     """
     try:
-        n_int = int(float(rating_number_str))
-        return chr(n_int + 64)
+        n_int = int(float(rating))
     except ValueError:
-        util.logger.error("Wrong numeric rating provided %s", rating_number_str)
-        return rating_number_str
+        return rating
+    return chr(n_int + 64) if 1 <= n_int <= 5 else rating
 
 
 def get_rating_number(rating_letter):
