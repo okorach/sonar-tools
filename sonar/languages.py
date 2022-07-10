@@ -22,6 +22,7 @@
 import json
 from sonar import sqobject, rules
 
+#: List of language APIs
 APIS = {"list": "languages/list"}
 
 _OBJECTS = {}
