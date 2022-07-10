@@ -17,11 +17,6 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-    Abstraction of the SonarQube "metric" concept
-
-"""
 
 import json
 from sonar import sqobject, utilities
@@ -36,6 +31,7 @@ MAIN_METRICS = (
     "sqale_rating",
     "security_review_rating",
     "sqale_debt_ratio",
+    "sqale_index",
     "coverage",
     "duplicated_lines_density",
     "security_hotspots_reviewed",
@@ -64,12 +60,15 @@ __MAX_PAGE_SIZE = 500
 _OBJECTS = {}
 _VISIBLE_OBJECTS = {}
 
+
 class Metric(sqobject.SqObject):
-    Count = None
+    """
+    Abstraction of the SonarQube "metric" concept
+    """
 
     def __init__(self, key=None, endpoint=None, data=None):
         super().__init__(key, endpoint)
-        self.type = None
+        self.type = None  #: Metric type (FLOAT, INT, STRING, WORK_DUR...)
         self.name = None
         self.description = None
         self.domain = None
@@ -102,7 +101,7 @@ class Metric(sqobject.SqObject):
             _VISIBLE_OBJECTS[self.key] = self
         if self.type not in METRICS_BY_TYPE:
             METRICS_BY_TYPE[self.type] = set()
-            METRICS_BY_TYPE[self.type].add(self.key)
+        METRICS_BY_TYPE[self.type].add(self.key)
         return True
 
     def is_a_rating(self):
@@ -111,26 +110,35 @@ class Metric(sqobject.SqObject):
     def is_a_percent(self):
         return self.type == "PERCENT"
 
+
 def is_of_type(metric_key, metric_type):
-    return metric_key in METRICS_BY_TYPE[metric_key]
+    return metric_key in METRICS_BY_TYPE[metric_type]
+
 
 def is_a_rating(metric_key):
     return is_of_type(metric_key, "RATING")
 
+
 def is_a_percent(metric_key):
     return is_of_type(metric_key, "PERCENT")
+
+
+def is_an_effort(metric_key):
+    return is_of_type(metric_key, "WORK_DUR")
+
 
 def count(endpoint):
     if len(_OBJECTS) is None:
         search(endpoint, True)
     return len(_VISIBLE_OBJECTS)
 
+
 def search(endpoint, show_hidden_metrics=False):
     if len(_OBJECTS) == 0:
         m_list = {}
         page, nb_pages = 1, 1
         while page <= nb_pages:
-            data = json.loads( endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
+            data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
             for m in data["metrics"]:
                 m_list[m["key"]] = Metric(key=m["key"], endpoint=endpoint, data=m)
             nb_pages = utilities.nbr_pages(data)
