@@ -26,7 +26,7 @@
 import time
 import json
 
-from sonar import aggregations, measures, options
+from sonar import aggregations, options
 from sonar.permissions import portfolio_permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -125,7 +125,7 @@ class Portfolio(aggregations.Aggregation):
     def __str__(self):
         return f"subportfolio '{self.key}'" if self.portfolio_type == "SVW" else f"portfolio '{self.key}'"
 
-    def get_details(self):
+    def refresh(self):
         util.logger.debug("Updating details for %s root key %s", str(self), self.root_key)
         data = json.loads(self.get(_GET_API, params={"key": self.root_key}).text)
         if self.root_key == self.key:
@@ -162,7 +162,7 @@ class Portfolio(aggregations.Aggregation):
             util.logger.debug("%s: Projects already set, returning %s", str(self), str(self._projects))
             return self._projects
         if "selectedProjects" not in self._json:
-            self.get_details()
+            self.refresh()
         self._projects = {}
         util.logger.debug("%s: Read projects %s", str(self), str(self._projects))
         if self.endpoint.version() < (9, 3, 0):
@@ -177,7 +177,7 @@ class Portfolio(aggregations.Aggregation):
         return self._projects
 
     def sub_portfolios(self):
-        self.get_details()
+        self.refresh()
         self._sub_portfolios = _sub_portfolios(self._json, self.endpoint.version())
         return self._sub_portfolios
 
@@ -232,20 +232,9 @@ class Portfolio(aggregations.Aggregation):
         util.logger.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
-    def get_measures(self, metrics_list):
-        m = measures.get(self.key, metrics_list, endpoint=self.endpoint)
-        if "ncloc" in m:
-            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
-        return m
-
     def dump_data(self, **opts):
-        self.get_details()
-        data = {
-            "type": "portfolio",
-            "key": self.key,
-            "name": self.name,
-            "ncloc": self.ncloc(),
-        }
+        self.refresh()
+        data = {"type": "portfolio", "key": self.key, "name": self.name, "ncloc": self.loc()}
         if opts.get(options.WITH_URL, False):
             data["url"] = self.url()
         if opts.get(options.WITH_LAST_ANALYSIS, False):
@@ -254,7 +243,7 @@ class Portfolio(aggregations.Aggregation):
 
     def export(self, full=False):
         util.logger.info("Exporting %s", str(self))
-        self.get_details()
+        self.refresh()
         json_data = self._json
         json_data.update(self.sub_portfolios())
         json_data.update(
@@ -404,6 +393,13 @@ class Portfolio(aggregations.Aggregation):
                         util.logger.info("Can't create sub-portfolio '%s' to parent %s", name, self.key)
                 o.set_parent(self.key)
                 o.update(subp, root_key)
+
+    def search_params(self):
+        """Return params used to search for that object
+
+        :meta private:
+        """
+        return {"portfolio": self.key}
 
 
 def count(endpoint=None):

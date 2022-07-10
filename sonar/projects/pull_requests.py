@@ -29,7 +29,7 @@ from sonar import measures, components
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
-_PULL_REQUESTS = {}
+_OBJECTS = {}
 
 
 class PullRequest(components.Component):
@@ -41,8 +41,7 @@ class PullRequest(components.Component):
         self.project = project
         self.json = data
         self._last_analysis = None
-        self._ncloc = None
-        _PULL_REQUESTS[self._uuid()] = self
+        _OBJECTS[self._uuid()] = self
         util.logger.debug("Created object %s", str(self))
 
     def __str__(self):
@@ -61,9 +60,9 @@ class PullRequest(components.Component):
 
     def get_measures(self, metrics_list):
         util.logger.debug("self.endpoint = %s", str(self.endpoint))
-        m = measures.get(self.project.key, metrics_list, endpoint=self.endpoint, pr_key=self.key)
+        m = measures.get(self, metrics_list)
         if "ncloc" in m:
-            self._ncloc = 0 if m["ncloc"] is None else int(m["ncloc"])
+            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
     def delete(self, api=None, params=None):
@@ -90,6 +89,13 @@ class PullRequest(components.Component):
             util.logger.debug("%s age is %d days", str(self), age)
         return problems
 
+    def search_params(self):
+        """Return params used to search for that object
+
+        :meta private:
+        """
+        return {"project": self.project.key, "pullRequest": self.key}
+
 
 def _uuid(project_key, pull_request_key):
     return f"{project_key} {pull_request_key}"
@@ -100,9 +106,9 @@ def get_object(pull_request_key, project, data=None):
         util.logger.debug("Pull requests not available in Community Edition")
         return None
     p_id = _uuid(project.key, pull_request_key)
-    if p_id not in _PULL_REQUESTS:
+    if p_id not in _OBJECTS:
         _ = PullRequest(project, pull_request_key, endpoint=project.endpoint, data=data)
-    return _PULL_REQUESTS[p_id]
+    return _OBJECTS[p_id]
 
 
 def get_list(project):

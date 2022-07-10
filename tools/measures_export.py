@@ -35,11 +35,6 @@ DATEFMT = "datetime"
 CONVERT_OPTIONS = {"ratings": "letters", "percents": "float", "dates": "datetime"}
 
 
-def __diff(first, second):
-    second = set(second)
-    return [item for item in first if item not in second]
-
-
 def __last_analysis(project_or_branch):
     last_analysis = project_or_branch.last_analysis()
     with_time = True
@@ -67,7 +62,7 @@ def __get_csv_header(wanted_metrics, edition, **kwargs):
 
 def __get_object_measures(obj, wanted_metrics):
     util.logger.info("Getting measures for %s", str(obj))
-    measures_d = obj.get_measures(wanted_metrics)
+    measures_d = {k: v.value if v else "" for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d["lastAnalysis"] = __last_analysis(obj)
     measures_d["url"] = obj.url()
     proj = obj
@@ -100,23 +95,25 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     line = ""
     for metric in util.csv_to_list(overall_metrics):
         val = ""
-        if metric in measures_d:
-            if measures_d[metric] is None:
-                val = ""
-            elif sep in measures_d[metric]:
+        if metric in measures_d and measures_d[metric]:
+            if isinstance(measures_d[metric], str) and sep in measures_d[metric]:
                 val = util.quote(measures_d[metric], sep)
             else:
-                val = str(measures.convert(metric, measures_d[metric], **CONVERT_OPTIONS))
+                val = str(measures.format(metric, measures_d[metric], **CONVERT_OPTIONS))
         line += val + sep
     return line[: -len(sep)]
 
 
 def __get_wanted_metrics(args, endpoint):
-    main_metrics = util.list_to_csv(metrics.Metric.MAIN_METRICS)
+    main_metrics = util.list_to_csv(metrics.MAIN_METRICS)
     wanted_metrics = args.metricKeys
     if wanted_metrics == "_all":
-        all_metrics = util.csv_to_list(metrics.as_csv(metrics.search(endpoint).values()))
-        wanted_metrics = main_metrics + "," + util.list_to_csv(__diff(all_metrics, metrics.Metric.MAIN_METRICS))
+        all_metrics = metrics.search(endpoint).keys()
+        # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
+        if endpoint.version() < (8, 0, 0):
+            all_metrics.pop("new_development_cost")
+        util.logger.info("Exporting %s metrics", len(all_metrics))
+        wanted_metrics = main_metrics + "," + util.list_to_csv(set(all_metrics) - set(metrics.MAIN_METRICS))
     elif wanted_metrics == "_main" or wanted_metrics is None:
         wanted_metrics = main_metrics
     return wanted_metrics
@@ -252,7 +249,7 @@ def main():
     util.logger.info("Computing LoCs")
     nb_loc = 0
     for project in project_list.values():
-        nb_loc += project.ncloc()
+        nb_loc += project.loc()
 
     util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)
     sys.exit(0)

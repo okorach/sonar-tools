@@ -38,9 +38,8 @@ class Component(sq.SqObject):
         self.name = None
         self.qualifier = None
         self.path = None
-        self.language = None
         self.nbr_issues = None
-        self._ncloc = None
+        self.ncloc = None
         self._description = None
         self._last_analysis = None
         self._tags = None
@@ -52,7 +51,9 @@ class Component(sq.SqObject):
         self.name = data.get("name", None)
         self.qualifier = data.get("qualifier", None)
         self.path = data.get("path", None)
-        self.language = data.get("language", None)
+
+        self._last_analysis = data.get("analysisDate", None)
+        return self
 
     def __str__(self):
         return self.key
@@ -139,21 +140,19 @@ class Component(sq.SqObject):
 
     def get_measure(self, metric, fallback=None):
         meas = self.get_measures(metric)
-        if metric in meas and meas[metric] is not None:
-            return meas[metric]
-        else:
-            return fallback
+        return meas[metric].value if metric in meas and meas[metric].value is not None else fallback
 
-    def ncloc(self):
-        if self._ncloc is None:
-            self._ncloc = int(self.get_measure("ncloc", fallback=0))
-        return self._ncloc
+    def loc(self):
+        if self.ncloc is None:
+            self.ncloc = int(self.get_measure("ncloc", fallback=0))
+        return self.ncloc
 
-    def last_analysis(self, include_branches=False):
-        if self._last_analysis is not None:
-            return self._last_analysis
-        resp = self.endpoint.get("navigation/component", params={"component": self.key})
-        self._last_analysis = json.loads(resp.text).get("analysisDate", None)
+    def refresh(self):
+        return self.__load(json.loads(self.endpoint.get("navigation/component", params={"component": self.key}).text))
+
+    def last_analysis(self):
+        if not self._last_analysis:
+            self.refresh()
         return self._last_analysis
 
     def url(self):

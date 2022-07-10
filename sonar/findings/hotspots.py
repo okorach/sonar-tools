@@ -81,7 +81,7 @@ class Hotspot(findings.Finding):
             self.projectKey = m.group(1)
             self.branch = m.group(2)
         _OBJECTS[self.uuid()] = self
-        if self.rule is None and self.get_details() is not None:
+        if self.rule is None and self.refresh():
             self.rule = self.__details["rule"]["key"]
 
     def __str__(self):
@@ -112,16 +112,15 @@ class Hotspot(findings.Finding):
         data["url"] = self.url()
         return data
 
-    def get_details(self):
-        """Reads hotspots details in SonarQube
+    def refresh(self):
+        """Refreshes and reads hotspots details in SonarQube
         :return: The hotspot details
-        :rtype: dict or None if hotspot not found
+        :rtype: Whether ther operation succeeded
         """
-        if not self.__details:
-            resp = self.get("hotspots/show", {"hotspot": self.key}, exit_on_error=False)
-            if resp.ok:
-                self.__details = json.loads(resp.text)
-        return self.__details
+        resp = self.get("hotspots/show", {"hotspot": self.key}, exit_on_error=False)
+        if resp.ok:
+            self.__details = json.loads(resp.text)
+        return resp.ok
 
     def __mark_as(self, resolution, comment=None):
         params = {"hotspot": self.key, "status": "REVIEWED", "resolution": resolution}
@@ -283,7 +282,8 @@ class Hotspot(findings.Finding):
         """
         if self._changelog is not None:
             return self._changelog
-        self.get_details()
+        if not self.__details:
+            self.refresh()
         util.json_dump_debug(self.__details, f"{str(self)} Details = ")
         self._changelog = {}
         seq = 1
@@ -305,7 +305,8 @@ class Hotspot(findings.Finding):
         """
         if self._comments is not None:
             return self._comments
-        self.get_details()
+        if not self.__details:
+            self.refresh()
         self._comments = {}
         seq = 0
         for c in self.__details["comment"]:
