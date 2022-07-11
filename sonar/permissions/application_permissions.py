@@ -22,4 +22,6 @@ from sonar.permissions import aggregation_permissions
 
 
 class ApplicationPermissions(aggregation_permissions.AggregationPermissions):
-    pass
+    """
+    Abstraction of Application permission
+    """

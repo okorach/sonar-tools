@@ -22,4 +22,7 @@ from sonar.permissions import aggregation_permissions
 
 
 class PortfolioPermissions(aggregation_permissions.AggregationPermissions):
-    pass
+    """
+    Abstraction of Portfolio permissions
+    """
+
