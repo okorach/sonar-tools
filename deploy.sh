@@ -19,6 +19,23 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+build_docs=1
+release=0
+
+while [ $# -ne 0 ]; do
+    case $1 in
+        nodoc)
+            build_docs=0
+            ;;
+        pypi)
+            release=1
+            ;;
+        *)
+            ;;
+    esac
+    shift
+done
+
 black --line-length=150 .
 rm -rf build dist
 python3 setup.py bdist_wheel
@@ -26,9 +43,12 @@ python3 setup.py bdist_wheel
 # Deploy locally for tests
 echo "y" | python3 -m pip uninstall sonar-tools
 python3 -m pip install dist/*-py3-*.whl
-sphinx-build -b html api-doc/source api-doc/build
+
+if [ "$build_docs" == "1" ]; then
+    sphinx-build -b html api-doc/source api-doc/build
+fi
 
 # Deploy on pypi.org once released
-if [ "$1" = "pypi" ]; then
+if [ "$release" = "1" ]; then
     python3 -m twine upload dist/*
 fi
