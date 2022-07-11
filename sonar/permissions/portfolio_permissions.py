@@ -25,4 +25,3 @@ class PortfolioPermissions(aggregation_permissions.AggregationPermissions):
     """
     Abstraction of Portfolio permissions
     """
-

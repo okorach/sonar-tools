@@ -61,6 +61,7 @@ class Permissions(ABC):
     """
     Abstraction of sonar objects permissions
     """
+
     def __init__(self, endpoint):
         self.endpoint = endpoint
         self.permissions = None
@@ -98,7 +99,6 @@ class Permissions(ABC):
         :return: The concerned object permissions
         :rtype: Permissions
         """
-
 
     @abstractmethod
     def set(self, new_perms):
