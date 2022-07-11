@@ -142,16 +142,16 @@ def main():
             util.exit_fatal(f"No permissiont to open file {kwargs['sif']}, aborting...", err)
         except sif.NotSystemInfo:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
-
-    key_list = util.csv_to_list(args.projectKeys)
-    if len(key_list) > 0 and "projects" in util.csv_to_list(args.what):
-        for key in key_list:
-            if not projects.exists(key, sq):
-                util.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
-    try:
-        problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
-    except options.NonExistingObjectError as e:
-        util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
+    else:
+        key_list = util.csv_to_list(args.projectKeys)
+        if len(key_list) > 0 and "projects" in util.csv_to_list(args.what):
+            for key in key_list:
+                if not projects.exists(key, sq):
+                    util.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
+        try:
+            problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
+        except options.NonExistingObjectError as e:
+            util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
     kwargs["format"] = __deduct_format__(args.format, args.file)
     file = kwargs.pop("file", None)
