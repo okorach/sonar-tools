@@ -6,8 +6,6 @@
 Welcome to sonar-tools documentation
 ====================================
 
-:doc:`/usage`
-
 .. toctree::
    sq_object
    platform
