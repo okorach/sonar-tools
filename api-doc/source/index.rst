@@ -33,7 +33,7 @@ Welcome to sonar-tools documentation
    rules
    webhooks
    tasks
-   permissions/permissions
+   permissions
    :maxdepth: 2
    :caption: Contents:
 
