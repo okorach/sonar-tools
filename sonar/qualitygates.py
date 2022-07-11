@@ -64,14 +64,18 @@ _IMPORTABLE_PROPERTIES = ("isDefault", "isBuiltIn", "conditions", "permissions")
 
 
 class QualityGate(sq.SqObject):
+    """
+    Abstraction of the Sonar Quality Gate concept
+    """
+
     def __init__(self, name, endpoint, data=None, create_data=None):
         super().__init__(name, endpoint)
-        self.name = name
-        self.is_built_in = False
+        self.name = name  #: Object name
+        self.is_built_in = False #: Whether the quality gate is built in
+        self.is_default = False #: Whether the quality gate is the default
         self._conditions = None
         self._permissions = None
         self._projects = None
-        self.is_default = False
         if create_data is not None:
             self.post(_CREATE_API, params={"name": name})
             self.set_conditions(create_data.get("conditions", None))
@@ -90,12 +94,24 @@ class QualityGate(sq.SqObject):
         _MAP[self.name] = self.key
 
     def __str__(self):
+        """
+        :return: String formatting of the object
+        :rtype: str
+        """
         return f"quality gate '{self.name}'"
 
     def url(self):
+        """
+        :return: the SonarQube permalink URL to the quality gate
+        :rtype: str
+        """
         return f"{self.endpoint.url}/quality_gates/show/{self.key}"
 
     def projects(self):
+        """
+        :return: The list of projects using this quality gate
+        :rtype: dict {<projectKey>: <projectData>}
+        """
         if self._projects is not None:
             return self._projects
         params = {"ps": 500}
@@ -122,9 +138,19 @@ class QualityGate(sq.SqObject):
         return self._projects
 
     def count_projects(self):
+        """
+        :return: The number of projects using this quality gate
+        :rtype: int
+        """
         return len(self.projects())
 
     def conditions(self, encoded=False):
+        """
+        :param encoded: Whether to encode the conditions or not, defaults to False
+        :type encoded: bool, optional
+        :return: The quality gate conditions, encoded (for simplication) or not
+        :rtype: list
+        """
         if self._conditions is None:
             self._conditions = []
             data = json.loads(self.get(_DETAILS_API, params={"name": self.name}).text)
@@ -135,6 +161,9 @@ class QualityGate(sq.SqObject):
         return self._conditions
 
     def clear_conditions(self):
+        """Clears all quality gate conditions, if quality gate is not built-in
+        :return: Nothing
+        """
         if self.is_built_in:
             util.logger.debug("Can't clear conditions of built-in %s", str(self))
         else:
@@ -144,6 +173,11 @@ class QualityGate(sq.SqObject):
             self._conditions = None
 
     def set_conditions(self, conditions_list):
+        """Sets quality gate conditions (overriding any previous conditions)
+        :param conditions_list: List of conditions, encoded
+        :type conditions_list: dict
+        :return: Nothing
+        """
         if conditions_list is None or len(conditions_list) == 0:
             return
         if self.is_built_in:
@@ -158,14 +192,27 @@ class QualityGate(sq.SqObject):
         self.conditions()
 
     def permissions(self):
+        """
+        :return: The quality gate permissions
+        :rtype: QualityGatePermissions
+        """
         if self._permissions is None:
             self._permissions = permissions.QualityGatePermissions(self)
         return self._permissions
 
     def set_permissions(self, permissions_list):
+        """Sets quality gate permissions
+        :param permissions_list:
+        :type permissions_list: dict {"users": [<userlist>], "groups": [<grouplist>]}
+        :return: The quality gate permissions
+        :rtype: QualityGatePermissions
+        """
         self.permissions().set(permissions_list)
 
     def update(self, **data):
+        """Updates a quality gate
+        :param dict data: Considered keys: "name", "conditions", "permissions"
+        """
         if "name" in data and data["name"] != self.name:
             util.logger.info("Renaming %s with %s", str(self), data["name"])
             self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
@@ -194,6 +241,9 @@ class QualityGate(sq.SqObject):
         return problems
 
     def audit(self, audit_settings=None):
+        """
+        :meta private:
+        """
         my_name = str(self)
         util.logger.debug("Auditing %s", my_name)
         problems = []
@@ -234,6 +284,9 @@ class QualityGate(sq.SqObject):
 
 
 def audit(endpoint=None, audit_settings=None):
+    """
+    :meta private:
+    """
     util.logger.info("--- Auditing quality gates ---")
     problems = []
     quality_gates_list = get_list(endpoint)
@@ -249,6 +302,10 @@ def audit(endpoint=None, audit_settings=None):
 
 
 def get_list(endpoint):
+    """
+    :return: The whole list of quality gates
+    :rtype: dict {<name>: <QualityGate>}
+    """
     util.logger.info("Getting quality gates")
     data = json.loads(endpoint.get("qualitygates/list").text)
     qg_list = {}
@@ -261,6 +318,12 @@ def get_list(endpoint):
 
 
 def get_object(name, endpoint=None):
+    """
+    :param str name: The quality gate name
+    :param Platform endpoint: Reference to the Sonar platform
+    :return: The QualityGate object from its name, or none if not found
+    :rtype: QualityGate or None
+    """
     if len(_QUALITY_GATES) == 0:
         get_list(endpoint)
     if name not in _MAP:
@@ -269,6 +332,10 @@ def get_object(name, endpoint=None):
 
 
 def export(endpoint, full=False):
+    """
+    :return: The list of quality gates in their JSON representation
+    :rtype: dict
+    """
     util.logger.info("Exporting quality gates")
     qg_list = {}
     for k, qg in get_list(endpoint).items():
@@ -303,6 +370,10 @@ def import_config(endpoint, config_data):
 
 
 def count(endpoint):
+    """
+    :return: Number of quality gates
+    :rtype: int
+    """
     return len(get_list(endpoint))
 
 
