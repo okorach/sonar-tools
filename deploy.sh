@@ -50,5 +50,9 @@ fi
 
 # Deploy on pypi.org once released
 if [ "$release" = "1" ]; then
-    python3 -m twine upload dist/*
+    echo "Confirm release [y/n] ?"
+    read confirm
+    if [ "$confirm" = "y" ]; then
+        python3 -m twine upload dist/*
+    fi
 fi
