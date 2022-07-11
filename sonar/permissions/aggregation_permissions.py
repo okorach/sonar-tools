@@ -30,6 +30,7 @@ class AggregationPermissions(project_permissions.ProjectPermissions):
     """
     Abstraction of aggregations (Portfolios and Applications) permissions
     """
+
     def read(self):
         """
         :return: Permissions associated to the aggregation
