@@ -1,0 +1,4 @@
+Rules
+=====
+
+.. automodule:: sonar.rules
