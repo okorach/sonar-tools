@@ -105,9 +105,9 @@ class QualityGate(sq.SqObject):
         self.name = name  #: Object name
         self.is_built_in = False  #: Whether the quality gate is built in
         self.is_default = False  #: Whether the quality gate is the default
-        self._conditions = None
-        self._permissions = None
-        self._projects = None
+        self._conditions = None  #: Quality gate conditions
+        self._permissions = None  #: Quality gate permissions
+        self._projects = None  #: Projects using this quality profile
         self._json = data
         self.key = data.pop("id")
         self.name = data.pop("name")
