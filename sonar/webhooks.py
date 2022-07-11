@@ -33,17 +33,18 @@ class WebHook(sq.SqObject):
     """
     Abstraction of the SonarQube "webhook" concept
     """
+
     def __init__(self, name, endpoint, url=None, secret=None, project=None, data=None):
         super().__init__(name, endpoint)
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
             data = json.loads(self.post("webhooks/create", params=params).text)["webhook"]
         self._json = data
-        self.name = data["name"] #: Webhook name
-        self.key = data["key"] #: Webhook key
-        self.webhook_url = data["url"] #: Webhook URL
-        self.secret = data.get("secret", None) #: Webhook secret
-        self.project = project #: Webhook project if project specific webhook
+        self.name = data["name"]  #: Webhook name
+        self.key = data["key"]  #: Webhook key
+        self.webhook_url = data["url"]  #: Webhook URL
+        self.secret = data.get("secret", None)  #: Webhook secret
+        self.project = project  #: Webhook project if project specific webhook
         self.last_delivery = data.get("latestDelivery", None)
         _OBJECTS[self.uuid()] = self
 
