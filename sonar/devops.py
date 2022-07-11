@@ -17,9 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-    Abstraction of the SonarQube ALM/DevOps Platform concept
-"""
+
 
 from http import HTTPStatus
 import json
@@ -28,6 +26,7 @@ import sonar.utilities as util
 
 _DEVOPS_PLATFORM_TYPES = ("github", "azure", "bitbucket", "bitbucketcloud", "gitlab")
 _OBJECTS = {}
+
 _CREATE_API_GITHUB = "alm_settings/create_github"
 _CREATE_API_GITLAB = "alm_settings/create_gitlab"
 _CREATE_API_AZURE = "alm_settings/create_azure"
@@ -39,9 +38,12 @@ _IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "clientId", "appId"
 
 
 class DevopsPlatform(sqobject.SqObject):
+    """
+    Abstraction of the SonarQube ALM/DevOps Platform concept
+    """
     def __init__(self, key, devops_platform_type, endpoint, data=None, create_data=None):
         super().__init__(key, endpoint)
-        self.type = devops_platform_type
+        self.type = devops_platform_type #: DevOps platform type
         if create_data is not None:
             exit_on_error = self.endpoint.edition() in ("enterprise", "datacenter")
             self.type = create_data.pop("type")
@@ -72,14 +74,11 @@ class DevopsPlatform(sqobject.SqObject):
             self.read()
         else:
             self._json = data
-            self.url = data.get("url", "")
+            self.url = data.get("url", "") #: DevOps platform base URL
         if devops_platform_type == "bitbucketcloud":
             self.url = "https://bitbucket.org"
         _OBJECTS[key] = self
         util.logger.debug("Created %s", str(self))
-
-    def uuid(self):
-        return f"{self.key}"
 
     def __str__(self):
         string = f"devops platform '{self.key}'"
@@ -88,6 +87,10 @@ class DevopsPlatform(sqobject.SqObject):
         return string
 
     def read(self):
+        """Reads / Refresh a DevOps platform information
+
+        :return: Nothing
+        """
         data = json.loads(self.get(_LIST_API).text)
         for alm_data in data.get(self.type, {}):
             if alm_data["key"] != self.key:
@@ -97,11 +100,25 @@ class DevopsPlatform(sqobject.SqObject):
         return self._json
 
     def to_json(self, full=False):
+        """Exports a DevOps platform configuration in JSON format
+
+        :param full: Whether to export all properties, including those that can't be set, or not, defaults to False
+        :type full: boo, optional
+        :return: The configuration of the DevOps platform (except secrets)
+        :rtype: dict
+        """
         json_data = self._json.copy()
         json_data.update({"key": self.key, "type": self.type, "url": self.url})
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
 
     def update(self, data):
+        """Updates a DevOps platform with information from data
+
+        :param dict data: data to update the DevOps platform configuration
+                          (url, clientId, workspace, appId depending on the type of platform)
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
         alm_type = data["type"]
         if alm_type != self.type:
             util.logger.error("DevOps platform type '%s' for update of %s is incompatible", alm_type, str(self))
@@ -117,6 +134,12 @@ class DevopsPlatform(sqobject.SqObject):
 
 
 def count(platf_type=None):
+    """
+    :param platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
+    :type platf_type: str or None
+    :return: Count of DevOps platforms
+    :rtype: int
+    """
     if platf_type is None:
         return len(_OBJECTS)
     # Hack: check first 5 chars to that bitbucket cloud and bitbucket server match
@@ -124,7 +147,12 @@ def count(platf_type=None):
 
 
 def get_list(endpoint):
-    """Gets several settings as bulk (returns a dict)"""
+    """Reads all DevOps platforms from SonarQube
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :return: List of DevOps platforms
+    :rtype: dict{<platformKey>: <DevopsPlatform>}
+    """
     if endpoint.edition() == "community":
         return _OBJECTS
     data = json.loads(endpoint.get(_LIST_API).text)
@@ -138,23 +166,34 @@ def get_list(endpoint):
 
 
 def get_object(devops_platform_key, endpoint):
+    """
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str devops_platform_key: Key of the platform (its name)
+    :return: The DevOps platforms corresponding to key, or None if not found
+    :rtype: DevopsPlatform
+    """
     if len(_OBJECTS) == 0:
         get_list(endpoint)
     return _OBJECTS.get(devops_platform_key, None)
 
 
 def exists(devops_platform_key, endpoint):
+    """
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str devops_platform_key: Key of the platform (its name)
+    :return: Whether the platform exists
+    :rtype: bool
+    """
     return get_object(devops_platform_key, endpoint) is not None
 
 
-def settings(endpoint):
-    return get_list(endpoint)
-
-
 def export(endpoint, full=False):
+    """
+    :meta private:
+    """
     util.logger.info("Exporting DevOps integration settings")
     json_data = {}
-    for s in settings(endpoint).values():
+    for s in get_list(endpoint).values():
         json_data[s.uuid()] = s.to_json(full)
         json_data[s.uuid()].pop("key")
     return json_data
@@ -174,6 +213,9 @@ def create_or_update_devops_platform(name, data, endpoint):
 
 
 def import_config(endpoint, config_data):
+    """
+    :meta private:
+    """
     devops_settings = config_data.get("devopsIntegration", {})
     if len(devops_settings) == 0:
         util.logger.info("No devops integration settings in config, skipping import...")
@@ -189,6 +231,10 @@ def import_config(endpoint, config_data):
 
 
 def platform_type(platform_key, endpoint):
+    """
+    :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES), or None if not found
+    :rtype: str or None
+    """
     o = get_object(platform_key, endpoint)
     if o is None:
         return None
@@ -196,4 +242,10 @@ def platform_type(platform_key, endpoint):
 
 
 def platform_exists(platform_key, endpoint):
+    """
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str platform_key: Key of the platform (its name)
+    :return: Whether the platform exists in SonarQube
+    :rtype: bool
+    """
     return get_object(platform_key, endpoint) is not None
