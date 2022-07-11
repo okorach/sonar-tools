@@ -78,6 +78,13 @@ class ProjectPermissions(permissions.Permissions):
         return self.read()
 
     def set(self, new_perms):
+        """Sets permissions of a project
+
+        :param new_perms:
+        :type new_perms: dict {"users": [<user>, <user>, ...], "groups": [<group>, <group>, ...]}
+        :return: Permissions associated to the aggregation
+        :rtype: self
+        """
         return self._set_perms(
             new_perms, ProjectPermissions.APIS, ProjectPermissions.API_SET_FIELD, permissions.diff, projectKey=self.concerned_object.key
         )

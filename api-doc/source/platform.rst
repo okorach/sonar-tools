@@ -1,5 +1,5 @@
-Environment
-===========
+Platforms
+=========
 
 .. automodule:: sonar.platform
 

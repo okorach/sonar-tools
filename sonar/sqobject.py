@@ -31,7 +31,7 @@ from sonar import utilities
 
 class SqObject:
     def __init__(self, key, endpoint):
-        self.key = key  #: Object unique key
+        self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
         self._json = None
 
@@ -83,7 +83,7 @@ def __search_thread(queue):
         utilities.logger.debug("Threaded search: API = %s params = %s", api, str(params))
         data = json.loads(endpoint.get(api, params=params).text)
         for obj in data[returned_field]:
-            if object_class.__name__ in ("QualityProfile", "Groups", "Portfolio"):
+            if object_class.__name__ in ("QualityProfile", "QualityGate", "Groups", "Portfolio"):
                 objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
             else:
                 objects[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)

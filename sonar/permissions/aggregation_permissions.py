@@ -27,11 +27,26 @@ AGGREGATION_PERMISSIONS = {
 
 
 class AggregationPermissions(project_permissions.ProjectPermissions):
+    """
+    Abstraction of aggregations (Portfolios and Applications) permissions
+    """
+
     def read(self):
+        """
+        :return: Permissions associated to the aggregation
+        :rtype: self
+        """
         super().read()
         # Hack: SonarQube return permissions for aggregations that do not exist
         self.white_list(AGGREGATION_PERMISSIONS)
         return self
 
     def set(self, new_perms):
+        """Sets permissions of an aggregation
+
+        :param new_perms:
+        :type new_perms: dict {"users": [<user>, <user>, ...], "groups": [<group>, <group>, ...]}
+        :return: Permissions associated to the aggregation
+        :rtype: self
+        """
         return super().set(permissions.white_list(new_perms, AGGREGATION_PERMISSIONS))

@@ -34,7 +34,7 @@ from sonar.audit import rules, severities, types
 import sonar.audit.problem as pb
 
 
-_QUALITY_GATES = {}
+_OBJECTS = {}
 _MAP = {}
 
 _CREATE_API = "qualitygates/create"
@@ -64,21 +64,50 @@ _IMPORTABLE_PROPERTIES = ("isDefault", "isBuiltIn", "conditions", "permissions")
 
 
 class QualityGate(sq.SqObject):
-    def __init__(self, name, endpoint, data=None, create_data=None):
+    """
+    Abstraction of the Sonar Quality Gate concept
+    """
+
+    @classmethod
+    def read(cls, endpoint, name):
+        """Reads a quality gate from SonarQube
+        :return: the QualityGate object or None if not found
+        :rtype: QualityGate or None
+        """
+        if name in _MAP and _MAP[name] in _OBJECTS:
+            return _OBJECTS[_MAP[name]]
+        data = search_by_name(endpoint, name)
+        if not data:
+            return None
+        return cls.load(endpoint, data)
+
+    @classmethod
+    def load(cls, endpoint, data):
+        """Creates a quality gate from search data
+        :return: the QualityGate object
+        :rtype: QualityGate or None
+        """
+        o = _OBJECTS.get(data["id"])
+        if not o:
+            o = cls(data["name"], endpoint, data=data)
+        o._json = data
+        return o
+
+    @classmethod
+    def create(cls, endpoint, name):
+        r = endpoint.post(_CREATE_API, params={"name": name})
+        if not r.ok:
+            return None
+        return cls.read(endpoint, name)
+
+    def __init__(self, name, endpoint, data):
         super().__init__(name, endpoint)
-        self.name = name
-        self.is_built_in = False
-        self._conditions = None
-        self._permissions = None
-        self._projects = None
-        self.is_default = False
-        if create_data is not None:
-            self.post(_CREATE_API, params={"name": name})
-            self.set_conditions(create_data.get("conditions", None))
-            self.set_permissions(create_data.get("permissions", None))
-            data = search_by_name(endpoint, name)
-        elif data is None:
-            data = search_by_name(endpoint, name)
+        self.name = name  #: Object name
+        self.is_built_in = False  #: Whether the quality gate is built in
+        self.is_default = False  #: Whether the quality gate is the default
+        self._conditions = None  #: Quality gate conditions
+        self._permissions = None  #: Quality gate permissions
+        self._projects = None  #: Projects using this quality profile
         self._json = data
         self.key = data.pop("id")
         self.name = data.pop("name")
@@ -86,16 +115,28 @@ class QualityGate(sq.SqObject):
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
         self.permissions()
-        _QUALITY_GATES[_uuid(self.name, self.key)] = self
+        _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
 
     def __str__(self):
+        """
+        :return: String formatting of the object
+        :rtype: str
+        """
         return f"quality gate '{self.name}'"
 
     def url(self):
+        """
+        :return: the SonarQube permalink URL to the quality gate
+        :rtype: str
+        """
         return f"{self.endpoint.url}/quality_gates/show/{self.key}"
 
     def projects(self):
+        """
+        :return: The list of projects using this quality gate
+        :rtype: dict {<projectKey>: <projectData>}
+        """
         if self._projects is not None:
             return self._projects
         params = {"ps": 500}
@@ -115,16 +156,26 @@ class QualityGate(sq.SqObject):
             elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 # Hack: For no projects, 8.9 returns 404, 9.x returns 400
                 util.exit_fatal(
-                    f"alm_settings/get_binding returning status code {resp.status_code}, exiting",
+                    f"qualitygates/search returning status code {resp.status_code}, exiting",
                     options.ERR_SONAR_API,
                 )
             page += 1
         return self._projects
 
     def count_projects(self):
+        """
+        :return: The number of projects using this quality gate
+        :rtype: int
+        """
         return len(self.projects())
 
     def conditions(self, encoded=False):
+        """
+        :param encoded: Whether to encode the conditions or not, defaults to False
+        :type encoded: bool, optional
+        :return: The quality gate conditions, encoded (for simplication) or not
+        :rtype: list
+        """
         if self._conditions is None:
             self._conditions = []
             data = json.loads(self.get(_DETAILS_API, params={"name": self.name}).text)
@@ -135,6 +186,9 @@ class QualityGate(sq.SqObject):
         return self._conditions
 
     def clear_conditions(self):
+        """Clears all quality gate conditions, if quality gate is not built-in
+        :return: Nothing
+        """
         if self.is_built_in:
             util.logger.debug("Can't clear conditions of built-in %s", str(self))
         else:
@@ -144,6 +198,11 @@ class QualityGate(sq.SqObject):
             self._conditions = None
 
     def set_conditions(self, conditions_list):
+        """Sets quality gate conditions (overriding any previous conditions)
+        :param conditions_list: List of conditions, encoded
+        :type conditions_list: dict
+        :return: Nothing
+        """
         if conditions_list is None or len(conditions_list) == 0:
             return
         if self.is_built_in:
@@ -158,20 +217,33 @@ class QualityGate(sq.SqObject):
         self.conditions()
 
     def permissions(self):
+        """
+        :return: The quality gate permissions
+        :rtype: QualityGatePermissions
+        """
         if self._permissions is None:
             self._permissions = permissions.QualityGatePermissions(self)
         return self._permissions
 
     def set_permissions(self, permissions_list):
+        """Sets quality gate permissions
+        :param permissions_list:
+        :type permissions_list: dict {"users": [<userlist>], "groups": [<grouplist>]}
+        :return: The quality gate permissions
+        :rtype: QualityGatePermissions
+        """
         self.permissions().set(permissions_list)
 
     def update(self, **data):
+        """Updates a quality gate
+        :param dict data: Considered keys: "name", "conditions", "permissions"
+        """
         if "name" in data and data["name"] != self.name:
             util.logger.info("Renaming %s with %s", str(self), data["name"])
             self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
-            _MAP.pop(_uuid(self.name, self.key), None)
+            _MAP.pop(self.name, None)
             self.name = data["name"]
-            _MAP[_uuid(self.name, self.key)] = self
+            _MAP[self.name] = self
         self.set_conditions(data.get("conditions", []))
         self.set_permissions(data.get("permissions", []))
         return self
@@ -194,6 +266,9 @@ class QualityGate(sq.SqObject):
         return problems
 
     def audit(self, audit_settings=None):
+        """
+        :meta private:
+        """
         my_name = str(self)
         util.logger.debug("Auditing %s", my_name)
         problems = []
@@ -234,6 +309,9 @@ class QualityGate(sq.SqObject):
 
 
 def audit(endpoint=None, audit_settings=None):
+    """
+    :meta private:
+    """
     util.logger.info("--- Auditing quality gates ---")
     problems = []
     quality_gates_list = get_list(endpoint)
@@ -249,6 +327,10 @@ def audit(endpoint=None, audit_settings=None):
 
 
 def get_list(endpoint):
+    """
+    :return: The whole list of quality gates
+    :rtype: dict {<name>: <QualityGate>}
+    """
     util.logger.info("Getting quality gates")
     data = json.loads(endpoint.get("qualitygates/list").text)
     qg_list = {}
@@ -261,36 +343,29 @@ def get_list(endpoint):
 
 
 def get_object(name, endpoint=None):
-    if len(_QUALITY_GATES) == 0:
+    """
+    :param str name: The quality gate name
+    :param Platform endpoint: Reference to the Sonar platform
+    :return: The QualityGate object from its name, or none if not found
+    :rtype: QualityGate or None
+    """
+    if len(_OBJECTS) == 0:
         get_list(endpoint)
-    if name not in _MAP:
+    if name not in _MAP or _MAP[name] not in _OBJECTS:
         return None
-    return _QUALITY_GATES[_uuid(name, _MAP[name])]
+    return _OBJECTS[_MAP[name]]
 
 
 def export(endpoint, full=False):
+    """
+    :return: The list of quality gates in their JSON representation
+    :rtype: dict
+    """
     util.logger.info("Exporting quality gates")
     qg_list = {}
     for k, qg in get_list(endpoint).items():
         qg_list[k] = qg.to_json(full)
     return qg_list
-
-
-def create(name, endpoint=None, **kwargs):
-    util.logger.info("Create quality gate '%s'", name)
-    o = get_object(name=name, endpoint=endpoint)
-    if o is None:
-        o = QualityGate(name=name, endpoint=endpoint, create_data=kwargs)
-    return o
-
-
-def create_or_update(endpoint, name, **kwargs):
-    o = get_object(endpoint=endpoint, name=name)
-    if o is None:
-        util.logger.debug("Quality gate '%s' does not exist, creating...", name)
-        return create(name, endpoint, **kwargs)
-    else:
-        return o.update(**kwargs)
 
 
 def import_config(endpoint, config_data):
@@ -299,10 +374,17 @@ def import_config(endpoint, config_data):
         return
     util.logger.info("Importing quality gates")
     for name, data in config_data["qualityGates"].items():
-        create_or_update(endpoint, name, **data)
+        o = get_object(endpoint=endpoint, name=name)
+        if not o:
+            o = QualityGate.create(endpoint, name)
+        o.update(endpoint, name, **data)
 
 
 def count(endpoint):
+    """
+    :return: Number of quality gates
+    :rtype: int
+    """
     return len(get_list(endpoint))
 
 
@@ -333,10 +415,6 @@ def _decode_condition(c):
     if metric.endswith("rating"):
         val = measures.get_rating_number(val)
     return (metric, op, val)
-
-
-def _uuid(name, id):
-    return id
 
 
 def search_by_name(endpoint, name):
