@@ -34,7 +34,7 @@ from sonar.audit import rules, severities, types
 import sonar.audit.problem as pb
 
 
-_QUALITY_GATES = {}
+_OBJECTS = {}
 _MAP = {}
 
 _CREATE_API = "qualitygates/create"
@@ -68,6 +68,26 @@ class QualityGate(sq.SqObject):
     Abstraction of the Sonar Quality Gate concept
     """
 
+    @classmethod
+    def read(cls, endpoint, name):
+        if name in _OBJECTS:
+            return _OBJECTS[name]
+        data = search_by_name(endpoint, name)
+        if not data:
+            return None
+        return cls.load(endpoint, name, data)
+
+    @classmethod
+    def load(cls, endpoint, name, data):
+        return cls(name, endpoint, data=data)
+
+    @classmethod
+    def create(cls, endpoint, name, **params):
+        r = endpoint.post(_CREATE_API, params={"name": name})
+        if not r.ok:
+            return None
+        return cls.read(endpoint, name)
+
     def __init__(self, name, endpoint, data=None, create_data=None):
         super().__init__(name, endpoint)
         self.name = name  #: Object name
@@ -90,7 +110,7 @@ class QualityGate(sq.SqObject):
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
         self.permissions()
-        _QUALITY_GATES[_uuid(self.name, self.key)] = self
+        _OBJECTS[_uuid(self.name, self.key)] = self
         _MAP[self.name] = self.key
 
     def __str__(self):
@@ -324,11 +344,11 @@ def get_object(name, endpoint=None):
     :return: The QualityGate object from its name, or none if not found
     :rtype: QualityGate or None
     """
-    if len(_QUALITY_GATES) == 0:
+    if len(_OBJECTS) == 0:
         get_list(endpoint)
     if name not in _MAP:
         return None
-    return _QUALITY_GATES[_uuid(name, _MAP[name])]
+    return _OBJECTS[_uuid(name, _MAP[name])]
 
 
 def export(endpoint, full=False):
