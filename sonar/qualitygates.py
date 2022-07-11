@@ -70,39 +70,44 @@ class QualityGate(sq.SqObject):
 
     @classmethod
     def read(cls, endpoint, name):
-        if name in _OBJECTS:
-            return _OBJECTS[name]
+        """Reads a quality gate from SonarQube
+        :return: the QualityGate object or None if not found
+        :rtype: QualityGate or None
+        """
+        if name in _MAP and _MAP[name] in _OBJECTS:
+            return _OBJECTS[_MAP[name]]
         data = search_by_name(endpoint, name)
         if not data:
             return None
-        return cls.load(endpoint, name, data)
+        return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint, name, data):
-        return cls(name, endpoint, data=data)
+    def load(cls, endpoint, data):
+        """Creates a quality gate from search data
+        :return: the QualityGate object
+        :rtype: QualityGate or None
+        """
+        o = _OBJECTS.get(data["id"])
+        if not o:
+            o = cls(data["name"], endpoint, data=data)
+        o._json = data
+        return o
 
     @classmethod
-    def create(cls, endpoint, name, **params):
+    def create(cls, endpoint, name):
         r = endpoint.post(_CREATE_API, params={"name": name})
         if not r.ok:
             return None
         return cls.read(endpoint, name)
 
-    def __init__(self, name, endpoint, data=None, create_data=None):
+    def __init__(self, name, endpoint, data):
         super().__init__(name, endpoint)
         self.name = name  #: Object name
-        self.is_built_in = False #: Whether the quality gate is built in
-        self.is_default = False #: Whether the quality gate is the default
+        self.is_built_in = False  #: Whether the quality gate is built in
+        self.is_default = False  #: Whether the quality gate is the default
         self._conditions = None
         self._permissions = None
         self._projects = None
-        if create_data is not None:
-            self.post(_CREATE_API, params={"name": name})
-            self.set_conditions(create_data.get("conditions", None))
-            self.set_permissions(create_data.get("permissions", None))
-            data = search_by_name(endpoint, name)
-        elif data is None:
-            data = search_by_name(endpoint, name)
         self._json = data
         self.key = data.pop("id")
         self.name = data.pop("name")
@@ -110,7 +115,7 @@ class QualityGate(sq.SqObject):
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
         self.permissions()
-        _OBJECTS[_uuid(self.name, self.key)] = self
+        _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
 
     def __str__(self):
@@ -151,7 +156,7 @@ class QualityGate(sq.SqObject):
             elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 # Hack: For no projects, 8.9 returns 404, 9.x returns 400
                 util.exit_fatal(
-                    f"alm_settings/get_binding returning status code {resp.status_code}, exiting",
+                    f"qualitygates/search returning status code {resp.status_code}, exiting",
                     options.ERR_SONAR_API,
                 )
             page += 1
@@ -236,9 +241,9 @@ class QualityGate(sq.SqObject):
         if "name" in data and data["name"] != self.name:
             util.logger.info("Renaming %s with %s", str(self), data["name"])
             self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
-            _MAP.pop(_uuid(self.name, self.key), None)
+            _MAP.pop(self.name, None)
             self.name = data["name"]
-            _MAP[_uuid(self.name, self.key)] = self
+            _MAP[self.name] = self
         self.set_conditions(data.get("conditions", []))
         self.set_permissions(data.get("permissions", []))
         return self
@@ -346,9 +351,9 @@ def get_object(name, endpoint=None):
     """
     if len(_OBJECTS) == 0:
         get_list(endpoint)
-    if name not in _MAP:
+    if name not in _MAP or _MAP[name] not in _OBJECTS:
         return None
-    return _OBJECTS[_uuid(name, _MAP[name])]
+    return _OBJECTS[_MAP[name]]
 
 
 def export(endpoint, full=False):
@@ -363,30 +368,16 @@ def export(endpoint, full=False):
     return qg_list
 
 
-def create(name, endpoint=None, **kwargs):
-    util.logger.info("Create quality gate '%s'", name)
-    o = get_object(name=name, endpoint=endpoint)
-    if o is None:
-        o = QualityGate(name=name, endpoint=endpoint, create_data=kwargs)
-    return o
-
-
-def create_or_update(endpoint, name, **kwargs):
-    o = get_object(endpoint=endpoint, name=name)
-    if o is None:
-        util.logger.debug("Quality gate '%s' does not exist, creating...", name)
-        return create(name, endpoint, **kwargs)
-    else:
-        return o.update(**kwargs)
-
-
 def import_config(endpoint, config_data):
     if "qualityGates" not in config_data:
         util.logger.info("No quality gates to import")
         return
     util.logger.info("Importing quality gates")
     for name, data in config_data["qualityGates"].items():
-        create_or_update(endpoint, name, **data)
+        o = get_object(endpoint=endpoint, name=name)
+        if not o:
+            o = QualityGate.create(endpoint, name)
+        o.update(endpoint, name, **data)
 
 
 def count(endpoint):
@@ -424,10 +415,6 @@ def _decode_condition(c):
     if metric.endswith("rating"):
         val = measures.get_rating_number(val)
     return (metric, op, val)
-
-
-def _uuid(name, id):
-    return id
 
 
 def search_by_name(endpoint, name):
