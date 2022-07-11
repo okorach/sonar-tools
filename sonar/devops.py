@@ -103,7 +103,7 @@ class DevopsPlatform(sqobject.SqObject):
         """Exports a DevOps platform configuration in JSON format
 
         :param full: Whether to export all properties, including those that can't be set, or not, defaults to False
-        :type full: boo, optional
+        :type full: bool, optional
         :return: The configuration of the DevOps platform (except secrets)
         :rtype: dict
         """
