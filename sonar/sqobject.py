@@ -31,7 +31,7 @@ from sonar import utilities
 
 class SqObject:
     def __init__(self, key, endpoint):
-        self.key = key  #: Object unique key
+        self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
         self._json = None
 
