@@ -2,4 +2,3 @@ Users
 =====
 
 .. automodule:: sonar.users
-
