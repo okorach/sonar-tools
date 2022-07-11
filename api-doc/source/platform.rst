@@ -1,5 +1,5 @@
-Platform
-========
+Platforms
+=========
 
 .. automodule:: sonar.platform
 
