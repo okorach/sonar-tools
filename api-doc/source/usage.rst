@@ -11,4 +11,4 @@ API Usage
 
 :doc:`/applications`
 
-:doc:`/permissions/permissions`
+:doc:`/permissions`
