@@ -41,9 +41,10 @@ class DevopsPlatform(sqobject.SqObject):
     """
     Abstraction of the SonarQube ALM/DevOps Platform concept
     """
+
     def __init__(self, key, devops_platform_type, endpoint, data=None, create_data=None):
         super().__init__(key, endpoint)
-        self.type = devops_platform_type #: DevOps platform type
+        self.type = devops_platform_type  #: DevOps platform type
         if create_data is not None:
             exit_on_error = self.endpoint.edition() in ("enterprise", "datacenter")
             self.type = create_data.pop("type")
@@ -74,7 +75,7 @@ class DevopsPlatform(sqobject.SqObject):
             self.read()
         else:
             self._json = data
-            self.url = data.get("url", "") #: DevOps platform base URL
+            self.url = data.get("url", "")  #: DevOps platform base URL
         if devops_platform_type == "bitbucketcloud":
             self.url = "https://bitbucket.org"
         _OBJECTS[key] = self
