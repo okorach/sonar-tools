@@ -27,7 +27,7 @@ import sys
 import datetime
 import json
 
-from sonar import platform, users, groups, version, qualityprofiles, qualitygates, sif, options, portfolios, applications
+from sonar import platform, users, groups, version, qualityprofiles, qualitygates, sif, options, portfolios, applications, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 from sonar.audit import problem, config
@@ -150,7 +150,7 @@ def main():
                     util.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
         try:
             problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
-        except options.NonExistingObjectError as e:
+        except exceptions.ObjectNotFound as e:
             util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
     kwargs["format"] = __deduct_format__(args.format, args.file)

@@ -28,6 +28,7 @@ import json
 import tempfile
 import requests
 import jprops
+from requests.exceptions import HTTPError
 
 import sonar.utilities as util
 
@@ -227,20 +228,20 @@ class Platform:
         """
         if self.__sys_info is None:
             success, counter = False, 0
-            while not success and counter < 10:
-                resp = self.get("system/info", exit_on_error=False)
-                if resp.ok:
-                    self.__sys_info = json.loads(resp.text)
+            while not success:
+                try:
+                    resp = self.get("system/info", exit_on_error=False)
                     success = True
-                else:
-                    # Hack: SonarQube randomly returns Error 500, retry in that case
-                    if resp.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+                except HTTPError as e:
+                    # Hack: SonarQube randomly returns Error 500 on this API, retry up to 10 times
+                    if e.response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR and counter < 10:
                         util.logger.error("HTTP Error 500 for api/system/info, retrying...")
+                        time.sleep(0.5)
                         counter += 1
-                        time.sleep(1)
                     else:
-                        util.logger.error("HTTP Error %d for api/system/info", resp.status_code)
-                        success = True
+                        raise e
+            self.__sys_info = json.loads(resp.text)
+            success = True
         return self.__sys_info
 
     def database(self):

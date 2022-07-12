@@ -103,7 +103,7 @@ class Application(aggr.Aggregation):
                 continue
             if bname == settings.DEFAULT_SETTING:
                 bname = o_proj.main_branch().name
-            if branches.exists(bname, pkey, self.endpoint):
+            if branches.exists(self.endpoint, bname, pkey):
                 project_list.append(pkey)
                 branch_list.append(bname)
             else:

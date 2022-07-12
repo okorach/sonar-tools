@@ -35,7 +35,7 @@ class ObjectNotFound(SonarException):
         self.key = key
 
 
-class UnsupportedOperation(Exception):
+class UnsupportedOperation(SonarException):
     """
-    Unsupported operation (most often due to edition not allowing it
+    Unsupported operation (most often due to edition not allowing it)
     """
