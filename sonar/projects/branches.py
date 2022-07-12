@@ -91,7 +91,7 @@ class Branch(components.Component):
         """Don't use this, use class methods to create object
         """
         if project.endpoint.edition() == "community":
-            raise exceptions.UnsupportedOperation("Branches not available in Community Edition")
+            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
         super().__init__(name, project.endpoint)
         self.name = name
         self.project = project
@@ -373,14 +373,14 @@ def get_list(project):
     """Retrieves a branch
 
     :param Project project: Project the branch belongs to
+    :raises UnsupportedOperation: Branches not supported in Community Edition
     :return: List of project branches
     :rtype: dict{<branchName>: <Branch object>}
     """
     if project.endpoint.edition() == "community":
-        util.logger.debug("branches not available in Community Edition")
-        return exceptions.UnsupportedOperation("Branches not available in Community Edition")
+        util.logger.debug(_UNSUPPORTED_IN_CE)
+        raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
-        return {}
     util.logger.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
     return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
@@ -392,6 +392,7 @@ def exists(branch_name, project_key, endpoint):
     :type branch_name: str
     :param project_key: Project key
     :type project_key: str
+    :raises UnsupportedOperation: Branches not supported in Community Edition
     :return: Whether the branch exists in SonarQube
     :rtype: bool
     """
