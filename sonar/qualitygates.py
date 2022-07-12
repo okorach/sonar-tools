@@ -158,8 +158,9 @@ class QualityGate(sq.SqObject):
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
             data = json.loads(resp.text)
-            for prj in data:
-                key = prj.get("key", prj["id"])
+            for prj in data["results"]:
+                util.logger.info("Proj = %s", str(prj))
+                key = prj["key"] if "key" in prj else prj["id"]
                 self._projects[key] = projects.get_object(key, self.endpoint)
             nb_pages = util.nbr_pages(data)
             page += 1
