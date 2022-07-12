@@ -69,7 +69,7 @@ class QualityGate(sq.SqObject):
     """
 
     @classmethod
-    def read(cls, endpoint, name):
+    def get_object(cls, endpoint, name):
         """Reads a quality gate from SonarQube
         :return: the QualityGate object or None if not found
         :rtype: QualityGate or None
@@ -98,7 +98,7 @@ class QualityGate(sq.SqObject):
         r = endpoint.post(_CREATE_API, params={"name": name})
         if not r.ok:
             return None
-        return cls.read(endpoint, name)
+        return cls.get_object(endpoint, name)
 
     def __init__(self, name, endpoint, data):
         super().__init__(name, endpoint)
@@ -342,20 +342,6 @@ def get_list(endpoint):
     return qg_list
 
 
-def get_object(name, endpoint=None):
-    """
-    :param str name: The quality gate name
-    :param Platform endpoint: Reference to the Sonar platform
-    :return: The QualityGate object from its name, or none if not found
-    :rtype: QualityGate or None
-    """
-    if len(_OBJECTS) == 0:
-        get_list(endpoint)
-    if name not in _MAP or _MAP[name] not in _OBJECTS:
-        return None
-    return _OBJECTS[_MAP[name]]
-
-
 def export(endpoint, full=False):
     """
     :return: The list of quality gates in their JSON representation
@@ -374,7 +360,7 @@ def import_config(endpoint, config_data):
         return
     util.logger.info("Importing quality gates")
     for name, data in config_data["qualityGates"].items():
-        o = get_object(endpoint=endpoint, name=name)
+        o = QualityGate.get_object(endpoint=endpoint, name=name)
         if not o:
             o = QualityGate.create(endpoint, name)
         o.update(endpoint, name, **data)
