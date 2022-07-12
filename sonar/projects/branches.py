@@ -56,7 +56,7 @@ class Branch(components.Component):
     def __str__(self):
         return f"branch '{self.name}' of {str(self.project)}"
 
-    def read(self):
+    def refresh(self):
         """Reads a branch in SonarQube (refresh with latest data)
 
         :return: itself
@@ -94,7 +94,7 @@ class Branch(components.Component):
         :rtype: datetime
         """
         if self._last_analysis is None:
-            self.read()
+            self.refresh()
         return self._last_analysis
 
     def is_kept_when_inactive(self):
@@ -103,7 +103,7 @@ class Branch(components.Component):
         :rtype: bool
         """
         if self._keep_when_inactive is None or self._json is None:
-            self.read()
+            self.refresh()
         return self._keep_when_inactive
 
     def is_main(self):
@@ -112,7 +112,7 @@ class Branch(components.Component):
         :rtype: bool
         """
         if self._is_main is None or self._json is None:
-            self.read()
+            self.refresh()
         return self._is_main
 
     def delete(self, api=None, params=None):
