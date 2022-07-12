@@ -17,11 +17,6 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-    Abstraction of the SonarQube "branch" concept
-
-"""
 
 import json
 import requests.utils
@@ -37,6 +32,10 @@ _LIST_API = "project_branches/list"
 
 
 class Branch(components.Component):
+    """
+    Abstraction of the SonarQube "project branch" concept
+    """
+
     def __init__(self, project, name, data=None, endpoint=None):
         if endpoint is not None:
             super().__init__(name, endpoint)
