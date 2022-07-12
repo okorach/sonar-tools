@@ -25,7 +25,13 @@ class SonarException(Exception):
         self.message = message
 
 
-class SonarObjectNotFound(SonarException):
+class ObjectNotFound(SonarException):
     """
     Object not found during a SonarQube search
+    """
+
+
+class UnsupportedOperation(Exception):
+    """
+    Unsupported operation (most often due to edition not allowing it
     """
