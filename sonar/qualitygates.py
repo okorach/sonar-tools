@@ -25,9 +25,11 @@
 
 from http import HTTPStatus
 import json
+from requests.exceptions import HTTPError
 import sonar.sqobject as sq
-from sonar import options, measures
+from sonar import measures, exceptions
 import sonar.permissions.qualitygate_permissions as permissions
+from sonar.projects import projects
 import sonar.utilities as util
 
 from sonar.audit import rules, severities, types
@@ -134,31 +136,27 @@ class QualityGate(sq.SqObject):
 
     def projects(self):
         """
+        :raises ObjectNotFound: Quality gate not found
         :return: The list of projects using this quality gate
         :rtype: dict {<projectKey>: <projectData>}
         """
         if self._projects is not None:
             return self._projects
-        params = {"ps": 500}
+        params = {"gateName": self.name, "ps": 500}
         page, nb_pages = 1, 1
         self._projects = {}
         while page <= nb_pages:
             params["p"] = page
-            resp = self.get("qualitygates/search", params=params, exit_on_error=False)
-            if resp.ok:
-                data = json.loads(resp.text)
-                for prj in data:
-                    if "key" in prj:
-                        self._projects[prj["key"]] = prj
-                    else:
-                        self._projects[prj["id"]] = prj
-                nb_pages = util.nbr_pages(data)
-            elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                # Hack: For no projects, 8.9 returns 404, 9.x returns 400
-                util.exit_fatal(
-                    f"qualitygates/search returning status code {resp.status_code}, exiting",
-                    options.ERR_SONAR_API,
-                )
+            try:
+                resp = self.get("qualitygates/search", params=params, exit_on_error=False)
+            except HTTPError as e:
+                if e.response.status_code == HTTPStatus.NOT_FOUND:
+                    raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
+            data = json.loads(resp.text)
+            for prj in data:
+                key = prj.get("key", prj["id"])
+                self._projects[key] = projects.get_object(key, self.endpoint)
+            nb_pages = util.nbr_pages(data)
             page += 1
         return self._projects
 
