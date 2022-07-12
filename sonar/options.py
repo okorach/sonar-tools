@@ -67,16 +67,3 @@ def set_url_arg(parser):
 def add_thread_arg(parser, action):
     parser.add_argument(f"--{NBR_THREADS}", required=False, type=int, default=8, help=f"Define number of threads for {action}, default 8")
     return parser
-
-
-class UnsupportedOperation(Exception):
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-
-
-class NonExistingObjectError(Exception):
-    def __init__(self, key, message):
-        super().__init__()
-        self.key = key
-        self.message = message

@@ -1,7 +1,6 @@
-#!/bin/bash
 #
 # sonar-tools
-# Copyright (C) 2019-2022 Olivier Korach
+# Copyright (C) 2022 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -19,41 +18,24 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-build_docs=1
-release=0
 
-while [ $# -ne 0 ]; do
-    case $1 in
-        nodoc)
-            build_docs=0
-            ;;
-        pypi)
-            release=1
-            ;;
-        *)
-            ;;
-    esac
-    shift
-done
+class SonarException(Exception):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
 
-black --line-length=150 .
-rm -rf build dist
-python3 setup.py bdist_wheel
 
-# Deploy locally for tests
-echo "y" | python3 -m pip uninstall sonar-tools
-python3 -m pip install dist/*-py3-*.whl
+class ObjectNotFound(SonarException):
+    """
+    Object not found during a SonarQube search
+    """
 
-if [ "$build_docs" == "1" ]; then
-    rm -rf api-doc/build
-    sphinx-build -b html api-doc/source api-doc/build
-fi
+    def __init__(self, key, message):
+        super().__init__(message)
+        self.key = key
 
-# Deploy on pypi.org once released
-if [ "$release" = "1" ]; then
-    echo "Confirm release [y/n] ?"
-    read confirm
-    if [ "$confirm" = "y" ]; then
-        python3 -m twine upload dist/*
-    fi
-fi
+
+class UnsupportedOperation(Exception):
+    """
+    Unsupported operation (most often due to edition not allowing it
+    """

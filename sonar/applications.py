@@ -24,7 +24,7 @@
 """
 import json
 from http import HTTPStatus
-from sonar import components, options, settings
+from sonar import components, exceptions, settings
 from sonar.projects import projects, branches
 from sonar.permissions import application_permissions
 import sonar.sqobject as sq
@@ -268,7 +268,7 @@ def get_list(endpoint, key_list=None):
     for key in util.csv_to_list(key_list):
         object_list[key] = get_object_by_key(key, endpoint=endpoint)
         if object_list[key] is None:
-            raise options.NonExistingObjectError(key, f"Application key '{key}' does not exist")
+            raise exceptions.ObjectNotFound(key, f"Application key '{key}' does not exist")
     return object_list
 
 

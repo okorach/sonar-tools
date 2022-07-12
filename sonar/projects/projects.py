@@ -28,7 +28,8 @@ import json
 from http import HTTPStatus
 from threading import Thread
 from queue import Queue
-from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures
+from requests.exceptions import HTTPError
+from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, exceptions
 from sonar.projects import pull_requests, branches
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
@@ -99,7 +100,7 @@ class Project(components.Component):
         if data is None:
             data = json.loads(self.get(_SEARCH_API, params={"projects": self.key}).text)
             if not data["components"]:
-                raise options.NonExistingObjectError(self.key, "Project key does not exist")
+                raise exceptions.ObjectNotFound(self.key, "Project key does not exist")
             data = data["components"][0]
         self._json = data
         self.name = data["name"]
@@ -229,18 +230,19 @@ class Project(components.Component):
         :rtype: dict
         """
         if self._binding["has_binding"] and self._binding["binding"] is None:
-            resp = self.get("alm_settings/get_binding", params={"project": self.key}, exit_on_error=False)
-            # Hack: 8.9 returns 404, 9.x returns 400
-            if resp.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                self._binding["has_binding"] = False
-            elif resp.ok:
+            try:
+                resp = self.get("alm_settings/get_binding", params={"project": self.key}, exit_on_error=False)
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
-            else:
-                util.exit_fatal(
-                    f"alm_settings/get_binding returning status code {resp.status_code}, exiting",
-                    options.ERR_SONAR_API,
-                )
+            except HTTPError as e:
+                if e.response.status_code in (HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST):
+                    # Hack: 8.9 returns 404, 9.x returns 400
+                    self._binding["has_binding"] = False
+                else:
+                    util.exit_fatal(
+                        f"alm_settings/get_binding returning status code {e.response.status_code}, exiting",
+                        options.ERR_SONAR_API,
+                    )
         return self._binding["binding"]
 
     def is_part_of_monorepo(self):
@@ -455,7 +457,7 @@ class Project(components.Component):
         """
         util.logger.info("Exporting %s (synchronously)", str(self))
         if self.endpoint.version() < (9, 2, 0) and self.endpoint.edition() not in ("enterprise", "datacenter"):
-            raise options.UnsupportedOperation(
+            raise exceptions.UnsupportedOperation(
                 "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
             )
         resp = self.post("project_dump/export", params={"key": self.key})
@@ -492,7 +494,7 @@ class Project(components.Component):
         """
         util.logger.info("Importing %s (asynchronously)", str(self))
         if self.endpoint.edition() not in ["enterprise", "datacenter"]:
-            raise options.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
+            raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         resp = self.post("project_dump/import", params={"key": self.key})
         return resp.status_code
 
@@ -869,7 +871,7 @@ class Project(components.Component):
         if not devops.platform_exists(alm_key, self.endpoint):
             util.logger.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
             return False
-        alm_type = devops.platform_type(platform_key=alm_key, endpoint=self.endpoint)
+        alm_type = devops.devops_type(platform_key=alm_key, endpoint=self.endpoint)
         mono = data.get("monorepo", False)
         repo = data["repository"]
         if alm_type == "github":
@@ -1051,7 +1053,7 @@ def get_list(endpoint, key_list=None):
     for key in util.csv_to_list(key_list):
         object_list[key] = get_object(key, endpoint=endpoint)
         if object_list[key] is None:
-            raise options.NonExistingObjectError(key, f"Project key '{key}' does not exist")
+            raise exceptions.ObjectNotFound(key, f"Project key '{key}' does not exist")
     return object_list
 
 
@@ -1240,8 +1242,9 @@ def __export_zip_thread(queue, results, statuses, export_timeout):
         project = queue.get()
         try:
             dump = project.export_zip(timeout=export_timeout)
-        except options.UnsupportedOperation as e:
-            util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+        except exceptions.UnsupportedOperation:
+            queue.task_done()
+            util.exit_fatal("Zip export unsupported on your SonarQube version", options.ERR_UNSUPPORTED_OPERATION)
         status = dump["status"]
         statuses[status] = 1 if status not in statuses else statuses[status] + 1
         data = {"key": project.key, "status": status}

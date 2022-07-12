@@ -7,24 +7,29 @@ Welcome to sonar-tools documentation
 ====================================
 
 .. toctree::
-   sq_object
-   platform
-   components
+   qualitygates
+   qualityprofiles
    projects
    branches
    pullrequests
-   aggregations
-   applications
-   portfolios
-   findings
    issues
    hotspots
-   metrics
    measures
-   qualitygates
-   qualityprofiles
    groups
    users
+   applications
+   portfolios
+   :maxdepth: 2
+   :caption: Main modules:
+
+.. toctree::
+   sq_object
+   platform
+   components
+   metrics
+   rules
+   aggregations
+   findings
    tokens
    devops
    languages
@@ -33,7 +38,8 @@ Welcome to sonar-tools documentation
    tasks
    permissions
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Other modules:
+
 
 Indices and tables
 ==================

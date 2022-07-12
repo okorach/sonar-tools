@@ -136,7 +136,7 @@ class Platform:
             "serverId": self.server_id(),
         }
 
-    def get(self, api, params=None, exit_on_error=True):
+    def get(self, api, params=None, exit_on_error=False):
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -153,16 +153,17 @@ class Platform:
         try:
             r = requests.get(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params)
             r.raise_for_status()
-        except requests.exceptions.HTTPError:
+        except requests.exceptions.HTTPError as e:
             if exit_on_error:
                 util.log_and_exit(r)
             else:
                 util.logger.error("GET Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                raise e
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
 
-    def post(self, api, params=None, exit_on_error=True):
+    def post(self, api, params=None, exit_on_error=False):
         """Makes an HTTP POST request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -184,6 +185,7 @@ class Platform:
                 util.log_and_exit(r)
             else:
                 util.logger.error("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                raise
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r

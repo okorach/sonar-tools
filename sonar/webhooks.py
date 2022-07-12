@@ -17,11 +17,6 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
-
-    Abstraction of the SonarQube "webhook" concept
-
-"""
 
 import json
 import sonar.utilities as util
@@ -35,17 +30,21 @@ _OBJECTS = {}
 
 
 class WebHook(sq.SqObject):
+    """
+    Abstraction of the SonarQube "webhook" concept
+    """
+
     def __init__(self, name, endpoint, url=None, secret=None, project=None, data=None):
         super().__init__(name, endpoint)
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
             data = json.loads(self.post("webhooks/create", params=params).text)["webhook"]
         self._json = data
-        self.name = data["name"]
-        self.key = data["key"]
-        self.webhook_url = data["url"]
-        self.secret = data.get("secret", None)
-        self.project = project
+        self.name = data["name"]  #: Webhook name
+        self.key = data["key"]  #: Webhook key
+        self.webhook_url = data["url"]  #: Webhook URL
+        self.secret = data.get("secret", None)  #: Webhook secret
+        self.project = project  #: Webhook project if project specific webhook
         self.last_delivery = data.get("latestDelivery", None)
         _OBJECTS[self.uuid()] = self
 
@@ -56,24 +55,48 @@ class WebHook(sq.SqObject):
         return f"{self.endpoint.url}/admin/webhooks"
 
     def uuid(self):
+        """
+        :meta private:
+        """
         return _uuid(self.name, self.project)
 
     def update(self, **kwargs):
+        """Updates a webhook with new properties (name, url, secret)
+
+        :param kwargs: dict - "url", "name", "secret" are the looked up keys
+        :return: Nothing
+        """
         params = util.remove_nones(kwargs)
         params.update({"webhook": self.key})
         self.post("webhooks/update", params=params)
 
     def audit(self):
+        """
+        :meta private:
+        """
         if self._json["latestDelivery"]["success"]:
             return []
         rule = rules.get_rule(rules.RuleId.FAILED_WEBHOOK)
         return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
 
     def to_json(self, full=False):
+        """Exports a Webhook configuration in JSON format
+
+        :param full: Whether to export all properties, including those that can't be set, or not, defaults to False
+        :type full: bool, optional
+        :return: The configuration of the DevOps platform (except secrets)
+        :rtype: dict
+        """
         return util.filter_export(self._json, _IMPORTABLE_PROPERTIES, full)
 
 
 def search(endpoint, params=None):
+    """Searches webhooks
+
+    :param params: Filters to narrow down the search, can only be "project"
+    :return: List of webhooks
+    :rtype: dict{<key>: <WebHook>}
+    """
     return sq.search_objects(api="webhooks/list", params=params, returned_field="webhooks", key_field="key", object_class=WebHook, endpoint=endpoint)
 
 
@@ -116,11 +139,15 @@ def get_object(name, endpoint, project_key=None, data=None):
 
 
 def _uuid(name, project_key):
+    # FIXME: Make UUID really unique
     p = "" if project_key is None else f":PROJECT:{project_key}"
     return f"{name}{p}"
 
 
 def audit(endpoint):
+    """
+    :meta private:
+    """
     util.logger.info("Auditing webhooks")
     problems = []
     for wh in search(endpoint=endpoint).values():
