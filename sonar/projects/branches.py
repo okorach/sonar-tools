@@ -36,7 +36,7 @@ APIS = {
     "list": "project_branches/list",
     "rename": "project_branches/rename",
     "get_new_code": "new_code_periods/list",
-    "delete": "project_branches/delete"
+    "delete": "project_branches/delete",
 }
 
 _UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
