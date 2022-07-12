@@ -39,23 +39,28 @@ import sonar.audit.problem as pb
 _OBJECTS = {}
 _MAP = {}
 
-_CREATE_API = "qualitygates/create"
-_SEARCH_API = "qualitygates/list"
-_DETAILS_API = "qualitygates/show"
+#: Quality gates APIs
+APIS = {
+    "create": "qualitygates/create",
+    "list": "qualitygates/list",
+    "rename": "qualitygates/rename",
+    "details": "qualitygates/show",
+    "get_projects": "qualitygates/search",
+}
 
-NEW_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on new issues should be 0 or should be removed from QG conditions"
+__NEW_ISSUES_SHOULD_BE_ZERO = "Any numeric threshold on new issues should be 0 or should be removed from QG conditions"
 
 GOOD_QG_CONDITIONS = {
     "new_reliability_rating": (1, 1, "Any rating other than A would let bugs slip through in new code"),
     "new_security_rating": (1, 1, "Any rating other than A would let vulnerabilities slip through in new code"),
     "new_maintainability_rating": (1, 1, "Expectation is that code smells density on new code is low enough to get A rating"),
     "new_coverage": (20, 90, "Coverage below 20% is a too low bar, above 90% is overkill"),
-    "new_bugs": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_vulnerabilities": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_security_hotspots": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_blocker_violations": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_critical_violations": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
-    "new_major_violations": (0, 0, NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_bugs": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_vulnerabilities": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_security_hotspots": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_blocker_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_critical_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
+    "new_major_violations": (0, 0, __NEW_ISSUES_SHOULD_BE_ZERO),
     "new_duplicated_lines_density": (1, 5, "Duplication on new code of less than 1% is overkill, more than 5% is too relaxed"),
     "new_security_hotspots_reviewed": (100, 100, "All hotspots on new code must be reviewed, any other condition than 100% make little sense"),
     "reliability_rating": (4, 4, "Threshold on overall code should not be too strict or passing the QG will be often impossible"),
@@ -97,7 +102,7 @@ class QualityGate(sq.SqObject):
 
     @classmethod
     def create(cls, endpoint, name):
-        r = endpoint.post(_CREATE_API, params={"name": name})
+        r = endpoint.post(APIS["create"], params={"name": name})
         if not r.ok:
             return None
         return cls.get_object(endpoint, name)
@@ -148,7 +153,7 @@ class QualityGate(sq.SqObject):
         while page <= nb_pages:
             params["p"] = page
             try:
-                resp = self.get("qualitygates/search", params=params, exit_on_error=False)
+                resp = self.get(APIS["get_projects"], params=params, exit_on_error=False)
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
@@ -176,7 +181,7 @@ class QualityGate(sq.SqObject):
         """
         if self._conditions is None:
             self._conditions = []
-            data = json.loads(self.get(_DETAILS_API, params={"name": self.name}).text)
+            data = json.loads(self.get(APIS["details"], params={"name": self.name}).text)
             for c in data.get("conditions", []):
                 self._conditions.append(c)
         if encoded:
@@ -238,7 +243,7 @@ class QualityGate(sq.SqObject):
         """
         if "name" in data and data["name"] != self.name:
             util.logger.info("Renaming %s with %s", str(self), data["name"])
-            self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
+            self.post(APIS["rename"], params={"id": self.key, "name": data["name"]})
             _MAP.pop(self.name, None)
             self.name = data["name"]
             _MAP[self.name] = self
@@ -330,7 +335,7 @@ def get_list(endpoint):
     :rtype: dict {<name>: <QualityGate>}
     """
     util.logger.info("Getting quality gates")
-    data = json.loads(endpoint.get("qualitygates/list").text)
+    data = json.loads(endpoint.get(APIS["list"]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
         qg_obj = QualityGate(name=qg["name"], endpoint=endpoint, data=qg)
@@ -402,4 +407,4 @@ def _decode_condition(c):
 
 
 def search_by_name(endpoint, name):
-    return util.search_by_name(endpoint, name, _SEARCH_API, "qualitygates")
+    return util.search_by_name(endpoint, name, APIS["list"], "qualitygates")
