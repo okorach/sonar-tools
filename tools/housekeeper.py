@@ -173,8 +173,8 @@ def _delete_objects(problems, mode):
                 deleted_projects[obj.key] = obj
                 deleted_loc += loc
         if isinstance(obj, branches.Branch):
-            if obj.project.key in deleted_projects:
-                util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
+            if obj.concerned_object.key in deleted_projects:
+                util.logger.info("%s deleted, so no need to delete %s", str(obj.concerned_object), str(obj))
             elif mode != "delete" or obj.delete():
                 deleted_branch_count += 1
         if isinstance(obj, pull_requests.PullRequest):
