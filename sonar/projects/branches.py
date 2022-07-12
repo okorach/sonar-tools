@@ -31,11 +31,14 @@ from sonar.audit import rules, problem
 
 _OBJECTS = {}
 
+#: APIs used for branch management
 APIS = {
     "list": "project_branches/list",
     "rename": "project_branches/rename",
     "delete": "project_branches/delete"
 }
+
+_UNSUPPORTED_IN_CE = "Branches not available in Community Edition"
 
 
 class Branch(components.Component):
@@ -45,6 +48,15 @@ class Branch(components.Component):
 
     @classmethod
     def read(cls, project, branch_name):
+        """Gets a SonarQube Branch object
+
+        :param Project project:
+        :param str branch_name:
+        :raises UnsupportedOperation: If trying to manipulate branches on a community edition
+        :raises ObjectNotFound: If project key or branch name not found in SonarQube
+        :return: The Branch object
+        :rtype: Branch
+        """
         uuid = _uuid(project.key, branch_name)
         if uuid in _OBJECTS:
             return _OBJECTS[uuid]
@@ -60,12 +72,26 @@ class Branch(components.Component):
 
     @classmethod
     def load(cls, project, branch_name, data):
+        """Gets a Branch object from JSON data gotten from a list API call
+
+        :param Project project:
+        :param str branch_name:
+        :param dict data:
+        :raises UnsupportedOperation: If trying to manipulate branches on a community edition
+        :raises ObjectNotFound: If project key or branch name not found in SonarQube
+        :return: The Branch object
+        :rtype: Branch
+        """
         uuid = _uuid(project.key, branch_name)
         o = _OBJECTS[uuid] if uuid in _OBJECTS else cls(project, branch_name)
         o._load(data)
         return o
 
     def __init__(self, project, name):
+        """Don't use this, use class methods to create object
+        """
+        if project.endpoint.edition() == "community":
+            raise exceptions.UnsupportedOperation("Branches not available in Community Edition")
         super().__init__(name, project.endpoint)
         self.name = name
         self.project = project
@@ -352,6 +378,8 @@ def get_list(project):
     """
     if project.endpoint.edition() == "community":
         util.logger.debug("branches not available in Community Edition")
+        return exceptions.UnsupportedOperation("Branches not available in Community Edition")
+
         return {}
     util.logger.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
