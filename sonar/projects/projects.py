@@ -1242,7 +1242,8 @@ def __export_zip_thread(queue, results, statuses, export_timeout):
         project = queue.get()
         try:
             dump = project.export_zip(timeout=export_timeout)
-        except exceptions.UnsupportedOperation as e:
+        except exceptions.UnsupportedOperation:
+            queue.task_done()
             util.exit_fatal("Zip export unsupported on your SonarQube version", options.ERR_UNSUPPORTED_OPERATION)
         status = dump["status"]
         statuses[status] = 1 if status not in statuses else statuses[status] + 1

@@ -65,30 +65,29 @@ class DevopsPlatform(sqobject.SqObject):
         if key in _OBJECTS:
             return _OBJECTS[key]
         o = DevopsPlatform(key, endpoint, plt_type)
-        o._load(data)
+        return o._load(data)
 
     @classmethod
     def create(cls, endpoint, key, plt_type):
-        # exit_on_error = self.endpoint.edition() in ("enterprise", "datacenter")
         params = {"key": key}
         try:
             if plt_type == "github":
                 params["clientSecret"] = "TO_BE_SET"
                 params["privateKey"] = "TO_BE_SET"
-                r = endpoint.post(_CREATE_API_GITHUB, params=params)
+                endpoint.post(_CREATE_API_GITHUB, params=params)
             elif plt_type == "azure":
                 # TODO: pass secrets on the cmd line
                 params["personalAccessToken"] = "TO_BE_SET"
                 r = endpoint.post(_CREATE_API_AZURE, params=params)
             elif plt_type == "gitlab":
                 params["personalAccessToken"] = "TO_BE_SET"
-                r = endpoint.post(_CREATE_API_GITLAB, params=params)
+                endpoint.post(_CREATE_API_GITLAB, params=params)
             elif plt_type == "bitbucket":
                 params["personalAccessToken"] = "TO_BE_SET"
-                r = endpoint.post(_CREATE_API_BITBUCKET, params=params)
+                endpoint.post(_CREATE_API_BITBUCKET, params=params)
             elif plt_type == "bitbucketcloud":
                 params["clientSecret"] = "TO_BE_SET"
-                r = endpoint.post(_CREATE_API_BBCLOUD, params=params)
+                endpoint.post(_CREATE_API_BBCLOUD, params=params)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST and endpoint.edition() == "developer":
                 util.logger.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
