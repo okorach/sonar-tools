@@ -17,11 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""
 
-    Abstraction of the SonarQube "application" concept
-
-"""
 import json
 from http import HTTPStatus
 from sonar import components, exceptions, settings
@@ -42,6 +38,9 @@ _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches"
 
 
 class Application(aggr.Aggregation):
+    """
+    Abstraction of the SonarQube "application" concept
+    """
     def __init__(self, key, endpoint, data=None, name=None, create_data=None):
         super().__init__(key, endpoint)
         self._branches = None
