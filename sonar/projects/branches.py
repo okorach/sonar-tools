@@ -30,7 +30,12 @@ import sonar.utilities as util
 from sonar.audit import rules, problem
 
 _OBJECTS = {}
-_LIST_API = "project_branches/list"
+
+APIS = {
+    "list": "project_branches/list",
+    "rename": "project_branches/rename",
+    "delete": "project_branches/delete"
+}
 
 
 class Branch(components.Component):
@@ -44,7 +49,7 @@ class Branch(components.Component):
         if uuid in _OBJECTS:
             return _OBJECTS[uuid]
         try:
-            data = json.loads(project.endpoint.get(_LIST_API, params={"project": project.key}).text)
+            data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(project.key, f"Project '{project.key}' not found")
@@ -80,7 +85,7 @@ class Branch(components.Component):
         :return: itself
         :rtype: Branch
         """
-        data = json.loads(self.get(_LIST_API, params={"project": self.project.key}).text)
+        data = json.loads(self.get(APIS["list"], params={"project": self.project.key}).text)
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self._load(br)
@@ -140,11 +145,12 @@ class Branch(components.Component):
         :rtype: bool
         """
         util.logger.info("Deleting %s", str(self))
-        r = self.post("project_branches/delete", params={"branch": self.name, "project": self.project.key})
-        if r.ok:
+        try:
+            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.project.key})
             util.logger.info("%s: Successfully deleted", str(self))
-        else:
-            util.logger.error("%s: deletion failed", str(self))
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
         return r.ok
 
     def new_code(self):
@@ -206,7 +212,7 @@ class Branch(components.Component):
             util.logger.debug("Skipping rename %s with same new name", str(self))
             return True
         util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.project), self.name, new_name)
-        resp = self.post("project_branches/rename", params={"project": self.project.key, "name": new_name}, exit_on_error=False)
+        resp = self.post(APIS["rename"], params={"project": self.project.key, "name": new_name}, exit_on_error=False)
         if not resp.ok:
             util.logger.error("HTTP %d - %s", resp.status_code, resp.text)
             return False
@@ -348,7 +354,7 @@ def get_list(project):
         util.logger.debug("branches not available in Community Edition")
         return {}
     util.logger.debug("Reading all branches of %s", str(project))
-    data = json.loads(project.endpoint.get(_LIST_API, params={"project": project.key}).text)
+    data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
     return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
 
