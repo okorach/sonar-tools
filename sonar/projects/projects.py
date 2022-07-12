@@ -82,9 +82,9 @@ class Project(components.Component):
             self.post(
                 _CREATE_API, params={"project": self.key, "name": create_data.get("name", None), "visibility": create_data.get("visibility", None)}
             )
-            self.__load()
+            self._load()
         else:
-            self.__load(data)
+            self._load(data)
         _OBJECTS[key] = self
         util.logger.debug("Created %s", str(self))
 
@@ -95,7 +95,7 @@ class Project(components.Component):
         """
         return f"project '{self.key}'"
 
-    def __load(self, data=None):
+    def _load(self, data=None):
         """Loads a project object with contents of an api/projects/search call"""
         if data is None:
             data = json.loads(self.get(_SEARCH_API, params={"projects": self.key}).text)
@@ -126,7 +126,7 @@ class Project(components.Component):
         :rtype: list[Branch]
         """
         if self._last_analysis == "undefined":
-            self.__load()
+            self._load()
         if not include_branches:
             return self._last_analysis
         if self._branches_last_analysis != "undefined":
@@ -175,10 +175,14 @@ class Project(components.Component):
     def branches(self):
         """
         :return: List of branches of the project
-        :rtype: list[Branches]
+        :rtype: dict{<branchName>: <Branch>}
         """
-        if self._branches is None:
-            self._branches = branches.get_list(self)
+        if not self._branches:
+            # Caching
+            try:
+                self._branches = branches.get_list(self)
+            except exceptions.UnsupportedOperation:
+                self._branches = {}
         return self._branches
 
     def main_branch(self):
