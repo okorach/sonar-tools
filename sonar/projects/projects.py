@@ -318,13 +318,13 @@ class Project(components.Component):
         util.logger.debug("Auditing %s branches", str(self))
         problems = []
         main_br_count = 0
-        for branch in self.branches():
-            if branch.name in ("main", "master"):
+        for name, branch in self.branches().items():
+            problems += branch.audit(audit_settings)
+            if name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
                     rule = rules.get_rule(rules.RuleId.PROJ_MAIN_AND_MASTER)
                     problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
-            problems += branch.audit(audit_settings)
         return problems
 
     def __audit_pull_requests(self, audit_settings):
