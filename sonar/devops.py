@@ -78,7 +78,7 @@ class DevopsPlatform(sqobject.SqObject):
             elif plt_type == "azure":
                 # TODO: pass secrets on the cmd line
                 params["personalAccessToken"] = "TO_BE_SET"
-                r = endpoint.post(_CREATE_API_AZURE, params=params)
+                endpoint.post(_CREATE_API_AZURE, params=params)
             elif plt_type == "gitlab":
                 params["personalAccessToken"] = "TO_BE_SET"
                 endpoint.post(_CREATE_API_GITLAB, params=params)

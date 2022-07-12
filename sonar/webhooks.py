@@ -139,7 +139,7 @@ def get_object(name, endpoint, project_key=None, data=None):
 
 
 def _uuid(name, project_key):
-    # TODO: Make UUID really unique
+    # FIXME: Make UUID really unique
     p = "" if project_key is None else f":PROJECT:{project_key}"
     return f"{name}{p}"
 
