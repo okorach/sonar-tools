@@ -262,7 +262,9 @@ class Branch(components.Component):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
+        _OBJECTS.pop(uuid(self.concerned_object.key, self.name), None)
         self.name = new_name
+        _OBJECTS[uuid(self.concerned_object.key, self.name)] = self
         return True
 
     def __audit_zero_loc(self):
