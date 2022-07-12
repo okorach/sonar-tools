@@ -234,8 +234,8 @@ class Platform:
                     success = True
                 except HTTPError as e:
                     # Hack: SonarQube randomly returns Error 500 on this API, retry up to 10 times
-                    util.logger.error("HTTP Error 500 for api/system/info, retrying...")
                     if e.response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR and counter < 10:
+                        util.logger.error("HTTP Error 500 for api/system/info, retrying...")
                         time.sleep(0.5)
                         counter += 1
                     else:
