@@ -29,13 +29,12 @@ class ObjectNotFound(SonarException):
     """
     Object not found during a SonarQube search
     """
-
     def __init__(self, key, message):
         super().__init__(message)
         self.key = key
 
 
-class UnsupportedOperation(Exception):
+class UnsupportedOperation(SonarException):
     """
-    Unsupported operation (most often due to edition not allowing it
+    Unsupported operation (most often due to edition not allowing it)
     """
