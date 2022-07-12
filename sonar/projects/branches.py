@@ -35,6 +35,7 @@ _OBJECTS = {}
 APIS = {
     "list": "project_branches/list",
     "rename": "project_branches/rename",
+    "get_new_code": "new_code_periods/list",
     "delete": "project_branches/delete"
 }
 
@@ -90,7 +91,9 @@ class Branch(components.Component):
         return o
 
     def __init__(self, concerned_object, name):
-        """Don't use this, use class methods to create object
+        """Don't use this, use class methods to create Branch objects
+
+        :raises UnsupportedOperation: When attempting to branches on Community Edition
         """
         if concerned_object.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
@@ -110,10 +113,15 @@ class Branch(components.Component):
     def refresh(self):
         """Reads a branch in SonarQube (refresh with latest data)
 
+        :raises ObjectNotFound: Branch not found in SonarQube
         :return: itself
         :rtype: Branch
         """
-        data = json.loads(self.get(APIS["list"], params={"project": self.concerned_object.key}).text)
+        try:
+            data = json.loads(self.get(APIS["list"], params={"project": self.concerned_object.key}).text)
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found in SonarQube")
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self._load(br)
@@ -171,6 +179,7 @@ class Branch(components.Component):
     def delete(self, api=None, params=None):
         """Deletes a branch
 
+        :raises ObjectNotFound: Branch not found for deletion
         :return: Whether the deletion was successful
         :rtype: bool
         """
@@ -189,7 +198,11 @@ class Branch(components.Component):
         :rtype: str
         """
         if self._new_code is None:
-            data = json.loads(self.get(api="new_code_periods/list", params={"project": self.concerned_object.key}).text)
+            try:
+                data = json.loads(self.get(api=APIS["get_new_code"], params={"project": self.concerned_object.key}).text)
+            except HTTPError as e:
+                if e.response.status_code == HTTPStatus.NOT_FOUND:
+                    raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
                 if b["branchKey"] == self.name:
@@ -232,20 +245,23 @@ class Branch(components.Component):
 
         :param new_name: New branch name
         :type new_name: str
+        :raises UnsupportedOperation: If trying to rename anything than the main branch
+        :raises ObjectNotFound: Concerned object (project) not found
         :return: Whether the branch was renamed
         :rtype: bool
         """
         if not self.is_main():
-            util.logger.error("Can't rename any other branch than the main branch")
-            return False
+            raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
+
         if self.name == new_name:
             util.logger.debug("Skipping rename %s with same new name", str(self))
-            return True
-        util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
-        resp = self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name}, exit_on_error=False)
-        if not resp.ok:
-            util.logger.error("HTTP %d - %s", resp.status_code, resp.text)
             return False
+        util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
+        try:
+            self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name}, exit_on_error=False)
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
         self.name = new_name
         return True
 
