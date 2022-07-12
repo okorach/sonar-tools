@@ -39,12 +39,12 @@ class Branch(components.Component):
     """
 
     @classmethod
-    def read(cls, endpoint, project, branch_name):
+    def read(cls, project, branch_name):
         uuid = _uuid(project.key, branch_name)
         if uuid in _OBJECTS:
             return _OBJECTS[uuid]
         try:
-            data = json.loads(endpoint.get(_LIST_API, params={"project": project.key}).text)
+            data = json.loads(project.endpoint.get(_LIST_API, params={"project": project.key}).text)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(project.key, f"Project '{project.key}' not found")
@@ -159,8 +159,8 @@ class Branch(components.Component):
                 if b["branchKey"] == self.name:
                     self._new_code = new_code
                 else:
-                    b_obj = get_object(b["branchKey"], self.project)
-                    b_obj._new_code = new_code
+                    # While we're there let's store the new code of other branches
+                    Branch.read(self.project, b["branchKey"])._new_code = new_code
         return self._new_code
 
     def export(self, full_export=True):
@@ -316,6 +316,7 @@ class Branch(components.Component):
     def audit(self, audit_settings):
         """Audits a branch and return list of problems found
 
+        :meta private:
         :param audit_settings: Options of what to audit and thresholds to raise problems
         :type audit_settings: dict
         :return: List of problems found, or empty list
@@ -336,41 +337,19 @@ def _uuid(project_key, branch_name):
     return f"{project_key} {branch_name}"
 
 
-def get_object(branch, project, data=None):
-    """Retrieves a branch
-
-    :param branch: Branch name
-    :type branch: str
-    :param project: Project the branch belongs to
-    :type project: Project
-    :return: The Branch object
-    :rtype: Branch
-    """
-    if project.endpoint.edition() == "community":
-        util.logger.debug("Branches not available in Community Edition")
-        return None
-    b_id = _uuid(project.key, branch)
-    if b_id not in _OBJECTS:
-        _ = Branch(project, branch, data=data, endpoint=project.endpoint)
-    return _OBJECTS[b_id]
-
-
 def get_list(project):
     """Retrieves a branch
 
-    :param branch: Branch name
-    :type branch: str
-    :param project: Project the branch belongs to
-    :type project: Project
-    :return: The Branch object
-    :rtype: Branch
+    :param Project project: Project the branch belongs to
+    :return: List of project branches
+    :rtype: dict{<branchName>: <Branch object>}
     """
     if project.endpoint.edition() == "community":
         util.logger.debug("branches not available in Community Edition")
         return {}
     util.logger.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(_LIST_API, params={"project": project.key}).text)
-    return [get_object(branch=branch["name"], project=project, data=branch) for branch in data.get("branches", {})]
+    return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
 
 def exists(branch_name, project_key, endpoint):
