@@ -45,6 +45,7 @@ echo "y" | python3 -m pip uninstall sonar-tools
 python3 -m pip install dist/*-py3-*.whl
 
 if [ "$build_docs" == "1" ]; then
+    rm -rf api-doc/build
     sphinx-build -b html api-doc/source api-doc/build
 fi
 
