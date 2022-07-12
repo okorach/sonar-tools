@@ -47,10 +47,10 @@ class Branch(components.Component):
     """
 
     @classmethod
-    def read(cls, concerned_object, branch_name):
+    def get_object(cls, concerned_object, branch_name):
         """Gets a SonarQube Branch object
 
-        :param concerned_object: Concerned object (Project or Application)
+        :param concerned_object: Object concerned by the branch (Project or Application)
         :type concerned_object: Project or Application
         :param str branch_name: The branch name
         :raises UnsupportedOperation: If trying to manipulate branches on a community edition
@@ -75,7 +75,7 @@ class Branch(components.Component):
     def load(cls, concerned_object, branch_name, data):
         """Gets a Branch object from JSON data gotten from a list API call
 
-        :param concerned_object: Concerned object (Project or Application)
+        :param concerned_object: Object concerned by the branch (Project or Application)
         :type concerned_object: Project or Application
         :param str branch_name:
         :param dict data:
@@ -196,7 +196,7 @@ class Branch(components.Component):
                     self._new_code = new_code
                 else:
                     # While we're there let's store the new code of other branches
-                    Branch.read(self.concerned_object, b["branchKey"])._new_code = new_code
+                    Branch.get_object(self.concerned_object, b["branchKey"])._new_code = new_code
         return self._new_code
 
     def export(self, full_export=True):
