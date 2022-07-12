@@ -57,7 +57,7 @@ class DevopsPlatform(sqobject.SqObject):
             for p in platforms:
                 if p["key"] == key:
                     return cls.load(endpoint, plt_type, data)
-        raise exceptions.ObjectNotFound(f"DevOps platform key '{key}' not found")
+        raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
 
     @classmethod
     def load(cls, endpoint, plt_type, data):
