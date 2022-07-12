@@ -47,34 +47,36 @@ class Branch(components.Component):
     """
 
     @classmethod
-    def read(cls, project, branch_name):
+    def read(cls, concerned_object, branch_name):
         """Gets a SonarQube Branch object
 
-        :param Project project:
-        :param str branch_name:
+        :param concerned_object: Concerned object (Project or Application)
+        :type concerned_object: Project or Application
+        :param str branch_name: The branch name
         :raises UnsupportedOperation: If trying to manipulate branches on a community edition
         :raises ObjectNotFound: If project key or branch name not found in SonarQube
         :return: The Branch object
         :rtype: Branch
         """
-        _uuid = uuid(project.key, branch_name)
+        _uuid = uuid(concerned_object.key, branch_name)
         if _uuid in _OBJECTS:
             return _OBJECTS[_uuid]
         try:
-            data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
+            data = json.loads(concerned_object.endpoint.get(APIS["list"], params={"project": concerned_object.key}).text)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(project.key, f"Project '{project.key}' not found")
+                raise exceptions.ObjectNotFound(concerned_object.key, f"Project '{concerned_object.key}' not found")
         for br in data.get("branches", []):
             if br["name"] == branch_name:
-                return cls.load(project, branch_name, data)
-        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of project '{project.key}' not found")
+                return cls.load(concerned_object, branch_name, data)
+        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of project '{concerned_object.key}' not found")
 
     @classmethod
-    def load(cls, project, branch_name, data):
+    def load(cls, concerned_object, branch_name, data):
         """Gets a Branch object from JSON data gotten from a list API call
 
-        :param Project project:
+        :param concerned_object: Concerned object (Project or Application)
+        :type concerned_object: Project or Application
         :param str branch_name:
         :param dict data:
         :raises UnsupportedOperation: If trying to manipulate branches on a community edition
@@ -82,19 +84,19 @@ class Branch(components.Component):
         :return: The Branch object
         :rtype: Branch
         """
-        _uuid = uuid(project.key, branch_name)
-        o = _OBJECTS[_uuid] if _uuid in _OBJECTS else cls(project, branch_name)
+        _uuid = uuid(concerned_object.key, branch_name)
+        o = _OBJECTS[_uuid] if _uuid in _OBJECTS else cls(concerned_object, branch_name)
         o._load(data)
         return o
 
-    def __init__(self, project, name):
+    def __init__(self, concerned_object, name):
         """Don't use this, use class methods to create object
         """
-        if project.endpoint.edition() == "community":
+        if concerned_object.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-        super().__init__(name, project.endpoint)
+        super().__init__(name, concerned_object.endpoint)
         self.name = name
-        self.project = project
+        self.concerned_object = concerned_object
         self._is_main = None
         self._new_code = None
         self._last_analysis = None
@@ -103,7 +105,7 @@ class Branch(components.Component):
         util.logger.debug("Created object %s", str(self))
 
     def __str__(self):
-        return f"branch '{self.name}' of {str(self.project)}"
+        return f"branch '{self.name}' of {str(self.concerned_object)}"
 
     def refresh(self):
         """Reads a branch in SonarQube (refresh with latest data)
@@ -111,11 +113,13 @@ class Branch(components.Component):
         :return: itself
         :rtype: Branch
         """
-        data = json.loads(self.get(APIS["list"], params={"project": self.project.key}).text)
+        data = json.loads(self.get(APIS["list"], params={"project": self.concerned_object.key}).text)
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self._load(br)
-                break
+            else:
+                # While we're there let's load other branches with up to date branch data
+                Branch.load(self.concerned_object, br["name"], data)
         return self
 
     def _load(self, data):
@@ -133,7 +137,7 @@ class Branch(components.Component):
         :return: the UUID
         :rtype: str
         """
-        return uuid(self.project.key, self.name)
+        return uuid(self.concerned_object.key, self.name)
 
     def last_analysis(self):
         """
@@ -172,7 +176,7 @@ class Branch(components.Component):
         """
         util.logger.info("Deleting %s", str(self))
         try:
-            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.project.key})
+            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.concerned_object.key})
             util.logger.info("%s: Successfully deleted", str(self))
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
@@ -185,14 +189,14 @@ class Branch(components.Component):
         :rtype: str
         """
         if self._new_code is None:
-            data = json.loads(self.get(api="new_code_periods/list", params={"project": self.project.key}).text)
+            data = json.loads(self.get(api="new_code_periods/list", params={"project": self.concerned_object.key}).text)
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
                 if b["branchKey"] == self.name:
                     self._new_code = new_code
                 else:
                     # While we're there let's store the new code of other branches
-                    Branch.read(self.project, b["branchKey"])._new_code = new_code
+                    Branch.read(self.concerned_object, b["branchKey"])._new_code = new_code
         return self._new_code
 
     def export(self, full_export=True):
@@ -212,7 +216,7 @@ class Branch(components.Component):
         if self.new_code():
             data[settings.NEW_CODE_PERIOD] = self.new_code()
         if full_export:
-            data.update({"name": self.name, "project": self.project.key})
+            data.update({"name": self.name, "project": self.concerned_object.key})
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
@@ -221,7 +225,7 @@ class Branch(components.Component):
         :return: The branch URL in SonarQube as permalink
         :rtype: str
         """
-        return f"{self.endpoint.url}/dashboard?id={self.project.key}&branch={requests.utils.quote(self.name)}"
+        return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&branch={requests.utils.quote(self.name)}"
 
     def rename(self, new_name):
         """Renames a branch
@@ -237,8 +241,8 @@ class Branch(components.Component):
         if self.name == new_name:
             util.logger.debug("Skipping rename %s with same new name", str(self))
             return True
-        util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.project), self.name, new_name)
-        resp = self.post(APIS["rename"], params={"project": self.project.key, "name": new_name}, exit_on_error=False)
+        util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
+        resp = self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name}, exit_on_error=False)
         if not resp.ok:
             util.logger.error("HTTP %d - %s", resp.status_code, resp.text)
             return False
@@ -270,7 +274,7 @@ class Branch(components.Component):
         return issues.search_all(
             endpoint=self.endpoint,
             params={
-                "componentKeys": self.project.key,
+                "componentKeys": self.concerned_object.key,
                 "branch": self.name,
                 "additionalFields": "comments",
             },
@@ -285,7 +289,7 @@ class Branch(components.Component):
         return hotspots.search(
             endpoint=self.endpoint,
             params={
-                "projectKey": self.project.key,
+                "projectKey": self.concerned_object.key,
                 "branch": self.name,
                 "additionalFields": "comments",
             },
@@ -362,7 +366,7 @@ class Branch(components.Component):
 
         :meta private:
         """
-        return {"project": self.project.key, "branch": self.name}
+        return {"project": self.concerned_object.key, "branch": self.name}
 
 
 def uuid(project_key, branch_name):
