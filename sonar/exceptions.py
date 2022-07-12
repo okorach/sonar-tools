@@ -29,6 +29,9 @@ class ObjectNotFound(SonarException):
     """
     Object not found during a SonarQube search
     """
+    def __init__(self, key, message):
+        super().__init__(message)
+        self.key = key
 
 
 class UnsupportedOperation(Exception):
