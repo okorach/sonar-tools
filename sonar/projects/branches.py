@@ -57,9 +57,9 @@ class Branch(components.Component):
         :return: The Branch object
         :rtype: Branch
         """
-        uuid = _uuid(project.key, branch_name)
-        if uuid in _OBJECTS:
-            return _OBJECTS[uuid]
+        _uuid = uuid(project.key, branch_name)
+        if _uuid in _OBJECTS:
+            return _OBJECTS[_uuid]
         try:
             data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
         except HTTPError as e:
@@ -82,8 +82,8 @@ class Branch(components.Component):
         :return: The Branch object
         :rtype: Branch
         """
-        uuid = _uuid(project.key, branch_name)
-        o = _OBJECTS[uuid] if uuid in _OBJECTS else cls(project, branch_name)
+        _uuid = uuid(project.key, branch_name)
+        o = _OBJECTS[_uuid] if _uuid in _OBJECTS else cls(project, branch_name)
         o._load(data)
         return o
 
@@ -133,7 +133,7 @@ class Branch(components.Component):
         :return: the UUID
         :rtype: str
         """
-        return _uuid(self.project.key, self.name)
+        return uuid(self.project.key, self.name)
 
     def last_analysis(self):
         """
@@ -365,7 +365,14 @@ class Branch(components.Component):
         return {"project": self.project.key, "branch": self.name}
 
 
-def _uuid(project_key, branch_name):
+def uuid(project_key, branch_name):
+    """Computes a uuid for the branch that can serve as index
+
+    :param str project_key: The project key
+    :param str branch_name: The branch name
+    :return: the UUID
+    :rtype: str
+    """
     return f"{project_key} {branch_name}"
 
 
@@ -386,12 +393,12 @@ def get_list(project):
     return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
 
-def exists(branch_name, project_key, endpoint):
-    """
-    :param branch_name: Branch name
-    :type branch_name: str
-    :param project_key: Project key
-    :type project_key: str
+def exists(endpoint, branch_name, project_key):
+    """Checks if a branch exists
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str branch_name: Branch name
+    :param str project_key: Project key
     :raises UnsupportedOperation: Branches not supported in Community Edition
     :return: Whether the branch exists in SonarQube
     :rtype: bool
