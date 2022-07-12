@@ -18,9 +18,11 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from http import HTTPStatus
 import json
+from requests.exceptions import HTTPError
 import requests.utils
-from sonar import measures, components, syncer, settings
+from sonar import measures, components, syncer, settings, exceptions
 from sonar.projects import projects
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
@@ -36,22 +38,38 @@ class Branch(components.Component):
     Abstraction of the SonarQube "project branch" concept
     """
 
-    def __init__(self, project, name, data=None, endpoint=None):
-        if endpoint is not None:
-            super().__init__(name, endpoint)
-        else:
-            super().__init__(name, project.endpoint)
+    @classmethod
+    def read(cls, endpoint, project, branch_name):
+        uuid = _uuid(project.key, branch_name)
+        if uuid in _OBJECTS:
+            return _OBJECTS[uuid]
+        try:
+            data = json.loads(endpoint.get(_LIST_API, params={"project": project.key}).text)
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(project.key, f"Project '{project.key}' not found")
+        for br in data.get("branches", []):
+            if br["name"] == branch_name:
+                return cls.load(project, branch_name, data)
+        raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of project '{project.key}' not found")
+
+    @classmethod
+    def load(cls, project, branch_name, data):
+        uuid = _uuid(project.key, branch_name)
+        o = _OBJECTS[uuid] if uuid in _OBJECTS else cls(project, branch_name)
+        o._load(data)
+        return o
+
+    def __init__(self, project, name):
+        super().__init__(name, project.endpoint)
         self.name = name
         self.project = project
         self._is_main = None
-        self._json = data
         self._new_code = None
         self._last_analysis = None
         self._keep_when_inactive = None
-        if data:
-            self.__load(data)
         _OBJECTS[self.uuid()] = self
-        util.logger.debug("Created %s", str(self))
+        util.logger.debug("Created object %s", str(self))
 
     def __str__(self):
         return f"branch '{self.name}' of {str(self.project)}"
@@ -65,11 +83,11 @@ class Branch(components.Component):
         data = json.loads(self.get(_LIST_API, params={"project": self.project.key}).text)
         for br in data.get("branches", []):
             if br["name"] == self.name:
-                self.__load(br)
+                self._load(br)
                 break
         return self
 
-    def __load(self, data):
+    def _load(self, data):
         if self._json is None:
             self._json = data
         else:
