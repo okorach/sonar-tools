@@ -1168,6 +1168,7 @@ def export(endpoint, key_list=None, full=False, threads=8):
         util.logger.debug("Starting project export thread %d", i)
         worker = Thread(target=__export_thread, args=(q, project_settings, full))
         worker.setDaemon(True)
+        worker.setName(f"ProjectExport{i}")
         worker.start()
     q.join()
     return project_settings
