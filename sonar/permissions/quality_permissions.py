@@ -92,7 +92,8 @@ class QualityPermissions(permissions.Permissions):
             self._post_api(apis["remove"][p], field[p], to_remove, **kwargs)
             to_add = diff_func(decoded_perms, self.permissions[p])
             self._post_api(apis["add"][p], field[p], to_add, **kwargs)
-        return self.read()
+        self.read()
+        return True
 
     def _read_perms(self, apis, field, **kwargs):
         self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
