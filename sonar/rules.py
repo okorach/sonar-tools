@@ -25,7 +25,7 @@
 import json
 from http import HTTPStatus
 import sonar.sqobject as sq
-from sonar import utilities, options
+from sonar import utilities, exceptions
 
 _OBJECTS = {}
 SEARCH_API = "rules/search"
@@ -45,7 +45,7 @@ class Rule(sq.SqObject):
         if r.ok:
             return Rule(key, endpoint, json.loads(r.text)["rule"])
         elif r.status_code == HTTPStatus.NOT_FOUND:
-            raise options.NonExistingObjectError(key=key, message=f"Rule key '{key}' does not exist")
+            raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
         else:
             utilities.log_and_exit(r)
 
@@ -73,7 +73,7 @@ class Rule(sq.SqObject):
             rule = Rule.read(key, endpoint)
             utilities.logger.info("Rule key '%s' already exists, instantiation skipped...", key)
             return rule
-        except options.NonExistingObjectError:
+        except exceptions.ObjectNotFound:
             pass
         utilities.logger.info("Instantiating rule key '%s' from template key '%s'", key, template_key)
         rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
@@ -152,7 +152,7 @@ def get_object(key, endpoint):
         return _OBJECTS[key]
     try:
         return Rule.read(key, endpoint)
-    except options.NonExistingObjectError:
+    except exceptions.ObjectNotFound:
         return None
 
 

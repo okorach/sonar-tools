@@ -25,7 +25,7 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 """
 import sys
-from sonar import measures, metrics, platform, version, options
+from sonar import measures, metrics, platform, version, options, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -212,7 +212,7 @@ def main():
 
     try:
         project_list = projects.get_list(endpoint=endpoint, key_list=args.projectKeys)
-    except options.NonExistingObjectError as e:
+    except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     is_first = True
     obj_list = []
