@@ -20,6 +20,7 @@
 
 import json
 from http import HTTPStatus
+from requests.exceptions import HTTPError
 from sonar import components, exceptions, settings
 from sonar.projects import projects, branches
 from sonar.permissions import application_permissions
@@ -41,22 +42,76 @@ class Application(aggr.Aggregation):
     """
     Abstraction of the SonarQube "application" concept
     """
-    def __init__(self, key, endpoint, data=None, name=None, create_data=None):
+
+    @classmethod
+    def get_object(cls, endpoint, key):
+        """Gets an Application object from SonarQube
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str key: Application key, must not already exist on SonarQube
+        :raises UnsupportedOperation: If on a Community Edition
+        :raises ObjectNotFound: If Application key not found in SonarQube
+        :return: The found Application object
+        :rtype: Application
+        """
+        if endpoint.edition() == "community":
+            raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
+        if key in _OBJECTS:
+            return _OBJECTS[key]
+        try:
+            data = json.loads(endpoint.get(_GET_API, params={"application": key}).text)
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(key, f"Application '{key}' not found")
+        return cls.load(endpoint, key, data)
+
+    @classmethod
+    def load(cls, endpoint, key, data):
+        """Loads an Application object with data retrieved from SonarQube
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str key: Application key, must not already exist on SonarQube
+        :param dict data: Data coming from api/components/search_projects or api/applications/show
+        :raises UnsupportedOperation: If on a Community Edition
+        :raises ObjectNotFound: If Application key not found in SonarQube
+        :return: The found Application object
+        :rtype: Application
+        """
+        if endpoint.edition() == "community":
+            raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
+        o = _OBJECTS.get(key, cls(endpoint, key, data["name"]))
+        o._load(data)
+
+    @classmethod
+    def create(cls, endpoint, key, name):
+        """Creates an Application object in SonarQube
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str key: Application key, must not already exist on SonarQube
+        :param str name: Application name
+        :raises UnsupportedOperation: If on a Community Edition
+        :raises ObjectAlreadyExists: If key already exist for another Application
+        :return: The created Application object
+        :rtype: Application
+        """
+        if endpoint.edition() == "community":
+            raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
+        try:
+            endpoint.post(_CREATE_API, params={"key": key, "name": name})
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.BAD_REQUEST:
+                raise exceptions.ObjectAlreadyExists(key, e.response.text)
+        return Application(endpoint, key, name)
+
+    def __init__(self, endpoint, key, name):
+        """Don't use this directly, go through the class methods to create Objects
+        """
         super().__init__(key, endpoint)
         self._branches = None
         self._projects = None
         self._description = None
-        if create_data is not None:
-            self.name = name
-            util.logger.info("Creating %s", str(self))
-            util.logger.debug("from %s", util.json_dump(create_data))
-            resp = self.post(_CREATE_API, params={"key": self.key, "name": self.name, "visibility": create_data.get("visibility", None)})
-            self.key = json.loads(resp.text)["application"]["key"]
-            self._load(api=_GET_API, key_name="application")
-            self.key = key
-        else:
-            self._load(api=_GET_API, data=data)
-        util.logger.debug("Created %s", str(self))
+        self.name = name
+        util.logger.debug("Created object %s", str(self))
         _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
 
@@ -289,7 +344,7 @@ def audit(audit_settings, endpoint=None, key_list=None):
     return problems
 
 
-def get_object(name, endpoint=None):
+def get_object_old(name, endpoint=None):
     # TODO - Don't re-read all apps every time a new app is searched
     if len(_OBJECTS) == 0 or name not in _MAP:
         get_list(endpoint)
