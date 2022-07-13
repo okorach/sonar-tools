@@ -361,38 +361,12 @@ def get_object_by_key(key, endpoint=None):
     return _OBJECTS[key]
 
 
-def create(endpoint, name, key, data=None):
-    if endpoint.edition() == "community":
-        return None
-    if key not in _OBJECTS:
-        get_list(endpoint)
-    o = _OBJECTS.get(key)
-    if o is None:
-        o = Application(endpoint=endpoint, name=name, key=key, create_data=data)
-    else:
-        util.logger.info("%s already exist, creation skipped", str(o))
-    return o
-
-
-def create_or_update(endpoint, name, key, data):
-    if endpoint.edition() == "community":
-        util.logger.warning("Can't create applications on a community edition")
-        return
-    if key not in _OBJECTS:
-        get_list(endpoint)
-    o = _OBJECTS.get(key, None)
-    if o is None:
-        util.logger.debug("Application key '%s' does not exist, creating...", key)
-        o = create(name=name, key=key, endpoint=endpoint, data=data)
-    o.update(data)
-
-
 def import_config(endpoint, config_data, key_list=None):
     if "applications" not in config_data:
         util.logger.info("No applications to import")
         return
     if endpoint.edition() == "community":
-        util.logger.warning("Can't be import applications in a community edition")
+        util.logger.warning("Can't import applications in a community edition")
         return
     util.logger.info("Importing applications")
     search(endpoint=endpoint)
@@ -401,7 +375,11 @@ def import_config(endpoint, config_data, key_list=None):
         if new_key_list and key not in new_key_list:
             continue
         util.logger.info("Importing application key '%s'", key)
-        create_or_update(endpoint=endpoint, name=data["name"], key=key, data=data)
+        try:
+            o = Application.get_object(endpoint, key)
+        except exceptions.ObjectNotFound:
+            o = Application.create(endpoint, key, data["name"])
+        o.update(data)
 
 
 def search_by_name(endpoint, name):
