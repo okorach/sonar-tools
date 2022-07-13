@@ -385,7 +385,7 @@ def search(endpoint, params=None):
         return {}
     app_list = {}
     if endpoint.edition() == "community":
-        raise UnsupportedOperation("Applications not supported in community edition")
+        raise exceptions.UnsupportedOperation("Applications not supported in community edition")
     new_params = {"filter": "qualifier = APP"}
     if params is not None:
         new_params.update(params)
