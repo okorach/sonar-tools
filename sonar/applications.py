@@ -87,6 +87,7 @@ class Application(aggr.Aggregation):
             raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
         o = _OBJECTS.get(data["key"], cls(endpoint, data["key"], data["name"]))
         o.reload(data)
+        return o
 
     @classmethod
     def create(cls, endpoint, key, name):
@@ -380,10 +381,9 @@ def search(endpoint, params=None):
     new_params = {"filter": "qualifier = APP"}
     if params is not None:
         new_params.update(params)
-    app_list = sq.search_objects(
+    return sq.search_objects(
         api=APIS["search"], params=new_params, returned_field="components", key_field="key", object_class=Application, endpoint=endpoint
     )
-    return app_list
 
 
 def get_list(endpoint, key_list=None):
