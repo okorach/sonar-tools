@@ -404,7 +404,7 @@ def get_list(project):
     :param Project project: Project the branch belongs to
     :raises UnsupportedOperation: Branches not supported in Community Edition
     :return: List of project branches
-    :rtype: dict{<branchName>: <Branch object>}
+    :rtype: list [Branch]
     """
     if project.endpoint.edition() == "community":
         util.logger.debug(_UNSUPPORTED_IN_CE)
@@ -412,7 +412,7 @@ def get_list(project):
 
     util.logger.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
-    return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
+    return [Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})]
 
 
 def exists(endpoint, branch_name, project_key):

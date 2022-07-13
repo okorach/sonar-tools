@@ -67,7 +67,7 @@ def __get_object_measures(obj, wanted_metrics):
     measures_d["url"] = obj.url()
     proj = obj
     if not isinstance(obj, projects.Project):
-        proj = obj.project
+        proj = obj.concerned_object
         measures_d["branch"] = obj.name
     measures_d["projectKey"] = proj.key
     measures_d["projectName"] = proj.name
