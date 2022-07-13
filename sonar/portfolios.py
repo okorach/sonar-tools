@@ -26,7 +26,7 @@
 import time
 import json
 
-from sonar import aggregations, options
+from sonar import aggregations, options, exceptions
 from sonar.permissions import portfolio_permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -414,7 +414,7 @@ def get_list(endpoint, key_list=None):
     for key in util.csv_to_list(key_list):
         object_list[key] = get_object(key, endpoint=endpoint)
         if object_list[key] is None:
-            raise options.NonExistingObjectError(key, f"Portfolio key '{key}' does not exist")
+            raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' does not exist")
     return object_list
 
 
