@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-from sonar import utilities
+from sonar import utilities, exceptions
 from sonar.permissions import permissions, quality_permissions
 
 
@@ -43,8 +43,8 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
 
     def set(self, new_perms):
         if self.endpoint.version() < (9, 2, 0):
-            utilities.logger.debug("Can't set %s on SonarQube < 9.2", str(self))
-            return self
+            raise exceptions.UnsupportedOperation(f"Can't set {str(self)} on SonarQube < 9.2")
+
         return self._set_perms(
             new_perms, QualityGatePermissions.APIS, QualityGatePermissions.API_SET_FIELD, permissions.diffarray, gateName=self.concerned_object.name
         )
