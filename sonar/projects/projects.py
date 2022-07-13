@@ -669,7 +669,7 @@ class Project(components.Component):
 
     def __get_branch_export(self):
         branch_data = {}
-        my_branches = self.branches().values()
+        my_branches = self.branches()
         for branch in my_branches:
             exp = branch.export(full_export=False)
             if len(my_branches) == 1 and branch.is_main() and len(exp) <= 1:
