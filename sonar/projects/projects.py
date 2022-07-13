@@ -318,9 +318,9 @@ class Project(components.Component):
         util.logger.debug("Auditing %s branches", str(self))
         problems = []
         main_br_count = 0
-        for name, branch in self.branches().items():
+        for branch in self.branches():
             problems += branch.audit(audit_settings)
-            if name in ("main", "master"):
+            if branch.name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
                     rule = rules.get_rule(rules.RuleId.PROJ_MAIN_AND_MASTER)
