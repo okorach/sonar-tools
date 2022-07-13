@@ -317,7 +317,7 @@ class Application(aggr.Aggregation):
                 util.logger.debug("Won't add project '%s' to %s, it's already added", proj, str(self))
                 continue
             util.logger.debug("Adding project '%s' to %s", proj, str(self))
-            r = self.post("applications/add_project", params={"application": self.key, "project": proj}, exit_on_error=False)
+            r = self.post("applications/add_project", params={"application": self.key, "project": proj})
             if r.status_code == HTTPStatus.NOT_FOUND:
                 util.logger.warning("Project '%s' not found, can't be added to %s", proj, self)
             else:

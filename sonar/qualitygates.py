@@ -156,7 +156,7 @@ class QualityGate(sq.SqObject):
         while page <= nb_pages:
             params["p"] = page
             try:
-                resp = self.get(APIS["get_projects"], params=params, exit_on_error=False)
+                resp = self.get(APIS["get_projects"], params=params)
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")

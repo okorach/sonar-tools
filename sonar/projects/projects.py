@@ -416,7 +416,7 @@ class Project(components.Component):
                 str(self),
             )
             return []
-        resp = self.get("alm_settings/validate_binding", params={"project": self.key}, exit_on_error=False)
+        resp = self.get("alm_settings/validate_binding", params={"project": self.key})
         if resp.ok:
             util.logger.debug("%s binding is valid", str(self))
             return []

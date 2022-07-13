@@ -258,7 +258,7 @@ class Branch(components.Component):
             return False
         util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         try:
-            self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name}, exit_on_error=False)
+            self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name})
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")

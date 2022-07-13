@@ -41,7 +41,7 @@ class Rule(sq.SqObject):
         if key in _OBJECTS:
             return _OBJECTS[key]
         utilities.logger.debug("Reading rule key '%s'", key)
-        r = endpoint.get(_DETAILS_API, params={"key": key}, exit_on_error=False)
+        r = endpoint.get(_DETAILS_API, params={"key": key})
         if r.ok:
             return Rule(key, endpoint, json.loads(r.text)["rule"])
         elif r.status_code == HTTPStatus.NOT_FOUND:

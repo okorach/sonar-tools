@@ -117,7 +117,7 @@ class Hotspot(findings.Finding):
         :return: The hotspot details
         :rtype: Whether ther operation succeeded
         """
-        resp = self.get("hotspots/show", {"hotspot": self.key}, exit_on_error=False)
+        resp = self.get("hotspots/show", {"hotspot": self.key})
         if resp.ok:
             self.__details = json.loads(resp.text)
         return resp.ok

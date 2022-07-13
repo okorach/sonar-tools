@@ -254,7 +254,7 @@ class Platform:
             success, counter = False, 0
             while not success:
                 try:
-                    resp = self.get("system/info", exit_on_error=False)
+                    resp = self.get("system/info", mute=(HTTPStatus.INTERNAL_SERVER_ERROR,))
                     success = True
                 except HTTPError as e:
                     # Hack: SonarQube randomly returns Error 500 on this API, retry up to 10 times
