@@ -545,11 +545,11 @@ this.context = Platform(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os
 
 def _normalize_api(api):
     api = api.lower()
-    if re.match(r"/api", api):
+    if api.startswith("/api"):
         pass
-    elif re.match(r"api", api):
+    elif api.startswith("api"):
         api = "/" + api
-    elif re.match(r"/", api):
+    elif api.startswith("/"):
         api = "/api" + api
     else:
         api = "/api/" + api
