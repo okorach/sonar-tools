@@ -41,38 +41,50 @@ class SqObject:
     def get_env(self):
         return self.endpoint
 
-    def get(self, api, params=None, exit_on_error=True):
+    def get(self, api, params=None, exit_on_error=False, mute=()):
         """Executes and HTTP GET against the SonarQube platform
 
         :param str api: API to invoke (eg api/issues/search)
         :param dict params: List of parameters to pass to the API
-        :param bool exit_on_error: Whether to exit on HTTP error
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
+        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
         :return: The request response
         :rtype: requests.Response
         """
-        return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error)
+        return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error, mute=mute)
 
-    def post(self, api, params=None, exit_on_error=True):
+    def post(self, api, params=None, exit_on_error=False, mute=()):
         """Executes and HTTP POST against the SonarQube platform
 
         :param str api: API to invoke (eg api/issues/search)
         :param dict params: List of parameters to pass to the API
-        :param bool exit_on_error: Whether to exit on HTTP error
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
+        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
         :return: The request response
         :rtype: requests.Response
         """
-        return self.endpoint.post(api=api, params=params, exit_on_error=exit_on_error)
+        return self.endpoint.post(api=api, params=params, exit_on_error=exit_on_error, mute=mute)
 
-    def delete(self, api, params=None):
+    def delete(self, api, params=None, exit_on_error=False, mute=()):
         """Executes and HTTP DELETE against the SonarQube platform
 
         :param str api: API to invoke (eg api/issues/search)
         :param dict params: List of parameters to pass to the API
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
+        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
         :return: The request response
         :rtype: requests.Response
         """
-        resp = self.endpoint.delete(api, params)
-        return resp.ok
+        return self.endpoint.delete(api, params, exit_on_error=exit_on_error, mute=mute)
 
 
 def __search_thread(queue):
@@ -91,7 +103,7 @@ def __search_thread(queue):
 
 
 def search_objects(api, endpoint, key_field, returned_field, object_class, params, threads=8):
-    """
+    """Runs a multi-threaded SonarQube search on any type of object (api, returned field etc... being passed in the request)
     :meta private:
     """
     __MAX_SEARCH = 500
@@ -108,6 +120,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
             objects_list[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
     nb_pages = utilities.nbr_pages(data)
     if nb_pages == 1:
+        # If everything is returned on the 1st page, no multi-threading needed
         return objects_list
     q = Queue(maxsize=0)
     for page in range(2, nb_pages + 1):
@@ -116,6 +129,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         utilities.logger.debug("Starting %s search thread %d", object_class.__name__, i)
         worker = Thread(target=__search_thread, args=[q])
         worker.setDaemon(True)
+        worker.setName(f"SearchThread{i}")
         worker.start()
     q.join()
     return objects_list
