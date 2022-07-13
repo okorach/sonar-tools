@@ -32,8 +32,11 @@ from sonar.audit import rules
 _OBJECTS = {}
 _MAP = {}
 
-_GET_API = "applications/show"
-_CREATE_API = "applications/create"
+APIS = {
+    "search": "api/components/search_projects",
+    "get": "api/applications/show",
+    "create": "api/applications/create",
+}
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
 
@@ -59,7 +62,7 @@ class Application(aggr.Aggregation):
         if key in _OBJECTS:
             return _OBJECTS[key]
         try:
-            data = json.loads(endpoint.get(_GET_API, params={"application": key}).text)
+            data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Application '{key}' not found")
@@ -97,15 +100,14 @@ class Application(aggr.Aggregation):
         if endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
         try:
-            endpoint.post(_CREATE_API, params={"key": key, "name": name})
+            endpoint.post(APIS["create"], params={"key": key, "name": name})
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
         return Application(endpoint, key, name)
 
     def __init__(self, endpoint, key, name):
-        """Don't use this directly, go through the class methods to create Objects
-        """
+        """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(key, endpoint)
         self._branches = None
         self._projects = None
@@ -116,13 +118,13 @@ class Application(aggr.Aggregation):
         _MAP[self.name] = self.key
 
     def refresh(self):
-        return self.__load(json.loads(self.get(_GET_API, params={"application": self.key}).text))
+        return self.__load(json.loads(self.get(APIS["get"], params={"application": self.key}).text))
 
     def __str__(self):
         return f"application key '{self.key}'"
 
     def _load_full(self):
-        data = json.loads(self.get(_GET_API, params={"application": self.key}).text)
+        data = json.loads(self.get(APIS["get"], params={"application": self.key}).text)
         self._json = data["application"]
         self._description = self._json.get("description", None)
 
@@ -184,7 +186,7 @@ class Application(aggr.Aggregation):
                 br.pop("isMain")
             b_name = br.pop("name")
             params["branch"] = b_name
-            data = json.loads(self.get(_GET_API, params=params).text)
+            data = json.loads(self.get(APIS["get"], params=params).text)
             br["projects"] = {}
             for proj in data["application"]["projects"]:
                 br["projects"][proj["key"]] = proj["branch"]
@@ -302,12 +304,7 @@ def search(endpoint, params=None):
         if params is not None:
             new_params.update(params)
         app_list = sq.search_objects(
-            api="api/components/search_projects",
-            params=new_params,
-            returned_field="components",
-            key_field="key",
-            object_class=Application,
-            endpoint=endpoint,
+            api=APIS["search"], params=new_params, returned_field="components", key_field="key", object_class=Application, endpoint=endpoint
         )
     return app_list
 
