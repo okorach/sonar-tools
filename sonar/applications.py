@@ -42,6 +42,7 @@ APIS = {
 }
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
+_NOT_SUPPORTED = "Applications not supported in community edition"
 
 
 class Application(aggr.Aggregation):
@@ -61,7 +62,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         if endpoint.edition() == "community":
-            raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
+            raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         if key in _OBJECTS:
             return _OBJECTS[key]
         try:
@@ -84,7 +85,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         if endpoint.edition() == "community":
-            raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
+            raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         o = _OBJECTS.get(data["key"], cls(endpoint, data["key"], data["name"]))
         o.reload(data)
         return o
@@ -102,7 +103,7 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         if endpoint.edition() == "community":
-            raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
+            raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         try:
             endpoint.post(APIS["create"], params={"key": key, "name": name})
         except HTTPError as e:
@@ -134,6 +135,7 @@ class Application(aggr.Aggregation):
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 _OBJECTS.pop(self.key, None)
                 raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+            raise
 
     def __str__(self):
         return f"application key '{self.key}'"
@@ -377,7 +379,7 @@ def search(endpoint, params=None):
         return {}
     app_list = {}
     if endpoint.edition() == "community":
-        raise exceptions.UnsupportedOperation("Applications not supported in community edition")
+        raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
     new_params = {"filter": "qualifier = APP"}
     if params is not None:
         new_params.update(params)
@@ -444,6 +446,8 @@ def import_config(endpoint, config_data, key_list=None):
     :param dict config_data: JSON representation of applications configuration
     :param key_list: list of Application keys to import, defaults to all if None
     :type key_list: list, optional
+    :return: Whether import succeeded
+    :rtype: bool
     """
     if "applications" not in config_data:
         util.logger.info("No applications to import")
@@ -463,6 +467,7 @@ def import_config(endpoint, config_data, key_list=None):
         except exceptions.ObjectNotFound:
             o = Application.create(endpoint, key, data["name"])
         o.update(data)
+    return True
 
 
 def search_by_name(endpoint, name):
