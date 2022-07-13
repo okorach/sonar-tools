@@ -235,7 +235,7 @@ class Project(components.Component):
         """
         if self._binding["has_binding"] and self._binding["binding"] is None:
             try:
-                resp = self.get("alm_settings/get_binding", params={"project": self.key}, exit_on_error=False)
+                resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
             except HTTPError as e:
