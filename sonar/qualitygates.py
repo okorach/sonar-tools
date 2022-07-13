@@ -381,6 +381,20 @@ def count(endpoint):
     return len(get_list(endpoint))
 
 
+def exists(endpoint, gate_name):
+    """Returns whether a quality gate exists
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str gate_name: Quality gate name
+    :return: Whether the quality gate exists
+    :rtype: bool
+    """
+    try:
+        o = QualityGate.get_object(endpoint, gate_name)
+        return True
+    except exceptions.ObjectNotFound:
+        return False
+
 def _encode_conditions(conds):
     simple_conds = []
     for c in conds:
