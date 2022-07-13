@@ -102,7 +102,6 @@ class Group(sq.SqObject):
         :return: The group object
         :rtype: Group or None
         """
-        util.logger.debug("Loading group '%s'", data["name"])
         return cls(name=data["name"], endpoint=endpoint, data=data)
 
     def __str__(self):
@@ -263,7 +262,7 @@ def export(endpoint):
     util.logger.info("Exporting groups")
     g_list = {}
     for g_name, g_obj in search(endpoint=endpoint).items():
-        if g_obj.is_default:
+        if g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
     return g_list
