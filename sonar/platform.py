@@ -161,7 +161,7 @@ class Platform:
             if exit_on_error:
                 util.log_and_exit(r)
             else:
-                if r.status_code in mute():
+                if r.status_code in mute:
                     util.logger.debug("GET Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
                 else:
                     util.logger.error("GET Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
@@ -194,7 +194,7 @@ class Platform:
             if exit_on_error:
                 util.log_and_exit(r)
             else:
-                if r.status_code in mute():
+                if r.status_code in mute:
                     util.logger.debug("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
                 else:
                     util.logger.error("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
@@ -227,7 +227,7 @@ class Platform:
             if exit_on_error:
                 util.log_and_exit(r)
             else:
-                if r.status_code in mute():
+                if r.status_code in mute:
                     util.logger.debug("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
                 else:
                     util.logger.error("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
