@@ -78,6 +78,9 @@ class QualityGate(sq.SqObject):
     @classmethod
     def get_object(cls, endpoint, name):
         """Reads a quality gate from SonarQube
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str name: Quality gate
         :return: the QualityGate object or None if not found
         :rtype: QualityGate or None
         """
