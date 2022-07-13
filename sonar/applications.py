@@ -376,9 +376,6 @@ def search(endpoint, params=None):
     :rtype: dict {<appKey>: Application, ...}
     """
     if endpoint.edition() == "community":
-        return {}
-    app_list = {}
-    if endpoint.edition() == "community":
         raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
     new_params = {"filter": "qualifier = APP"}
     if params is not None:

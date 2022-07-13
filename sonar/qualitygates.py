@@ -211,11 +211,11 @@ class QualityGate(sq.SqObject):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        if conditions_list is None or len(conditions_list) == 0:
-            return
+        if not conditions_list or len(conditions_list) == 0:
+            return True
         if self.is_built_in:
             util.logger.debug("Can't set conditions of built-in %s", str(self))
-            return
+            return False
         self.clear_conditions()
         util.logger.debug("Setting conditions of %s", str(self))
         params = {"gateName": self.name}
@@ -405,7 +405,7 @@ def exists(endpoint, gate_name):
     :rtype: bool
     """
     try:
-        o = QualityGate.get_object(endpoint, gate_name)
+        _ = QualityGate.get_object(endpoint, gate_name)
         return True
     except exceptions.ObjectNotFound:
         return False
