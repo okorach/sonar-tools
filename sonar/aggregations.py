@@ -34,6 +34,15 @@ class Aggregation(comp.Component):
         self._permissions = None
         super().__init__(key, endpoint)
 
+    def reload(self, data):
+        """Reloads an Aggregatin (Application or Portfolio) from the result of a search or get
+
+        :return: self
+        :rtype: Application or Portfolio
+        """
+        super().reload(data)
+        self._description = self._json.get("description", None)
+
     def nbr_projects(self):
         if self._nbr_projects is None:
             self._nbr_projects = 0

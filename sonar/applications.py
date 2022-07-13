@@ -137,15 +137,6 @@ class Application(aggr.Aggregation):
     def __str__(self):
         return f"application key '{self.key}'"
 
-    def reload(self, data):
-        """Reloads an Application from the result of a search or get
-
-        :return: self
-        :rtype: Application
-        """
-        super.reload(data)
-        self._description = self._json.get("description", None)
-
     def permissions(self):
         """
         :return: The application permissions
