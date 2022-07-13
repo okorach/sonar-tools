@@ -129,7 +129,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         utilities.logger.debug("Starting %s search thread %d", object_class.__name__, i)
         worker = Thread(target=__search_thread, args=[q])
         worker.setDaemon(True)
-        worker.setName(f"SearchThread{i}")
+        worker.setName(f"Search{i}")
         worker.start()
     q.join()
     return objects_list
