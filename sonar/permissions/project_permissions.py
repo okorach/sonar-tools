@@ -70,10 +70,9 @@ class ProjectPermissions(permissions.Permissions):
         for p in permissions.PERMISSION_TYPES:
             if new_perms is None or p not in new_perms:
                 continue
-            decoded_perms = {k: permissions.decode(v) for k, v in new_perms[p].items()}
-            to_remove = diff_func(self.permissions[p], decoded_perms)
+            to_remove = diff_func(self.permissions[p], new_perms[p])
             self._post_api(apis["remove"][p], field[p], to_remove, **kwargs)
-            to_add = diff_func(decoded_perms, self.permissions[p])
+            to_add = diff_func(new_perms[p], self.permissions[p])
             self._post_api(apis["add"][p], field[p], to_add, **kwargs)
         return self.read()
 
