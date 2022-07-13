@@ -21,7 +21,6 @@
 from http import HTTPStatus
 import sys
 import os
-import re
 import time
 import datetime
 import json
@@ -44,6 +43,7 @@ from sonar import sif
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
+_HTTP_ERROR = "%s Error: %s HTTP status code %d"
 
 _SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
@@ -162,9 +162,9 @@ class Platform:
                 util.log_and_exit(r)
             else:
                 if r.status_code in mute:
-                    util.logger.debug("GET Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                    util.logger.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
                 else:
-                    util.logger.error("GET Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                    util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
                 raise e
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
@@ -195,9 +195,9 @@ class Platform:
                 util.log_and_exit(r)
             else:
                 if r.status_code in mute:
-                    util.logger.debug("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                    util.logger.debug(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
                 else:
-                    util.logger.error("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                    util.logger.error(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
                 raise
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
@@ -228,9 +228,9 @@ class Platform:
                 util.log_and_exit(r)
             else:
                 if r.status_code in mute:
-                    util.logger.debug("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                    util.logger.debug(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
                 else:
-                    util.logger.error("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                    util.logger.error(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
                 raise
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
