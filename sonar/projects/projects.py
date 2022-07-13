@@ -206,7 +206,7 @@ class Project(components.Component):
             self._pull_requests = pull_requests.get_list(self)
         return self._pull_requests
 
-    def delete(self, api="projects/delete", params=None):
+    def delete(self, api="projects/delete", params=None, exit_on_error=False, mute=()):
         """Deletes a project in SonarQube
 
         :return: List of pull requests of the project
@@ -214,7 +214,7 @@ class Project(components.Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        if not super().post("projects/delete", params={"project": self.key}):
+        if not super().post("projects/delete", params={"project": self.key, **params}, exit_on_error=exit_on_error, mute=mute):
             util.logger.error("%s deletion failed", str(self))
             return False
         util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)

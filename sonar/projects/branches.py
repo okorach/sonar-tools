@@ -176,7 +176,7 @@ class Branch(components.Component):
             self.refresh()
         return self._is_main
 
-    def delete(self, api=None, params=None):
+    def delete(self, api=None, params=None, exit_on_error=False, mute=()):
         """Deletes a branch
 
         :raises ObjectNotFound: Branch not found for deletion
@@ -185,7 +185,7 @@ class Branch(components.Component):
         """
         util.logger.info("Deleting %s", str(self))
         try:
-            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.concerned_object.key})
+            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.concerned_object.key}, exit_on_error=exit_on_error, mute=mute)
             util.logger.info("%s: Successfully deleted", str(self))
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:

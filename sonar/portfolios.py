@@ -212,8 +212,8 @@ class Portfolio(aggregations.Aggregation):
             comp_list[c["key"]] = c
         return comp_list
 
-    def delete(self, api="views/delete", params=None):
-        _ = self.post("views/delete", params={"key": self.key})
+    def delete(self, api="views/delete", params=None, exit_on_error=False, mute=()):
+        _ = self.post("views/delete", params={"key": self.key, **params}, exit_on_error=exit_on_error, mute=mute)
         return True
 
     def _audit_empty(self, audit_settings):
