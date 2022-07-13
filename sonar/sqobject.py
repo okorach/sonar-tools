@@ -102,7 +102,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
     objects_list = {}
     data = json.loads(endpoint.get(api, params=new_params).text)
     for obj in data[returned_field]:
-        if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User"):
+        if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application"):
             objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
         else:
             objects_list[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
