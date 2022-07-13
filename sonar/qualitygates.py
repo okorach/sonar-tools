@@ -362,19 +362,29 @@ def export(endpoint, full=False):
 
 
 def import_config(endpoint, config_data):
+    """Imports quality gates in a SonarQube platform
+    Quality gates already existing  are updates with the provided configuration
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param dict config_data: JSON representation of quality gates (as per export format)
+    :return: Whether the import succeeded
+    :rtype: bool
+    """
     if "qualityGates" not in config_data:
         util.logger.info("No quality gates to import")
-        return
+        return True
     util.logger.info("Importing quality gates")
     for name, data in config_data["qualityGates"].items():
-        o = QualityGate.get_object(endpoint=endpoint, name=name)
-        if not o:
+        try:
+            o = QualityGate.get_object(endpoint, name)
+        except exceptions.ObjectNotFound:
             o = QualityGate.create(endpoint, name)
         o.update(endpoint, name, **data)
-
+    return True
 
 def count(endpoint):
     """
+    :param Platform endpoint: Reference to the SonarQube platform
     :return: Number of quality gates
     :rtype: int
     """
