@@ -382,6 +382,7 @@ def import_config(endpoint, config_data):
         o.update(endpoint, name, **data)
     return True
 
+
 def count(endpoint):
     """
     :param Platform endpoint: Reference to the SonarQube platform
@@ -404,6 +405,7 @@ def exists(endpoint, gate_name):
         return True
     except exceptions.ObjectNotFound:
         return False
+
 
 def _encode_conditions(conds):
     simple_conds = []

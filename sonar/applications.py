@@ -396,8 +396,7 @@ def search(endpoint, params=None):
 
 
 def get_list(endpoint, key_list=None):
-    """Gets a list of Application objects
-    """
+    """Gets a list of Application objects"""
     if key_list is None or len(key_list) == 0:
         util.logger.info("Listing applications")
         return search(endpoint=endpoint)
