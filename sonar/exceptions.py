@@ -34,6 +34,7 @@ class ObjectNotFound(SonarException):
         super().__init__(message)
         self.key = key
 
+
 class ObjectAlreadyExists(SonarException):
     """
     Object already exists when trying to create it
@@ -42,6 +43,7 @@ class ObjectAlreadyExists(SonarException):
     def __init__(self, key, message):
         super().__init__(message)
         self.key = key
+
 
 class UnsupportedOperation(SonarException):
     """
