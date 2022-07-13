@@ -783,8 +783,8 @@ class Project(components.Component):
         if quality_gate is None:
             return False
         try:
-            qg = qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
-        except exceptions.ObjectNotFound as e:
+            _ = qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
+        except exceptions.ObjectNotFound:
             util.logger.warning("Quality gate '%s' does not exist, can't set it for %s", quality_gate, str(self))
             return False
         util.logger.debug("Setting quality gate '%s' for %s", quality_gate, str(self))
