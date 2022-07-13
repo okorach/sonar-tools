@@ -208,7 +208,8 @@ class QualityGate(sq.SqObject):
         """Sets quality gate conditions (overriding any previous conditions)
         :param conditions_list: List of conditions, encoded
         :type conditions_list: dict
-        :return: Nothing
+        :return: Whether the operation succeeded
+        :rtype: bool
         """
         if conditions_list is None or len(conditions_list) == 0:
             return
@@ -218,10 +219,12 @@ class QualityGate(sq.SqObject):
         self.clear_conditions()
         util.logger.debug("Setting conditions of %s", str(self))
         params = {"gateName": self.name}
+        ok = True
         for cond in conditions_list:
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
-            self.post("qualitygates/create_condition", params=params)
+            ok = ok and self.post("qualitygates/create_condition", params=params).ok
         self.conditions()
+        return ok
 
     def permissions(self):
         """
@@ -236,10 +239,10 @@ class QualityGate(sq.SqObject):
         """Sets quality gate permissions
         :param permissions_list:
         :type permissions_list: dict {"users": [<userlist>], "groups": [<grouplist>]}
-        :return: The quality gate permissions
-        :rtype: QualityGatePermissions
+        :return: Whether the operation succeeded
+        :rtype: bool
         """
-        self.permissions().set(permissions_list)
+        return self.permissions().set(permissions_list)
 
     def update(self, **data):
         """Updates a quality gate
@@ -251,9 +254,9 @@ class QualityGate(sq.SqObject):
             _MAP.pop(self.name, None)
             self.name = data["name"]
             _MAP[self.name] = self
-        self.set_conditions(data.get("conditions", []))
-        self.set_permissions(data.get("permissions", []))
-        return self
+        ok = self.set_conditions(data.get("conditions", []))
+        ok = ok and self.set_permissions(data.get("permissions", []))
+        return ok
 
     def __audit_conditions__(self):
         problems = []
@@ -374,13 +377,14 @@ def import_config(endpoint, config_data):
         util.logger.info("No quality gates to import")
         return True
     util.logger.info("Importing quality gates")
+    ok = True
     for name, data in config_data["qualityGates"].items():
         try:
             o = QualityGate.get_object(endpoint, name)
         except exceptions.ObjectNotFound:
             o = QualityGate.create(endpoint, name)
-        o.update(endpoint, name, **data)
-    return True
+        ok = ok and o.update(endpoint, name, **data)
+    return ok
 
 
 def count(endpoint):
