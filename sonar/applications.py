@@ -23,7 +23,7 @@ from http import HTTPStatus
 from requests.exceptions import HTTPError
 from sonar import components, exceptions, settings
 from sonar.projects import projects, branches
-from sonar.permissions import application_permissions
+from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
@@ -36,6 +36,9 @@ APIS = {
     "search": "api/components/search_projects",
     "get": "api/applications/show",
     "create": "api/applications/create",
+    "delete": "api/applications/delete",
+    "create_branch": "api/applications/create_branch",
+    "update_branch": "api/applications/update_branch",
 }
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
@@ -83,7 +86,7 @@ class Application(aggr.Aggregation):
         if endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
         o = _OBJECTS.get(data["key"], cls(endpoint, data["key"], data["name"]))
-        o._load(data)
+        o.reload(data)
 
     @classmethod
     def create(cls, endpoint, key, name):
@@ -118,66 +121,110 @@ class Application(aggr.Aggregation):
         _MAP[self.name] = self.key
 
     def refresh(self):
-        return self.__load(json.loads(self.get(APIS["get"], params={"application": self.key}).text))
+        """Refreshes the by re-reading SonarQube
+
+        :raises ObjectNotFound: If the Application does not exists anymore
+        :return: self:
+        :rtype: Appplication
+        """
+        try:
+            return self.reload(json.loads(self.get(APIS["get"], params={"application": self.key}).text)["application"])
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                _OBJECTS.pop(self.key, None)
+                raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
 
     def __str__(self):
         return f"application key '{self.key}'"
 
-    def _load_full(self):
-        data = json.loads(self.get(APIS["get"], params={"application": self.key}).text)
-        self._json = data["application"]
+    def reload(self, data):
+        """Reloads an Application from the result of a search or get
+
+        :return: self
+        :rtype: Application
+        """
+        super.reload(data)
         self._description = self._json.get("description", None)
 
     def permissions(self):
+        """
+        :return: The application permissions
+        :rtype: ApplicationPermissions
+        """
         if self._permissions is None:
             self._permissions = application_permissions.ApplicationPermissions(self)
         return self._permissions
 
     def projects(self):
+        """
+        :return: The project branches included in the application
+        :rtype: dict{<projectKey>: <branch>}
+        """
         if self._projects is not None:
             return self._projects
         self._projects = {}
         if "projects" not in self._json:
-            self._load_full()
+            self.refresh()
         for p in self._json["projects"]:
+            # TODO: Support several branches of same project in the Application
+            # TODO: Return projects in an application branch
             self._projects[p["key"]] = p["branch"]
         return self._projects
 
     def branch_exists(self, branch):
+        """
+        :return: Whether the Application branch exists
+        :rtype: bool
+        """
         return branch in self.branches()
 
     def branch_is_main(self, branch):
+        """
+        :return: Whether the Application branch is the main branch
+        :rtype: bool
+        """
         return branch in self.branches() and self._branches[branch]["isMain"]
 
     def set_branch(self, branch_name, branch_data):
+        """Creates or updates an Application branch with a set of project branches
+
+        :param str branch_name: The Application branch to set
+        :param dict branch_data: in format returned by api/applications/show or {"projects": {<projectKey>: <branch>, ...}}
+        :raises ObjectNotFound: if a project key does not exist or project branch does not exists
+        :return: self:
+        :rtype: Application
+        """
         project_list, branch_list = [], []
         for p in branch_data.get("projects", []):
             (pkey, bname) = (p["projectKey"], p["branch"]) if isinstance(p, dict) else (p, branch_data["projects"][p])
             o_proj = projects.get_object(pkey, self.endpoint)
             if not o_proj:
-                util.logger.warning("Project '%s' not found, cannot add to %s branch", pkey, str(self))
-                continue
+                raise exceptions.ObjectNotFound(pkey, f"Project '{pkey}' not found while setting application branch")
             if bname == settings.DEFAULT_SETTING:
                 bname = o_proj.main_branch().name
-            if branches.exists(self.endpoint, bname, pkey):
-                project_list.append(pkey)
-                branch_list.append(bname)
-            else:
-                util.logger.warning("Branch '%s' not found, cannot add to %s branch", bname, str(self))
+            if not branches.exists(self.endpoint, bname, pkey):
+                raise exceptions.ObjectNotFound(pkey, f"Branch '{bname}' of {str(o_proj)} not found while setting application branch")
+            project_list.append(pkey)
+            branch_list.append(bname)
 
         if len(project_list) > 0:
             params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
-            api = "applications/create_branch"
+            api = APIS["create_branch"]
             if self.branch_exists(branch_name):
-                api = "applications/update_branch"
+                api = APIS["update_branch"]
                 params["name"] = params["branch"]
             self.post(api, params=params)
+        return self
 
     def branches(self):
+        """
+        :return: the list of branches of the application and their definition
+        :rtype: dict {<appBranch: {"projects": {<projectKey>: <projectBranch>, ...}}}
+        """
         if self._branches is not None:
             return self._branches
         if "branches" not in self._json:
-            self._load_full()
+            self.refresh()
         params = {"application": self.key}
         self._branches = {}
 
@@ -190,34 +237,50 @@ class Application(aggr.Aggregation):
             br["projects"] = {}
             for proj in data["application"]["projects"]:
                 br["projects"][proj["key"]] = proj["branch"]
-
             self._branches[b_name] = br
-
         return self._branches
 
     def delete(self, api="applications/delete", params=None):
+        """Deletes an Application
+
+        :return: Whether the delete succeeded
+        :rtype: bool
+        """
         _ = self.post("applications/delete", params={"application": self.key})
         return True
 
     def _audit_empty(self, audit_settings):
+        """Audits if an application contains 0 projects"""
         if not audit_settings["audit.applications.empty"]:
             util.logger.debug("Auditing empty applications is disabled, skipping...")
             return []
         return super()._audit_empty_aggregation(broken_rule=rules.RuleId.APPLICATION_EMPTY)
 
     def _audit_singleton(self, audit_settings):
+        """Audits if an application contains a single project (makes littel sense)"""
         if not audit_settings["audit.applications.singleton"]:
             util.logger.debug("Auditing singleton applications is disabled, skipping...")
             return []
         return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
 
     def audit(self, audit_settings):
+        """Audits an application and returns list of problems found
+
+        :param dict audit_settings: Audit configuration settings from sonar-audit properties config file
+        :return: list of problems found
+        :rtype: list [Problem]
+        """
         util.logger.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
     def export(self, full=False):
+        """Exports an application
+
+        :param full: Whether to do a full export including settings that can't be set, defaults to False
+        :type full: bool, optional
+        """
         util.logger.info("Exporting %s", str(self))
-        self._load_full()
+        self.refresh()
         json_data = self._json.copy()
         json_data.update(
             {
@@ -234,7 +297,13 @@ class Application(aggr.Aggregation):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def set_permissions(self, data):
-        self.permissions().set(data.get("permissions", None))
+        """Sets an application permissions
+
+        :param dict data: dict of permission {"users": [<user1>, <user2>, ...], "groups": [<group1>, <group2>, ...]}
+        :raises: ObjectNotFound if a user or a group does not exists
+        :return: self
+        """
+        return self.permissions().set(data.get("permissions", None))
 
     def set_tags(self, tags):
         if tags is None or len(tags) == 0:
@@ -262,7 +331,12 @@ class Application(aggr.Aggregation):
         return ok
 
     def update(self, data):
-        self.set_permissions(data)
+        """Updates an Application with data coming from a JSON (export)
+
+        :param dict data:
+        """
+        perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
+        self.set_permissions(util.csv_to_list(perms))
         self.add_projects(_project_list(data))
         self.set_tags(data.get("tags", None))
         for name, branch_data in data.get("branches", {}).items():
@@ -287,50 +361,82 @@ def _project_list(data):
     return plist.keys()
 
 
-def count(endpoint=None):
-    data = json.loads(endpoint.get(components.SEARCH_API, params={"ps": 1, "filter": "qualifier = APP"}))
+def count(endpoint):
+    """returns count of applications
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :return: Count of applications
+    :rtype: int
+    """
+    data = json.loads(endpoint.get(components.SEARCH_API, params={"ps": 1, "filter": "qualifier = APP"}).text)
     return data["paging"]["total"]
 
 
 def search(endpoint, params=None):
+    """Searches applications
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param params: Search filters (see api/components/search parameters)
+    :raises UnsupportedOperation: If on a community edition
+    :return: dict of applications
+    :rtype: dict {<appKey>: Application, ...}
+    """
     if endpoint.edition() == "community":
         return {}
     app_list = {}
-    edition = endpoint.edition()
-    if edition == "community":
-        util.logger.info("No applications in %s edition", edition)
-    else:
-        new_params = {"filter": "qualifier = APP"}
-        if params is not None:
-            new_params.update(params)
-        app_list = sq.search_objects(
-            api=APIS["search"], params=new_params, returned_field="components", key_field="key", object_class=Application, endpoint=endpoint
-        )
+    if endpoint.edition() == "community":
+        raise UnsupportedOperation("Applications not supported in community edition")
+    new_params = {"filter": "qualifier = APP"}
+    if params is not None:
+        new_params.update(params)
+    app_list = sq.search_objects(
+        api=APIS["search"], params=new_params, returned_field="components", key_field="key", object_class=Application, endpoint=endpoint
+    )
     return app_list
 
 
 def get_list(endpoint, key_list=None):
-    if endpoint.edition() == "community":
-        return {}
+    """Gets a list of Application objects
+    """
     if key_list is None or len(key_list) == 0:
         util.logger.info("Listing applications")
         return search(endpoint=endpoint)
     object_list = {}
     for key in util.csv_to_list(key_list):
-        object_list[key] = get_object_by_key(key, endpoint=endpoint)
-        if object_list[key] is None:
-            raise exceptions.ObjectNotFound(key, f"Application key '{key}' does not exist")
+        object_list[key] = Application.get_object(endpoint, key)
     return object_list
 
 
 def export(endpoint, key_list=None, full=False):
+    """Exports applications as JSON
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param key_list: list of Application keys to export, defaults to all if None
+    :type key_list: list, optional
+    :param full: Whether to export all attributes, including those that can't be set, defaults to False
+    :type full: bool
+    :return: Dict of applications settings
+    :rtype: dict
+    """
     apps_settings = {k: app.export(full) for k, app in get_list(endpoint, key_list).items()}
     for k in apps_settings:
+        # remove key from JSON value, it's already the dict key
         apps_settings[k].pop("key")
     return apps_settings
 
 
 def audit(audit_settings, endpoint=None, key_list=None):
+    """Audits applications and return list of problems found
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param dict audit_settings: dict of audit config settings
+    :param key_list: list of Application keys to audit, defaults to all if None
+    :type key_list: list, optional
+    :return: List of problems found
+    :rtype: list [Problem]
+    """
+    if endpoint.edition() == "community":
+        return []
     if not audit_settings["audit.applications"]:
         util.logger.debug("Auditing applications is disabled, skipping...")
         return []
@@ -341,30 +447,20 @@ def audit(audit_settings, endpoint=None, key_list=None):
     return problems
 
 
-def get_object_old(name, endpoint=None):
-    # TODO - Don't re-read all apps every time a new app is searched
-    if len(_OBJECTS) == 0 or name not in _MAP:
-        get_list(endpoint)
-    if name not in _MAP:
-        return None
-    return _OBJECTS[_MAP[name]]
-
-
-def get_object_by_key(key, endpoint=None):
-    if len(_OBJECTS) == 0:
-        get_list(endpoint)
-    if key not in _OBJECTS:
-        return None
-    return _OBJECTS[key]
-
-
 def import_config(endpoint, config_data, key_list=None):
+    """Imports a list of application configuration in a SonarQube platform
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param dict config_data: JSON representation of applications configuration
+    :param key_list: list of Application keys to import, defaults to all if None
+    :type key_list: list, optional
+    """
     if "applications" not in config_data:
         util.logger.info("No applications to import")
-        return
+        return True
     if endpoint.edition() == "community":
         util.logger.warning("Can't import applications in a community edition")
-        return
+        return False
     util.logger.info("Importing applications")
     search(endpoint=endpoint)
     new_key_list = util.csv_to_list(key_list)
