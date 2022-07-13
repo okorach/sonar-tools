@@ -234,9 +234,16 @@ class Application(aggr.Aggregation):
             self._branches[b_name] = br
         return self._branches
 
-    def delete(self, api="applications/delete", params=None):
+    def delete(self, api="applications/delete", params=None, exit_on_error=False, mute=()):
         """Deletes an Application
 
+        :param params: Params for delete, typically None
+        :type params: dict, optional
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
+        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
         :return: Whether the delete succeeded
         :rtype: bool
         """
