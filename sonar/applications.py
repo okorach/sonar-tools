@@ -63,10 +63,10 @@ class Application(aggr.Aggregation):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Application '{key}' not found")
-        return cls.load(endpoint, key, data)
+        return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint, key, data):
+    def load(cls, endpoint, data):
         """Loads an Application object with data retrieved from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -79,7 +79,7 @@ class Application(aggr.Aggregation):
         """
         if endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation("Applications not supported in Community Edition")
-        o = _OBJECTS.get(key, cls(endpoint, key, data["name"]))
+        o = _OBJECTS.get(data["key"], cls(endpoint, data["key"], data["name"]))
         o._load(data)
 
     @classmethod
