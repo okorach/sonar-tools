@@ -20,7 +20,7 @@
 
 import datetime as dt
 import pytz
-from sonar import groups, sqobject, tokens
+from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
@@ -73,13 +73,13 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint, login, is_local=True, password=None):
+    def create(cls, endpoint, login, name=None, is_local=True, password=None):
         """Creates a new user in SonarQube and returns the corresponding User object
 
-        :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Platform
-        :param login: User login
-        :type login: str
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str login: User login
+        :param name: User name, default to login
+        :type name: str, optional
         :param is_local: Whether the user is local, defaults to True
         :type is_local: bool, optional
         :param password: The password if user is local, defaults to login
@@ -88,26 +88,29 @@ class User(sqobject.SqObject):
         :rtype: User or None
         """
         util.logger.debug("Creating user '%s'", login)
-        params = {"login": login, "local": is_local}
+        params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password if password else login
         endpoint.post(CREATE_API, params=params)
-        return cls.read(endpoint=endpoint, login=login)
+        return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
-    def read(cls, endpoint, login):
+    def get_object(cls, endpoint, login):
         """Creates a User object corresponding to the user with same login in SonarQube
 
-        :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Platform
-        :param login: User login
-        :type login: str
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str login: User login
+        :raise ObjectNotFound: if login not found
         :return: The user object
-        :rtype: User or None if not found
+        :rtype: User
         """
-        util.logger.debug("Reading user '%s'", login)
-        data = search(endpoint, params={"q": login})
-        return data.get(login, None)
+        if login in _OBJECTS:
+            return _OBJECTS[login]
+        util.logger.debug("Getting user '%s'", login)
+        for k, o in search(endpoint, params={"q": login}).items():
+            if k == login:
+                return o
+        raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
     def __str__(self):
         """
@@ -182,19 +185,20 @@ class User(sqobject.SqObject):
         util.logger.debug("Updating %s with %s", str(self), str(kwargs))
         params = {"login": self.login}
         my_data = vars(self)
-        for p in ("name", "email"):
-            if p in kwargs and kwargs[p] != my_data[p]:
-                params[p] = kwargs[p]
-        if len(params) > 1:
-            self.post(UPDATE_API, params=params)
-        self.set_scm_accounts(kwargs.get("scmAccounts", ""))
-        if "login" in kwargs:
-            new_login = kwargs["login"]
-            if new_login not in _OBJECTS:
-                self.post(UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
-                _OBJECTS.pop(self.login, None)
-                self.login = new_login
-                _OBJECTS[self.login] = self
+        if self.is_local:
+            for p in ("name", "email"):
+                if p in kwargs and kwargs[p] != my_data[p]:
+                    params[p] = kwargs[p]
+            if len(params) > 1:
+                self.post(UPDATE_API, params=params)
+            self.set_scm_accounts(kwargs.get("scmAccounts", ""))
+            if "login" in kwargs:
+                new_login = kwargs["login"]
+                if new_login not in _OBJECTS:
+                    self.post(UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
+                    _OBJECTS.pop(self.login, None)
+                    self.login = new_login
+                    _OBJECTS[self.login] = self
         self.set_groups(kwargs.get("groups", ""))
         return self
 
@@ -215,15 +219,15 @@ class User(sqobject.SqObject):
     def remove_from_group(self, group_name):
         """Removes group membership to the user
 
-        :param group_name: Group to remove membership
-        :type group_name: str
+        :param str group_name: Group to remove membership
+        :raises UnsupportedOperation: if trying to remove a user from built-in groups ("sonar-users" only for now)
+        :raises ObjectNotFound: if group name not found
         :return: Whether operation succeeded
         :rtype: bool
         """
         group = groups.Group.read(endpoint=self.endpoint, name=group_name)
-        if not group:
-            util.logger.warning("Group '%s' does not exists, can't remove membership for %s", group_name, str(self))
-            return False
+        if group.is_default():
+            raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
         return group.remove_user(self.login)
 
     def set_groups(self, group_list):
@@ -236,9 +240,11 @@ class User(sqobject.SqObject):
         """
         ok = True
         for g in list(set(group_list) - set(self.groups)):
-            ok = ok and self.add_to_group(g)
+            if g != "sonar-users":
+                ok = ok and self.add_to_group(g)
         for g in list(set(self.groups) - set(group_list)):
-            ok = ok and self.remove_from_group(g)
+            if g != "sonar-users":
+                ok = ok and self.remove_from_group(g)
         if ok:
             self.groups = group_list
         else:
@@ -423,26 +429,11 @@ def import_config(endpoint, config_data):
     for login, data in config_data["users"].items():
         data = _decode(data)
         data.pop("login", None)
-        o = get_object(endpoint=endpoint, login=login)
-        if o is None:
-            util.logger.debug("User '%s' does not exist, creating...", login)
-            o = User.create(endpoint, login, data.get("local", False))
+        try:
+            o = User.get_object(endpoint, login)
+        except exceptions.ObjectNotFound:
+            o = User.create(endpoint, login, data.get("name", login), data.get("local", False))
         o.update(**data)
-
-
-def get_object(endpoint, login):
-    """Returns the User object corresponding to a particular login
-    Returns None if login is not found
-
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
-    :param login: the configuration to import
-    :type login: dict
-    :return: Nothing
-    """
-    if len(_OBJECTS) == 0:
-        search(endpoint)
-    return _OBJECTS.get(login, None)
 
 
 def _decode(data):

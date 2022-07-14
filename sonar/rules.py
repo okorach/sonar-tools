@@ -24,6 +24,7 @@
 """
 import json
 from http import HTTPStatus
+from requests.exceptions import HTTPError
 import sonar.sqobject as sq
 from sonar import utilities, exceptions
 
@@ -37,17 +38,16 @@ TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
 
 class Rule(sq.SqObject):
     @classmethod
-    def read(cls, key, endpoint):
+    def get_object(cls, endpoint, key):
         if key in _OBJECTS:
             return _OBJECTS[key]
         utilities.logger.debug("Reading rule key '%s'", key)
-        r = endpoint.get(_DETAILS_API, params={"key": key})
-        if r.ok:
-            return Rule(key, endpoint, json.loads(r.text)["rule"])
-        elif r.status_code == HTTPStatus.NOT_FOUND:
-            raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
-        else:
-            utilities.log_and_exit(r)
+        try:
+            r = endpoint.get(_DETAILS_API, params={"key": key})
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
+        return Rule(key, endpoint, json.loads(r.text)["rule"])
 
     @classmethod
     def create(cls, key, endpoint, **kwargs):
@@ -57,7 +57,7 @@ class Rule(sq.SqObject):
         r = endpoint.post(_CREATE_API, params=params)
         if not r.ok:
             return None
-        o = cls.read(key=key, endpoint=endpoint)
+        o = cls.get_object(key=key, endpoint=endpoint)
         return o
 
     @classmethod
@@ -70,7 +70,7 @@ class Rule(sq.SqObject):
     @classmethod
     def instantiate(cls, key, template_key, endpoint, data):
         try:
-            rule = Rule.read(key, endpoint)
+            rule = Rule.get_object(endpoint, key)
             utilities.logger.info("Rule key '%s' already exists, instantiation skipped...", key)
             return rule
         except exceptions.ObjectNotFound:
@@ -151,7 +151,7 @@ def get_object(key, endpoint):
     if key in _OBJECTS:
         return _OBJECTS[key]
     try:
-        return Rule.read(key, endpoint)
+        return Rule.get_object(key, endpoint)
     except exceptions.ObjectNotFound:
         return None
 
@@ -231,8 +231,9 @@ def import_config(endpoint, config_data):
     utilities.logger.info("Importing customized (custom tags, extended description) rules")
     get_list(endpoint=endpoint)
     for key, custom in config_data["rules"].get("extended", {}).items():
-        rule = get_object(key, endpoint=endpoint)
-        if rule is None:
+        try:
+            rule = Rule.get_object(endpoint, key)
+        except exceptions.ObjectNotFound:
             utilities.logger.warning("Rule key '%s' does not exist, can't import it", key)
             continue
         rule.set_description(custom.get("description", None))
@@ -242,11 +243,15 @@ def import_config(endpoint, config_data):
     get_list(endpoint=endpoint, templates=True)
     utilities.logger.info("Importing custom rules (instantiated from rule templates)")
     for key, instantiation_data in config_data["rules"].get("instantiated", {}).items():
-        if get_object(key, endpoint) is not None:
+        try:
+            rule = Rule.get_object(endpoint, key)
             utilities.logger.debug("Instantiated rule key '%s' already exists, instantiation skipped", key)
             continue
-        template_rule = get_object(instantiation_data["templateKey"], endpoint)
-        if template_rule is None:
+        except exceptions.ObjectNotFound:
+            pass
+        try:
+            template_rule = Rule.get_object(endpoint, instantiation_data["templateKey"])
+        except exceptions.ObjectNotFound:
             utilities.logger.warning("Rule template key '%s' does not exist, can't instantiate it", key)
             continue
         Rule.instantiate(key, template_rule.key, endpoint, instantiation_data)

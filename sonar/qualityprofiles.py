@@ -22,6 +22,7 @@ import json
 from http import HTTPStatus
 from queue import Queue
 from threading import Thread
+from requests import HTTPError
 import requests.utils
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
@@ -227,8 +228,7 @@ class QualityProfile(sq.SqObject):
     def activate_rule(self, rule_key, severity=None, **params):
         """Activates a rule in the quality profile
 
-        :param rule_key: Rule key to activate
-        :type rule_key: str
+        :param str rule_key: Rule key to activate
         :param severity: Severity of the rule in the quality profiles, defauls to rule rule default severity
         :type severity: str, optional
         :param params: List of parameters associated to the rules, defaults to None
@@ -255,10 +255,16 @@ class QualityProfile(sq.SqObject):
             return False
         ok = True
         for r_key, r_data in ruleset.items():
-            if isinstance(r_data, str):
-                ok = ok and self.activate_rule(rule_key=r_key, severity=r_data)
-            else:
-                ok = ok and self.activate_rule(rule_key=r_key, severity=r_data.get("severity", None), **r_data["params"])
+            util.logger.debug("Activating rule %s in QG %s data %s", r_key, str(self), str(r_data))
+            try:
+                sev = r_data if isinstance(r_data, str) else r_data.get("severity", None)
+                if "params" in r_data:
+                    ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
+                else:
+                    ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
+            except HTTPError as e:
+                ok = False
+                util.logger.warning("Activation of rule '%s' in %s failed: HTTP Error %d", r_key, str(self), e.response.status_code)
         return ok
 
     def update(self, data, queue):

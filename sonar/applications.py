@@ -157,7 +157,7 @@ class Application(aggr.Aggregation):
         if self._projects is not None:
             return self._projects
         self._projects = {}
-        if "projects" not in self._json:
+        if self._json is None or "projects" not in self._json:
             self.refresh()
         for p in self._json["projects"]:
             # TODO: Support several branches of same project in the Application
@@ -189,17 +189,21 @@ class Application(aggr.Aggregation):
         :rtype: Application
         """
         project_list, branch_list = [], []
+        ok = True
         for p in branch_data.get("projects", []):
             (pkey, bname) = (p["projectKey"], p["branch"]) if isinstance(p, dict) else (p, branch_data["projects"][p])
-            o_proj = projects.get_object(pkey, self.endpoint)
-            if not o_proj:
-                raise exceptions.ObjectNotFound(pkey, f"Project '{pkey}' not found while setting application branch")
-            if bname == settings.DEFAULT_SETTING:
-                bname = o_proj.main_branch().name
-            if not branches.exists(self.endpoint, bname, pkey):
-                raise exceptions.ObjectNotFound(pkey, f"Branch '{bname}' of {str(o_proj)} not found while setting application branch")
-            project_list.append(pkey)
-            branch_list.append(bname)
+            try:
+                o_proj = projects.Project.get_object(self.endpoint, pkey)
+                if bname == settings.DEFAULT_SETTING:
+                    bname = o_proj.main_branch().name
+                if not branches.exists(self.endpoint, bname, pkey):
+                    ok = False
+                    util.logger.warning("Branch '%s' of %s not found while setting application branch", bname, str(o_proj))
+                else:
+                    project_list.append(pkey)
+                    branch_list.append(bname)
+            except exceptions.ObjectNotFound:
+                ok = False
 
         if len(project_list) > 0:
             params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
@@ -207,7 +211,7 @@ class Application(aggr.Aggregation):
             if self.branch_exists(branch_name):
                 api = APIS["update_branch"]
                 params["name"] = params["branch"]
-            self.post(api, params=params)
+            ok = ok and self.post(api, params=params).ok
         return self
 
     def branches(self):
@@ -303,7 +307,7 @@ class Application(aggr.Aggregation):
         :raises: ObjectNotFound if a user or a group does not exists
         :return: self
         """
-        return self.permissions().set(data.get("permissions", None))
+        return self.permissions().set(data)
 
     def set_tags(self, tags):
         if tags is None or len(tags) == 0:
@@ -323,11 +327,15 @@ class Application(aggr.Aggregation):
                 util.logger.debug("Won't add project '%s' to %s, it's already added", proj, str(self))
                 continue
             util.logger.debug("Adding project '%s' to %s", proj, str(self))
-            r = self.post("applications/add_project", params={"application": self.key, "project": proj})
-            if r.status_code == HTTPStatus.NOT_FOUND:
-                util.logger.warning("Project '%s' not found, can't be added to %s", proj, self)
-            else:
+            try:
+                r = self.post("applications/add_project", params={"application": self.key, "project": proj})
                 ok = ok and r.ok
+            except HTTPError as e:
+                if e.response.status_code == HTTPStatus.NOT_FOUND:
+                    util.logger.warning("Project '%s' not found, can't be added to %s", proj, self)
+                    ok = False
+                else:
+                    raise
         return ok
 
     def update(self, data):
@@ -335,8 +343,15 @@ class Application(aggr.Aggregation):
 
         :param dict data:
         """
-        perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
-        self.set_permissions(util.csv_to_list(perms))
+        if "permissions" in data:
+            decoded_perms = {}
+            for ptype in permissions.PERMISSION_TYPES:
+                if ptype not in data["permissions"]:
+                    continue
+                decoded_perms[ptype] = {u: permissions.decode(v) for u, v in data["permissions"][ptype].items()}
+            self.set_permissions(decoded_perms)
+            # perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
+            # self.set_permissions(util.csv_to_list(perms))
         self.add_projects(_project_list(data))
         self.set_tags(data.get("tags", None))
         for name, branch_data in data.get("branches", {}).items():

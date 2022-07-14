@@ -337,7 +337,7 @@ class Platform:
         :return: Whether setting the value was successful or not
         :rtype: bool
         """
-        return settings.set_setting(self, key, value).ok
+        return settings.set_setting(self, key, value)
 
     def __urlstring(self, api, params):
         """Returns a string corresponding to the URL and parameters"""

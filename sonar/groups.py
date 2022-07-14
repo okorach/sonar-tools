@@ -20,6 +20,7 @@
 
 import sonar.sqobject as sq
 import sonar.utilities as util
+from sonar import exceptions
 
 from sonar.audit import rules, problem
 
@@ -56,10 +57,10 @@ class Group(sq.SqObject):
     @classmethod
     def read(cls, endpoint, name):
         """Creates a Group object corresponding to the group with same name in SonarQube
-        :param endpoint: Reference to the SonarQube platform
-        :type endpoint: Platform
-        :param name: Group name
-        :type name: str
+        :param Platform endpoint: Reference to the SonarQube platform
+        :type endpoint:
+        :param str name: Group name
+        :raises ObjectNotFound: if group name not found
         :return: The group object
         :rtype: Group or None if not found
         """
@@ -68,7 +69,7 @@ class Group(sq.SqObject):
             return _OBJECTS[_MAP[name]]
         data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
         if data is None:
-            return None
+            raise exceptions.UnsupportedOperation(f"Group '{name}' not found.")
         key = data["id"]
         if key in _OBJECTS:
             return _OBJECTS[key]

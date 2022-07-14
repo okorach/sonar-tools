@@ -40,6 +40,7 @@ _CREATE_API_BITBUCKET = "alm_settings/create_bitbucket"
 _CREATE_API_BBCLOUD = "alm_settings/create_bitbucketcloud"
 APIS = {"list": "alm_settings/list_definitions"}
 
+_TO_BE_SET = "TO_BE_SET"
 _IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "clientId", "appId")
 
 
@@ -68,30 +69,32 @@ class DevopsPlatform(sqobject.SqObject):
         return o._load(data)
 
     @classmethod
-    def create(cls, endpoint, key, plt_type):
+    def create(cls, endpoint, key, plt_type, url_or_workspace):
         params = {"key": key}
         try:
             if plt_type == "github":
-                params["clientSecret"] = "TO_BE_SET"
-                params["privateKey"] = "TO_BE_SET"
+                params.update(
+                    {"appId": _TO_BE_SET, "clientId": _TO_BE_SET, "clientSecret": _TO_BE_SET, "privateKey": _TO_BE_SET, "url": url_or_workspace}
+                )
                 endpoint.post(_CREATE_API_GITHUB, params=params)
             elif plt_type == "azure":
                 # TODO: pass secrets on the cmd line
-                params["personalAccessToken"] = "TO_BE_SET"
+                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
                 endpoint.post(_CREATE_API_AZURE, params=params)
             elif plt_type == "gitlab":
-                params["personalAccessToken"] = "TO_BE_SET"
+                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
                 endpoint.post(_CREATE_API_GITLAB, params=params)
             elif plt_type == "bitbucket":
-                params["personalAccessToken"] = "TO_BE_SET"
+                params.update({"personalAccessToken": _TO_BE_SET, "url": url_or_workspace})
                 endpoint.post(_CREATE_API_BITBUCKET, params=params)
             elif plt_type == "bitbucketcloud":
-                params["clientSecret"] = "TO_BE_SET"
+                params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
                 endpoint.post(_CREATE_API_BBCLOUD, params=params)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST and endpoint.edition() == "developer":
                 util.logger.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
                 raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
+            raise
         o = DevopsPlatform(key, endpoint, plt_type)
         o.refresh()
         return o
@@ -257,7 +260,8 @@ def import_config(endpoint, config_data):
         try:
             o = DevopsPlatform.read(endpoint, name)
         except exceptions.ObjectNotFound:
-            o = DevopsPlatform.create(key=name, endpoint=endpoint, plt_type=data["type"])
+            info = data["workspace"] if data["type"] == "bitbucketcloud" else data["url"]
+            o = DevopsPlatform.create(key=name, endpoint=endpoint, plt_type=data["type"], url_or_workspace=info)
         o.update(**data)
 
 
