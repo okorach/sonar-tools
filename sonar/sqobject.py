@@ -71,21 +71,6 @@ class SqObject:
         """
         return self.endpoint.post(api=api, params=params, exit_on_error=exit_on_error, mute=mute)
 
-    def delete(self, api, params=None, exit_on_error=False, mute=()):
-        """Executes and HTTP DELETE against the SonarQube platform
-
-        :param str api: API to invoke (eg api/issues/search)
-        :param dict params: List of parameters to pass to the API
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
-        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
-        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
-        :type mute: tuple, optional
-        :return: The request response
-        :rtype: requests.Response
-        """
-        return self.endpoint.delete(api, params, exit_on_error=exit_on_error, mute=mute)
-
 
 def __search_thread(queue):
     while not queue.empty():

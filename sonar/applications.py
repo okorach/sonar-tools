@@ -234,7 +234,7 @@ class Application(aggr.Aggregation):
             self._branches[b_name] = br
         return self._branches
 
-    def delete(self, api="applications/delete", params=None, exit_on_error=False, mute=()):
+    def delete(self):
         """Deletes an Application
 
         :param params: Params for delete, typically None

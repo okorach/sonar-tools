@@ -176,7 +176,7 @@ class Branch(components.Component):
             self.refresh()
         return self._is_main
 
-    def delete(self, api=None, params=None, exit_on_error=False, mute=()):
+    def delete(self):
         """Deletes a branch
 
         :raises ObjectNotFound: Branch not found for deletion

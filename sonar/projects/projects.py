@@ -206,7 +206,7 @@ class Project(components.Component):
             self._pull_requests = pull_requests.get_list(self)
         return self._pull_requests
 
-    def delete(self, api="projects/delete", params=None, exit_on_error=False, mute=()):
+    def delete(self):
         """Deletes a project in SonarQube
 
         :raises ObjectNotFound: If object to delete was not found in SonarQube

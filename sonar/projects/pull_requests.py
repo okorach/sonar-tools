@@ -67,7 +67,7 @@ class PullRequest(components.Component):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def delete(self, api=None, params=None, exit_on_error=False, mute=()):
+    def delete(self):
         try:
             util.logger.info("Deleting %s", str(self))
             r = self.post("project_pull_requests/delete", params={"pullRequest": self.key, "project": self.project.key}, mute=(HTTPStatus.NOT_FOUND,))

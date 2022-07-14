@@ -214,7 +214,7 @@ class Portfolio(aggregations.Aggregation):
             comp_list[c["key"]] = c
         return comp_list
 
-    def delete(self, api="views/delete", params=None, exit_on_error=False, mute=()):
+    def delete(self):
         util.logger.info("Deleting %s", str(self))
         try:
             r = self.post("views/delete", params={"key": self.key}, mute=(HTTPStatus.NOT_FOUND,))
