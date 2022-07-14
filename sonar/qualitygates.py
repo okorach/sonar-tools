@@ -88,7 +88,7 @@ class QualityGate(sq.SqObject):
             return _OBJECTS[_MAP[name]]
         data = search_by_name(endpoint, name)
         if not data:
-            return None
+            raise exceptions.ObjectNotFound(name, f"Quality gate '{name}' not found")
         return cls.load(endpoint, data)
 
     @classmethod
@@ -383,7 +383,7 @@ def import_config(endpoint, config_data):
             o = QualityGate.get_object(endpoint, name)
         except exceptions.ObjectNotFound:
             o = QualityGate.create(endpoint, name)
-        ok = ok and o.update(endpoint, name, **data)
+        ok = ok and o.update(**data)
     return ok
 
 
