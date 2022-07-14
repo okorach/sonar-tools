@@ -80,7 +80,7 @@ class ProjectPermissions(permissions.Permissions):
         """Sets permissions of a project
 
         :param new_perms:
-        :type new_perms: dict {"users": [<user>, <user>, ...], "groups": [<group>, <group>, ...]}
+        :type new_perms: dict {"users": {<user>: [<perm>, ...], <user>: [], ...}, "groups": {<group>: [<perm>, ...], <group>:[], ...}}
         :return: Permissions associated to the aggregation
         :rtype: self
         """
