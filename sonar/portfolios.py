@@ -27,7 +27,8 @@ import time
 import json
 
 from sonar import aggregations, options, exceptions
-from sonar.permissions import portfolio_permissions
+import sonar.permissions.permissions as perms
+import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules
@@ -257,7 +258,7 @@ class Portfolio(aggregations.Aggregation):
     def permissions(self):
         if self._permissions is None and self.portfolio_type == "VW":
             # No permissions for SVW
-            self._permissions = portfolio_permissions.PortfolioPermissions(self)
+            self._permissions = pperms.PortfolioPermissions(self)
         return self._permissions
 
     def set_permissions(self, portfolio_perms):
@@ -353,7 +354,14 @@ class Portfolio(aggregations.Aggregation):
     def update(self, data, root_key):
         util.logger.debug("Updating %s with %s", str(self), util.json_dump(data))
         if "byReference" not in data or not data["byReference"]:
-            self.set_permissions(data.get("permissions", {}))
+            if "permissions" in data:
+                decoded_perms = {}
+                for ptype in perms.PERMISSION_TYPES:
+                    if ptype not in data["permissions"]:
+                        continue
+                    decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
+                self.set_permissions(decoded_perms)
+                # self.set_permissions(data.get("permissions", {}))
             selection_mode = data.get(_PROJECT_SELECTION_MODE, "NONE")
             branch = data.get(_PROJECT_SELECTION_BRANCH, None)
             regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
