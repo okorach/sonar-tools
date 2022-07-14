@@ -50,13 +50,16 @@ def __last_analysis(project_or_branch):
 def __get_csv_header(wanted_metrics, edition, **kwargs):
     sep = kwargs["csvSeparator"]
     if edition == "community" or not kwargs[options.WITH_BRANCHES]:
-        header = f"# Project Key{sep}Project Name{sep}Last Analysis"
+        header = f"# Project Key:1{sep}Project Name:2{sep}Last Analysis:3"
+        i = 4
     else:
-        header = f"# Project Key{sep}Project Name{sep}Branch{sep}Last Analysis"
+        header = f"# Project Key:1{sep}Project Name:2{sep}Branch:3{sep}Last Analysis:4"
+        i = 5
     for m in util.csv_to_list(wanted_metrics):
-        header += f"{sep}{m}"
+        header += f"{sep}{m}:{i}"
+        i += 1
     if kwargs[options.WITH_URL]:
-        header += f"{sep}URL"
+        header += f"{sep}URL:{i}"
     return header
 
 
