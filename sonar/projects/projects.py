@@ -217,7 +217,7 @@ class Project(components.Component):
         try:
             loc = int(self.get_measure("ncloc", fallback="0"))
             util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-            r = self.post("projects/delete", params={"project": self.key, **params}, mute=(HTTPStatus.NOT_FOUND,))
+            r = self.post("projects/delete", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
             util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
             return r.ok
         except HTTPError as e:
