@@ -191,9 +191,7 @@ class Application(aggr.Aggregation):
         project_list, branch_list = [], []
         for p in branch_data.get("projects", []):
             (pkey, bname) = (p["projectKey"], p["branch"]) if isinstance(p, dict) else (p, branch_data["projects"][p])
-            o_proj = projects.get_object(pkey, self.endpoint)
-            if not o_proj:
-                raise exceptions.ObjectNotFound(pkey, f"Project '{pkey}' not found while setting application branch")
+            o_proj = projects.Project.get_object(self.endpoint, pkey)
             if bname == settings.DEFAULT_SETTING:
                 bname = o_proj.main_branch().name
             if not branches.exists(self.endpoint, bname, pkey):
@@ -303,7 +301,7 @@ class Application(aggr.Aggregation):
         :raises: ObjectNotFound if a user or a group does not exists
         :return: self
         """
-        return self.permissions().set(data.get("permissions", None))
+        return self.permissions().set(data)
 
     def set_tags(self, tags):
         if tags is None or len(tags) == 0:
@@ -335,8 +333,15 @@ class Application(aggr.Aggregation):
 
         :param dict data:
         """
-        perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
-        self.set_permissions(util.csv_to_list(perms))
+        if "permissions" in data:
+            decoded_perms = {}
+            for ptype in permissions.PERMISSION_TYPES:
+                if ptype not in data["permissions"]:
+                    continue
+                decoded_perms[ptype] = {u: permissions.decode(v) for u, v in data["permissions"][ptype].items()}
+            self.set_permissions(decoded_perms)
+            # perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
+            # self.set_permissions(util.csv_to_list(perms))
         self.add_projects(_project_list(data))
         self.set_tags(data.get("tags", None))
         for name, branch_data in data.get("branches", {}).items():
