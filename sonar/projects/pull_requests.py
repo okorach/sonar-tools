@@ -71,7 +71,7 @@ class PullRequest(components.Component):
         try:
             util.logger.info("Deleting %s", str(self))
             r = self.post("project_pull_requests/delete", params={"pullRequest": self.key, "project": self.project.key}, mute=(HTTPStatus.NOT_FOUND,))
-            util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
+            util.logger.info("Successfully deleted %s", str(self))
             return r.ok
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
