@@ -66,7 +66,7 @@ class PullRequest(components.Component):
         return m
 
     def delete(self):
-        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS, self.uuid())
+        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS)
 
     def audit(self, audit_settings):
         age = util.age(self.last_analysis())

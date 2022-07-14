@@ -184,7 +184,7 @@ class Branch(components.Component):
         :return: Whether the deletion was successful
         :rtype: bool
         """
-        return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS, self.uuid())
+        return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS)
 
     def new_code(self):
         """

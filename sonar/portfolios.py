@@ -215,7 +215,7 @@ class Portfolio(aggregations.Aggregation):
         return comp_list
 
     def delete(self):
-        return sq.delete_object(self, "views/delete", {"key": self.key}, _OBJECTS, self.key)
+        return sq.delete_object(self, "views/delete", {"key": self.key}, _OBJECTS)
 
     def _audit_empty(self, audit_settings):
         if not audit_settings["audit.portfolios.empty"]:

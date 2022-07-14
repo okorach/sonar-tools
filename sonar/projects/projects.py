@@ -215,7 +215,7 @@ class Project(components.Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS, self.key)
+        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS)
         util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
         return ok
 

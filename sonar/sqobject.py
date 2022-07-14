@@ -122,15 +122,15 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
     return objects_list
 
 
-def delete_object(object, api, params, map, uuid):
+def delete_object(object, api, params, map):
     try:
         utilities.logger.info("Deleting %s", str(object))
         r = object.post(api, params=params, mute=(HTTPStatus.NOT_FOUND,))
-        map.pop(uuid, None)
+        map.pop(object.uuid(), None)
         utilities.logger.info("Successfully deleted %s", str(object))
         return r.ok
     except HTTPError as e:
         if e.response.status_code == HTTPStatus.NOT_FOUND:
-            map.pop(uuid, None)
+            map.pop(object.uuid(), None)
             raise exceptions.ObjectNotFound(object.key, f"{str(object)} not found for delete")
         raise

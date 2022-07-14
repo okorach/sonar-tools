@@ -247,7 +247,7 @@ class Application(aggr.Aggregation):
         :return: Whether the delete succeeded
         :rtype: bool
         """
-        return sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS, self.key)
+        return sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS)
 
     def _audit_empty(self, audit_settings):
         """Audits if an application contains 0 projects"""
