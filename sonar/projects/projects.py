@@ -30,10 +30,11 @@ from threading import Thread
 from queue import Queue
 from requests.exceptions import HTTPError
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, exceptions
+import sonar.permissions.permissions as perms
 from sonar.projects import pull_requests, branches
 from sonar.findings import issues, hotspots
 import sonar.utilities as util
-import sonar.permissions.project_permissions as perms
+import sonar.permissions.project_permissions as pperms
 
 from sonar.audit import rules, severities
 import sonar.audit.problem as pb
@@ -769,7 +770,7 @@ class Project(components.Component):
         :rtype: ProjectPermissions
         """
         if self._permissions is None:
-            self._permissions = perms.ProjectPermissions(self)
+            self._permissions = pperms.ProjectPermissions(self)
         return self._permissions
 
     def set_permissions(self, desired_permissions):
@@ -1007,7 +1008,13 @@ class Project(components.Component):
         :param dict data: JSON of configuration settings
         :return: Nothing
         """
-        self.set_permissions(data.get("permissions", None))
+        if "permissions" in data:
+            decoded_perms = {}
+            for ptype in perms.PERMISSION_TYPES:
+                if ptype not in data["permissions"]:
+                    continue
+                decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
+            self.set_permissions(decoded_perms)
         self.set_links(data)
         self.set_tags(data.get("tags", None))
         self.set_quality_gate(data.get("qualityGate", None))
