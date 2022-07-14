@@ -419,4 +419,8 @@ def exists(endpoint, branch_name, project_key):
     :return: Whether the branch exists in SonarQube
     :rtype: bool
     """
-    return branch_name in get_list(project=projects.get_object(project_key, endpoint))
+    try:
+        project = projects.Project.get_object(endpoint, project_key)
+    except exceptions.ObjectNotFound:
+        return False
+    return branch_name in get_list(project)
