@@ -115,12 +115,13 @@ class Project(components.Component):
         :rtype: Project
         """
         try:
-            endpoint.post("projects/create", params={"key": key, "name": name})
+            endpoint.post(_CREATE_API, params={"project": key, "name": name})
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
         o = cls(endpoint, key)
         o.name = name
+        return o
 
     def __init__(self, endpoint, key):
         super().__init__(key, endpoint)
@@ -1235,7 +1236,7 @@ def import_config(endpoint, config_data, key_list=None):
             o = Project.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
             o = Project.create(endpoint, key, data["name"])
-        o.update(endpoint, key, data)
+        o.update(data)
         i += 1
         if i % 20 == 0 or i == nb_projects:
             util.logger.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))
