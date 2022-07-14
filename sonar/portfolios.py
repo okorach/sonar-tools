@@ -231,15 +231,6 @@ class Portfolio(aggregations.Aggregation):
         util.logger.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
-    def dump_data(self, **opts):
-        self.refresh()
-        data = {"type": "portfolio", "key": self.key, "name": self.name, "ncloc": self.loc()}
-        if opts.get(options.WITH_URL, False):
-            data["url"] = self.url()
-        if opts.get(options.WITH_LAST_ANALYSIS, False):
-            data["lastAnalysis"] = self.last_analysis()
-        return data
-
     def export(self, full=False):
         util.logger.info("Exporting %s", str(self))
         self.refresh()

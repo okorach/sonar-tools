@@ -43,8 +43,7 @@ def __deduct_format(fmt, file):
 def __dump_csv(object_list, fd, **kwargs):
     writer = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
 
-    nb_loc = 0
-    nb_objects = 0
+    nb_loc, nb_objects = 0, 0
     arr = ["# Key", "ncloc"]
     if kwargs.get(options.WITH_NAME, False):
         arr.append("name")
@@ -55,24 +54,21 @@ def __dump_csv(object_list, fd, **kwargs):
     writer.writerow(arr)
 
     util.logger.info("%d objects with LoCs to export...", len(object_list))
-    for p in object_list.values():
-        if nb_objects == 0:
-            if isinstance(p, portfolios.Portfolio):
-                obj_type = "portfolio"
-            else:
-                obj_type = "project"
-
-        data = p.dump_data(**kwargs)
-        arr = [data["key"], data["ncloc"]]
+    obj_type = None
+    for o in object_list.values():
+        if obj_type is None:
+            obj_type = type(o).__name__.lower()
+        loc = o.loc()
+        arr = [o.key, o.loc()]
         if kwargs.get(options.WITH_NAME, False):
-            arr.append(data["name"])
+            arr.append(o.name)
         if kwargs.get(options.WITH_LAST_ANALYSIS, False):
-            arr.append(data["lastAnalysis"])
+            arr.append(o.last_analysis())
         if kwargs.get(options.WITH_URL, False):
-            arr.append(data["url"])
+            arr.append(o.url())
         writer.writerow(arr)
         nb_objects += 1
-        nb_loc += p.loc()
+        nb_loc += loc
 
         if nb_objects % 50 == 0:
             util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
@@ -81,26 +77,24 @@ def __dump_csv(object_list, fd, **kwargs):
 
 
 def __dump_json(object_list, fd, **kwargs):
-    nb_loc = 0
-    nb_objects = 0
+    nb_loc, nb_objects = 0, 0
     data = []
     util.logger.info("%d objects with LoCs to export...", len(object_list))
-    for p in object_list.values():
-        if nb_objects == 0:
-            if isinstance(p, portfolios.Portfolio):
-                obj_type = "portfolio"
-            else:
-                obj_type = "project"
-        data.append(p.dump_data(**kwargs))
+    obj_type = None
+    for o in object_list.values():
+        if obj_type is None:
+            obj_type = type(o).__name__.lower()
+        d = {"key": o.key, "ncloc": o.loc()}
+        if kwargs.get(options.WITH_NAME, False):
+            d["name"] = o.name
+        if kwargs.get(options.WITH_LAST_ANALYSIS, False):
+            d["lastAnalysis"] = util.date_to_string(o.last_analysis())
+        if kwargs.get(options.WITH_URL, False):
+            d["url"] = o.url()
+        data.append(d)
         nb_objects += 1
-        nb_loc += p.ncloc_with_branches()
         if nb_objects % 50 == 0:
-            util.logger.info(
-                "%d %ss and %d LoCs, still counting...",
-                nb_objects,
-                str(obj_type),
-                nb_loc,
-            )
+            util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, str(obj_type), nb_loc)
 
     print(util.json_dump(data), file=fd)
     util.logger.info("%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc)

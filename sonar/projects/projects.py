@@ -613,19 +613,6 @@ class Project(components.Component):
 
         return findings_list
 
-    def dump_data(self, **opts):
-        data = {
-            "type": "project",
-            "key": self.key,
-            "name": self.name,
-            "ncloc": self.loc(),
-        }
-        if opts.get(options.WITH_URL, False):
-            data["url"] = self.url()
-        if opts.get(options.WITH_LAST_ANALYSIS, False):
-            data["lastAnalysis"] = self.last_analysis()
-        return data
-
     def sync(self, another_project, sync_settings):
         """Syncs project issues with another project
 
