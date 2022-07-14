@@ -297,7 +297,7 @@ class QualityGate(sq.SqObject):
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
         problems += self.__audit_conditions()
         util.logger.debug("Auditing that %s has some assigned projects", my_name)
-        if not self.is_default and not self.projects():
+        if not self.is_default and len(self.projects()) == 0:
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
             msg = rule.msg.format(my_name)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
