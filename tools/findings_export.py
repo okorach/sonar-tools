@@ -41,7 +41,7 @@ import datetime
 from queue import Queue
 from threading import Thread
 
-from sonar import platform, version, options
+from sonar import platform, version, options, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
@@ -323,7 +323,7 @@ def main():
             break
     try:
         project_list = projects.get_list(endpoint=sqenv, key_list=util.csv_to_list(kwargs.get("projectKeys", None)))
-    except options.NonExistingObjectError as e:
+    except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     fmt = kwargs.pop("format", None)
     file = kwargs.pop("file", None)

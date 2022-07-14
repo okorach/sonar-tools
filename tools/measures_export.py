@@ -25,7 +25,7 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 """
 import sys
-from sonar import measures, metrics, platform, version, options
+from sonar import measures, metrics, platform, version, options, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -50,13 +50,16 @@ def __last_analysis(project_or_branch):
 def __get_csv_header(wanted_metrics, edition, **kwargs):
     sep = kwargs["csvSeparator"]
     if edition == "community" or not kwargs[options.WITH_BRANCHES]:
-        header = f"# Project Key{sep}Project Name{sep}Last Analysis"
+        header = f"# Project Key:1{sep}Project Name:2{sep}Last Analysis:3"
+        i = 4
     else:
-        header = f"# Project Key{sep}Project Name{sep}Branch{sep}Last Analysis"
+        header = f"# Project Key:1{sep}Project Name:2{sep}Branch:3{sep}Last Analysis:4"
+        i = 5
     for m in util.csv_to_list(wanted_metrics):
-        header += f"{sep}{m}"
+        header += f"{sep}{m}:{i}"
+        i += 1
     if kwargs[options.WITH_URL]:
-        header += f"{sep}URL"
+        header += f"{sep}URL:{i}"
     return header
 
 
@@ -67,7 +70,7 @@ def __get_object_measures(obj, wanted_metrics):
     measures_d["url"] = obj.url()
     proj = obj
     if not isinstance(obj, projects.Project):
-        proj = obj.project
+        proj = obj.concerned_object
         measures_d["branch"] = obj.name
     measures_d["projectKey"] = proj.key
     measures_d["projectName"] = proj.name
@@ -95,7 +98,7 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     line = ""
     for metric in util.csv_to_list(overall_metrics):
         val = ""
-        if metric in measures_d and measures_d[metric]:
+        if metric in measures_d and measures_d[metric] is not None:
             if isinstance(measures_d[metric], str) and sep in measures_d[metric]:
                 val = util.quote(measures_d[metric], sep)
             else:
@@ -212,7 +215,7 @@ def main():
 
     try:
         project_list = projects.get_list(endpoint=endpoint, key_list=args.projectKeys)
-    except options.NonExistingObjectError as e:
+    except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     is_first = True
     obj_list = []

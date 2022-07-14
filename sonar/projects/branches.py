@@ -22,6 +22,7 @@ from http import HTTPStatus
 import json
 from requests.exceptions import HTTPError
 import requests.utils
+import sonar.sqobject as sq
 from sonar import measures, components, syncer, settings, exceptions
 from sonar.projects import projects
 from sonar.findings import issues, hotspots
@@ -176,21 +177,14 @@ class Branch(components.Component):
             self.refresh()
         return self._is_main
 
-    def delete(self, api=None, params=None):
+    def delete(self):
         """Deletes a branch
 
         :raises ObjectNotFound: Branch not found for deletion
         :return: Whether the deletion was successful
         :rtype: bool
         """
-        util.logger.info("Deleting %s", str(self))
-        try:
-            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.concerned_object.key})
-            util.logger.info("%s: Successfully deleted", str(self))
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
-        return r.ok
+        return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS)
 
     def new_code(self):
         """
@@ -258,7 +252,7 @@ class Branch(components.Component):
             return False
         util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         try:
-            self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name}, exit_on_error=False)
+            self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name})
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
@@ -404,7 +398,7 @@ def get_list(project):
     :param Project project: Project the branch belongs to
     :raises UnsupportedOperation: Branches not supported in Community Edition
     :return: List of project branches
-    :rtype: dict{<branchName>: <Branch object>}
+    :rtype: list [Branch]
     """
     if project.endpoint.edition() == "community":
         util.logger.debug(_UNSUPPORTED_IN_CE)
@@ -412,7 +406,7 @@ def get_list(project):
 
     util.logger.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
-    return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
+    return [Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})]
 
 
 def exists(endpoint, branch_name, project_key):

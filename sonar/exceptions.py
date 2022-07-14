@@ -35,6 +35,16 @@ class ObjectNotFound(SonarException):
         self.key = key
 
 
+class ObjectAlreadyExists(SonarException):
+    """
+    Object already exists when trying to create it
+    """
+
+    def __init__(self, key, message):
+        super().__init__(message)
+        self.key = key
+
+
 class UnsupportedOperation(SonarException):
     """
     Unsupported operation (most often due to edition not allowing it)

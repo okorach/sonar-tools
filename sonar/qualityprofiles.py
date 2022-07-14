@@ -119,7 +119,7 @@ class QualityProfile(sq.SqObject):
             util.logger.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         util.logger.debug("Creating quality profile '%s' of language '%s'", name, language)
-        r = endpoint.post(_CREATE_API, params={"name": name, "language": language}, exit_on_error=False)
+        r = endpoint.post(_CREATE_API, params={"name": name, "language": language})
         if not r.ok:
             return None
         return cls.read(endpoint=endpoint, name=name, language=language)
@@ -181,7 +181,7 @@ class QualityProfile(sq.SqObject):
             return False
         if self.parent_name is None or self.parent_name != parent_name:
             params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
-            r = self.post("qualityprofiles/change_parent", params=params, exit_on_error=False)
+            r = self.post("qualityprofiles/change_parent", params=params)
             return r.ok
         else:
             util.logger.debug("Won't set parent of %s. It's the same as currently", str(self))
@@ -239,7 +239,7 @@ class QualityProfile(sq.SqObject):
         api_params = {"key": self.key, "rule": rule_key, "severity": severity}
         if len(params) > 0:
             api_params["params"] = ";".join([f"{k}={v}" for k, v in params.items()])
-        r = self.post("qualityprofiles/activate_rule", params=api_params, exit_on_error=False)
+        r = self.post("qualityprofiles/activate_rule", params=api_params)
         if r.status_code == HTTPStatus.NOT_FOUND:
             util.logger.error("Rule %s not found, can't activate it in %s", rule_key, str(self))
         elif r.status_code == HTTPStatus.BAD_REQUEST:

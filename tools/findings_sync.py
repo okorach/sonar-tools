@@ -28,8 +28,9 @@
     Only issues with a 100% match are synchronized. When there's a doubt, nothing is done
 """
 
-from sonar import platform, version, syncer, options
-from sonar.projects import projects, branches
+from sonar import platform, version, syncer, options, exceptions
+from sonar.projects import projects
+from sonar.projects.branches import Branch
 import sonar.utilities as util
 
 _WITH_COMMENTS = {"additionalFields": "comments"}
@@ -118,15 +119,15 @@ def main():
     report = []
     try:
         if not projects.exists(source_key, endpoint=source_env):
-            raise options.NonExistingObjectError(source_key, f"Project key '{source_key}' does not exist")
+            raise exceptions.ObjectNotFound(source_key, f"Project key '{source_key}' does not exist")
         if target_url is None and target_key is None and source_branch is None and target_branch is None:
             # Sync all branches of a given project
             (report, counters) = projects.get_object(key=source_key, endpoint=source_env).sync_branches(sync_settings=settings)
         elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
             # Sync 2 branches of a given project
             if source_branch != target_branch:
-                src_branch = branches.get_object(branch=source_branch, project=projects.get_object(source_key, source_env))
-                tgt_branch = branches.get_object(branch=target_branch, project=projects.get_object(source_key, source_env))
+                src_branch = Branch.get_object(projects.get_object(source_key, source_env), source_branch)
+                tgt_branch = Branch.get_object(projects.get_object(source_key, source_env), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
@@ -134,21 +135,21 @@ def main():
         elif target_url is None and target_key is not None:
             # sync 2 branches of 2 different projects of the same platform
             if not projects.exists(target_key, endpoint=source_env):
-                raise options.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
+                raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
-            src_branch = branches.get_object(branch=source_branch, project=projects.get_object(source_key, source_env))
-            tgt_branch = branches.get_object(branch=target_branch, project=projects.get_object(target_key, source_env))
+            src_branch = Branch.get_object(projects.get_object(source_key, source_env), source_branch)
+            tgt_branch = Branch.get_object(projects.get_object(target_key, source_env), target_branch)
             (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
 
         elif target_url is not None and target_key is not None:
             target_env = platform.Platform(some_url=args.urlTarget, some_token=args.tokenTarget, cert_file=args.clientCert)
             if not projects.exists(target_key, endpoint=target_env):
-                raise options.NonExistingObjectError(target_key, f"Project key '{target_key}' does not exist")
+                raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
             if source_branch is not None or target_branch is not None:
                 # sync main 2 branches of 2 projects on different platforms
-                src_branch = branches.get_object(branch=source_branch, project=projects.get_object(source_key, endpoint=source_env))
-                tgt_branch = branches.get_object(branch=target_branch, project=projects.get_object(target_key, endpoint=target_env))
+                src_branch = Branch.get_object(projects.get_object(source_key, endpoint=source_env), source_branch)
+                tgt_branch = Branch.get_object(projects.get_object(target_key, endpoint=target_env), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 # sync main all branches of 2 projects on different platforms
@@ -176,7 +177,7 @@ def main():
             counters.get("nb_tgt_has_changelog", 0),
         )
 
-    except options.NonExistingObjectError as e:
+    except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
 

@@ -206,19 +206,18 @@ class Project(components.Component):
             self._pull_requests = pull_requests.get_list(self)
         return self._pull_requests
 
-    def delete(self, api="projects/delete", params=None):
+    def delete(self):
         """Deletes a project in SonarQube
 
-        :return: List of pull requests of the project
-        :rtype: list[PullRequest]
+        :raises ObjectNotFound: If object to delete was not found in SonarQube
+        :raises request.HTTPError: In all other cases of HTTP Errors
+        :return: Nothing
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        if not super().post("projects/delete", params={"project": self.key}):
-            util.logger.error("%s deletion failed", str(self))
-            return False
+        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS)
         util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
-        return True
+        return ok
 
     def has_binding(self):
         """
@@ -235,7 +234,7 @@ class Project(components.Component):
         """
         if self._binding["has_binding"] and self._binding["binding"] is None:
             try:
-                resp = self.get("alm_settings/get_binding", params={"project": self.key}, exit_on_error=False)
+                resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
             except HTTPError as e:
@@ -318,9 +317,9 @@ class Project(components.Component):
         util.logger.debug("Auditing %s branches", str(self))
         problems = []
         main_br_count = 0
-        for name, branch in self.branches().items():
+        for branch in self.branches():
             problems += branch.audit(audit_settings)
-            if name in ("main", "master"):
+            if branch.name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
                     rule = rules.get_rule(rules.RuleId.PROJ_MAIN_AND_MASTER)
@@ -416,7 +415,7 @@ class Project(components.Component):
                 str(self),
             )
             return []
-        resp = self.get("alm_settings/validate_binding", params={"project": self.key}, exit_on_error=False)
+        resp = self.get("alm_settings/validate_binding", params={"project": self.key})
         if resp.ok:
             util.logger.debug("%s binding is valid", str(self))
             return []
@@ -782,7 +781,9 @@ class Project(components.Component):
         """
         if quality_gate is None:
             return False
-        if qualitygates.get_object(quality_gate, endpoint=self.endpoint) is None:
+        try:
+            _ = qualitygates.QualityGate.get_object(self.endpoint, quality_gate)
+        except exceptions.ObjectNotFound:
             util.logger.warning("Quality gate '%s' does not exist, can't set it for %s", quality_gate, str(self))
             return False
         util.logger.debug("Setting quality gate '%s' for %s", quality_gate, str(self))
@@ -1166,6 +1167,7 @@ def export(endpoint, key_list=None, full=False, threads=8):
         util.logger.debug("Starting project export thread %d", i)
         worker = Thread(target=__export_thread, args=(q, project_settings, full))
         worker.setDaemon(True)
+        worker.setName(f"ProjectExport{i}")
         worker.start()
     q.join()
     return project_settings

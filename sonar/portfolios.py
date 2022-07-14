@@ -26,7 +26,7 @@
 import time
 import json
 
-from sonar import aggregations, options
+from sonar import aggregations, options, exceptions
 from sonar.permissions import portfolio_permissions
 import sonar.sqobject as sq
 import sonar.utilities as util
@@ -212,9 +212,8 @@ class Portfolio(aggregations.Aggregation):
             comp_list[c["key"]] = c
         return comp_list
 
-    def delete(self, api="views/delete", params=None):
-        _ = self.post("views/delete", params={"key": self.key})
-        return True
+    def delete(self):
+        return sq.delete_object(self, "views/delete", {"key": self.key}, _OBJECTS)
 
     def _audit_empty(self, audit_settings):
         if not audit_settings["audit.portfolios.empty"]:
@@ -290,7 +289,7 @@ class Portfolio(aggregations.Aggregation):
         ok = True
         for proj, branches in project_list.items():
             if proj not in current_project_keys:
-                r = self.post("views/add_project", params={"key": self.key, "project": proj}, exit_on_error=False)
+                r = self.post("views/add_project", params={"key": self.key, "project": proj})
                 ok = ok and r.ok
                 current_projects[proj] = options.DEFAULT
             else:
@@ -299,7 +298,7 @@ class Portfolio(aggregations.Aggregation):
                 if branch != options.DEFAULT and branch not in util.csv_to_list(current_projects[proj]):
                     if self.endpoint.version() >= (9, 2, 0):
                         util.logger.debug("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
-                        r = self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch}, exit_on_error=False)
+                        r = self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch})
                         ok = ok and r.ok
                     else:
                         util.logger.warning("Can't add branch '%s' of project '%s' in a portfolio on SonarQube < 9.2", branch, proj)
@@ -414,7 +413,7 @@ def get_list(endpoint, key_list=None):
     for key in util.csv_to_list(key_list):
         object_list[key] = get_object(key, endpoint=endpoint)
         if object_list[key] is None:
-            raise options.NonExistingObjectError(key, f"Portfolio key '{key}' does not exist")
+            raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' does not exist")
     return object_list
 
 
@@ -615,7 +614,7 @@ def __create_portfolio_hierarchy(endpoint, data, parent_key):
         for p in ("name", "description", "visibility"):
             params[p] = subp.get(p, None)
         util.logger.debug("Creating portfolio name '%s'", subp["name"])
-        r = endpoint.post(_CREATE_API, params=params, exit_on_error=False)
+        r = endpoint.post(_CREATE_API, params=params)
         if r.ok:
             nbr_creations += 1
         nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=key)

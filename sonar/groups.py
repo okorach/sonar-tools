@@ -102,7 +102,6 @@ class Group(sq.SqObject):
         :return: The group object
         :rtype: Group or None
         """
-        util.logger.debug("Loading group '%s'", data["name"])
         return cls(name=data["name"], endpoint=endpoint, data=data)
 
     def __str__(self):
@@ -142,7 +141,7 @@ class Group(sq.SqObject):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        return self.post(ADD_USER_API, params={"login": user_login, "name": self.name}, exit_on_error=False).ok
+        return self.post(ADD_USER_API, params={"login": user_login, "name": self.name}).ok
 
     def remove_user(self, user_login):
         """Removes a user from the group
@@ -152,7 +151,7 @@ class Group(sq.SqObject):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        return self.post(REMOVE_USER_API, params={"login": user_login, "name": self.name}, exit_on_error=False).ok
+        return self.post(REMOVE_USER_API, params={"login": user_login, "name": self.name}).ok
 
     def audit(self, audit_settings=None):
         """Audits a group and return list of problems found
@@ -199,7 +198,7 @@ class Group(sq.SqObject):
             util.logger.debug("No description to update for %s", str(self))
             return True
         util.logger.debug("Updating %s with description = %s", str(self), description)
-        r = self.post(_UPDATE_API, params={"id": self.key, "description": description}, exit_on_error=False)
+        r = self.post(_UPDATE_API, params={"id": self.key, "description": description})
         if r.ok:
             self.description = description
         return r.ok
@@ -216,7 +215,7 @@ class Group(sq.SqObject):
             util.logger.debug("No name to update for %s", str(self))
             return True
         util.logger.debug("Updating %s with name = %s", str(self), name)
-        r = self.post(_UPDATE_API, params={"id": self.key, "name": name}, exit_on_error=False)
+        r = self.post(_UPDATE_API, params={"id": self.key, "name": name})
         if r.ok:
             _MAP.pop(self.name, None)
             self.name = name
@@ -263,7 +262,7 @@ def export(endpoint):
     util.logger.info("Exporting groups")
     g_list = {}
     for g_name, g_obj in search(endpoint=endpoint).items():
-        if g_obj.is_default:
+        if g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
     return g_list

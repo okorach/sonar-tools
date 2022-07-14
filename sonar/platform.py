@@ -21,7 +21,6 @@
 from http import HTTPStatus
 import sys
 import os
-import re
 import time
 import datetime
 import json
@@ -44,6 +43,7 @@ from sonar import sif
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
+_HTTP_ERROR = "%s Error: %s HTTP status code %d"
 
 _SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
@@ -137,7 +137,7 @@ class Platform:
             "serverId": self.server_id(),
         }
 
-    def get(self, api, params=None, exit_on_error=False):
+    def get(self, api, params=None, exit_on_error=False, mute=()):
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -146,6 +146,9 @@ class Platform:
         :type params: dict, optional
         :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :type exit_on_error: bool, optional
+        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
+        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
         :return: the result of the HTTP request
         :rtype: request.Response
         """
@@ -158,13 +161,16 @@ class Platform:
             if exit_on_error:
                 util.log_and_exit(r)
             else:
-                util.logger.error("GET Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                if r.status_code in mute:
+                    util.logger.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
+                else:
+                    util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
                 raise e
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
 
-    def post(self, api, params=None, exit_on_error=False):
+    def post(self, api, params=None, exit_on_error=False, mute=()):
         """Makes an HTTP POST request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -173,6 +179,9 @@ class Platform:
         :type params: dict, optional
         :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :type exit_on_error: bool, optional
+        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
+        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
         :return: the result of the HTTP request
         :rtype: request.Response
         """
@@ -185,19 +194,27 @@ class Platform:
             if exit_on_error:
                 util.log_and_exit(r)
             else:
-                util.logger.error("POST Error: %s HTTP status code %d", self.__urlstring(api, params), r.status_code)
+                if r.status_code in mute:
+                    util.logger.debug(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
+                else:
+                    util.logger.error(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
                 raise
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
 
-    def delete(self, api, params=None):
+    def delete(self, api, params=None, exit_on_error=False, mute=()):
         """Makes an HTTP DELETE request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
         :type api: str
         :param params: params to pass in the HTTP request, defaults to None
         :type params: dict, optional
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
+        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
         :return: the result of the HTTP request
         :rtype: request.Response
         """
@@ -207,7 +224,14 @@ class Platform:
             r = requests.delete(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
-            util.log_and_exit(r)
+            if exit_on_error:
+                util.log_and_exit(r)
+            else:
+                if r.status_code in mute:
+                    util.logger.debug(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
+                else:
+                    util.logger.error(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
+                raise
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
 
@@ -230,7 +254,7 @@ class Platform:
             success, counter = False, 0
             while not success:
                 try:
-                    resp = self.get("system/info", exit_on_error=False)
+                    resp = self.get("system/info", mute=(HTTPStatus.INTERNAL_SERVER_ERROR,))
                     success = True
                 except HTTPError as e:
                     # Hack: SonarQube randomly returns Error 500 on this API, retry up to 10 times
@@ -545,11 +569,11 @@ this.context = Platform(os.getenv("SONAR_HOST_URL", "http://localhost:9000"), os
 
 def _normalize_api(api):
     api = api.lower()
-    if re.match(r"/api", api):
+    if api.startswith("/api"):
         pass
-    elif re.match(r"api", api):
+    elif api.startswith("api"):
         api = "/" + api
-    elif re.match(r"/", api):
+    elif api.startswith("/"):
         api = "/api" + api
     else:
         api = "/api/" + api

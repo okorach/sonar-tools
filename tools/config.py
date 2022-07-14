@@ -23,7 +23,7 @@
 """
 import sys
 import datetime
-from sonar import platform, version, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities
+from sonar import platform, version, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities, exceptions
 from sonar.projects import projects
 
 _EVERYTHING = [
@@ -178,7 +178,7 @@ def main():
     if kwargs["export"]:
         try:
             __export_config(endpoint, what, args)
-        except options.NonExistingObjectError as e:
+        except exceptions.ObjectNotFound as e:
             utilities.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     if kwargs["import"]:
         __import_config(endpoint, what, args)

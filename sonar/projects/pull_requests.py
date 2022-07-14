@@ -25,7 +25,7 @@
 
 import json
 import requests.utils
-from sonar import measures, components
+from sonar import measures, components, sqobject
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
@@ -65,16 +65,8 @@ class PullRequest(components.Component):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def delete(self, api=None, params=None):
-        util.logger.info("Deleting %s", str(self))
-        if not self.post(
-            "api/project_pull_requests/delete",
-            params={"pullRequest": self.key, "project": self.project.key},
-        ):
-            util.logger.error("%s: deletion failed", str(self))
-            return False
-        util.logger.info("%s: Successfully deleted", str(self))
-        return True
+    def delete(self):
+        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS)
 
     def audit(self, audit_settings):
         age = util.age(self.last_analysis())

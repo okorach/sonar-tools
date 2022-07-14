@@ -61,7 +61,7 @@ class CustomMeasure(sq.SqObject):
             {"id": self.uuid, "value": value, "description": description},
         )
 
-    def delete(self, api=None, params=None):
+    def delete(self):
         return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid})
 
 

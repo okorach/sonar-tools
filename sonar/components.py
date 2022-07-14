@@ -36,8 +36,6 @@ class Component(sq.SqObject):
     def __init__(self, key, endpoint=None, data=None):
         super().__init__(key, endpoint)
         self.name = None
-        self.qualifier = None
-        self.path = None
         self.nbr_issues = None
         self.ncloc = None
         self._description = None
@@ -45,14 +43,19 @@ class Component(sq.SqObject):
         self._tags = None
         self._visibility = None
         if data is not None:
-            self.__load(data)
+            self.reload(data)
 
-    def __load(self, data):
-        self.name = data.get("name", None)
-        self.qualifier = data.get("qualifier", None)
-        self.path = data.get("path", None)
-
-        self._last_analysis = data.get("analysisDate", None)
+    def reload(self, data):
+        if self._json:
+            self._json.update(data)
+        else:
+            self._json = data
+        if "name" in data:
+            self.name = data["name"]
+        if "visibility" in data:
+            self._visibility = data["visibility"]
+        if "analysisDate" in data:
+            self._last_analysis = data["analysisDate"]
         return self
 
     def __str__(self):
@@ -148,7 +151,7 @@ class Component(sq.SqObject):
         return self.ncloc
 
     def refresh(self):
-        return self.__load(json.loads(self.endpoint.get("navigation/component", params={"component": self.key}).text))
+        return self.reload(json.loads(self.endpoint.get("navigation/component", params={"component": self.key}).text))
 
     def last_analysis(self):
         if not self._last_analysis:

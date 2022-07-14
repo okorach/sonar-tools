@@ -78,6 +78,9 @@ class QualityGate(sq.SqObject):
     @classmethod
     def get_object(cls, endpoint, name):
         """Reads a quality gate from SonarQube
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str name: Quality gate
         :return: the QualityGate object or None if not found
         :rtype: QualityGate or None
         """
@@ -153,7 +156,7 @@ class QualityGate(sq.SqObject):
         while page <= nb_pages:
             params["p"] = page
             try:
-                resp = self.get(APIS["get_projects"], params=params, exit_on_error=False)
+                resp = self.get(APIS["get_projects"], params=params)
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
@@ -205,20 +208,23 @@ class QualityGate(sq.SqObject):
         """Sets quality gate conditions (overriding any previous conditions)
         :param conditions_list: List of conditions, encoded
         :type conditions_list: dict
-        :return: Nothing
+        :return: Whether the operation succeeded
+        :rtype: bool
         """
-        if conditions_list is None or len(conditions_list) == 0:
-            return
+        if not conditions_list or len(conditions_list) == 0:
+            return True
         if self.is_built_in:
             util.logger.debug("Can't set conditions of built-in %s", str(self))
-            return
+            return False
         self.clear_conditions()
         util.logger.debug("Setting conditions of %s", str(self))
         params = {"gateName": self.name}
+        ok = True
         for cond in conditions_list:
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
-            self.post("qualitygates/create_condition", params=params)
+            ok = ok and self.post("qualitygates/create_condition", params=params).ok
         self.conditions()
+        return ok
 
     def permissions(self):
         """
@@ -233,10 +239,10 @@ class QualityGate(sq.SqObject):
         """Sets quality gate permissions
         :param permissions_list:
         :type permissions_list: dict {"users": [<userlist>], "groups": [<grouplist>]}
-        :return: The quality gate permissions
-        :rtype: QualityGatePermissions
+        :return: Whether the operation succeeded
+        :rtype: bool
         """
-        self.permissions().set(permissions_list)
+        return self.permissions().set(permissions_list)
 
     def update(self, **data):
         """Updates a quality gate
@@ -248,11 +254,11 @@ class QualityGate(sq.SqObject):
             _MAP.pop(self.name, None)
             self.name = data["name"]
             _MAP[self.name] = self
-        self.set_conditions(data.get("conditions", []))
-        self.set_permissions(data.get("permissions", []))
-        return self
+        ok = self.set_conditions(data.get("conditions", []))
+        ok = ok and self.set_permissions(data.get("permissions", []))
+        return ok
 
-    def __audit_conditions__(self):
+    def __audit_conditions(self):
         problems = []
         for c in self.conditions():
             m = c["metric"]
@@ -289,9 +295,9 @@ class QualityGate(sq.SqObject):
             rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_COND)
             msg = rule.msg.format(my_name, nb_conditions, max_cond)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
-        problems += self.__audit_conditions__()
+        problems += self.__audit_conditions()
         util.logger.debug("Auditing that %s has some assigned projects", my_name)
-        if not self.is_default and not self.projects():
+        if not self.is_default and len(self.projects()) == 0:
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
             msg = rule.msg.format(my_name)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
@@ -359,23 +365,50 @@ def export(endpoint, full=False):
 
 
 def import_config(endpoint, config_data):
+    """Imports quality gates in a SonarQube platform
+    Quality gates already existing  are updates with the provided configuration
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param dict config_data: JSON representation of quality gates (as per export format)
+    :return: Whether the import succeeded
+    :rtype: bool
+    """
     if "qualityGates" not in config_data:
         util.logger.info("No quality gates to import")
-        return
+        return True
     util.logger.info("Importing quality gates")
+    ok = True
     for name, data in config_data["qualityGates"].items():
-        o = QualityGate.get_object(endpoint=endpoint, name=name)
-        if not o:
+        try:
+            o = QualityGate.get_object(endpoint, name)
+        except exceptions.ObjectNotFound:
             o = QualityGate.create(endpoint, name)
-        o.update(endpoint, name, **data)
+        ok = ok and o.update(endpoint, name, **data)
+    return ok
 
 
 def count(endpoint):
     """
+    :param Platform endpoint: Reference to the SonarQube platform
     :return: Number of quality gates
     :rtype: int
     """
     return len(get_list(endpoint))
+
+
+def exists(endpoint, gate_name):
+    """Returns whether a quality gate exists
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str gate_name: Quality gate name
+    :return: Whether the quality gate exists
+    :rtype: bool
+    """
+    try:
+        _ = QualityGate.get_object(endpoint, gate_name)
+        return True
+    except exceptions.ObjectNotFound:
+        return False
 
 
 def _encode_conditions(conds):
