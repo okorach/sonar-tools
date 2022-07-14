@@ -218,11 +218,10 @@ class Project(components.Component):
         """
         if self._ncloc_with_branches is not None:
             return self._ncloc_with_branches
-        self._ncloc_with_branches = super().loc()
-        if self.endpoint.edition() != "community":
-            for b in self.branches() + self.pull_requests():
-                if b.loc() > self._ncloc_with_branches:
-                    self._ncloc_with_branches = b.loc()
+        if self.endpoint.edition() == "community":
+            self._ncloc_with_branches = super().loc()
+        else:
+            self._ncloc_with_branches = max([b.loc() for b in self.branches() + self.pull_requests()])
         return self._ncloc_with_branches
 
     def get_measures(self, metrics_list):
