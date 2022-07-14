@@ -119,7 +119,7 @@ class Setting(sqobject.SqObject):
         util.logger.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
         uu = _uuid_p(key, component)
         o = _OBJECTS[uu] if uu in _OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
-        o._load(data)
+        o.reload(data)
         return o
 
     def __init__(self, key, endpoint, component=None, data=None):
@@ -127,11 +127,11 @@ class Setting(sqobject.SqObject):
         self.component = component
         self.value = None
         self.inherited = None
-        self._load(data)
+        self.reload(data)
         util.logger.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
         _OBJECTS[self.uuid()] = self
 
-    def _load(self, data):
+    def reload(self, data):
         if not data:
             return
         if self.key == NEW_CODE_PERIOD:
@@ -168,11 +168,12 @@ class Setting(sqobject.SqObject):
             return f"setting '{self.key}' of {str(self.component)}"
 
     def set(self, value):
+        util.logger.debug("%s set to '%s'", str(self), str(value))
         if not is_valid(self.key, self.endpoint):
             util.logger.error("Setting '%s' does not seem to be a valid setting, trying to set anyway...", str(self))
         if value is None or value == "":
-            # return endpoint.reset_setting(key)
-            return None
+            # TODO: return endpoint.reset_setting(key)
+            return True
         if self.key in (COMPONENT_VISIBILITY, PROJECT_DEFAULT_VISIBILITY):
             return set_visibility(endpoint=self.endpoint, component=self.component, visibility=value)
 
@@ -191,7 +192,7 @@ class Setting(sqobject.SqObject):
             if isinstance(value, bool):
                 value = "true" if value else "false"
             params["value"] = value
-        return self.post(_API_SET, params=params)
+        return self.post(_API_SET, params=params).ok
 
     def to_json(self):
         return {self.key: encode(self.key, self.value)}
