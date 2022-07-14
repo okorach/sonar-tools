@@ -25,8 +25,6 @@
 
 import time
 import json
-from http import HTTPStatus
-from requests.exceptions import HTTPError
 
 from sonar import aggregations, options, exceptions
 from sonar.permissions import portfolio_permissions
