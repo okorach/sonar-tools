@@ -258,7 +258,7 @@ class QualityGate(sq.SqObject):
         ok = ok and self.set_permissions(data.get("permissions", []))
         return ok
 
-    def __audit_conditions__(self):
+    def __audit_conditions(self):
         problems = []
         for c in self.conditions():
             m = c["metric"]
@@ -295,7 +295,7 @@ class QualityGate(sq.SqObject):
             rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_COND)
             msg = rule.msg.format(my_name, nb_conditions, max_cond)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
-        problems += self.__audit_conditions__()
+        problems += self.__audit_conditions()
         util.logger.debug("Auditing that %s has some assigned projects", my_name)
         if not self.is_default and not self.projects():
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
