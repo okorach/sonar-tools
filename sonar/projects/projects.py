@@ -527,9 +527,10 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation(
                 "Project export is only available with Enterprise and Datacenter Edition, or with SonarQube 9.2 or higher for any Edition"
             )
-        resp = self.post("project_dump/export", params={"key": self.key})
-        if not resp.ok:
-            return {"status": f"HTTP_ERROR {resp.status_code}"}
+        try:
+            resp = self.post("project_dump/export", params={"key": self.key})
+        except HTTPError as e:
+            return {"status": f"HTTP_ERROR {e.response.status_code}"}
         data = json.loads(resp.text)
         status = tasks.Task(data["taskId"], endpoint=self.endpoint, concerned_object=self, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
@@ -542,36 +543,35 @@ class Project(components.Component):
     def export_async(self):
         """Export project as zip file, synchronously
 
-        :return: export taskId
-        :rtype: str
+        :return: export taskId or None if starting the export failed
+        :rtype: str or None
         """
         util.logger.info("Exporting %s (asynchronously)", str(self))
-        resp = self.post("project_dump/export", params={"key": self.key})
-        if resp.ok:
-            data = json.loads(resp.text)
-            return data["taskId"]
-        return None
+        try:
+            return json.loads(self.post("project_dump/export", params={"key": self.key}).text)["taskId"]
+        except HTTPError:
+            return None
 
     def import_zip(self):
         """Imports a project zip file in SonarQube
 
-        :return: status code of the HTTP import request
-        :rtype: int
+        :raises http.HTTPError:
+        :return: Whether the operation succeeded
+        :rtype: bool
         """
         util.logger.info("Importing %s (asynchronously)", str(self))
         if self.endpoint.edition() not in ("enterprise", "datacenter"):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
-        resp = self.post("project_dump/import", params={"key": self.key})
-        return resp.status_code
+        return self.post("project_dump/import", params={"key": self.key}).ok
 
     def get_findings(self, branch=None, pr=None):
         """Returns a project list of findings (issues and hotspots)
 
         :param branch: branch name to consider, if any
-        :type branch: str
+        :type branch: str, optional
         :param pr: PR key to consider, if any
-        :type pr: str
-        :return: dict of all findings, with finding key as key
+        :type pr: str, optional
+        :return: JSON of all findings, with finding key as key
         :rtype: dict{key: Finding}
         """
         if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ("enterprise", "datacenter"):
