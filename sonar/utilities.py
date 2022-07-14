@@ -221,10 +221,7 @@ def string_to_date(string):
 
 
 def date_to_string(date, with_time=True):
-    fmt = SQ_DATETIME_FORMAT
-    if not with_time:
-        fmt = SQ_DATE_FORMAT
-    return date.strftime(fmt)
+    return "" if date is None else date.strftime(SQ_DATETIME_FORMAT if with_time else SQ_DATE_FORMAT)
 
 
 def age(some_date, rounded=True):
