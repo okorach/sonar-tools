@@ -479,19 +479,17 @@ class Project(components.Component):
                 str(self),
             )
             return []
-        resp = self.get("alm_settings/validate_binding", params={"project": self.key})
-        if resp.ok:
+        try:
+            resp = self.get("alm_settings/validate_binding", params={"project": self.key})
             util.logger.debug("%s binding is valid", str(self))
             return []
-        # Hack: 8.9 returns 404, 9.x returns 400
-        elif resp.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-            rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
-        else:
-            util.exit_fatal(
-                f"alm_settings/get_binding returning status code {resp.status_code}, exiting",
-                options.ERR_SONAR_API,
-            )
+        except HTTPError as e:
+            # Hack: 8.9 returns 404, 9.x returns 400
+            if e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
+                return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
+            else:
+                util.exit_fatal(f"alm_settings/get_binding returning status code {resp.status_code}, exiting", options.ERR_SONAR_API)
 
     def audit(self, audit_settings):
         """Audits a project and returns the list of problems found
