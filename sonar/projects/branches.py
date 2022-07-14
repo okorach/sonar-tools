@@ -185,12 +185,15 @@ class Branch(components.Component):
         """
         util.logger.info("Deleting %s", str(self))
         try:
-            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.concerned_object.key}, exit_on_error=exit_on_error, mute=mute)
+            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.concerned_object.key}, mute=(HTTPStatus.NOT_FOUND,))
+            _OBJECTS.pop(self.uuid(), None)
             util.logger.info("%s: Successfully deleted", str(self))
+            return r.ok
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
+                _OBJECTS.pop(self.uuid(), None)
                 raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
-        return r.ok
+            raise
 
     def new_code(self):
         """

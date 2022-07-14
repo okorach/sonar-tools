@@ -209,16 +209,23 @@ class Project(components.Component):
     def delete(self, api="projects/delete", params=None, exit_on_error=False, mute=()):
         """Deletes a project in SonarQube
 
-        :return: List of pull requests of the project
+        :raises ObjectNotFound: If object to delete was not found in SonarQube
+        :raises request.HTTPError: In all other cases of HTTP Errors
+        :return: Whether the deletion was successful or not
         :rtype: list[PullRequest]
         """
-        loc = int(self.get_measure("ncloc", fallback="0"))
-        util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        if not super().post("projects/delete", params={"project": self.key, **params}, exit_on_error=exit_on_error, mute=mute):
-            util.logger.error("%s deletion failed", str(self))
-            return False
-        util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
-        return True
+        try:
+            loc = int(self.get_measure("ncloc", fallback="0"))
+            util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
+            r = self.post("projects/delete", params={"project": self.key, **params}, mute=(HTTPStatus.NOT_FOUND,))
+            util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
+            return r.ok
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                _OBJECTS.pop(self.key, None)
+                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
+            raise
+
 
     def has_binding(self):
         """

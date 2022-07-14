@@ -25,6 +25,8 @@
 
 import time
 import json
+from http import HTTPStatus
+from requests.exceptions import HTTPError
 
 from sonar import aggregations, options, exceptions
 from sonar.permissions import portfolio_permissions
@@ -213,8 +215,17 @@ class Portfolio(aggregations.Aggregation):
         return comp_list
 
     def delete(self, api="views/delete", params=None, exit_on_error=False, mute=()):
-        _ = self.post("views/delete", params={"key": self.key, **params}, exit_on_error=exit_on_error, mute=mute)
-        return True
+        util.logger.info("Deleting %s", str(self))
+        try:
+            r = self.post("views/delete", params={"key": self.key}, mute=(HTTPStatus.NOT_FOUND,))
+            _OBJECTS.pop(self.key, None)
+            util.logger.info("%s: Successfully deleted", str(self))
+            return r.ok
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                _OBJECTS.pop(self.parent_key, None)
+                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
+            raise
 
     def _audit_empty(self, audit_settings):
         if not audit_settings["audit.portfolios.empty"]:

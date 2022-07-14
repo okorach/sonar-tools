@@ -24,8 +24,10 @@
 """
 
 import json
+from http import HTTPStatus
 import requests.utils
-from sonar import measures, components
+from requests.exceptions import HTTPError
+from sonar import measures, components, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
@@ -65,16 +67,17 @@ class PullRequest(components.Component):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def delete(self, api=None, params=None):
-        util.logger.info("Deleting %s", str(self))
-        if not self.post(
-            "api/project_pull_requests/delete",
-            params={"pullRequest": self.key, "project": self.project.key},
-        ):
-            util.logger.error("%s: deletion failed", str(self))
-            return False
-        util.logger.info("%s: Successfully deleted", str(self))
-        return True
+    def delete(self, api=None, params=None, exit_on_error=False, mute=()):
+        try:
+            util.logger.info("Deleting %s", str(self))
+            r = self.post("project_pull_requests/delete", params={"pullRequest": self.key, "project": self.project.key}, mute=(HTTPStatus.NOT_FOUND,))
+            util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
+            return r.ok
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                _OBJECTS.pop(self.key, None)
+                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
+            raise
 
     def audit(self, audit_settings):
         age = util.age(self.last_analysis())
