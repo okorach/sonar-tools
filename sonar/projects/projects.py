@@ -211,21 +211,13 @@ class Project(components.Component):
 
         :raises ObjectNotFound: If object to delete was not found in SonarQube
         :raises request.HTTPError: In all other cases of HTTP Errors
-        :return: Whether the deletion was successful or not
-        :rtype: list[PullRequest]
+        :return: Nothing
         """
-        try:
-            loc = int(self.get_measure("ncloc", fallback="0"))
-            util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-            r = self.post("projects/delete", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
-            util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
-            return r.ok
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                _OBJECTS.pop(self.key, None)
-                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
-            raise
-
+        loc = int(self.get_measure("ncloc", fallback="0"))
+        util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
+        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS, self.key)
+        util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
+        return ok
 
     def has_binding(self):
         """

@@ -215,17 +215,7 @@ class Portfolio(aggregations.Aggregation):
         return comp_list
 
     def delete(self):
-        util.logger.info("Deleting %s", str(self))
-        try:
-            r = self.post("views/delete", params={"key": self.key}, mute=(HTTPStatus.NOT_FOUND,))
-            _OBJECTS.pop(self.key, None)
-            util.logger.info("%s: Successfully deleted", str(self))
-            return r.ok
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                _OBJECTS.pop(self.parent_key, None)
-                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
-            raise
+        return sq.delete_object(self, "views/delete", {"key": self.key}, _OBJECTS, self.key)
 
     def _audit_empty(self, audit_settings):
         if not audit_settings["audit.portfolios.empty"]:

@@ -247,17 +247,7 @@ class Application(aggr.Aggregation):
         :return: Whether the delete succeeded
         :rtype: bool
         """
-        util.logger.info("Deleting %s", str(self))
-        try:
-            r = self.post("applications/delete", params={"application": self.key}, mute=(HTTPStatus.NOT_FOUND,))
-            _OBJECTS.pop(self.key, None)
-            util.logger.info("%s: Successfully deleted", str(self))
-            return r.ok
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                _OBJECTS.pop(self.uuid(), None)
-                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
-            raise
+        return sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS, self.key)
 
     def _audit_empty(self, audit_settings):
         """Audits if an application contains 0 projects"""

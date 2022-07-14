@@ -24,9 +24,11 @@
 """
 
 import json
+from http import HTTPStatus
 from queue import Queue
 from threading import Thread
-from sonar import utilities
+from requests.exceptions import HTTPError
+from sonar import utilities, exceptions
 
 
 class SqObject:
@@ -118,3 +120,17 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         worker.start()
     q.join()
     return objects_list
+
+
+def delete_object(object, api, params, map, uuid):
+    try:
+        utilities.logger.info("Deleting %s", str(object))
+        r = object.post(api, params=params, mute=(HTTPStatus.NOT_FOUND,))
+        map.pop(uuid, None)
+        utilities.logger.info("Successfully deleted %s", str(object))
+        return r.ok
+    except HTTPError as e:
+        if e.response.status_code == HTTPStatus.NOT_FOUND:
+            map.pop(uuid, None)
+            raise exceptions.ObjectNotFound(object.key, f"{str(object)} not found for delete")
+        raise

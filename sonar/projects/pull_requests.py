@@ -24,10 +24,8 @@
 """
 
 import json
-from http import HTTPStatus
 import requests.utils
-from requests.exceptions import HTTPError
-from sonar import measures, components, exceptions
+from sonar import measures, components, sqobject
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
@@ -68,16 +66,7 @@ class PullRequest(components.Component):
         return m
 
     def delete(self):
-        try:
-            util.logger.info("Deleting %s", str(self))
-            r = self.post("project_pull_requests/delete", params={"pullRequest": self.key, "project": self.project.key}, mute=(HTTPStatus.NOT_FOUND,))
-            util.logger.info("Successfully deleted %s", str(self))
-            return r.ok
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                _OBJECTS.pop(self.key, None)
-                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
-            raise
+        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS, self.uuid())
 
     def audit(self, audit_settings):
         age = util.age(self.last_analysis())

@@ -22,6 +22,7 @@ from http import HTTPStatus
 import json
 from requests.exceptions import HTTPError
 import requests.utils
+import sonar.sqobject as sq
 from sonar import measures, components, syncer, settings, exceptions
 from sonar.projects import projects
 from sonar.findings import issues, hotspots
@@ -183,17 +184,7 @@ class Branch(components.Component):
         :return: Whether the deletion was successful
         :rtype: bool
         """
-        util.logger.info("Deleting %s", str(self))
-        try:
-            r = self.post(APIS["delete"], params={"branch": self.name, "project": self.concerned_object.key}, mute=(HTTPStatus.NOT_FOUND,))
-            _OBJECTS.pop(self.uuid(), None)
-            util.logger.info("%s: Successfully deleted", str(self))
-            return r.ok
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                _OBJECTS.pop(self.uuid(), None)
-                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found for delete")
-            raise
+        return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS, self.uuid())
 
     def new_code(self):
         """
