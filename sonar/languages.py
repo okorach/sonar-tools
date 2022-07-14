@@ -70,7 +70,7 @@ def read_list(endpoint):
     :return: List of languages
     :rtype: dict{<language_key>: <language_name>}
     """
-    data = json.loads(endpoint.get(APIS["language"]).text)
+    data = json.loads(endpoint.get(APIS["list"]).text)
     for lang in data["languages"]:
         _OBJECTS[lang["key"]] = lang["name"]
     return _OBJECTS
