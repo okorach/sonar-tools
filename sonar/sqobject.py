@@ -40,8 +40,11 @@ class SqObject:
     def uuid(self):
         return self.key
 
-    def get_env(self):
-        return self.endpoint
+    def reload(self, data):
+        if self._json is None:
+            self._json = data
+        else:
+            self._json.update(data)
 
     def get(self, api, params=None, exit_on_error=False, mute=()):
         """Executes and HTTP GET against the SonarQube platform
