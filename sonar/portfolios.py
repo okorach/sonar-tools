@@ -25,6 +25,8 @@
 
 import time
 import json
+from http import HTTPStatus
+from requests.exceptions import HTTPError
 
 from sonar import aggregations, options, exceptions
 import sonar.permissions.permissions as perms
@@ -41,7 +43,8 @@ _CREATE_API = "views/create"
 _GET_API = "views/show"
 
 MAX_PAGE_SIZE = 500
-PORTFOLIO_QUALIFIER = "VW"
+_PORTFOLIO_QUALIFIER = "VW"
+_SUBPORTFOLIO_QUALIFIER = "SVW"
 
 SELECTION_MODE_MANUAL = "MANUAL"
 SELECTION_MODE_REGEXP = "REGEXP"
@@ -72,74 +75,82 @@ _IMPORTABLE_PROPERTIES = (
 
 class Portfolio(aggregations.Aggregation):
     @classmethod
-    def read(cls, name, endpoint, root_key=None):
-        util.logger.debug("Reading portfolio name '%s'", name)
+    def get_object(cls, endpoint, key):
+        util.logger.debug("Reading portfolio key '%s'", key)
         # if root_key is None:
-        data = search_by_name(endpoint=endpoint, name=name)
+        # data = search_by_name(endpoint=endpoint, name=name)
         # else:
         #    data = _find_sub_portfolio_by_name(name=name, data=_OBJECTS[root_key]._json)
-        if data is None:
-            return None
-        key = data["key"]
+        # if data is None:
+        #    return None
+        # key = data["key"]
         if key in _OBJECTS:
             return _OBJECTS[key]
-        return cls(key=key, endpoint=endpoint, data=data, root_key=root_key)
+        data = search_by_key(endpoint, key)
+        if data is None:
+            raise exceptions.ObjectNotFound
+        return Portfolio.load(endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, name, endpoint, **kwargs):
+    def create(cls, endpoint, name, **kwargs):
         params = {"name": name}
         for p in ("description", "parent", "key", "visibility"):
             params[p] = kwargs.get(p, None)
-        util.logger.debug("Creating portfolio name '%s'", name)
-        r = endpoint.post(_CREATE_API, params=params)
-        if not r.ok:
-            return None
-        o = cls.read(name=name, endpoint=endpoint, root_key=kwargs.get("root_key", None))
-        o.set_parent(kwargs.get("parent", None))
+        endpoint.post(_CREATE_API, params=params)
+        o = cls(endpoint=endpoint, name=name, key=kwargs.get("key", None))
+        if "parent" in kwargs:
+            o.set_parent(kwargs["parent"])
+            o.root_key = o.root_portfolio().key
         # TODO - Allow on the fly selection mode
         return o
 
     @classmethod
-    def load(cls, endpoint, data, root_key=None):
+    def load(cls, endpoint, data):
         util.logger.debug("Loading portfolio '%s'", data["name"])
-        o = cls(key=data["key"], endpoint=endpoint, data=data, root_key=root_key)
-        return o
+        o = cls(endpoint=endpoint, name=data["name"], key=data["key"])
+        return o.reload(data)
 
-    def __init__(self, key, endpoint, data, root_key=None):
-        super().__init__(key, endpoint)
-        self._json = data
+    def __init__(self, endpoint, name, key=None):
+        super().__init__(key if key else name, endpoint)
+        self.name = name
+        self._selection_mode = None  #: Portfolio project selection mode
+        self._selection_branch = None  #: project branches on SonarQube 9.2+
+        self._projects = None  #: Portfolio list of projects when selection mode is MANUAL
+        self._regexp = None  #: Project selection regexp is selection mode is REGEXP
+        self._tags = []  #: Portfolio tags when selection mode is TAGS
+        self._description = None  #: Portfolio description
+        self.is_sub_portfolio = False  #: Whether the portfolio is a subportfolio
+        self._visibility = None  #: Portfolio visibility
+        self._sub_portfolios = None  #: Subportfolios
+        self._permissions = None  #: Permissions
+        self.parent_key = None  #: Ref to parent portfolio, if any
+        self.root_key = None  #: Ref to root portfolio, if any
+        _OBJECTS[self.uuid()] = self
+        util.logger.debug("Created portfolio object name '%s'", name)
+
+    def reload(self, data):
+        super().reload(data)
         self.name = data.get("name")
         self._selection_mode = self._json.pop("selectionMode", None)
         self._selection_branch = self._json.pop("branch", None)
         self._regexp = self._json.get("regexp", None)
         self._description = self._json.get("desc", self._json.get("description", None))
-        self.portfolio_type = self._json.get("qualifier", None)
-        self._projects = None
+        self.is_sub_portfolio = self._json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
         self._tags = self._json.pop("tags", [])
         self._visibility = self._json.get("visibility")
-        self._sub_portfolios = None
-        self._permissions = None
         self.parent_key = data.get("parentKey")
-        self.root_key = self.key if root_key is None else root_key
-        _OBJECTS[self.key] = self
 
     def __str__(self):
-        return f"subportfolio '{self.key}'" if self.portfolio_type == "SVW" else f"portfolio '{self.key}'"
+        return f"subportfolio '{self.key}'" if self.is_sub_portfolio else f"portfolio '{self.key}'"
 
     def refresh(self):
         util.logger.debug("Updating details for %s root key %s", str(self), self.root_key)
         data = json.loads(self.get(_GET_API, params={"key": self.root_key}).text)
+        self.reload(data)
         if self.root_key == self.key:
             self._json.update(data)
         else:
             self._json.update(_find_sub_portfolio(self.key, data))
-        self._selection_mode = self._json.pop("selectionMode", None)
-        self._selection_branch = self._json.pop("branch", None)
-        self._regexp = self._json.get("regexp", None)
-        self._description = self._json.get("desc", self._json.get("description", None))
-        self._tags = self._json.pop("tags", [])
-        self.portfolio_type = self._json.get("qualifier", None)
-        # self._visibility = self._json.get("visibility")
 
     def set_parent(self, parent_key):
         util.logger.debug("Setting parent of %s to '%s'", str(self), parent_key)
@@ -148,11 +159,14 @@ class Portfolio(aggregations.Aggregation):
     def url(self):
         return f"{self.endpoint.url}/portfolio?id={self.key}"
 
-    def is_sub_portfolio(self):
-        return self.portfolio_type == "SVW"
-
     def selection_mode(self):
         return self._selection_mode
+
+    def root_portfolio(self):
+        if self.parent_key is None or self.parent_key == self.key:
+            return self
+        else:
+            return Portfolio.get_object(self.endpoint, self.parent_key).root_portfolio()
 
     def projects(self):
         if self._selection_mode != SELECTION_MODE_MANUAL:
@@ -256,14 +270,14 @@ class Portfolio(aggregations.Aggregation):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def permissions(self):
-        if self._permissions is None and self.portfolio_type == "VW":
-            # No permissions for SVW
+        if self._permissions is None and not self.is_sub_portfolio:
+            # No permissions for sub portfolios
             self._permissions = pperms.PortfolioPermissions(self)
         return self._permissions
 
     def set_permissions(self, portfolio_perms):
-        if self.portfolio_type == "VW":
-            # No permissions for SVW)
+        if not self.is_sub_portfolio:
+            # No permissions for SVW
             self.permissions().set(portfolio_perms)
 
     def set_component_tags(self, tags, api):
@@ -281,21 +295,34 @@ class Portfolio(aggregations.Aggregation):
         ok = True
         for proj, branches in project_list.items():
             if proj not in current_project_keys:
+                util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
+                continue
+            try:
                 r = self.post("views/add_project", params={"key": self.key, "project": proj})
                 ok = ok and r.ok
                 current_projects[proj] = options.DEFAULT
-            else:
-                util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
+            except HTTPError as e:
+                if e.response.status_code == HTTPStatus.NOT_FOUND:
+                    raise exceptions.ObjectNotFound(self.key, f"Project '{proj}' not found, can't be added to portfolio '{self.key}'")
+                raise
+
             for branch in util.csv_to_list(branches):
-                if branch != options.DEFAULT and branch not in util.csv_to_list(current_projects[proj]):
-                    if self.endpoint.version() >= (9, 2, 0):
-                        util.logger.debug("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
-                        r = self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch})
-                        ok = ok and r.ok
-                    else:
-                        util.logger.warning("Can't add branch '%s' of project '%s' in a portfolio on SonarQube < 9.2", branch, proj)
-                else:
+                if branch == options.DEFAULT or branch in util.csv_to_list(current_projects[proj]):
                     util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
+                    continue
+                if self.endpoint.version() < (9, 2, 0):
+                    util.logger.warning("Can't add a project branch '%s / %s' in a %s on SonarQube < 9.2", proj, branch, str(self))
+                    ok = False
+                    continue
+                util.logger.debug("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
+                try:
+                    ok = ok and self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch}).ok
+                except HTTPError as e:
+                    if e.response.status_code == HTTPStatus.NOT_FOUND:
+                        util.logger.warning("Branch '%s' of project '%s' not found, can't be added to portfolio '%s'", branch, proj, self.key)
+                        ok = False
+                    else:
+                        raise
         return ok
 
     def set_tag_mode(self, tags, branch):
@@ -333,15 +360,21 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def add_subportfolio(self, key, name=None, by_ref=False):
-        if not exists(key, self.endpoint):
-            util.logger.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
-            return False
+        # if not exists(key, self.endpoint):
+        #    util.logger.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
+        #    return False
+
         if self.endpoint.version() >= (9, 3, 0):
+            if not by_ref:
+                try:
+                    o = Portfolio.get_object(self.endpoint, key)
+                except exceptions.ObjectNotFound:
+                    o = Portfolio.create(self.endpoint, name, key=key, parent=self.key)
             r = self.post("views/add_portfolio", params={"portfolio": self.key, "reference": key})
         elif by_ref:
             r = self.post("views/add_local_view", params={"key": self.key, "ref_key": key})
         else:
-            r = self.post("views/add_sub_view", params={"key": self.key, "name": key, "subKey": key})
+            r = self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key})
         if not by_ref:
             self.recompute()
             time.sleep(0.5)
@@ -351,7 +384,7 @@ class Portfolio(aggregations.Aggregation):
         util.logger.debug("Recomputing %s", str(self))
         self.post("views/refresh", params={"key": self.root_key})
 
-    def update(self, data, root_key):
+    def update(self, data):
         util.logger.debug("Updating %s with %s", str(self), util.json_dump(data))
         if "byReference" not in data or not data["byReference"]:
             if "permissions" in data:
@@ -367,7 +400,7 @@ class Portfolio(aggregations.Aggregation):
             regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
             tags = data.get(_PROJECT_SELECTION_TAGS, None)
             projects = data.get("projects", None)
-            self.root_key = root_key
+            self.root_key = self.root_portfolio().key
             self.set_selection_mode(selection_mode=selection_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
         else:
             util.logger.debug("Skipping setting portfolio details, it's a reference")
@@ -375,22 +408,21 @@ class Portfolio(aggregations.Aggregation):
         for key, subp in data.get("subPortfolios", {}).items():
             key_list = list(self.sub_portfolios().get("subPortfolios", {}).keys())
             if subp.get("byReference", False):
-                o_subp = get_object(key=key, endpoint=self.endpoint)
-                if o_subp is not None:
-                    if o_subp.key not in key_list:
-                        self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
-                    o_subp.update(subp, root_key)
+                o_subp = Portfolio.get_object(self.endpoint, key)
+                if o_subp.key not in key_list:
+                    self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
+                o_subp.update(subp)
             else:
                 name = subp.pop("name")
                 get_list(endpoint=self.endpoint)
-                o = get_object(key=key, endpoint=self.endpoint)
-                if o is None:
+                try:
+                    o = Portfolio.get_object(self.endpoint, key)
+                except exceptions.ObjectNotFound:
                     util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
-                    o = Portfolio.create(name=name, endpoint=self.endpoint, parent=self.key, root_key=root_key, **subp)
-                    if o is None:
-                        util.logger.info("Can't create sub-portfolio '%s' to parent %s", name, self.key)
+                    # o = Portfolio.create(endpoint=self.endpoint, name=name, parent=self.key, **subp)
+                    self.add_subportfolio(key=key, name=data["name"], by_ref=False)
                 o.set_parent(self.key)
-                o.update(subp, root_key)
+                o.update(subp)
 
     def search_params(self):
         """Return params used to search for that object
@@ -410,9 +442,7 @@ def get_list(endpoint, key_list=None):
         return search(endpoint=endpoint)
     object_list = {}
     for key in util.csv_to_list(key_list):
-        object_list[key] = get_object(key, endpoint=endpoint)
-        if object_list[key] is None:
-            raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' does not exist")
+        object_list[key] = Portfolio.get_object(endpoint, key)
     return object_list
 
 
@@ -472,9 +502,9 @@ def _sub_portfolios(json_data, version):
     subport = {}
     if "subViews" in json_data and len(json_data["subViews"]) > 0:
         for p in json_data["subViews"]:
-            qual = p.pop("qualifier", "SVW")
-            p["byReference"] = qual == "VW"
-            if qual == "VW":
+            qual = p.pop("qualifier", _SUBPORTFOLIO_QUALIFIER)
+            p["byReference"] = qual == _PORTFOLIO_QUALIFIER
+            if qual == _PORTFOLIO_QUALIFIER:
                 p["key"] = p.pop("originalKey")
                 for k in ("name", "desc"):
                     p.pop(k, None)
@@ -516,7 +546,11 @@ def get_object(key, endpoint=None):
 
 
 def exists(key, endpoint):
-    return get_object(key, endpoint) is not None
+    try:
+        Portfolio.get_object(endpoint, key)
+        return True
+    except exceptions.ObjectNotFound:
+        return False
 
 
 def import_config(endpoint, config_data, key_list=None):
@@ -535,8 +569,9 @@ def import_config(endpoint, config_data, key_list=None):
         if new_key_list and key not in new_key_list:
             continue
         util.logger.info("Importing portfolio key '%s'", key)
-        o = get_object(key, endpoint)
-        if o is None:
+        try:
+            o = Portfolio.get_object(endpoint, key)
+        except exceptions.ObjectNotFound:
             newdata = data.copy()
             name = newdata.pop("name")
             o = Portfolio.create(name=name, endpoint=endpoint, key=key, root_key=key, **newdata)
@@ -552,11 +587,11 @@ def import_config(endpoint, config_data, key_list=None):
     for key, data in config_data["portfolios"].items():
         if new_key_list and key not in new_key_list:
             continue
-        o = get_object(key, endpoint)
-        if o is None:
-            util.logger.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
-        else:
+        try:
+            o = Portfolio.get_object(endpoint, key)
             o.update(data, root_key=key)
+        except exceptions.ObjectNotFound:
+            util.logger.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
 
 
 def search_by_name(endpoint, name):
