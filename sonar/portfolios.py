@@ -360,15 +360,21 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def add_subportfolio(self, key, name=None, by_ref=False):
-        if not exists(key, self.endpoint):
-            util.logger.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
-            return False
+        # if not exists(key, self.endpoint):
+        #    util.logger.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
+        #    return False
+
         if self.endpoint.version() >= (9, 3, 0):
+            if not by_ref:
+                try:
+                    o = Portfolio.get_object(self.endpoint, key)
+                except exceptions.ObjectNotFound:
+                    o = Portfolio.create(self.endpoint, name, key=key, parent=self.key)
             r = self.post("views/add_portfolio", params={"portfolio": self.key, "reference": key})
         elif by_ref:
             r = self.post("views/add_local_view", params={"key": self.key, "ref_key": key})
         else:
-            r = self.post("views/add_sub_view", params={"key": self.key, "name": key, "subKey": key})
+            r = self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key})
         if not by_ref:
             self.recompute()
             time.sleep(0.5)
@@ -413,7 +419,8 @@ class Portfolio(aggregations.Aggregation):
                     o = Portfolio.get_object(self.endpoint, key)
                 except exceptions.ObjectNotFound:
                     util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
-                    o = Portfolio.create(endpoint=self.endpoint, name=name, parent=self.key, **subp)
+                    # o = Portfolio.create(endpoint=self.endpoint, name=name, parent=self.key, **subp)
+                    self.add_subportfolio(key=key, name=data["name"], by_ref=False)
                 o.set_parent(self.key)
                 o.update(subp)
 
