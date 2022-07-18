@@ -76,7 +76,7 @@ _IMPORTABLE_PROPERTIES = (
 class Portfolio(aggregations.Aggregation):
     @classmethod
     def get_object(cls, endpoint, key):
-        util.logger.debug("Reading portfolio key '%s'", key)
+        util.logger.debug("Getting object '%s'", key)
         # if root_key is None:
         # data = search_by_name(endpoint=endpoint, name=name)
         # else:
@@ -88,19 +88,19 @@ class Portfolio(aggregations.Aggregation):
             return _OBJECTS[key]
         data = search_by_key(endpoint, key)
         if data is None:
-            raise exceptions.ObjectNotFound
+            raise exceptions.ObjectNotFound(key, f"Portfolios '{key}' not found")
         return Portfolio.load(endpoint=endpoint, data=data)
 
     @classmethod
     def create(cls, endpoint, name, **kwargs):
+        util.logger.debug("Creating portfolio name '%s', key '%s'", name, str(kwargs.get("key", None)))
         params = {"name": name}
         for p in ("description", "parent", "key", "visibility"):
             params[p] = kwargs.get(p, None)
         endpoint.post(_CREATE_API, params=params)
         o = cls(endpoint=endpoint, name=name, key=kwargs.get("key", None))
         if "parent" in kwargs:
-            o.set_parent(kwargs["parent"])
-            o.root_key = o.root_portfolio().key
+            o.set_parent(Portfolio.get_object(endpoint, kwargs["parent"]))
         # TODO - Allow on the fly selection mode
         return o
 
@@ -123,12 +123,14 @@ class Portfolio(aggregations.Aggregation):
         self._visibility = None  #: Portfolio visibility
         self._sub_portfolios = None  #: Subportfolios
         self._permissions = None  #: Permissions
-        self.parent_key = None  #: Ref to parent portfolio, if any
-        self.root_key = None  #: Ref to root portfolio, if any
+        self.parent = None  #: Ref to parent portfolio object, if any
+        self._root_portfolio = None  #: Ref to root portfolio, if any
         _OBJECTS[self.uuid()] = self
         util.logger.debug("Created portfolio object name '%s'", name)
+        util.logger.debug("PORTFOLIOS = %s", str([p.key for p in _OBJECTS.values()]))
 
     def reload(self, data):
+        util.logger.debug("Reloading %s", str(self))
         super().reload(data)
         self.name = data.get("name")
         self._selection_mode = self._json.pop("selectionMode", None)
@@ -138,23 +140,25 @@ class Portfolio(aggregations.Aggregation):
         self.is_sub_portfolio = self._json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
         self._tags = self._json.pop("tags", [])
         self._visibility = self._json.get("visibility")
-        self.parent_key = data.get("parentKey")
+        if "parentKey" in data:
+            self.set_parent(Portfolio.get_object(self.endpoint, data["parentKey"]))
 
     def __str__(self):
         return f"subportfolio '{self.key}'" if self.is_sub_portfolio else f"portfolio '{self.key}'"
 
     def refresh(self):
-        util.logger.debug("Updating details for %s root key %s", str(self), self.root_key)
-        data = json.loads(self.get(_GET_API, params={"key": self.root_key}).text)
+        util.logger.debug("Updating details for %s root key %s", str(self), self._root_portfolio)
+        data = json.loads(self.get(_GET_API, params={"key": self._root_portfolio.key}).text)
         self.reload(data)
-        if self.root_key == self.key:
+        if self._root_portfolio.key == self.key:
             self._json.update(data)
         else:
             self._json.update(_find_sub_portfolio(self.key, data))
 
-    def set_parent(self, parent_key):
-        util.logger.debug("Setting parent of %s to '%s'", str(self), parent_key)
-        self.parent_key = parent_key
+    def set_parent(self, parent_portfolio):
+        self.parent = parent_portfolio
+        self._root_portfolio = self.root_portfolio()
+        util.logger.debug("%s: Parent = %s, Root = %s", str(self), str(self._root_portfolio))
 
     def url(self):
         return f"{self.endpoint.url}/portfolio?id={self.key}"
@@ -163,10 +167,12 @@ class Portfolio(aggregations.Aggregation):
         return self._selection_mode
 
     def root_portfolio(self):
-        if self.parent_key is None or self.parent_key == self.key:
+        if self.parent is None:
+            util.logger.debug("Found root for %s, parent = %s", self.key, str(self.parent))
             return self
         else:
-            return Portfolio.get_object(self.endpoint, self.parent_key).root_portfolio()
+            util.logger.debug("recursing root for %s, parent = %s", self.key, str(self.parent))
+            return self.parent.root_portfolio()
 
     def projects(self):
         if self._selection_mode != SELECTION_MODE_MANUAL:
@@ -291,10 +297,10 @@ class Portfolio(aggregations.Aggregation):
         util.logger.debug("Project list = %s", str(project_list))
         if project_list is None:
             return False
-        util.logger.debug("Current Project list = %s", str(current_projects))
+        util.logger.debug("Current Project list = %s", str(current_project_keys))
         ok = True
         for proj, branches in project_list.items():
-            if proj not in current_project_keys:
+            if proj in current_project_keys:
                 util.logger.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
                 continue
             try:
@@ -364,12 +370,13 @@ class Portfolio(aggregations.Aggregation):
         #    util.logger.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
         #    return False
 
+        util.logger.debug("Adding sub-portfolios to %s", str(self))
         if self.endpoint.version() >= (9, 3, 0):
             if not by_ref:
                 try:
-                    o = Portfolio.get_object(self.endpoint, key)
+                    Portfolio.get_object(self.endpoint, key)
                 except exceptions.ObjectNotFound:
-                    o = Portfolio.create(self.endpoint, name, key=key, parent=self.key)
+                    Portfolio.create(self.endpoint, name, key=key, parent=self.key)
             r = self.post("views/add_portfolio", params={"portfolio": self.key, "reference": key})
         elif by_ref:
             r = self.post("views/add_local_view", params={"key": self.key, "ref_key": key})
@@ -382,7 +389,8 @@ class Portfolio(aggregations.Aggregation):
 
     def recompute(self):
         util.logger.debug("Recomputing %s", str(self))
-        self.post("views/refresh", params={"key": self.root_key})
+        key = self._root_portfolio.key if self._root_portfolio else self.key
+        self.post("views/refresh", params={"key": key})
 
     def update(self, data):
         util.logger.debug("Updating %s with %s", str(self), util.json_dump(data))
@@ -400,7 +408,8 @@ class Portfolio(aggregations.Aggregation):
             regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
             tags = data.get(_PROJECT_SELECTION_TAGS, None)
             projects = data.get("projects", None)
-            self.root_key = self.root_portfolio().key
+            self._root_portfolio = self.root_portfolio()
+            util.logger.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
             self.set_selection_mode(selection_mode=selection_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
         else:
             util.logger.debug("Skipping setting portfolio details, it's a reference")
@@ -421,7 +430,7 @@ class Portfolio(aggregations.Aggregation):
                     util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
                     # o = Portfolio.create(endpoint=self.endpoint, name=name, parent=self.key, **subp)
                     self.add_subportfolio(key=key, name=data["name"], by_ref=False)
-                o.set_parent(self.key)
+                o.set_parent(self)
                 o.update(subp)
 
     def search_params(self):
@@ -572,9 +581,10 @@ def import_config(endpoint, config_data, key_list=None):
         try:
             o = Portfolio.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
+            util.logger.debug("Portfolio not found, creating it")
             newdata = data.copy()
             name = newdata.pop("name")
-            o = Portfolio.create(name=name, endpoint=endpoint, key=key, root_key=key, **newdata)
+            o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
         nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
         # Hack: When subportfolios are created, recompute is needed to get them in the
         # api/views/search results
@@ -589,7 +599,7 @@ def import_config(endpoint, config_data, key_list=None):
             continue
         try:
             o = Portfolio.get_object(endpoint, key)
-            o.update(data, root_key=key)
+            o.update(data)
         except exceptions.ObjectNotFound:
             util.logger.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
 
@@ -641,15 +651,17 @@ def _find_sub_portfolio(key, data):
 
 def __create_portfolio_hierarchy(endpoint, data, parent_key):
     nbr_creations = 0
+    o_parent = Portfolio.get_object(endpoint, parent_key)
     for key, subp in data.get("subPortfolios", {}).items():
         if subp.get("byReference", False):
             continue
-        params = {"parent": parent_key, "key": key}
-        for p in ("name", "description", "visibility"):
-            params[p] = subp.get(p, None)
-        util.logger.debug("Creating portfolio name '%s'", subp["name"])
-        r = endpoint.post(_CREATE_API, params=params)
-        if r.ok:
+        try:
+            o = Portfolio.get_object(endpoint, key)
+        except exceptions.ObjectNotFound:
+            name = subp.pop("name")
+            util.logger.debug("Creating portfolio name '%s'", name)
+            o = Portfolio.create(endpoint, name, key=key, parent=o_parent.key, **subp)
             nbr_creations += 1
+        o.set_parent(o_parent)
         nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=key)
     return nbr_creations
