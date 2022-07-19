@@ -212,7 +212,9 @@ def token_type(token):
 
 def check_token(token):
     if token_type(token) != "user":
-        exit_fatal(f"The provided token is a {token_type(token)} token, not suitable for sonar-tools", options.ERR_TOKEN_NOT_SUITED)
+        exit_fatal(
+            f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools", options.ERR_TOKEN_NOT_SUITED
+        )
 
 
 def json_dump_debug(json_data, pre_string=""):
