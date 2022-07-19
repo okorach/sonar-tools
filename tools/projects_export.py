@@ -25,7 +25,7 @@
 """
 import sys
 import datetime
-from sonar import options, platform, utilities
+from sonar import options, platform, utilities, version
 from sonar.projects import projects
 
 
@@ -43,6 +43,8 @@ def main():
     )
     args = utilities.parse_and_check_token(parser)
     utilities.check_environment(vars(args))
+    utilities.check_token(args.token)
+    utilities.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     start_time = datetime.datetime.today()
     sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
 

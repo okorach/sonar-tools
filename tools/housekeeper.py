@@ -150,7 +150,9 @@ def _parse_arguments():
         default=_DEFAULT_TOKEN_OBSOLESCENCE,
         help=f"Deletes user tokens older than a certain number of days, by default {_DEFAULT_TOKEN_OBSOLESCENCE} days",
     )
-    return util.parse_and_check_token(parser)
+    args = util.parse_and_check_token(parser)
+    util.check_token(args.token)
+    return args
 
 
 def _delete_objects(problems, mode):

@@ -149,16 +149,18 @@ def __parse_args(desc):
         action="store_true",
         help="Extracts only toplevel portfolios LoCs, not sub-portfolios",
     )
-    return util.parse_and_check_token(parser)
+    args = util.parse_and_check_token(parser)
+    util.check_environment(vars(args))
+    util.check_token(args.token)
+    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    return args
 
 
 def main():
     args = __parse_args("Extract projects or portfolios lines of code, as computed for the licence")
     endpoint = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     kwargs = vars(args)
-    util.check_environment(kwargs)
     file = kwargs.pop("file", None)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     args.format = __deduct_format(args.format, file)
 
     if args.portfolios:
