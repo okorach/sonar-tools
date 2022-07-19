@@ -143,6 +143,7 @@ def main():
         except sif.NotSystemInfo:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
     else:
+        util.check_token(args.token)
         key_list = util.csv_to_list(args.projectKeys)
         if len(key_list) > 0 and "projects" in util.csv_to_list(args.what):
             for key in key_list:

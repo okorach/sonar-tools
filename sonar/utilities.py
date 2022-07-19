@@ -22,6 +22,7 @@
     Utilities for SonarQube API
 
 """
+from http import HTTPStatus
 import sys
 import os
 import contextlib
@@ -199,6 +200,23 @@ def parse_and_check_token(parser):
             options.ERR_SONAR_API_AUTHENTICATION,
         )
     return args
+
+
+def token_type(token):
+    if token[0:4] == "sqa_":
+        return "global-analysis"
+    elif token[0:4] == "sqp_":
+        return "project-analysis"
+    else:
+        return "user"
+
+
+def check_token(token):
+    if token_type(token) != "user":
+        exit_fatal(
+            f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
+            options.ERR_TOKEN_NOT_SUITED,
+        )
 
 
 def json_dump_debug(json_data, pre_string=""):
@@ -485,11 +503,15 @@ def log_and_exit(response):
         return
     tool_msg = f"For request URL {response.request.url}\n"
     code = response.status_code
-    sq_msg = " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
-    if code == 401:
+    try:
+        sq_msg = " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
+    except json.decoder.JSONDecodeError:
+        sq_msg = ""
+
+    if code == HTTPStatus.UNAUTHORIZED:
         tool_msg += f"HTTP error {code} - Authentication error. Is token valid ?"
         err_code = options.ERR_SONAR_API_AUTHENTICATION
-    elif code == 403:
+    elif code == HTTPStatus.FORBIDDEN:
         tool_msg += f"HTTP error {code} - Insufficient permissions to perform operation"
         err_code = options.ERR_SONAR_API_AUTHORIZATION
     else:

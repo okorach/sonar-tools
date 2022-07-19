@@ -191,6 +191,7 @@ def __parse_args(desc):
 
     args = util.parse_and_check_token(parser)
     util.check_environment(vars(args))
+    util.check_token(args.token)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     if args.ratingsAsNumbers:
         CONVERT_OPTIONS["ratings"] = "numbers"
