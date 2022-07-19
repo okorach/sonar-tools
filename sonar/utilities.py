@@ -201,6 +201,20 @@ def parse_and_check_token(parser):
     return args
 
 
+def token_type(token):
+    if token[0:4] == "sqa_":
+        return "global-analysis"
+    elif token[0:4] == "sqp_":
+        return "project-analysis"
+    else:
+        return "user"
+
+
+def check_token(token):
+    if token_type(token) != "user":
+        exit_fatal(f"The provided token is a {token_type(token)} token, not suitable for sonar-tools", options.ERR_TOKEN_NOT_SUITED)
+
+
 def json_dump_debug(json_data, pre_string=""):
     logger.debug("%s%s", pre_string, json_dump(json_data))
 
