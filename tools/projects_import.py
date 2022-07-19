@@ -31,8 +31,8 @@ import sonar.utilities as util
 
 
 def _check_sq_environments(import_sq, export_sq):
-    version = import_sq.version(digits=2, as_string=True)
-    if version != export_sq["version"]:
+    imp_version = import_sq.version(digits=2, as_string=True)
+    if imp_version != export_sq["version"]:
         util.exit_fatal(
             "Export was not performed with same SonarQube version, aborting...",
             options.ERR_UNSUPPORTED_OPERATION,

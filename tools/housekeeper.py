@@ -152,6 +152,7 @@ def _parse_arguments():
     )
     args = util.parse_and_check_token(parser)
     util.check_token(args.token)
+    return args
 
 
 def _delete_objects(problems, mode):

@@ -80,7 +80,7 @@ def __parse_args(desc):
     )
 
     args = util.parse_and_check_token(parser)
-    util.check_token_type(args.token)
+    util.check_token(args.token)
     return args
 
 
