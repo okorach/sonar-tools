@@ -22,6 +22,7 @@
     Utilities for SonarQube API
 
 """
+from http import HTTPStatus
 import sys
 import os
 import contextlib
@@ -502,11 +503,15 @@ def log_and_exit(response):
         return
     tool_msg = f"For request URL {response.request.url}\n"
     code = response.status_code
-    sq_msg = " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
-    if code == 401:
+    try:
+        sq_msg = " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
+    except json.decoder.JSONDecodeError:
+        sq_msg = ""
+
+    if code == HTTPStatus.UNAUTHORIZED:
         tool_msg += f"HTTP error {code} - Authentication error. Is token valid ?"
         err_code = options.ERR_SONAR_API_AUTHENTICATION
-    elif code == 403:
+    elif code == HTTPStatus.FORBIDDEN:
         tool_msg += f"HTTP error {code} - Insufficient permissions to perform operation"
         err_code = options.ERR_SONAR_API_AUTHORIZATION
     else:
