@@ -32,7 +32,7 @@ import requests
 from sonar import version, sif, options
 from sonar.audit import severities
 import sonar.utilities as util
-from sonar.audit import problem
+from sonar.audit import problem, config
 
 PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]
 
@@ -146,11 +146,12 @@ def main():
         print(f"No SIF found in ticket {kwargs['ticket']}")
         sys.exit(2)
     problems = []
+    settings = config.load("sonar-audit")
     found_problems = False
     comment = ""
     for file, sysinfo in sif_list.items():
         try:
-            problems = sif.Sif(sysinfo).audit()
+            problems = sif.Sif(sysinfo).audit(settings)
             comment += f"h3. SIF *[^{file}]* audit:\n"
             print(f"SIF file '{file}' audit:")
             if problems:

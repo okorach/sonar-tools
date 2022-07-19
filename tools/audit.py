@@ -54,7 +54,7 @@ def __deduct_format__(fmt, file):
     return "csv"
 
 
-def _audit_sif(sysinfo):
+def _audit_sif(sysinfo, audit_settings):
     util.logger.info("Auditing SIF file '%s'", sysinfo)
     try:
         with open(sysinfo, "r", encoding="utf-8") as f:
@@ -68,7 +68,7 @@ def _audit_sif(sysinfo):
     except PermissionError:
         util.logger.critical("No permission to open file %s", sysinfo)
         raise
-    return sif.Sif(sysinfo).audit()
+    return sif.Sif(sysinfo).audit(audit_settings)
 
 
 def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
@@ -133,7 +133,7 @@ def main():
     if kwargs.get("sif", None) is not None:
         try:
             err = options.ERR_SIF_AUDIT_ERROR
-            problems = _audit_sif(kwargs["sif"])
+            problems = _audit_sif(kwargs["sif"], settings)
         except json.decoder.JSONDecodeError:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", err)
         except FileNotFoundError:

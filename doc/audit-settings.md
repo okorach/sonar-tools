@@ -90,6 +90,10 @@ audit.globalSettings.maintainabilityRating.C.range.2 = 0.10, 0.25, HIGH, CONFIGU
 audit.globalSettings.maintainabilityRating.D.range.1 = 0.40, 0.50, MEDIUM, CONFIGURATION
 audit.globalSettings.maintainabilityRating.D.range.2 = 0.30, 0.60, HIGH, CONFIGURATION
 
+# Min max heap allocated to the web process
+audit.web.heapMin = 1024
+audit.web.heapMax = 2048
+
 #======================= PERMISSIONS AUDIT CONFIGURATION ======================
 
 #----------------------------- GLOBAL PERMISSIONS -----------------------------

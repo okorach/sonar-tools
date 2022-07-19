@@ -457,7 +457,7 @@ class Platform:
             + self._audit_admin_password()
             + self._audit_global_permissions()
             + self._audit_lts_latest()
-            + sif.Sif(self.sys_info(), self).audit()
+            + sif.Sif(self.sys_info(), self).audit(audit_settings)
             + webhooks.audit(self)
             + permission_templates.audit(self, audit_settings)
         )

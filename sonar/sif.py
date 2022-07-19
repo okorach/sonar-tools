@@ -138,9 +138,9 @@ class Sif:
             return None
         return util.int_memory(setting)
 
-    def audit(self):
+    def audit(self, audit_settings):
         util.logger.info("Auditing System Info")
-        problems = self.__audit_jdbc_url() + self.__audit_web_settings()
+        problems = self.__audit_jdbc_url() + self.__audit_web_settings(audit_settings)
         if self.edition() == "datacenter":
             problems += self.__audit_dce_settings()
         else:
@@ -325,7 +325,7 @@ class Sif:
             return [pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self)]
         return []
 
-    def __audit_web_settings(self):
+    def __audit_web_settings(self, audit_settings):
         util.logger.debug("Auditing Web settings")
         problems = []
         jvm_cmdline = self.web_jvm_cmdline()
@@ -333,10 +333,12 @@ class Sif:
             util.logger.warning("Can't retrieve web JVM command line, skipping heap and log4shell audits...")
             return []
         web_ram = util.jvm_heap(jvm_cmdline)
+        min_heap = audit_settings.get("audit.web.heapMin", 1024)
+        max_heap = audit_settings.get("audit.web.heapMax", 2048)
         if web_ram is None:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_NO_HEAP)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self))
-        elif web_ram < 1024 or web_ram > 2048:
+        elif web_ram < min_heap or web_ram > max_heap:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048), concerned_object=self))
         else:
