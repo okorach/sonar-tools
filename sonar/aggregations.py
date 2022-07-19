@@ -41,7 +41,9 @@ class Aggregation(comp.Component):
         :rtype: Application or Portfolio
         """
         super().reload(data)
-        self._description = self._json.get("description", None)
+        for d in ("description", "desc"):
+            if d in data:
+                self._description = self._json[d]
 
     def nbr_projects(self):
         if self._nbr_projects is None:
