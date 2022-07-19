@@ -145,9 +145,9 @@ class Sif:
             problems += self.__audit_dce_settings()
         else:
             problems += (
-                self.__audit_ce_settings(audit_settings)
+                self.__audit_ce_settings()
                 + self.__audit_background_tasks()
-                + self.__audit_es_settings(audit_settings)
+                + self.__audit_es_settings()
                 + self.__audit_log_level()
                 + self.__audit_version()
                 + self.__audit_branch_use()
