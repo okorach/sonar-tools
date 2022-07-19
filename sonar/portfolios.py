@@ -135,7 +135,8 @@ class Portfolio(aggregations.Aggregation):
     def reload(self, data):
         util.logger.debug("Reloading %s with %s", str(self), util.json_dump(data))
         super().reload(data)
-        self.name = data.get("name")
+        if "name" in data:
+            self.name = data["name"]
         if "selectionMode" in self._json:
             self._selection_mode = self._json["selectionMode"]
         if "branch" in self._json:
@@ -457,14 +458,13 @@ class Portfolio(aggregations.Aggregation):
                     self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
                 o_subp.update(subp)
             else:
-                name = subp.pop("name")
                 # get_list(endpoint=self.endpoint)
                 try:
                     o = Portfolio.get_object(self.endpoint, key)
                 except exceptions.ObjectNotFound:
-                    util.logger.info("Creating subportfolio %s from %s", name, util.json_dump(subp))
+                    util.logger.info("%s: Creating subportfolio from %s", str(self), util.json_dump(subp))
                     # o = Portfolio.create(endpoint=self.endpoint, name=name, parent=self.key, **subp)
-                    self.add_subportfolio(key=key, name=data["name"], by_ref=False)
+                    self.add_subportfolio(key=key, name=subp["name"], by_ref=False)
                 o.set_parent(self)
                 o.update(subp)
 
@@ -617,6 +617,7 @@ def import_config(endpoint, config_data, key_list=None):
             newdata = data.copy()
             name = newdata.pop("name")
             o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
+            o.reload(data)
         nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
         # Hack: When subportfolios are created, recompute is needed to get them in the
         # api/views/search results
@@ -690,9 +691,11 @@ def __create_portfolio_hierarchy(endpoint, data, parent_key):
         try:
             o = Portfolio.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
-            name = subp.pop("name")
+            newdata = subp.copy()
+            name = newdata.pop("name")
             util.logger.debug("Object not found, creating portfolio name '%s'", name)
-            o = Portfolio.create(endpoint, name, key=key, parent=o_parent.key, **subp)
+            o = Portfolio.create(endpoint, name, key=key, parent=o_parent.key, **newdata)
+            o.reload(subp)
             nbr_creations += 1
         o.set_parent(o_parent)
         nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=key)
