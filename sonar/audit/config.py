@@ -80,5 +80,5 @@ def configure():
         print(text)
     else:
         util.logger.info("Creating file '%s'", config_file)
-        with open(config_file, "r", encoding="utf-8") as fh:
+        with open(config_file, "w", encoding="utf-8") as fh:
             print(text, file=fh)
