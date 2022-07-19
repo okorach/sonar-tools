@@ -25,7 +25,7 @@
 """
 import sys
 import json
-from sonar import options, platform
+from sonar import options, platform, version
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -56,8 +56,10 @@ def main():
     parser = util.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
     args = util.parse_and_check_token(parser)
-    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     util.check_environment(vars(args))
+    util.check_token(args.token)
+    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
 
     with open(args.projectsFile, "r", encoding="utf-8") as file:
         data = json.load(file)

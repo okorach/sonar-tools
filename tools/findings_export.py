@@ -116,7 +116,9 @@ def parse_args(desc):
         action="store_true",
         help="Generate finding URL in the report, false by default",
     )
-    return util.parse_and_check_token(parser)
+    args = util.parse_and_check_token(parser)
+    util.check_token(args.token)
+    return args
 
 
 def __write_header(file, format):

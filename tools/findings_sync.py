@@ -79,7 +79,9 @@ def __parse_args(desc):
         help="If specified, will not add a link to source issue in the target issue comments",
     )
 
-    return util.parse_and_check_token(parser)
+    args = util.parse_and_check_token(parser)
+    util.check_token_type(args.token)
+    return args
 
 
 def __dump_report(report, file):
@@ -142,6 +144,7 @@ def main():
             (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
 
         elif target_url is not None and target_key is not None:
+            util.check_token(args.tokenTarget)
             target_env = platform.Platform(some_url=args.urlTarget, some_token=args.tokenTarget, cert_file=args.clientCert)
             if not projects.exists(target_key, endpoint=target_env):
                 raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")

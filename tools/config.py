@@ -100,6 +100,7 @@ def __parse_args(desc):
     )
     args = utilities.parse_and_check_token(parser)
     utilities.check_environment(vars(args))
+    utilities.check_token(args.token)
     utilities.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     return args
 
