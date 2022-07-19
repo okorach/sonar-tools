@@ -57,6 +57,8 @@ ERR_RULES_LOADING_FAILED = 8
 ERR_SIF_AUDIT_ERROR = 9
 
 ERR_ARGS_ERROR = 10
+# if a global analysis or project analysis token is provided
+ERR_TOKEN_NOT_SUITED = 11
 
 
 def set_url_arg(parser):
