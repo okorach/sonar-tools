@@ -491,7 +491,7 @@ class Project(components.Component):
                 rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
                 return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
             else:
-                util.exit_fatal(f"alm_settings/validate_binding returning status code {resp.status_code}, exiting", options.ERR_SONAR_API)
+                util.exit_fatal(f"alm_settings/validate_binding returning status code {e.response.status_code}, exiting", options.ERR_SONAR_API)
 
     def audit(self, audit_settings):
         """Audits a project and returns the list of problems found
