@@ -69,7 +69,7 @@ jobs:
         with:
           # Add: -Dsonar.userHome=./.sonar for local cache
           args: >
-            -Dsonar.verbose=true
+            -Dsonar.verbose=false
 
 
   # code-ql:
