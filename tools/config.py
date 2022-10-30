@@ -127,9 +127,15 @@ def __export_config(endpoint, what, args):
     if options.WHAT_PROJECTS in what:
         sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys, full=args.fullExport, threads=args.threads)
     if options.WHAT_APPS in what:
-        sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
+        try:
+            sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
+        except exceptions.UnsupportedOperation as e:
+            utilities.logger.info("%s", e.message)
     if options.WHAT_PORTFOLIOS in what:
-        sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
+        try:
+            sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
+        except exceptions.UnsupportedOperation as e:
+            utilities.logger.info("%s", e.message)
     if options.WHAT_USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint, full=args.fullExport)
     if options.WHAT_GROUPS in what:
