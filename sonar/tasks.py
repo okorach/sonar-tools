@@ -79,6 +79,8 @@ SCANNER_VERSIONS = {
         "2.8.0": datetime.datetime(2019, 10, 1),
     },
     "ScannerMSBuild": {
+        "5.8.0": datetime.datetime(2022, 8, 24),
+        "5.7.2": datetime.datetime(2022, 7, 12),
         "5.7.1": datetime.datetime(2022, 6, 21),
         "5.7.0": datetime.datetime(2022, 6, 20),
         "5.6.0": datetime.datetime(2022, 5, 30),
@@ -102,6 +104,25 @@ SCANNER_VERSIONS = {
         "4.8.0": datetime.datetime(2019, 11, 6),
         "4.7.1": datetime.datetime(2019, 9, 10),
         "4.7.0": datetime.datetime(2019, 9, 3),
+    },
+    "ScannerNpm": {
+        "2.8.2": datetime.datetime(2022, 9, 25),
+        "2.8.1": datetime.datetime(2021, 6, 10),
+        "2.8.0": datetime.datetime(2020, 11, 10),
+        "2.7.0": datetime.datetime(2020, 7, 6),
+        "2.6.0": datetime.datetime(2020, 3, 24),
+        "2.5.0": datetime.datetime(2019, 6, 26),
+        "2.4.1": datetime.datetime(2019, 5, 28),
+        "2.4.0": datetime.datetime(2019, 2, 23),
+        "2.3.0": datetime.datetime(2019, 2, 19),
+        "2.2.0": datetime.datetime(2019, 2, 12),
+        "2.1.2": datetime.datetime(2018, 10, 8),
+        "2.1.1": datetime.datetime(2018, 8, 28),
+        "2.1.0": datetime.datetime(2018, 7, 10),
+    },
+    "Ant": {
+        "2.7.1": datetime.datetime(2021, 4, 30),
+        "2.7": datetime.datetime(2019, 10, 1),
     },
 }
 
@@ -345,7 +366,24 @@ class Task(sq.SqObject):
         scanner_version = context.get("sonar.scanner.appVersion", None)
         util.logger.debug("Scanner type = %s, Scanner version = %s", scanner_type, scanner_version)
         if not scanner_version:
+            util.logger.warning(
+                "%s has been scanned with scanner '%s' with no version, skipping check scanner version obsolescence",
+                str(self.concerned_object),
+                scanner_type,
+            )
             return []
+        if scanner_type not in SCANNER_VERSIONS:
+            util.logger.warning(
+                "%s has been scanned with scanner '%s' which is not inventoried, skipping check on scanner obsolescence",
+                str(self.concerned_object),
+                scanner_type,
+            )
+            return []
+
+        if scanner_type == "Ant":
+            rule = rules.get_rule(rules.RuleId.ANT_SCANNER_DEPRECATED)
+            msg = rule.msg.format(str(self.concerned_object))
+            return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self.concerned_object)]
 
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
             (scanner_version, build_tool_version) = scanner_version.split("/")
