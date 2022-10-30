@@ -160,8 +160,8 @@ def main():
     args = __parse_args("Extract projects or portfolios lines of code, as computed for the licence")
     endpoint = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
     kwargs = vars(args)
-    file = kwargs.pop("file", None)
-    args.format = __deduct_format(args.format, file)
+    ofile = kwargs.pop("file", None)
+    args.format = __deduct_format(args.format, ofile)
 
     if args.portfolios:
         params = {}
@@ -170,7 +170,7 @@ def main():
         objects_list = portfolios.search(endpoint, params=params)
     else:
         objects_list = projects.search(endpoint)
-    __dump_loc(objects_list, file, **vars(args))
+    __dump_loc(objects_list, ofile, **vars(args))
     sys.exit(0)
 
 

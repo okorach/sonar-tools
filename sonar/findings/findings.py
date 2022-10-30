@@ -174,7 +174,7 @@ class Finding(sq.SqObject):
                 data[field] = ""
         data["branch"] = util.quote(data["branch"], separator)
         data["message"] = util.quote(data["message"], separator)
-        data["projectName"] = projects.get_object(self.projectKey, endpoint=self.endpoint).name
+        data["projectName"] = projects.Project.get_object(key=self.projectKey, endpoint=self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
@@ -346,7 +346,7 @@ def export_findings(endpoint, project_key, branch=None, pull_request=None):
     :rtype: dict{<key>: <Finding>}
     """
     util.logger.info("Using new export findings to speed up issue export")
-    return projects.Project(project_key, endpoint=endpoint).get_findings(branch, pull_request)
+    return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch, pull_request)
 
 
 def to_csv_header(separator=","):

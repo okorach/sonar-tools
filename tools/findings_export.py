@@ -328,27 +328,27 @@ def main():
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     fmt = kwargs.pop("format", None)
-    file = kwargs.pop("file", None)
-    if file is not None:
-        ext = file.split(".")[-1].lower()
-        if os.path.exists(file):
-            os.remove(file)
+    fname = kwargs.pop("file", None)
+    if fname is not None:
+        ext = fname.split(".")[-1].lower()
+        if os.path.exists(fname):
+            os.remove(fname)
         if ext in ("csv", "json"):
             fmt = ext
 
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
-    __write_header(file, fmt)
+    __write_header(fname, fmt)
     store_findings(
         project_list,
         params=params,
         endpoint=sqenv,
-        file=file,
+        file=fname,
         format=fmt,
         threads=kwargs[options.NBR_THREADS],
         with_url=kwargs[options.WITH_URL],
         csv_separator=kwargs[options.CSV_SEPARATOR],
     )
-    __write_footer(file, fmt)
+    __write_footer(fname, fmt)
     util.logger.info("Returned findings: %d - Total execution time: %s", TOTAL_FINDINGS, str(datetime.datetime.today() - start_time))
     sys.exit(0)
 

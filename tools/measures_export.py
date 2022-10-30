@@ -125,12 +125,12 @@ def __get_wanted_metrics(args, endpoint):
 def __get_fmt_and_file(args):
     kwargs = vars(args)
     fmt = kwargs["format"]
-    file = kwargs.get("file", None)
-    if file is not None:
-        ext = file.split(".")[-1].lower()
+    fname = kwargs.get("file", None)
+    if fname is not None:
+        ext = fname.split(".")[-1].lower()
         if ext in ("csv", "json"):
             fmt = ext
-    return (fmt, file)
+    return (fmt, fname)
 
 
 def __parse_args(desc):

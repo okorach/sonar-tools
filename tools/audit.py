@@ -131,8 +131,8 @@ def main():
         sys.exit(0)
 
     if kwargs.get("sif", None) is not None:
+        err = options.ERR_SIF_AUDIT_ERROR
         try:
-            err = options.ERR_SIF_AUDIT_ERROR
             problems = _audit_sif(kwargs["sif"], settings)
         except json.decoder.JSONDecodeError:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", err)
@@ -155,8 +155,8 @@ def main():
             util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
     kwargs["format"] = __deduct_format__(args.format, args.file)
-    file = kwargs.pop("file", None)
-    problem.dump_report(problems, file, **kwargs)
+    ofile = kwargs.pop("file", None)
+    problem.dump_report(problems, ofile, **kwargs)
 
     util.logger.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
     if problems:

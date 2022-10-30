@@ -25,7 +25,7 @@
 """
 import sys
 import json
-from sonar import options, platform, version
+from sonar import options, platform, version, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -71,16 +71,16 @@ def main():
     i = 0
     statuses = {}
     for project in project_list:
-        status = projects.create(key=project["key"], endpoint=sq)
-        if status != 200:
-            s = f"CREATE {status}"
+        try:
+            o_proj = projects.Project.create(key=project["key"], endpoint=sq, name=project["key"])
+            status = o_proj.import_zip()
+            s = f"IMPORT {status}"
             if s in statuses:
                 statuses[s] += 1
             else:
                 statuses[s] = 1
-        else:
-            status = projects.Project(project["key"], endpoint=sq).import_zip()
-            s = f"IMPORT {status}"
+        except exceptions.ObjectAlreadyExists:
+            s = "CREATE projectAlreadyExist"
             if s in statuses:
                 statuses[s] += 1
             else:
