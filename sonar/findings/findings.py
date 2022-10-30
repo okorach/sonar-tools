@@ -174,7 +174,7 @@ class Finding(sq.SqObject):
                 data[field] = ""
         data["branch"] = util.quote(data["branch"], separator)
         data["message"] = util.quote(data["message"], separator)
-        data["projectName"] = projects.get_object(self.projectKey, endpoint=self.endpoint).name
+        data["projectName"] = projects.Project.get_object(key=self.projectKey, endpoint=self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self):
