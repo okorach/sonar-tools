@@ -120,7 +120,7 @@ SCANNER_VERSIONS = {
         "2.1.1": datetime.datetime(2018, 8, 28),
         "2.1.0": datetime.datetime(2018, 7, 10),
     },
-    "ScannerAnt": {
+    "Ant": {
         "2.7.1": datetime.datetime(2021, 4, 30),
         "2.7": datetime.datetime(2019, 10, 1),
     },
@@ -367,14 +367,14 @@ class Task(sq.SqObject):
         util.logger.debug("Scanner type = %s, Scanner version = %s", scanner_type, scanner_version)
         if not scanner_version:
             util.logger.warning(
-                "%s has been scanned with scanner %s with no version, " "skipping check scanner version obsolescence",
+                "%s has been scanned with scanner '%s' with no version, skipping check scanner version obsolescence",
                 str(self.concerned_object),
                 scanner_type,
             )
             return []
         if scanner_type not in SCANNER_VERSIONS:
             util.logger.warning(
-                "%s has been scanned with Scanner %s which is not inventoried, " "skipping check on scanner obsolescence",
+                "%s has been scanned with scanner '%s' which is not inventoried, skipping check on scanner obsolescence",
                 str(self.concerned_object),
                 scanner_type,
             )
