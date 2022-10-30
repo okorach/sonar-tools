@@ -124,12 +124,12 @@ def main():
             raise exceptions.ObjectNotFound(source_key, f"Project key '{source_key}' does not exist")
         if target_url is None and target_key is None and source_branch is None and target_branch is None:
             # Sync all branches of a given project
-            (report, counters) = projects.get_object(key=source_key, endpoint=source_env).sync_branches(sync_settings=settings)
+            (report, counters) = projects.Project.get_object(key=source_key, endpoint=source_env).sync_branches(sync_settings=settings)
         elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
             # Sync 2 branches of a given project
             if source_branch != target_branch:
-                src_branch = Branch.get_object(projects.get_object(source_key, source_env), source_branch)
-                tgt_branch = Branch.get_object(projects.get_object(source_key, source_env), target_branch)
+                src_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
+                tgt_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
@@ -139,8 +139,8 @@ def main():
             if not projects.exists(target_key, endpoint=source_env):
                 raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
-            src_branch = Branch.get_object(projects.get_object(source_key, source_env), source_branch)
-            tgt_branch = Branch.get_object(projects.get_object(target_key, source_env), target_branch)
+            src_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
+            tgt_branch = Branch.get_object(projects.Project.get_object(target_key, source_env), target_branch)
             (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
 
         elif target_url is not None and target_key is not None:
@@ -151,13 +151,13 @@ def main():
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
             if source_branch is not None or target_branch is not None:
                 # sync main 2 branches of 2 projects on different platforms
-                src_branch = Branch.get_object(projects.get_object(source_key, endpoint=source_env), source_branch)
-                tgt_branch = Branch.get_object(projects.get_object(target_key, endpoint=target_env), target_branch)
+                src_branch = Branch.get_object(projects.Project.get_object(key=source_key, endpoint=source_env), source_branch)
+                tgt_branch = Branch.get_object(projects.Project.get_object(key=target_key, endpoint=target_env), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 # sync main all branches of 2 projects on different platforms
-                src_project = projects.get_object(key=source_key, endpoint=source_env)
-                tgt_project = projects.get_object(key=target_key, endpoint=target_env)
+                src_project = projects.Project.get_object(key=source_key, endpoint=source_env)
+                tgt_project = projects.Project.get_object(key=target_key, endpoint=target_env)
                 (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
 
         __dump_report(report, args.file)
