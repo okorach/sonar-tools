@@ -385,6 +385,11 @@
         "type": "OPERATIONS",
         "message": "{} was last analyzed with {} version {} that is not the most recent version, consider updating the scanner"
     },
+    "ANT_SCANNER_DEPRECATED": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "{} was last analyzed with {} which is deprecated, consider switching to Scanner for CLI"
+    },
     "NOT_USING_BRANCH_ANALYSIS": {
         "severity": "LOW",
         "type": "GOVERNANCE",

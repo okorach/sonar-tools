@@ -79,6 +79,8 @@ SCANNER_VERSIONS = {
         "2.8.0": datetime.datetime(2019, 10, 1),
     },
     "ScannerMSBuild": {
+        "5.8.0": datetime.datetime(2022, 8, 24),
+        "5.7.2": datetime.datetime(2022, 7, 12),
         "5.7.1": datetime.datetime(2022, 6, 21),
         "5.7.0": datetime.datetime(2022, 6, 20),
         "5.6.0": datetime.datetime(2022, 5, 30),
@@ -117,6 +119,10 @@ SCANNER_VERSIONS = {
         "2.1.2": datetime.datetime(2018, 10, 8),
         "2.1.1": datetime.datetime(2018, 8, 28),
         "2.1.0": datetime.datetime(2018, 7, 10),
+    },
+    "ScannerAnt": {
+        "2.7.1": datetime.datetime(2021, 4, 30),
+        "2.7": datetime.datetime(2019, 10, 1),
     },
 }
 
@@ -369,6 +375,12 @@ class Task(sq.SqObject):
                                 "skipping check on scanner obsolescence",
                                 str(self.concerned_object), scanner_type)
             return []
+
+        if scanner_type == "ScannerAnt":
+            rule = rules.get_rule(rules.RuleId.ANT_SCANNER_DEPRECATED)
+            msg = rule.msg.format(str(self.concerned_object), scanner_type)
+            return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self.concerned_object)]
+
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
             (scanner_version, build_tool_version) = scanner_version.split("/")
             scanner_version = scanner_version.replace("-SNAPSHOT", "")
