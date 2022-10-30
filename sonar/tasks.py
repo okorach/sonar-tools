@@ -366,14 +366,18 @@ class Task(sq.SqObject):
         scanner_version = context.get("sonar.scanner.appVersion", None)
         util.logger.debug("Scanner type = %s, Scanner version = %s", scanner_type, scanner_version)
         if not scanner_version:
-            util.logger.warning("%s has been scanned with scanner %s with no version, "
-                                "skipping check scanner version obsolescence",
-                                str(self.concerned_object), scanner_type)
+            util.logger.warning(
+                "%s has been scanned with scanner %s with no version, " "skipping check scanner version obsolescence",
+                str(self.concerned_object),
+                scanner_type,
+            )
             return []
         if scanner_type not in SCANNER_VERSIONS:
-            util.logger.warning("%s has been scanned with Scanner %s which is not inventoried, "
-                                "skipping check on scanner obsolescence",
-                                str(self.concerned_object), scanner_type)
+            util.logger.warning(
+                "%s has been scanned with Scanner %s which is not inventoried, " "skipping check on scanner obsolescence",
+                str(self.concerned_object),
+                scanner_type,
+            )
             return []
 
         if scanner_type == "ScannerAnt":
