@@ -103,6 +103,21 @@ SCANNER_VERSIONS = {
         "4.7.1": datetime.datetime(2019, 9, 10),
         "4.7.0": datetime.datetime(2019, 9, 3),
     },
+    "ScannerNpm": {
+        "2.8.2": datetime.datetime(2022, 9, 25),
+        "2.8.1": datetime.datetime(2021, 6, 10),
+        "2.8.0": datetime.datetime(2020, 11, 10),
+        "2.7.0": datetime.datetime(2020, 7, 6),
+        "2.6.0": datetime.datetime(2020, 3, 24),
+        "2.5.0": datetime.datetime(2019, 6, 26),
+        "2.4.1": datetime.datetime(2019, 5, 28),
+        "2.4.0": datetime.datetime(2019, 2, 23),
+        "2.3.0": datetime.datetime(2019, 2, 19),
+        "2.2.0": datetime.datetime(2019, 2, 12),
+        "2.1.2": datetime.datetime(2018, 10, 8),
+        "2.1.1": datetime.datetime(2018, 8, 28),
+        "2.1.0": datetime.datetime(2018, 7, 10),
+    },
 }
 
 
