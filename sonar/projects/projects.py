@@ -482,7 +482,7 @@ class Project(components.Component):
             )
             return []
         try:
-            resp = self.get("alm_settings/validate_binding", params={"project": self.key})
+            _ = self.get("alm_settings/validate_binding", params={"project": self.key})
             util.logger.debug("%s binding is valid", str(self))
             return []
         except HTTPError as e:

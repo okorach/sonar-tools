@@ -346,7 +346,7 @@ def export_findings(endpoint, project_key, branch=None, pull_request=None):
     :rtype: dict{<key>: <Finding>}
     """
     util.logger.info("Using new export findings to speed up issue export")
-    return projects.Project(project_key, endpoint=endpoint).get_findings(branch, pull_request)
+    return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch, pull_request)
 
 
 def to_csv_header(separator=","):
