@@ -382,7 +382,7 @@ class Task(sq.SqObject):
 
         if scanner_type == "Ant":
             rule = rules.get_rule(rules.RuleId.ANT_SCANNER_DEPRECATED)
-            msg = rule.msg.format(str(self.concerned_object), scanner_type)
+            msg = rule.msg.format(str(self.concerned_object))
             return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self.concerned_object)]
 
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
