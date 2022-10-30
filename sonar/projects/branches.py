@@ -22,6 +22,7 @@ from http import HTTPStatus
 import json
 from requests.exceptions import HTTPError
 import requests.utils
+from urllib.parse import unquote
 import sonar.sqobject as sq
 from sonar import measures, components, syncer, settings, exceptions
 from sonar.projects import projects
@@ -60,6 +61,7 @@ class Branch(components.Component):
         :return: The Branch object
         :rtype: Branch
         """
+        branch_name = unquote(branch_name)
         _uuid = uuid(concerned_object.key, branch_name)
         if _uuid in _OBJECTS:
             return _OBJECTS[_uuid]
@@ -86,6 +88,7 @@ class Branch(components.Component):
         :return: The Branch object
         :rtype: Branch
         """
+        branch_name = unquote(branch_name)
         _uuid = uuid(concerned_object.key, branch_name)
         o = _OBJECTS[_uuid] if _uuid in _OBJECTS else cls(concerned_object, branch_name)
         o._load(data)
@@ -98,6 +101,7 @@ class Branch(components.Component):
         """
         if concerned_object.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+        name = unquote(name)
         super().__init__(name, concerned_object.endpoint)
         self.name = name
         self.concerned_object = concerned_object
