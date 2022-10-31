@@ -20,9 +20,9 @@
 
 from http import HTTPStatus
 import json
+from urllib.parse import unquote
 from requests.exceptions import HTTPError
 import requests.utils
-from urllib.parse import unquote
 import sonar.sqobject as sq
 from sonar import measures, components, syncer, settings, exceptions
 from sonar.projects import projects
