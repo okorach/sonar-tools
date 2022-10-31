@@ -74,6 +74,7 @@ class Platform:
         self.__cert_file = cert_file
         self._version = None
         self.__sys_info = None
+        self.__global_nav = None
         self._server_id = None
         self._permissions = None
 
@@ -111,7 +112,10 @@ class Platform:
         :return: the SonarQube platform edition
         :rtype: str ("community", "developer", "enterprise" or "datacenter")
         """
-        return self.sys_info()["Statistics"]["edition"]
+        if self.version() < (9, 7, 0):
+            return self.sys_info()["Statistics"]["edition"]
+        else:
+            return self.global_nav()["edition"]
 
     def server_id(self):
         """
@@ -268,19 +272,35 @@ class Platform:
             success = True
         return self.__sys_info
 
+    def global_nav(self):
+        """
+        :return: the SonarQube platform global navigation data
+        :rtype: dict
+        """
+        if self.__global_nav is None:
+            resp = self.get("navigation/global", mute=(HTTPStatus.INTERNAL_SERVER_ERROR,))
+            self.__global_nav = json.loads(resp.text)
+        return self.__global_nav
+
     def database(self):
         """
         :return: the SonarQube platform backend database
         :rtype: str
         """
-        return self.sys_info()["Statistics"]["database"]["name"]
+        if self.version() < (9, 7, 0):
+            return self.sys_info()["Statistics"]["database"]["name"]
+        else:
+            return self.sys_info()["Database"]["Database"]
 
     def plugins(self):
         """
         :return: the SonarQube platform plugins
         :rtype: dict
         """
-        return self.sys_info()["Statistics"]["plugins"]
+        if self.version() < (9, 7, 0):
+            return self.sys_info()["Statistics"]["plugins"]
+        else:
+            return self.sys_info()["Plugins"]
 
     def get_settings(self, settings_list=None):
         """Returns a list of (or all) platform global settings value from their key
@@ -451,13 +471,17 @@ class Platform:
             elif key.startswith("audit.globalSettings.isNotSet"):
                 problems += _audit_setting_set(key, False, platform_settings, audit_settings, settings_url)
 
+        pf_sif = self.sys_info()
+        if self.version() >= (9, 7, 0):
+            # Hack: Manually add edition in SIF (it's removed starting from 9.7 :-()
+            pf_sif["edition"] = self.edition()
         problems += (
             _audit_maintainability_rating_grid(platform_settings, audit_settings, settings_url)
             + self._audit_project_default_visibility()
             + self._audit_admin_password()
             + self._audit_global_permissions()
             + self._audit_lts_latest()
-            + sif.Sif(self.sys_info(), self).audit(audit_settings)
+            + sif.Sif(pf_sif, self).audit(audit_settings)
             + webhooks.audit(self)
             + permission_templates.audit(self, audit_settings)
         )
