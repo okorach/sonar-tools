@@ -81,15 +81,25 @@ class Sif:
             try:
                 ed = self.json["License"]["edition"]
             except KeyError:
-                return ""
+                try:
+                    # FIXME: Can't get edition in SIF of SonarQube 9.7+, this is an unsolvable problem
+                    ed = self.json["edition"]
+                except KeyError:
+                    return ""
         # Old SIFs could return "Enterprise Edition"
         return ed.split(" ")[0].lower()
 
     def database(self):
-        return self.json[_STATS]["database"]["name"]
+        if self.version() < (9, 7, 0):
+            return self.json[_STATS]["database"]["name"]
+        else:
+            return self.json["Database"]["Database"]
 
     def plugins(self):
-        return self.json[_STATS]["plugins"]
+        if self.version() < (9, 7, 0):
+            return self.json[_STATS]["plugins"]
+        else:
+            return self.json["Plugins"]
 
     def license_type(self):
         if "License" not in self.json:
@@ -260,7 +270,10 @@ class Sif:
     def __audit_dce_settings(self):
         util.logger.info("Auditing DCE settings")
         problems = []
-        stats = self.json.get(_STATS)
+        if self.version() < (9, 7, 0):
+            stats = self.json.get(_STATS)
+        else:
+            stats = self.json
         if stats is None:
             util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
             return problems
