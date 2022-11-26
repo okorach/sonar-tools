@@ -60,7 +60,7 @@ if [ "$dolint" != "false" ]; then
 fi
 
 version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | cut -d "'" -f 2)
-
+version=$(echo $version)
 pr_branch=""
 for o in $scanOpts
 do
