@@ -103,7 +103,7 @@ To avoid bad mistakes (mistakenly deleting too many projects), the tools will re
 
 ### Example
 ```
-sonar-housekeeper -o 120 -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
+sonar-housekeeper -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 ```
 
 # <a name="sonar-loc"></a>sonar-loc
