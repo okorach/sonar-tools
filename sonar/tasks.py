@@ -416,7 +416,9 @@ class Task(sq.SqObject):
                 "Scanner '%s' version '%s' is not referenced in sonar-tools. "
                 "Scanner obsolescence check skipped. "
                 "Please report to author at https://github.com/okorach/sonar-tools/issues",
-                scanner_type, str_version)
+                scanner_type,
+                str_version,
+            )
             return []
 
         tuple_version_list = []
