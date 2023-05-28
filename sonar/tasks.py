@@ -41,7 +41,8 @@ __SUSPICIOUS_EXCEPTIONS = None
 
 SCANNER_VERSIONS = {
     "ScannerCLI": {
-        "4.7.0": datetime.datetime(2022, 2, 22),
+        "4.8.0": datetime.datetime(2022, 2, 6),
+        "4.7.0": datetime.datetime(2022, 2, 2),
         "4.6.2": datetime.datetime(2021, 5, 7),
         "4.6.1": datetime.datetime(2021, 4, 30),
         "4.6.0": datetime.datetime(2021, 1, 13),
@@ -70,6 +71,8 @@ SCANNER_VERSIONS = {
         "3.0.0": datetime.datetime(2016, 1, 1),
     },
     "ScannerGradle": {
+        "4.0.0": datetime.datetime(2023, 2, 17),
+        "3.5.0": datetime.datetime(2022, 10, 27),
         "3.4.0": datetime.datetime(2022, 6, 8),
         "3.3.0": datetime.datetime(2021, 6, 10),
         "3.2.0": datetime.datetime(2021, 4, 30),
@@ -79,6 +82,13 @@ SCANNER_VERSIONS = {
         "2.8.0": datetime.datetime(2019, 10, 1),
     },
     "ScannerMSBuild": {
+        "5.13.0": datetime.datetime(2023, 4, 5),
+        "5.12.0": datetime.datetime(2023, 3, 17),
+        "5.11.0": datetime.datetime(2023, 1, 27),
+        "5.10.0": datetime.datetime(2023, 1, 13),
+        "5.9.2": datetime.datetime(2022, 12, 14),
+        "5.9.1": datetime.datetime(2022, 12, 6),
+        "5.9.0": datetime.datetime(2022, 12, 1),
         "5.8.0": datetime.datetime(2022, 8, 24),
         "5.7.2": datetime.datetime(2022, 7, 12),
         "5.7.1": datetime.datetime(2022, 6, 21),
@@ -106,6 +116,10 @@ SCANNER_VERSIONS = {
         "4.7.0": datetime.datetime(2019, 9, 3),
     },
     "ScannerNpm": {
+        "3.0.1": datetime.datetime(2023, 2, 10),
+        "3.0.0": datetime.datetime(2023, 1, 4),
+        "2.9.0": datetime.datetime(2022, 12, 4),
+        "2.8.9": datetime.datetime(2022, 12, 4),
         "2.8.2": datetime.datetime(2022, 9, 25),
         "2.8.1": datetime.datetime(2021, 6, 10),
         "2.8.0": datetime.datetime(2020, 11, 10),
@@ -392,17 +406,25 @@ class Task(sq.SqObject):
         if len(scanner_version) == 2:
             scanner_version.append(0)
         scanner_version = tuple(scanner_version[0:3])
-
         str_version = ".".join([str(n) for n in scanner_version])
-        release_date = SCANNER_VERSIONS[scanner_type][str_version]
-        delta_days = (datetime.datetime.today() - release_date).days
         versions_list = SCANNER_VERSIONS[scanner_type].keys()
         util.logger.debug("versions = %s", str(versions_list))
+        try:
+            release_date = SCANNER_VERSIONS[scanner_type][str_version]
+        except KeyError:
+            util.logger.warning(
+                "Scanner '%s' version '%s' is not referenced in sonar-tools. "
+                "Scanner obsolescence check skipped. "
+                "Please report to author at https://github.com/okorach/sonar-tools/issues",
+                scanner_type, str_version)
+            return []
+
         tuple_version_list = []
         for v in versions_list:
             tuple_version_list.append(tuple([int(n) for n in v.split(".")]))
-
         tuple_version_list.sort(reverse=True)
+
+        delta_days = (datetime.datetime.today() - release_date).days
         index = tuple_version_list.index(scanner_version)
         util.logger.debug("Scanner used is %d versions old", index)
         if delta_days > audit_settings["audit.projects.scannerMaxAge"]:
