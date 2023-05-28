@@ -406,14 +406,17 @@ class Task(sq.SqObject):
         if len(scanner_version) == 2:
             scanner_version.append(0)
         scanner_version = tuple(scanner_version[0:3])
-        str_version = ".".join([str(n) for n in scanner_version])        
+        str_version = ".".join([str(n) for n in scanner_version])
         versions_list = SCANNER_VERSIONS[scanner_type].keys()
         util.logger.debug("versions = %s", str(versions_list))
         try:
             release_date = SCANNER_VERSIONS[scanner_type][str_version]
         except KeyError:
-            util.logger.warn("Scanner %s version %s is not referenced in sonar-tools. Can't verify scanner obsolescence. Please report to author at https://github.com/okorach/sonar-tools/issues",
-                             scanner_type, str_version)
+            util.logger.warning(
+                "Scanner '%s' version '%s' is not referenced in sonar-tools. "
+                "Scanner obsolescence check skipped. "
+                "Please report to author at https://github.com/okorach/sonar-tools/issues",
+                scanner_type, str_version)
             return []
 
         tuple_version_list = []
