@@ -205,7 +205,9 @@ class Project(components.Component):
             # Starting from 9.2 project last analysis date takes into account branches and PR
             return self._branches_last_analysis
 
-        for b in self.branches() + self.pull_requests():
+        util.logger.debug("Branches = %s", str(self.branches()))
+        util.logger.debug("PR = %s", str(self.pull_requests()))
+        for b in list(self.branches().values()) + self.pull_requests():
             if b.last_analysis() is None:
                 continue
             b_ana_date = b.last_analysis()
