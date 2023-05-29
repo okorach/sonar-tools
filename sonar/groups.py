@@ -44,7 +44,7 @@ class Group(sq.SqObject):
 
     def __init__(self, endpoint, name, data):
         """Do not use, use class methods to create objects"""
-        super().__init__(data["id"], endpoint)
+        super().__init__(data.get("id", name), endpoint)
         self.name = name  #: Group name
         self.description = data.get("description", "")  #: Group description
         self.__members_count = data.get("membersCount", None)
