@@ -19,7 +19,7 @@ import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = "sonar-tools"
-copyright = "2022, Olivier Korach"
+copyright = "2022-2023, Olivier Korach"
 author = "Olivier Korach"
 
 # The full version, including alpha/beta/rc tags
