@@ -119,8 +119,8 @@ class QualityGate(sq.SqObject):
         self._permissions = None  #: Quality gate permissions
         self._projects = None  #: Projects using this quality profile
         self._json = data
-        self.key = data.pop("id")
         self.name = data.pop("name")
+        self.key = data.pop("id", self.name)
         self.is_default = data.get("isDefault", False)
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
@@ -345,6 +345,7 @@ def get_list(endpoint):
     data = json.loads(endpoint.get(APIS["list"]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
+        util.logger.debug("Getting QG %s", str(qg))
         qg_obj = QualityGate(name=qg["name"], endpoint=endpoint, data=qg)
         if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
             qg_obj.is_default = True
