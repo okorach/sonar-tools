@@ -20,6 +20,8 @@
 #
 set -euo pipefail
 
+curdir=$(basename $0)
+
 check() {
     if [ -s "$1" ]; then
         echo "Output file $1 is OK"
@@ -49,7 +51,7 @@ echo "Install sonar-tools current local version" | tee -a $IT_LOG_FILE
 for env in $*
 do
     echo "Running with environment $env" | tee -a $IT_LOG_FILE
-    . sqenv $env
+    . ${curdir}/sonar-env.sh $env
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
     f="$IT_ROOT/measures-$env-unrel.csv"
