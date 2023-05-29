@@ -37,7 +37,7 @@ check() {
 IT_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd ../tmp ; pwd -P )"
 IT_LOG_FILE="$IT_ROOT/it.log"
 mkdir -p $IT_ROOT
-rm -f $IT_ROOT/*
+rm -f $IT_ROOT/*.log $IT_ROOT/*.csv $IT_ROOT/*.json
 
 noExport=0
 if [ "$1" == "--noExport" ]; then
@@ -51,7 +51,7 @@ echo "Install sonar-tools current local version" | tee -a $IT_LOG_FILE
 for env in $*
 do
     echo "Running with environment $env" | tee -a $IT_LOG_FILE
-    . ${curdir}/sonar-env.sh $env
+    . ${cur_dir}/sonar-env.sh $env
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
     f="$IT_ROOT/measures-$env-unrel.csv"
