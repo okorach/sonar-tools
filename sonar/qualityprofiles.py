@@ -346,9 +346,15 @@ class QualityProfile(sq.SqObject):
         while more:
             params["p"] = page
             data = json.loads(self.get("qualityprofiles/projects", params=params).text)
+            util.logger.debug("Got QP data = %s", str(data))
             self._projects += [p["key"] for p in data["results"]]
-            more = data["more"]
             page += 1
+            if self.endpoint.version() >= (10, 0, 0):
+                nb_pages = (data["paging"]["total"] + 500 - 1) // 500
+                more = nb_pages >= page
+            else:
+                more = data["more"]
+
         util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
         return self._projects
 
