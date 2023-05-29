@@ -249,6 +249,8 @@ def _search_value(data):
     value = data.get("value", None)
     if not value and "periods" in data:
         value = data["periods"][0]["value"]
+    elif not value and "period" in data:
+        value = data["period"]["value"]
     if metrics.is_a_rating(data["metric"]):
         value = get_rating_letter(value)
     return value
