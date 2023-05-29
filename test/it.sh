@@ -20,7 +20,7 @@
 #
 set -euo pipefail
 
-curdir=$(dirname $0)
+cur_dir=$(dirname $0)
 
 check() {
     if [ -s "$1" ]; then
