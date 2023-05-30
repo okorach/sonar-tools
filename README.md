@@ -26,7 +26,8 @@ deletes tokens created since more than a certain number of days
 - [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
 - [sonar-config](#sonar-config): Exports or Imports a SonarQube platform configuration to/from configuration as code file (JSON file).
 
-:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 8.9.x) and LATEST versions**
+:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 9.9.x) and LATEST versions**
+:warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
 
 # What's New - Release notes
 - [What's new](https://github.com/okorach/sonar-tools/blob/master/doc/what-is-new.md)
@@ -88,6 +89,8 @@ Branches marked as "keep when inactive" are excluded from housekeeping
 - `--mode delete`: If not specified, `sonar-housekeeper` will only perform a dry run and list projects
 branches, pull requests and tokens that would be deleted.
 If `--mode delete` is specified objects are actually deleted
+
+:warning: **sonar-tools** 2.7 or higher is required for `sonar-housekeeper` compatibility with SonarQube 10
 
 ## Required Permissions
 
@@ -209,6 +212,7 @@ Basic Usage: `sonar-projects-export [--exportTimeout <timeout>] >exported_projec
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 
 :information_source: All zip files are generated in the SonarQube instance standard location (under `data/governance/project_dumps/export`). On a DCE, the export may be distributed over all the Application Nodes
+:warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
 
 The CSV file generated is to be used by the `sonar-projects-import` tool
 
@@ -228,6 +232,7 @@ sonar-projects-export >exported_projects.csv
 Imports a list of projects previously exported with `sonar-projects-export`.  
 :warning: This requires a SonarQube Enterprise or Data Center Edition.  
 It takes as input a CSV file produced by `sonar-projects-export`
+:warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
 
 Basic Usage: `sonar-projects-import -f <file.csv>`  
 - `-f`: Define input file for project import, result of a `sonar-projects-export` command
@@ -259,6 +264,8 @@ Basic Usage: `sonar-config --export -f <file.json>`
 - `k "<key1>,<key2>,...,<keyn>"`: Will only import/export projects, apps or portfolios with matching keys
 - `--fullExport`: Will also export object properties that are not used for an import by may be of interest anyway
 See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
+
+:warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
 
 ## Required Permissions
 
