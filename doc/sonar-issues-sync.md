@@ -1,7 +1,6 @@
 # <a name="sonar-issues-sync"></a>sonar-issues-sync
 
-`sonar-issues-sync` synchronizes issues changelog between branches, projects within a same SonarQube instance or
-across different SonarQube instances
+`sonar-issues-sync` synchronizes issues changelog between branches, projects within a same SonarQube instance or across different SonarQube instances
 
 ## Requirements and Installation
 
@@ -73,7 +72,6 @@ Issues changelog synchronization includes:
 
 When an issue could not be synchronized because of one of the above reasons, this is reported in the `sonar-issues-sync` report.
 Whenever a close enough issue was found but not sync'ed (because not 100% certain to be identical), the close issue is provided in the report to complete synchronization manually if desired.
-
 
 ## Required Permissions
 

@@ -1,3 +1,21 @@
+# Version 2.7
+
+- Compatibility with SonarQube 10+
+- Support of project analyzed with recent scanner version
+  - Scanner for CLI 4.8+
+  - Scanner for Gradle 3.5+
+  - Scanner for .Net 5.9+
+  - Scanner for NPM 2.9+
+
+# Version 2.6
+
+- Compatibility with SonarQube 9.7+
+- Support of UTF-8 in branch names
+
+# Version 2.5
+
+- Mostly hardening
+
 # Version 2.4
 
 ## General
