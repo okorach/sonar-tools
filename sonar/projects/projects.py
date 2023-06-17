@@ -207,7 +207,7 @@ class Project(components.Component):
 
         util.logger.debug("Branches = %s", str(self.branches()))
         util.logger.debug("PR = %s", str(self.pull_requests()))
-        for b in list(self.branches().values()) + self.pull_requests():
+        for b in self.branches() + self.pull_requests():
             if b.last_analysis() is None:
                 continue
             b_ana_date = b.last_analysis()
@@ -250,7 +250,7 @@ class Project(components.Component):
             try:
                 self._branches = branches.get_list(self)
             except exceptions.UnsupportedOperation:
-                self._branches = {}
+                self._branches = []
         return self._branches
 
     def main_branch(self):
