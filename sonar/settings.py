@@ -406,7 +406,7 @@ def get_component_params(component, name="component"):
     if not component:
         return {}
     elif type(component).__name__ == "Branch":
-        return {name: component.project.key, "branch": component.key} if component else {}
+        return {name: component.project.key, "branch": component.key}
     else:
         return {name: component.key}
 
