@@ -1054,7 +1054,7 @@ def count(endpoint, params=None):
     """
     new_params = {} if params is None else params.copy()
     new_params.update({"ps": 1, "p": 1})
-    data = json.loads(endpoint.get(_SEARCH_API, params=params))
+    data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
     return data["paging"]["total"]
 
 

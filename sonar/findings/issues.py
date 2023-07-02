@@ -219,7 +219,7 @@ class Issue(findings.Finding):
         :rtype: dict{"<date>_<sequence_nbr>": <event>}
         """
         if self._changelog is None:
-            data = json.loads(self.get("issues/changelog", {"issue": self.key, "format": "json"}))
+            data = json.loads(self.get("issues/changelog", {"issue": self.key, "format": "json"}).text)
             util.json_dump_debug(data["changelog"], f"{str(self)} Changelog = ")
             self._changelog = {}
             seq = 1
