@@ -63,7 +63,7 @@ class Measure(sq.SqObject):
         :rtype: int or float or str
         """
         params = util.replace_keys(("project", "application", "portfolio"), "component", self.concerned_object.search_params())
-        data = json.loads(self.get(Measure.API_READ, params=params))["component"]["measures"]
+        data = json.loads(self.get(Measure.API_READ, params=params).text)["component"]["measures"]
         self.value = _search_value(data)
         return self.value
 
@@ -92,7 +92,7 @@ class Measure(sq.SqObject):
             new_params["ps"] = __MAX_PAGE_SIZE
         page, nbr_pages = 1, 1
         while page <= nbr_pages:
-            data = json.loads(self.get(Measure.API_HISTORY, params=new_params))
+            data = json.loads(self.get(Measure.API_HISTORY, params=new_params).text)
             for m in data["measures"][0]["history"]:
                 measures[m["date"]] = m["value"]
             nbr_pages = util.nbr_pages(data)
