@@ -30,6 +30,7 @@ import sys
 from sonar import platform, tokens, users, groups, version, options
 from sonar.projects import projects, branches, pull_requests
 import sonar.utilities as util
+import sonar.exceptions as ex
 from sonar.audit import config, problem
 
 
@@ -165,27 +166,31 @@ def _delete_objects(problems, mode):
         obj = p.concerned_object
         if obj is None:
             continue  # BUG
-        if isinstance(obj, projects.Project):
-            loc = int(obj.get_measure("ncloc", fallback="0"))
-            if mode == "delete":
-                util.logger.info("Deleting %s, %d LoC", str(obj), loc)
-            else:
-                util.logger.info("%s, %d LoC should be deleted", str(obj), loc)
-            if mode != "delete" or obj.delete():
-                deleted_projects[obj.key] = obj
-                deleted_loc += loc
-        if isinstance(obj, branches.Branch):
-            if obj.concerned_object.key in deleted_projects:
-                util.logger.info("%s deleted, so no need to delete %s", str(obj.concerned_object), str(obj))
-            elif mode != "delete" or obj.delete():
-                deleted_branch_count += 1
-        if isinstance(obj, pull_requests.PullRequest):
-            if obj.project.key in deleted_projects:
-                util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
-            elif mode != "delete" or obj.delete():
-                deleted_pr_count += 1
-        if isinstance(obj, tokens.UserToken) and (mode != "delete" or obj.revoke()):
-            revoked_token_count += 1
+        try:
+            if isinstance(obj, projects.Project):
+                loc = int(obj.get_measure("ncloc", fallback="0"))
+                if mode == "delete":
+                    util.logger.info("Deleting %s, %d LoC", str(obj), loc)
+                else:
+                    util.logger.info("%s, %d LoC should be deleted", str(obj), loc)
+                if mode != "delete" or obj.delete():
+                    deleted_projects[obj.key] = obj
+                    deleted_loc += loc
+            if isinstance(obj, branches.Branch):
+                if obj.concerned_object.key in deleted_projects:
+                    util.logger.info("%s deleted, so no need to delete %s", str(obj.concerned_object), str(obj))
+                elif mode != "delete" or obj.delete():
+                    deleted_branch_count += 1
+            if isinstance(obj, pull_requests.PullRequest):
+                if obj.project.key in deleted_projects:
+                    util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
+                elif mode != "delete" or obj.delete():
+                    deleted_pr_count += 1
+            if isinstance(obj, tokens.UserToken) and (mode != "delete" or obj.revoke()):
+                revoked_token_count += 1
+        except ex.ObjectNotFound:
+            util.logger.warning("%s does not exist, deletion skipped...", str(obj))
+
     return (
         len(deleted_projects),
         deleted_loc,

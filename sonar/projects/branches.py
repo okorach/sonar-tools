@@ -188,7 +188,12 @@ class Branch(components.Component):
         :return: Whether the deletion was successful
         :rtype: bool
         """
-        return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS)
+        try:
+            return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS)
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.BAD_REQUEST:
+                util.logger.warning("Can't delete %s, it's the main branch", str(self))
+            return False
 
     def new_code(self):
         """
@@ -355,7 +360,9 @@ class Branch(components.Component):
             return []
         max_age = audit_settings["audit.projects.branches.maxLastAnalysisAge"]
         problems = []
-        if self.is_kept_when_inactive():
+        if self.is_main():
+            util.logger.debug("%s is main (not purgeable)", str(self))
+        elif self.is_kept_when_inactive():
             util.logger.debug("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
