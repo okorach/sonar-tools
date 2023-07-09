@@ -44,7 +44,7 @@ _CHILDREN_KEY = "children"
 
 _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions")
 
-_QP_LOCK = Lock()
+_CLASS_LOCK = Lock()
 
 
 class QualityProfile(sq.SqObject):
@@ -456,7 +456,7 @@ def get_list(endpoint):
     :rtype: dict{key: QualityProfile}
     """
 
-    with _QP_LOCK:
+    with _CLASS_LOCK:
         if len(_OBJECTS) == 0:
             # TODO: Don't assume no quality profile change since last search
             search(endpoint=endpoint)

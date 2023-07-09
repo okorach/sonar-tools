@@ -21,6 +21,7 @@
 import json
 from http import HTTPStatus
 from requests.exceptions import HTTPError
+from threading import Lock
 from sonar import components, exceptions, settings
 from sonar.projects import projects, branches
 from sonar.permissions import permissions, application_permissions
@@ -31,6 +32,7 @@ from sonar.audit import rules
 
 _OBJECTS = {}
 _MAP = {}
+_CLASS_LOCK = Lock()
 
 APIS = {
     "search": "api/components/search_projects",
@@ -408,12 +410,13 @@ def search(endpoint, params=None):
 
 def get_list(endpoint, key_list=None):
     """Gets a list of Application objects"""
-    if key_list is None or len(key_list) == 0:
-        util.logger.info("Listing applications")
-        return search(endpoint=endpoint)
-    object_list = {}
-    for key in util.csv_to_list(key_list):
-        object_list[key] = Application.get_object(endpoint, key)
+    with _CLASS_LOCK:
+        if key_list is None or len(key_list) == 0:
+            util.logger.info("Listing applications")
+            return search(endpoint=endpoint)
+        object_list = {}
+        for key in util.csv_to_list(key_list):
+            object_list[key] = Application.get_object(endpoint, key)
     return object_list
 
 
