@@ -21,7 +21,7 @@
 import json
 from http import HTTPStatus
 from queue import Queue
-from threading import Thread
+from threading import Thread, Lock
 from requests import HTTPError
 import requests.utils
 from sonar import rules, languages
@@ -44,6 +44,7 @@ _CHILDREN_KEY = "children"
 
 _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions")
 
+_QP_LOCK = None
 
 class QualityProfile(sq.SqObject):
     """
@@ -454,9 +455,18 @@ def get_list(endpoint):
     :return: the list of all quality profiles
     :rtype: dict{key: QualityProfile}
     """
+    if _QP_LOCK is None:
+        _QP_LOCK = Thread.Lock()
+
+    _QP_LOCK.acquire()
     if len(_OBJECTS) == 0:
-        # TODO: Don't assume no quality profile change since last search
-        search(endpoint=endpoint)
+        try:
+            # TODO: Don't assume no quality profile change since last search
+            search(endpoint=endpoint)
+        except:
+            _QP_LOCK.release()
+            raise
+    _QP_LOCK.release()
     return _OBJECTS
 
 
@@ -555,8 +565,7 @@ def get_object(name, language, endpoint=None):
     :return: The quality profile object, of None if not found
     :rtype: QualityProfile or None
     """
-    if len(_OBJECTS) == 0:
-        get_list(endpoint)
+    get_list(endpoint)
     fmt = _format(name, language)
     if fmt not in _MAP:
         return None
