@@ -199,13 +199,14 @@ def is_of_type(metric_key, metric_type):
     return metric_key in METRICS_BY_TYPE[metric_type]
 
 
-def count(endpoint):
+def count(endpoint, use_cache=True):
     """
     :param endpoint: Reference to the SonarQube platform object
     :type endpoint: Platform
     :returns: Count of public metrics
     :rtype: int
     """
-    if len(_OBJECTS) == 0:
-        search(endpoint, True)
+    with _CLASS_LOCK:
+        if len(_OBJECTS) == 0 or not use_cache:
+            search(endpoint, True)
     return len(_VISIBLE_OBJECTS)
