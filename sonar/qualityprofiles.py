@@ -340,27 +340,24 @@ class QualityProfile(sq.SqObject):
         """
 
         with self._projects_lock:
-            if self._projects is not None:
-                # Assume nobody changed QP during execution
-                self._projects_lock.release()
-                return self._projects
-            self._projects = []
-            params = {"key": self.key, "ps": 500}
-            page = 1
-            more = True
-            while more:
-                params["p"] = page
-                data = json.loads(self.get("qualityprofiles/projects", params=params).text)
-                util.logger.debug("Got QP %s data = %s", self.key, str(data))
-                self._projects += [p["key"] for p in data["results"]]
-                page += 1
-                if self.endpoint.version() >= (10, 0, 0):
-                    nb_pages = (data["paging"]["total"] + 500 - 1) // 500
-                    more = nb_pages >= page
-                else:
-                    more = data["more"]
+            if self._projects is None:
+                self._projects = []
+                params = {"key": self.key, "ps": 500}
+                page = 1
+                more = True
+                while more:
+                    params["p"] = page
+                    data = json.loads(self.get("qualityprofiles/projects", params=params).text)
+                    util.logger.debug("Got QP %s data = %s", self.key, str(data))
+                    self._projects += [p["key"] for p in data["results"]]
+                    page += 1
+                    if self.endpoint.version() >= (10, 0, 0):
+                        nb_pages = (data["paging"]["total"] + 500 - 1) // 500
+                        more = nb_pages >= page
+                    else:
+                        more = data["more"]
 
-            util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
+                util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
         return self._projects
 
     def used_by_project(self, project):
