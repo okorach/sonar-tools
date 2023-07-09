@@ -483,6 +483,12 @@ def count(endpoint=None):
 
 
 def get_list(endpoint, key_list=None, use_cache=True):
+    """
+    :return: List of Portfolios (all of them if key_list is None or empty)
+    :param key_list: List of portfolios keys to get, if None or empty all portfolios are returned
+    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+    :rtype: dict{<branchName>: <Branch>}
+    """
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             util.logger.info("Listing portfolios")
