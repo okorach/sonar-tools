@@ -46,6 +46,7 @@ _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefa
 
 _QP_LOCK = Lock()
 
+
 class QualityProfile(sq.SqObject):
     """
     Abstraction of the SonarQube "quality profile" concept
