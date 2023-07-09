@@ -245,6 +245,7 @@ class Project(components.Component):
         """
         :return: List of branches of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :type use_cache: bool
         :rtype: dict{<branchName>: <Branch>}
         """
         if not self._branches or not use_cache:
@@ -270,6 +271,7 @@ class Project(components.Component):
         """
         :return: List of pull requests of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+        :type use_cache: bool
         :rtype: list[PullRequest]
         """
         if self._pull_requests is None:
@@ -1088,6 +1090,7 @@ def get_list(endpoint, key_list=None, use_cache=True):
     :type endpoint: Platform
     :param key_list: List of portfolios keys to get, if None or empty all portfolios are returned
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+    :type use_cache: bool
     :return: the list of all quality profiles
     :rtype: dict{key: QualityProfile}
     """

@@ -453,6 +453,7 @@ def get_list(endpoint, use_cache=True):
     :param endpoint: Reference to the SonarQube platform
     :type endpoint: Platform
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+    :type use_cache: bool
     :return: the list of all quality profiles
     :rtype: dict{key: QualityProfile}
     """
