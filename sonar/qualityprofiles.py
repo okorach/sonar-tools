@@ -96,7 +96,7 @@ class QualityProfile(sq.SqObject):
         if not languages.exists(endpoint=endpoint, language=language):
             util.logger.error("Language '%s' does not exist, quality profile creation aborted")
             return None
-        util.logger.debug("Reading quality profile '%s'  of language '%s'", name, language)
+        util.logger.debug("Reading quality profile '%s' of language '%s'", name, language)
         key = get_id(name, language)
         if key in _OBJECTS:
             return _OBJECTS[key]
@@ -336,6 +336,7 @@ class QualityProfile(sq.SqObject):
         :return: dict result of the diff ("inLeft", "modified")
         :rtype: List[project_key]
         """
+        # TODO: Make this function thread safe
         if self._projects is not None:
             # Assume nobody changed QP during execution
             return self._projects
@@ -346,7 +347,7 @@ class QualityProfile(sq.SqObject):
         while more:
             params["p"] = page
             data = json.loads(self.get("qualityprofiles/projects", params=params).text)
-            util.logger.debug("Got QP data = %s", str(data))
+            util.logger.debug("Got QP %s data = %s", self.key, str(data))
             self._projects += [p["key"] for p in data["results"]]
             page += 1
             if self.endpoint.version() >= (10, 0, 0):
