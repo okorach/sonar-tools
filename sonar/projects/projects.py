@@ -241,13 +241,13 @@ class Project(components.Component):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def branches(self):
+    def branches(self, use_cache=True):
         """
         :return: List of branches of the project
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :rtype: dict{<branchName>: <Branch>}
         """
-        if not self._branches:
-            # Caching
+        if not self._branches or not use_cache:
             try:
                 self._branches = branches.get_list(self)
             except exceptions.UnsupportedOperation:
@@ -266,9 +266,10 @@ class Project(components.Component):
             util.logger.warning("Could not find main branch for %s", str(self))
         return None
 
-    def pull_requests(self):
+    def pull_requests(self, use_cache=True):
         """
         :return: List of pull requests of the project
+        :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :rtype: list[PullRequest]
         """
         if self._pull_requests is None:
@@ -1082,6 +1083,14 @@ def search(endpoint, params=None):
 
 
 def get_list(endpoint, key_list=None, use_cache=True):
+    """
+    :param endpoint: Reference to the SonarQube platform
+    :type endpoint: Platform
+    :param key_list: List of portfolios keys to get, if None or empty all portfolios are returned
+    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+    :return: the list of all quality profiles
+    :rtype: dict{key: QualityProfile}
+    """
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 and not use_cache:
             util.logger.info("Listing projects")
