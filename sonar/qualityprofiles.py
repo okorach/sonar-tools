@@ -44,7 +44,7 @@ _CHILDREN_KEY = "children"
 
 _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions")
 
-_QP_LOCK = None
+_QP_LOCK = Lock()
 
 class QualityProfile(sq.SqObject):
     """
@@ -70,7 +70,7 @@ class QualityProfile(sq.SqObject):
         self.nbr_rules = int(data["activeRuleCount"])  #: Number of rules in the quality profile
         self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])  #: Number of deprecated rules in the quality profile
 
-        (self._projects, self._projects_lock) = (None, None)
+        (self._projects, self._projects_lock) = (None, Lock())
         self.project_count = data.get("projectCount", None)  #: Number of projects using this quality profile
         self.parent_name = data.get("parentName", None)  #: Name of parent profile, or None if none
 
@@ -337,32 +337,29 @@ class QualityProfile(sq.SqObject):
         :return: dict result of the diff ("inLeft", "modified")
         :rtype: List[project_key]
         """
-        if self._projects_lock is None:
-            self._projects_lock = Lock()
 
-        self._projects_lock.acquire()
-        if self._projects is not None:
-            # Assume nobody changed QP during execution
-            self._projects_lock.release()
-            return self._projects
-        self._projects = []
-        params = {"key": self.key, "ps": 500}
-        page = 1
-        more = True
-        while more:
-            params["p"] = page
-            data = json.loads(self.get("qualityprofiles/projects", params=params).text)
-            util.logger.debug("Got QP %s data = %s", self.key, str(data))
-            self._projects += [p["key"] for p in data["results"]]
-            page += 1
-            if self.endpoint.version() >= (10, 0, 0):
-                nb_pages = (data["paging"]["total"] + 500 - 1) // 500
-                more = nb_pages >= page
-            else:
-                more = data["more"]
+        with self._projects_lock:
+            if self._projects is not None:
+                # Assume nobody changed QP during execution
+                self._projects_lock.release()
+                return self._projects
+            self._projects = []
+            params = {"key": self.key, "ps": 500}
+            page = 1
+            more = True
+            while more:
+                params["p"] = page
+                data = json.loads(self.get("qualityprofiles/projects", params=params).text)
+                util.logger.debug("Got QP %s data = %s", self.key, str(data))
+                self._projects += [p["key"] for p in data["results"]]
+                page += 1
+                if self.endpoint.version() >= (10, 0, 0):
+                    nb_pages = (data["paging"]["total"] + 500 - 1) // 500
+                    more = nb_pages >= page
+                else:
+                    more = data["more"]
 
-        util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
-        self._projects_lock.release()
+            util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
         return self._projects
 
     def used_by_project(self, project):
@@ -460,18 +457,11 @@ def get_list(endpoint):
     :return: the list of all quality profiles
     :rtype: dict{key: QualityProfile}
     """
-    if _QP_LOCK is None:
-        _QP_LOCK = Lock()
 
-    _QP_LOCK.acquire()
-    if len(_OBJECTS) == 0:
-        try:
+    with _QP_LOCK:
+        if len(_OBJECTS) == 0:
             # TODO: Don't assume no quality profile change since last search
             search(endpoint=endpoint)
-        except:
-            _QP_LOCK.release()
-            raise
-    _QP_LOCK.release()
     return _OBJECTS
 
 
