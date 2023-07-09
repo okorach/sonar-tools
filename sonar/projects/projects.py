@@ -26,7 +26,7 @@ import os
 import re
 import json
 from http import HTTPStatus
-from threading import Thread
+from threading import Thread, Lock
 from queue import Queue
 from requests.exceptions import HTTPError
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, exceptions
@@ -40,6 +40,7 @@ from sonar.audit import rules, severities
 import sonar.audit.problem as pb
 
 _OBJECTS = {}
+_CLASS_LOCK = Lock()
 
 MAX_PAGE_SIZE = 500
 _SEARCH_API = "projects/search"
@@ -1081,9 +1082,10 @@ def search(endpoint, params=None):
 
 
 def get_list(endpoint, key_list=None):
-    if key_list is None or len(key_list) == 0:
-        util.logger.info("Listing projects")
-        return search(endpoint=endpoint)
+    with _CLASS_LOCK:
+        if key_list is None or len(key_list) == 0:
+            util.logger.info("Listing projects")
+            return search(endpoint=endpoint)
     return {key: Project.get_object(endpoint, key) for key in util.csv_to_list(key_list)}
 
 

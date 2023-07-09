@@ -26,6 +26,7 @@
 import time
 import json
 from http import HTTPStatus
+from threading import Lock
 from requests.exceptions import HTTPError
 
 from sonar import aggregations, options, exceptions
@@ -36,6 +37,7 @@ import sonar.utilities as util
 from sonar.audit import rules
 
 _OBJECTS = {}
+_CLASS_LOCK = Lock()
 
 _LIST_API = "views/list"
 _SEARCH_API = "views/search"
@@ -481,12 +483,13 @@ def count(endpoint=None):
 
 
 def get_list(endpoint, key_list=None):
-    if key_list is None or len(key_list) == 0:
-        util.logger.info("Listing portfolios")
-        return search(endpoint=endpoint)
-    object_list = {}
-    for key in util.csv_to_list(key_list):
-        object_list[key] = Portfolio.get_object(endpoint, key)
+    with _CLASS_LOCK:
+        if key_list is None or len(key_list) == 0:
+            util.logger.info("Listing portfolios")
+            return search(endpoint=endpoint)
+        object_list = {}
+        for key in util.csv_to_list(key_list):
+            object_list[key] = Portfolio.get_object(endpoint, key)
     return object_list
 
 

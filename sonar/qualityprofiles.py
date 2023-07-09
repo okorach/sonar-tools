@@ -21,7 +21,7 @@
 import json
 from http import HTTPStatus
 from queue import Queue
-from threading import Thread
+from threading import Thread, Lock
 from requests import HTTPError
 import requests.utils
 from sonar import rules, languages
@@ -43,6 +43,8 @@ _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
 
 _IMPORTABLE_PROPERTIES = ("name", "language", "parentName", "isBuiltIn", "isDefault", "rules", "permissions")
+
+_CLASS_LOCK = Lock()
 
 
 class QualityProfile(sq.SqObject):
@@ -69,7 +71,7 @@ class QualityProfile(sq.SqObject):
         self.nbr_rules = int(data["activeRuleCount"])  #: Number of rules in the quality profile
         self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])  #: Number of deprecated rules in the quality profile
 
-        self._projects = None
+        (self._projects, self._projects_lock) = (None, Lock())
         self.project_count = data.get("projectCount", None)  #: Number of projects using this quality profile
         self.parent_name = data.get("parentName", None)  #: Name of parent profile, or None if none
 
@@ -336,27 +338,26 @@ class QualityProfile(sq.SqObject):
         :return: dict result of the diff ("inLeft", "modified")
         :rtype: List[project_key]
         """
-        # TODO: Make this function thread safe
-        if self._projects is not None:
-            # Assume nobody changed QP during execution
-            return self._projects
-        self._projects = []
-        params = {"key": self.key, "ps": 500}
-        page = 1
-        more = True
-        while more:
-            params["p"] = page
-            data = json.loads(self.get("qualityprofiles/projects", params=params).text)
-            util.logger.debug("Got QP %s data = %s", self.key, str(data))
-            self._projects += [p["key"] for p in data["results"]]
-            page += 1
-            if self.endpoint.version() >= (10, 0, 0):
-                nb_pages = (data["paging"]["total"] + 500 - 1) // 500
-                more = nb_pages >= page
-            else:
-                more = data["more"]
 
-        util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
+        with self._projects_lock:
+            if self._projects is None:
+                self._projects = []
+                params = {"key": self.key, "ps": 500}
+                page = 1
+                more = True
+                while more:
+                    params["p"] = page
+                    data = json.loads(self.get("qualityprofiles/projects", params=params).text)
+                    util.logger.debug("Got QP %s data = %s", self.key, str(data))
+                    self._projects += [p["key"] for p in data["results"]]
+                    page += 1
+                    if self.endpoint.version() >= (10, 0, 0):
+                        nb_pages = (data["paging"]["total"] + 500 - 1) // 500
+                        more = nb_pages >= page
+                    else:
+                        more = data["more"]
+
+                util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
         return self._projects
 
     def used_by_project(self, project):
@@ -454,9 +455,11 @@ def get_list(endpoint):
     :return: the list of all quality profiles
     :rtype: dict{key: QualityProfile}
     """
-    if len(_OBJECTS) == 0:
-        # TODO: Don't assume no quality profile change since last search
-        search(endpoint=endpoint)
+
+    with _CLASS_LOCK:
+        if len(_OBJECTS) == 0:
+            # TODO: Don't assume no quality profile change since last search
+            search(endpoint=endpoint)
     return _OBJECTS
 
 
@@ -555,8 +558,7 @@ def get_object(name, language, endpoint=None):
     :return: The quality profile object, of None if not found
     :rtype: QualityProfile or None
     """
-    if len(_OBJECTS) == 0:
-        get_list(endpoint)
+    get_list(endpoint)
     fmt = _format(name, language)
     if fmt not in _MAP:
         return None

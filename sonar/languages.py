@@ -20,12 +20,14 @@
 #
 
 import json
+from threading import Lock
 from sonar import sqobject, rules
 
 #: List of language APIs
 APIS = {"list": "languages/list"}
 
 _OBJECTS = {}
+_CLASS_LOCK = Lock()
 
 
 class Language(sqobject.SqObject):
@@ -84,8 +86,9 @@ def get_list(endpoint):
     :return: List of languages
     :rtype: dict{<language_key>: <language_name>}
     """
-    if len(_OBJECTS) == 0:
-        read_list(endpoint)
+    with _CLASS_LOCK:
+        if len(_OBJECTS) == 0:
+            read_list(endpoint)
     return _OBJECTS
 
 
