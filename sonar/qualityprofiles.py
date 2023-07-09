@@ -70,7 +70,7 @@ class QualityProfile(sq.SqObject):
         self.nbr_rules = int(data["activeRuleCount"])  #: Number of rules in the quality profile
         self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])  #: Number of deprecated rules in the quality profile
 
-        self._projects = None
+        (self._projects, self._projects_lock) = (None, None)
         self.project_count = data.get("projectCount", None)  #: Number of projects using this quality profile
         self.parent_name = data.get("parentName", None)  #: Name of parent profile, or None if none
 
@@ -337,9 +337,13 @@ class QualityProfile(sq.SqObject):
         :return: dict result of the diff ("inLeft", "modified")
         :rtype: List[project_key]
         """
-        # TODO: Make this function thread safe
+        if self._projects_lock is None:
+            self._projects_lock = Lock()
+
+        self._projects_lock.acquire()
         if self._projects is not None:
             # Assume nobody changed QP during execution
+            self._projects_lock.release()
             return self._projects
         self._projects = []
         params = {"key": self.key, "ps": 500}
@@ -358,6 +362,7 @@ class QualityProfile(sq.SqObject):
                 more = data["more"]
 
         util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
+        self._projects_lock.release()
         return self._projects
 
     def used_by_project(self, project):
@@ -456,7 +461,7 @@ def get_list(endpoint):
     :rtype: dict{key: QualityProfile}
     """
     if _QP_LOCK is None:
-        _QP_LOCK = Thread.Lock()
+        _QP_LOCK = Lock()
 
     _QP_LOCK.acquire()
     if len(_OBJECTS) == 0:
