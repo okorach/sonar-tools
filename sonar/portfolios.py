@@ -26,8 +26,8 @@
 import time
 import json
 from http import HTTPStatus
-from requests.exceptions import HTTPError
 from threading import Lock
+from requests.exceptions import HTTPError
 
 from sonar import aggregations, options, exceptions
 import sonar.permissions.permissions as perms

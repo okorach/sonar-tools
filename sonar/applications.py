@@ -20,8 +20,8 @@
 
 import json
 from http import HTTPStatus
-from requests.exceptions import HTTPError
 from threading import Lock
+from requests.exceptions import HTTPError
 from sonar import components, exceptions, settings
 from sonar.projects import projects, branches
 from sonar.permissions import permissions, application_permissions
