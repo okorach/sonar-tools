@@ -448,7 +448,7 @@ def search(endpoint, params=None):
     )
 
 
-def get_list(endpoint):
+def get_list(endpoint, use_cache=True):
     """
     :param endpoint: Reference to the SonarQube platform
     :type endpoint: Platform
@@ -457,8 +457,7 @@ def get_list(endpoint):
     """
 
     with _CLASS_LOCK:
-        if len(_OBJECTS) == 0:
-            # TODO: Don't assume no quality profile change since last search
+        if len(_OBJECTS) == 0 and not use_cache:
             search(endpoint=endpoint)
     return _OBJECTS
 

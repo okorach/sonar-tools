@@ -408,10 +408,10 @@ def search(endpoint, params=None):
     )
 
 
-def get_list(endpoint, key_list=None):
+def get_list(endpoint, key_list=None, use_cache=True):
     """Gets a list of Application objects"""
     with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0:
+        if key_list is None or len(key_list) == 0 or not use_cache:
             util.logger.info("Listing applications")
             return search(endpoint=endpoint)
         object_list = {}

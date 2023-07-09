@@ -1081,9 +1081,9 @@ def search(endpoint, params=None):
     )
 
 
-def get_list(endpoint, key_list=None):
+def get_list(endpoint, key_list=None, use_cache=True):
     with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0:
+        if key_list is None or len(key_list) == 0 and not use_cache:
             util.logger.info("Listing projects")
             return search(endpoint=endpoint)
     return {key: Project.get_object(endpoint, key) for key in util.csv_to_list(key_list)}

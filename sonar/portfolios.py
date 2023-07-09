@@ -482,9 +482,9 @@ def count(endpoint=None):
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
 
-def get_list(endpoint, key_list=None):
+def get_list(endpoint, key_list=None, use_cache=True):
     with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0:
+        if key_list is None or len(key_list) == 0 or not use_cache:
             util.logger.info("Listing portfolios")
             return search(endpoint=endpoint)
         object_list = {}
