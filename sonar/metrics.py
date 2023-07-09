@@ -19,6 +19,7 @@
 #
 
 import json
+from threading import Lock
 from sonar import sqobject, utilities
 
 #: List of what can be considered the main metrics
@@ -62,6 +63,7 @@ APIS = {
 __MAX_PAGE_SIZE = 500
 
 _OBJECTS = {}
+_CLASS_LOCK = Lock()
 _VISIBLE_OBJECTS = {}
 
 
@@ -140,24 +142,27 @@ def is_a_rating(metric_key):
     return is_of_type(metric_key, "RATING")
 
 
-def search(endpoint, show_hidden_metrics=False):
+def search(endpoint, show_hidden_metrics=False, use_cache=True):
     """
     :param endpoint: Reference to the SonarQube platform object
     :type endpoint: Platform
     :param show_hidden_metrics: Whether to also include hidden (private) metrics
     :type show_hidden_metrics: bool
+    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+    :type use_cache: bool
     :return: List of metrics
     :rtype: dict of Metric
     """
-    if len(_OBJECTS) == 0:
-        m_list = {}
-        page, nb_pages = 1, 1
-        while page <= nb_pages:
-            data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
-            for m in data["metrics"]:
-                m_list[m["key"]] = Metric(key=m["key"], endpoint=endpoint, data=m)
-            nb_pages = utilities.nbr_pages(data)
-            page += 1
+    with _CLASS_LOCK:
+        if len(_OBJECTS) == 0 or not use_cache:
+            m_list = {}
+            page, nb_pages = 1, 1
+            while page <= nb_pages:
+                data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
+                for m in data["metrics"]:
+                    m_list[m["key"]] = Metric(key=m["key"], endpoint=endpoint, data=m)
+                nb_pages = utilities.nbr_pages(data)
+                page += 1
 
     return _OBJECTS if show_hidden_metrics else _VISIBLE_OBJECTS
 
