@@ -82,8 +82,9 @@ def get_list(endpoint, use_cache=True):
     """Gets the list of languages existing on the SonarQube platform
     Unlike read_list, get_list() is using a local cache if available (so no API call)
     :param endpoint: Reference of the SonarQube platform
-    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :type endpoint: Platform
+    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+    :type use_cache: bool
     :return: List of languages
     :rtype: dict{<language_key>: <language_name>}
     """
