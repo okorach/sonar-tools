@@ -1175,7 +1175,9 @@ def export(endpoint, key_list=None, full=False, threads=8):
     :return: list of projects
     :rtype: dict{key: Project}
     """
-    qualityprofiles.get_list(endpoint)
+    for qp in qualityprofiles.get_list(endpoint).values():
+        qp.projects()
+
     q = Queue(maxsize=0)
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
         q.put(p)
