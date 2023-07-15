@@ -206,9 +206,9 @@ class Project(components.Component):
             # Starting from 9.2 project last analysis date takes into account branches and PR
             return self._branches_last_analysis
 
-        util.logger.debug("Branches = %s", str(self.branches()))
-        util.logger.debug("PR = %s", str(self.pull_requests()))
-        for b in self.branches() + self.pull_requests():
+        util.logger.debug("Branches = %s", str(self.branches().values()))
+        util.logger.debug("PR = %s", str(self.pull_requests().values()))
+        for b in self.branches().values() + self.pull_requests().values():
             if b.last_analysis() is None:
                 continue
             b_ana_date = b.last_analysis()
@@ -226,7 +226,7 @@ class Project(components.Component):
         if self.endpoint.edition() == "community":
             self._ncloc_with_branches = super().loc()
         else:
-            self._ncloc_with_branches = max([b.loc() for b in self.branches() + self.pull_requests()])
+            self._ncloc_with_branches = max([b.loc() for b in self.branches().values() + self.pull_requests().values()])
         return self._ncloc_with_branches
 
     def get_measures(self, metrics_list):
@@ -243,7 +243,7 @@ class Project(components.Component):
 
     def branches(self, use_cache=True):
         """
-        :return: List of branches of the project
+        :return: Dict of branches of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :type use_cache: bool
         :rtype: dict{<branchName>: <Branch>}
@@ -252,7 +252,7 @@ class Project(components.Component):
             try:
                 self._branches = branches.get_list(self)
             except exceptions.UnsupportedOperation:
-                self._branches = []
+                self._branches = {}
         return self._branches
 
     def main_branch(self):
@@ -260,7 +260,7 @@ class Project(components.Component):
         :return: Main branch of the project
         :rtype: Branch
         """
-        for b in self.branches():
+        for b in self.branches().values():
             if b.is_main():
                 return b
         if self.endpoint.edition() != "community":
@@ -272,10 +272,13 @@ class Project(components.Component):
         :return: List of pull requests of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
         :type use_cache: bool
-        :rtype: list[PullRequest]
+        :rtype: dict{PR_ID: PullRequest}
         """
-        if self._pull_requests is None:
-            self._pull_requests = pull_requests.get_list(self)
+        if self._pull_requests is None or not use_cache:
+            try:
+                self._pull_requests = pull_requests.get_list(self)
+            except exceptions.UnsupportedOperation:
+                self._pull_requests = {}
         return self._pull_requests
 
     def delete(self):
@@ -389,7 +392,7 @@ class Project(components.Component):
         util.logger.debug("Auditing %s branches", str(self))
         problems = []
         main_br_count = 0
-        for branch in self.branches():
+        for branch in self.branches().values():
             problems += branch.audit(audit_settings)
             if branch.name in ("main", "master"):
                 main_br_count += 1
@@ -411,7 +414,7 @@ class Project(components.Component):
             util.logger.debug("Auditing of pull request last analysis age is disabled, skipping...")
             return []
         problems = []
-        for pr in self.pull_requests():
+        for pr in self.pull_requests().values():
             problems += pr.audit(audit_settings)
         return problems
 
@@ -627,10 +630,10 @@ class Project(components.Component):
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
-        tgt_branches = another_project.branches()
+        tgt_branches = another_project.branches().values()
         report = []
         counters = {}
-        for b_src in self.branches():
+        for b_src in self.branches().values():
             for b_tgt in tgt_branches:
                 if b_src.name == b_tgt.name:
                     (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
@@ -648,8 +651,8 @@ class Project(components.Component):
         my_branches = self.branches()
         report = []
         counters = {}
-        for b_src in my_branches:
-            for b_tgt in my_branches:
+        for b_src in my_branches.values():
+            for b_tgt in my_branches.values():
                 if b_src.name == b_tgt.name:
                     continue
                 (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
@@ -715,7 +718,7 @@ class Project(components.Component):
 
     def __get_branch_export(self):
         branch_data = {}
-        my_branches = self.branches()
+        my_branches = self.branches().values()
         for branch in my_branches:
             exp = branch.export(full_export=False)
             if len(my_branches) == 1 and branch.is_main() and len(exp) <= 1:
@@ -1095,7 +1098,7 @@ def get_list(endpoint, key_list=None, use_cache=True):
     :rtype: dict{key: QualityProfile}
     """
     with _CLASS_LOCK:
-        if key_list is None or len(key_list) == 0 and not use_cache:
+        if key_list is None or len(key_list) == 0 or not use_cache:
             util.logger.info("Listing projects")
             return search(endpoint=endpoint)
     return {key: Project.get_object(endpoint, key) for key in util.csv_to_list(key_list)}

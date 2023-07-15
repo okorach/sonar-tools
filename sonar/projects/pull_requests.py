@@ -25,11 +25,13 @@
 
 import json
 import requests.utils
-from sonar import measures, components, sqobject
+from sonar import measures, components, sqobject, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
 _OBJECTS = {}
+
+_UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
 
 class PullRequest(components.Component):
@@ -104,11 +106,19 @@ def get_object(pull_request_key, project, data=None):
 
 
 def get_list(project):
+    """Retrieves the list of pull requests of a project
+
+    :param Project project: Project to get PRs from
+    :raises UnsupportedOperation: PRs not supported in Community Edition
+    :return: List of project PRs
+    :rtype: dict{PR_ID: PullRequest}
+    """
     if project.endpoint.edition() == "community":
-        util.logger.debug("Pull requests not available in Community Edition")
-        return []
+        util.logger.debug(_UNSUPPORTED_IN_CE)
+        raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+
     data = json.loads(project.get("project_pull_requests/list", params={"project": project.key}).text)
-    pr_list = []
+    pr_list = {}
     for pr in data["pullRequests"]:
-        pr_list.append(get_object(pr["key"], project, pr))
+        pr_list[pr["key"]] = get_object(pr["key"], project, pr)
     return pr_list

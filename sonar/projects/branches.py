@@ -404,12 +404,12 @@ def uuid(project_key, branch_name):
 
 
 def get_list(project):
-    """Retrieves a branch
+    """Retrieves the list of branches of a project
 
     :param Project project: Project the branch belongs to
     :raises UnsupportedOperation: Branches not supported in Community Edition
     :return: List of project branches
-    :rtype: list [Branch]
+    :rtype: dict{branch_name: Branch}
     """
     if project.endpoint.edition() == "community":
         util.logger.debug(_UNSUPPORTED_IN_CE)
@@ -417,7 +417,7 @@ def get_list(project):
 
     util.logger.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
-    return [Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})]
+    return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 
 
 def exists(endpoint, branch_name, project_key):
