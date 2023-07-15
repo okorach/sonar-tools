@@ -459,7 +459,7 @@ def get_list(endpoint, use_cache=True):
     """
 
     with _CLASS_LOCK:
-        if len(_OBJECTS) == 0 and not use_cache:
+        if len(_OBJECTS) == 0 or not use_cache:
             search(endpoint=endpoint)
     return _OBJECTS
 
