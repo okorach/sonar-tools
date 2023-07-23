@@ -135,6 +135,13 @@ do
         echo "IT $env sonar-projects-export" | tee -a $IT_LOG_FILE
         sonar-projects-export
     fi
+
+    echo "IT $env sonar-findings-export USER export" | tee -a $IT_LOG_FILE
+    f1="$IT_ROOT/findings-$env-admin.csv"
+    sonar-findings-export -v DEBUG -f $f1 -k okorach_audio-video-tools,okorach_sonar-tools
+    . ${cur_dir}/sonar-env.sh $env-user
+    f2="$IT_ROOT/findings-$env-user.csv"
+    sonar-findings-export -v DEBUG -f $f2 -k okorach_audio-video-tools,okorach_sonar-tools
 done
 
 echo "Restore sonar-tools last released version"
@@ -162,7 +169,7 @@ do
         echo "==========================" | tee -a $IT_LOG_FILE
         sort $root-rel.csv >$root-rel.sorted.csv
         sort $root-unrel.csv >$root-unrel.sorted.csv
-        diff $root-rel.csv $root-unrel.csv | tee -a $IT_LOG_FILE || echo "" 
+        diff $root-rel.sorted.csv $root-unrel.sorted.csv | tee -a $IT_LOG_FILE || echo "" 
     done
     for f in config
     do
@@ -172,6 +179,12 @@ do
         echo "==========================" | tee -a $IT_LOG_FILE
         diff $root-rel.json $root-unrel.json | tee -a $IT_LOG_FILE || echo "" 
     done
+    echo "==========================" | tee -a $IT_LOG_FILE
+    echo findings-$env admin vs user diff                 | tee -a $IT_LOG_FILE
+    echo "==========================" | tee -a $IT_LOG_FILE
+    f1="$IT_ROOT/findings-$env-admin.csv"
+    f2="$IT_ROOT/findings-$env-user.csv"
+    diff $f1 $f2 | tee -a $IT_LOG_FILE || echo ""
 done
 
 echo "====================================="
