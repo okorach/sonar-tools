@@ -45,6 +45,7 @@ _CLASS_LOCK = Lock()
 MAX_PAGE_SIZE = 500
 _SEARCH_API = "projects/search"
 _CREATE_API = "projects/create"
+_NAV_API = "navigation/component"
 PRJ_QUALIFIER = "TRK"
 APP_QUALIFIER = "APP"
 
@@ -83,10 +84,18 @@ class Project(components.Component):
         """
         if key in _OBJECTS:
             return _OBJECTS[key]
-        data = json.loads(endpoint.get(_SEARCH_API, params={"projects": key}).text)
-        if len(data["components"]) == 0:
-            raise exceptions.ObjectNotFound(key, f"Project key {key} not found")
-        return cls.load(endpoint, data["components"][0])
+        try:
+            data = json.loads(endpoint.get(_SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
+            if len(data["components"]) == 0:
+                raise exceptions.ObjectNotFound(key, f"Project key {key} not found")
+            return cls.load(endpoint, data["components"][0])
+        except HTTPError as e:
+            if e.response.status_code != HTTPStatus.FORBIDDEN:
+                raise
+            data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
+            if "errors" in data:
+                raise exceptions.ObjectNotFound(key, f"Project key {key} not found")
+            return cls.load(endpoint, data)
 
     @classmethod
     def load(cls, endpoint, data):
@@ -175,6 +184,8 @@ class Project(components.Component):
         self._visibility = data["visibility"]
         if "lastAnalysisDate" in data:
             self._last_analysis = util.string_to_date(data["lastAnalysisDate"])
+        elif "analysisDate" in data:
+            self._last_analysis = util.string_to_date(data["analysisDate"])
         else:
             self._last_analysis = None
         self.revision = data.get("revision", None)
