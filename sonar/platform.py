@@ -409,6 +409,8 @@ class Platform:
         :type webhooks_data: dict
         :return: Nothing
         """
+        if webhooks_data is None:
+            return
         current_wh = self.webhooks()
         # FIXME: Handle several webhooks with same name
         current_wh_names = [wh.name for wh in current_wh.values()]
