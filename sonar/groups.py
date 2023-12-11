@@ -70,8 +70,8 @@ class Group(sq.SqObject):
         data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
         if data is None:
             raise exceptions.UnsupportedOperation(f"Group '{name}' not found.")
-        # SonarQube 10 compatibility: id field is dropped, use name instead
-        key = data.get("id", data.get("name"))
+        # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
+        key = data.get("id", data["name"])
         if key in _OBJECTS:
             return _OBJECTS[key]
         return cls(endpoint, name, data=data)
