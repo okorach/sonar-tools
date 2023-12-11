@@ -139,8 +139,8 @@ def main():
             if not projects.exists(target_key, endpoint=source_env):
                 raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
-            src_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
-            tgt_branch = Branch.get_object(projects.Project.get_object(target_key, source_env), target_branch)
+            src_branch = Branch.get_object(projects.Project.get_object(key=source_key, endpoint=source_env), source_branch)
+            tgt_branch = Branch.get_object(projects.Project.get_object(key=target_key, endpoint=source_env), target_branch)
             (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
 
         elif target_url is not None and target_key is not None:

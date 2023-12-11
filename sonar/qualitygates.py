@@ -97,7 +97,8 @@ class QualityGate(sq.SqObject):
         :return: the QualityGate object
         :rtype: QualityGate or None
         """
-        o = _OBJECTS.get(data["id"])
+        # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
+        o = _OBJECTS.get(data.get("id", data["name"]))
         if not o:
             o = cls(data["name"], endpoint, data=data)
         o._json = data
