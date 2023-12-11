@@ -50,8 +50,8 @@ _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-cen
 
 LTS = None
 LATEST = None
-_HARDCODED_LTS = (8, 9, 9)
-_HARDCODED_LATEST = (9, 5, 0)
+_HARDCODED_LTS = (9, 9, 3)
+_HARDCODED_LATEST = (10, 3, 0)
 
 
 class Platform:
