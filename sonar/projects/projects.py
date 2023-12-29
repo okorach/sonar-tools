@@ -29,7 +29,7 @@ from http import HTTPStatus
 from threading import Thread, Lock
 from queue import Queue
 from requests.exceptions import HTTPError
-from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, exceptions
+from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, exceptions, syncer
 import sonar.permissions.permissions as perms
 from sonar.projects import pull_requests, branches
 from sonar.findings import issues, hotspots
@@ -632,6 +632,20 @@ class Project(components.Component):
 
         return findings_list
 
+    def get_hotspots(self):
+        """Returns a project main branch list of hotspots
+
+        :return: dict of Hotspots, with hotspot key as key
+        :rtype: dict{key: Hotspot}
+        """
+        return hotspots.search(
+            endpoint=self.endpoint,
+            params={
+                "projectKey": self.key,
+                "additionalFields": "comments",
+            },
+        )
+
     def sync(self, another_project, sync_settings):
         """Syncs project issues with another project
 
@@ -641,15 +655,36 @@ class Project(components.Component):
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
-        tgt_branches = another_project.branches().values()
-        report = []
-        counters = {}
-        for b_src in self.branches().values():
-            for b_tgt in tgt_branches:
-                if b_src.name == b_tgt.name:
-                    (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
-                    report += tmp_report
-                    counters = util.dict_add(counters, tmp_counts)
+        if self.endpoint.edition() == "community":
+            report, counters = [], {}
+            util.logger.info("Syncing %s issues", str(self))
+            (report, counters) = syncer.sync_lists(
+                self.get_issues(),
+                another_project.get_issues(),
+                self,
+                another_project,
+                sync_settings=sync_settings,
+            )
+            util.logger.info("Syncing %s issues", str(self))
+            (tmp_report, tmp_counts) = syncer.sync_lists(
+                self.get_hotspots(),
+                another_project.get_hotspots(),
+                self,
+                another_project,
+                sync_settings=sync_settings,
+            )
+            report += tmp_report
+            counters = util.dict_add(counters, tmp_counts)
+        else:
+            tgt_branches = another_project.branches().values()
+            report = []
+            counters = {}
+            for b_src in self.branches().values():
+                for b_tgt in tgt_branches:
+                    if b_src.name == b_tgt.name:
+                        (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
+                        report += tmp_report
+                        counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
     def sync_branches(self, sync_settings):

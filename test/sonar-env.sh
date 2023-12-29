@@ -13,7 +13,15 @@ case $1 in
         export SONAR_HOST_URL=$SONAR_LTS_URL
         export SONAR_TOKEN=$SONAR_LTS_USER_TOKEN
         ;;
+    lts-ce-user)
+        export SONAR_HOST_URL=$SONAR_LTS_URL
+        export SONAR_TOKEN=$SONAR_LTS_USER_TOKEN
+        ;;
     latest-user)
+        export SONAR_HOST_URL=$SONAR_LATEST_URL
+        export SONAR_TOKEN=$SONAR_LATEST_USER_TOKEN
+        ;;
+    latest-ce-user)
         export SONAR_HOST_URL=$SONAR_LATEST_URL
         export SONAR_TOKEN=$SONAR_LATEST_USER_TOKEN
         ;;

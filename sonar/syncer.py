@@ -177,6 +177,16 @@ def __sync_findings_list(src_findings, tgt_findings, settings):
 
 def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings=None):
     interesting_src_findings = {}
+    if len(src_findings) == 0 or len(tgt_findings) == 0:
+        util.logger.info("source or target list of findings to sync empty, skipping...")
+        counters = {
+            "nb_to_sync": 0,
+            "nb_applies": 0,
+            "nb_approx_match": 0,
+            "nb_tgt_has_changelog": 0,
+            "nb_multiple_matches": 0,
+        }
+        return ([], counters)
     name = __name(list(src_findings.values())[0])
     util.logger.info(
         "Syncing %d %ss from %s into %d %ss from %s",
@@ -189,7 +199,7 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
     )
     for key1, finding in src_findings.items():
         if not (finding.has_changelog() or finding.has_comments()):
-            util.logger.debug("%s has no changelog or comments, skipped in sync", str(finding))
+            util.logger.info("%s has no changelog or comments, skipped in sync", str(finding))
             continue
         if finding.is_closed():
             util.logger.info(
@@ -204,9 +214,10 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
             sync_settings = {}
         if sync_settings.get(SYNC_SERVICE_ACCOUNTS, None) is None:
             sync_settings[SYNC_SERVICE_ACCOUNTS] = [syncer]
-        if len(modifiers) == 1 and modifiers[0] == syncer:
+
+        if len(modifiers) == 1 and list(modifiers)[0] == syncer:
             util.logger.info(
-                "%s is has only been changed by %s, so it will not be synchronized despite having a changelog",
+                "%s has only been changed by %s, so it will not be synchronized despite having a changelog",
                 str(finding),
                 syncer,
             )

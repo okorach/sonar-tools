@@ -360,13 +360,13 @@ class Issue(findings.Finding):
         """
         :meta private:
         """
-        return super.strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
+        return super().strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
     def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
         """
         :meta private:
         """
-        return super.almost_identical_to(another_finding, ignore_component, **kwargs) and (
+        return super().almost_identical_to(another_finding, ignore_component, **kwargs) and (
             self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False)
         )
 
