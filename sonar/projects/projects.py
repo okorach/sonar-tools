@@ -82,8 +82,8 @@ class Project(components.Component):
         :return: The Project
         :rtype: Project
         """
-        if key in _OBJECTS:
-            return _OBJECTS[key]
+        if endpoint.url in _OBJECTS and key in _OBJECTS[endpoint.url]:
+            return _OBJECTS[endpoint.url][key]
         try:
             data = json.loads(endpoint.get(_SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             if len(data["components"]) == 0:
@@ -108,8 +108,8 @@ class Project(components.Component):
         :rtype: Project
         """
         key = data["key"]
-        if key in _OBJECTS:
-            o = _OBJECTS[key]
+        if endpoint.url in _OBJECTS and key in _OBJECTS[endpoint.url]:
+            o = _OBJECTS[endpoint.url][key]
         else:
             o = cls(endpoint, key)
         o.reload(data)
@@ -145,7 +145,9 @@ class Project(components.Component):
         self._binding = {"has_binding": True, "binding": None}
         self._new_code = None
         super().__init__(key, endpoint)
-        _OBJECTS[key] = self
+        if endpoint.url not in _OBJECTS:
+            _OBJECTS[endpoint.url] = {}
+        _OBJECTS[endpoint.url][key] = self
         util.logger.debug("Created object %s", str(self))
 
     def __str__(self):
@@ -164,7 +166,7 @@ class Project(components.Component):
         """
         data = json.loads(self.get(_SEARCH_API, params={"projects": self.key}).text)
         if len(data["components"]) == 0:
-            _OBJECTS.pop(self.uuid(), None)
+            _OBJECTS[self.endpoint.url].pop(self.uuid(), None)
             raise exceptions.ObjectNotFound(self.key, f"Project key {self.key} not found")
         return self.reload(data["components"][0])
 
@@ -301,7 +303,7 @@ class Project(components.Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         util.logger.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS)
+        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS[self.endpoint.url])
         util.logger.info("Successfully deleted %s - %d LoCs", str(self), loc)
         return ok
 
@@ -1148,13 +1150,6 @@ def get_list(endpoint, key_list=None, use_cache=True):
             util.logger.info("Listing projects")
             return search(endpoint=endpoint)
     return {key: Project.get_object(endpoint, key) for key in util.csv_to_list(key_list)}
-
-
-def key_obj(key_or_obj):
-    if isinstance(key_or_obj, str):
-        return (key_or_obj, _OBJECTS.get(key_or_obj, None))
-    else:
-        return (key_or_obj.key, key_or_obj)
 
 
 def __audit_thread(queue, results, audit_settings, bindings):
