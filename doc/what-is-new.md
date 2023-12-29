@@ -1,3 +1,14 @@
+# Version 2.8
+
+- Additional compatibility with SonarQube 10+
+- Ability to export findings (issues) without Global Sys Admin permission (only Project Browse permission needed)
+- More thread safety on metrics manipulation
+- Hardening
+
+# Version 2.7.1
+
+- Hardening
+
 # Version 2.7
 
 - Compatibility with SonarQube 10+
