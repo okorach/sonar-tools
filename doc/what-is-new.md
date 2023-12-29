@@ -1,3 +1,7 @@
+# Version 2.8.1
+
+- Fixed several problems on findings (issues) sync on Community Edition
+
 # Version 2.8
 
 - Additional compatibility with SonarQube 10+
