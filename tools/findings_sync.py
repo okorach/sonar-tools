@@ -182,6 +182,8 @@ def main():
 
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
+    except exceptions.UnsupportedOperation as e:
+        util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
 
 
 if __name__ == "__main__":
