@@ -1,6 +1,10 @@
 # Version 2.8.1
 
 - Fixed several problems on findings (issues) sync on Community Edition
+- Fixed failure on **sonar-loc** and **sonar-measures-export** with recent versions of **sonar-tools**
+  with SonarQube Developer Edition, Enterprise Edition and DataCenter edition, when exporting
+  LoC (`ncloc`) or Last Analysis Date
+
 
 # Version 2.8
 
