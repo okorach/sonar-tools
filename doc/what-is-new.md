@@ -4,7 +4,7 @@
 - Fixed failure on **sonar-loc** and **sonar-measures-export** with recent versions of **sonar-tools**
   with SonarQube Developer Edition, Enterprise Edition and DataCenter edition, when exporting
   LoC (`ncloc`) or Last Analysis Date
-
+- **sonar-issues-sync** is deprecated. Migrated doc of **sonar-issues-sync** to **sonar-findings-sync**
 
 # Version 2.8
 
