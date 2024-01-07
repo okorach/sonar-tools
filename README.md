@@ -12,7 +12,7 @@ Command line tools to help in SonarQube administration tasks.
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 
-**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company editing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarcloud.io) and [SonarLint](https://sonarlint.org) products
+**DISCLAIMER**: This software is community software. None of the tools it contains are neither supported nor endorsed by SonarSource S.A. Switzerland, the company publishing the [SonarQube](https://www.sonarqube.org/), [SonarCloud](https://sonarcloud.io) and [SonarLint](https://sonarlint.org) products
 
 The following utilities are available:
 - [sonar-audit](#sonar-audit): Audits a SonarQube instance, and reports all the problems
@@ -306,7 +306,7 @@ When tools complete successfully they return exit code 0. En case of fatal error
 
 # License
 
-Copyright (C) 2019-2023 Olivier Korach
+Copyright (C) 2019-2024 Olivier Korach
 mailto:olivier.korach AT gmail DOT com
 
 This program is free software; you can redistribute it and/or
