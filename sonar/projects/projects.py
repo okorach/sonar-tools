@@ -221,7 +221,7 @@ class Project(components.Component):
 
         util.logger.debug("Branches = %s", str(self.branches().values()))
         util.logger.debug("PR = %s", str(self.pull_requests().values()))
-        for b in self.branches().values() + self.pull_requests().values():
+        for b in list(self.branches().values()) + list(self.pull_requests().values()):
             if b.last_analysis() is None:
                 continue
             b_ana_date = b.last_analysis()
@@ -239,7 +239,7 @@ class Project(components.Component):
         if self.endpoint.edition() == "community":
             self._ncloc_with_branches = super().loc()
         else:
-            self._ncloc_with_branches = max([b.loc() for b in self.branches().values() + self.pull_requests().values()])
+            self._ncloc_with_branches = max([b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values())])
         return self._ncloc_with_branches
 
     def get_measures(self, metrics_list):
