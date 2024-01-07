@@ -5,6 +5,7 @@
   with SonarQube Developer Edition, Enterprise Edition and DataCenter edition, when exporting
   LoC (`ncloc`) or Last Analysis Date
 - **sonar-issues-sync** is deprecated. Migrated doc of **sonar-issues-sync** to **sonar-findings-sync**
+- Added Copyright (c) 2024
 
 # Version 2.8
 
