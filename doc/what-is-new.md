@@ -1,4 +1,4 @@
-# Version 2.8.1
+# Version 2.8.1 - Jan 2024
 
 - Fixed several problems on findings (issues) sync on Community Edition
 - Fixed failure on **sonar-loc** and **sonar-measures-export** with recent versions of **sonar-tools**
