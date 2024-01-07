@@ -21,7 +21,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-loc](#sonar-loc): Computes lines of code per project and in total, as they would be coputed by the license
 - [sonar-measures-export](#sonar-measures-export): Exports measures/metrics of one, several or all projects of the instance in CSV
 - [sonar-findings-export](#sonar-findings-export) (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
-- [sonar-issues-sync](#sonar-issues-sync): Synchronizes issue changelog between branches, projects or even SonarQube instances
+- [sonar-findings-sync](#sonar-findings-sync): Synchronizes issues and hotspots changelog between branches, projects or even SonarQube instances (formerly **sonar-issues-sync**, now deprecated)
 - [sonar-projects-export](#sonar-projects-export): Exports all projects from a SonarQube instance (EE and higher)
 - [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
 - [sonar-config](#sonar-config): Exports or Imports a SonarQube platform configuration to/from configuration as code file (JSON file).
@@ -65,10 +65,10 @@ See common [error exit codes](#exit-codes) at the bottom of this page
 `sonar-audit` allows to audit a SonarQube instance and output warning logs for all anomalies found.
 See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-audit.md) for details
 
-# <a name="sonar-issues-sync"></a>sonar-issues-sync
+# <a name="sonar-findings-sync"></a>sonar-findings-sync
 
-`sonar-issues-sync` allows to synchronizes issue changelog (false positives, won't fix, issue severity or type change, tags and comments) between branches, projects or SonarQube instances.
-See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-issues-sync.md) for details
+`sonar-findings-sync` allows to synchronizes issues and hotspots changelog (false positives, won't fix, issue severity or type change, review status, tags and comments) between branches, projects or SonarQube instances.
+See [complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-findings-sync.md) for details
 
 # <a name="sonar-housekeeper"></a>sonar-housekeeper
 

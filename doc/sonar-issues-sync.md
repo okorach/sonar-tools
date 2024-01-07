@@ -1,18 +1,18 @@
-# <a name="sonar-issues-sync"></a>sonar-issues-sync
+# <a name="sonar-findings-sync"></a>sonar-findings-sync (formerly sonar-issues-sync)
 
-`sonar-issues-sync` synchronizes issues changelog between branches, projects within a same SonarQube instance or across different SonarQube instances
+`sonar-findings-sync` synchronizes issues and hotspots changelog between branches, projects within a same SonarQube instance or across different SonarQube instances
 
 ## Requirements and Installation
 
-`sonar-issues-sync` is installed through the **sonar-tools** [general installation](../README.md#install)
+`sonar-findings-sync` is installed through the **sonar-tools** [general installation](../README.md#install)
 
 ## Common command line parameters
 
-`sonar-issues-sync` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
+`sonar-findings-sync` accepts all the **sonar-tools** [common parameters](../README.md#common-params)
 
 ## Usage
 
-`sonar-issues-sync --login <user> -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--nocomment] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
+`sonar-findings-sync --login <user> -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--nocomment] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
 
 - `--login`: Login of the dedicated (technical service) user dedicated to the issue synchronization. Using a dedicated user allow to detect past synchronization when issue sync is performed repeatedly.
 - `-k <projectKey>`: Key of the source project
@@ -24,11 +24,11 @@
 - `-f <file>`: Sends a summary report of synchronization to `<file>`, `stdout` is the default. The output format is JSON
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
-:warning: Note about `--login` and `-t` and `-T`: It is strongly recommended to run `sonar-issues-sync` with the credentials of a specific service account dedicated to issues synchronization. This will allow to recognize automatic synchronization changes by the author of those changes. So `--login` must correspond to the same user as the token used in the target SonarQube instance (the one that will be written). This token is either the one provided with `-t`when the synchronization is within a same SonarQube instance (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube instances (the `--login <user>` and the `-T <token>` corresponding to a user on the **target** SonarQube instance in that case)
+:warning: Note about `--login` and `-t` and `-T`: It is strongly recommended to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization. This will allow to recognize automatic synchronization changes by the author of those changes. So `--login` must correspond to the same user as the token used in the target SonarQube instance (the one that will be written). This token is either the one provided with `-t`when the synchronization is within a same SonarQube instance (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube instances (the `--login <user>` and the `-T <token>` corresponding to a user on the **target** SonarQube instance in that case)
 
 ## Required Permissions
 
-To be able to perform the sync, the token provided to `sonar-issues-sync` should have:
+To be able to perform the sync, the token provided to `sonar-findings-sync` should have:
 - `Browse` permission on the source project
 - `Browse` and `Administer Issues` permission on the target project. When hotspots will also be synchronized,
   `Administer Hotspots` permission will also be needed
@@ -36,8 +36,8 @@ To be able to perform the sync, the token provided to `sonar-issues-sync` should
 ## Example
 
 :warning: The `sonar-issue-sync` tool MUST be run with a specific service account (to be named on the command line) so that `sonar-issue-sync` can recognize past synchronizations and complement them if some updates happened on an issue that has already been synchronized before with the same service account.
-`sonar-issues-sync --login <serviceAccount> -t <tokenOfThatServiceAccount> ...` when syncing within a same instance
-`sonar-issues-sync --login <targetInstanceServiceAccount> -T <tokenOfThatServiceAccount> ...` when syncing between 2 instances
+`sonar-findings-sync --login <serviceAccount> -t <tokenOfThatServiceAccount> ...` when syncing within a same instance
+`sonar-findings-sync --login <targetInstanceServiceAccount> -T <tokenOfThatServiceAccount> ...` when syncing between 2 instances
 
 Synchronizes issues changelog between:
 - All branches of a same project:
@@ -63,19 +63,19 @@ Issues changelog synchronization includes:
 
 ## Limitations
 
-`sonar-issues-sync` has a couple of limitations:
+`sonar-findings-sync` has a couple of limitations:
 - Security Hotspots are not (yet) synchronized
 - The source and target issues are synchronized only:
   - When there is a 100% certainty that the issues are the same. In some rare corner cases it can be impossible to be certain that 2 issues are the same.
   - When the target issue has currently no changelog (except from the synchronization service account changes). If a issue
   has been manually modified by another user on the target issue, the synchronization can't happen anymore
 
-When an issue could not be synchronized because of one of the above reasons, this is reported in the `sonar-issues-sync` report.
+When an issue could not be synchronized because of one of the above reasons, this is reported in the `sonar-findings-sync` report.
 Whenever a close enough issue was found but not sync'ed (because not 100% certain to be identical), the close issue is provided in the report to complete synchronization manually if desired.
 
 ## Required Permissions
 
-`sonar-issues-sync` needs the global `Create Projects` permission
+`sonar-findings-sync` needs the global `Create Projects` permission
 
 ## Configurable behaviors
 
@@ -100,13 +100,13 @@ export SONAR_HOST_URL=https://sonar.acme-corp.com
 export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
 
 # Syncs issues from branch develop to branch master of project myProjKey
-sonar-issues-sync -k myProjKey -b develop -B master >sync_2_branches.json
+sonar-findings-sync -k myProjKey -b develop -B master >sync_2_branches.json
 
 # Syncs issues from projectKey1 main branch to projectKey2 main branch
-sonar-issues-sync -k projectKey1 -K projectKey2 >sync_2_projects.json
+sonar-findings-sync -k projectKey1 -K projectKey2 >sync_2_projects.json
 
 # Syncs issues from projectKey1 main branch to projectKey2 main branch
-sonar-issues-sync -k myPorjectKey -U https://anothersonar.acme-corp.com -t d04d671eaec0272b6c83c056ac363f9b78919b06 -K otherInstanceProjKey >sync_2_instances.json
+sonar-findings-sync -k myPorjectKey -U https://anothersonar.acme-corp.com -t d04d671eaec0272b6c83c056ac363f9b78919b06 -K otherInstanceProjKey >sync_2_instances.json
 ```
 
 # License
