@@ -1,4 +1,5 @@
-# <a name="sonar-findings-sync"></a>sonar-findings-sync (formerly sonar-issues-sync)
+# <a name="sonar-findings-sync"></a>sonar-findings-sync
+Note: Replaces `sonar-issues-sync`, which deprecated
 
 `sonar-findings-sync` synchronizes issues and hotspots changelog between branches, projects within a same SonarQube instance or across different SonarQube instances
 
@@ -24,7 +25,7 @@
 - `-f <file>`: Sends a summary report of synchronization to `<file>`, `stdout` is the default. The output format is JSON
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
-:warning: Note about `--login` and `-t` and `-T`: It is strongly recommended to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization. This will allow to recognize automatic synchronization changes by the author of those changes. So `--login` must correspond to the same user as the token used in the target SonarQube instance (the one that will be written). This token is either the one provided with `-t`when the synchronization is within a same SonarQube instance (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube instances (the `--login <user>` and the `-T <token>` corresponding to a user on the **target** SonarQube instance in that case)
+:warning: Note about `--login` and `-t` and `-T`: It is **strongly recommended** to run `sonar-findings-sync` with the credentials of a specific service account dedicated to issues synchronization. This will allow to recognize automatic synchronization changes by the author of those changes. So `--login` must correspond to the same user as the token used in the target SonarQube instance (the one that will be written). This token is either the one provided with `-t`when the synchronization is within a same SonarQube instance (for instance 2 branches of a same project), or `-T` when synchronizing between 2 different SonarQube instances (the `--login <user>` and the `-T <token>` corresponding to a user on the **target** SonarQube instance in that case)
 
 ## Required Permissions
 
