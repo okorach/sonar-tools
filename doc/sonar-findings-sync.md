@@ -98,7 +98,7 @@ The tool sends to standard output a JSON file with, for each issue on the target
 ## Examples
 ```
 export SONAR_HOST_URL=https://sonar.acme-corp.com
-export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
+export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 
 # Syncs issues from branch develop to branch master of project myProjKey
 sonar-findings-sync -k myProjKey -b develop -B master >sync_2_branches.json
