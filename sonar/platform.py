@@ -69,7 +69,7 @@ class Platform:
         :return: the SonarQube object
         :rtype: Platform
         """
-        self.url = some_url  #: SonarQube URL
+        self.url = some_url.rstrip('/')  #: SonarQube URL
         self.__token = some_token
         self.__cert_file = cert_file
         self._version = None
@@ -105,6 +105,7 @@ class Platform:
         if as_string:
             return ".".join(self._version[0:digits])
         else:
+            util.logger.debug("Version = %s", self._version)
             return tuple(int(n) for n in self._version[0:digits])
 
     def edition(self):
