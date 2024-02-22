@@ -245,6 +245,20 @@ class QualityGate(sq.SqObject):
         """
         return self.permissions().set(permissions_list)
 
+    def set_as_default(self):
+        """Sets the quality gate as the default
+        :return: Whether setting as default quality gate was successful
+        :rtype: bool
+        """
+        r = self.post("qualitygates/set_as_default", params={"name": self.name})
+        if r.ok:
+            self.is_default = True
+            # Turn off default for all other quality gates except the current one
+            for qg in get_list(self.endpoint).values():
+                if qg.name != self.name:
+                    qg.is_default = False
+        return r.ok
+
     def update(self, **data):
         """Updates a quality gate
         :param dict data: Considered keys: "name", "conditions", "permissions"
@@ -257,6 +271,8 @@ class QualityGate(sq.SqObject):
             _MAP[self.name] = self
         ok = self.set_conditions(data.get("conditions", []))
         ok = ok and self.set_permissions(data.get("permissions", []))
+        if data.get("isDefault", False):
+            self.set_as_default()
         return ok
 
     def __audit_conditions(self):
