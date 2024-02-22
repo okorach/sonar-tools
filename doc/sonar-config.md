@@ -50,7 +50,7 @@ To import configuration, `sonar-config` needs a token with:
 ## Example
 ```
 export SONAR_HOST_URL=https://sonar.acme-corp.com
-export SONAR_TOKEN=15ee09df11fb9b8234b7a1f1ac5fce2e4e93d75d
+export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 
 # Export everything, send results to config.json in JSON format
 sonar-config -e -f config.json
