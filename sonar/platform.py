@@ -69,7 +69,7 @@ class Platform:
         :return: the SonarQube object
         :rtype: Platform
         """
-        self.url = some_url.rstrip('/')  #: SonarQube URL
+        self.url = some_url.rstrip("/")  #: SonarQube URL
         self.__token = some_token
         self.__cert_file = cert_file
         self._version = None
