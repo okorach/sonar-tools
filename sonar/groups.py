@@ -337,7 +337,7 @@ def import_config(endpoint, config_data):
     :return: Nothing
     """
     if "groups" not in config_data:
-        util.logger.info("No groups groups to import")
+        util.logger.info("No groups to import")
         return
     util.logger.info("Importing groups")
     for name, data in config_data["groups"].items():
