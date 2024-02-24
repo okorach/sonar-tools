@@ -431,6 +431,10 @@ class Platform:
         :type config_data: dict
         :return: Nothing
         """
+        if "globalSettings" not in config_data:
+            util.logger.info("No global settings to import")
+            return
+        config_data = config_data["globalSettings"]
         for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
             if section not in config_data:
                 continue

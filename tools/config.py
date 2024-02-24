@@ -163,7 +163,7 @@ def __import_config(endpoint, what, args):
             rules.import_config(endpoint, data)
         qualityprofiles.import_config(endpoint, data)
     if options.WHAT_SETTINGS in what:
-        endpoint.import_config(data["globalSettings"])
+        endpoint.import_config(data)
     if options.WHAT_PROJECTS in what:
         projects.import_config(endpoint, data, key_list=args.projectKeys)
     if options.WHAT_APPS in what:
