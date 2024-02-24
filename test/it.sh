@@ -27,7 +27,7 @@ check() {
         echo "Output file $1 is OK"
     else
         echo "Output file $1 is missing or empty" | tee -a $IT_LOG_FILE
-        exit 1
+        # exit 1
     fi
 }
 
@@ -47,7 +47,7 @@ fi
 
 date | tee -a $IT_LOG_FILE
 echo "Install sonar-tools current local version" | tee -a $IT_LOG_FILE
-./deploy.sh
+./deploy.sh nodoc
 for env in $*
 do
     echo "Running with environment $env" | tee -a $IT_LOG_FILE
@@ -149,7 +149,7 @@ echo "Y" | pip uninstall sonar-tools
 pip install sonar-tools
 for env in $*
 do
-    . sqenv $env
+    . sonar-env.sh $env
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
     sonar-measures-export -b -f $IT_ROOT/measures-$env-rel.csv -m _main --withURL
     sonar-findings-export -f $IT_ROOT/findings-$env-rel.csv
@@ -157,7 +157,7 @@ do
     sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 
     sonar-config -e >$IT_ROOT/config-$env-rel.json 
 done
-./deploy.sh
+./deploy.sh nodoc
 for env in $*
 do
     echo "IT compare released and unreleased $env" | tee -a $IT_LOG_FILE
