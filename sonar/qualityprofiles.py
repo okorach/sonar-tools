@@ -190,6 +190,21 @@ class QualityProfile(sq.SqObject):
             util.logger.debug("Won't set parent of %s. It's the same as currently", str(self))
             return True
 
+    def set_as_default(self):
+        """Sets the quality profile as the default for the language
+        :return: Whether setting as default quality profile was successful
+        :rtype: bool
+        """
+        params = {"qualityProfile": self.name, "language": self.language}
+        r = self.post("qualityprofiles/set_default", params=params)
+        if r.ok:
+            self.is_default = True
+            # Turn off default for all other profiles except the current profile
+            for qp in get_list(self.endpoint).values():
+                if qp.language == self.language and qp.key != self.key:
+                    qp.is_default = False
+        return r.ok
+
     def is_child(self):
         """
         :return: Whether the quality profile has a parent
@@ -231,7 +246,7 @@ class QualityProfile(sq.SqObject):
         """Activates a rule in the quality profile
 
         :param str rule_key: Rule key to activate
-        :param severity: Severity of the rule in the quality profiles, defauls to rule rule default severity
+        :param severity: Severity of the rule in the quality profiles, defaults to the rule default severity
         :type severity: str, optional
         :param params: List of parameters associated to the rules, defaults to None
         :type params: dict, optional
@@ -284,7 +299,8 @@ class QualityProfile(sq.SqObject):
             self.set_permissions(data.get("permissions", []))
             self.set_parent(data.pop(_KEY_PARENT, None))
             self.is_built_in = data.get("isBuiltIn", False)
-            self.is_default = data.get("isDefault", False)
+            if data.get("isDefault", False):
+                self.set_as_default()
 
         _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}), queue=queue)
         return self
