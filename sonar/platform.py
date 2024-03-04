@@ -113,10 +113,10 @@ class Platform:
         :return: the SonarQube platform edition
         :rtype: str ("community", "developer", "enterprise" or "datacenter")
         """
-        if self.version() < (9, 7, 0):
-            return self.sys_info()["Statistics"]["edition"]
-        else:
+        if "edition" in self.global_nav():
             return self.global_nav()["edition"]
+        else:
+            return self.sys_info()["Statistics"]["edition"]
 
     def server_id(self):
         """
