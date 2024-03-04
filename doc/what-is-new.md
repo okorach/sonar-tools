@@ -1,3 +1,15 @@
+# Version 2.9 - March 2024
+
+- Allow non admin tokens for sonar-tools not requiring them (Credit @raspy)
+
+# Version 2.8.2 - Feb 2024
+
+- Updated docs for several partly innacurate things (Credit @sylvain-combe-sonarsource)
+- Fixes
+  - Crashes when SonarQube URL has a trailing "/" #934
+  - Wrong function entry point for sonar-projects-import #942 (Credit @sylvain-combe-sonarsource)
+  - Crash when doing sonar-config full import of a partial export #940
+
 # Version 2.8.1 - Jan 2024
 
 - Fixed several problems on findings (issues) sync on Community Edition
