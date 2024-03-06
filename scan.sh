@@ -59,7 +59,7 @@ if [ "$dolint" != "false" ]; then
   ./run_linters.sh
 fi
 
-version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | cut -d "'" -f 2)
+version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
 version=$(echo $version)
 pr_branch=""
 for o in $scanOpts
@@ -70,22 +70,17 @@ do
   fi
 done
 
-
-echo "Running: sonar-scanner \
-  -Dsonar.projectVersion=$version \
+cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
-  -Dsonar.python.coverage.reportPaths=$coverageReport \
   $pr_branch \
   $scanOpts"
 
-sonar-scanner \
-  -Dsonar.projectVersion=$version \
-  -Dsonar.python.flake8.reportPaths=$flake8Report \
-  -Dsonar.python.pylint.reportPaths=$pylintReport \
-  -Dsonar.python.bandit.reportPaths=$banditReport \
-  -Dsonar.python.coverage.reportPaths=$coverageReport \
-  -Dsonar.coverage.exclusions=**/*.sh \
-  $pr_branch \
-  $scanOpts
+if [ -f "$coverageReport" ]; then
+   cmd="$cmd -Dsonar.python.coverage.reportPaths=$coverageReport"
+fi
+
+echo "Running: $cmd"
+
+$cmd

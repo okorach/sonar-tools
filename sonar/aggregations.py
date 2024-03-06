@@ -19,7 +19,7 @@
 #
 """
 
-    Parent class of applications and portfolios
+    Parent module of applications and portfolios
 
 """
 import json
@@ -29,13 +29,14 @@ from sonar.audit import rules, problem
 
 
 class Aggregation(comp.Component):
-    def __init__(self, key, endpoint, data=None):
+    """Parent class of applications and portfolios"""
+    def __init__(self, key: str, endpoint: object, data: dict[str, any] = None) -> None:
         self._nbr_projects = None
         self._permissions = None
         super().__init__(key, endpoint)
 
-    def reload(self, data):
-        """Reloads an Aggregatin (Application or Portfolio) from the result of a search or get
+    def reload(self, data: dict[str, any]) -> None:
+        """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
 
         :return: self
         :rtype: Application or Portfolio
@@ -45,7 +46,11 @@ class Aggregation(comp.Component):
             if d in data:
                 self._description = self._json[d]
 
-    def nbr_projects(self):
+    def nbr_projects(self) -> int:
+        """Returns the number of projects of an Aggregation (Application or Portfolio)
+        :return: The number of projects
+        :rtype: int
+        """
         if self._nbr_projects is None:
             self._nbr_projects = 0
             data = json.loads(
@@ -63,13 +68,17 @@ class Aggregation(comp.Component):
                     self.ncloc = int(m["value"])
         return self._nbr_projects
 
-    def get_measures(self, metrics_list):
+    def get_measures(self, metrics_list: list[str]) -> dict[str, any]:
+        """Returns measures of an Aggregation (Application or Portfolio)
+        :return: dict of metric: value
+        :rtype: dict
+        """
         m = measures.get(self, metrics_list)
         if "ncloc" in m:
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def _audit_aggregation_cardinality(self, sizes, broken_rule):
+    def _audit_aggregation_cardinality(self, sizes: tuple[int], broken_rule: object) -> list[problem.Problem]:
         problems = []
         n = self.nbr_projects()
         if n in sizes:
@@ -80,14 +89,18 @@ class Aggregation(comp.Component):
             utilities.logger.debug("%s has %d projects", str(self), n)
         return problems
 
-    def _audit_empty_aggregation(self, broken_rule):
+    def _audit_empty_aggregation(self, broken_rule: object) -> list[problem.Problem]:
         return self._audit_aggregation_cardinality((0, None), broken_rule)
 
-    def _audit_singleton_aggregation(self, broken_rule):
+    def _audit_singleton_aggregation(self, broken_rule: object) -> list[problem.Problem]:
         return self._audit_aggregation_cardinality((1, 1), broken_rule)
 
 
-def count(api, endpoint, params=None):
+def count(api: str, endpoint: object, params: dict[str, str] = None) -> int:
+    """Returns number of aggregations of a given type (Application OR Portfolio)
+    :return: number of Apps or Portfolios
+    :rtype: int
+    """
     if params is None:
         params = {}
     params["ps"] = 1
