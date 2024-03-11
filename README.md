@@ -309,6 +309,7 @@ When tools complete successfully they return exit code 0. En case of fatal error
 - Code 9: SIF audit error (file not found, can't open file, not a legit JSON file, ...)
 - Code 10: Incorrect command line arguments
 - Code 11: Global analysis or project analysis token provided (user token needed for sonar-tools)
+- Code 12: HTTP request time-out using the SonarQube API
 
 # License
 

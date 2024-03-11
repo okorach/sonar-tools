@@ -60,6 +60,9 @@ ERR_ARGS_ERROR = 10
 # if a global analysis or project analysis token is provided
 ERR_TOKEN_NOT_SUITED = 11
 
+# HTTP request timeout
+ERR_REQUEST_TIMEOUT = 12
+
 
 def set_url_arg(parser):
     parser.add_argument(f"--{WITH_URL}", action="store_true", default=False, required=False, help="Add objects URLs in report")
