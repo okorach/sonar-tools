@@ -276,7 +276,7 @@ class Branch(components.Component):
             return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return []
 
-    def __audit_never_analyzed(self):
+    def __audit_never_analyzed(self) -> list[problem.Problem]:
         """Detects branches that have never been analyzed are are kept zwhen inactive"""
         if not self.last_analysis() and self.is_kept_when_inactive():
             rule = rules.get_rule(rules.RuleId.BRANCH_NEVER_ANALYZED)
