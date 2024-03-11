@@ -176,6 +176,8 @@ class Platform:
                 else:
                     util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
                 raise e
+        except requests.exceptions.Timeout as e:
+            util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
@@ -209,6 +211,8 @@ class Platform:
                 else:
                     util.logger.error(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
                 raise
+        except requests.exceptions.Timeout as e:
+            util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
@@ -242,6 +246,8 @@ class Platform:
                 else:
                     util.logger.error(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
                 raise
+        except requests.exceptions.Timeout as e:
+            util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
 
