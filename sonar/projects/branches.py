@@ -276,6 +276,13 @@ class Branch(components.Component):
             return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return []
 
+    def __audit_never_analyzed(self):
+        """Detects branches that have never been analyzed are are kept zwhen inactive"""
+        if not self.last_analysis() and self.is_kept_when_inactive():
+            rule = rules.get_rule(rules.RuleId.BRANCH_NEVER_ANALYZED)
+            return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
+        return []
+
     def get_measures(self, metrics_list):
         """Retrieves a branch list of measures
 
@@ -382,7 +389,7 @@ class Branch(components.Component):
         :rtype: list[Problem]
         """
         util.logger.debug("Auditing %s", str(self))
-        return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc()
+        return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
 
     def search_params(self):
         """Return params used to search for that object
