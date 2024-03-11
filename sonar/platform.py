@@ -165,7 +165,7 @@ class Platform:
         api = _normalize_api(api)
         util.logger.debug("GET: %s", self.__urlstring(api, params))
         try:
-            r = requests.get(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params)
+            r = requests.get(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params, timeout=10)
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if exit_on_error or (r.status_code not in mute and r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)):
@@ -198,7 +198,7 @@ class Platform:
         api = _normalize_api(api)
         util.logger.debug("POST: %s", self.__urlstring(api, params))
         try:
-            r = requests.post(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, data=params)
+            r = requests.post(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, data=params, timeout=10)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error or r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
@@ -231,7 +231,7 @@ class Platform:
         api = _normalize_api(api)
         util.logger.debug("DELETE: %s", self.__urlstring(api, params))
         try:
-            r = requests.delete(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT)
+            r = requests.delete(url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT, timeout=10)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -521,7 +521,7 @@ class Platform:
         util.logger.info("Auditing admin password")
         problems = []
         try:
-            r = requests.get(url=self.url + "/api/authentication/validate", auth=("admin", "admin"))
+            r = requests.get(url=self.url + "/api/authentication/validate", auth=("admin", "admin"), timeout=10)
             data = json.loads(r.text)
             if data.get("valid", False):
                 rule = rules.get_rule(rules.RuleId.DEFAULT_ADMIN_PASSWORD)
@@ -747,7 +747,7 @@ def __lts_and_latest():
         _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
         try:
             with open(tmpfile, "w", encoding="utf-8") as fp:
-                print(requests.get(_UPDATE_CENTER, headers=_SONAR_TOOLS_AGENT).text, file=fp)
+                print(requests.get(_UPDATE_CENTER, headers=_SONAR_TOOLS_AGENT, timeout=10).text, file=fp)
             with open(tmpfile, "r", encoding="utf-8") as fp:
                 upd_center_props = jprops.load_properties(fp)
             v = upd_center_props.get("ltsVersion", "8.9.9").split(".")
