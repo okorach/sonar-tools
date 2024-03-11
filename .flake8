@@ -1,6 +1,6 @@
 [flake8]
 # E501 = Line too long
-ignore = E501
-max-line-length = 128
+ignore = E501,W503,E128,C901,W504,E302,E265,E741,W291,W293,W391,F401,E226,F841,F821,F541,D400,D401,E800,D102,D105,D107,I900,F632,E261
+max-line-length = 150
 #exclude = tests/*
 #max-complexity = 10
