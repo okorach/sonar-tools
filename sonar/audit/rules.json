@@ -220,11 +220,17 @@
         "object": "Project",
         "message": "{} with {} LoCs is stale, it has not been analyzed since {} days, it could be deleted"
     },
-    "BRANCH_LAST_ANALYSIS": {
-        "severity": "MEDIUM",
+    "BRANCH_NEVER_ANALYZED": {
+        "severity": "LOW",
         "type": "PERFORMANCE",
-        "object": "Project",
-        "message": "{} is stale, it has not been analyzed since {} days, it could be deleted"
+        "object": "Branch",
+        "message": "{} has never been analyzed and is kept even if inactive, this is suspicious"
+    },
+    "BRANCH_LAST_ANALYSIS": {
+        "severity": "LOW",
+        "type": "PERFORMANCE",
+        "object": "Branch",
+        "message": "{} is stale, has not been analyzed since {} days, it could be deleted"
     },
     "PULL_REQUEST_LAST_ANALYSIS": {
         "severity": "LOW",

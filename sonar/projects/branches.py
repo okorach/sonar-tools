@@ -276,6 +276,13 @@ class Branch(components.Component):
             return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return []
 
+    def __audit_never_analyzed(self) -> list[problem.Problem]:
+        """Detects branches that have never been analyzed are are kept when inactive"""
+        if not self.last_analysis() and self.is_kept_when_inactive():
+            rule = rules.get_rule(rules.RuleId.BRANCH_NEVER_ANALYZED)
+            return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
+        return []
+
     def get_measures(self, metrics_list):
         """Retrieves a branch list of measures
 
@@ -381,8 +388,12 @@ class Branch(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        util.logger.debug("Auditing %s", str(self))
-        return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc()
+        if audit_settings["sonar.audit.branches"]:
+            util.logger.debug("Auditing %s", str(self))
+            return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
+        else:
+            util.logger.debug("Branch audit disabled, skipping audit of %s", str(self))
+            return []
 
     def search_params(self):
         """Return params used to search for that object
