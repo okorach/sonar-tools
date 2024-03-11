@@ -388,8 +388,12 @@ class Branch(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        util.logger.debug("Auditing %s", str(self))
-        return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
+        if audit_settings["sonar.audit.branches"]:
+            util.logger.debug("Auditing %s", str(self))
+            return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
+        else:
+            util.logger.debug("Branch audit disabled, skipping audit of %s", str(self))
+            return []
 
     def search_params(self):
         """Return params used to search for that object
