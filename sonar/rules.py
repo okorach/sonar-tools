@@ -101,6 +101,11 @@ class Rule(sq.SqObject):
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
         self.template_key = data.get("templateKey", None)
+        self._impacts = data.get("impacts", None)
+        self._clean_code_attribute = {
+            "attribute": data.get("cleanCodeAttribute", None),
+            "attribute_category": data.get("cleanCodeAttributeCategory", None)
+        }
         _OBJECTS[self.key] = self
 
     def __str__(self):
@@ -125,6 +130,12 @@ class Rule(sq.SqObject):
             return
         utilities.logger.debug("Settings custom description '%s' to %s", description, str(self))
         self.post("rules/update", params={"key": self.key, "markdown_note": description})
+
+    def clean_code_attribute(self) -> dict:
+        return self._clean_code_attribute
+
+    def impacts(self) -> dict:
+        return self._impacts
 
 
 def get_facet(facet, endpoint):
