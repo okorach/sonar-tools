@@ -50,6 +50,7 @@ PRJ_QUALIFIER = "TRK"
 APP_QUALIFIER = "APP"
 
 _BIND_SEP = ":::"
+_AUDIT_BRANCHES_PARAM = "audit.projects.branches"
 
 _IMPORTABLE_PROPERTIES = (
     "key",
@@ -399,7 +400,7 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        if not audit_settings["audit.projects.branches"]:
+        if not audit_settings.get(_AUDIT_BRANCHES_PARAM, True):
             util.logger.debug("Auditing of branchs is disabled, skipping...")
             return []
         util.logger.debug("Auditing %s branches", str(self))
@@ -488,7 +489,7 @@ class Project(components.Component):
         :rtype: list[Problem]
         """
         if (
-            (not audit_settings["audit.projects.branches"] or self.endpoint.edition() == "community")
+            (not audit_settings.get(_AUDIT_BRANCHES_PARAM, True) or self.endpoint.edition() == "community")
             and self.last_analysis() is not None
             and self.loc() == 0
         ):
