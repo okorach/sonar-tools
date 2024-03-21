@@ -85,9 +85,9 @@ class Sif:
                     # FIXME: Can't get edition in SIF of SonarQube 9.7+, this is an unsolvable problem
                     ed = self.json["edition"]
                 except KeyError:
-                    return ""
+                    return None
         # Old SIFs could return "Enterprise Edition"
-        return ed.split(" ")[0].lower()
+        return util.edition_normalize(ed)
 
     def database(self):
         if self.version() < (9, 7, 0):
@@ -109,15 +109,7 @@ class Sif:
         return None
 
     def version(self, digits=3, as_string=False):
-        sif_v = self.__get_field("Version")
-        if sif_v is None:
-            return None
-
-        split_version = sif_v.split(".")
-        if as_string:
-            return ".".join(split_version[0:digits])
-        else:
-            return tuple(int(n) for n in split_version[0:digits])
+        return util.string_to_version(self.__get_field("Version"))
 
     def server_id(self):
         return self.__get_field("Server ID")
@@ -150,8 +142,10 @@ class Sif:
 
     def audit(self, audit_settings):
         util.logger.info("Auditing System Info")
-        problems = self.__audit_jdbc_url() + self.__audit_web_settings(audit_settings)
+        problems = self.__audit_jdbc_url()
+        util.logger.debug("Edition = %s", self.edition())
         if self.edition() == "datacenter":
+            util.logger.info("DCE SIF audit")
             problems += self.__audit_dce_settings()
         else:
             problems += (
@@ -162,6 +156,7 @@ class Sif:
                 + self.__audit_version()
                 + self.__audit_branch_use()
                 + self.__audit_undetected_scm()
+                + self.__audit_web_settings(audit_settings)
             )
         return problems
 
@@ -268,18 +263,11 @@ class Sif:
         return problems
 
     def __audit_dce_settings(self):
-        util.logger.info("Auditing DCE settings")
+        util.logger.info("Auditing DCE settings for version %s", str(self.version()))
         problems = []
-        if self.version() < (9, 7, 0):
-            stats = self.json.get(_STATS)
-        else:
-            stats = self.json
-        if stats is None:
-            util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
-            return problems
-        sq_edition = stats.get("edition", None)
+        sq_edition = self.edition()
         if sq_edition is None:
-            util.logger.error("Can't verify edition in System Info File, was it corrupted or redacted ?")
+            util.logger.error("Can't verify edition in System Info File (2_), was it corrupted or redacted ?")
             return problems
         if sq_edition != "datacenter":
             util.logger.info("Not a Data Center Edition, skipping DCE checks")
@@ -341,36 +329,48 @@ class Sif:
     def __audit_web_settings(self, audit_settings):
         util.logger.debug("Auditing Web settings")
         problems = []
-        jvm_cmdline = self.web_jvm_cmdline()
-        if jvm_cmdline is None:
-            util.logger.warning("Can't retrieve web JVM command line, skipping heap and log4shell audits...")
-            return []
-        web_ram = util.jvm_heap(jvm_cmdline)
+        if self.version() < (9, 0, 0):
+            jvm_cmdline = self.web_jvm_cmdline()
+            if jvm_cmdline is None:
+                util.logger.warning("Can't retrieve web JVM command line, skipping heap and log4shell audits...")
+                return []
+            problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_WEB)
+            heap_size = util.jvm_heap(jvm_cmdline)
+        else:
+            try:
+                heap_size = self.json["Web JVM State"]["Heap Max (MB)"]
+            except KeyError:
+                util.logger.warning("Can't retrieve web JVM heap")
+                return []
         min_heap = audit_settings.get("audit.web.heapMin", 1024)
         max_heap = audit_settings.get("audit.web.heapMax", 2048)
-        if web_ram is None:
+        if heap_size is None:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_NO_HEAP)
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self))
-        elif web_ram < min_heap or web_ram > max_heap:
+        elif heap_size < min_heap or heap_size > max_heap:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(web_ram, 1024, 2048), concerned_object=self))
+            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(heap_size, min_heap, max_heap), concerned_object=self))
         else:
-            util.logger.debug(
-                "sonar.web.javaOpts -Xmx memory setting value is %d MB, within the recommended range [1024-2048]",
-                web_ram,
-            )
+            util.logger.debug("Sonar Web process heap value is %d MB, within the recommended range [%d-%d]", heap_size, min_heap, max_heap)
 
-        problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_WEB)
         return problems
 
     def __audit_ce_settings(self):
         util.logger.info("Auditing CE settings")
         problems = []
-        jvm_cmdline = self.ce_jvm_cmdline()
-        if jvm_cmdline is None:
-            util.logger.warning("Can't retrieve CE JVM command line, heap and logshell checks skipped")
-            return []
-        ce_ram = util.jvm_heap(jvm_cmdline)
+        if self.version() < (9, 0, 0):
+            jvm_cmdline = self.ce_jvm_cmdline()
+            if jvm_cmdline is None:
+                util.logger.warning("Can't retrieve CE JVM command line, heap and logshell checks skipped")
+                return []
+            problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_CE)
+            ce_ram = util.jvm_heap(jvm_cmdline)
+        else:
+            try:
+                ce_ram = self.json["Compute Engine JVM State"]["Heap Max (MB)"]
+            except KeyError:
+                util.logger.warning("Can't retrieve CE JVM heap")
+                return []
         ce_tasks = self.__get_field("Compute Engine Tasks")
         if ce_tasks is None:
             return []
@@ -394,12 +394,11 @@ class Sif:
             problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers), concerned_object=self))
         else:
             util.logger.debug(
-                "sonar.ce.javaOpts -Xmx memory setting value is %d MB, within recommended range ([512-2048] x %d workers)",
+                "SonarQube CE memory setting value is %d MB, within recommended range ([512-2048] x %d workers)",
                 ce_ram,
                 ce_workers,
             )
 
-        problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_CE)
         return problems
 
     def __audit_background_tasks(self):

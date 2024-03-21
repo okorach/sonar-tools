@@ -49,8 +49,21 @@ class SearchNode(nodes.DceNode):
         util.logger.info("Auditing %s", str(self))
         return self.__audit_store_size()
 
+    def max_heap(self):
+        if self.sif.version() < (9, 0, 0):
+            return util.jvm_heap(self.sif.search_jvm_cmdline())
+        try:
+            sz = self.json["Search State"]["JVM Heap Max"]
+        except KeyError:
+            util.logger.warning("Can't retrieve heap allocated to %s", str(self))
+            return None
+        return int(float(sz.split(" ")[0]) * 1024)
+
     def __audit_store_size(self):
-        es_heap = util.jvm_heap(self.sif.search_jvm_cmdline())
+        es_heap = self.max_heap()
+        if es_heap is None:
+            util.logger.warning("%s audit of ES head is skipped", str(self))
+            return []
         index_size = self.store_size()
 
         if es_heap is None:
