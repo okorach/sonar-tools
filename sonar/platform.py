@@ -55,8 +55,8 @@ _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-cen
 
 LTS = None
 LATEST = None
-_HARDCODED_LTS = (9, 9, 3)
-_HARDCODED_LATEST = (10, 3, 0)
+_HARDCODED_LTS = (9, 9, 4)
+_HARDCODED_LATEST = (10, 4, 1)
 
 
 class Platform:
@@ -600,7 +600,7 @@ class Platform:
         elif sq_vers < lts(3):
             rule = rules.get_rule(rules.RuleId.LTS_PATCH_MISSING)
             v = lts()
-        elif sq_vers < latest(2):
+        elif sq_vers[:2] > lts(2) and sq_vers < latest(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
             v = latest()
         if not v:
@@ -762,11 +762,11 @@ def __lts_and_latest():
                 print(requests.get(_UPDATE_CENTER, headers=_SONAR_TOOLS_AGENT, timeout=10).text, file=fp)
             with open(tmpfile, "r", encoding="utf-8") as fp:
                 upd_center_props = jprops.load_properties(fp)
-            v = upd_center_props.get("ltsVersion", "8.9.9").split(".")
+            v = upd_center_props.get("ltsVersion", "9.9.0").split(".")
             if len(v) == 2:
                 v.append("0")
             LTS = tuple(int(n) for n in v)
-            v = upd_center_props.get("publicVersions", "9.5").split(",")[-1].split(".")
+            v = upd_center_props.get("publicVersions", "10.4").split(",")[-1].split(".")
             if len(v) == 2:
                 v.append("0")
             LATEST = tuple(int(n) for n in v)
