@@ -99,6 +99,11 @@
         "type": "PERFORMANCE",
         "message": "Web process heap ('sonar.web.javaOpts' -Xmx) memory setting is not specified"
     },
+    "SETTING_WEB_WRONG_JAVA_VERSION": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "message": "SonarQube {} is running on Java {} which is not a supported Java version"
+    },
     "SETTING_CE_HEAP": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
