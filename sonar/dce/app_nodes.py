@@ -76,7 +76,7 @@ class AppNode(dce_nodes.DceNode):
     def name(self):
         return self.json["Name"]
 
-    def audit(self, audit_settings: dict = None):
+    def audit(self, audit_settings: dict[str, str] = None):
         util.logger.info("Auditing %s", str(self))
         return (
             self.__audit_log_level()
@@ -159,7 +159,7 @@ class AppNode(dce_nodes.DceNode):
             )
             return []
 
-    def __audit_jvm_version(self) -> list:
+    def __audit_jvm_version(self) -> list[pb.Problem]:
         try:
             java_version = int(self.json["Web JVM Properties"]["java.specification.version"])
         except KeyError:
@@ -177,7 +177,7 @@ class AppNode(dce_nodes.DceNode):
             util.logger.debug("%s is running on the required java version (java %d)", str(self), java_version)
         return []
 
-    def __audit_jvm_ram(self, audit_settings) -> list:
+    def __audit_jvm_ram(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         # On DCE we expect between 2 and 4 GB of RAM per App Node Web JVM
         min_heap = audit_settings.get("audit.web.heapMin", 2024)
         max_heap = audit_settings.get("audit.web.heapMax", 4096)
@@ -195,7 +195,7 @@ class AppNode(dce_nodes.DceNode):
         else:
             util.logger.debug("%s web heap of %d MB is within recommended range [%d-%d]", str(self), web_heap, min_heap, max_heap)
 
-    def __audit_web_settings(self, audit_settings: dict) -> list:
+    def __audit_web_settings(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         return self.__audit_jvm_version() + self.__audit_jvm_ram(audit_settings)
 
     def __audit_ce_settings(self):
@@ -260,7 +260,7 @@ class AppNode(dce_nodes.DceNode):
         return problems
 
 
-def audit(sub_sif: dict, sif: object, audit_settings: dict = None) -> list:
+def audit(sub_sif: dict[str, str], sif: object, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
     """Audits application nodes of a DCE instance
 
     :param dict sub_sif: The JSON subsection of the SIF pertaining to the App Nodes
