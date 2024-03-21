@@ -566,3 +566,20 @@ def replace_keys(key_list, new_key, data):
         if k in data:
             data[new_key] = data.pop(k)
     return data
+
+
+def edition_normalize(edition):
+    if edition is None:
+        return None
+    return edition.lower().replace("edition", "").replace(" ", "")
+
+
+def string_to_version(sif_v: str, digits=3, as_string=False):
+    if sif_v is None:
+        return None
+
+    split_version = sif_v.split(".")
+    if as_string:
+        return ".".join(split_version[0:digits])
+    else:
+        return tuple(int(n) for n in split_version[0:digits])
