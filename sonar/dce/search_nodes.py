@@ -27,6 +27,7 @@ import sonar.utilities as util
 from sonar.audit import rules
 import sonar.audit.problem as pb
 from sonar.dce import nodes
+from typing import Union
 
 _STORE_SIZE = "Store Size"
 _ES_STATE = "Search State"
@@ -49,7 +50,7 @@ class SearchNode(nodes.DceNode):
         util.logger.info("Auditing %s", str(self))
         return self.__audit_store_size()
 
-    def max_heap(self) -> int | None:
+    def max_heap(self) -> Union[int | None]:
         if self.sif.version() < (9, 0, 0):
             return util.jvm_heap(self.sif.search_jvm_cmdline())
         try:
