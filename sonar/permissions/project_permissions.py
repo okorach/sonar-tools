@@ -89,7 +89,7 @@ class ProjectPermissions(permissions.Permissions):
         )
 
     def audit(self, audit_settings):
-        if not audit_settings["audit.projects.permissions"]:
+        if not audit_settings.get("audit.projects.permissions", True):
             utilities.logger.debug("Auditing project permissions is disabled by configuration, skipping")
             return []
         utilities.logger.debug("Auditing %s", str(self))
@@ -98,13 +98,13 @@ class ProjectPermissions(permissions.Permissions):
     def __audit_user_permissions(self, audit_settings):
         problems = []
         user_count = self.count("users")
-        max_users = audit_settings["audit.projects.permissions.maxUsers"]
+        max_users = audit_settings.get("audit.projects.permissions.maxUsers", 5)
         if user_count > max_users:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_USERS)
             msg = rule.msg.format(str(self.concerned_object), user_count)
             problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        max_admins = audit_settings["audit.projects.permissions.maxAdminUsers"]
+        max_admins = audit_settings.get("audit.projects.permissions.maxAdminUsers", 2)
         admin_count = self.count("users", ("admin"))
         if admin_count > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_USERS)
@@ -128,35 +128,35 @@ class ProjectPermissions(permissions.Permissions):
                     problem.Problem(rule.type, rule.severity, rule.msg.format(str(self.concerned_object)), concerned_object=self.concerned_object)
                 )
 
-        max_perms = audit_settings["audit.projects.permissions.maxGroups"]
+        max_perms = audit_settings.get("audit.projects.permissions.maxGroups", 5)
         counter = self.count(perm_type="groups", perm_filter=permissions.PROJECT_PERMISSIONS)
         if counter > max_perms:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_GROUPS)
             msg = rule.msg.format(str(self.concerned_object), counter, max_perms)
             problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        max_scan = audit_settings["audit.projects.permissions.maxScanGroups"]
+        max_scan = audit_settings.get("audit.projects.permissions.maxScanGroups", 1)
         counter = self.count(perm_type="groups", perm_filter=("scan"))
         if counter > max_scan:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_SCAN_GROUPS)
             msg = rule.msg.format(str(self.concerned_object), counter, max_scan)
             problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        max_issue_adm = audit_settings["audit.projects.permissions.maxIssueAdminGroups"]
+        max_issue_adm = audit_settings.get("audit.projects.permissions.maxIssueAdminGroups", 2)
         counter = self.count(perm_type="groups", perm_filter=("issueadmin"))
         if counter > max_issue_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ISSUE_ADM_GROUPS)
             msg = rule.msg.format(str(self.concerned_object), counter, max_issue_adm)
             problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        max_spots_adm = audit_settings["audit.projects.permissions.maxHotspotAdminGroups"]
+        max_spots_adm = audit_settings.get("audit.projects.permissions.maxHotspotAdminGroups", 2)
         counter = self.count(perm_type="groups", perm_filter=("securityhotspotadmin"))
         if counter > max_spots_adm:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_HOTSPOT_ADM_GROUPS)
             msg = rule.msg.format(str(self.concerned_object), counter, max_spots_adm)
             problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
-        max_admins = audit_settings["audit.projects.permissions.maxAdminGroups"]
+        max_admins = audit_settings.get("audit.projects.permissions.maxAdminGroups", 2)
         counter = self.count(perm_type="groups", perm_filter=("admin"))
         if counter > max_admins:
             rule = rules.get_rule(rules.RuleId.PROJ_PERM_MAX_ADM_GROUPS)

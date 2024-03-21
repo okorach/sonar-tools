@@ -257,14 +257,14 @@ class Application(aggr.Aggregation):
 
     def _audit_empty(self, audit_settings):
         """Audits if an application contains 0 projects"""
-        if not audit_settings["audit.applications.empty"]:
+        if not audit_settings.get("audit.applications.empty", True):
             util.logger.debug("Auditing empty applications is disabled, skipping...")
             return []
         return super()._audit_empty_aggregation(broken_rule=rules.RuleId.APPLICATION_EMPTY)
 
     def _audit_singleton(self, audit_settings):
         """Audits if an application contains a single project (makes littel sense)"""
-        if not audit_settings["audit.applications.singleton"]:
+        if not audit_settings.get("audit.applications.singleton", True):
             util.logger.debug("Auditing singleton applications is disabled, skipping...")
             return []
         return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
@@ -456,7 +456,7 @@ def audit(audit_settings, endpoint=None, key_list=None):
     """
     if endpoint.edition() == "community":
         return []
-    if not audit_settings["audit.applications"]:
+    if not audit_settings.get("audit.applications", True):
         util.logger.debug("Auditing applications is disabled, skipping...")
         return []
     util.logger.info("--- Auditing applications ---")

@@ -384,7 +384,7 @@ def audit(endpoint, audit_settings):
     :return: list of problems found
     :rtype: list[Problem]
     """
-    if not audit_settings["audit.users"]:
+    if not audit_settings.get("audit.users", True):
         util.logger.info("Auditing users is disabled, skipping...")
         return []
     util.logger.info("--- Auditing users ---")

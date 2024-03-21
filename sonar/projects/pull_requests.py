@@ -74,7 +74,7 @@ class PullRequest(components.Component):
         age = util.age(self.last_analysis())
         if age is None:  # Main branch not analyzed yet
             return []
-        max_age = audit_settings["audit.projects.pullRequests.maxLastAnalysisAge"]
+        max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         problems = []
         if age > max_age:
             rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)

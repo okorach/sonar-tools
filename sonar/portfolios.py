@@ -275,13 +275,13 @@ class Portfolio(aggregations.Aggregation):
         return sq.delete_object(self, "views/delete", {"key": self.key}, _OBJECTS)
 
     def _audit_empty(self, audit_settings):
-        if not audit_settings["audit.portfolios.empty"]:
+        if not audit_settings.get("audit.portfolios.empty", True):
             util.logger.debug("Auditing empty portfolios is disabled, skipping...")
             return []
         return self._audit_empty_aggregation(broken_rule=rules.RuleId.PORTFOLIO_EMPTY)
 
     def _audit_singleton(self, audit_settings):
-        if not audit_settings["audit.portfolios.singleton"]:
+        if not audit_settings.get("audit.portfolios.singleton", True):
             util.logger.debug("Auditing singleton portfolios is disabled, skipping...")
             return []
         return self._audit_singleton_aggregation(broken_rule=rules.RuleId.PORTFOLIO_SINGLETON)
@@ -517,7 +517,7 @@ def search(endpoint, params=None):
 
 
 def audit(audit_settings, endpoint=None, key_list=None):
-    if not audit_settings["audit.portfolios"]:
+    if not audit_settings.get("audit.portfolios", True):
         util.logger.debug("Auditing portfolios is disabled, skipping...")
         return []
     util.logger.info("--- Auditing portfolios ---")

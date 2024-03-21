@@ -166,7 +166,7 @@ class Group(sq.SqObject):
         """
         util.logger.debug("Auditing %s", str(self))
         problems = []
-        if audit_settings["audit.groups.empty"] and self.__members_count == 0:
+        if audit_settings.get("audit.groups.empty", True) and self.__members_count == 0:
             rule = rules.get_rule(rules.RuleId.GROUP_EMPTY)
             problems = [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
         return problems
@@ -280,7 +280,7 @@ def audit(audit_settings, endpoint=None):
     :return: list of problems found
     :rtype: list[Problem]
     """
-    if not audit_settings["audit.groups"]:
+    if not audit_settings.get("audit.groups", True):
         util.logger.info("Auditing groups is disabled, skipping...")
         return []
     util.logger.info("--- Auditing groups ---")

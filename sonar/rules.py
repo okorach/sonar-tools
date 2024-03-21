@@ -104,7 +104,7 @@ class Rule(sq.SqObject):
         self._impacts = data.get("impacts", None)
         self._clean_code_attribute = {
             "attribute": data.get("cleanCodeAttribute", None),
-            "attribute_category": data.get("cleanCodeAttributeCategory", None)
+            "attribute_category": data.get("cleanCodeAttributeCategory", None),
         }
         _OBJECTS[self.key] = self
 
