@@ -119,9 +119,9 @@ class Platform:
         :rtype: str ("community", "developer", "enterprise" or "datacenter")
         """
         if "edition" in self.global_nav():
-            return self.global_nav()["edition"]
+            return util.edition_normalize(self.global_nav()["edition"])
         else:
-            return self.sys_info()["Statistics"]["edition"]
+            return util.edition_normalize(self.sys_info()["Statistics"]["edition"])
 
     def server_id(self):
         """

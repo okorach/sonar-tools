@@ -23,10 +23,12 @@
 
 """
 
+from typing import Union
 import sonar.utilities as util
 from sonar.audit import rules
 import sonar.audit.problem as pb
 from sonar.dce import nodes
+
 
 _STORE_SIZE = "Store Size"
 _ES_STATE = "Search State"
@@ -49,14 +51,26 @@ class SearchNode(nodes.DceNode):
         util.logger.info("Auditing %s", str(self))
         return self.__audit_store_size()
 
-    def __audit_store_size(self):
-        es_heap = util.jvm_heap(self.sif.search_jvm_cmdline())
-        index_size = self.store_size()
+    def max_heap(self) -> Union[int | None]:
+        if self.sif.version() < (9, 0, 0):
+            return util.jvm_heap(self.sif.search_jvm_cmdline())
+        try:
+            sz = self.json["Search State"]["JVM Heap Max"]
+        except KeyError:
+            util.logger.warning("Can't retrieve heap allocated to %s", str(self))
+            return None
+        return int(float(sz.split(" ")[0]) * 1024)
 
+    def __audit_store_size(self):
+        es_heap = self.max_heap()
         if es_heap is None:
+            util.logger.warning("No ES heap found for %s, audit of ES head is skipped", str(self))
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             return [pb.Problem(rule.type, rule.severity, rule.msg)]
-        elif index_size is None:
+
+        index_size = self.store_size()
+
+        if index_size is None:
             util.logger.debug("Search server index size missing, audit of ES index vs heap skipped...")
             return []
         elif index_size == 0:

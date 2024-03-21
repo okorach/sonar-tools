@@ -31,6 +31,7 @@ import logging
 import argparse
 import json
 import datetime
+from typing import Union
 import pytz
 from sonar import options
 
@@ -566,3 +567,32 @@ def replace_keys(key_list, new_key, data):
         if k in data:
             data[new_key] = data.pop(k)
     return data
+
+
+def edition_normalize(edition: str) -> Union[str, None]:
+    """Returns the SQ edition in a normalized way (community, developer, enterprise or datacenter)
+
+    :param str edition: The original non normalized edition string
+    :return: The normalized edition string
+    :rtype: str
+    """
+    if edition is None:
+        return None
+    return edition.lower().replace("edition", "").replace(" ", "")
+
+
+def string_to_version(sif_v: str, digits: int = 3, as_string: bool = False) -> Union[str, tuple[int], None]:
+    """Returns the normalized SQ version as string or tuple
+
+    :param str edition: The original non normalized edition string
+    :return: The normalized edition string
+    :rtype: str
+    """
+    if sif_v is None:
+        return None
+
+    split_version = sif_v.split(".")
+    if as_string:
+        return ".".join(split_version[0:digits])
+    else:
+        return tuple(int(n) for n in split_version[0:digits])

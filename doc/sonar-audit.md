@@ -131,7 +131,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - C maintainability rating threshold is not between 15% and 20%
   - D maintainability rating threshold is not between 40% and 50%
 - Environment: (if `audit.globalSettings = yes`, default `yes`)
-  - Web process heap (`-Xmx`) is not between 1 GB and 2 GB
+  - Web process heap (`-Xmx`) is not between 1 GB and 2 GB for CE, DE and EE, between 2 and 4 GB for DCE
   - CE process heap (`-Xmx`) is not between 512 MB per worker and 2 GB per worker
   - More than 4 CE workers
   - CE background tasks failure rate is more than 1%
@@ -193,7 +193,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
 - Applications: (if `audit.applications = yes`, default `yes`)
   - Empty applications (with no projects) if `audit.applications.empty` is `yes`
   - Applications composed of a single project if `audit.applications.singleton` is `yes`
-  - Last recomputation `FAILED` 
+  - Last recomputation `FAILED`
 - Users: (if `audit.users = yes`, default `yes`)
   - Users that did not login on the platform since `audit.users.maxLoginAge` days (default 180 days)
   - Tokens older than `audit.tokens.maxAge` days (default 90 days)
