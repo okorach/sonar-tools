@@ -51,7 +51,7 @@ class SearchNode(nodes.DceNode):
         util.logger.info("Auditing %s", str(self))
         return self.__audit_store_size()
 
-    def max_heap(self) -> Union[int | None]:
+    def max_heap(self) -> Union[int, None]:
         if self.sif.version() < (9, 0, 0):
             return util.jvm_heap(self.sif.search_jvm_cmdline())
         try:
