@@ -569,7 +569,7 @@ def replace_keys(key_list, new_key, data):
     return data
 
 
-def edition_normalize(edition: str) -> str:
+def edition_normalize(edition: str) -> Union[str, None]:
     """Returns the SQ edition in a normalized way (community, developer, enterprise or datacenter)
 
     :param str edition: The original non normalized edition string

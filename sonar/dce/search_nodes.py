@@ -23,11 +23,12 @@
 
 """
 
+from typing import Union
 import sonar.utilities as util
 from sonar.audit import rules
 import sonar.audit.problem as pb
 from sonar.dce import nodes
-from typing import Union
+
 
 _STORE_SIZE = "Store Size"
 _ES_STATE = "Search State"
