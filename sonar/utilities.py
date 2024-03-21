@@ -568,13 +568,25 @@ def replace_keys(key_list, new_key, data):
     return data
 
 
-def edition_normalize(edition):
+def edition_normalize(edition: str) -> str:
+    """Returns the SQ edition in a normalized way (community, developer, enterprise or datacenter)
+
+    :param str edition: The original non normalized edition string
+    :return: The normalized edition string
+    :rtype: str
+    """
     if edition is None:
         return None
     return edition.lower().replace("edition", "").replace(" ", "")
 
 
-def string_to_version(sif_v: str, digits=3, as_string=False):
+def string_to_version(sif_v: str, digits: int = 3, as_string: bool = False) -> str | tuple | None:
+    """Returns the normalized SQ version as string or tuple
+
+    :param str edition: The original non normalized edition string
+    :return: The normalized edition string
+    :rtype: str
+    """
     if sif_v is None:
         return None
 

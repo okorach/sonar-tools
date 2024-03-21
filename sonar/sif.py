@@ -109,7 +109,7 @@ class Sif:
         return None
 
     def version(self, digits=3, as_string=False):
-        return util.string_to_version(self.__get_field("Version"))
+        return util.string_to_version(self.__get_field("Version"), digits=digits, as_string=as_string)
 
     def server_id(self):
         return self.__get_field("Server ID")
