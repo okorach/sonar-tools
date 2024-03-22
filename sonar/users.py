@@ -296,7 +296,7 @@ class User(sqobject.SqObject):
             util.logger.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
-        today = dt.datetime.today().replace(tzinfo=dt.datetime.timezone.utc)
+        today = dt.datetime.today().replace(tzinfo=dt.timezone.utc)
         problems = []
         for t in self.tokens():
             age = abs((today - t.created_at).days)
