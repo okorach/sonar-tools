@@ -429,7 +429,7 @@ class Task(sq.SqObject):
         delta_days = (datetime.datetime.today() - release_date).days
         index = tuple_version_list.index(scanner_version)
         util.logger.debug("Scanner used is %d versions old", index)
-        if delta_days > audit_settings["audit.projects.scannerMaxAge"]:
+        if delta_days > audit_settings.get("audit.projects.scannerMaxAge", 730):
             rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER) if index >= 3 else rules.get_rule(rules.RuleId.NOT_LATEST_SCANNER)
             msg = rule.msg.format(str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False))
             return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self.concerned_object)]

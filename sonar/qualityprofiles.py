@@ -418,13 +418,13 @@ class QualityProfile(sq.SqObject):
         util.logger.debug("Auditing %s (key '%s')", str(self), self.key)
         problems = []
         age = util.age(self.last_update(), rounded=True)
-        if age > audit_settings["audit.qualityProfiles.maxLastChangeAge"]:
+        if age > audit_settings.get("audit.qualityProfiles.maxLastChangeAge", 180):
             rule = arules.get_rule(arules.RuleId.QP_LAST_CHANGE_DATE)
             msg = rule.msg.format(str(self), age)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         total_rules = rules.count(endpoint=self.endpoint, languages=self.language)
-        if self.nbr_rules < int(total_rules * audit_settings["audit.qualityProfiles.minNumberOfRules"]):
+        if self.nbr_rules < int(total_rules * audit_settings.get("audit.qualityProfiles.minNumberOfRules", 0.5)):
             rule = arules.get_rule(arules.RuleId.QP_TOO_FEW_RULES)
             msg = rule.msg.format(str(self), self.nbr_rules, total_rules)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
@@ -434,11 +434,11 @@ class QualityProfile(sq.SqObject):
             rule = arules.get_rule(arules.RuleId.QP_NOT_USED)
             msg = rule.msg.format(str(self))
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
-        elif age > audit_settings["audit.qualityProfiles.maxUnusedAge"]:
+        elif age > audit_settings.get("audit.qualityProfiles.maxUnusedAge", 60):
             rule = arules.get_rule(arules.RuleId.QP_LAST_USED_DATE)
             msg = rule.msg.format(str(self), age)
             problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
-        if audit_settings["audit.qualityProfiles.checkDeprecatedRules"]:
+        if audit_settings.get("audit.qualityProfiles.checkDeprecatedRules", True):
             max_deprecated_rules = 0
             parent_qp = self.built_in_parent()
             if parent_qp is not None:

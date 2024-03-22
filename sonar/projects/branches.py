@@ -365,7 +365,7 @@ class Branch(components.Component):
         if self.is_main() or age is None:
             # Main branch (not purgeable) or branch not analyzed yet
             return []
-        max_age = audit_settings["audit.projects.branches.maxLastAnalysisAge"]
+        max_age = audit_settings.get("audit.projects.branches.maxLastAnalysisAge", 30)
         problems = []
         if self.is_main():
             util.logger.debug("%s is main (not purgeable)", str(self))
@@ -388,7 +388,7 @@ class Branch(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        if audit_settings["sonar.audit.branches"]:
+        if audit_settings.get("audit.project.branches", True):
             util.logger.debug("Auditing %s", str(self))
             return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
         else:

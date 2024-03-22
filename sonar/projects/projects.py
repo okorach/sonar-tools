@@ -371,7 +371,7 @@ class Project(components.Component):
         problems = []
         age = util.age(self.last_analysis(include_branches=True), True)
         if age is None:
-            if not audit_settings["audit.projects.neverAnalyzed"]:
+            if not audit_settings.get("audit.projects.neverAnalyzed", True):
                 util.logger.debug("Auditing of never analyzed projects is disabled, skipping")
             else:
                 rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
@@ -379,7 +379,7 @@ class Project(components.Component):
                 problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
             return problems
 
-        max_age = audit_settings["audit.projects.maxLastAnalysisAge"]
+        max_age = audit_settings.get("audit.projects.maxLastAnalysisAge", 180)
         if max_age == 0:
             util.logger.debug("Auditing of projects with old analysis date is disabled, skipping")
         elif age > max_age:
@@ -423,7 +423,7 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        max_age = audit_settings["audit.projects.pullRequests.maxLastAnalysisAge"]
+        max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         if max_age == 0:
             util.logger.debug("Auditing of pull request last analysis age is disabled, skipping...")
             return []
@@ -498,7 +498,7 @@ class Project(components.Component):
         return []
 
     def __audit_binding_valid(self, audit_settings):
-        if self.endpoint.edition() == "community" or not audit_settings["audit.projects.bindings.validation"] or not self.has_binding():
+        if self.endpoint.edition() == "community" or not audit_settings.get("audit.projects.branches", True) or not self.has_binding():
             util.logger.info(
                 "Community edition, binding validation disabled or %s has no binding, skipping binding validation...",
                 str(self),
@@ -1154,7 +1154,7 @@ def get_list(endpoint, key_list=None, use_cache=True):
 
 
 def __audit_thread(queue, results, audit_settings, bindings):
-    audit_bindings = audit_settings["audit.projects.bindings"]
+    audit_bindings = audit_settings.get("audit.projects.bindings", True)
     while not queue.empty():
         util.logger.debug("Picking from the queue")
         project = queue.get()
@@ -1193,14 +1193,14 @@ def audit(endpoint, audit_settings, key_list=None):
     for p in plist.values():
         q.put(p)
     bindings = {}
-    for i in range(audit_settings["threads"]):
+    for i in range(audit_settings.get("threads", 1)):
         util.logger.debug("Starting project audit thread %d", i)
         worker = Thread(target=__audit_thread, args=(q, problems, audit_settings, bindings))
         worker.setDaemon(True)
         worker.setName(f"ProjectAudit{i}")
         worker.start()
     q.join()
-    if not audit_settings["audit.projects.duplicates"]:
+    if not audit_settings.get("audit.projects.duplicates", True):
         util.logger.info("Project duplicates auditing was disabled by configuration")
         return problems
     for key, p in plist.items():
