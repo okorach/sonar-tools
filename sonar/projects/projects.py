@@ -490,7 +490,6 @@ class Project(components.Component):
         """
         if (
             (not audit_settings.get(_AUDIT_BRANCHES_PARAM, True) or self.endpoint.edition() == "community")
-            (not audit_settings.get(_AUDIT_BRANCHES_PARAM, True) or self.endpoint.edition() == "community")
             and self.last_analysis() is not None
             and self.loc() == 0
         ):
