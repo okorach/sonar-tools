@@ -291,7 +291,7 @@ class User(sqobject.SqObject):
         :rtype: list[Problem]
         """
         util.logger.debug("Auditing %s", str(self))
-        protected_users = util.csv_to_list(settings["audit.tokens.neverExpire"])
+        protected_users = util.csv_to_list(settings.get("audit.tokens.neverExpire", ""))
         if self.login in protected_users:
             util.logger.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
@@ -300,25 +300,25 @@ class User(sqobject.SqObject):
         problems = []
         for t in self.tokens():
             age = abs((today - t.created_at).days)
-            if age > settings["audit.tokens.maxAge"]:
+            if age > settings.get("audit.tokens.maxAge", 90):
                 rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
                 msg = rule.msg.format(str(t), age)
                 problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
-            if t.last_connection_date is None and age > settings["audit.tokens.maxUnusedAge"]:
+            if t.last_connection_date is None and age > settings.get("audit.tokens.maxUnusedAge", 30):
                 rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
                 msg = rule.msg.format(str(t), age)
                 problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
             if t.last_connection_date is None:
                 continue
             last_cnx_age = abs((today - t.last_connection_date).days)
-            if last_cnx_age > settings["audit.tokens.maxUnusedAge"]:
+            if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
                 rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
                 msg = rule.msg.format(str(t), last_cnx_age)
                 problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
 
         if self.last_login:
             age = abs((today - self.last_login).days)
-            if age > settings["audit.users.maxLoginAge"]:
+            if age > settings.get("audit.users.maxLoginAge", 180):
                 rule = rules.get_rule(rules.RuleId.USER_UNUSED)
                 msg = rule.msg.format(str(self), age)
                 problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
