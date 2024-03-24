@@ -76,7 +76,6 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
 ## List of audited stuff
 
 - General checks: (if `audit.globalSettings = yes`, default `yes`)
-  - SonarQube instance is not an official distribution
   - The `admin` user password is the default value `admin`
   - The platform is of version lower than LTS
   - The platform is not on most recent LTS patch level
@@ -179,9 +178,10 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - Usage of `**/<directory>/**/*`, `**`, `**/*`, `**/*.<extension>` pattern
       (Exceptions: `__pycache__`, `node_modules`, `vendor`, `lib`, `libs` directories)
     - Above patterns and exceptions are configurable
-  - sonar.scm.disabled=true
+  - Projects with `sonar.scm.disabled` set to `true`
   - Projects with both a `main` and a `master` branch
   - Analysis warnings on main branch analysis
+  - Last background task with failed SCM detection
   - Last background task on main branch `FAILED`
   - Last analysis with an obsolete scanner version (by default more than 2 years old)
 - Branches: (if `audit.project.branches = yes`, default `yes`)

@@ -209,16 +209,15 @@ class Permissions(ABC):
         :return: The number of permissions.
         :rtype: int
         """
-        perms = PERMISSION_TYPES if perm_type is None else (perm_type)
+        perms = PERMISSION_TYPES if perm_type is None else (perm_type,)
         elem_counter, perm_counter = 0, 0
         for ptype in perms:
             for elem_perms in self.permissions.get(ptype, {}).values():
                 elem_counter += 1
                 if perm_filter is None:
                     continue
-                for p in elem_perms:
-                    if p in perm_filter:
-                        perm_counter += 1
+                perm_counter += len([1 for p in elem_perms if p in perm_filter])
+        utilities.logger.debug("Perm counts = %d", (elem_counter if perm_filter is None else perm_counter))
         return elem_counter if perm_filter is None else perm_counter
 
     def _get_api(self, api, perm_type, ret_field, **extra_params):

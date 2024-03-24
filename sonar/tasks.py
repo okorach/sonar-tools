@@ -354,12 +354,22 @@ class Task(sq.SqObject):
         if not audit_settings.get("audit.projects.analysisWarnings", True):
             util.logger.info("Project analysis warnings auditing disabled, skipping...")
             return []
+        pbs = []
         warnings = self.warnings()
-        if len(warnings) == 0:
-            return []
-        rule = rules.get_rule(rules.RuleId.PROJ_ANALYSIS_WARNING)
-        msg = rule.msg.format(str(self.concerned_object), " --- ".join(warnings))
-        return [problem.Problem(rule.type, rule.severity, msg, concerned_object=self)]
+        warnings_left = []
+        for w in warnings:
+            if w.find("SCM provider autodetection failed") >= 0:
+                rule = rules.get_rule(rules.RuleId.PROJ_SCM_UNDETECTED)
+                pbs.append(
+                    problem.Problem(rule.type, rule.severity, rule.msg.format(str(self.concerned_object)), concerned_object=self.concerned_object)
+                )
+            else:
+                warnings_left.append(w)
+        if len(warnings_left) > 0:
+            rule = rules.get_rule(rules.RuleId.PROJ_ANALYSIS_WARNING)
+            msg = rule.msg.format(str(self.concerned_object), " --- ".join(warnings_left))
+            pbs.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
+        return pbs
 
     def __audit_failed_task(self, audit_settings):
         if not audit_settings.get("audit.projects.failedTasks", True):

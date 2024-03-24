@@ -498,9 +498,17 @@ class Project(components.Component):
         return []
 
     def __audit_binding_valid(self, audit_settings):
-        if self.endpoint.edition() == "community" or not audit_settings.get("audit.projects.branches", True) or not self.has_binding():
+        if self.endpoint.edition() == "community":
+            util.logger.info("Community edition, skipping binding validation...")
+            return []
+        elif not audit_settings.get("audit.projects.bindings", True):
             util.logger.info(
-                "Community edition, binding validation disabled or %s has no binding, skipping binding validation...",
+                "%s binding validation disabled, skipped",
+                str(self),
+            )
+        elif not self.has_binding():
+            util.logger.info(
+                "%s has no binding, skipping binding validation...",
                 str(self),
             )
             return []

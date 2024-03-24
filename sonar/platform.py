@@ -107,10 +107,10 @@ class Platform:
             digits = 3
         if self._version is None:
             self._version = self.get("/api/server/version").text.split(".")
+            util.logger.debug("Version = %s", self._version)
         if as_string:
             return ".".join(self._version[0:digits])
         else:
-            util.logger.debug("Version = %s", self._version)
             return tuple(int(n) for n in self._version[0:digits])
 
     def edition(self):
@@ -565,7 +565,7 @@ class Platform:
 
         maxis = {"admin": 2, "gateadmin": 2, "profileadmin": 2, "scan": 2, "provisioning": 3}
         for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
-            counter = self.global_permissions().count(perm_type="groups", perm_filter=(key))
+            counter = self.global_permissions().count(perm_type="groups", perm_filter=(key,))
             if key in maxis and counter > maxis[key]:
                 msg = f"Too many ({counter}) groups with permission '{name}', {maxis[key]} max recommended"
                 problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg, concerned_object=perms_url))
@@ -582,7 +582,7 @@ class Platform:
 
         maxis = {"admin": 3, "gateadmin": 3, "profileadmin": 3, "scan": 3, "provisioning": 3}
         for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
-            counter = self.global_permissions().count(perm_type="users", perm_filter=(key))
+            counter = self.global_permissions().count(perm_type="users", perm_filter=(key,))
             if key in maxis and counter > maxis[key]:
                 msg = f"Too many ({counter}) users with permission '{name}', use groups instead"
                 problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg, concerned_object=perms_url))
@@ -656,7 +656,7 @@ def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, 
         return []
     value, min_v, max_v = float(platform_settings[v[0]]), float(v[1]), float(v[2])
     util.logger.info(
-        "Auditing that setting %s is within recommended range [%f-%f]",
+        "Auditing that setting %s is within recommended range [%.2f-%.2f]",
         v[0],
         min_v,
         max_v,
@@ -673,29 +673,22 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings, url
     if v is None:
         util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
-    if key not in platform_settings:
-        util.logger.warning(_NON_EXISTING_SETTING_SKIPPED, key)
-        return []
-    util.logger.info("Auditing whether setting %s is set or not", key)
-    problems = []
-    if platform_settings[key] == "":
+    util.logger.info("Auditing whether setting %s is set or not", v[0])
+    if platform_settings.get(v[0], "") == "":  # Setting is not set
         if check_is_set:
             rule = rules.get_rule(rules.RuleId.SETTING_NOT_SET)
-            problems = [pb.Problem(rule.type, rule.severity, rule.msg.format(key), concerned_object=url)]
-        else:
-            util.logger.info("Setting %s is not set", key)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(v[0]), concerned_object=url)]
+        util.logger.info("Setting %s is not set", v[0])
     else:
         if not check_is_set:
-            util.logger.info("Setting %s is set with value %s", key, platform_settings[key])
-        else:
-            problems = [pb.Problem(v[1], v[2], f"Setting {key} is set, although it should probably not", concerned_object=url)]
-
-    return problems
+            return [pb.Problem(v[1], v[2], f"Setting {v[0]} is set, although it should probably not", concerned_object=url)]
+        util.logger.info("Setting %s is set with value %s", v[0], platform_settings[v[0]])
+    return []
 
 
 def _audit_maintainability_rating_range(value, range, rating_letter, severity, domain, url):
     util.logger.debug(
-        "Checking that maintainability rating threshold %3.0f%% for '%s' is within recommended range [%3.0f%%-%3.0f%%]",
+        "Checking that maintainability rating threshold %.1f%% for '%s' is within recommended range [%.1f%%-%.1f%%]",
         value * 100,
         rating_letter,
         range[0] * 100,
@@ -708,7 +701,7 @@ def _audit_maintainability_rating_range(value, range, rating_letter, severity, d
             domain,
             severity,
             f"Maintainability rating threshold {value * 100}% for {rating_letter} "
-            f"is NOT within recommended range [{range[0] * 100}%-{range[1] * 100}%]",
+            f"is NOT within recommended range [{range[0] * 100:.1f}%-{range[1] * 100:.1f}%]",
             concerned_object=url,
         )
     ]
