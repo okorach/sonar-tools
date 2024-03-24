@@ -184,7 +184,7 @@ class Sif:
                     undetected_scm_count = scm["count"]
             if undetected_scm_count == 0:
                 return []
-            rule = rules.get_rule(rules.RuleId.UNDETECTED_SCM)
+            rule = rules.get_rule(rules.RuleId.SIF_UNDETECTED_SCM)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(undetected_scm_count), concerned_object=self)]
         except KeyError:
             util.logger.info("SCM information not in SIF, ignoring audit...")

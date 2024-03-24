@@ -375,6 +375,12 @@
         "object": "Project",
         "message": "{} has SCM integration disabled, issue timestamping may not be accurate for these project"
     },
+    "PROJ_SCM_UNDETECTED": {
+        "severity": "HIGH",
+        "type": "GOVERNANCE",
+        "object": "Project",
+        "message": "{} SCM detection failed, issue timestamping may not be accurate for these project"
+    },
     "PROJ_ANALYSIS_WARNING": {
         "severity": "MEDIUM",
         "type": "OPERATIONS",
@@ -406,7 +412,7 @@
         "type": "GOVERNANCE",
         "message": "Running commercial edition without leveraging branch analysis"
     },
-    "UNDETECTED_SCM": {
+    "SIF_UNDETECTED_SCM": {
         "severity": "LOW",
         "type": "GOVERNANCE",
         "message": "{} projects with undetected SCM, issue timestamping may not be accurate for those projects"
