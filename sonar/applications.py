@@ -248,7 +248,7 @@ class Application(aggr.Aggregation):
         :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :type exit_on_error: bool, optional
         :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
-        Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :type mute: tuple, optional
         :return: Whether the delete succeeded
         :rtype: bool
