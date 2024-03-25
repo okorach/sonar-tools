@@ -222,7 +222,7 @@ def main():
     obj_list = []
     if with_branches:
         for project in project_list.values():
-            obj_list += project.branches()
+            obj_list += project.branches().values()
     else:
         obj_list = project_list.values()
     nb_branches = len(obj_list)

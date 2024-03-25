@@ -192,7 +192,7 @@ def __dump_compact(finding_list, file, **kwargs):
 
 def __get_list(project, list_str, list_type):
     if list_str == "*":
-        list_array = [b.name for b in project.branches()] if list_type == "branch" else [p.key for p in project.pull_requests()]
+        list_array = project.branches().keys() if list_type == "branch" else project.pull_requests().keys()
     elif list_str is not None:
         list_array = util.csv_to_list(list_str)
     else:

@@ -255,7 +255,7 @@ class Project(components.Component):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def branches(self, use_cache=True):
+    def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
         """
         :return: Dict of branches of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
@@ -281,7 +281,7 @@ class Project(components.Component):
             util.logger.warning("Could not find main branch for %s", str(self))
         return None
 
-    def pull_requests(self, use_cache=True):
+    def pull_requests(self, use_cache: bool = True) -> dict[str, pull_requests.PullRequest]:
         """
         :return: List of pull requests of the project
         :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)

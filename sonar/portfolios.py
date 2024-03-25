@@ -294,7 +294,9 @@ class Portfolio(aggregations.Aggregation):
         util.logger.info("Exporting %s", str(self))
         self.refresh()
         json_data = self._json
-        json_data.update(self.sub_portfolios(full=full))
+        subp = self.sub_portfolios(full=full)
+        if subp:
+            json_data.update(subp)
         json_data.update(
             {
                 "key": self.key,
