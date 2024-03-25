@@ -75,17 +75,12 @@ class Sif:
         return self._url
 
     def edition(self):
-        try:
-            ed = self.json[_STATS]["edition"]
-        except KeyError:
-            try:
-                ed = self.json["License"]["edition"]
-            except KeyError:
+        for section in (_STATS, _SYSTEM, "License"):
+            for subsection in ("edition", "Edition"):
                 try:
-                    # FIXME: Can't get edition in SIF of SonarQube 9.7+, this is an unsolvable problem
-                    ed = self.json["edition"]
+                    ed = self.json[section][subsection]
                 except KeyError:
-                    return None
+                    pass
         # Old SIFs could return "Enterprise Edition"
         return util.edition_normalize(ed)
 
