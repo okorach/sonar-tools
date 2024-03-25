@@ -160,24 +160,25 @@ class AppNode(dce_nodes.DceNode):
             return []
 
     def __audit_jvm_version(self) -> list[pb.Problem]:
+        util.logger.debug("Auditing %s JVM version", str(self))
         try:
             java_version = int(self.json["Web JVM Properties"]["java.specification.version"])
         except KeyError:
             util.logger.warning("Can't find Java version for %s in SIF, auditing this part is skipped", str(self))
             return []
         try:
-            sq_version = util.string_to_version(self.json["System"]["Version"])
+            sq_version = self.sif.version()
         except KeyError:
             util.logger.warning("Can't find SonarQube version for %s in SIF, auditing this part is skipped", str(self))
             return []
         if sq_version >= (9, 9, 0) and java_version != 17:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_WRONG_JAVA_VERSION)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), java_version), concerned_object=self)]
-        else:
-            util.logger.debug("%s is running on the required java version (java %d)", str(self), java_version)
+        util.logger.debug("%s is running on the required java version (java %d)", str(self), java_version)
         return []
 
     def __audit_jvm_ram(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+        util.logger.debug("Auditing %s JVM RAM", str(self))
         # On DCE we expect between 2 and 4 GB of RAM per App Node Web JVM
         min_heap = audit_settings.get("audit.web.heapMin", 2024)
         max_heap = audit_settings.get("audit.web.heapMax", 4096)
@@ -192,8 +193,8 @@ class AppNode(dce_nodes.DceNode):
         elif web_heap < min_heap or web_heap > max_heap:
             rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(web_heap, min_heap, max_heap), concerned_object=self)]
-        else:
-            util.logger.debug("%s web heap of %d MB is within recommended range [%d-%d]", str(self), web_heap, min_heap, max_heap)
+        util.logger.debug("%s web heap of %d MB is within recommended range [%d-%d]", str(self), web_heap, min_heap, max_heap)
+        return []
 
     def __audit_web_settings(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         return self.__audit_jvm_version() + self.__audit_jvm_ram(audit_settings)
