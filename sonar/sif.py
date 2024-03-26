@@ -235,27 +235,29 @@ class Sif:
             return [pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self)]
         return []
 
-    def __audit_jdbc_url(self):
+    def __audit_jdbc_url(self) -> list[pb.Problem]:
         util.logger.info("Auditing JDBC settings")
-        problems = []
         stats = self.json.get(_SETTINGS)
         if stats is None:
             util.logger.error("Can't verify Database settings in System Info File, was it corrupted or redacted ?")
-            return problems
+            return []
         jdbc_url = stats.get("sonar.jdbc.url", None)
-        util.logger.debug("JDBC URL = %s", str(jdbc_url))
         if jdbc_url is None:
             rule = rules.get_rule(rules.RuleId.SETTING_JDBC_URL_NOT_SET)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self))
-        elif re.search(
+            return [pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self)]
+        if re.search(
             r":(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]",
             jdbc_url,
         ):
             lic = self.license_type()
             if lic == "PRODUCTION":
                 rule = rules.get_rule(rules.RuleId.SETTING_DB_ON_SAME_HOST)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(jdbc_url), concerned_object=self))
-        return problems
+                return [pb.Problem(rule.type, rule.severity, rule.msg.format(jdbc_url), concerned_object=self)]
+            else:
+                util.logger.info("JDBC URL %s is on localhost but this is not a production license. So be it!", jdbc_url)
+        else:
+            util.logger.info("JDBC URL %s does not use localhost, all good!", jdbc_url)
+        return []
 
     def __audit_dce_settings(self):
         util.logger.info("Auditing DCE settings for version %s", str(self.version()))
