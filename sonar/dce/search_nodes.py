@@ -52,7 +52,7 @@ class SearchNode(nodes.DceNode):
         return self.__audit_store_size()
 
     def max_heap(self) -> Union[int, None]:
-        if self.sif.version() < (9, 0, 0):
+        if self.sif.edition() != "datacenter" and self.sif.version() < (9, 0, 0):
             return util.jvm_heap(self.sif.search_jvm_cmdline())
         try:
             sz = self.json["Search State"]["JVM Heap Max"]
@@ -62,9 +62,10 @@ class SearchNode(nodes.DceNode):
         return int(float(sz.split(" ")[0]) * 1024)
 
     def __audit_store_size(self):
+        util.logger.info("%s: Auditing store size", str(self))
         es_heap = self.max_heap()
         if es_heap is None:
-            util.logger.warning("No ES heap found for %s, audit of ES head is skipped", str(self))
+            util.logger.warning("%s: No ES heap found, audit of ES head is skipped", str(self))
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             return [pb.Problem(rule.type, rule.severity, rule.msg)]
 
