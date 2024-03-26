@@ -89,30 +89,15 @@
         "type": "PERFORMANCE",
         "message": "Short Lived Branches retention duration of {} days is outside of recommended range [{}-{}]"
     },
-    "SETTING_WEB_HEAP": {
+    "SETTING_BAD_HEAP": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
-        "message": "Web process heap ('sonar.web.javaOpts' -Xmx) memory setting value is {} MB, outside of recommended range [{}-{}]"
-    },
-    "SETTING_WEB_NO_HEAP": {
-        "severity": "HIGH",
-        "type": "PERFORMANCE",
-        "message": "Web process heap ('sonar.web.javaOpts' -Xmx) memory setting is not specified"
+        "message": "{} heap memory setting value is {} MB, outside of recommended range [{}-{}]"
     },
     "SETTING_WEB_WRONG_JAVA_VERSION": {
         "severity": "HIGH",
         "type": "OPERATIONS",
         "message": "SonarQube {} is running on Java {} which is not a supported Java version"
-    },
-    "SETTING_CE_HEAP": {
-        "severity": "HIGH",
-        "type": "PERFORMANCE",
-        "message": "CE process heap ('sonar.ce.javaOpts' -Xmx) memory setting value is {} MB, outside of recommended range [{}-{}] x {} workers"
-    },
-    "SETTING_CE_NO_HEAP": {
-        "severity": "HIGH",
-        "type": "PERFORMANCE",
-        "message": "CE process heap ('sonar.ce.javaOpts' -Xmx) memory setting is not specified"
     },
     "SETTING_ES_HEAP": {
         "severity": "HIGH",
