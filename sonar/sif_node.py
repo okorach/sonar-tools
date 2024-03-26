@@ -39,11 +39,11 @@ _WORKER_COUNT = "Worker Count"
 
 
 def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, dict]) -> list[pb.Problem]:
-    util.logger.debug("Auditing CE background tasks")
+    util.logger.info("%s: Auditing CE background tasks", obj_name)
     problems = []
     ce_tasks = ce_data.get(_CE_TASKS)
     if ce_tasks is None:
-        util.logger.warning("Can't find %s Compute Engine Tasks in SIF, audit on CE task is skipped", obj_name)
+        util.logger.warning("%s: Can't find Compute Engine Tasks in SIF, audit on CE task is skipped", obj_name)
         return []
     ce_success = ce_tasks["Processed With Success"]
     ce_error = ce_tasks["Processed With Error"]
@@ -73,44 +73,44 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, dict
 
 
 def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limits: tuple[int] = (1024, 4096)) -> list[pb.Problem]:
-    util.logger.info("Auditing %s JVM RAM", str(obj_name))
+    util.logger.info("%s: Auditing JVM RAM", obj_name)
     # On DCE we expect between 2 and 4 GB of RAM per App Node Web JVM
     (min_heap, max_heap) = heap_limits
     try:
         heap = jvm_state["Heap Max (MB)"]
     except KeyError:
-        util.logger.warning("Can't find JVM Heap for %s in SIF, auditing this part is skipped", obj_name)
+        util.logger.warning("%s: Can't find JVM Heap in SIF, auditing this part is skipped", obj_name)
         return []
     if heap < min_heap or heap > max_heap:
         rule = rules.get_rule(rules.RuleId.SETTING_BAD_HEAP)
         return [pb.Problem(rule.type, rule.severity, rule.msg.format(obj_name, heap, min_heap, max_heap), concerned_object=obj)]
-    util.logger.info("%s heap of %d MB is within recommended range [%d-%d]", obj_name, heap, min_heap, max_heap)
+    util.logger.info("%s: Heap of %d MB is within recommended range [%d-%d]", obj_name, heap, min_heap, max_heap)
     return []
 
 
 def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -> list[pb.Problem]:
-    util.logger.info("Auditing %s JVM version", str(obj))
+    util.logger.info("%s: Auditing JVM version", obj_name)
     try:
         java_version = int(jvm_props["java.specification.version"])
     except KeyError:
-        util.logger.warning("Can't find Java version for %s in SIF, auditing this part is skipped", obj_name)
+        util.logger.warning("%s: Can't find Java version in SIF, auditing this part is skipped", obj_name)
         return []
     try:
         sq_version = obj.version()
     except KeyError:
-        util.logger.warning("Can't find SonarQube version for %s in SIF, auditing this part is skipped", obj_name)
+        util.logger.warning("%s: Can't find SonarQube version in SIF, auditing this part is skipped", obj_name)
         return []
     if sq_version >= (9, 9, 0) and java_version != 17:
         rule = rules.get_rule(rules.RuleId.SETTING_WEB_WRONG_JAVA_VERSION)
         return [pb.Problem(rule.type, rule.severity, rule.msg.format(obj_name, java_version), concerned_object=obj)]
-    util.logger.info("%s is running on the required java version (java %d)", obj_name, java_version)
+    util.logger.info("%s: Running on the required java version (java %d)", obj_name, java_version)
     return []
 
 
 def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list[pb.Problem]:
     ed = obj.edition()
     if ed in ("community", "developer"):
-        util.logger.info("%s edition, CE workers audit skipped...", ed)
+        util.logger.info("%s: %s edition, CE workers audit skipped...", obj_name, ed)
         return []
     try:
         ce_workers = ce_data[_CE_TASKS][_WORKER_COUNT]
@@ -138,13 +138,13 @@ def __log_level(logging_section):
 
 
 def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]):
-    util.logger.info("Auditing log level")
+    util.logger.info("%s: Auditing log level", obj_name)
     lvl = __log_level(logging_data)
     if lvl is None:
         util.logger.warning("%s: log level is missing, audit of log level is skipped...", obj_name)
         return []
     if lvl not in ("DEBUG", "TRACE"):
-        util.logger.info("Log level of '%s' is '%s', all good...", obj_name, lvl)
+        util.logger.info("%s: Log level is '%s', all good...", obj_name, lvl)
         return []
     if lvl == "TRACE":
         return [
@@ -171,7 +171,7 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]):
 def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
     st_time = obj.start_time()
     if st_time is None:
-        util.logger.warning("SIF start time is not available, skipping audit on SonarQube version (aligned with LTS)...")
+        util.logger.warning("%s: start time is not available, skipping audit on SonarQube version (aligned with LTS)...", obj_name)
         return []
     sq_version = obj.version()
     if (
