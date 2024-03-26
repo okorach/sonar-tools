@@ -591,8 +591,14 @@ def string_to_version(sif_v: str, digits: int = 3, as_string: bool = False) -> U
     if sif_v is None:
         return None
 
-    split_version = sif_v.split(".")
-    if as_string:
-        return ".".join(split_version[0:digits])
-    else:
-        return tuple(int(n) for n in split_version[0:digits])
+    try:
+        split_version = sif_v.split(".")
+    except KeyError:
+        return None
+    try:
+        if as_string:
+            return ".".join(split_version[0:digits])
+        else:
+            return tuple(int(n) for n in split_version[0:digits])
+    except ValueError:
+        return None
