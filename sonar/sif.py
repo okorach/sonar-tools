@@ -28,8 +28,9 @@ import re
 from dateutil.relativedelta import relativedelta
 import sonar.utilities as util
 
-from sonar.audit import rules, types, severities
+from sonar.audit import rules
 import sonar.audit.problem as pb
+import sonar.sif_node as sifn
 
 import sonar.dce.app_nodes as appnodes
 import sonar.dce.search_nodes as searchnodes
@@ -104,7 +105,10 @@ class Sif:
         return None
 
     def version(self, digits=3, as_string=False):
-        return util.string_to_version(self.__get_field("Version"), digits=digits, as_string=as_string)
+        try:
+            return util.string_to_version(self.json["System"]["Version"], digits=digits, as_string=as_string)
+        except KeyError:
+            return None
 
     def server_id(self):
         return self.__get_field("Server ID")
@@ -144,14 +148,11 @@ class Sif:
             problems += self.__audit_dce_settings()
         else:
             problems += (
-                self.__audit_ce_settings()
-                + self.__audit_background_tasks()
+                sifn.audit_web(self, "SIF", self.json)
+                + sifn.audit_ce(self, "SIF", self.json)
                 + self.__audit_es_settings()
-                + self.__audit_log_level()
-                + self.__audit_version()
                 + self.__audit_branch_use()
                 + self.__audit_undetected_scm()
-                + self.__audit_web_settings(audit_settings)
             )
         return problems
 
@@ -278,157 +279,6 @@ class Sif:
             problems += searchnodes.audit(self.json[_ES_NODES], self)
         else:
             util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
-        return problems
-
-    def __audit_log_level(self):
-        util.logger.debug("Auditing log levels")
-        log_level = self.__get_field("Web Logging")
-        if log_level is None:
-            return []
-        log_level = log_level["Logs Level"]
-        if log_level not in ("DEBUG", "TRACE"):
-            return []
-        if log_level == "TRACE":
-            return [
-                pb.Problem(
-                    types.Type.PERFORMANCE,
-                    severities.Severity.CRITICAL,
-                    "Log level set to TRACE, this does very negatively affect platform performance, reverting to INFO is required",
-                    concerned_object=self,
-                )
-            ]
-        if log_level == "DEBUG":
-            return [
-                pb.Problem(
-                    types.Type.PERFORMANCE,
-                    severities.Severity.HIGH,
-                    "Log level is set to DEBUG, this may affect platform performance, reverting to INFO is recommended",
-                    concerned_object=self,
-                )
-            ]
-        return []
-
-    def __audit_version(self):
-        st_time = self.start_time()
-        if st_time is None:
-            util.logger.warning("SIF date is not available, skipping audit on SonarQube version (aligned with LTS)...")
-            return []
-        sq_version = self.version()
-        if (
-            (st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0))
-            or (st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0))
-            or (st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0))
-        ):
-            rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-            return [pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self)]
-        return []
-
-    def __audit_web_settings(self, audit_settings):
-        util.logger.debug("Auditing Web settings")
-        problems = []
-        if self.version() < (9, 0, 0):
-            jvm_cmdline = self.web_jvm_cmdline()
-            if jvm_cmdline is None:
-                util.logger.warning("Can't retrieve web JVM command line, skipping heap and log4shell audits...")
-                return []
-            problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_WEB)
-            heap_size = util.jvm_heap(jvm_cmdline)
-        else:
-            try:
-                heap_size = self.json["Web JVM State"]["Heap Max (MB)"]
-            except KeyError:
-                util.logger.warning("Can't retrieve web JVM heap")
-                return []
-        min_heap = audit_settings.get("audit.web.heapMin", 1024)
-        max_heap = audit_settings.get("audit.web.heapMax", 2048)
-        if heap_size is None:
-            rule = rules.get_rule(rules.RuleId.SETTING_WEB_NO_HEAP)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self))
-        elif heap_size < min_heap or heap_size > max_heap:
-            rule = rules.get_rule(rules.RuleId.SETTING_WEB_HEAP)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(heap_size, min_heap, max_heap), concerned_object=self))
-        else:
-            util.logger.debug("Sonar Web process heap value is %d MB, within the recommended range [%d-%d]", heap_size, min_heap, max_heap)
-
-        return problems
-
-    def __audit_ce_settings(self):
-        util.logger.info("Auditing CE settings")
-        problems = []
-        if self.version() < (9, 0, 0):
-            jvm_cmdline = self.ce_jvm_cmdline()
-            if jvm_cmdline is None:
-                util.logger.warning("Can't retrieve CE JVM command line, heap and logshell checks skipped")
-                return []
-            problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_CE)
-            ce_ram = util.jvm_heap(jvm_cmdline)
-        else:
-            try:
-                ce_ram = self.json["Compute Engine JVM State"]["Heap Max (MB)"]
-            except KeyError:
-                util.logger.warning("Can't retrieve CE JVM heap")
-                return []
-        ce_tasks = self.__get_field("Compute Engine Tasks")
-        if ce_tasks is None:
-            return []
-        ce_workers = ce_tasks["Worker Count"]
-        MAX_WORKERS = 4
-        if ce_workers > MAX_WORKERS:
-            rule = rules.get_rule(rules.RuleId.SETTING_CE_TOO_MANY_WORKERS)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_workers, MAX_WORKERS), concerned_object=self))
-        else:
-            util.logger.debug(
-                "%d CE workers configured, correct compared to the max %d recommended",
-                ce_workers,
-                MAX_WORKERS,
-            )
-
-        if ce_ram is None:
-            rule = rules.get_rule(rules.RuleId.SETTING_CE_NO_HEAP)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self))
-        elif ce_ram < 512 * ce_workers or ce_ram > 2048 * ce_workers:
-            rule = rules.get_rule(rules.RuleId.SETTING_CE_HEAP)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_ram, 512, 2048, ce_workers), concerned_object=self))
-        else:
-            util.logger.debug(
-                "SonarQube CE memory setting value is %d MB, within recommended range ([512-2048] x %d workers)",
-                ce_ram,
-                ce_workers,
-            )
-
-        return problems
-
-    def __audit_background_tasks(self):
-        util.logger.debug("Auditing CE background tasks")
-        problems = []
-        ce_tasks = self.__get_field("Compute Engine Tasks")
-        if ce_tasks is None:
-            return []
-        ce_success = ce_tasks["Processed With Success"]
-        ce_error = ce_tasks["Processed With Error"]
-        if ce_success == 0 and ce_error == 0:
-            failure_rate = 0
-        else:
-            failure_rate = ce_error / (ce_success + ce_error)
-        if ce_error > 10 and failure_rate > 0.01:
-            rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(int(failure_rate * 100)), concerned_object=self))
-        else:
-            util.logger.debug(
-                "Number of failed background tasks (%d), and failure rate %d%% is OK",
-                ce_error,
-                int(failure_rate * 100),
-            )
-
-        ce_pending = ce_tasks["Pending"]
-        if ce_pending > 100:
-            rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending), concerned_object=self))
-        elif ce_pending > 20 and ce_pending > (10 * ce_tasks["Worker Count"]):
-            rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending), concerned_object=self))
-        else:
-            util.logger.debug("Number of pending background tasks (%d) is OK", ce_pending)
         return problems
 
     def __audit_es_settings(self):
