@@ -107,6 +107,7 @@ class SearchNode(nodes.DceNode):
         )
         return []
 
+
 def __audit_index_balance(searchnodes):
     util.logger.info("Auditing search nodes store size balance")
     nbr_search_nodes = len(searchnodes)
