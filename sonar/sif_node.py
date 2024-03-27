@@ -145,28 +145,13 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]):
     if lvl is None:
         util.logger.warning("%s: log level is missing, audit of log level is skipped...", obj_name)
         return []
-    if lvl not in ("DEBUG", "TRACE"):
-        util.logger.info("%s: Log level is '%s', all good...", obj_name, lvl)
-        return []
     if lvl == "TRACE":
-        return [
-            pb.Problem(
-                problem_type=types.Type.PERFORMANCE,
-                severity=severities.Severity.CRITICAL,
-                msg=f"Log level of {obj_name} set to TRACE, this does very negatively affect platform performance, reverting to INFO is required",
-                concerned_object=obj,
-            )
-        ]
+        rule = rules.get_rule(rules.RuleId.LOGS_IN_TRACE_MODE)
+        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name), concerned_object=obj)]
     if lvl == "DEBUG":
-        return [
-            pb.Problem(
-                problem_type=types.Type.PERFORMANCE,
-                severity=severities.Severity.HIGH,
-                msg=f"Log level of {obj_name} is set to DEBUG, this may affect platform performance, reverting to INFO is recommended",
-                concerned_object=obj,
-            )
-        ]
-    util.logger.info("%s: Node log level is '%s', this is fine", obj_name, lvl)
+        rule = rules.get_rule(rules.RuleId.LOGS_IN_DEBUG_MODE)
+        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name), concerned_object=obj)]
+    util.logger.info("%s: Log level is '%s', this is fine", obj_name, lvl)
     return []
 
 

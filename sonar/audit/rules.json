@@ -99,6 +99,16 @@
         "type": "PERFORMANCE",
         "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
     },
+    "LOGS_IN_TRACE_MODE": {
+        "severity": "CRITICAL",
+        "type": "PERFORMANCE",
+        "message": "Log level of {} set to TRACE, this very negatively affects platform performance, reverting to INFO is urgent"
+    },
+    "LOGS_IN_DEBUG_MODE": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Log level of {} set to DEBUG, this very negatively affects platform performance, reverting to INFO is required"
+    },
     "ES_HEAP_TOO_HIGH": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
