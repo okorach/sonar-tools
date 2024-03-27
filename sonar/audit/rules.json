@@ -104,6 +104,11 @@
         "type": "PERFORMANCE",
         "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
     },
+    "SETTING_ES_DISK_FREE": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "message": "Disk available for '{}' ({} MB) is too low, please ensure at least 10 GB ofr free space"
+    },
     "SETTING_ES_NO_HEAP": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
