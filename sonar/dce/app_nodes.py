@@ -139,27 +139,27 @@ def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: dict[str,
     if len(nodes) == 1:
         rule = rules.get_rule(rules.RuleId.DCE_APP_CLUSTER_NOT_HA)
         return [pb.Problem(rule.type, rule.severity, rule.msg)]
-    for i in range(len(nodes)):
-        problems += nodes[i].audit(audit_settings)
-        for j in range(i, len(nodes)):
-            v1 = nodes[i].version()
-            v2 = nodes[j].version()
+    for node_1 in nodes:
+        problems += node_1.audit(audit_settings)
+        for node_2 in nodes:
+            v1 = node_1.version()
+            v2 = node_2.version()
             if v1 is not None and v2 is not None and v1 != v2:
                 rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
                 problems.append(
                     pb.Problem(
                         rule.type,
                         rule.severity,
-                        rule.msg.format(str(nodes[i]), str(nodes[j])),
+                        rule.msg.format(str(node_1), str(node_2)),
                     )
                 )
-            if nodes[i].plugins() != nodes[j].plugins():
+            if node_1.plugins() != node_2.plugins():
                 rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
                 problems.append(
                     pb.Problem(
                         rule.type,
                         rule.severity,
-                        rule.msg.format(str(nodes[i]), str(nodes[j])),
+                        rule.msg.format(str(node_1), str(node_2)),
                     )
                 )
     return problems
