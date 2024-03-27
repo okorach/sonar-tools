@@ -1,7 +1,11 @@
+# Version 2.10 - April 2024
+  - Further audit features (see changelog)
+
 # Version 2.9 - March 2024
 
 - Improvements:
   - Allow non admin tokens for sonar-tools not requiring them - #946 (Credit @raspy)
+  - Many hardening / compatibility with SonarQube 9.9 and 10.x - including audit of recent SIF format
 
 # Version 2.8.2 - Feb 2024
 
@@ -62,7 +66,7 @@
 - Tool is now multi-threaded, this can dramatically increase speed of audit on large platforms with a lot of projects (which is the object consuming most of the auditing time)
 - Tool now uses live data for Sonar update center (instead of hardcoding versions) to determine what version re LTS and LATEST
 - Tool now allows to audit a selection of project or portfolios (chosen by their key)
-- Tool now gracefully fails when a non existing project key is specified 
+- Tool now gracefully fails when a non existing project key is specified
 - Tool now allows to add a link to the concerned object in the audit report (makes it easy to navigate to the object to fix)
 - New **audit**ed stuff
   - Audits the version of scanner used and raise a warning if too old
@@ -89,7 +93,7 @@
 
 ## sonar-findings-export
 - Tool is now multi-threaded, this can dramatically increase speed of export on large platforms with a lot of projects and a lot of issues
-- Tool gracefully fails when a non existing project key is specified 
+- Tool gracefully fails when a non existing project key is specified
 
 ## sonar-findings-sync
 - Fix regression. tool was broken in v2.3
