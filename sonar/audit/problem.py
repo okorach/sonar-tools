@@ -23,12 +23,20 @@ from sonar import utilities, options
 
 
 class Problem:
-    def __init__(self, problem_type, severity, msg, concerned_object=None):
+    def __init__(self, problem_type, severity, msg, broken_rule=None, concerned_object=None):
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
-        self.type = problem_type
-        self.severity = severity
-        self.message = msg
+        if broken_rule is None:
+            self.type = problem_type
+            self.severity = severity
+            self.message = msg
+            self.rule_id = 0
+        else:
+            self.type = broken_rule.type
+            self.severity = broken_rule.severity
+            self.rule_id = broken_rule.id
+            self.message = msg
+
         utilities.logger.warning(msg)
 
     def __str__(self):
