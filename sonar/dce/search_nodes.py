@@ -48,8 +48,8 @@ class SearchNode(nodes.DceNode):
         return "SEARCH"
 
     def audit(self):
-        util.logger.info("Auditing %s", str(self))
-        return self.__audit_store_size()
+        util.logger.info("%s: Auditing...", str(self))
+        return self.__audit_store_size() + self.__audit_available_disk()
 
     def max_heap(self) -> Union[int, None]:
         if self.sif.edition() != "datacenter" and self.sif.version() < (9, 0, 0):
@@ -88,6 +88,24 @@ class SearchNode(nodes.DceNode):
         )
         return []
 
+    def __audit_available_disk(self):
+        util.logger.info("%s: Auditing available disk space", str(self))
+        try:
+            space_avail = util.int_memory(self.json["Search State"]["Disk Available"])
+        except ValueError:
+            util.logger.warning("%s: disk space available not found in SIF, skipping this check", str(self))
+            return []
+        store_size = self.store_size()
+        if store_size * 4 > space_avail or space_avail < 10000:
+            rule = rules.get_rule(rules.RuleId.SETTING_ES_DISK_FREE)
+            return [pb.Problem(rule.type, rule.severity, rule.msg.format(store_size, space_avail))]
+        util.logger.info(
+            "%s: Search server available disk size of %d MB is correct wrt to store size of %d MB",
+            str(self),
+            space_avail,
+            store_size,
+        )
+        return []
 
 def __audit_index_balance(searchnodes):
     util.logger.info("Auditing search nodes store size balance")
