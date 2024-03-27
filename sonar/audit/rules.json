@@ -149,7 +149,7 @@
         "type": "PERFORMANCE",
         "message": "JDBC URL '{}' is pointing to local host which is highly discouraged for production"
     },
-    "CE_TOO_MANY_WORKERS": {
+    "TOO_MANY_CE_WORKERS": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "CE has {} workers configured, more than the max {} recommended"

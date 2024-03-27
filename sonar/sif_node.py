@@ -123,7 +123,7 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
     if ed == "datacenter":
         MAX_WORKERS = 6
     if ce_workers > MAX_WORKERS:
-        rule = rules.get_rule(rules.RuleId.CE_TOO_MANY_WORKERS)
+        rule = rules.get_rule(rules.RuleId.TOO_CE_MANY_WORKERS)
         return [pb.Problem(broken_rule=rule, msg=rule.msg.format(ce_workers, MAX_WORKERS), concerned_object=obj)]
     else:
         util.logger.info(
