@@ -168,7 +168,7 @@ class Group(sq.SqObject):
         problems = []
         if audit_settings.get("audit.groups.empty", True) and self.__members_count == 0:
             rule = rules.get_rule(rules.RuleId.GROUP_EMPTY)
-            problems = [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
+            problems = [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
         return problems
 
     def to_json(self, full_specs=False):

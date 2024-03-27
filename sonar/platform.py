@@ -526,7 +526,7 @@ class Platform:
         util.logger.info("Project default visibility is '%s'", visi)
         if config.get_property("checkDefaultProjectVisibility") and visi != "private":
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
-            problems.append(pb.Problem(rule.type, rule.severity, rule.msq.format(visi), concerned_object=f"{self.url}/admin/projects_management"))
+            problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(visi), concerned_object=f"{self.url}/admin/projects_management"))
         return problems
 
     def _audit_admin_password(self):
@@ -537,7 +537,7 @@ class Platform:
             data = json.loads(r.text)
             if data.get("valid", False):
                 rule = rules.get_rule(rules.RuleId.DEFAULT_ADMIN_PASSWORD)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=self.url))
+                problems.append(pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self.url))
             else:
                 util.logger.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
@@ -551,24 +551,24 @@ class Platform:
         groups = self.global_permissions().groups()
         if len(groups) > 10:
             msg = f"Too many ({len(groups)}) groups with global permissions"
-            problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg, concerned_object=perms_url))
+            problems.append(pb.Problem(problem_type=typ.Type.BAD_PRACTICE, severity=sev.Severity.MEDIUM, msg=msg, concerned_object=perms_url))
 
         for gr_name, gr_perms in groups.items():
             if gr_name == "Anyone":
                 rule = rules.get_rule(rules.RuleId.ANYONE_WITH_GLOBAL_PERMS)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=perms_url))
+                problems.append(pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=perms_url))
             if gr_name == "sonar-users" and (
                 "admin" in gr_perms or "gateadmin" in gr_perms or "profileadmin" in gr_perms or "provisioning" in gr_perms
             ):
                 rule = rules.get_rule(rules.RuleId.SONAR_USERS_WITH_ELEVATED_PERMS)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=perms_url))
+                problems.append(pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=perms_url))
 
         maxis = {"admin": 2, "gateadmin": 2, "profileadmin": 2, "scan": 2, "provisioning": 3}
         for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="groups", perm_filter=(key,))
             if key in maxis and counter > maxis[key]:
                 msg = f"Too many ({counter}) groups with permission '{name}', {maxis[key]} max recommended"
-                problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg, concerned_object=perms_url))
+                problems.append(pb.Problem(problem_type=typ.Type.BAD_PRACTICE, severity=sev.Severity.MEDIUM, msg=msg, concerned_object=perms_url))
         return problems
 
     def __audit_user_permissions(self):
@@ -578,14 +578,14 @@ class Platform:
         users = self.global_permissions().users()
         if len(users) > 10:
             msg = f"Too many ({len(users)}) users with direct global permissions, use groups instead"
-            problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg, concerned_object=perms_url))
+            problems.append(pb.Problem(problem_type=typ.Type.BAD_PRACTICE, severity=sev.Severity.MEDIUM, msg=msg, concerned_object=perms_url))
 
         maxis = {"admin": 3, "gateadmin": 3, "profileadmin": 3, "scan": 3, "provisioning": 3}
         for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="users", perm_filter=(key,))
             if key in maxis and counter > maxis[key]:
                 msg = f"Too many ({counter}) users with permission '{name}', use groups instead"
-                problems.append(pb.Problem(typ.Type.BAD_PRACTICE, sev.Severity.MEDIUM, msg, concerned_object=perms_url))
+                problems.append(pb.Problem(problem_type=typ.Type.BAD_PRACTICE, severity=sev.Severity.MEDIUM, msg=msg, concerned_object=perms_url))
         return problems
 
     def _audit_global_permissions(self):
@@ -606,7 +606,7 @@ class Platform:
         if not v:
             return []
         msg = rule.msg.format(_version_as_string(sq_vers), _version_as_string(v))
-        return [pb.Problem(rule.type, rule.severity, msg, concerned_object=self.url)]
+        return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self.url)]
 
 
 # --------------------- Static methods -----------------
@@ -640,7 +640,7 @@ def _audit_setting_value(key, platform_settings, audit_settings, url):
     s = platform_settings.get(v[0], "")
     if s == v[1]:
         return []
-    return [pb.Problem(v[2], v[3], f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'", concerned_object=url)]
+    return [pb.Problem(problem_type=v[2], severity=v[3], msg=f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'", concerned_object=url)]
 
 
 def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, url):
@@ -664,7 +664,12 @@ def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, 
     if min_v <= value <= max_v:
         return []
     return [
-        pb.Problem(v[4], v[3], f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]", concerned_object=url)
+        pb.Problem(
+            problem_type=v[4],
+            severity=v[3],
+            msg=f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]",
+            concerned_object=url,
+        )
     ]
 
 
@@ -677,11 +682,11 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings, url
     if platform_settings.get(v[0], "") == "":  # Setting is not set
         if check_is_set:
             rule = rules.get_rule(rules.RuleId.SETTING_NOT_SET)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(v[0]), concerned_object=url)]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(v[0]), concerned_object=url)]
         util.logger.info("Setting %s is not set", v[0])
     else:
         if not check_is_set:
-            return [pb.Problem(v[1], v[2], f"Setting {v[0]} is set, although it should probably not", concerned_object=url)]
+            return [pb.Problem(problem_type=v[1], severity=v[2], msg=f"Setting {v[0]} is set, although it should probably not", concerned_object=url)]
         util.logger.info("Setting %s is set with value %s", v[0], platform_settings[v[0]])
     return []
 

@@ -282,14 +282,14 @@ class QualityGate(sq.SqObject):
             if m not in GOOD_QG_CONDITIONS:
                 rule = rules.get_rule(rules.RuleId.QG_WRONG_METRIC)
                 msg = rule.msg.format(str(self), m)
-                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
                 continue
             val = int(c["error"])
             (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
             util.logger.debug("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
                 msg = f"{str(self)} condition on metric '{m}': {msg}".format(self.name, m, msg)
-                problems.append(pb.Problem(types.Type.BAD_PRACTICE, severities.Severity.HIGH, msg, concerned_object=self))
+                problems.append(pb.Problem(problem_type=types.Type.BAD_PRACTICE, severity=severities.Severity.HIGH, msg=msg, concerned_object=self))
         return problems
 
     def audit(self, audit_settings=None):
@@ -307,17 +307,17 @@ class QualityGate(sq.SqObject):
         if nb_conditions == 0:
             rule = rules.get_rule(rules.RuleId.QG_NO_COND)
             msg = rule.msg.format(my_name)
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         elif nb_conditions > max_cond:
             rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_COND)
             msg = rule.msg.format(my_name, nb_conditions, max_cond)
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         problems += self.__audit_conditions()
         util.logger.debug("Auditing that %s has some assigned projects", my_name)
         if not self.is_default and len(self.projects()) == 0:
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
             msg = rule.msg.format(my_name)
-            problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 
     def to_json(self, full=False):
@@ -347,7 +347,7 @@ def audit(endpoint=None, audit_settings=None):
     util.logger.debug("Auditing that there are no more than %s quality gates", str(max_qg))
     if nb_qg > max_qg:
         rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_GATES)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nb_qg, 5), concerned_object=f"{endpoint.url}/quality_gates"))
+        problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(nb_qg, 5), concerned_object=f"{endpoint.url}/quality_gates"))
     for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
     return problems

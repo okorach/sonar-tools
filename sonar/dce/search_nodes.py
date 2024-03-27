@@ -67,7 +67,7 @@ class SearchNode(nodes.DceNode):
         if es_heap is None:
             util.logger.warning("%s: No ES heap found, audit of ES head is skipped", str(self))
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
-            return [pb.Problem(rule.type, rule.severity, rule.msg)]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg)]
 
         index_size = self.store_size()
 
@@ -76,10 +76,10 @@ class SearchNode(nodes.DceNode):
             return []
         elif index_size == 0:
             rule = rules.get_rule(rules.RuleId.DCE_ES_INDEX_EMPTY)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)))]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)))]
         elif es_heap < 2 * index_size and es_heap < index_size + 1000:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(es_heap, index_size))]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(es_heap, index_size))]
         util.logger.info(
             "%s: Search server memory %d MB is correct wrt to store size of %d MB",
             str(self),
@@ -98,7 +98,7 @@ class SearchNode(nodes.DceNode):
         store_size = self.store_size()
         if store_size * 4 > space_avail or space_avail < 10000:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_DISK_FREE)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(store_size, space_avail))]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(store_size, space_avail))]
         util.logger.info(
             "%s: Search server available disk size of %d MB is correct wrt to store size of %d MB",
             str(self),
@@ -123,7 +123,7 @@ def __audit_index_balance(searchnodes):
             if store_ratio >= 0.5 or store_ratio <= 2:
                 continue
             rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format())]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format())]
     util.logger.info("Search nodes store size balance acceptable")
     return []
 
@@ -138,13 +138,13 @@ def audit(sub_sif, sif):
     util.logger.info("Auditing number of search nodes")
     if nbr_search_nodes < 3:
         rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_NOT_HA)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format()))
+        problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format()))
     elif nbr_search_nodes > 3:
         if nbr_search_nodes % 2 == 0:
             rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_EVEN_NUMBER_OF_NODES)
         else:
             rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(nbr_search_nodes)))
+        problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(nbr_search_nodes)))
     else:
         util.logger.info("%d search nodes found, all OK", nbr_search_nodes)
     for i in range(nbr_search_nodes):

@@ -52,7 +52,7 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, dict
         failure_rate = ce_error / (ce_success + ce_error)
     if ce_error > 10 and failure_rate > 0.01:
         rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(int(failure_rate * 100)), concerned_object=obj))
+        problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(int(failure_rate * 100)), concerned_object=obj))
     else:
         util.logger.info(
             "%s: Number of failed background tasks (%d), and failure rate %d%% is OK",
@@ -63,10 +63,10 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, dict
     ce_pending = ce_tasks["Pending"]
     if ce_pending > 100:
         rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending), concerned_object=obj))
+        problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(ce_pending), concerned_object=obj))
     elif ce_pending > 20 and ce_pending > (10 * ce_tasks[_WORKER_COUNT]):
         rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
-        problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(ce_pending), concerned_object=obj))
+        problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(ce_pending), concerned_object=obj))
     else:
         util.logger.info("%s: Number of pending background tasks (%d) is OK", obj_name, ce_pending)
     return problems
@@ -83,7 +83,7 @@ def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limi
         return []
     if heap < min_heap or heap > max_heap:
         rule = rules.get_rule(rules.RuleId.SETTING_BAD_HEAP)
-        return [pb.Problem(rule.type, rule.severity, rule.msg.format(obj_name, heap, min_heap, max_heap), concerned_object=obj)]
+        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, heap, min_heap, max_heap), concerned_object=obj)]
     util.logger.info("%s: Heap of %d MB is within recommended range [%d-%d]", obj_name, heap, min_heap, max_heap)
     return []
 
@@ -102,7 +102,7 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
         return []
     if sq_version >= (9, 9, 0) and java_version != 17:
         rule = rules.get_rule(rules.RuleId.SETTING_WEB_WRONG_JAVA_VERSION)
-        return [pb.Problem(rule.type, rule.severity, rule.msg.format(obj_name, java_version), concerned_object=obj)]
+        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, java_version), concerned_object=obj)]
     util.logger.info("%s: Running on the required java version (java %d)", obj_name, java_version)
     return []
 
@@ -122,7 +122,7 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
         MAX_WORKERS = 6
     if ce_workers > MAX_WORKERS:
         rule = rules.get_rule(rules.RuleId.SETTING_CE_TOO_MANY_WORKERS)
-        return [pb.Problem(rule.type, rule.severity, rule.msg.format(ce_workers, MAX_WORKERS), concerned_object=obj)]
+        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(ce_workers, MAX_WORKERS), concerned_object=obj)]
     else:
         util.logger.info(
             "%s: %d CE workers configured, correct compared to the max %d recommended",
@@ -149,18 +149,18 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]):
     if lvl == "TRACE":
         return [
             pb.Problem(
-                types.Type.PERFORMANCE,
-                severities.Severity.CRITICAL,
-                f"Log level of {obj_name} set to TRACE, this does very negatively affect platform performance, reverting to INFO is required",
+                problem_type=types.Type.PERFORMANCE,
+                severity=severities.Severity.CRITICAL,
+                msg=f"Log level of {obj_name} set to TRACE, this does very negatively affect platform performance, reverting to INFO is required",
                 concerned_object=obj,
             )
         ]
     if lvl == "DEBUG":
         return [
             pb.Problem(
-                types.Type.PERFORMANCE,
-                severities.Severity.HIGH,
-                f"Log level of {obj_name} is set to DEBUG, this may affect platform performance, reverting to INFO is recommended",
+                problem_type=types.Type.PERFORMANCE,
+                severity=severities.Severity.HIGH,
+                msg=f"Log level of {obj_name} is set to DEBUG, this may affect platform performance, reverting to INFO is recommended",
                 concerned_object=obj,
             )
         ]
@@ -189,7 +189,7 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
         return []
 
     rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-    return [pb.Problem(0, 0, broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lts_str))]
+    return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lts_str))]
 
 
 def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]):

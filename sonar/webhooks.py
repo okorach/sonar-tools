@@ -77,7 +77,7 @@ class WebHook(sq.SqObject):
         if self._json["latestDelivery"]["success"]:
             return []
         rule = rules.get_rule(rules.RuleId.FAILED_WEBHOOK)
-        return [problem.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
+        return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
 
     def to_json(self, full=False):
         """Exports a Webhook configuration in JSON format

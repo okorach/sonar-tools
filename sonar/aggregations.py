@@ -84,8 +84,7 @@ class Aggregation(comp.Component):
         n = self.nbr_projects()
         if n in sizes:
             rule = rules.get_rule(broken_rule)
-            msg = rule.msg.format(str(self))
-            problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
+            problems.append(problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self))
         else:
             utilities.logger.debug("%s has %d projects", str(self), n)
         return problems

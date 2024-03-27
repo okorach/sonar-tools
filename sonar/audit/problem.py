@@ -23,7 +23,7 @@ from sonar import utilities, options
 
 
 class Problem:
-    def __init__(self, problem_type, severity, msg, broken_rule=None, concerned_object=None):
+    def __init__(self, broken_rule=None, msg="", problem_type=None, severity=None, concerned_object=None):
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
         self.rule_id = "UNDEF"

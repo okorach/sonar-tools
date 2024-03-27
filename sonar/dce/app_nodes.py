@@ -79,7 +79,7 @@ class AppNode(dce_nodes.DceNode):
         util.logger.info("%s: Auditing node health", str(self))
         if self.health() != dce_nodes.HEALTH_GREEN:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_NOT_GREEN)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), self.health()))]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), self.health()))]
 
         util.logger.info("%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN)
         return []
@@ -93,7 +93,7 @@ class AppNode(dce_nodes.DceNode):
             return []
         elif not self.json[_SYSTEM]["Official Distribution"]:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)))]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)))]
         else:
             util.logger.debug("%s: Node is official distribution", str(self))
             return []
@@ -116,7 +116,7 @@ def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: dict[str,
         nodes.append(AppNode(n, sif_object))
     if len(nodes) == 1:
         rule = rules.get_rule(rules.RuleId.DCE_APP_CLUSTER_NOT_HA)
-        return [pb.Problem(rule.type, rule.severity, rule.msg)]
+        return [pb.Problem(broken_rule=rule, msg=rule.msg)]
     for node_1 in nodes:
         problems += node_1.audit(audit_settings)
         for node_2 in nodes:
@@ -124,20 +124,8 @@ def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: dict[str,
             v2 = node_2.version()
             if v1 is not None and v2 is not None and v1 != v2:
                 rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
-                problems.append(
-                    pb.Problem(
-                        rule.type,
-                        rule.severity,
-                        rule.msg.format(str(node_1), str(node_2)),
-                    )
-                )
+                problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(node_1), str(node_2))))
             if node_1.plugins() != node_2.plugins():
                 rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
-                problems.append(
-                    pb.Problem(
-                        rule.type,
-                        rule.severity,
-                        rule.msg.format(str(node_1), str(node_2)),
-                    )
-                )
+                problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(node_1), str(node_2))))
     return problems
