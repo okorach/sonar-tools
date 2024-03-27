@@ -77,12 +77,13 @@ class AppNode(dce_nodes.DceNode):
         )
 
     def __audit_health(self):
+        util.logger.info("%s: Auditing node health", str(self))
         if self.health() != dce_nodes.HEALTH_GREEN:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_NOT_GREEN)
             return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), self.health()))]
-        else:
-            util.logger.debug("%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN)
-            return []
+
+        util.logger.info("%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN)
+        return []
 
     def __audit_official(self):
         if _SYSTEM not in self.json:
