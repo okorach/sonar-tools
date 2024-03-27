@@ -550,8 +550,9 @@ class Platform:
         perms_url = f"{self.url}/admin/permissions"
         groups = self.global_permissions().groups()
         if len(groups) > 10:
+            rule = rules.get_rule(rule_id=rules.RuleId.RISKY_GLOBAL_PERMISSIONS)
             msg = f"Too many ({len(groups)}) groups with global permissions"
-            problems.append(pb.Problem(problem_type=typ.Type.BAD_PRACTICE, severity=sev.Severity.MEDIUM, msg=msg, concerned_object=perms_url))
+            problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=perms_url))
 
         for gr_name, gr_perms in groups.items():
             if gr_name == "Anyone":
@@ -567,8 +568,9 @@ class Platform:
         for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="groups", perm_filter=(key,))
             if key in maxis and counter > maxis[key]:
+                rule = rules.get_rule(rule_id=rules.RuleId.RISKY_GLOBAL_PERMISSIONS)
                 msg = f"Too many ({counter}) groups with permission '{name}', {maxis[key]} max recommended"
-                problems.append(pb.Problem(problem_type=typ.Type.BAD_PRACTICE, severity=sev.Severity.MEDIUM, msg=msg, concerned_object=perms_url))
+                problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=perms_url))
         return problems
 
     def __audit_user_permissions(self):
@@ -577,15 +579,17 @@ class Platform:
         perms_url = f"{self.url}/admin/permissions"
         users = self.global_permissions().users()
         if len(users) > 10:
+            rule = rules.get_rule(rule_id=rules.RuleId.RISKY_GLOBAL_PERMISSIONS)
             msg = f"Too many ({len(users)}) users with direct global permissions, use groups instead"
-            problems.append(pb.Problem(problem_type=typ.Type.BAD_PRACTICE, severity=sev.Severity.MEDIUM, msg=msg, concerned_object=perms_url))
+            problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=perms_url))
 
         maxis = {"admin": 3, "gateadmin": 3, "profileadmin": 3, "scan": 3, "provisioning": 3}
         for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="users", perm_filter=(key,))
             if key in maxis and counter > maxis[key]:
+                rule = rules.get_rule(rule_id=rules.RuleId.RISKY_GLOBAL_PERMISSIONS)
                 msg = f"Too many ({counter}) users with permission '{name}', use groups instead"
-                problems.append(pb.Problem(problem_type=typ.Type.BAD_PRACTICE, severity=sev.Severity.MEDIUM, msg=msg, concerned_object=perms_url))
+                problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=perms_url))
         return problems
 
     def _audit_global_permissions(self):

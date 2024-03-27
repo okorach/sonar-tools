@@ -4,6 +4,11 @@
         "type": "SECURITY",
         "message": "Default admin password has not been changed, this is a critical security risk"
     },
+    "RISKY_GLOBAL_PERMISSIONS": {
+        "severity": "HIGH",
+        "type": "BAD_PRACTICE",
+        "message": "{}"
+    },
     "BELOW_LTS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
