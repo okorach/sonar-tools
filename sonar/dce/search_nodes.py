@@ -78,7 +78,7 @@ class SearchNode(nodes.DceNode):
             rule = rules.get_rule(rules.RuleId.DCE_ES_INDEX_EMPTY)
             return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)))]
         elif es_heap < 2 * index_size and es_heap < index_size + 1000:
-            rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
+            rule = rules.get_rule(rules.RuleId.WRONG_HEAP_ALLOC)
             return [pb.Problem(broken_rule=rule, msg=rule.msg.format(es_heap, index_size))]
         util.logger.info(
             "%s: Search server memory %d MB is correct wrt to store size of %d MB",
@@ -97,8 +97,8 @@ class SearchNode(nodes.DceNode):
             return []
         store_size = self.store_size()
         if store_size * 4 > space_avail or space_avail < 10000:
-            rule = rules.get_rule(rules.RuleId.SETTING_ES_DISK_FREE)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(store_size, space_avail))]
+            rule = rules.get_rule(rules.RuleId.LOW_FREE_DISK_SPACE)
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), store_size // 1024, space_avail // 1024))]
         util.logger.info(
             "%s: Search server available disk size of %d MB is correct wrt to store size of %d MB",
             str(self),

@@ -89,7 +89,7 @@
         "type": "PERFORMANCE",
         "message": "Short Lived Branches retention duration of {} days is outside of recommended range [{}-{}]"
     },
-    "SETTING_BAD_HEAP": {
+    "WRONG_HEAP_ALLOC": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "{} heap memory setting value is {} MB, outside of recommended range [{}-{}]"
@@ -104,10 +104,10 @@
         "type": "PERFORMANCE",
         "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
     },
-    "SETTING_ES_DISK_FREE": {
+    "LOW_FREE_SDISK_SPACE": {
         "severity": "HIGH",
         "type": "OPERATIONS",
-        "message": "Disk available for '{}' ({} MB) is too low, please ensure at least 10 GB ofr free space"
+        "message": "Disk available for '{}' ({} MB) is too low, please ensure at least 10 GB of free space"
     },
     "SETTING_ES_NO_HEAP": {
         "severity": "HIGH",
@@ -124,7 +124,7 @@
         "type": "PERFORMANCE",
         "message": "JDBC URL '{}' is pointing to local host which is highly discouraged for production"
     },
-    "SETTING_CE_TOO_MANY_WORKERS": {
+    "CE_TOO_MANY_WORKERS": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "CE has {} workers configured, more than the max {} recommended"
@@ -148,6 +148,11 @@
         "severity": "HIGH",
         "type": "OPERATIONS",
         "message": "Background task failure rate ({}%) is high, verify failed background tasks"
+    },
+    "BACKGROUND_TASKS_FAILURE_RATE_VERY_HIGH": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Background task failure rate ({}%) is very high, verify failed background tasks"
     },
     "BACKGROUND_TASKS_PENDING_QUEUE_LONG": {
         "severity": "HIGH",
