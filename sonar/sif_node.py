@@ -169,19 +169,27 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]):
 
 
 def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
-    st_time = obj.start_time()
-    if st_time is None:
-        util.logger.warning("%s: start time is not available, skipping audit on SonarQube version (aligned with LTS)...", obj_name)
-        return []
     sq_version = obj.version()
-    if (
-        (st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0))
-        or (st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0))
-        or (st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0))
-    ):
-        rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-        return [pb.Problem(rule.type, rule.severity, rule.msg, concerned_object=obj)]
-    return []
+    if sq_version is None:
+        util.logger.warning("%s: Version information is missing, audit on node vresion is skipped...")
+        return []
+    st_time = obj.start_time()
+    if st_time > _RELEASE_DATE_8_9:
+        current_lts = (8, 9, 0)
+
+    elif st_time > _RELEASE_DATE_7_9:
+        current_lts = (7, 9, 0)
+    elif st_time > _RELEASE_DATE_6_7:
+        current_lts = (6, 7, 0)
+    else:
+        current_lts = (5, 9, 0)
+    lts_str = f"{current_lts[0]}.{current_lts[1]}"
+    if sq_version >= current_lts:
+        util.logger.info("%s: Version %s is correct wrt LTS %s", obj_name, obj.version(as_string=True), lts_str)
+        return []
+
+    rule = rules.get_rule(rules.RuleId.BELOW_LTS)
+    return [pb.Problem(0, 0, broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lts_str))]
 
 
 def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]):
