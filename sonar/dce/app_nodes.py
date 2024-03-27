@@ -105,20 +105,22 @@ class AppNode(dce_nodes.DceNode):
             util.logger.warning("%s: Version information is missing, audit on node vresion is skipped...")
             return []
         st_time = self.sif.start_time()
-        if (
-            (st_time > _RELEASE_DATE_6_7 and sq_version < (6, 7, 0))
-            or (st_time > _RELEASE_DATE_7_9 and sq_version < (7, 9, 0))
-            or (st_time > _RELEASE_DATE_8_9 and sq_version < (8, 9, 0))
-        ):
-            rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-            return [pb.Problem(rule.type, rule.severity, rule.msg)]
+        if st_time > _RELEASE_DATE_8_9:
+            current_lts = "8.9"
+        elif st_time > _RELEASE_DATE_7_9:
+            current_lts = "7.9"
+        elif st_time > _RELEASE_DATE_6_7:
+            current_lts = "6.7"
         else:
-            util.logger.debug(
+            util.logger.info(
                 "%s: Version %s is correct wrt LTS",
                 str(self),
                 self.version(as_string=True),
             )
             return []
+
+        rule = rules.get_rule(rules.RuleId.BELOW_LTS)
+        return [pb.Problem(0, 0, broken_rule=rule, msg=rule.msg.format(self.version(as_string=True), current_lts))]
 
 
 def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
