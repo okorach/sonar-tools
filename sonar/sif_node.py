@@ -52,6 +52,8 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, dict
         failure_rate = ce_error / (ce_success + ce_error)
     if ce_error > 10 and failure_rate > 0.01:
         rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
+        if failure_rate > 0.1:
+            rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_VERY_HIGH)
         problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(int(failure_rate * 100)), concerned_object=obj))
     else:
         util.logger.info(
@@ -82,7 +84,7 @@ def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limi
         util.logger.warning("%s: Can't find JVM Heap in SIF, auditing this part is skipped", obj_name)
         return []
     if heap < min_heap or heap > max_heap:
-        rule = rules.get_rule(rules.RuleId.SETTING_BAD_HEAP)
+        rule = rules.get_rule(rules.RuleId.WRONG_HEAP_ALLOC)
         return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, heap, min_heap, max_heap), concerned_object=obj)]
     util.logger.info("%s: Heap of %d MB is within recommended range [%d-%d]", obj_name, heap, min_heap, max_heap)
     return []
@@ -121,7 +123,7 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
     if ed == "datacenter":
         MAX_WORKERS = 6
     if ce_workers > MAX_WORKERS:
-        rule = rules.get_rule(rules.RuleId.SETTING_CE_TOO_MANY_WORKERS)
+        rule = rules.get_rule(rules.RuleId.CE_TOO_MANY_WORKERS)
         return [pb.Problem(broken_rule=rule, msg=rule.msg.format(ce_workers, MAX_WORKERS), concerned_object=obj)]
     else:
         util.logger.info(
