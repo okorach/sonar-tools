@@ -55,7 +55,7 @@ class SearchNode(nodes.DceNode):
         if self.sif.edition() != "datacenter" and self.sif.version() < (9, 0, 0):
             return util.jvm_heap(self.sif.search_jvm_cmdline())
         try:
-            sz = self.json["Search State"]["JVM Heap Max"]
+            sz = self.json[_ES_STATE]["JVM Heap Max"]
         except KeyError:
             util.logger.warning("%s: Can't retrieve heap allocated, skipping this check", str(self))
             return None
@@ -91,7 +91,7 @@ class SearchNode(nodes.DceNode):
     def __audit_available_disk(self):
         util.logger.info("%s: Auditing available disk space", str(self))
         try:
-            space_avail = util.int_memory(self.json["Search State"]["Disk Available"])
+            space_avail = util.int_memory(self.json[_ES_STATE]["Disk Available"])
         except ValueError:
             util.logger.warning("%s: disk space available not found in SIF, skipping this check", str(self))
             return []
