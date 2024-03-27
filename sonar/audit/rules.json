@@ -122,7 +122,7 @@
     "ES_HEAP_TOO_HIGH": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
-        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, above the max {} MB recommended"
+        "message": "{} heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, above the max {} MB recommended"
     },
     "SETTING_WEB_WRONG_JAVA_VERSION": {
         "severity": "HIGH",
