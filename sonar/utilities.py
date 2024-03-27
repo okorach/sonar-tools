@@ -389,6 +389,12 @@ def int_memory(string):
         return int(val)
     elif unit == "GB":
         return int(val * 1024)
+    elif unit == "TB":
+        return int(val * 1024 * 1024)
+    elif unit == "PB":
+        return int(val * 1024 * 1024 * 1024)
+    elif unit == "EB":
+        return int(val * 1024 * 1024 * 1024 * 1024)
     elif unit == "KB":
         return val / 1024
     elif unit == "bytes":

@@ -84,7 +84,7 @@ def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limi
         util.logger.warning("%s: Can't find JVM Heap in SIF, auditing this part is skipped", obj_name)
         return []
     if heap < min_heap or heap > max_heap:
-        rule = rules.get_rule(rules.RuleId.WRONG_HEAP_ALLOC)
+        rule = rules.get_rule(rules.RuleId.WRONG_APP_HEAP_ALLOC)
         return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, heap, min_heap, max_heap), concerned_object=obj)]
     util.logger.info("%s: Heap of %d MB is within recommended range [%d-%d]", obj_name, heap, min_heap, max_heap)
     return []

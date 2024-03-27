@@ -89,22 +89,27 @@
         "type": "PERFORMANCE",
         "message": "Short Lived Branches retention duration of {} days is outside of recommended range [{}-{}]"
     },
-    "WRONG_HEAP_ALLOC": {
+    "WRONG_APP_HEAP_ALLOC": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "{} heap memory setting value is {} MB, outside of recommended range [{}-{}]"
+    },
+    "ES_HEAP_TOO_LOW": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
+    },
+    "ES_HEAP_TOO_HIGH": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, above the max {} MB recommended"
     },
     "SETTING_WEB_WRONG_JAVA_VERSION": {
         "severity": "HIGH",
         "type": "OPERATIONS",
         "message": "SonarQube {} is running on Java {} which is not a supported Java version"
     },
-    "SETTING_ES_HEAP": {
-        "severity": "HIGH",
-        "type": "PERFORMANCE",
-        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
-    },
-    "LOW_FREE_SDISK_SPACE": {
+    "LOW_FREE_DISK_SPACE": {
         "severity": "HIGH",
         "type": "OPERATIONS",
         "message": "Disk available for '{}' ({} MB) is too low, please ensure at least 10 GB of free space"
@@ -119,7 +124,7 @@
         "type": "PERFORMANCE",
         "message": "JDBC URL is not set, most probably SonarQube runs on internal H2 DB that is not supported for production. You will not be able to upgrade"
     },
-    "SETTING_DB_ON_SAME_HOST": {
+    "DB_ON_SAME_HOST": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "JDBC URL '{}' is pointing to local host which is highly discouraged for production"

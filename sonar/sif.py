@@ -252,7 +252,7 @@ class Sif:
         ):
             lic = self.license_type()
             if lic == "PRODUCTION":
-                rule = rules.get_rule(rules.RuleId.SETTING_DB_ON_SAME_HOST)
+                rule = rules.get_rule(rules.RuleId.DB_ON_SAME_HOST)
                 return [pb.Problem(broken_rule=rule, msg=rule.msg.format(jdbc_url), concerned_object=self)]
             else:
                 util.logger.info("JDBC URL %s is on localhost but this is not a production license. So be it!", jdbc_url)
@@ -297,8 +297,11 @@ class Sif:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             problems.append(pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self))
         elif es_ram < 2 * index_size and es_ram < index_size + 1000:
-            rule = rules.get_rule(rules.RuleId.SETTING_ES_HEAP)
-            problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(es_ram, index_size), concerned_object=self))
+            rule = rules.get_rule(rules.RuleId.ES_HEAP_TOO_LOW)
+            problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format("SIF", es_ram, index_size), concerned_object=self))
+        elif es_ram > 32 * 1024:
+            rule = rules.get_rule(rules.RuleId.ES_HEAP_TOO_HIGH)
+            problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format("SIF", es_ram, 32 * 1024), concerned_object=self))
         else:
             util.logger.debug(
                 "Search server memory %d MB is correct wrt to index size of %d MB",
