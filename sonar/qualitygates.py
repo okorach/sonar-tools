@@ -286,10 +286,11 @@ class QualityGate(sq.SqObject):
                 continue
             val = int(c["error"])
             (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
-            util.logger.debug("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
+            util.logger.info("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
-                msg = f"{str(self)} condition on metric '{m}': {msg}".format(self.name, m, msg)
-                problems.append(pb.Problem(problem_type=types.Type.BAD_PRACTICE, severity=severities.Severity.HIGH, msg=msg, concerned_object=self))
+                rule = rules.get_rule(rules.RuleId.QG_WRONG_THRESHOLD)
+                msg = rule.msg.format(str(self), str(val), str(m), str(mini), str(maxi))
+                problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 
     def audit(self, audit_settings=None):

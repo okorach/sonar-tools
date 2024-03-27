@@ -644,7 +644,9 @@ def _audit_setting_value(key, platform_settings, audit_settings, url):
     s = platform_settings.get(v[0], "")
     if s == v[1]:
         return []
-    return [pb.Problem(problem_type=v[2], severity=v[3], msg=f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'", concerned_object=url)]
+    rule = rules.get_rule(rules.RuleId.DUBIOUS_GLOBAL_SETTING)
+    msg = f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'"
+    return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=url)]
 
 
 def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, url):
@@ -667,14 +669,9 @@ def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, 
     )
     if min_v <= value <= max_v:
         return []
-    return [
-        pb.Problem(
-            problem_type=v[4],
-            severity=v[3],
-            msg=f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]",
-            concerned_object=url,
-        )
-    ]
+    rule = rules.get_rule(rules.RuleId.DUBIOUS_GLOBAL_SETTING)
+    msg = f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]"
+    return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=url)]
 
 
 def _audit_setting_set(key, check_is_set, platform_settings, audit_settings, url):
@@ -690,7 +687,8 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings, url
         util.logger.info("Setting %s is not set", v[0])
     else:
         if not check_is_set:
-            return [pb.Problem(problem_type=v[1], severity=v[2], msg=f"Setting {v[0]} is set, although it should probably not", concerned_object=url)]
+            rule = rules.get_rule(rules.RuleId.SETTING_SET)
+            return [pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=url)]
         util.logger.info("Setting %s is set with value %s", v[0], platform_settings[v[0]])
     return []
 

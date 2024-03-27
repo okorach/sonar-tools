@@ -9,6 +9,11 @@
         "type": "BAD_PRACTICE",
         "message": "{}"
     },
+    "DUBIOUS_GLOBAL_SETTING": {
+        "severity": "HIGH",
+        "type": "BAD_PRACTICE",
+        "message": "{}"
+    },
     "BELOW_LTS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
