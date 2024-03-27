@@ -226,7 +226,7 @@ class Sif:
         if not self.__eligible_to_log4shell_check():
             return []
 
-        util.logger.debug("Auditing log4shell vulnerability fix")
+        util.logger.info("Auditing log4shell vulnerability fix")
         sq_version = self.version()
         if sq_version < (8, 9, 6) or ((9, 0, 0) <= sq_version < (9, 2, 4)):
             for s in jvm_settings.split(" "):
