@@ -241,7 +241,7 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
     return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lts_str))]
 
 
-def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]):
+def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]) -> list[pb.Problem]:
     """Audits the CE section of a SIF (global SIF or App Node level),
     and returns list of Problem for each problem found
 
@@ -266,7 +266,7 @@ def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]):
     )
 
 
-def audit_web(obj: object, obj_name: str, node_data: dict[str, dict]):
+def audit_web(obj: object, obj_name: str, node_data: dict[str, dict]) -> list[pb.Problem]:
     """Audits the Web section of a SIF (global SIF or App Node level),
     and returns list of Problem for each problem found
 

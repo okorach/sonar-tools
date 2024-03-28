@@ -68,7 +68,7 @@ class Sif:
         self.concerned_object = concerned_object
         self._url = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.concerned_object)
 
     def url(self):
