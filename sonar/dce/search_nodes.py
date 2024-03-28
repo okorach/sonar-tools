@@ -72,28 +72,24 @@ class SearchNode(nodes.DceNode):
         index_size = self.store_size()
 
         es_min = min(2 * index_size, es_heap < index_size + 1000)
-        es_max = 32000
+        es_max = 32 * 1024
+        es_pb = []
         if index_size is None:
             util.logger.warning("%s: Search server store size missing, audit of ES index vs heap skipped...", str(self))
-            return []
         elif index_size == 0:
             rule = rules.get_rule(rules.RuleId.DCE_ES_INDEX_EMPTY)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)))]
+            es_pb = [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)))]
         elif es_heap < es_min:
             rule = rules.get_rule(rules.RuleId.ES_HEAP_TOO_LOW)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), es_heap, index_size))]
-        elif es_heap > 32 * 1024:
+            es_pb = [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), es_heap, index_size))]
+        elif es_heap > es_max:
             rule = rules.get_rule(rules.RuleId.ES_HEAP_TOO_HIGH)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), es_heap, 32 * 1024))]
-        util.logger.info(
-            "%s: Search server memory %d MB is correct wrt to store size of %d MB",
-            str(self),
-            es_heap,
-            index_size,
-        )
-        return []
+            es_pb = [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), es_heap, 32 * 1024))]
+        else:
+            util.logger.info("%s: Search server memory %d MB is correct wrt to store size of %d MB", str(self), es_heap, index_size)
+        return es_pb
 
-    def __audit_available_disk(self):
+    def __audit_available_disk(self) -> list[pb.Problem]:
         util.logger.info("%s: Auditing available disk space", str(self))
         try:
             space_avail = util.int_memory(self.json[_ES_STATE]["Disk Available"])

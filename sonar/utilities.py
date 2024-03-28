@@ -381,25 +381,26 @@ def jvm_heap(cmdline):
     return None
 
 
-def int_memory(string):
+def int_memory(string) -> Union[int, None]:
     (val, unit) = string.split(" ")
     # For decimal separator in some countries
     val = float(val.replace(",", "."))
+    int_val = None
     if unit == "MB":
-        return int(val)
+        int_val = int(val)
     elif unit == "GB":
-        return int(val * 1024)
+        int_val = int(val * 1024)
     elif unit == "TB":
-        return int(val * 1024 * 1024)
+        int_val = int(val * 1024 * 1024)
     elif unit == "PB":
-        return int(val * 1024 * 1024 * 1024)
+        int_val = int(val * 1024 * 1024 * 1024)
     elif unit == "EB":
-        return int(val * 1024 * 1024 * 1024 * 1024)
+        int_val = int(val * 1024 * 1024 * 1024 * 1024)
     elif unit == "KB":
-        return val / 1024
+        int_val = val / 1024
     elif unit == "bytes":
-        return val / 1024 / 1024
-    return None
+        int_val = val / 1024 / 1024
+    return int_val
 
 
 def dict_add(dict1, dict2):

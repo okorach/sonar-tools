@@ -25,9 +25,10 @@
 
 import datetime
 from dateutil.relativedelta import relativedelta
+from typing import Union
 import sonar.utilities as util
 
-from sonar.audit import rules, types, severities
+from sonar.audit import rules
 import sonar.audit.problem as pb
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
@@ -38,7 +39,18 @@ _CE_TASKS = "Compute Engine Tasks"
 _WORKER_COUNT = "Worker Count"
 
 
-def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, dict]) -> list[pb.Problem]:
+def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, str]) -> list[pb.Problem]:
+    """Audits the SIF for the health of background tasks stats, namely the failure rate
+
+    :param obj: Object concerned by the audit (SIF or App Node)
+    :type obj: Sif or AppNode
+    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :type obj_name: str
+    :param ce_data: CE section of the SIF (global or for a given DCE app node)
+    :type obj_name: dict
+    :return: List of problems found, or empty list
+    :rtype: list[Problem]
+    """
     util.logger.info("%s: Auditing CE background tasks", obj_name)
     problems = []
     ce_tasks = ce_data.get(_CE_TASKS)
@@ -75,6 +87,17 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, dict
 
 
 def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limits: tuple[int] = (1024, 4096)) -> list[pb.Problem]:
+    """Audits the SIF for the JVM head allocation used for a node (global SIF or App Node level)
+
+    :param obj: Object concerned by the audit (SIF or App Node)
+    :type obj: Sif or AppNode
+    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :type obj_name: str
+    :param jvm_props: Web or CE JVM State section of the SIF (global SIF or App Node level)
+    :type obj_name: dict
+    :return: List of problems found, or empty list
+    :rtype: list[Problem]
+    """
     util.logger.info("%s: Auditing JVM RAM", obj_name)
     # On DCE we expect between 2 and 4 GB of RAM per App Node Web JVM
     (min_heap, max_heap) = heap_limits
@@ -91,6 +114,17 @@ def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limi
 
 
 def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -> list[pb.Problem]:
+    """Audits the SIF for the JVM version used for a node (global SIF or App Node level)
+
+    :param obj: Object concerned by the audit (SIF or App Node)
+    :type obj: Sif or AppNode
+    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :type obj_name: str
+    :param jvm_props: Web or CE JVM Properties section of the SIF (global SIF or App Node level)
+    :type obj_name: dict
+    :return: List of problems found, or empty list
+    :rtype: list[Problem]
+    """
     util.logger.info("%s: Auditing JVM version", obj_name)
     try:
         java_version = int(jvm_props["java.specification.version"])
@@ -110,6 +144,17 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
 
 
 def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list[pb.Problem]:
+    """Audits the SIF for number of CE workers configured (global SIF or App Node level)
+
+    :param obj: Object concerned by the audit (SIF or App Node)
+    :type obj: Sif or AppNode
+    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :type obj_name: str
+    :param ce_data: CE sections of the SIF (global SIF or App Node level)
+    :type obj_name: dict
+    :return: List of problems found, or empty list
+    :rtype: list[Problem]
+    """
     ed = obj.edition()
     if ed in ("community", "developer"):
         util.logger.info("%s: %s edition, CE workers audit skipped...", obj_name, ed)
@@ -123,7 +168,7 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
     if ed == "datacenter":
         MAX_WORKERS = 6
     if ce_workers > MAX_WORKERS:
-        rule = rules.get_rule(rules.RuleId.TOO_CE_MANY_WORKERS)
+        rule = rules.get_rule(rules.RuleId.TOO_MANY_CE_WORKERS)
         return [pb.Problem(broken_rule=rule, msg=rule.msg.format(ce_workers, MAX_WORKERS), concerned_object=obj)]
     else:
         util.logger.info(
@@ -135,13 +180,21 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
     return []
 
 
-def __log_level(logging_section):
-    return logging_section.get("Logs Level", None)
+def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]) -> list[pb.Problem]:
+    """Audits the SIF for the Web or CE process log level (global SIF or App Node level),
+    and returns Problem if it is DEBUG or TRACE
 
-
-def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]):
+    :param obj: Object concerned by the audit (SIF or App Node)
+    :type obj: Sif or AppNode
+    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :type obj_name: str
+    :param logging_data: Web or CE Logging section of the SIF (global SIF or App Node level)
+    :type obj_name: dict
+    :return: List of problems found, or empty list
+    :rtype: list[Problem]
+    """
     util.logger.info("%s: Auditing log level", obj_name)
-    lvl = __log_level(logging_data)
+    lvl = logging_data.get("Logs Level", None)
     if lvl is None:
         util.logger.warning("%s: log level is missing, audit of log level is skipped...", obj_name)
         return []
@@ -156,14 +209,23 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]):
 
 
 def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
+    """Audits the SIF for SonarQube version (global SIF or App Node level),
+    and returns Problem if it is below LTS
+
+    :param obj: Object concerned by the audit (SIF or App Node)
+    :type obj: Sif or AppNode
+    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :type obj_name: str
+    :return: List of problems found, or empty list
+    :rtype: list[Problem]
+    """
     sq_version = obj.version()
     if sq_version is None:
-        util.logger.warning("%s: Version information is missing, audit on node vresion is skipped...")
+        util.logger.warning("%s: Version information is missing, audit on node version is skipped...")
         return []
     st_time = obj.start_time()
     if st_time > _RELEASE_DATE_8_9:
         current_lts = (8, 9, 0)
-
     elif st_time > _RELEASE_DATE_7_9:
         current_lts = (7, 9, 0)
     elif st_time > _RELEASE_DATE_6_7:
@@ -180,6 +242,18 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
 
 
 def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]):
+    """Audits the CE section of a SIF (global SIF or App Node level),
+    and returns list of Problem for each problem found
+
+    :param obj: Object concerned by the audit (SIF or App Node)
+    :type obj: Sif or AppNode
+    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :type obj_name: str
+    :param node_data: Global SIF or one Application node section a DCE SIF
+    :type node_data: dict
+    :return: List of problems found, or empty list
+    :rtype: list[Problem]
+    """
     nb_workers = node_data[_CE_TASKS][_WORKER_COUNT]
     heap_min = max(2048, 1024 * nb_workers)
     heap_max = max(4096, 2048 * nb_workers)
@@ -193,6 +267,18 @@ def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]):
 
 
 def audit_web(obj: object, obj_name: str, node_data: dict[str, dict]):
+    """Audits the Web section of a SIF (global SIF or App Node level),
+    and returns list of Problem for each problem found
+
+    :param obj: Object concerned by the audit (SIF or App Node)
+    :type obj: Sif or AppNode
+    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :type obj_name: str
+    :param node_data: Global SIF or one Application node section a DCE SIF
+    :type node_data: dict
+    :return: List of problems found, or empty list
+    :rtype: list[Problem]
+    """
     (heap_min, heap_max) = (1024, 4096)
     if obj.edition() == "datacenter":
         (heap_min, heap_max) = (2048, 8192)

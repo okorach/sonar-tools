@@ -32,7 +32,7 @@ import sonar.permissions.qualitygate_permissions as permissions
 from sonar.projects import projects
 import sonar.utilities as util
 
-from sonar.audit import rules, severities, types
+from sonar.audit import rules
 import sonar.audit.problem as pb
 
 
@@ -285,11 +285,11 @@ class QualityGate(sq.SqObject):
                 problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
                 continue
             val = int(c["error"])
-            (mini, maxi, msg) = GOOD_QG_CONDITIONS[m]
+            (mini, maxi, precise_msg) = GOOD_QG_CONDITIONS[m]
             util.logger.info("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
                 rule = rules.get_rule(rules.RuleId.QG_WRONG_THRESHOLD)
-                msg = rule.msg.format(str(self), str(val), str(m), str(mini), str(maxi))
+                msg = rule.msg.format(str(self), str(val), str(m), str(mini), str(maxi), precise_msg)
                 problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 

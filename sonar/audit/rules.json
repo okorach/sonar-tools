@@ -471,7 +471,7 @@
         "severity": "HIGH",
         "type": "GOVERNANCE",
         "object": "QualityGate",
-        "message": "{} threshold {} on metric '{}', is outside of the recommended range [{}-{}]"
+        "message": "{} threshold {} on metric '{}', is outside of the recommended range [{}-{}]. {}"
     },
     "QP_TOO_MANY_QP": {
         "severity": "MEDIUM",

@@ -51,7 +51,7 @@ class AppNode(dce_nodes.DceNode):
     def node_type(self):
         return "APPLICATION"
 
-    def start_time(self):
+    def start_time(self) -> datetime.datetime:
         return self.sif.start_time()
 
     def version(self, digits=3, as_string=False):
@@ -60,7 +60,7 @@ class AppNode(dce_nodes.DceNode):
         except KeyError:
             return None
 
-    def edition(self):
+    def edition(self) -> str:
         self.sif.edition()
 
     def name(self):
