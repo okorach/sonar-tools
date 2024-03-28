@@ -694,7 +694,7 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings, url
 
 
 def _audit_maintainability_rating_range(value, range, rating_letter, severity, domain, url):
-    util.logger.debug(
+    util.logger.info(
         "Checking that maintainability rating threshold %.1f%% for '%s' is within recommended range [%.1f%%-%.1f%%]",
         value * 100,
         rating_letter,
@@ -703,21 +703,15 @@ def _audit_maintainability_rating_range(value, range, rating_letter, severity, d
     )
     if range[0] <= value <= range[1]:
         return []
-    return [
-        pb.Problem(
-            domain,
-            severity,
-            f"Maintainability rating threshold {value * 100}% for {rating_letter} "
-            f"is NOT within recommended range [{range[0] * 100:.1f}%-{range[1] * 100:.1f}%]",
-            concerned_object=url,
-        )
-    ]
+    rule = rules.get_rule(rules.RuleId.SETTING_MAINT_GRID)
+    msg = rule.msg.format(f"{value * 100:.1f}", rating_letter, f"{range[0] * 100:.1f}", f"{range[1] * 100:.1f}")
+    return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=url)]
 
 
 def _audit_maintainability_rating_grid(platform_settings, audit_settings, url):
     thresholds = util.csv_to_list(platform_settings["sonar.technicalDebt.ratingGrid"])
     problems = []
-    util.logger.debug("Auditing maintainabillity rating grid")
+    util.logger.info("Auditing maintainability rating grid")
     for key in audit_settings:
         if not key.startswith("audit.globalSettings.maintainabilityRating"):
             continue

@@ -92,7 +92,7 @@
     "SETTING_MAINT_GRID": {
         "severity": "MEDIUM",
         "type": "GOVERNANCE",
-        "message": "Maintainability rating threshold of '{}' for {} rating is outside of recommended range [{}-{}]"
+        "message": "Maintainability rating threshold of {}% for {} rating is outside of recommended range [{}%-{}%]"
     },
     "SETTING_SLB_RETENTION": {
         "severity": "MEDIUM",
