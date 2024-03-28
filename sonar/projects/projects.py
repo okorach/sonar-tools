@@ -376,7 +376,7 @@ class Project(components.Component):
             else:
                 rule = rules.get_rule(rules.RuleId.PROJ_NOT_ANALYZED)
                 msg = rule.msg.format(str(self))
-                problems.append(pb.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
             return problems
 
         max_age = audit_settings.get("audit.projects.maxLastAnalysisAge", 180)
@@ -387,7 +387,7 @@ class Project(components.Component):
             severity = severities.Severity.HIGH if age > 365 else rule.severity
             loc = self.get_measure("ncloc", fallback="0")
             msg = rule.msg.format(str(self), loc, age)
-            problems.append(pb.Problem(rule.type, severity, msg, concerned_object=self))
+            problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
 
         util.logger.debug("%s last analysis is %d days old", str(self), age)
         return problems
@@ -412,7 +412,7 @@ class Project(components.Component):
                 main_br_count += 1
                 if main_br_count > 1:
                     rule = rules.get_rule(rules.RuleId.PROJ_MAIN_AND_MASTER)
-                    problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self))
+                    problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self))
         return problems
 
     def __audit_pull_requests(self, audit_settings):
@@ -447,7 +447,7 @@ class Project(components.Component):
         visi = self.visibility()
         if visi != "private":
             rule = rules.get_rule(rules.RuleId.PROJ_VISIBILITY)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), visi), concerned_object=self)]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), visi), concerned_object=self)]
         util.logger.debug("%s visibility is 'private'", str(self))
         return []
 
@@ -476,7 +476,7 @@ class Project(components.Component):
         utility_locs = sum(lcount for lang, lcount in languages.items() if lang in ("xml", "json"))
         if total_locs > 100000 and (utility_locs / total_locs) > 0.5:
             rule = rules.get_rule(rules.RuleId.PROJ_UTILITY_LOCS)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self), utility_locs), concerned_object=self)]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), utility_locs), concerned_object=self)]
         util.logger.debug("%s utility LoCs count (%d) seems reasonable", str(self), utility_locs)
         return []
 
@@ -494,7 +494,7 @@ class Project(components.Component):
             and self.loc() == 0
         ):
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
-            return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
         return []
 
     def __audit_binding_valid(self, audit_settings):
@@ -520,7 +520,7 @@ class Project(components.Component):
             # Hack: 8.9 returns 404, 9.x returns 400
             if e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
-                return [pb.Problem(rule.type, rule.severity, rule.msg.format(str(self)), concerned_object=self)]
+                return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
             else:
                 util.exit_fatal(f"alm_settings/validate_binding returning status code {e.response.status_code}, exiting", options.ERR_SONAR_API)
 
@@ -1174,7 +1174,7 @@ def __audit_thread(queue, results, audit_settings, bindings):
         bindkey = project.binding_key()
         if bindkey and bindkey in bindings:
             rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE_BINDING)
-            results.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(project), str(bindings[bindkey])), concerned_object=project))
+            results.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(project), str(bindings[bindkey])), concerned_object=project))
         else:
             bindings[bindkey] = project
         queue.task_done()
@@ -1216,7 +1216,7 @@ def audit(endpoint, audit_settings, key_list=None):
         for key2 in plist:
             if key2 != key and re.match(key2, key):
                 rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE)
-                problems.append(pb.Problem(rule.type, rule.severity, rule.msg.format(str(p), key2), concerned_object=p))
+                problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(p), key2), concerned_object=p))
     return problems
 
 

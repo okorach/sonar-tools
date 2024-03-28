@@ -303,25 +303,25 @@ class User(sqobject.SqObject):
             if age > settings.get("audit.tokens.maxAge", 90):
                 rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
                 msg = rule.msg.format(str(t), age)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
             if t.last_connection_date is None and age > settings.get("audit.tokens.maxUnusedAge", 30):
                 rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
                 msg = rule.msg.format(str(t), age)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
             if t.last_connection_date is None:
                 continue
             last_cnx_age = abs((today - t.last_connection_date).days)
             if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
                 rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
                 msg = rule.msg.format(str(t), last_cnx_age)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
 
         if self.last_login:
             age = abs((today - self.last_login).days)
             if age > settings.get("audit.users.maxLoginAge", 180):
                 rule = rules.get_rule(rules.RuleId.USER_UNUSED)
                 msg = rule.msg.format(str(self), age)
-                problems.append(problem.Problem(rule.type, rule.severity, msg, concerned_object=self))
+                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 
     def to_json(self, full=False):

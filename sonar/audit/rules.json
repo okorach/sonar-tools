@@ -4,6 +4,16 @@
         "type": "SECURITY",
         "message": "Default admin password has not been changed, this is a critical security risk"
     },
+    "RISKY_GLOBAL_PERMISSIONS": {
+        "severity": "HIGH",
+        "type": "BAD_PRACTICE",
+        "message": "{}"
+    },
+    "DUBIOUS_GLOBAL_SETTING": {
+        "severity": "HIGH",
+        "type": "BAD_PRACTICE",
+        "message": "{}"
+    },
     "BELOW_LTS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
@@ -89,35 +99,40 @@
         "type": "PERFORMANCE",
         "message": "Short Lived Branches retention duration of {} days is outside of recommended range [{}-{}]"
     },
-    "SETTING_WEB_HEAP": {
+    "WRONG_APP_HEAP_ALLOC": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
-        "message": "Web process heap ('sonar.web.javaOpts' -Xmx) memory setting value is {} MB, outside of recommended range [{}-{}]"
+        "message": "{} heap memory setting value is {} MB, outside of recommended range [{}-{}]"
     },
-    "SETTING_WEB_NO_HEAP": {
+    "ES_HEAP_TOO_LOW": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
-        "message": "Web process heap ('sonar.web.javaOpts' -Xmx) memory setting is not specified"
+        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
+    },
+    "LOGS_IN_TRACE_MODE": {
+        "severity": "CRITICAL",
+        "type": "PERFORMANCE",
+        "message": "Log level of {} set to TRACE, this very negatively affects platform performance, reverting to INFO is urgent"
+    },
+    "LOGS_IN_DEBUG_MODE": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "Log level of {} set to DEBUG, this very negatively affects platform performance, reverting to INFO is required"
+    },
+    "ES_HEAP_TOO_HIGH": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "{} heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, above the max {} MB recommended"
     },
     "SETTING_WEB_WRONG_JAVA_VERSION": {
         "severity": "HIGH",
         "type": "OPERATIONS",
         "message": "SonarQube {} is running on Java {} which is not a supported Java version"
     },
-    "SETTING_CE_HEAP": {
+    "LOW_FREE_DISK_SPACE": {
         "severity": "HIGH",
-        "type": "PERFORMANCE",
-        "message": "CE process heap ('sonar.ce.javaOpts' -Xmx) memory setting value is {} MB, outside of recommended range [{}-{}] x {} workers"
-    },
-    "SETTING_CE_NO_HEAP": {
-        "severity": "HIGH",
-        "type": "PERFORMANCE",
-        "message": "CE process heap ('sonar.ce.javaOpts' -Xmx) memory setting is not specified"
-    },
-    "SETTING_ES_HEAP": {
-        "severity": "HIGH",
-        "type": "PERFORMANCE",
-        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
+        "type": "OPERATIONS",
+        "message": "Disk available for '{}' ({} MB) is too low, please ensure at least 10 GB of free space"
     },
     "SETTING_ES_NO_HEAP": {
         "severity": "HIGH",
@@ -129,12 +144,12 @@
         "type": "PERFORMANCE",
         "message": "JDBC URL is not set, most probably SonarQube runs on internal H2 DB that is not supported for production. You will not be able to upgrade"
     },
-    "SETTING_DB_ON_SAME_HOST": {
+    "DB_ON_SAME_HOST": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "JDBC URL '{}' is pointing to local host which is highly discouraged for production"
     },
-    "SETTING_CE_TOO_MANY_WORKERS": {
+    "TOO_MANY_CE_WORKERS": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
         "message": "CE has {} workers configured, more than the max {} recommended"
@@ -158,6 +173,11 @@
         "severity": "HIGH",
         "type": "OPERATIONS",
         "message": "Background task failure rate ({}%) is high, verify failed background tasks"
+    },
+    "BACKGROUND_TASKS_FAILURE_RATE_VERY_HIGH": {
+        "severity": "CRITICAL",
+        "type": "OPERATIONS",
+        "message": "Background task failure rate ({}%) is very high, verify failed background tasks"
     },
     "BACKGROUND_TASKS_PENDING_QUEUE_LONG": {
         "severity": "HIGH",
@@ -451,7 +471,7 @@
         "severity": "HIGH",
         "type": "GOVERNANCE",
         "object": "QualityGate",
-        "message": "{} threshold {} on metric '{}', is outside of the recommended range [{}-{}]"
+        "message": "{} threshold {} on metric '{}', is outside of the recommended range [{}-{}]. {}"
     },
     "QP_TOO_MANY_QP": {
         "severity": "MEDIUM",
