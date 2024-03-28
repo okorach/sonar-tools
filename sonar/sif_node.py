@@ -24,8 +24,8 @@
 """
 
 import datetime
-from dateutil.relativedelta import relativedelta
 from typing import Union
+from dateutil.relativedelta import relativedelta
 import sonar.utilities as util
 
 from sonar.audit import rules

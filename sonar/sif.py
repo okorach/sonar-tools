@@ -25,6 +25,7 @@
 
 import datetime
 import re
+from typing import Union
 from dateutil.relativedelta import relativedelta
 import sonar.utilities as util
 
@@ -67,6 +68,9 @@ class Sif:
         self.concerned_object = concerned_object
         self._url = None
 
+    def __str__(self):
+        return str(self.concerned_object)
+
     def url(self):
         if not self._url:
             if self.concerned_object:
@@ -75,13 +79,21 @@ class Sif:
                 self._url = self.json.get("Settings", {}).get("sonar.core.serverBaseURL", "")
         return self._url
 
-    def edition(self):
+    def edition(self) -> Union[str, None]:
+        ed = None
         for section in (_STATS, _SYSTEM, "License"):
             for subsection in ("edition", "Edition"):
                 try:
                     ed = self.json[section][subsection]
                 except KeyError:
                     pass
+        if "Application Nodes" in self.json:
+            util.logger.debug("DCE edition detected from the presence in SIF of the 'Application Nodes' key")
+            ed = "datacenter"
+        if ed is None:
+            util.logger.warning("Could not find edition in SIF")
+            return None
+
         # Old SIFs could return "Enterprise Edition"
         return util.edition_normalize(ed)
 
