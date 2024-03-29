@@ -127,7 +127,7 @@
     "SETTING_WEB_WRONG_JAVA_VERSION": {
         "severity": "HIGH",
         "type": "OPERATIONS",
-        "message": "SonarQube {} is running on Java {} which is not a supported Java version"
+        "message": "{}: SonarQube {} is running on Java {} which is not a supported Java version for this release"
     },
     "LOW_FREE_DISK_SPACE": {
         "severity": "HIGH",

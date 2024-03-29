@@ -127,7 +127,10 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     """
     util.logger.info("%s: Auditing JVM version", obj_name)
     try:
-        java_version = int(jvm_props["java.specification.version"])
+        str_v = jvm_props["java.specification.version"]
+        if str_v.startswith("1."):
+            str_v = str_v.split(".")[-1]
+        java_version = int(str_v)
     except KeyError:
         util.logger.warning("%s: Can't find Java version in SIF, auditing this part is skipped", obj_name)
         return []
@@ -136,11 +139,14 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     except KeyError:
         util.logger.warning("%s: Can't find SonarQube version in SIF, auditing this part is skipped", obj_name)
         return []
-    if sq_version >= (9, 9, 0) and java_version != 17:
-        rule = rules.get_rule(rules.RuleId.SETTING_WEB_WRONG_JAVA_VERSION)
-        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, java_version), concerned_object=obj)]
-    util.logger.info("%s: Running on the required java version (java %d)", obj_name, java_version)
-    return []
+    sq_v_str = ".".join([str(i) for i in sq_version])
+    if (java_version == 17 and sq_version >= (9, 6, 0)) or (
+        java_version == 11 and (7, 9, 0) <= sq_version <= (9, 8, 0) or (java_version == 8 and (7, 9, 0) <= sq_version < (8, 9, 0))
+    ):
+        util.logger.info("%s: SonarQube %s running on a supported java version (java %d)", sq_v_str, obj_name, java_version)
+        return []
+    rule = rules.get_rule(rules.RuleId.SETTING_WEB_WRONG_JAVA_VERSION)
+    return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, sq_v_str, java_version), concerned_object=obj)]
 
 
 def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list[pb.Problem]:
