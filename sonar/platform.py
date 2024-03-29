@@ -693,7 +693,7 @@ def _audit_setting_set(key, check_is_set, platform_settings, audit_settings, url
     return []
 
 
-def _audit_maintainability_rating_range(value, range, rating_letter, severity, domain, url):
+def _audit_maintainability_rating_range(value: float, range: tuple[float, float], rating_letter: str, url: str):
     util.logger.info(
         "Checking that maintainability rating threshold %.1f%% for '%s' is within recommended range [%.1f%%-%.1f%%]",
         value * 100,
@@ -723,7 +723,7 @@ def _audit_maintainability_rating_grid(platform_settings, audit_settings, url):
         v = _get_multiple_values(4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
         if v is None:
             continue
-        problems += _audit_maintainability_rating_range(value, (float(v[0]), float(v[1])), letter, v[2], v[3], url)
+        problems += _audit_maintainability_rating_range(value, (float(v[0]), float(v[1])), letter, url)
     return problems
 
 
