@@ -260,7 +260,11 @@ def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]) -> list[pb.
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
-    nb_workers = node_data[_CE_TASKS][_WORKER_COUNT]
+    try:
+        nb_workers = node_data[_CE_TASKS][_WORKER_COUNT]
+    except KeyError:
+        nb_workers = 0
+
     heap_min = max(2048, 1024 * nb_workers)
     heap_max = max(4096, 2048 * nb_workers)
     return (
