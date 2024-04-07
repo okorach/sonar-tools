@@ -207,7 +207,6 @@ def main():
     kwargs = vars(args)
     mode = args.mode
     util.check_environment(kwargs)
-    util.logger.debug("Args = %s", str(kwargs))
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     problems = []
     if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:

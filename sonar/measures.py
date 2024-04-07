@@ -20,7 +20,9 @@
 
 import json
 import re
-from sonar import metrics
+from http import HTTPStatus
+from requests.exceptions import HTTPError
+from sonar import metrics, exceptions
 import sonar.utilities as util
 import sonar.sqobject as sq
 
@@ -122,7 +124,11 @@ def get(concerned_object, metrics_list, **kwargs):
     params["metricKeys"] = util.list_to_csv(metrics_list)
     util.logger.debug("Getting measures with %s", str(params))
 
-    data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
+    try:
+        data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
+    except HTTPError as e:
+        if e.response.status_code == HTTPStatus.NOT_FOUND:
+            raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
     m_dict = {m: None for m in metrics_list}
     for m in data["component"]["measures"]:
         m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
