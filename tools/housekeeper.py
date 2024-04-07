@@ -107,7 +107,7 @@ def _parse_arguments():
     _DEFAULT_BRANCH_OBSOLESCENCE = 90
     _DEFAULT_PR_OBSOLESCENCE = 30
     _DEFAULT_TOKEN_OBSOLESCENCE = 365
-    parser = util.set_common_args("Deletes projects not analyzed since a given numbr of days")
+    parser = util.set_common_args("Deletes projects, branches, PR, user tokens not used since a given number of days")
     parser = options.add_thread_arg(parser, "auditing before housekeeping")
     parser.add_argument(
         "--mode",
@@ -203,7 +203,7 @@ def _delete_objects(problems, mode):
 def main():
     args = _parse_arguments()
 
-    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
     kwargs = vars(args)
     mode = args.mode
     util.check_environment(kwargs)

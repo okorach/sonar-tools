@@ -103,6 +103,12 @@ def set_common_args(desc):
         default=None,
         help="Optional client certificate file (as .pem file)",
     )
+    parser.add_argument(
+        "--httpTimeout",
+        required=False,
+        default=10,
+        help="HTTP timeout for requests to SonarQube, 10s by default",
+    )
     return parser
 
 

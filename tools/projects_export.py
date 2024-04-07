@@ -46,7 +46,7 @@ def main():
     utilities.check_token(args.token)
     utilities.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     start_time = datetime.datetime.today()
-    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
 
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
         utilities.exit_fatal(

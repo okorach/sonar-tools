@@ -39,9 +39,9 @@ def parse_args(desc):
 
 def main():
     args = parse_args("Manipulate custom metrics")
-    sqenv = platform.Platform(some_url=args.url, some_token=args.token)
+    sqenv = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
     if sqenv.version() >= (9, 0, 0):
-        utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", options.UnsupportedOperation)
+        utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", options.ERR_UNSUPPORTED_OPERATION)
     else:
         utilities.logger.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
     # Remove unset params from the dict
