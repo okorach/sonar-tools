@@ -134,6 +134,7 @@ def get(concerned_object, metrics_list, **kwargs):
         m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
     return m_dict
 
+
 def get_rating_letter(rating):
     """
     :params rating:
