@@ -62,7 +62,7 @@ _HARDCODED_LATEST = (10, 4, 1)
 class Platform:
     """Abstraction of the SonarQube "platform" concept"""
 
-    def __init__(self, some_url, some_token, cert_file=None):
+    def __init__(self, some_url: str, some_token: str, cert_file: str = None, http_timeout: int = 10):
         """Creates a SonarQube platform object
 
         :param some_url: base URL of the SonarQube platform
@@ -82,6 +82,7 @@ class Platform:
         self.__global_nav = None
         self._server_id = None
         self._permissions = None
+        self.http_timeout = http_timeout
 
     def __str__(self):
         """
@@ -166,7 +167,7 @@ class Platform:
         util.logger.debug("GET: %s", self.__urlstring(api, params))
         try:
             r = requests.get(
-                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params, timeout=10
+                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params, timeout=self.http_timeout
             )
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -203,7 +204,7 @@ class Platform:
         util.logger.debug("POST: %s", self.__urlstring(api, params))
         try:
             r = requests.post(
-                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, data=params, timeout=10
+                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, data=params, timeout=self.http_timeout
             )
             r.raise_for_status()
         except requests.exceptions.HTTPError:
@@ -240,7 +241,7 @@ class Platform:
         util.logger.debug("DELETE: %s", self.__urlstring(api, params))
         try:
             r = requests.delete(
-                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT, timeout=10
+                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT, timeout=self.http_timeout
             )
             r.raise_for_status()
         except requests.exceptions.HTTPError:
@@ -533,7 +534,7 @@ class Platform:
         util.logger.info("Auditing admin password")
         problems = []
         try:
-            r = requests.get(url=self.url + "/api/authentication/validate", auth=("admin", "admin"), timeout=10)
+            r = requests.get(url=self.url + "/api/authentication/validate", auth=("admin", "admin"), timeout=self.http_timeout)
             data = json.loads(r.text)
             if data.get("valid", False):
                 rule = rules.get_rule(rules.RuleId.DEFAULT_ADMIN_PASSWORD)

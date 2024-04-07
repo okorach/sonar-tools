@@ -205,7 +205,7 @@ def __parse_args(desc):
 
 def main():
     args = __parse_args("Extract measures of projects")
-    endpoint = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    endpoint = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
 
     with_branches = args.withBranches
     if endpoint.edition() == "community":

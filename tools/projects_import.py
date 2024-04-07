@@ -59,7 +59,7 @@ def main():
     util.check_environment(vars(args))
     util.check_token(args.token)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
-    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert)
+    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
 
     with open(args.projectsFile, "r", encoding="utf-8") as file:
         data = json.load(file)

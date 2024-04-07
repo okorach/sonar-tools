@@ -309,7 +309,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 
 def main():
     kwargs = vars(parse_args("Sonar findings extractor"))
-    sqenv = platform.Platform(some_url=kwargs["url"], some_token=kwargs["token"], cert_file=kwargs["clientCert"])
+    sqenv = platform.Platform(some_url=kwargs["url"], some_token=kwargs["token"], cert_file=kwargs["clientCert"], http_timeout=kwargs["httpTimeout"])
     del kwargs["token"]
     util.check_environment(kwargs)
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
