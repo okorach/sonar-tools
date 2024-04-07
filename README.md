@@ -57,6 +57,8 @@ Using login/password is not possible.
 The user corresponding to the token must have enough permissions to achieve the tool tasks
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
+- `-c` or `--clientCert` : Allows to specify an optional client certificate file (as .pem file)
+- `--httpTimeout` : Sets the timeout for HTTP(S) requests to the SonarQUbe platform
 
 See common [error exit codes](#exit-codes) at the bottom of this page
 
@@ -111,10 +113,10 @@ sonar-housekeeper -u https://sonar.acme-corp.com -t 15ee09df11fb9b8234b7a1f1ac5f
 
 # <a name="sonar-loc"></a>sonar-loc
 
-Exports all projects lines of code as they would be counted by the commercial licences.  
+Exports all projects lines of code as they would be counted by the commercial licences.
 See `sonar-loc -h` for details
 
-Basic Usage: `sonar-loc [-f <file>] [--format json|csv] [-a] [-n] [--withURL] [--portfolios] [--topLevelOnly]`  
+Basic Usage: `sonar-loc [-f <file>] [--format json|csv] [-a] [-n] [--withURL] [--portfolios] [--topLevelOnly]`
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `--format`: Choose export format between csv (default) and json
 - `--portfolios`: Output the LOC of portfolios instead of projects (Enterprise Edition only)
@@ -129,13 +131,13 @@ Basic Usage: `sonar-loc [-f <file>] [--format json|csv] [-a] [-n] [--withURL] [-
 
 # <a name="sonar-measures-export"></a>sonar-measures-export
 
-Exports one or all projects with all (or some selected) measures in a CSV file.  
-The CSV is sent to standard output.  
+Exports one or all projects with all (or some selected) measures in a CSV file.
+The CSV is sent to standard output.
 Plenty of issue filters can be specified from the command line, type `sonar-measures-export -h` for details
 
-Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format json|csv] [-b] [-r] [-p] [-d] [-d] [-n] [-a] [--withURL]`  
+Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format json|csv] [-b] [-r] [-p] [-d] [-d] [-n] [-a] [--withURL]`
 - `-m | --metricKeys`: comma separated list of metrics to export
-  - `-m _main` is a shortcut to list all main metrics. It's the recommended option  
+  - `-m _main` is a shortcut to list all main metrics. It's the recommended option
   - `-m _all` is a shortcut to list all metrics, including the most obscure ones
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `--format`: Choose export format between csv (default) and json
@@ -170,7 +172,7 @@ sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -o all_measu
 (Also available as `sonar-issues-export` for backward compatibility, but **deprecated**)
 
 Exports a list of issues as CSV  or JSON. The export is sent to standard output or into a file
-Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.  
+Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.
 :warning: On large SonarQube instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
 ## Required Permissions
@@ -200,12 +202,12 @@ sonar-findings-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities
 
 # <a name="sonar-projects-export"></a>sonar-projects-export
 
-Exports all projects of a given SonarQube instance.  
+Exports all projects of a given SonarQube instance.
 It sends to the output a CSV or JSON with the list of project keys, the export result (`SUCCESS` or `FAIL`), and:
 - If the export was successful, the generated zip file
 - If the export was failed, the failure reason
 
-Basic Usage: `sonar-projects-export [--exportTimeout <timeout>] >exported_projects.csv`  
+Basic Usage: `sonar-projects-export [--exportTimeout <timeout>] >exported_projects.csv`
 - `--exportTimeout`: Defines timeout to export a single project in seconds,
                      by default 180 s (large projects can take time to export)
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
@@ -233,12 +235,12 @@ sonar-projects-export -f exported_projects.json
 
 # <a name="sonar-projects-import"></a>sonar-projects-import
 
-Imports a list of projects previously exported with `sonar-projects-export`.  
-:warning: Unlike projects export that is available on all editions, project import requires a SonarQube Enterprise or Data Center Edition.  
+Imports a list of projects previously exported with `sonar-projects-export`.
+:warning: Unlike projects export that is available on all editions, project import requires a SonarQube Enterprise or Data Center Edition.
 It takes as input a CSV or JSON file produced by `sonar-projects-export`
 :warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
 
-Basic Usage: `sonar-projects-import -f <file.csv>`  
+Basic Usage: `sonar-projects-import -f <file.csv>`
 - `-f`: Define input file for project import, result of a `sonar-projects-export` command
 
 :information_source: All exported zip files must be first copied to the right location on the target SonarQube instance for the import to be successful (In `data/governance/project_dumps/import`)
@@ -263,7 +265,7 @@ sonar-projects-import -f exported_projects.json
 Exports or imports all or part of a SonarQube platform configuration.
 `sonar-config` is expected to export/import everything that is configurable in a SonarQube platform, except secrets
 
-Basic Usage: `sonar-config --export -f <file.json>`  
+Basic Usage: `sonar-config --export -f <file.json>`
 - `-f`: Define the output file, if not specified `stdout` is used
 - `-e` or `--export`: Specify the export operation
 - `-w` or `--what`: Specify what to export (everything by default)
