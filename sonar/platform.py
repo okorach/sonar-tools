@@ -167,7 +167,12 @@ class Platform:
         util.logger.debug("GET: %s", self.__urlstring(api, params))
         try:
             r = requests.get(
-                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, params=params, timeout=self.http_timeout
+                url=self.url + api,
+                auth=self.__credentials(),
+                verify=self.__cert_file,
+                headers=_SONAR_TOOLS_AGENT,
+                params=params,
+                timeout=self.http_timeout,
             )
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -204,7 +209,12 @@ class Platform:
         util.logger.debug("POST: %s", self.__urlstring(api, params))
         try:
             r = requests.post(
-                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=_SONAR_TOOLS_AGENT, data=params, timeout=self.http_timeout
+                url=self.url + api,
+                auth=self.__credentials(),
+                verify=self.__cert_file,
+                headers=_SONAR_TOOLS_AGENT,
+                data=params,
+                timeout=self.http_timeout,
             )
             r.raise_for_status()
         except requests.exceptions.HTTPError:
@@ -241,7 +251,12 @@ class Platform:
         util.logger.debug("DELETE: %s", self.__urlstring(api, params))
         try:
             r = requests.delete(
-                url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, params=params, headers=_SONAR_TOOLS_AGENT, timeout=self.http_timeout
+                url=self.url + api,
+                auth=self.__credentials(),
+                verify=self.__cert_file,
+                params=params,
+                headers=_SONAR_TOOLS_AGENT,
+                timeout=self.http_timeout,
             )
             r.raise_for_status()
         except requests.exceptions.HTTPError:
