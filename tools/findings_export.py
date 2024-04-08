@@ -152,14 +152,19 @@ def __write_footer(file, format):
         return
     closing_sequence = ""
     if format == "sarif":
-        closing_sequence = "]\n}\n]\n}"
+        closing_sequence = "\n]\n}\n]\n}"
     elif format == "json":
-        closing_sequence = "]"
+        closing_sequence = "\n]"
+    # Remove trailing comma
+    with open(file, "rb+") as filehandle:
+        filehandle.seek(-2, os.SEEK_END)
+        filehandle.truncate()
+    # Add closing sequence
     with util.open_file(file, mode="a") as f:
-        print(f"{closing_sequence}\n", file=f)
+        print(f"{closing_sequence}", file=f)
 
 
-def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
+def __dump_findings(findings_list, file, file_format, **kwargs):
     i = len(findings_list)
     util.logger.info("Writing %d more findings to %s in format %s", i, f"file '{file}'" if file else "stdout", file_format)
     with util.open_file(file, mode="a") as f:
@@ -168,8 +173,6 @@ def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
         comma = ","
         for _, finding in findings_list.items():
             i -= 1
-            if is_last and i == 0:
-                comma = ""
             if file_format == "json":
                 finding_json = finding.to_json()
                 if not kwargs[options.WITH_URL]:
@@ -188,14 +191,14 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
     while True:
         while queue.empty():
             time.sleep(0.5)
-        (data, is_last) = queue.get()
+        (data, _) = queue.get()
         if data == WRITE_END:
             queue.task_done()
             break
 
         global TOTAL_FINDINGS
         TOTAL_FINDINGS += len(data)
-        __dump_findings(data, file_to_write, file_format, is_last, withURL=with_url, csvSeparator=separator)
+        __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
         queue.task_done()
 
 
@@ -272,7 +275,7 @@ def __get_project_findings(queue, write_queue):
         if search_findings:
             findings_list = findings.export_findings(endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None))
 
-            write_queue.put([findings_list, queue.empty()])
+            write_queue.put([findings_list, False])
         else:
             new_params = issues.get_search_criteria(params)
             new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
@@ -290,7 +293,7 @@ def __get_project_findings(queue, write_queue):
             else:
                 util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
-            write_queue.put([findings_list, queue.empty()])
+            write_queue.put([findings_list, False])
         util.logger.debug("Queue %s task %s done", str(queue), key)
         queue.task_done()
 
