@@ -53,7 +53,7 @@ TOTAL_FINDINGS = 0
 def parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_key_arg(parser)
-    parser = util.set_output_file_args(parser)
+    parser = util.set_output_file_args(parser, sarif_fmt=True)
     parser = options.add_thread_arg(parser, "findings search")
     parser.add_argument(
         "-b",
@@ -124,19 +124,59 @@ def parse_args(desc):
 def __write_header(file, format):
     util.logger.info("Dumping report to %s", f"file '{file}'" if file else "stdout")
     with util.open_file(file) as f:
-        print("[" if format == "json" else findings.to_csv_header(), file=f)
+        if format == "json":
+            print("[", file=f)
+        elif format == "sarif":
+            print(
+                """{
+   "version": "2.1.0",
+   "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json",
+   "runs": [
+       {
+          "tool": {
+            "driver": {
+                "name": "SonarQube",
+                "informationUri": "https://www.sonarsource.com/products/sonarqube/"
+            }
+          },
+          "results": [
+""",
+                file=f,
+            )
+        else:
+            print(findings.to_csv_header(), file=f)
 
 
 def __write_footer(file, format):
-    if format != "json":
+    if format == "csv":
         return
+    closing_sequence = ""
+    if format == "sarif":
+        closing_sequence = "\n]\n}\n]\n}"
+    elif format == "json":
+        closing_sequence = "\n]"
+    # Remove trailing comma
+    with open(file, "rb+") as filehandle:
+        filehandle.seek(-2, os.SEEK_END)
+        filehandle.truncate()
+    # Add closing sequence
     with util.open_file(file, mode="a") as f:
-        print("]\n", file=f)
+        print(f"{closing_sequence}", file=f)
 
 
-def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
+def __dump_findings(findings_list: list[object], file: str, file_format: str, **kwargs) -> None:
+    """Dumps a list of findings in a file. The findings are appended at the end of the file
+
+    :param findings_list: List of findings
+    :type findings_list: Array
+    :param file: Filename to dump the findings
+    :type file: str
+    :param file_format: Format to dump (can be "csv", "json" or "sarif")
+    :type file_format: str
+    :return: Nothing
+    """
     i = len(findings_list)
-    util.logger.info("Writing %d more findings to %s", i, f"file '{file}'" if file else "stdout")
+    util.logger.info("Writing %d more findings to %s in format %s", i, f"file '{file}'" if file else "stdout", file_format)
     with util.open_file(file, mode="a") as f:
         url = ""
         sep = kwargs.get(options.CSV_SEPARATOR, ",")
@@ -147,9 +187,10 @@ def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
                 finding_json = finding.to_json()
                 if not kwargs[options.WITH_URL]:
                     finding_json.pop("url", None)
-                if is_last and i == 0:
-                    comma = ""
                 print(f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end="")
+            elif file_format == "sarif":
+                finding_sarif = finding.to_sarif()
+                print(f"{util.json_dump(finding_sarif, indent=1)}{comma}\n", file=f, end="")
             else:
                 if kwargs[options.WITH_URL]:
                     url = f'{sep}"{finding.url()}"'
@@ -160,14 +201,14 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
     while True:
         while queue.empty():
             time.sleep(0.5)
-        (data, is_last) = queue.get()
+        (data, _) = queue.get()
         if data == WRITE_END:
             queue.task_done()
             break
 
         global TOTAL_FINDINGS
         TOTAL_FINDINGS += len(data)
-        __dump_findings(data, file_to_write, file_format, is_last, withURL=with_url, csvSeparator=separator)
+        __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
         queue.task_done()
 
 
@@ -244,7 +285,7 @@ def __get_project_findings(queue, write_queue):
         if search_findings:
             findings_list = findings.export_findings(endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None))
 
-            write_queue.put([findings_list, queue.empty()])
+            write_queue.put([findings_list, False])
         else:
             new_params = issues.get_search_criteria(params)
             new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
@@ -262,7 +303,7 @@ def __get_project_findings(queue, write_queue):
             else:
                 util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
-            write_queue.put([findings_list, queue.empty()])
+            write_queue.put([findings_list, False])
         util.logger.debug("Queue %s task %s done", str(queue), key)
         queue.task_done()
 
@@ -329,7 +370,7 @@ def main():
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     fmt = kwargs.pop("format", None)
     fname = kwargs.pop("file", None)
-    if fname is not None:
+    if fmt is None and fname is not None:
         ext = fname.split(".")[-1].lower()
         if os.path.exists(fname):
             os.remove(fname)

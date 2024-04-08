@@ -140,17 +140,24 @@ def set_target_sonar_args(parser):
     return parser
 
 
-def set_output_file_args(parser, json_fmt=True, csv_fmt=True):
+def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False):
     parser.add_argument(
         "-f",
         "--file",
         required=False,
         help="Output file for the report, stdout by default",
     )
+    fmt_choice = []
+    if csv_fmt:
+        fmt_choice.append("csv")
+    if json_fmt:
+        fmt_choice.append("json")
+    if sarif_fmt:
+        fmt_choice.append("sarif")
     if json_fmt and csv_fmt:
         parser.add_argument(
             "--" + options.FORMAT,
-            choices=["csv", "json"],
+            choices=fmt_choice,
             required=False,
             help="Output format for generated report.\nIf not specified, it is the output file extension if json or csv, then csv by default",
         )

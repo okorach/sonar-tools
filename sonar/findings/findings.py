@@ -196,6 +196,35 @@ class Finding(sq.SqObject):
                 data.pop(k)
         return data
 
+    def to_sarif(self) -> dict[str, str]:
+        """
+        :return: The finding in SARIF format
+        :rtype: dict
+        """
+        data = {}
+        data["level"] = "warning"
+        if self.is_bug() or self.is_vulnerability() or self.severity in ("CRITICAL", "BLOCKER"):
+            data["level"] = "error"
+        data["ruleId"] = self.rule
+        data["message"] = {"text": self.message}
+        data["properties"] = self.to_json()
+        data["properties"]["url"] = self.url()
+        rg = self._json["textRange"]
+        data["locations"] = [
+            {
+                "physicalLocation": {
+                    "artifactLocation": {"uri": f"file:///{self.file()}", "index": 0},
+                    "region": {
+                        "startLine": max(int(rg["startLine"]), 1),
+                        "startColumn": max(int(rg["startOffset"]), 1),
+                        "endLine": max(int(rg["endLine"]), 1),
+                        "endColumn": max(int(rg["endOffset"]), 1),
+                    },
+                }
+            }
+        ]
+        return data
+
     def is_vulnerability(self):
         return self.type == "VULNERABILITY"
 
