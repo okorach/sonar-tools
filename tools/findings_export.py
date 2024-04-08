@@ -124,14 +124,31 @@ def parse_args(desc):
 def __write_header(file, format):
     util.logger.info("Dumping report to %s", f"file '{file}'" if file else "stdout")
     with util.open_file(file) as f:
-        print("[" if format == "json" else findings.to_csv_header(), file=f)
+        if format == "json":
+            print("[", file=f)
+        elif format == "sarif":
+            print(
+                """{
+   "version": "2.1.0",
+   "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json",
+   "runs": null,
+""",
+                file=f,
+            )
+        else:
+            print(findings.to_csv_header(), file=f)
 
 
 def __write_footer(file, format):
-    if format != "json":
+    if format == "csv":
         return
+    char = ""
+    if format == "sarif":
+        char = "}"
+    elif format == "json":
+        char = "]"
     with util.open_file(file, mode="a") as f:
-        print("]\n", file=f)
+        print(f"{char}\n", file=f)
 
 
 def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
@@ -143,13 +160,16 @@ def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
         comma = ","
         for _, finding in findings_list.items():
             i -= 1
+            if is_last and i == 0:
+                comma = ""
             if file_format == "json":
                 finding_json = finding.to_json()
                 if not kwargs[options.WITH_URL]:
                     finding_json.pop("url", None)
-                if is_last and i == 0:
-                    comma = ""
                 print(f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end="")
+            elif file_format == "sarif":
+                finding_sarif = finding.to_sarif()
+                print(f"{util.json_dump(finding_sarif, indent=1)}{comma}\n", file=f, end="")
             else:
                 if kwargs[options.WITH_URL]:
                     url = f'{sep}"{finding.url()}"'
