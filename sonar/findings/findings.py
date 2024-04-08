@@ -213,7 +213,7 @@ class Finding(sq.SqObject):
         data["locations"] = [
             {
                 "physicalLocation": {
-                    "artifactLocation": {"uri": self.file(), "index": 0},
+                    "artifactLocation": {"uri": f"file:///{self.file()}", "index": 0},
                     "region": {
                         "startLine": max(int(rg["startLine"]), 1),
                         "startColumn": max(int(rg["startOffset"]), 1),
