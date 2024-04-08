@@ -215,10 +215,10 @@ class Finding(sq.SqObject):
                 "physicalLocation": {
                     "artifactLocation": {"uri": self.file(), "index": 0},
                     "region": {
-                        "startLine": rg["startLine"],
-                        "startColumn": rg["startOffset"],
-                        "endLine": rg["endLine"],
-                        "endColumn": rg["endOffset"],
+                        "startLine": max(int(rg["startLine"]), 1),
+                        "startColumn": max(int(rg["startOffset"]), 1),
+                        "endLine": max(int(rg["endLine"]), 1),
+                        "endColumn": max(int(rg["endOffset"]), 1),
                     },
                 }
             }

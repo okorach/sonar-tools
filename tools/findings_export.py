@@ -53,7 +53,7 @@ TOTAL_FINDINGS = 0
 def parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_key_arg(parser)
-    parser = util.set_output_file_args(parser)
+    parser = util.set_output_file_args(parser, sarif_fmt=True)
     parser = options.add_thread_arg(parser, "findings search")
     parser.add_argument(
         "-b",
@@ -131,7 +131,15 @@ def __write_header(file, format):
                 """{
    "version": "2.1.0",
    "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json",
-   "runs": null,
+   "runs": [
+       {
+          "tool": {
+            "driver": {
+                "name": "SonarQube",
+                "informationUri": "https://www.sonarsource.com/products/sonarqube/"
+            }
+          },
+          "results": [
 """,
                 file=f,
             )
@@ -142,18 +150,18 @@ def __write_header(file, format):
 def __write_footer(file, format):
     if format == "csv":
         return
-    char = ""
+    closing_sequence = ""
     if format == "sarif":
-        char = "}"
+        closing_sequence = "]\n}\n]\n}"
     elif format == "json":
-        char = "]"
+        closing_sequence = "]"
     with util.open_file(file, mode="a") as f:
-        print(f"{char}\n", file=f)
+        print(f"{closing_sequence}\n", file=f)
 
 
 def __dump_findings(findings_list, file, file_format, is_last=False, **kwargs):
     i = len(findings_list)
-    util.logger.info("Writing %d more findings to %s", i, f"file '{file}'" if file else "stdout")
+    util.logger.info("Writing %d more findings to %s in format %s", i, f"file '{file}'" if file else "stdout", file_format)
     with util.open_file(file, mode="a") as f:
         url = ""
         sep = kwargs.get(options.CSV_SEPARATOR, ",")
@@ -349,7 +357,7 @@ def main():
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     fmt = kwargs.pop("format", None)
     fname = kwargs.pop("file", None)
-    if fname is not None:
+    if fmt is None and fname is not None:
         ext = fname.split(".")[-1].lower()
         if os.path.exists(fname):
             os.remove(fname)
