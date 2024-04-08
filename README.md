@@ -171,7 +171,7 @@ sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -o all_measu
 # <a name="sonar-findings-export"></a>sonar-findings-export
 (Also available as `sonar-issues-export` for backward compatibility, but **deprecated**)
 
-Exports a list of issues as CSV  or JSON. The export is sent to standard output or into a file
+Exports a list of issues as CSV, JSON or SARIF format. The export is sent to standard output or into a file
 Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.
 :warning: On large SonarQube instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
@@ -198,6 +198,9 @@ sonar-findings-export -a 2020-01-01 -b 2020-12-31 -o issues_created_in_2020.csv
 
 # Exports all vulnerabilities and bugs
 sonar-findings-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.json
+
+# Exports all vulnerabilities and bugs in SARIF format
+sonar-findings-export -types VULNERABILITY,BUG -f json --format sarif >bugs_and_vulnerabilities.sarif.json
 ```
 
 # <a name="sonar-projects-export"></a>sonar-projects-export
