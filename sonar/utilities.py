@@ -140,7 +140,7 @@ def set_target_sonar_args(parser):
     return parser
 
 
-def set_output_file_args(parser, json_fmt=True, csv_fmt=True, sarif_fmt=False):
+def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False):
     parser.add_argument(
         "-f",
         "--file",

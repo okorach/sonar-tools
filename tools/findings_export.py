@@ -164,7 +164,17 @@ def __write_footer(file, format):
         print(f"{closing_sequence}", file=f)
 
 
-def __dump_findings(findings_list, file, file_format, **kwargs):
+def __dump_findings(findings_list: list[object], file: str, file_format: str, **kwargs) -> None:
+    """Dumps a list of findings in a file. The findings are appended at the end of the file
+
+    :param findings_list: List of findings
+    :type findings_list: Array
+    :param file: Filename to dump the findings
+    :type file: str
+    :param file_format: Format to dump (can be "csv", "json" or "sarif")
+    :type file_format: str
+    :return: Nothing
+    """
     i = len(findings_list)
     util.logger.info("Writing %d more findings to %s in format %s", i, f"file '{file}'" if file else "stdout", file_format)
     with util.open_file(file, mode="a") as f:

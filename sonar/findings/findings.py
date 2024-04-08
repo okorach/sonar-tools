@@ -196,7 +196,7 @@ class Finding(sq.SqObject):
                 data.pop(k)
         return data
 
-    def to_sarif(self):
+    def to_sarif(self) -> dict[str, str]:
         """
         :return: The finding in SARIF format
         :rtype: dict
