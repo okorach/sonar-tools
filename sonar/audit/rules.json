@@ -107,7 +107,7 @@
     "ES_HEAP_TOO_LOW": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
-        "message": "Search process heap ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
+        "message": "{} ('sonar.search.javaOpts' -Xmx) memory setting value is {} MB, too low for index size of {} MB"
     },
     "LOGS_IN_TRACE_MODE": {
         "severity": "CRITICAL",
