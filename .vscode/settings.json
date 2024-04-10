@@ -1,7 +1,6 @@
 {
-    "python.linting.pylintEnabled": true
     "sonarlint.connectedMode.project": {
-        "connectionId": "SQ LATEST",
-        "projectKey": "sonarqube-tools"
+        "connectionId": "sonarcloud",
+        "projectKey": "okorach_sonar-tools"
     }
 }
