@@ -70,7 +70,7 @@ def __dump_csv(problems: list[Problem], file: str, server_id: str = None, **kwar
             data = []
             if server_id is not None:
                 data = [server_id]
-            data.append(list(p.to_json(kwargs.get(options.WITH_URL, False)).values()))
+            data += list(p.to_json(kwargs.get(options.WITH_URL, False)).values())
             csvwriter.writerow(data)
 
 
