@@ -4,6 +4,7 @@
   - Fixes problem in `sonar-housekeeper` causing crashes
   - Added `--httpTimeout` to all tools to sets the HTTP(S) requests timeout (default 10s)
   - Added ability for `sonar-findings-export` to export findings in [SARIF](https://sarifweb.azurewebsites.net/) 2.1 format (basic SARIF fields are populated)
+  - Added **Server Id** as first field in `sonar-audit` CSV report (under field key `server_id` in JSON report)
 
 # Version 2.9 - March 2024
 

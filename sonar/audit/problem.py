@@ -55,22 +55,29 @@ class Problem:
         return d
 
 
-def dump_report(problems, file, **kwargs):
+def dump_report(problems: list[Problem], file: str, server_id: str = None, **kwargs):
     utilities.logger.info("Writing report to %s", f"file '{file}'" if file else "stdout")
     if kwargs.get("format", "csv") == "json":
-        __dump_json(problems=problems, file=file, **kwargs)
+        __dump_json(problems=problems, file=file, server_id=server_id, **kwargs)
     else:
-        __dump_csv(problems=problems, file=file, **kwargs)
+        __dump_csv(problems=problems, file=file, server_id=server_id, **kwargs)
 
 
-def __dump_csv(problems, file, **kwargs):
+def __dump_csv(problems: list[Problem], file: str, server_id: str = None, **kwargs):
     with utilities.open_file(file, "w") as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs.get("separator", ","))
         for p in problems:
-            csvwriter.writerow(list(p.to_json(kwargs.get(options.WITH_URL, False)).values()))
+            data = []
+            if server_id is not None:
+                data = [server_id]
+            data.append(list(p.to_json(kwargs.get(options.WITH_URL, False)).values()))
+            csvwriter.writerow(data)
 
 
-def __dump_json(problems, file, **kwargs):
-    json = [p.to_json(kwargs.get(options.WITH_URL, False)) for p in problems]
+def __dump_json(problems: list[Problem], file: str, server_id: str = None, **kwargs):
+    sid_dict = {}
+    if server_id is not None:
+        sid_dict = {"server_id": server_id}
+    json = [{**p.to_json(kwargs.get(options.WITH_URL, False)), **sid_dict} for p in problems]
     with utilities.open_file(file) as fd:
         print(utilities.json_dump(json), file=fd)
