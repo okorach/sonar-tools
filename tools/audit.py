@@ -68,7 +68,9 @@ def _audit_sif(sysinfo, audit_settings):
     except PermissionError:
         util.logger.critical("No permission to open file %s", sysinfo)
         raise
-    return sif.Sif(sysinfo).audit(audit_settings)
+    sif_obj = sif.Sif(sysinfo)
+    server_id = sif_obj.server_id()
+    return (server_id, sif_obj.audit(audit_settings))
 
 
 def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
@@ -133,7 +135,7 @@ def main():
     if kwargs.get("sif", None) is not None:
         err = options.ERR_SIF_AUDIT_ERROR
         try:
-            problems = _audit_sif(kwargs["sif"], settings)
+            (server_id, problems) = _audit_sif(kwargs["sif"], settings)
         except json.decoder.JSONDecodeError:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", err)
         except FileNotFoundError:
@@ -143,6 +145,7 @@ def main():
         except sif.NotSystemInfo:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
     else:
+        server_id = sq.server_id()
         util.check_token(args.token)
         key_list = util.csv_to_list(args.projectKeys)
         if len(key_list) > 0 and "projects" in util.csv_to_list(args.what):
@@ -156,7 +159,7 @@ def main():
 
     kwargs["format"] = __deduct_format__(args.format, args.file)
     ofile = kwargs.pop("file", None)
-    problem.dump_report(problems, ofile, **kwargs)
+    problem.dump_report(problems, ofile, server_id, **kwargs)
 
     util.logger.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
     if problems:

@@ -160,8 +160,8 @@ class Sif:
             problems += self.__audit_dce_settings()
         else:
             problems += (
-                sifn.audit_web(self, "Web App", self.json)
-                + sifn.audit_ce(self, "CE App", self.json)
+                sifn.audit_web(self, "Web process", self.json)
+                + sifn.audit_ce(self, "CE process", self.json)
                 + self.__audit_es_settings()
                 + self.__audit_branch_use()
                 + self.__audit_undetected_scm()
