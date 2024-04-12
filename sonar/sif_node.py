@@ -111,10 +111,16 @@ def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limi
         return []
 
     if heap < min_heap:
-        rule = rules.get_rule(rules.RuleId.APP_HEAP_TOO_LOW)
+        if "CE process" in obj_name:
+            rule = rules.get_rule(rules.RuleId.CE_HEAP_TOO_LOW)
+        else:
+            rule = rules.get_rule(rules.RuleId.WEB_HEAP_TOO_LOW)
         limit = min_heap
     else:
-        rule = rules.get_rule(rules.RuleId.APP_HEAP_TOO_HIGH)
+        if "CE process" in obj_name:
+            rule = rules.get_rule(rules.RuleId.CE_HEAP_TOO_HIGH)
+        else:
+            rule = rules.get_rule(rules.RuleId.WEB_HEAP_TOO_HIGH)
         limit = max_heap
     return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, heap, limit), concerned_object=obj)]
 

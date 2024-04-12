@@ -99,12 +99,22 @@
         "type": "PERFORMANCE",
         "message": "Short Lived Branches retention duration of {} days is outside of recommended range [{}-{}]"
     },
-    "APP_HEAP_TOO_LOW": {
+    "WEB_HEAP_TOO_LOW": {
         "severity": "HIGH",
         "type": "PERFORMANCE",
-        "message": "{} heap memory setting value is {} MB, below of the recommended value of {} MB"
+        "message": "{} heap memory setting value is {} MB, below the recommended value of {} MB"
     },
-    "APP_HEAP_TOO_HIGH": {
+    "WEB_HEAP_TOO_HIGH": {
+        "severity": "LOW",
+        "type": "PERFORMANCE",
+        "message": "{} heap memory setting value is {} MB, above the maximum suggested value of {} MB"
+    },
+    "CE_HEAP_TOO_LOW": {
+        "severity": "HIGH",
+        "type": "PERFORMANCE",
+        "message": "{} heap memory setting value is {} MB, below the recommended value of {} MB"
+    },
+    "CE_HEAP_TOO_HIGH": {
         "severity": "LOW",
         "type": "PERFORMANCE",
         "message": "{} heap memory setting value is {} MB, above the maximum suggested value of {} MB"
