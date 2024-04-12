@@ -14,6 +14,7 @@
 		"git.confirmSync": false,
 		"git.autofetch": true,
 		"window.zoomLevel": 1,
-		"files.autoSave": "afterDelay"
+		"files.autoSave": "afterDelay",
+		"sonarlint.focusOnNewCode": true
 	}
 }
