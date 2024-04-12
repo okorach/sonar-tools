@@ -23,7 +23,7 @@ from sonar import utilities, options
 
 
 class Problem:
-    def __init__(self, broken_rule=object, msg: str = "", problem_type=None, severity=None, concerned_object: object = None):
+    def __init__(self, broken_rule: object, msg: str = "", problem_type=None, severity=None, concerned_object: object = None) -> None:
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
         self.rule_id = "UNDEF"
@@ -55,7 +55,15 @@ class Problem:
         return d
 
 
-def dump_report(problems: list[Problem], file: str, server_id: str = None, **kwargs):
+def dump_report(problems: list[Problem], file: str, server_id: str = None, **kwargs) -> None:
+    """Dumps to file a report about a list of problems
+
+    :param list[Problems] problems: List of problems to dump
+    :param str file: Filename to write the problems
+    :param str server_id: ServerId of the platform having the problems
+    :return: Nothing
+    :rtype: None
+    """
     utilities.logger.info("Writing report to %s", f"file '{file}'" if file else "stdout")
     if kwargs.get("format", "csv") == "json":
         __dump_json(problems=problems, file=file, server_id=server_id, **kwargs)
@@ -63,7 +71,14 @@ def dump_report(problems: list[Problem], file: str, server_id: str = None, **kwa
         __dump_csv(problems=problems, file=file, server_id=server_id, **kwargs)
 
 
-def __dump_csv(problems: list[Problem], file: str, server_id: str = None, **kwargs):
+def __dump_csv(problems: list[Problem], file: str, server_id: str = None, **kwargs) -> None:
+    """Writes a list of problems in CSV format
+
+    :param list[Problems] problems: List of problems to dump
+    :param str file: Filename to write the problems
+    :return: Nothing
+    :rtype: None
+    """
     with utilities.open_file(file, "w") as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs.get("separator", ","))
         for p in problems:
@@ -74,7 +89,14 @@ def __dump_csv(problems: list[Problem], file: str, server_id: str = None, **kwar
             csvwriter.writerow(data)
 
 
-def __dump_json(problems: list[Problem], file: str, server_id: str = None, **kwargs):
+def __dump_json(problems: list[Problem], file: str, server_id: str = None, **kwargs) -> None:
+    """Writes a list of problems in JSON format
+
+    :param list[Problems] problems: List of problems to dump
+    :param str file: Filename to write the problems
+    :return: Nothing
+    :rtype: None
+    """
     sid_dict = {}
     if server_id is not None:
         sid_dict = {"server_id": server_id}
