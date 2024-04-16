@@ -34,7 +34,8 @@ check() {
 
 [ $# -eq 0 ] && echo "Usage: $0 <env1> [... <envN>]" && exit 1
 
-IT_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd ../tmp ; pwd -P )"
+IT_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd .. ; pwd -P )"
+IT_ROOT="$IT_ROOT/tmp"
 IT_LOG_FILE="$IT_ROOT/it.log"
 mkdir -p $IT_ROOT
 rm -f $IT_ROOT/*.log $IT_ROOT/*.csv $IT_ROOT/*.json
@@ -51,7 +52,9 @@ echo "Install sonar-tools current local version" | tee -a $IT_LOG_FILE
 for env in $*
 do
     echo "Running with environment $env" | tee -a $IT_LOG_FILE
-    . ${cur_dir}/sonar-env.sh $env
+    export SONAR_TOKEN=$SOMNAR_TOKEN_ADMIN_USER
+    cd test;./sonar-create --pg_backup ~/backup/db.$env.backup
+
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
     f="$IT_ROOT/measures-$env-unrel.csv"
