@@ -47,14 +47,16 @@ if [ "$1" == "--noExport" ]; then
 fi
 
 date | tee -a $IT_LOG_FILE
-echo "Install sonar-tools current local version" | tee -a $IT_LOG_FILE
-./deploy.sh nodoc
 for env in $*
 do
+
+    echo "Install sonar-tools current local version" | tee -a $IT_LOG_FILE
+    ./deploy.sh nodoc
+
     echo "Running with environment $env" | tee -a $IT_LOG_FILE
-    export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
     cd test;./sonar-create --pg_backup ~/backup/db.$env.backup
 
+    export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
 
     f="$IT_ROOT/measures-$env-unrel.csv"
@@ -146,24 +148,20 @@ do
     export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
     f2="$IT_ROOT/findings-$env-user.csv"
     sonar-findings-export -v DEBUG -f $f2 -k okorach_audio-video-tools,okorach_sonar-tools
-done
 
-echo "Restore sonar-tools last released version"
-echo "Y" | pip uninstall sonar-tools
-pip install sonar-tools
-for env in $*
-do
-    . sonar-env.sh $env
+    # Restore admin token as long as previous version is 2.9 or less
+    echo "Restore sonar-tools last released version"
+    echo "Y" | pip uninstall sonar-tools
+    pip install sonar-tools
+    export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
+
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
     sonar-measures-export -b -f $IT_ROOT/measures-$env-rel.csv -m _main --withURL
     sonar-findings-export -f $IT_ROOT/findings-$env-rel.csv
     sonar-audit >$IT_ROOT/audit-$env-rel.csv || echo "OK"
     sonar-loc -n -a >$IT_ROOT/loc-$env-rel.csv 
     sonar-config -e >$IT_ROOT/config-$env-rel.json 
-done
-./deploy.sh nodoc
-for env in $*
-do
+
     echo "IT compare released and unreleased $env" | tee -a $IT_LOG_FILE
     for f in measures findings audit loc
     do
