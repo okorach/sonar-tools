@@ -4,6 +4,8 @@
 
 pg_port=""
 
+DOCKER_COMPOSE_TEMPLATE_DIR=docker-compose-template
+
 function usage {
    cat <<EOF
 Usage: $0 --tag <sq_docker_tag> --sq_port <sq_port> --pg_port <pg_port> --pg_backup <backup_file>
@@ -55,8 +57,8 @@ done
 
 temp_dir=$id-sonar
 echo "Creating temp dir $temp_dir"
-cp -r docker-setup $temp_dir
-cat docker-setup/.env | \
+cp -r $DOCKER_COMPOSE_TEMPLATE_DIR $temp_dir
+cat $DOCKER_COMPOSE_TEMPLATE_DIR/.env | \
    sed -e "s/SONAR_PORT=9000/SONAR_PORT=$sq_port/" \
        -e "s/SONAR_TAG=.*/SONAR_TAG=$sq_tag/" \
        -e "s/SONAR_CONTAINER=sonar_lts/SONAR_CONTAINER=${id}_sonar/" \
