@@ -68,7 +68,7 @@ cat $DOCKER_COMPOSE_TEMPLATE_DIR/.env | \
 
 echo "Starting Sonar instance"
 docker compose -f $temp_dir/docker-compose.yml up -d
-sleep 20
+sleep 30
 
 echo "Restoring DB"
 pg_restore --host localhost --port $pg_port --username sonar -d sonar --verbose --clean "$pg_backup" >/dev/null
