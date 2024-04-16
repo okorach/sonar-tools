@@ -52,7 +52,7 @@ echo "Install sonar-tools current local version" | tee -a $IT_LOG_FILE
 for env in $*
 do
     echo "Running with environment $env" | tee -a $IT_LOG_FILE
-    export SONAR_TOKEN=$SOMNAR_TOKEN_ADMIN_USER
+    export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
     cd test;./sonar-create --pg_backup ~/backup/db.$env.backup
 
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
