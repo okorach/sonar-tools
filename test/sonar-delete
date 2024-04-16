@@ -1,0 +1,49 @@
+#!/bin/bash
+
+
+pg_port=""
+
+function usage {
+   cat <<EOF
+Usage: $0 --id <id>
+
+--id: Sonar instance Id
+
+EOF
+
+}
+
+sq_tag=lts-enterprise
+pg_tag=pg_lts-enterprise
+sq_port=9000
+pg_backup=db.backup
+id=$$
+
+while [ $# -ne 0 ]; do
+   case $1 in
+      --id)
+         shift
+         id=$1
+         ;;
+      *)
+         echo "ERROR: Unexpected parameter $1" && usage
+         exit 1
+         ;;
+   esac
+   shift
+done
+
+dir="${id}-sonar"
+
+echo "Stopping instance"
+cd $dir; docker compose down; cd -
+
+echo "Deleting volumes"
+for vol in logs data extensions db; do
+   docker volume rm ${id}-sonar_${vol} 
+done
+
+echo "removing directory"
+rm -rf $dir
+
+echo "Deletion of sonar Id ${id} complete"
