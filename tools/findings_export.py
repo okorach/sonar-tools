@@ -209,20 +209,25 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
             queue.task_done()
             break
 
+        if len(data) == 0:
+            queue.task_done()
+            continue
+
+        if file_format == "csv":
+            __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
+            continue
+
         with FIRST_SEM:
-            if not IS_FIRST and file_format != "csv" and len(data) > 0:
-                util.logger.debug("Not first project, adding comma")
+            if not IS_FIRST:
                 with util.open_file(file_to_write, mode="a") as f:
                     print(",", file=f)
+            IS_FIRST = False
 
         with TOTAL_SEM:
             global TOTAL_FINDINGS
             TOTAL_FINDINGS += len(data)
 
         __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
-        if len(data) > 0:
-            with FIRST_SEM:
-                IS_FIRST = False
         queue.task_done()
 
 
