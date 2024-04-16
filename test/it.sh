@@ -142,7 +142,8 @@ do
     echo "IT $env sonar-findings-export USER export" | tee -a $IT_LOG_FILE
     f1="$IT_ROOT/findings-$env-admin.csv"
     sonar-findings-export -v DEBUG -f $f1 -k okorach_audio-video-tools,okorach_sonar-tools
-    . ${cur_dir}/sonar-env.sh $env-user
+
+    export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
     f2="$IT_ROOT/findings-$env-user.csv"
     sonar-findings-export -v DEBUG -f $f2 -k okorach_audio-video-tools,okorach_sonar-tools
 done
