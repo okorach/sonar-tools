@@ -14,7 +14,6 @@ EOF
 }
 
 sq_tag=lts-enterprise
-pg_tag=pg_lts-enterprise
 sq_port=9000
 pg_backup=db.backup
 id=$$
