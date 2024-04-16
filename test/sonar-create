@@ -67,13 +67,7 @@ cat $DOCKER_COMPOSE_TEMPLATE_DIR/.env | \
    > $temp_dir/.env
 
 echo "Starting Sonar instance"
-# docker run --hostname=6e3561b05021 --env=POSTGRES_USER=sonar --env=POSTGRES_PASSWORD=sonar --env=POSTGRES_DB=sonar \
-#    --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin --env=GOSU_VERSION=1.17 \
-#    --env=LANG=en_US.utf8 --env=PG_MAJOR=15 --env=PG_VERSION=15.6-1.pgdg120+2 --env=PGDATA=/var/lib/postgresql/data --volume=/var/lib/postgresql/data \
-#    --network=4641-sonar_default -p 4000:5432 --restart=no \
-# --runtime=runc -d postgres:15
-
-cd $temp_dir; docker compose up -d; cd -
+docker compose -f $temp_dir/docker-compose.yml up -d
 sleep 20
 
 echo "Restoring DB"
