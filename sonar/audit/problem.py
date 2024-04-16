@@ -45,7 +45,8 @@ class Problem:
     def to_json(self, with_url=False):
         d = vars(self).copy()
         d.pop("concerned_object")
-        for k in ("severity", "type"):
+
+        for k in ("severity", "type", "rule_id"):
             d[k] = str(d[k])
         if with_url:
             try:
