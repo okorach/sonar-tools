@@ -1,0 +1,69 @@
+
+version: "3.7"
+services:
+  sonarqube:
+    image: sonarqube:${SONAR_TAG}
+    hostname: ${SONAR_CONTAINER}
+    container_name: ${SONAR_CONTAINER}
+    depends_on:
+      - db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+      SONAR_CE_JAVAOPTS: -Xmx1G -Xms128m -XX:+HeapDumpOnOutOfMemoryError
+      SONAR_WEB_JAVAOPTS: -Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError
+      SONAR_SEARCH_JAVAOPTS: -Xmx1G -Xms1G -XX:+HeapDumpOnOutOfMemoryError
+    command: '-Dsonar.es.bootstrap.checks.disable=true'
+    volumes:
+      - extensions:/opt/sonarqube/extensions
+      # long syntax below:
+      # - type: volume
+      #   source: sqExtensions
+      #   target: /opt/sonarqube/extensions
+      #   read_only: false
+      ## logs directory does not need to be populated, a bind mount is more convenient for logs access from host
+      - logs:/opt/sonarqube/logs
+      ## volumes are supposed to be more performant, so let's use a volume
+      - data:/opt/sonarqube/data
+      # - ./sonarqube/certs:/certificates
+    ports:
+      - ${SONAR_PORT}:9000
+  db:
+    image: postgres:${POSTGRES_TAG}
+    container_name: ${POSTGRES_CONTAINER}
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - db:/var/lib/postgresql/data
+      # - pg_data:/var/lib/postgresql_data
+
+volumes:
+  logs:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./sonar/logs
+      o: bind
+  data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./sonar/data
+      o: bind
+  extensions:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./sonar/extensions
+      o: bind
+  db:
+#    driver_opts:
+#      type: none
+#      o: bind
+#      device: ./postgres
+

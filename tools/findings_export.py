@@ -39,6 +39,7 @@ import os
 import time
 import datetime
 from queue import Queue
+import threading
 from threading import Thread
 
 from sonar import platform, version, options, exceptions
@@ -48,6 +49,9 @@ from sonar.findings import findings, issues, hotspots
 
 WRITE_END = object()
 TOTAL_FINDINGS = 0
+IS_FIRST = True
+TOTAL_SEM = threading.Semaphore()
+FIRST_SEM = threading.Semaphore()
 
 
 def parse_args(desc):
@@ -155,10 +159,6 @@ def __write_footer(file, format):
         closing_sequence = "\n]\n}\n]\n}"
     elif format == "json":
         closing_sequence = "\n]"
-    # Remove trailing comma
-    with open(file, "rb+") as filehandle:
-        filehandle.seek(-2, os.SEEK_END)
-        filehandle.truncate()
     # Add closing sequence
     with util.open_file(file, mode="a") as f:
         print(f"{closing_sequence}", file=f)
@@ -183,6 +183,8 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
         comma = ","
         for _, finding in findings_list.items():
             i -= 1
+            if i == 0:
+                comma = ""
             if file_format == "json":
                 finding_json = finding.to_json()
                 if not kwargs[options.WITH_URL]:
@@ -198,6 +200,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
 
 
 def __write_findings(queue, file_to_write, file_format, with_url, separator):
+    global IS_FIRST
     while True:
         while queue.empty():
             time.sleep(0.5)
@@ -206,8 +209,24 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
             queue.task_done()
             break
 
-        global TOTAL_FINDINGS
-        TOTAL_FINDINGS += len(data)
+        if len(data) == 0:
+            queue.task_done()
+            continue
+
+        if file_format == "csv":
+            __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
+            continue
+
+        with FIRST_SEM:
+            if not IS_FIRST:
+                with util.open_file(file_to_write, mode="a") as f:
+                    print(",", file=f)
+            IS_FIRST = False
+
+        with TOTAL_SEM:
+            global TOTAL_FINDINGS
+            TOTAL_FINDINGS += len(data)
+
         __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
         queue.task_done()
 
