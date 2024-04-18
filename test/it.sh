@@ -187,6 +187,10 @@ do
     f1="$IT_ROOT/findings-$env-admin.csv"
     f2="$IT_ROOT/findings-$env-user.csv"
     diff $f1 $f2 | tee -a $IT_LOG_FILE || echo ""
+
+    id=$(cd test;ls |grep "-sonar"|cut -d '-' -f 1)
+    echo "Deleting environment id $id"
+    cd test;./sonar-delete --id $id
 done
 
 echo "====================================="
