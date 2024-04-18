@@ -153,7 +153,7 @@ do
     echo "Restore sonar-tools last released version"
     echo "Y" | pip uninstall sonar-tools
     pip install sonar-tools
-    # export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
+    export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
 
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
     sonar-measures-export -b -f $IT_ROOT/measures-$env-rel.csv -m _main --withURL
