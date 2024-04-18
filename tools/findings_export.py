@@ -197,6 +197,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
                 if kwargs[options.WITH_URL]:
                     url = f'{sep}"{finding.url()}"'
                 print(f"{finding.to_csv(sep)}{url}", file=f)
+    util.logger.debug("File written")
 
 
 def __write_findings(queue, file_to_write, file_format, with_url, separator):
@@ -206,15 +207,18 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
             time.sleep(0.5)
         (data, _) = queue.get()
         if data == WRITE_END:
+            util.logger.debug("End of write queue reached")
             queue.task_done()
             break
 
+        util.logger.debug("Processing write queue for project")
         if len(data) == 0:
             queue.task_done()
             continue
 
-        if file_format == "csv":
+        if file_format in (None, "csv"):
             __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
+            queue.task_done()
             continue
 
         with FIRST_SEM:
@@ -229,6 +233,7 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
 
         __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
         queue.task_done()
+    util.logger.debug("End of write findings")
 
 
 def __dump_compact(finding_list, file, **kwargs):
@@ -362,9 +367,10 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 
     my_queue.join()
     # Tell the writer thread that writing is complete
-    util.logger.debug("WriteQueue %s task %s put", str(write_queue), str(WRITE_END))
+    util.logger.debug("WriteQueue %s task WRITE_END put", str(write_queue))
     write_queue.put((WRITE_END, True))
     write_queue.join()
+    util.logger.debug("WriteQueue joined")
 
 
 def main():

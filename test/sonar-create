@@ -29,10 +29,10 @@ while [ $# -ne 0 ]; do
    case $1 in
       --tag)
          shift
-         $sq_tag=$1
-         $pg_tag="pg_$(echo $sq_tag | sed 's/:/_/')"
+         sq_tag=$1
+         pg_tag="pg_$(echo $sq_tag | sed 's/:/_/')"
          ;;
-      --sq_port)
+      --port)
          shift
          sq_port=$1
          ;;
@@ -54,6 +54,7 @@ done
 
 [ "$pg_port" = "" ] && pg_port=$(expr $sq_port - 4000)
 
+echo "Creating SonarQube instance with tag $sq_tag"
 
 temp_dir=$id-sonar
 echo "Creating temp dir $temp_dir"

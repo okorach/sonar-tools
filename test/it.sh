@@ -54,7 +54,7 @@ do
     ./deploy.sh nodoc
 
     echo "Running with environment $env" | tee -a $IT_LOG_FILE
-    cd test;./sonar-create --pg_backup ~/backup/db.$env.backup
+    cd test;./sonar-create --tag $env --pg_backup ~/backup/db.$env.backup
 
     export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
     echo "IT $env sonar-measures-export" | tee -a $IT_LOG_FILE
@@ -153,7 +153,7 @@ do
     echo "Restore sonar-tools last released version"
     echo "Y" | pip uninstall sonar-tools
     pip install sonar-tools
-    # export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
+    export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
 
     echo "IT released tools $env" | tee -a $IT_LOG_FILE
     sonar-measures-export -b -f $IT_ROOT/measures-$env-rel.csv -m _main --withURL
