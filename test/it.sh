@@ -190,7 +190,7 @@ do
 
     id=$(cd test;ls |grep "-sonar"|cut -d '-' -f 1)
     echo "Deleting environment id $id"
-    cd test;./sonar-delete --id $id
+    cd test;./sonar-delete --id $id; cd -
 done
 
 echo "====================================="
