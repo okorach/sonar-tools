@@ -1,3 +1,7 @@
+# Version 2.10.1 - April 18th, 2024
+
+  - Fixed critical bug: `sonar-findings-export` hanging when exporting to CSV file with **sonar-tools** 2.10
+
 # Version 2.10 - April 2024
 
   - Further audit features (see changelog)

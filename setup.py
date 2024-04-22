@@ -74,6 +74,7 @@ setuptools.setup(
             "sonar-loc = tools.loc:main",
             "sonar-config = tools.config:main",
             "support-audit = tools.support:main",
+            "sonar-rules = tools.rules_cli:main",
         ]
     },
     python_requires=">=3.6",
