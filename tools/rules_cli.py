@@ -78,20 +78,22 @@ def main() -> int:
     (fmt, file) = __get_fmt_and_file(args)
 
     rule_list = rules.get_list(endpoint=endpoint)
-    if fmt == "json":
-        with util.open_file(file) as fd:
+
+    with util.open_file(file) as fd:
+        if fmt == "json":
             print("[", end="", file=fd)
-            for rule in rule_list.values():
+        elif fmt == "csv":
+            csvwriter = csv.writer(fd, delimiter=args.csvSeparator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for rule in rule_list.values():
+            if fmt == "csv":
+                csvwriter.writerow([str(x) for x in rule.to_csv()])
+            elif fmt == "json":
                 if not is_first:
                     print(",", end="", file=fd)
                 print(util.json_dump(rule.to_json()), file=fd)
                 is_first = False
+        if fmt == "json":
             print("\n]\n", file=fd)
-    if fmt == "csv":
-        with util.open_file(file) as fd:
-            csvwriter = csv.writer(fd, delimiter=args.csvSeparator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            for rule in rule_list.values():
-                csvwriter.writerow([str(x) for x in rule.to_csv()])
 
     util.logger.info("%d rules exported", len(rule_list))
     sys.exit(0)
