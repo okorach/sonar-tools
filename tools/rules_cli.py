@@ -84,6 +84,7 @@ def main() -> int:
             print("[", end="", file=fd)
         elif fmt == "csv":
             csvwriter = csv.writer(fd, delimiter=args.csvSeparator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        is_first = True
         for rule in rule_list.values():
             if fmt == "csv":
                 csvwriter.writerow([str(x) for x in rule.to_csv()])
