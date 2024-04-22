@@ -36,5 +36,6 @@ Collections of utilities for SonarQube:
 - sonar-projects-export: Exports all projects from a platform (All editions)
 - sonar-projects-import: Imports a list of projects into a platform (EE and higher)
 - sonar-config: Exports and imports an entire (or subsets of a) SonarQube platform configuration as code (JSON)
+- sonar-rules: Exports Sonar rules
 See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation
 ''')

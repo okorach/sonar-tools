@@ -114,6 +114,9 @@ class Rule(sq.SqObject):
     def to_json(self):
         return self._json
 
+    def to_csv(self):
+        return [self.key, self.language, self.repo, self.type, self.name, self.is_template, self.tags]
+
     def export(self, full=False):
         return convert_for_export(self.to_json(), self.language, full=full)
 
