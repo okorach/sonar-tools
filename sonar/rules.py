@@ -23,6 +23,7 @@
 
 """
 import json
+from typing import Union
 from http import HTTPStatus
 from requests.exceptions import HTTPError
 import sonar.sqobject as sq
@@ -114,13 +115,13 @@ class Rule(sq.SqObject):
     def to_json(self):
         return self._json
 
-    def to_csv(self):
+    def to_csv(self) -> list[str]:
         return [self.key, self.language, self.repo, self.type, self.name, self.is_template, self.tags]
 
     def export(self, full=False):
         return convert_for_export(self.to_json(), self.language, full=full)
 
-    def set_tags(self, tags):
+    def set_tags(self, tags: Union[str, list[str]]) -> None:
         if tags is None:
             return
         if isinstance(tags, list):
@@ -161,7 +162,12 @@ def get_list(endpoint, **params):
     return search(endpoint, include_external="false", **params)
 
 
-def get_object(key, endpoint):
+def get_object(key: str, endpoint: object) -> Union[Rule, None]:
+    """Returns a Rule object from its key
+    :return: The Rule object corresponding to the input rule key, or None if not found
+    :param str key: The rule key
+    :rtype: Rule or None
+    """
     if key in _OBJECTS:
         return _OBJECTS[key]
     try:
@@ -230,7 +236,16 @@ def export_needed(endpoint, instantiated=True, extended=True, full=False):
     return utilities.remove_nones(rule_list)
 
 
-def export(endpoint, instantiated=True, extended=True, standard=False, full=False):
+def export(endpoint: object, instantiated: bool = True, extended: bool = True, standard: bool = False, full: bool = False) -> dict[str: Rule]:
+    """Returns a dict of rules for export
+    :return: a dict of rule onbjects indexed with rule key
+    :param object endpoint: The SonarQube Platform object to connect to
+    :param bool instantiated: Include instantiated rules in the list
+    :param bool extended: Include extended rules in the list
+    :param bool standard: Include standard rules in the list
+    :param full standard: Include full rule information in the export
+    :rtype: dict{ruleKey: Rule}
+    """
     utilities.logger.info("Exporting rules")
     if standard:
         return export_all(endpoint, full)
