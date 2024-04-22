@@ -122,6 +122,19 @@ do
     sonar-loc -n -a -f $f --csvSeparator ';'
     check $f
 
+    f="$IT_ROOT/rules-$env-1.csv"
+    sonar-rules -e >$f
+    check $f
+    f="$IT_ROOT/rules-$env-2.csv"
+    sonar-rules -e -f $f
+    check $f
+    f="$IT_ROOT/rules-$env-3.json"
+    sonar-rules -e --format json >$f
+    check $f
+    f="$IT_ROOT/rules-$env-4.json"
+    sonar-rules -e -f $f
+    check $f
+
     f="$IT_ROOT/config-$env-1.json"
     echo "IT $env sonar-config -e -w \"qualitygates, qualityprofiles, projects\" -k okorach_audio-video-tools,okorach_sonar-tools >$f" | tee -a $IT_LOG_FILE
     sonar-config -e -w "qualitygates, qualityprofiles, projects" -k okorach_audio-video-tools,okorach_sonar-tools >$f
