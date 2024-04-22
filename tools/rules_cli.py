@@ -88,7 +88,7 @@ def main() -> int:
                 is_first = False
             print("\n]\n", file=fd)
     if fmt == "csv":
-        with open(file, "w", newline="", encoding="utf-8") if file and file != "-" else sys.stdout as fd:
+        with util.open_file(file) as fd:
             csvwriter = csv.writer(fd, delimiter=args.csvSeparator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for rule in rule_list.values():
                 csvwriter.writerow([str(x) for x in rule.to_csv()])
