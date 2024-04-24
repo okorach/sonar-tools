@@ -78,7 +78,7 @@ do
     
     logmsg "IT $env sonar-measures-export"
 
-    f="$IT_ROOT/measures-$env-unrel.csv"  run_test $f sonar-measures-export -b -f $f -m _main --withURL
+    f="$IT_ROOT/measures-$env-unrel.csv"; run_test $f sonar-measures-export -b -f $f -m _main --withURL
     f="$IT_ROOT/measures-$env-2.csv";     run_test_stdout $f sonar-measures-export -b -m _main --withURL
     f="$IT_ROOT/measures-$env-3.csv";     run_test_stdout $f sonar-measures-export -b -p -r -d -m _all
 
