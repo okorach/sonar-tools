@@ -72,10 +72,10 @@ do
 
     id="it$$"
     logmsg "Running with environment $env - sonarId $id"
-    sonar create --id $id --tag $env --sq_port 6000 --pg_port 5999 --pg_backup ~/backup/db.$env.backup
+    sonar create --id $id --tag $env --port 6000 --pg_port 5999 --pg_backup ~/backup/db.$env.backup
 
     export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
-    
+    export SONAR_HOST_URL="http://localhost:6000"
     logmsg "IT $env sonar-measures-export"
 
     f="$IT_ROOT/measures-$env-unrel.csv"; run_test $f sonar-measures-export -b -f $f -m _main --withURL
