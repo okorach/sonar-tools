@@ -29,13 +29,13 @@ function logmsg {
 function run_test {
     file=$1; shift
     logmsg "$@"
-    $@
+    "$@"
     check "$file"
 }
 function run_test_stdout {
     file=$1; shift
     logmsg "$@" ">$file"
-    $@ >$file
+    "$@" >$file
     check "$file"
 }
 
@@ -72,10 +72,10 @@ do
 
     id="it$$"
     logmsg "Running with environment $env - sonarId $id"
-    sonar create --id $id --tag $env --port 6000 --pg_port 5999 --pg_backup ~/backup/db.$env.backup
+    sonar create --id $id --tag $env --pg_backup ~/backup/db.$env.backup
 
     export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
-    export SONAR_HOST_URL="http://localhost:6000"
+    # export SONAR_HOST_URL="http://localhost:6000"
     logmsg "IT $env sonar-measures-export"
 
     f="$IT_ROOT/measures-$env-unrel.csv"; run_test $f sonar-measures-export -b -f $f -m _main --withURL
@@ -92,7 +92,7 @@ do
     f="$IT_ROOT/findings-$env-1.json";     run_test $f sonar-findings-export -f $f
     f="$IT_ROOT/findings-$env-2.json";     run_test_stdout $f sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools
     f="$IT_ROOT/findings-$env-3.json";     run_test_stdout $f sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools --useFindings
-    f="$IT_ROOT/findings-$env-4.csv";      run_test_stdout $f sonar-findings-export --format json -k okorach_audio-video-tools,okorach_sonar-tools --csvSeparator '+'
+    f="$IT_ROOT/findings-$env-4.csv";      run_test_stdout $f sonar-findings-export --format csv -k okorach_audio-video-tools,okorach_sonar-tools --csvSeparator '+'
     
     logmsg "IT $env sonar-audit"
     f="$IT_ROOT/audit-$env-unrel.csv";     run_test_stdout $f sonar-audit
@@ -172,7 +172,6 @@ do
     f2="$IT_ROOT/findings-$env-user.csv"
     diff $f1 $f2 | tee -a $IT_LOG_FILE || echo ""
 
-    id=$(cd test;ls |grep "-sonar"|cut -d '-' -f 1)
     logmsg "Deleting environment sonarId $id"
     sonar delete --id $id
 done
