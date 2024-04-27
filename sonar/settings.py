@@ -68,7 +68,7 @@ _PRIVATE_SETTINGS = (
 _INLINE_SETTINGS = (
     r"^.*\.file\.suffixes$",
     r"^.*\.reportPaths$",
-    r"^sonar(\.[a-z]+)?\.exclusions$",
+    r"^sonar(\.[a-z]+)?\.(in|ex)clusions$",
     r"^sonar\.javascript\.(globals|environments)$",
     r"^sonar\.dbcleaner\.branchesToKeepWhenInactive$",
     r"^sonar\.rpg\.suffixes$",
@@ -200,14 +200,16 @@ class Setting(sqobject.SqObject):
     def category(self):
         m = re.match(
             r"^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|"
-            r"javascript|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|"
-            r"typescript|vb|vbnet|xml|yaml)\.",
+            r"javascript|eslint|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|"
+            r"typescript|vb|vbnet|xml|yaml|jcl|text)\.",
             self.key,
         )
         if m:
             lang = m.group(2)
             if lang in ("c", "cpp", "objc", "cfamily"):
                 lang = "cfamily"
+            elif lang in ("eslint"):
+                lang = "javascript"
             return (LANGUAGES_SETTINGS, lang)
         if re.match(
             r"^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$",
@@ -230,7 +232,9 @@ class Setting(sqobject.SqObject):
         if self.key not in (NEW_CODE_PERIOD, PROJECT_DEFAULT_VISIBILITY, COMPONENT_VISIBILITY) and not re.match(
             r"^(email|sonar\.core|sonar\.allowPermission|sonar\.builtInQualityProfiles|sonar\.core|"
             r"sonar\.cpd|sonar\.dbcleaner|sonar\.developerAggregatedInfo|sonar\.governance|sonar\.issues|sonar\.lf|sonar\.notifications|"
-            r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks).*$",
+            r"sonar\.portfolios|sonar\.qualitygate|sonar\.scm\.disabled|sonar\.scm\.provider|sonar\.technicalDebt|sonar\.validateWebhooks|"
+            r"sonar\.docker|sonar\.login|sonar\.kubernetes|sonar\.plugins|sonar\.documentation|sonar\.projectCreation|"
+            r"sonar\.qualityProfiles|sonar\.announcement|provisioning\.git|sonar\.ce|sonar\.azureresourcemanager|sonar\.filesize\.limit).*$",
             self.key,
         ):
             return ("thirdParty", None)
