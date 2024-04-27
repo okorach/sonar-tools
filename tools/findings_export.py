@@ -120,8 +120,7 @@ def parse_args(desc):
         action="store_true",
         help="Generate finding URL in the report, false by default",
     )
-    args = util.parse_and_check_token(parser)
-    util.check_token(args.token)
+    args = util.parse_and_check(parser)
     return args
 
 
@@ -377,8 +376,6 @@ def main():
     kwargs = vars(parse_args("Sonar findings extractor"))
     sqenv = platform.Platform(some_url=kwargs["url"], some_token=kwargs["token"], cert_file=kwargs["clientCert"], http_timeout=kwargs["httpTimeout"])
     del kwargs["token"]
-    util.check_environment(kwargs)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     start_time = datetime.datetime.today()
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)

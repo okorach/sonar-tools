@@ -23,7 +23,7 @@
 """
 import sys
 import datetime
-from sonar import platform, version, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities, exceptions
+from sonar import platform, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities, exceptions
 from sonar.projects import projects
 
 _EVERYTHING = [
@@ -98,10 +98,7 @@ def __parse_args(desc):
         help="Also exports informative data that would be ignored as part of an import. Informative field are prefixed with _."
         "This option is ignored in case of import",
     )
-    args = utilities.parse_and_check_token(parser)
-    utilities.check_environment(vars(args))
-    utilities.check_token(args.token)
-    utilities.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    args = utilities.parse_and_check(parser)
     return args
 
 

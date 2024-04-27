@@ -24,7 +24,7 @@
 import sys
 import csv
 
-from sonar import platform, portfolios, version, options
+from sonar import platform, portfolios, options
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -149,10 +149,7 @@ def __parse_args(desc):
         action="store_true",
         help="Extracts only toplevel portfolios LoCs, not sub-portfolios",
     )
-    args = util.parse_and_check_token(parser)
-    util.check_environment(vars(args))
-    util.check_token(args.token)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    args = util.parse_and_check(parser)
     return args
 
 

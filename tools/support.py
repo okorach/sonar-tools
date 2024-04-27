@@ -136,8 +136,6 @@ def __get_sysinfo_from_ticket(**kwargs):
 
 def main():
     kwargs = vars(__get_args("Audits a Sonar ServiceDesk ticket (Searches for SIF attachment and audits SIF)"))
-    util.check_environment(kwargs)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     kwargs["creds"] = (kwargs.pop("login"), kwargs.pop("password"))
     if not kwargs["ticket"].startswith("SUPPORT-"):
         kwargs["ticket"] = f'SUPPORT-{kwargs["ticket"]}'

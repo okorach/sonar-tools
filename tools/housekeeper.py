@@ -151,8 +151,7 @@ def _parse_arguments():
         default=_DEFAULT_TOKEN_OBSOLESCENCE,
         help=f"Deletes user tokens older than a certain number of days, by default {_DEFAULT_TOKEN_OBSOLESCENCE} days",
     )
-    args = util.parse_and_check_token(parser)
-    util.check_token(args.token)
+    args = util.parse_and_check(parser)
     return args
 
 
@@ -204,10 +203,7 @@ def main():
     args = _parse_arguments()
 
     sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
-    kwargs = vars(args)
     mode = args.mode
-    util.check_environment(kwargs)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     problems = []
     if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:
         problems = get_project_problems(args.projects, args.branches, args.pullrequests, args.threads, sq)

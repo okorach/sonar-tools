@@ -219,10 +219,6 @@ def set_debug_level(level):
     logger.info("Set debug level to %s", level)
 
 
-def check_environment(kwargs):
-    set_debug_level(kwargs.pop(OPT_VERBOSE))
-
-
 def check_last_sonar_tools_version() -> None:
     """Checks last version of sonar-tools on pypi and displays a warning if the currently used version is older"""
     logger.info("Checking latest sonar-version on pypi.org")
@@ -237,7 +233,7 @@ def check_last_sonar_tools_version() -> None:
         logger.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
 
 
-def parse_and_check_token(parser: argparse.ArgumentParser) -> object:
+def parse_and_check(parser: argparse.ArgumentParser, verify_token: bool = True) -> object:
     """Parses arguments and perform common environment checks"""
     args = parser.parse_args()
     kwargs = vars(args)
@@ -248,11 +244,8 @@ def parse_and_check_token(parser: argparse.ArgumentParser) -> object:
     if not kwargs[OPT_SKIP_VERSION_CHECK] and random.randrange(10) == 0:
         check_last_sonar_tools_version()
 
-    if args.token is None:
-        exit_fatal(
-            "Token is missing (Argument -t/--token)",
-            options.ERR_SONAR_API_AUTHENTICATION,
-        )
+    if verify_token:
+        check_token(args.token)
     return args
 
 
@@ -265,7 +258,13 @@ def token_type(token):
         return "user"
 
 
-def check_token(token):
+def check_token(token: str) -> None:
+    """Verifies if a proper user token has been provided"""
+    if token is None:
+        exit_fatal(
+            "Token is missing (Argument -t/--token)",
+            options.ERR_SONAR_API_AUTHENTICATION,
+        )
     if token_type(token) != "user":
         exit_fatal(
             f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",

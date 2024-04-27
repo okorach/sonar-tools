@@ -189,10 +189,7 @@ def __parse_args(desc):
         help="Add projects/branches URLs in report",
     )
 
-    args = util.parse_and_check_token(parser)
-    util.check_environment(vars(args))
-    util.check_token(args.token)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    args = util.parse_and_check(parser)
     if args.ratingsAsNumbers:
         CONVERT_OPTIONS["ratings"] = "numbers"
     if args.percentsAsString:
