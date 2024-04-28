@@ -79,8 +79,7 @@ def __parse_args(desc):
         help="If specified, will not add a link to source issue in the target issue comments",
     )
 
-    args = util.parse_and_check_token(parser)
-    util.check_token(args.token)
+    args = util.parse_and_check(parser)
     return args
 
 
@@ -104,7 +103,6 @@ def main():
     util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     source_env = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
     params = vars(args)
-    util.check_environment(params)
     source_key = params["projectKeys"]
     target_key = params.get("targetProjectKey", None)
     source_branch = params.get("sourceBranch", None)

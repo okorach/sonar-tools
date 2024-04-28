@@ -77,6 +77,7 @@ _INLINE_SETTINGS = (
     r"^sonar\.portfolios\.recompute\.hours$",
     r"^sonar\.cobol\.copy\.(directories|exclusions)$",
     r"^sonar\.cobol\.sql\.catalog\.defaultSchema$",
+    r"^sonar\.docker\.file\.patterns$",
 )
 
 _API_SET = "settings/set"
@@ -199,15 +200,17 @@ class Setting(sqobject.SqObject):
 
     def category(self):
         m = re.match(
-            r"^sonar\.(cpd\.)?(abap|apex|cloudformation|c|cpp|cfamily|cobol|cs|css|flex|go|html|java|"
-            r"javascript|eslint|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|terraform|tsql|"
-            r"typescript|vb|vbnet|xml|yaml|jcl|text)\.",
+            r"^sonar\.(cpd\.)?(abap|androidLint|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|docker|"
+            r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|"
+            r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml)\.",
             self.key,
         )
         if m:
             lang = m.group(2)
             if lang in ("c", "cpp", "objc", "cfamily"):
                 lang = "cfamily"
+            elif lang in ("androidLint"):
+                lang = "kotlin"
             elif lang in ("eslint"):
                 lang = "javascript"
             return (LANGUAGES_SETTINGS, lang)

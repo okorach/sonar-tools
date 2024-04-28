@@ -29,7 +29,7 @@ import os
 import json
 import argparse
 import requests
-from sonar import version, sif, options
+from sonar import sif, options
 from sonar.audit import severities
 import sonar.utilities as util
 from sonar.audit import problem, config
@@ -84,7 +84,7 @@ def __get_issue_id(**kwargs):
     """Converts a ticket number into issue id needed to post on the issue"""
     tix = kwargs["ticket"]
     url = f'{kwargs["url"]}/rest/servicedeskapi/request/{tix}'
-    r = requests.get(url, auth=kwargs["creds"])
+    r = requests.get(url, auth=kwargs["creds"], timeout=10)
     if not r.ok:
         if r.status_code == HTTPStatus.NOT_FOUND:
             return None
@@ -95,14 +95,14 @@ def __get_issue_id(**kwargs):
 
 def __add_comment(comment, **kwargs):
     url = f'{kwargs["url"]}/rest/api/2/issue/{__get_issue_id(**kwargs)}/comment'
-    requests.post(url, auth=kwargs["creds"], json={"body": comment, "properties": PRIVATE_COMMENT})
+    requests.post(url, auth=kwargs["creds"], json={"body": comment, "properties": PRIVATE_COMMENT}, timeout=10)
 
 
 def __get_sysinfo_from_ticket(**kwargs):
     tix = kwargs["ticket"]
     url = f"{kwargs['url']}/rest/servicedeskapi/request/{tix}"
     util.logger.debug("Check %s - URL %s", kwargs["ticket"], url)
-    r = requests.get(url, auth=kwargs["creds"])
+    r = requests.get(url, auth=kwargs["creds"], timeout=10)
     if not r.ok:
         if r.status_code == HTTPStatus.NOT_FOUND:
             print(f"Ticket {tix} not found")
@@ -123,7 +123,7 @@ def __get_sysinfo_from_ticket(**kwargs):
             attachment_url = v["content"]
             attachment_file = attachment_url.split("/")[-1]
             util.logger.info("Ticket %s: Verifying attachment '%s' found", tix, attachment_file)
-            r = requests.get(attachment_url, auth=kwargs["creds"])
+            r = requests.get(attachment_url, auth=kwargs["creds"], timeout=10)
             if not r.ok:
                 util.exit_fatal(f"ERROR: Ticket {tix} get attachment status code {r.status_code}", options.ERR_SONAR_API)
             try:
@@ -136,8 +136,6 @@ def __get_sysinfo_from_ticket(**kwargs):
 
 def main():
     kwargs = vars(__get_args("Audits a Sonar ServiceDesk ticket (Searches for SIF attachment and audits SIF)"))
-    util.check_environment(kwargs)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     kwargs["creds"] = (kwargs.pop("login"), kwargs.pop("password"))
     if not kwargs["ticket"].startswith("SUPPORT-"):
         kwargs["ticket"] = f'SUPPORT-{kwargs["ticket"]}'

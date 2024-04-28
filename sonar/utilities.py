@@ -31,11 +31,14 @@ import logging
 import argparse
 import json
 import datetime
+import random
 from typing import Union
+import requests
 import pytz
-from sonar import options
+from sonar import options, version
 
 OPT_VERBOSE = "verbosity"
+OPT_SKIP_VERSION_CHECK = "skipVersionCheck"
 OPT_MODE = "mode"
 DRY_RUN = "dryrun"
 CONFIRM = "confirm"
@@ -108,6 +111,13 @@ def set_common_args(desc):
         required=False,
         default=10,
         help="HTTP timeout for requests to SonarQube, 10s by default",
+    )
+    parser.add_argument(
+        f"--{OPT_SKIP_VERSION_CHECK}",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Prevents sonar-tools to occasionnally check from more recent version",
     )
     return parser
 
@@ -209,17 +219,33 @@ def set_debug_level(level):
     logger.info("Set debug level to %s", level)
 
 
-def check_environment(kwargs):
-    set_debug_level(kwargs.pop(OPT_VERBOSE))
+def check_last_sonar_tools_version() -> None:
+    """Checks last version of sonar-tools on pypi and displays a warning if the currently used version is older"""
+    logger.info("Checking latest sonar-version on pypi.org")
+    try:
+        r = requests.get(url="https://pypi.org/simple/sonar-tools", headers={"Accept": "application/vnd.pypi.simple.v1+json"}, timeout=10)
+        r.raise_for_status()
+    except (requests.RequestException, requests.exceptions.HTTPError, requests.exceptions.Timeout) as e:
+        logger.info("Can't access pypi.org, error %s", str(e))
+    txt_version = json.loads(r.text)["versions"][-1]
+    logger.info("Latest sonar-tools version is %s", txt_version)
+    if tuple(".".split(txt_version)) > tuple(".".split(version.PACKAGE_VERSION)):
+        logger.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
 
 
-def parse_and_check_token(parser):
+def parse_and_check(parser: argparse.ArgumentParser, verify_token: bool = True) -> object:
+    """Parses arguments and perform common environment checks"""
     args = parser.parse_args()
-    if args.token is None:
-        exit_fatal(
-            "Token is missing (Argument -t/--token)",
-            options.ERR_SONAR_API_AUTHENTICATION,
-        )
+    kwargs = vars(args)
+    set_debug_level(kwargs[OPT_VERBOSE])
+    logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+
+    # Verify version randomly once every 10 runs
+    if not kwargs[OPT_SKIP_VERSION_CHECK] and random.randrange(10) == 0:
+        check_last_sonar_tools_version()
+
+    if verify_token:
+        check_token(args.token)
     return args
 
 
@@ -232,7 +258,13 @@ def token_type(token):
         return "user"
 
 
-def check_token(token):
+def check_token(token: str) -> None:
+    """Verifies if a proper user token has been provided"""
+    if token is None:
+        exit_fatal(
+            "Token is missing (Argument -t/--token)",
+            options.ERR_SONAR_API_AUTHENTICATION,
+        )
     if token_type(token) != "user":
         exit_fatal(
             f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",

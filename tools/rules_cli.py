@@ -23,7 +23,7 @@
 """
 import sys
 import csv
-from sonar import rules, platform, version, options
+from sonar import rules, platform, options
 import sonar.utilities as util
 
 
@@ -63,10 +63,7 @@ def __parse_args(desc: str) -> object:
         help="Add rules URLs in report",
     )
 
-    args = util.parse_and_check_token(parser)
-    util.check_environment(vars(args))
-    util.check_token(args.token)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    args = util.parse_and_check(parser)
     return args
 
 

@@ -25,7 +25,7 @@
 """
 import sys
 import json
-from sonar import options, platform, version, exceptions
+from sonar import options, platform, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -55,10 +55,7 @@ def _check_sq_environments(import_sq, export_sq):
 def main():
     parser = util.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
-    args = util.parse_and_check_token(parser)
-    util.check_environment(vars(args))
-    util.check_token(args.token)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    args = util.parse_and_check(parser)
     sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
 
     with open(args.projectsFile, "r", encoding="utf-8") as file:

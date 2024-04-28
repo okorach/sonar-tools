@@ -27,7 +27,7 @@ import sys
 import datetime
 import json
 
-from sonar import platform, users, groups, version, qualityprofiles, qualitygates, sif, options, portfolios, applications, exceptions
+from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, options, portfolios, applications, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 from sonar.audit import problem, config
@@ -109,12 +109,9 @@ def __parser_args(desc):
         action="store_true",
         help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
     )
-    args = parser.parse_args()
-    if args.sif is None and args.config is None and args.token is None:
-        util.exit_fatal(
-            "Token is missing (Argument -t/--token) when not analyzing local SIF",
-            options.ERR_TOKEN_MISSING,
-        )
+    args = util.parse_and_check(parser, verify_token=False)
+    if args.sif is None and args.config is None:
+        util.check_token(args.token)
     return args
 
 
@@ -122,8 +119,6 @@ def main():
     args = __parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)")
     kwargs = vars(args)
     sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
-    util.check_environment(kwargs)
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     start_time = datetime.datetime.today()
 
     settings = config.load("sonar-audit")
