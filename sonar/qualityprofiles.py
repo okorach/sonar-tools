@@ -345,8 +345,14 @@ class QualityProfile(sq.SqObject):
         util.logger.debug("Comparing %s and %s", str(self), str(another_qp))
         compare_result = self.compare(another_qp)
         my_rules = self.rules()
-        diff_rules = _treat_added_rules(my_rules, compare_result["inLeft"])
-        diff_rules.update(_treat_modified_rules(my_rules, compare_result["modified"]))
+        diff_rules = {}
+        if len(compare_result["inLeft"]) > 0:
+            diff_rules["addedRules"] = _treat_added_rules(my_rules, compare_result["inLeft"], endpoint=self.endpoint)
+        if len(compare_result["inRight"]) > 0:
+            diff_rules["removedRules"] = _treat_removed_rules(my_rules, compare_result["inRight"], endpoint=self.endpoint)
+        if len(compare_result["modified"]) > 0:
+            diff_rules["removedRules"] = _treat_modified_rules(my_rules, compare_result["modified"])
+        util.logger.info("Returning %s", str(diff_rules))
         return diff_rules
 
     def projects(self):
@@ -520,15 +526,22 @@ def hierarchize(qp_list):
             util.logger.debug("Treating %s:%s", lang, qp_name)
             if "parentName" not in qp_value:
                 continue
+
+            qp_value.pop("rules", None)
             util.logger.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_value["parentName"])
             if _CHILDREN_KEY not in qp_list[lang][qp_value["parentName"]]:
                 qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY] = {}
 
             parent_qp = get_object(qp_value["parentName"], lang)
             this_qp = get_object(name=qp_name, language=lang)
-            qp_value["rules"] = {}
-            for k, v in this_qp.diff(parent_qp).items():
-                qp_value["rules"][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
+            diff = this_qp.diff(parent_qp)
+            for index in ("addedRules", "modifiedRules", "removedRules"):
+                if index not in diff:
+                    continue
+                if index not in qp_value:
+                    qp_value[index] = {}
+                for k, v in diff[index].items():
+                    qp_value[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
 
             qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY][qp_name] = qp_value
             qp_list[lang].pop(qp_name)
@@ -667,13 +680,14 @@ def exists(endpoint, name, language):
     return get_object(name=name, language=language, endpoint=endpoint) is not None
 
 
-def _treat_added_rules(my_rules, added_rules):
+def _treat_added_rules(my_rules: list[rules.Rule], added_rules: dict[str:str], endpoint: object, added_flag: bool = True):
     diff_rules = {}
     for r in added_rules:
         r_key = r.pop("key")
         diff_rules[r_key] = r
-        if r_key in my_rules:
-            diff_rules[r_key] = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)
+        if (added_flag and r_key in my_rules) or (not added_flag and r_key not in my_rules):
+            rule_obj = rules.get_object(r_key, endpoint)
+            diff_rules[r_key] = rules.convert_for_export(rule_obj.to_json(), rule_obj.language)
         if "severity" in r:
             if isinstance(diff_rules[r_key], str):
                 diff_rules[r_key] = r["severity"]
@@ -682,7 +696,11 @@ def _treat_added_rules(my_rules, added_rules):
     return diff_rules
 
 
-def _treat_modified_rules(my_rules, modified_rules):
+def _treat_removed_rules(my_rules: list[rules.Rule], removed_rules: dict[str:str], endpoint: object):
+    return _treat_added_rules(my_rules, removed_rules, endpoint=endpoint, added_flag=False)
+
+
+def _treat_modified_rules(my_rules: list[rules.Rule], modified_rules: dict[str:str]):
     diff_rules = {}
     for r in modified_rules:
         r_key, r_left, r_right = r["key"], r["left"], r["right"]
