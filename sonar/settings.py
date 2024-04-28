@@ -77,6 +77,7 @@ _INLINE_SETTINGS = (
     r"^sonar\.portfolios\.recompute\.hours$",
     r"^sonar\.cobol\.copy\.(directories|exclusions)$",
     r"^sonar\.cobol\.sql\.catalog\.defaultSchema$",
+    r"^sonar\.docker\.file\.patterns$",
 )
 
 _API_SET = "settings/set"
