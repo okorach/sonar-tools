@@ -18,6 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
+from typing import Union
 import json
 from http import HTTPStatus
 from queue import Queue
@@ -335,7 +337,48 @@ class QualityProfile(sq.SqObject):
                 r.pop(k, None)
         return data
 
-    def diff(self, another_qp):
+    def _treat_added_rules(self, added_rules: dict[str:str], added_flag: bool = True) -> dict[str:str]:
+        diff_rules = {}
+        my_rules = self.rules()
+        for r in added_rules:
+            r_key = r.pop("key")
+            diff_rules[r_key] = r
+            if (added_flag and r_key in my_rules) or (not added_flag and r_key not in my_rules):
+                rule_obj = rules.get_object(r_key, self.endpoint)
+                diff_rules[r_key] = rules.convert_for_export(rule_obj.to_json(), rule_obj.language)
+            if "severity" in r:
+                if isinstance(diff_rules[r_key], str):
+                    diff_rules[r_key] = r["severity"]
+                else:
+                    diff_rules[r_key]["severity"] = r["severity"]
+        return diff_rules
+
+    def _treat_removed_rules(self, removed_rules: dict[str:str]) -> dict[str:str]:
+        return self._treat_added_rules(removed_rules, added_flag=False)
+
+    def _treat_modified_rules(self, modified_rules: dict[str:str]) -> dict[str:str]:
+        diff_rules = {}
+        my_rules = self.rules()
+        for r in modified_rules:
+            r_key, r_left, r_right = r["key"], r["left"], r["right"]
+            diff_rules[r_key] = {"modified": True}
+            parms = None
+            if r_left["severity"] != r_right["severity"]:
+                diff_rules[r_key]["severity"] = r_left["severity"]
+            if len(r_left.get("params", {})) > 0:
+                diff_rules[r_key]["params"] = r_left["params"]
+                parms = r_left["params"]
+            if r_key not in my_rules:
+                continue
+            data = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)
+            if "templateKey" in data:
+                diff_rules[r_key]["templateKey"] = data["templateKey"]
+                diff_rules[r_key]["params"] = data["params"]
+                if parms:
+                    diff_rules[r_key]["params"].update(parms)
+        return diff_rules
+
+    def diff(self, another_qp: QualityProfile, qp_json_data: dict[str:str] = None) -> tuple[dict[str:str], dict[str:str]]:
         """Returns the list of rules added or modified in self compared to another_qp (for inheritance)
         :param another_qp: The second quality profile to diff
         :type another_qp: QualityProfile
@@ -344,16 +387,25 @@ class QualityProfile(sq.SqObject):
         """
         util.logger.debug("Comparing %s and %s", str(self), str(another_qp))
         compare_result = self.compare(another_qp)
-        my_rules = self.rules()
         diff_rules = {}
         if len(compare_result["inLeft"]) > 0:
-            diff_rules["addedRules"] = _treat_added_rules(my_rules, compare_result["inLeft"], endpoint=self.endpoint)
+            diff_rules["addedRules"] = self._treat_added_rules(compare_result["inLeft"])
         if len(compare_result["inRight"]) > 0:
-            diff_rules["removedRules"] = _treat_removed_rules(my_rules, compare_result["inRight"], endpoint=self.endpoint)
+            diff_rules["removedRules"] = self._treat_removed_rules(compare_result["inRight"])
         if len(compare_result["modified"]) > 0:
-            diff_rules["removedRules"] = _treat_modified_rules(my_rules, compare_result["modified"])
+            diff_rules["removedRules"] = self._treat_modified_rules(compare_result["modified"])
         util.logger.info("Returning %s", str(diff_rules))
-        return diff_rules
+        if qp_json_data is None:
+            return (diff_rules, qp_json_data)
+        for index in ("addedRules", "modifiedRules", "removedRules"):
+            if index not in diff_rules:
+                continue
+            if index not in qp_json_data:
+                qp_json_data[index] = {}
+            for k, v in diff_rules[index].items():
+                qp_json_data[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
+
+        return (diff_rules, qp_json_data)
 
     def projects(self):
         """Returns the list of projects keys using this quality profile
@@ -457,7 +509,7 @@ class QualityProfile(sq.SqObject):
         return problems
 
 
-def search(endpoint, params=None):
+def search(endpoint: object, params: dict[str:str] = None) -> dict[str:QualityProfile]:
     """Searches projects in SonarQube
 
     :param params: list of parameters to filter quality profiles to search
@@ -522,30 +574,21 @@ def hierarchize(qp_list):
     """
     util.logger.info("Organizing quality profiles in hierarchy")
     for lang, qpl in qp_list.copy().items():
-        for qp_name, qp_value in qpl.copy().items():
+        for qp_name, qp_json_data in qpl.copy().items():
             util.logger.debug("Treating %s:%s", lang, qp_name)
-            if "parentName" not in qp_value:
+            if "parentName" not in qp_json_data:
                 continue
+            parent_qp_name = qp_json_data["parentName"]
+            qp_json_data.pop("rules", None)
+            util.logger.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_json_data["parentName"])
+            if _CHILDREN_KEY not in qp_list[lang][qp_json_data["parentName"]]:
+                qp_list[lang][qp_json_data["parentName"]][_CHILDREN_KEY] = {}
 
-            qp_value.pop("rules", None)
-            util.logger.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_value["parentName"])
-            if _CHILDREN_KEY not in qp_list[lang][qp_value["parentName"]]:
-                qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY] = {}
-
-            parent_qp = get_object(qp_value["parentName"], lang)
             this_qp = get_object(name=qp_name, language=lang)
-            diff = this_qp.diff(parent_qp)
-            for index in ("addedRules", "modifiedRules", "removedRules"):
-                if index not in diff:
-                    continue
-                if index not in qp_value:
-                    qp_value[index] = {}
-                for k, v in diff[index].items():
-                    qp_value[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
-
-            qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY][qp_name] = qp_value
+            (_, qp_json_data) = this_qp.diff(get_object(parent_qp_name, lang), qp_json_data)
+            qp_list[lang][parent_qp_name][_CHILDREN_KEY][qp_name] = qp_json_data
             qp_list[lang].pop(qp_name)
-            qp_value.pop("parentName")
+            qp_json_data.pop("parentName")
     return qp_list
 
 
@@ -576,7 +619,7 @@ def export(endpoint, in_hierarchy=True, full=False):
     return qp_list
 
 
-def get_object(name, language, endpoint=None):
+def get_object(name: str, language: str, endpoint: object = None) -> Union[QualityProfile, None]:
     """Returns a quality profile Object from its name and language
 
     :param name: Quality profile name
@@ -678,45 +721,3 @@ def exists(endpoint, name, language):
     :rtype: bool
     """
     return get_object(name=name, language=language, endpoint=endpoint) is not None
-
-
-def _treat_added_rules(my_rules: list[rules.Rule], added_rules: dict[str:str], endpoint: object, added_flag: bool = True):
-    diff_rules = {}
-    for r in added_rules:
-        r_key = r.pop("key")
-        diff_rules[r_key] = r
-        if (added_flag and r_key in my_rules) or (not added_flag and r_key not in my_rules):
-            rule_obj = rules.get_object(r_key, endpoint)
-            diff_rules[r_key] = rules.convert_for_export(rule_obj.to_json(), rule_obj.language)
-        if "severity" in r:
-            if isinstance(diff_rules[r_key], str):
-                diff_rules[r_key] = r["severity"]
-            else:
-                diff_rules[r_key]["severity"] = r["severity"]
-    return diff_rules
-
-
-def _treat_removed_rules(my_rules: list[rules.Rule], removed_rules: dict[str:str], endpoint: object):
-    return _treat_added_rules(my_rules, removed_rules, endpoint=endpoint, added_flag=False)
-
-
-def _treat_modified_rules(my_rules: list[rules.Rule], modified_rules: dict[str:str]):
-    diff_rules = {}
-    for r in modified_rules:
-        r_key, r_left, r_right = r["key"], r["left"], r["right"]
-        diff_rules[r_key] = {"modified": True}
-        parms = None
-        if r_left["severity"] != r_right["severity"]:
-            diff_rules[r_key]["severity"] = r_left["severity"]
-        if len(r_left.get("params", {})) > 0:
-            diff_rules[r_key]["params"] = r_left["params"]
-            parms = r_left["params"]
-        if r_key not in my_rules:
-            continue
-        data = rules.convert_for_export(my_rules[r_key].to_json(), my_rules[r_key].language)
-        if "templateKey" in data:
-            diff_rules[r_key]["templateKey"] = data["templateKey"]
-            diff_rules[r_key]["params"] = data["params"]
-            if parms:
-                diff_rules[r_key]["params"].update(parms)
-    return diff_rules
