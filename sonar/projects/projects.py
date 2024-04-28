@@ -810,7 +810,9 @@ class Project(components.Component):
         if qg_is_default:
             json_data.pop("qualityGate")
 
-        json_data["webhooks"] = webhooks.export(self.endpoint, self.key)
+        hooks = webhooks.export(self.endpoint, self.key)
+        if hooks is not None:
+            json_data["webhooks"] = hooks
         json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
         settings_dict = settings.get_bulk(endpoint=self, component=self, settings_list=settings_list, include_not_set=False)
         # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
