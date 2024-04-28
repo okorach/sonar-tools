@@ -42,7 +42,7 @@ from queue import Queue
 import threading
 from threading import Thread
 
-from sonar import platform, version, options, exceptions
+from sonar import platform, options, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots

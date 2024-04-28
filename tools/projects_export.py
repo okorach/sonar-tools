@@ -25,7 +25,7 @@
 """
 import sys
 import datetime
-from sonar import options, platform, utilities, version
+from sonar import options, platform, utilities
 from sonar.projects import projects
 
 

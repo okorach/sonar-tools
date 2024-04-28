@@ -27,7 +27,7 @@
 
 """
 import sys
-from sonar import platform, tokens, users, groups, version, options
+from sonar import platform, tokens, users, groups, options
 from sonar.projects import projects, branches, pull_requests
 import sonar.utilities as util
 import sonar.exceptions as ex

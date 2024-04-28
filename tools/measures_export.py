@@ -25,7 +25,7 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 """
 import sys
-from sonar import measures, metrics, platform, version, options, exceptions
+from sonar import measures, metrics, platform, options, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 
