@@ -335,7 +335,7 @@ class QualityProfile(sq.SqObject):
                 r.pop(k, None)
         return data
 
-    def diff(self, another_qp):
+    def diff(self, another_qp, qp_json_data: dict[str:str] = None):
         """Returns the list of rules added or modified in self compared to another_qp (for inheritance)
         :param another_qp: The second quality profile to diff
         :type another_qp: QualityProfile
@@ -353,7 +353,17 @@ class QualityProfile(sq.SqObject):
         if len(compare_result["modified"]) > 0:
             diff_rules["removedRules"] = _treat_modified_rules(my_rules, compare_result["modified"])
         util.logger.info("Returning %s", str(diff_rules))
-        return diff_rules
+        if qp_json_data is None:
+            return (diff_rules, qp_json_data)
+        for index in ("addedRules", "modifiedRules", "removedRules"):
+            if index not in diff_rules:
+                continue
+            if index not in qp_json_data:
+                qp_json_data[index] = {}
+            for k, v in diff_rules[index].items():
+                qp_json_data[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
+
+        return (diff_rules, qp_json_data)
 
     def projects(self):
         """Returns the list of projects keys using this quality profile
@@ -522,30 +532,21 @@ def hierarchize(qp_list):
     """
     util.logger.info("Organizing quality profiles in hierarchy")
     for lang, qpl in qp_list.copy().items():
-        for qp_name, qp_value in qpl.copy().items():
+        for qp_name, qp_json_data in qpl.copy().items():
             util.logger.debug("Treating %s:%s", lang, qp_name)
-            if "parentName" not in qp_value:
+            if "parentName" not in qp_json_data:
                 continue
+            parent_qp_name = qp_json_data["parentName"]
+            qp_json_data.pop("rules", None)
+            util.logger.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_json_data["parentName"])
+            if _CHILDREN_KEY not in qp_list[lang][qp_json_data["parentName"]]:
+                qp_list[lang][qp_json_data["parentName"]][_CHILDREN_KEY] = {}
 
-            qp_value.pop("rules", None)
-            util.logger.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_value["parentName"])
-            if _CHILDREN_KEY not in qp_list[lang][qp_value["parentName"]]:
-                qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY] = {}
-
-            parent_qp = get_object(qp_value["parentName"], lang)
             this_qp = get_object(name=qp_name, language=lang)
-            diff = this_qp.diff(parent_qp)
-            for index in ("addedRules", "modifiedRules", "removedRules"):
-                if index not in diff:
-                    continue
-                if index not in qp_value:
-                    qp_value[index] = {}
-                for k, v in diff[index].items():
-                    qp_value[index][k] = v if isinstance(v, str) or "templateKey" not in v else v["severity"]
-
-            qp_list[lang][qp_value["parentName"]][_CHILDREN_KEY][qp_name] = qp_value
+            (_, qp_json_data) = this_qp.diff(get_object(parent_qp_name, lang), qp_json_data)
+            qp_list[lang][parent_qp_name][_CHILDREN_KEY][qp_name] = qp_json_data
             qp_list[lang].pop(qp_name)
-            qp_value.pop("parentName")
+            qp_json_data.pop("parentName")
     return qp_list
 
 
