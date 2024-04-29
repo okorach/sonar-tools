@@ -201,6 +201,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
 
 def __write_findings(queue, file_to_write, file_format, with_url, separator):
     global IS_FIRST
+    global TOTAL_FINDINGS
     while True:
         while queue.empty():
             time.sleep(0.5)
@@ -218,6 +219,8 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
         if file_format in (None, "csv"):
             __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
             queue.task_done()
+            with TOTAL_SEM:
+                TOTAL_FINDINGS += len(data)
             continue
 
         with FIRST_SEM:
@@ -227,7 +230,6 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
             IS_FIRST = False
 
         with TOTAL_SEM:
-            global TOTAL_FINDINGS
             TOTAL_FINDINGS += len(data)
 
         __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
@@ -385,6 +387,10 @@ def main():
     start_time = datetime.datetime.today()
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
+
+    if util.is_sonarcloud_url(params["url"]) and params["useFindings"]:
+        util.logger.warning("--useFindings option is not available with SonarCloud, disabling the option to proceed")
+        params["useFindings"] = False
 
     for p in ("statuses", "createdAfter", "createdBefore", "resolutions", "severities", "types", "tags"):
         if params.get(p, None) is not None:
