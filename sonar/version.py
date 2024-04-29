@@ -24,4 +24,4 @@
 
 """
 
-PACKAGE_VERSION = "2.11"
+PACKAGE_VERSION = "3.0"
