@@ -63,7 +63,7 @@ _SERVER_ID_KEY = "Server ID"
 class Platform:
     """Abstraction of the SonarQube "platform" concept"""
 
-    def __init__(self, some_url: str, some_token: str, org: str = None, cert_file: str = None, http_timeout: int = 10):
+    def __init__(self, some_url: str, some_token: str, org: str = None, cert_file: str = None, http_timeout: int = 10) -> None:
         """Creates a SonarQube platform object
 
         :param some_url: base URL of the SonarQube platform
