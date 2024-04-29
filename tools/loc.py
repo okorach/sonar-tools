@@ -155,7 +155,9 @@ def __parse_args(desc):
 
 def main():
     args = __parse_args("Extract projects or portfolios lines of code, as computed for the licence")
-    endpoint = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    endpoint = platform.Platform(
+        some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
+    )
     kwargs = vars(args)
     ofile = kwargs.pop("file", None)
     args.format = __deduct_format(args.format, ofile)

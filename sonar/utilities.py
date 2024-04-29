@@ -39,6 +39,7 @@ from sonar import options, version
 
 OPT_VERBOSE = "verbosity"
 OPT_SKIP_VERSION_CHECK = "skipVersionCheck"
+OPT_ORGANIZATION = "organization"
 OPT_MODE = "mode"
 DRY_RUN = "dryrun"
 CONFIRM = "confirm"
@@ -90,6 +91,12 @@ def set_common_args(desc):
         default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
         help="""Root URL of the source SonarQube server,
         default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set""",
+    )
+    parser.add_argument(
+        "-o",
+        f"--{OPT_ORGANIZATION}",
+        required=False,
+        help="SonarCloud organization when using sonar-tools with SonarCloud",
     )
     parser.add_argument(
         "-v",
