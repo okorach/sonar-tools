@@ -37,6 +37,7 @@ import requests
 import pytz
 from sonar import options, version
 
+OPT_URL = "url"
 OPT_VERBOSE = "verbosity"
 OPT_SKIP_VERSION_CHECK = "skipVersionCheck"
 OPT_ORGANIZATION = "organization"
@@ -86,10 +87,10 @@ def set_common_args(desc):
     )
     parser.add_argument(
         "-u",
-        "--url",
+        f"--{OPT_URL}",
         required=False,
         default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
-        help="""Root URL of the source SonarQube server,
+        help="""Root URL of the source SonarQube or SonarCloud server,
         default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set""",
     )
     parser.add_argument(
@@ -252,7 +253,7 @@ def parse_and_check(parser: argparse.ArgumentParser, verify_token: bool = True) 
         check_last_sonar_tools_version()
 
     if verify_token:
-        check_token(args.token)
+        check_token(args.token, is_sonarcloud_url(kwargs[OPT_URL]))
     return args
 
 
@@ -265,14 +266,14 @@ def token_type(token):
         return "user"
 
 
-def check_token(token: str) -> None:
+def check_token(token: str, is_sonarcloud: bool = False) -> None:
     """Verifies if a proper user token has been provided"""
     if token is None:
         exit_fatal(
             "Token is missing (Argument -t/--token)",
             options.ERR_SONAR_API_AUTHENTICATION,
         )
-    if token_type(token) != "user":
+    if not is_sonarcloud and token_type(token) != "user":
         exit_fatal(
             f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
             options.ERR_TOKEN_NOT_SUITED,
@@ -668,3 +669,13 @@ def string_to_version(sif_v: str, digits: int = 3, as_string: bool = False) -> U
             return tuple(int(n) for n in split_version[0:digits])
     except ValueError:
         return None
+
+
+def is_sonarcloud_url(url: str) -> bool:
+    """Returns whether an URL is the SonarCloud URL
+
+    :param str url: The URL to examine
+    :return: Whether the URL is the SonarCloud URL (in any form)
+    :rtype: str
+    """
+    return url.rstrip("/").lower().endswith("sonarcloud.io")

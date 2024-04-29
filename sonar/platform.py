@@ -60,6 +60,7 @@ _HARDCODED_LATEST = (10, 4, 1)
 
 _SERVER_ID_KEY = "Server ID"
 
+
 class Platform:
     """Abstraction of the SonarQube "platform" concept"""
 
@@ -148,7 +149,7 @@ class Platform:
         :return: whether the target platform is SonarCloud
         :rtype: bool
         """
-        return self.url.endswith("sonarcloud.io")
+        return util.is_sonarcloud_url(self.url)
 
     def basics(self):
         """
