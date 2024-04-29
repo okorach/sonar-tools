@@ -1137,7 +1137,7 @@ def search(endpoint, params=None):
     new_params = {} if params is None else params.copy()
     new_params["qualifiers"] = "TRK"
     return sqobject.search_objects(
-        api="projects/search",
+        api=_SEARCH_API,
         params=new_params,
         key_field="key",
         returned_field="components",
