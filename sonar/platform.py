@@ -74,7 +74,7 @@ class Platform:
         :return: the SonarQube object
         :rtype: Platform
         """
-        self.url = some_url.rstrip("/")  #: SonarQube URL
+        self.url = some_url.rstrip("/").lower()  #: SonarQube URL
         self.__token = some_token
         self.__cert_file = cert_file
         self._version = None
@@ -102,9 +102,11 @@ class Platform:
         :type digits: int, optional
         :param as_string: Whether to return the version as string or tuple, default to False (ie returns a tuple)
         :type as_string: bool, optional
-        :return: the SonarQube platform version
+        :return: the SonarQube platform version, or 0.0.0 for SonarCloud
         :rtype: tuple or str
         """
+        if self.is_sonarcloud():
+            return "sonarcloud" if as_string else tuple(int(n) for n in [0, 0, 0][0:digits])
         if digits < 1 or digits > 3:
             digits = 3
         if self._version is None:
@@ -120,6 +122,8 @@ class Platform:
         :return: the SonarQube platform edition
         :rtype: str ("community", "developer", "enterprise" or "datacenter")
         """
+        if self.url.lower().endswith("sonarcloud.io"):
+            return "sonarcloud"
         if "edition" in self.global_nav():
             return util.edition_normalize(self.global_nav()["edition"])
         else:
@@ -137,6 +141,13 @@ class Platform:
         else:
             self._server_id = json.loads(self.get("system/status").text)["id"]
         return self._server_id
+
+    def is_sonarcloud(self) -> bool:
+        """
+        :return: whether the target platform is SonarCloud
+        :rtype: bool
+        """
+        return self.url.endswith("sonarcloud.io")
 
     def basics(self):
         """
@@ -298,6 +309,8 @@ class Platform:
         :return: the SonarQube platform system info file
         :rtype: dict
         """
+        if self.is_sonarcloud():
+            return {"System": {"Server ID": "sonarcloud"}}
         if self.__sys_info is None:
             success, counter = False, 0
             while not success:
@@ -331,20 +344,22 @@ class Platform:
         :return: the SonarQube platform backend database
         :rtype: str
         """
+        if self.is_sonarcloud():
+            return "postgres"
         if self.version() < (9, 7, 0):
             return self.sys_info()["Statistics"]["database"]["name"]
-        else:
-            return self.sys_info()["Database"]["Database"]
+        return self.sys_info()["Database"]["Database"]
 
     def plugins(self):
         """
         :return: the SonarQube platform plugins
         :rtype: dict
         """
+        if self.is_sonarcloud():
+            return {}
         if self.version() < (9, 7, 0):
             return self.sys_info()["Statistics"]["plugins"]
-        else:
-            return self.sys_info()["Plugins"]
+        return self.sys_info()["Plugins"]
 
     def get_settings(self, settings_list=None):
         """Returns a list of (or all) platform global settings value from their key
@@ -523,18 +538,24 @@ class Platform:
             elif key.startswith("audit.globalSettings.isNotSet"):
                 problems += _audit_setting_set(key, False, platform_settings, audit_settings, settings_url)
 
+        problems += (
+            self._audit_project_default_visibility()
+            + self._audit_global_permissions()
+            + webhooks.audit(self)
+            + permission_templates.audit(self, audit_settings)
+        )
+        if self.is_sonarcloud():
+            return problems
+
         pf_sif = self.sys_info()
         if self.version() >= (9, 7, 0):
             # Hack: Manually add edition in SIF (it's removed starting from 9.7 :-()
             pf_sif["edition"] = self.edition()
         problems += (
             _audit_maintainability_rating_grid(platform_settings, audit_settings, settings_url)
-            + self._audit_project_default_visibility()
             + self._audit_admin_password()
-            + self._audit_global_permissions()
             + self._audit_lts_latest()
             + sif.Sif(pf_sif, self).audit(audit_settings)
-            + webhooks.audit(self)
             + permission_templates.audit(self, audit_settings)
         )
         return problems
@@ -625,6 +646,8 @@ class Platform:
         return self.__audit_user_permissions() + self.__audit_group_permissions()
 
     def _audit_lts_latest(self):
+        if self.is_sonarcloud():
+            return []
         sq_vers, v = self.version(3), None
         if sq_vers < lts(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LTS)
