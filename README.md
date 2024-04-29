@@ -162,10 +162,10 @@ export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 sonar-measures-export -m ncloc,bugs,vulnerabilities >measures.csv
 
 # Exports main metrics of all projects and all their branches
-sonar-measures-export -m _main -b -o measures.json
+sonar-measures-export -m _main -b -f measures.json
 
 # Exports all metrics of projects myProjectKey1 and myOtherProjectKey main branch. Convert ratings to letters
-sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -o all_measures.csv
+sonar-measures-export -k myProjectKey1,myOtherProjectKey -m _all -r -f all_measures.csv
 ```
 
 # <a name="sonar-findings-export"></a>sonar-findings-export
@@ -188,13 +188,13 @@ export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 sonar-findings-export >all_issues.csv
 
 # Exports all issues of project myProjectKey
-sonar-findings-export -k myProjectKey -o project_issues.csv
+sonar-findings-export -k myProjectKey -f project_issues.csv
 
 # Exports all false positive and won't fix issues across all projects
-sonar-findings-export -r FALSE-POSITIVE,WONTFIX -o fp_wf.json
+sonar-findings-export -r FALSE-POSITIVE,WONTFIX -f fp_wf.json
 
 # Exports all issues created in 2020
-sonar-findings-export -a 2020-01-01 -b 2020-12-31 -o issues_created_in_2020.csv
+sonar-findings-export -a 2020-01-01 -b 2020-12-31 -f issues_created_in_2020.csv
 
 # Exports all vulnerabilities and bugs
 sonar-findings-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.json
