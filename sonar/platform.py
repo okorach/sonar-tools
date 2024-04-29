@@ -169,8 +169,6 @@ class Platform:
         if self.organization:
             util.logger.debug("Preparing SonarCloud query with org %s", self.organization)
             headers["Authorization"] = f"Bearer {self.__token}"
-            headers["authorization"] = f"Bearer {self.__token}"
-            util.logger.debug("Headers = %s", util.json_dump(headers))
             if params is None:
                 params = {}
             params["organization"] = self.organization
