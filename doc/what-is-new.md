@@ -1,3 +1,10 @@
+# Version 2.11 - April 29th, 2024
+
+  - Adjusted sonar-config export to the new capabilities of SonarQube 10.x
+    - Ability to disable rules from parent in a child profile
+    - Several new config parameters for JC language and all the IaC/Secrets anayzers
+  - Check (occasionally) if a new version is available when running a sonar tool, and display info messsage
+
 # Version 2.10.1 - April 18th, 2024
 
   - Fixed critical bug: `sonar-findings-export` hanging when exporting to CSV file with **sonar-tools** 2.10
