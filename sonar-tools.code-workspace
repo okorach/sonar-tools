@@ -9,7 +9,6 @@
 			"connectionId": "SonarCloud",
 			"projectKey": "okorach_sonar-tools"
 		},
-		"python.pythonPath": "/usr/local/bin/python3",
 		"sonarlint.analyzerProperties": {},
 		"git.confirmSync": false,
 		"git.autofetch": true,
