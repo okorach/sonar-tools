@@ -62,7 +62,7 @@ _HARDCODED_LATEST = (10, 4, 1)
 class Platform:
     """Abstraction of the SonarQube "platform" concept"""
 
-    def __init__(self, some_url: str, some_token: str, cert_file: str = None, http_timeout: int = 10):
+    def __init__(self, some_url: str, some_token: str, org: str = None, cert_file: str = None, http_timeout: int = 10):
         """Creates a SonarQube platform object
 
         :param some_url: base URL of the SonarQube platform
@@ -83,6 +83,7 @@ class Platform:
         self._server_id = None
         self._permissions = None
         self.http_timeout = http_timeout
+        self.organization = org
 
     def __str__(self):
         """
@@ -164,13 +165,24 @@ class Platform:
         :rtype: request.Response
         """
         api = _normalize_api(api)
+        headers = _SONAR_TOOLS_AGENT
+        if self.organization:
+            util.logger.debug("Preparing SonarCloud query with org %s", self.organization)
+            headers["Authorization"] = f"Bearer {self.__token}"
+            headers["authorization"] = f"Bearer {self.__token}"
+            util.logger.debug("Headers = %s", util.json_dump(headers))
+            if params is None:
+                params = {}
+            params["organization"] = self.organization
+        else:
+            util.logger.debug("Preparing SonarQube query")
         util.logger.debug("GET: %s", self.__urlstring(api, params))
         try:
             r = requests.get(
                 url=self.url + api,
                 auth=self.__credentials(),
                 verify=self.__cert_file,
-                headers=_SONAR_TOOLS_AGENT,
+                headers=headers,
                 params=params,
                 timeout=self.http_timeout,
             )
