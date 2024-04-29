@@ -58,6 +58,7 @@ LATEST = None
 _HARDCODED_LTS = (9, 9, 4)
 _HARDCODED_LATEST = (10, 4, 1)
 
+_SERVER_ID_KEY = "Server ID"
 
 class Platform:
     """Abstraction of the SonarQube "platform" concept"""
@@ -136,8 +137,8 @@ class Platform:
         """
         if self._server_id is not None:
             return self._server_id
-        if self.__sys_info is not None and "Server ID" in self.__sys_info["System"]:
-            self._server_id = self.__sys_info["System"]["Server ID"]
+        if self.__sys_info is not None and _SERVER_ID_KEY in self.__sys_info["System"]:
+            self._server_id = self.__sys_info["System"][_SERVER_ID_KEY]
         else:
             self._server_id = json.loads(self.get("system/status").text)["id"]
         return self._server_id
@@ -310,7 +311,7 @@ class Platform:
         :rtype: dict
         """
         if self.is_sonarcloud():
-            return {"System": {"Server ID": "sonarcloud"}}
+            return {"System": {_SERVER_ID_KEY: "sonarcloud"}}
         if self.__sys_info is None:
             success, counter = False, 0
             while not success:
