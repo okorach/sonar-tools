@@ -387,14 +387,17 @@ class QualityProfile(sq.SqObject):
         """
         util.logger.debug("Comparing %s and %s", str(self), str(another_qp))
         compare_result = self.compare(another_qp)
-        diff_rules = {}
+        diff_rules = {"addedRules": {}, "modifiedRules": {}}
         if len(compare_result["inLeft"]) > 0:
             diff_rules["addedRules"] = self._treat_added_rules(compare_result["inLeft"])
+        if len(compare_result["modified"]) > 0:
+            diff_rules["modifiedRules"] = self._treat_modified_rules(compare_result["modified"])
         if len(compare_result["inRight"]) > 0:
             diff_rules["removedRules"] = self._treat_removed_rules(compare_result["inRight"])
-        if len(compare_result["modified"]) > 0:
-            diff_rules["removedRules"] = self._treat_modified_rules(compare_result["modified"])
-        util.logger.debug("Returning %s", str(diff_rules))
+        elif self.endpoint.version() >= (10, 3, 0):
+            diff_rules["removedRules"] = {}
+
+        util.logger.debug("Returning QP diff %s", str(diff_rules))
         if qp_json_data is None:
             return (diff_rules, qp_json_data)
         for index in ("addedRules", "modifiedRules", "removedRules"):
