@@ -394,7 +394,7 @@ class QualityProfile(sq.SqObject):
             diff_rules["removedRules"] = self._treat_removed_rules(compare_result["inRight"])
         if len(compare_result["modified"]) > 0:
             diff_rules["removedRules"] = self._treat_modified_rules(compare_result["modified"])
-        util.logger.info("Returning %s", str(diff_rules))
+        util.logger.debug("Returning %s", str(diff_rules))
         if qp_json_data is None:
             return (diff_rules, qp_json_data)
         for index in ("addedRules", "modifiedRules", "removedRules"):
