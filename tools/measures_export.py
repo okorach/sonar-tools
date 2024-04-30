@@ -188,7 +188,6 @@ def __parse_args(desc):
         required=False,
         help="Add projects/branches URLs in report",
     )
-
     args = util.parse_and_check(parser)
     if args.ratingsAsNumbers:
         CONVERT_OPTIONS["ratings"] = "numbers"
@@ -249,13 +248,14 @@ def main():
         if fmt == "json":
             print("\n]\n", file=fd)
 
-    util.logger.info("Computing LoCs")
-    nb_loc = 0
-    for project in project_list.values():
-        nb_loc += project.loc()
+        # Stop computing LoC, this is expensive in API calls
+        #    util.logger.info("Computing LoCs")
+        #    nb_loc = 0
+        #    for project in project_list.values():
+        #        nb_loc += project.loc()
 
-    util.logger.info("%d PROJECTS %d branches %d LoCs", len(project_list), nb_branches, nb_loc)
-    sys.exit(0)
+        util.logger.info("%d PROJECTS %d branches", len(project_list), nb_branches)
+        sys.exit(0)
 
 
 if __name__ == "__main__":
