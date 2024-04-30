@@ -180,23 +180,26 @@ class Platform:
         api = _normalize_api(api)
         headers = _SONAR_TOOLS_AGENT
         if self.organization:
-            util.logger.debug("Preparing SonarCloud query with org %s", self.organization)
             headers["Authorization"] = f"Bearer {self.__token}"
             if params is None:
                 params = {}
             params["organization"] = self.organization
-        else:
-            util.logger.debug("Preparing SonarQube query")
-        util.logger.debug("GET: %s", self.__urlstring(api, params))
+
         try:
-            r = requests.get(
-                url=self.url + api,
-                auth=self.__credentials(),
-                verify=self.__cert_file,
-                headers=headers,
-                params=params,
-                timeout=self.http_timeout,
-            )
+            retry = True
+            while retry:
+                util.logger.debug("GET: %s", self.__urlstring(api, params))
+                r = requests.get(
+                    url=self.url + api,
+                    auth=self.__credentials(),
+                    verify=self.__cert_file,
+                    headers=headers,
+                    params=params,
+                    timeout=self.http_timeout,
+                )
+                (retry, new_url) = _check_for_retry(r)
+                if retry:
+                    self.url = new_url
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if exit_on_error or (r.status_code not in mute and r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)):
@@ -229,16 +232,21 @@ class Platform:
         :rtype: request.Response
         """
         api = _normalize_api(api)
-        util.logger.debug("POST: %s", self.__urlstring(api, params))
         try:
-            r = requests.post(
-                url=self.url + api,
-                auth=self.__credentials(),
-                verify=self.__cert_file,
-                headers=_SONAR_TOOLS_AGENT,
-                data=params,
-                timeout=self.http_timeout,
-            )
+            retry = True
+            while retry:
+                util.logger.debug("POST: %s", self.__urlstring(api, params))
+                r = requests.post(
+                    url=self.url + api,
+                    auth=self.__credentials(),
+                    verify=self.__cert_file,
+                    headers=_SONAR_TOOLS_AGENT,
+                    data=params,
+                    timeout=self.http_timeout,
+                )
+                (retry, new_url) = _check_for_retry(r)
+                if retry:
+                    self.url = new_url
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error or r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
@@ -271,16 +279,21 @@ class Platform:
         :rtype: request.Response
         """
         api = _normalize_api(api)
-        util.logger.debug("DELETE: %s", self.__urlstring(api, params))
         try:
-            r = requests.delete(
-                url=self.url + api,
-                auth=self.__credentials(),
-                verify=self.__cert_file,
-                params=params,
-                headers=_SONAR_TOOLS_AGENT,
-                timeout=self.http_timeout,
-            )
+            retry = True
+            while retry:
+                util.logger.debug("DELETE: %s", self.__urlstring(api, params))
+                r = requests.delete(
+                    url=self.url + api,
+                    auth=self.__credentials(),
+                    verify=self.__cert_file,
+                    params=params,
+                    headers=_SONAR_TOOLS_AGENT,
+                    timeout=self.http_timeout,
+                )
+                (retry, new_url) = _check_for_retry(r)
+                if retry:
+                    self.url = new_url
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             if exit_on_error:
@@ -851,3 +864,12 @@ def latest(digits=3):
     if digits < 1 or digits > 3:
         digits = 3
     return __lts_and_latest()[1][0:digits]
+
+
+def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
+    """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
+    if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
+        new_url = "/".join(response.history[0].headers["Location"].split("/")[0:3])
+        util.logger.debug("Moved permanently to URL %s", new_url)
+        return (True, new_url)
+    return (False, None)
