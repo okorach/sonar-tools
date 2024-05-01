@@ -86,6 +86,7 @@ class Platform:
         self._permissions = None
         self.http_timeout = http_timeout
         self.organization = org
+        self.__is_sonarcloud = util.is_sonarcloud_url(self.url)
 
     def __str__(self):
         """
@@ -124,7 +125,7 @@ class Platform:
         :return: the SonarQube platform edition
         :rtype: str ("community", "developer", "enterprise" or "datacenter")
         """
-        if self.url.lower().endswith("sonarcloud.io"):
+        if self.is_sonarcloud():
             return "sonarcloud"
         if "edition" in self.global_nav():
             return util.edition_normalize(self.global_nav()["edition"])
@@ -149,7 +150,7 @@ class Platform:
         :return: whether the target platform is SonarCloud
         :rtype: bool
         """
-        return util.is_sonarcloud_url(self.url)
+        return self.__is_sonarcloud
 
     def basics(self):
         """
@@ -162,7 +163,7 @@ class Platform:
             "serverId": self.server_id(),
         }
 
-    def get(self, api, params=None, exit_on_error=False, mute=()):
+    def get(self, api: str, params: dict[str, str] = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -177,41 +178,7 @@ class Platform:
         :return: the result of the HTTP request
         :rtype: request.Response
         """
-        api = _normalize_api(api)
-        headers = _SONAR_TOOLS_AGENT
-        if self.organization:
-            util.logger.debug("Preparing SonarCloud query with org %s", self.organization)
-            headers["Authorization"] = f"Bearer {self.__token}"
-            if params is None:
-                params = {}
-            params["organization"] = self.organization
-        else:
-            util.logger.debug("Preparing SonarQube query")
-        util.logger.debug("GET: %s", self.__urlstring(api, params))
-        try:
-            r = requests.get(
-                url=self.url + api,
-                auth=self.__credentials(),
-                verify=self.__cert_file,
-                headers=headers,
-                params=params,
-                timeout=self.http_timeout,
-            )
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            if exit_on_error or (r.status_code not in mute and r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)):
-                util.log_and_exit(r)
-            else:
-                if r.status_code in mute:
-                    util.logger.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
-                else:
-                    util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
-                raise e
-        except requests.exceptions.Timeout as e:
-            util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
-        except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
-        return r
+        return self.__run_request(requests.get, api, params, exit_on_error, mute)
 
     def post(self, api, params=None, exit_on_error=False, mute=()):
         """Makes an HTTP POST request to SonarQube
@@ -228,32 +195,7 @@ class Platform:
         :return: the result of the HTTP request
         :rtype: request.Response
         """
-        api = _normalize_api(api)
-        util.logger.debug("POST: %s", self.__urlstring(api, params))
-        try:
-            r = requests.post(
-                url=self.url + api,
-                auth=self.__credentials(),
-                verify=self.__cert_file,
-                headers=_SONAR_TOOLS_AGENT,
-                data=params,
-                timeout=self.http_timeout,
-            )
-            r.raise_for_status()
-        except requests.exceptions.HTTPError:
-            if exit_on_error or r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
-                util.log_and_exit(r)
-            else:
-                if r.status_code in mute:
-                    util.logger.debug(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
-                else:
-                    util.logger.error(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
-                raise
-        except requests.exceptions.Timeout as e:
-            util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
-        except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
-        return r
+        return self.__run_request(requests.post, api, params, exit_on_error, mute)
 
     def delete(self, api, params=None, exit_on_error=False, mute=()):
         """Makes an HTTP DELETE request to SonarQube
@@ -270,31 +212,50 @@ class Platform:
         :return: the result of the HTTP request
         :rtype: request.Response
         """
+        return self.__run_request(requests.delete, api, params, exit_on_error, mute)
+
+    def __run_request(
+        self, request: callable, api: str, params: dict[str, str] = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()
+    ) -> requests.Response:
+        """Makes an HTTP request to SonarQube"""
         api = _normalize_api(api)
-        util.logger.debug("DELETE: %s", self.__urlstring(api, params))
+        util.logger.debug("%s: %s", getattr(request, "__name__", repr(request)).upper(), self.__urlstring(api, params))
+        headers = _SONAR_TOOLS_AGENT
+        if self.is_sonarcloud():
+            headers["Authorization"] = f"Bearer {self.__token}"
+            if params is None:
+                params = {}
+            params["organization"] = self.organization
+
         try:
-            r = requests.delete(
-                url=self.url + api,
-                auth=self.__credentials(),
-                verify=self.__cert_file,
-                params=params,
-                headers=_SONAR_TOOLS_AGENT,
-                timeout=self.http_timeout,
-            )
+            retry = True
+            while retry:
+                r = request(
+                    url=self.url + api,
+                    auth=self.__credentials(),
+                    verify=self.__cert_file,
+                    headers=headers,
+                    params=params,
+                    timeout=self.http_timeout,
+                )
+                (retry, new_url) = _check_for_retry(r)
+                if retry:
+                    self.url = new_url
             r.raise_for_status()
-        except requests.exceptions.HTTPError:
-            if exit_on_error:
+        except requests.exceptions.HTTPError as e:
+            if exit_on_error or (r.status_code not in mute and r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)):
                 util.log_and_exit(r)
             else:
                 if r.status_code in mute:
-                    util.logger.debug(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
+                    util.logger.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
                 else:
-                    util.logger.error(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
-                raise
+                    util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
+                raise e
         except requests.exceptions.Timeout as e:
             util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
+        return r
 
     def global_permissions(self):
         """Returns the SonarQube platform global permissions
@@ -851,3 +812,12 @@ def latest(digits=3):
     if digits < 1 or digits > 3:
         digits = 3
     return __lts_and_latest()[1][0:digits]
+
+
+def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
+    """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
+    if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
+        new_url = "/".join(response.history[0].headers["Location"].split("/")[0:3])
+        util.logger.debug("Moved permanently to URL %s", new_url)
+        return (True, new_url)
+    return (False, None)
