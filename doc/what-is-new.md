@@ -1,3 +1,10 @@
+# Version 3.0
+  - Compatibility with SonarCloud of the following tools:
+    - `sonar-loc`
+    - `sonar-measures-export`
+    - `sonar-findings-export`
+    - `sonar-findings-sync`
+
 # Version 2.11 - April 29th, 2024
 
   - Adjusted sonar-config export to the new capabilities of SonarQube 10.x
