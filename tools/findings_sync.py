@@ -100,8 +100,9 @@ def main():
         "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
     )
 
-    util.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
-    source_env = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    source_env = platform.Platform(
+        some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
+    )
     params = vars(args)
     source_key = params["projectKeys"]
     target_key = params.get("targetProjectKey", None)
@@ -144,7 +145,7 @@ def main():
         elif target_url is not None and target_key is not None:
             util.check_token(args.tokenTarget)
             target_env = platform.Platform(
-                some_url=args.urlTarget, some_token=args.tokenTarget, cert_file=args.clientCert, http_timeout=args.httpTimeout
+                some_url=args.urlTarget, some_token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
             )
             if not projects.exists(target_key, endpoint=target_env):
                 raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
