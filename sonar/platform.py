@@ -86,6 +86,7 @@ class Platform:
         self._permissions = None
         self.http_timeout = http_timeout
         self.organization = org
+        self.__is_sonarcloud = util.is_sonarcloud_url(self.url)
 
     def __str__(self):
         """
@@ -124,7 +125,7 @@ class Platform:
         :return: the SonarQube platform edition
         :rtype: str ("community", "developer", "enterprise" or "datacenter")
         """
-        if self.url.lower().endswith("sonarcloud.io"):
+        if self.is_sonarcloud():
             return "sonarcloud"
         if "edition" in self.global_nav():
             return util.edition_normalize(self.global_nav()["edition"])
@@ -149,7 +150,7 @@ class Platform:
         :return: whether the target platform is SonarCloud
         :rtype: bool
         """
-        return util.is_sonarcloud_url(self.url)
+        return self.__is_sonarcloud
 
     def basics(self):
         """
@@ -162,7 +163,7 @@ class Platform:
             "serverId": self.server_id(),
         }
 
-    def get(self, api, params=None, exit_on_error=False, mute=()):
+    def get(self, api: str, params: dict[str, str] = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -177,9 +178,50 @@ class Platform:
         :return: the result of the HTTP request
         :rtype: request.Response
         """
+        return self.__run_request(requests.get, api, params, exit_on_error, mute)
+
+    def post(self, api, params=None, exit_on_error=False, mute=()):
+        """Makes an HTTP POST request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :type api: str
+        :param params: params to pass in the HTTP request, defaults to None
+        :type params: dict, optional
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
+                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
+        :return: the result of the HTTP request
+        :rtype: request.Response
+        """
+        return self.__run_request(requests.post, api, params, exit_on_error, mute)
+
+    def delete(self, api, params=None, exit_on_error=False, mute=()):
+        """Makes an HTTP DELETE request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :type api: str
+        :param params: params to pass in the HTTP request, defaults to None
+        :type params: dict, optional
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :type exit_on_error: bool, optional
+        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
+                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :type mute: tuple, optional
+        :return: the result of the HTTP request
+        :rtype: request.Response
+        """
+        return self.__run_request(requests.delete, api, params, exit_on_error, mute)
+
+    def __run_request(
+        self, request: callable, api: str, params: dict[str, str] = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()
+    ) -> requests.Response:
+        """Makes an HTTP request to SonarQube"""
         api = _normalize_api(api)
+        util.logger.debug("%s: %s", getattr(request, "__name__", repr(request)).upper(), self.__urlstring(api, params))
         headers = _SONAR_TOOLS_AGENT
-        if self.organization:
+        if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
             if params is None:
                 params = {}
@@ -188,8 +230,7 @@ class Platform:
         try:
             retry = True
             while retry:
-                util.logger.debug("GET: %s", self.__urlstring(api, params))
-                r = requests.get(
+                r = request(
                     url=self.url + api,
                     auth=self.__credentials(),
                     verify=self.__cert_file,
@@ -215,99 +256,6 @@ class Platform:
         except requests.RequestException as e:
             util.exit_fatal(str(e), options.ERR_SONAR_API)
         return r
-
-    def post(self, api, params=None, exit_on_error=False, mute=()):
-        """Makes an HTTP POST request to SonarQube
-
-        :param api: API to invoke (without the platform base URL)
-        :type api: str
-        :param params: params to pass in the HTTP request, defaults to None
-        :type params: dict, optional
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
-        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
-                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
-        :type mute: tuple, optional
-        :return: the result of the HTTP request
-        :rtype: request.Response
-        """
-        api = _normalize_api(api)
-        try:
-            retry = True
-            while retry:
-                util.logger.debug("POST: %s", self.__urlstring(api, params))
-                r = requests.post(
-                    url=self.url + api,
-                    auth=self.__credentials(),
-                    verify=self.__cert_file,
-                    headers=_SONAR_TOOLS_AGENT,
-                    data=params,
-                    timeout=self.http_timeout,
-                )
-                (retry, new_url) = _check_for_retry(r)
-                if retry:
-                    self.url = new_url
-            r.raise_for_status()
-        except requests.exceptions.HTTPError:
-            if exit_on_error or r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
-                util.log_and_exit(r)
-            else:
-                if r.status_code in mute:
-                    util.logger.debug(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
-                else:
-                    util.logger.error(_HTTP_ERROR, "POST", self.__urlstring(api, params), r.status_code)
-                raise
-        except requests.exceptions.Timeout as e:
-            util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
-        except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
-        return r
-
-    def delete(self, api, params=None, exit_on_error=False, mute=()):
-        """Makes an HTTP DELETE request to SonarQube
-
-        :param api: API to invoke (without the platform base URL)
-        :type api: str
-        :param params: params to pass in the HTTP request, defaults to None
-        :type params: dict, optional
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
-        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
-                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
-        :type mute: tuple, optional
-        :return: the result of the HTTP request
-        :rtype: request.Response
-        """
-        api = _normalize_api(api)
-        try:
-            retry = True
-            while retry:
-                util.logger.debug("DELETE: %s", self.__urlstring(api, params))
-                r = requests.delete(
-                    url=self.url + api,
-                    auth=self.__credentials(),
-                    verify=self.__cert_file,
-                    params=params,
-                    headers=_SONAR_TOOLS_AGENT,
-                    timeout=self.http_timeout,
-                )
-                (retry, new_url) = _check_for_retry(r)
-                if retry:
-                    self.url = new_url
-            r.raise_for_status()
-        except requests.exceptions.HTTPError:
-            if exit_on_error:
-                util.log_and_exit(r)
-            else:
-                if r.status_code in mute:
-                    util.logger.debug(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
-                else:
-                    util.logger.error(_HTTP_ERROR, "DELETE", self.__urlstring(api, params), r.status_code)
-                raise
-        except requests.exceptions.Timeout as e:
-            util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
-        except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
 
     def global_permissions(self):
         """Returns the SonarQube platform global permissions
