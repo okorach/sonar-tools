@@ -28,7 +28,7 @@
     Only issues with a 100% match are synchronized. When there's a doubt, nothing is done
 """
 
-from sonar import platform, version, syncer, options, exceptions
+from sonar import platform, syncer, options, exceptions
 from sonar.projects import projects
 from sonar.projects.branches import Branch
 import sonar.utilities as util
