@@ -278,7 +278,7 @@ class Finding(sq.SqObject):
         :return: the set of users that commented the finding
         :rtype: set(str)
         """
-        return set([v.get("user", None) for v in self.comments() if v.get("user", None)])
+        return set([v["user"] for v in self.comments() if "user" in v])
 
     def can_be_synced(self, user_list):
         """

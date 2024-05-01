@@ -72,7 +72,7 @@ class Branch(components.Component):
                 raise exceptions.ObjectNotFound(concerned_object.key, f"Project '{concerned_object.key}' not found")
         for br in data.get("branches", []):
             if br["name"] == branch_name:
-                return cls.load(concerned_object, branch_name, data)
+                return cls.load(concerned_object, branch_name, br)
         raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of project '{concerned_object.key}' not found")
 
     @classmethod
@@ -140,6 +140,7 @@ class Branch(components.Component):
             self._json = data
         else:
             self._json.update(data)
+        util.logger.debug("GOT BRANCH DATA %s", util.json_dump(self._json))
         self._is_main = self._json["isMain"]
         self._last_analysis = util.string_to_date(self._json.get("analysisDate", None))
         self._keep_when_inactive = self._json.get("excludedFromPurge", False)
