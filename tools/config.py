@@ -102,12 +102,19 @@ def __parse_args(desc):
     return args
 
 
-def __export_config(endpoint, what, args):
+def __check_projects_existence(endpoint: object, key_list: list[str]) -> list[str]:
+    for key in key_list:
+        if not projects.exists(key, endpoint):
+            utilities.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
+    return key_list
+
+
+def __export_config(endpoint: object, what: list[str], args: object) -> None:
+    """Exports a platform configuration in a JSON file"""
     key_list = utilities.csv_to_list(args.projectKeys)
-    if len(key_list) > 0 and "projects" in utilities.csv_to_list(args.what):
-        for key in key_list:
-            if not projects.exists(key, endpoint):
-                utilities.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
+    if "projects" in args.what:
+        key_list = __check_projects_existence(endpoint, args.projectKeys)
+
     utilities.logger.info("Exporting configuration from %s", args.url)
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
@@ -125,10 +132,10 @@ def __export_config(endpoint, what, args):
         else:
             utilities.logger.warning("Quality gates export not yet supported for SonarCloud")
     if options.WHAT_PROJECTS in what:
-        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys, full=args.fullExport, threads=args.threads)
+        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=key_list, full=args.fullExport, threads=args.threads)
     if options.WHAT_APPS in what:
         try:
-            sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
+            sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=key_list, full=args.fullExport)
         except exceptions.UnsupportedOperation as e:
             utilities.logger.info("%s", e.message)
     if options.WHAT_PORTFOLIOS in what:

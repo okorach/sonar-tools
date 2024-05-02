@@ -339,6 +339,7 @@ def new_code_to_string(data):
 
 
 def get_new_code_period(endpoint: object, project_or_branch: object) -> Setting:
+    """returns the new code period, either the default global setting, or specific to a project/branch"""
     return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
 
