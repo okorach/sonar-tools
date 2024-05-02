@@ -23,7 +23,7 @@
 
 import re
 import json
-from sonar import sqobject
+from sonar import sqobject, exceptions
 import sonar.utilities as util
 
 DEVOPS_INTEGRATION = "devopsIntegration"
@@ -97,13 +97,19 @@ class Setting(sqobject.SqObject):
         uu = _uuid_p(key, component)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
-        if key == NEW_CODE_PERIOD:
+        if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
             params = get_component_params(component, name="project")
             data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)
         else:
+            if key == NEW_CODE_PERIOD:
+                key = "sonar.leak.period.type"
             params = get_component_params(component)
             params.update({"keys": key})
-            data = json.loads(endpoint.get(_API_GET, params=params).text)["settings"][0]
+            data = json.loads(endpoint.get(_API_GET, params=params).text)["settings"]
+            if not endpoint.is_sonarcloud() and len(data) > 0:
+                data = data[0]
+            else:
+                data = {"inherited": True}
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
 
     @classmethod
@@ -138,7 +144,7 @@ class Setting(sqobject.SqObject):
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == COMPONENT_VISIBILITY:
-            self.value = data["visibility"]
+            self.value = data.get("visibility", None)
         elif self.key.startswith("sonar.issue."):
             self.value = data.get("fieldValues", None)
         else:
@@ -282,11 +288,15 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
             settings_dict[o.key] = o
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
-    o = get_visibility(endpoint, component)
-    settings_dict[o.key] = o
+    try:
+        o = get_visibility(endpoint, component)
+        settings_dict[o.key] = o
+    except exceptions.UnsupportedOperation as e:
+        util.logger.info("%s", str(e))
 
-    o = get_new_code_period(endpoint, component)
-    settings_dict[o.key] = o
+    if not endpoint.is_sonarcloud():
+        o = get_new_code_period(endpoint, component)
+        settings_dict[o.key] = o
     VALID_SETTINGS.update(set(settings_dict.keys()))
     VALID_SETTINGS.update({"sonar.scm.provider"})
     return settings_dict
@@ -323,7 +333,7 @@ def new_code_to_string(data):
         return f"{data['type']} = {data['value']}"
 
 
-def get_new_code_period(endpoint, project_or_branch):
+def get_new_code_period(endpoint: object, project_or_branch: object) -> Setting:
     return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
 
@@ -346,6 +356,8 @@ def get_visibility(endpoint, component):
         data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
         return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])
     else:
+        if endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarCloud")
         data = json.loads(endpoint.get(_API_GET, params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
