@@ -1,0 +1,5 @@
+Organizations
+=============
+
+.. automodule:: sonar.organizations
+

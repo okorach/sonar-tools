@@ -23,7 +23,7 @@ copyright = "2022-2024, Olivier Korach"
 author = "Olivier Korach"
 
 # The full version, including alpha/beta/rc tags
-release = "2.4"
+release = "3.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,7 +35,9 @@ release = "2.4"
 extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
 ]
+
 autodoc_default_options = {
     "members": True,
     "show-inheritance": True,
