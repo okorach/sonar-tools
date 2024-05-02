@@ -75,10 +75,9 @@ class Organization(sqobject.SqObject):
         """Loads an Organization object with data retrieved from SonarCloud
 
         :param Platform endpoint: Reference to the SonarCloud platform
-        :param str key: Organization key
         :param dict data: Data coming from api/organizations/search
         :raises UnsupportedOperation: If not running against SonarCloud
-        :raises ObjectNotFound: If Oragnization key not found
+        :raises ObjectNotFound: If Organization key not found
         :return: The found Organization object
         :rtype: Organization
         """
