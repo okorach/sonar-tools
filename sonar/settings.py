@@ -254,6 +254,26 @@ def get_object(key, component=None):
     return _OBJECTS.get(_uuid_p(key, component), None)
 
 
+def __get_settings(endpoint: object, data: dict[str, str], component: object = None) -> dict[str, Setting]:
+    """Returns settings of the global platform or a specific componennt object (Project, App, Portfolio)"""
+    settings = {}
+    settings_type_list = ["settings"]
+    # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
+    if component is None:
+        settings_type_list += ["setSecuredSettings"]
+
+    for setting_type in settings_type_list:
+        util.logger.debug("Looking at %s", setting_type)
+        for s in data.get(setting_type, {}):
+            (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
+            if is_private(key) > 0:
+                util.logger.debug("Skipping private setting %s", s["key"])
+                continue
+            o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
+            settings[o.key] = o
+    return settings
+
+
 def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False):
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
@@ -265,27 +285,12 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
                 continue
             o = Setting.load(key=s["key"], endpoint=endpoint, data=s, component=component)
             settings_dict[o.key] = o
-    if settings_list is None:
-        pass
-    elif isinstance(settings_list, list):
+
+    if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
-    else:
-        params["keys"] = util.csv_normalize(settings_list)
+
     data = json.loads(endpoint.get(_API_GET, params=params).text)
-    settings_type_list = ["settings"]
-    # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
-    if component is None:
-        settings_type_list = ["setSecuredSettings"]
-    settings_type_list += ["settings"]
-    for setting_type in settings_type_list:
-        util.logger.debug("Looking at %s", setting_type)
-        for s in data.get(setting_type, {}):
-            (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            if is_private(key) > 0:
-                util.logger.debug("Skipping private setting %s", s["key"])
-                continue
-            o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
-            settings_dict[o.key] = o
+    settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
     try:

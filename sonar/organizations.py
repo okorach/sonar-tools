@@ -84,16 +84,16 @@ class Organization(sqobject.SqObject):
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         o = _OBJECTS.get(data["key"], cls(endpoint, data["key"], data["name"]))
-        o._json = data
+        o.json_data = data
         o.name = data["name"]
-        o._description = data["description"]
+        o.description = data["description"]
         return o
 
     def __init__(self, endpoint: object, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(key, endpoint)
-        self._json = None
-        self._description = None
+        self.json_data = None
+        self.description = None
         self.name = name
         util.logger.debug("Created object %s", str(self))
         _OBJECTS[self.key] = self
@@ -104,7 +104,7 @@ class Organization(sqobject.SqObject):
     def export(self) -> dict[str, str]:
         """Exports an organization"""
         util.logger.info("Exporting %s", str(self))
-        json_data = self._json.copy()
+        json_data = self.json_data.copy()
         json_data.pop("defaultLeakPeriod", None)
         json_data.pop("defaultLeakPeriodType", None)
         (nctype, ncval) = self.new_code_period()
@@ -121,15 +121,15 @@ class Organization(sqobject.SqObject):
         return {"organizations": self.key}
 
     def new_code_period(self) -> tuple[str, str]:
-        if "defaultLeakPeriodType" in self._json and self._json["defaultLeakPeriodType"] == "days":
-            return ("DAYS", self._json["defaultLeakPeriod"])
+        if "defaultLeakPeriodType" in self.json_data and self.json_data["defaultLeakPeriodType"] == "days":
+            return ("DAYS", self.json_data["defaultLeakPeriod"])
         return ("PREVIOUS_VERSION", None)
 
     def subscription(self) -> str:
-        return self._json.get("subscription", "UNKNOWN")
+        return self.json_data.get("subscription", "UNKNOWN")
 
     def alm(self) -> Union[dict[str, str], None]:
-        return self._json.get("alm", None)
+        return self.json_data.get("alm", None)
 
 
 def get_list(endpoint: object, key_list: str = None, use_cache: bool = True) -> dict[str, object]:
