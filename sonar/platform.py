@@ -157,6 +157,9 @@ class Platform:
         :return: the 3 basic information of the platform: ServerId, Edition and Version
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>}
         """
+        if self.is_sonarcloud():
+            return {"edition": self.edition()}
+
         return {
             "version": self.version(as_string=True),
             "edition": self.edition(),
@@ -415,7 +418,12 @@ class Platform:
         util.logger.info("Exporting platform global settings")
         json_data = {}
         for s in self.__settings(include_not_set=True).values():
+            if s.is_internal():
+                continue
             (categ, subcateg) = s.category()
+            if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
+                # What is reported as 3rd part are SonarCloud internal settings
+                continue
             util.update_json(json_data, categ, subcateg, s.to_json())
 
         hooks = webhooks.export(self, full=full)

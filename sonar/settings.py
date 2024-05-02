@@ -56,13 +56,39 @@ DEFAULT_SETTING = "__default__"
 
 _OBJECTS = {}
 
-_PRIVATE_SETTINGS = (
+_SQ_INTERNAL_SETTINGS = (
     "sonaranalyzer",
     "sonar.updatecenter",
     "sonar.plugins.risk.consent",
     "sonar.core.id",
     "sonar.core.startTime",
     "sonar.plsql.jdbc.driver.class",
+)
+
+_SC_INTERNAL_SETTINGS = (
+    "sonaranalyzer",
+    "sonar.updatecenter",
+    "sonar.plugins.risk.consent",
+    "sonar.core.id",
+    "sonar.core.startTime",
+    "sonar.plsql.jdbc.driver.class",
+    "sonar.dbcleaner",
+    "sonar.core.serverBaseURL",
+    "email.",
+    "sonar.builtIn",
+    "sonar.issues.defaultAssigneeLogin",
+    "sonar.filesize.limit",
+    "sonar.kubernetes.activate",
+    "sonar.lf",
+    "sonar.notifications",
+    "sonar.plugins.loadAll",
+    "sonar.plugins.loadAll",
+    "sonar.qualityProfiles.allowDisableInheritedRules",
+    "sonar.scm.disabled",
+    "sonar.technicalDebt",
+    "sonar.issue.",
+    "sonar.global",
+    "sonar.forceAuthentication",
 )
 
 _INLINE_SETTINGS = (
@@ -204,6 +230,10 @@ class Setting(sqobject.SqObject):
     def to_json(self):
         return {self.key: encode(self.key, self.value)}
 
+    def is_internal(self) -> bool:
+        """Returns whether a setting is internal to the platform and is useless to expose externally"""
+        return _is_internal(self.key, self.endpoint.is_sonarcloud())
+
     def category(self):
         m = re.match(
             r"^sonar\.(cpd\.)?(abap|androidLint|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|docker|"
@@ -266,8 +296,8 @@ def __get_settings(endpoint: object, data: dict[str, str], component: object = N
         util.logger.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            if is_private(key) > 0:
-                util.logger.debug("Skipping private setting %s", s["key"])
+            if _is_internal(key, endpoint.is_sonarcloud()):
+                util.logger.debug("Skipping internal setting %s", s["key"])
                 continue
             o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
             settings[o.key] = o
@@ -441,11 +471,15 @@ def is_valid(setting_key, endpoint):
         get_bulk(endpoint=endpoint, include_not_set=True)
     if setting_key not in VALID_SETTINGS:
         return False
-    return not is_private(setting_key)
+    return not _is_internal(setting_key, endpoint.is_sonarcloud())
 
 
-def is_private(setting_key):
-    for prefix in _PRIVATE_SETTINGS:
+def _is_internal(setting_key: str, is_sonarcloud: bool = False) -> bool:
+    """Returns whether a setting is internal to the platform and is useless to expose externally"""
+    internal_settings = _SQ_INTERNAL_SETTINGS
+    if is_sonarcloud:
+        internal_settings = _SC_INTERNAL_SETTINGS
+    for prefix in internal_settings:
         if setting_key.startswith(prefix):
             return True
     return False
