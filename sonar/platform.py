@@ -423,7 +423,8 @@ class Platform:
             json_data[settings.GENERAL_SETTINGS].update({"webhooks": hooks})
         json_data["permissions"] = self.global_permissions().export()
         json_data["permissionTemplates"] = permission_templates.export(self, full=full)
-        json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, full=full)
+        if not self.is_sonarcloud():
+            json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, full=full)
         return json_data
 
     def set_webhooks(self, webhooks_data):
