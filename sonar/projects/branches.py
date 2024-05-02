@@ -140,7 +140,6 @@ class Branch(components.Component):
             self._json = data
         else:
             self._json.update(data)
-        util.logger.debug("GOT BRANCH DATA %s", util.json_dump(self._json))
         self._is_main = self._json["isMain"]
         self._last_analysis = util.string_to_date(self._json.get("analysisDate", None))
         self._keep_when_inactive = self._json.get("excludedFromPurge", False)
@@ -196,12 +195,14 @@ class Branch(components.Component):
                 util.logger.warning("Can't delete %s, it's the main branch", str(self))
             return False
 
-    def new_code(self):
+    def new_code(self) -> str:
         """
         :return: The branch new code period definition
         :rtype: str
         """
-        if self._new_code is None:
+        if self._new_code is None and self.endpoint.is_sonarcloud():
+            self._new_code = settings.new_code_to_string({"inherited": True})
+        elif self._new_code is None:
             try:
                 data = json.loads(self.get(api=APIS["get_new_code"], params={"project": self.concerned_object.key}).text)
             except HTTPError as e:
