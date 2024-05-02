@@ -120,7 +120,10 @@ def __export_config(endpoint, what, args):
             sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=args.fullExport)
         sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, full=args.fullExport)
     if options.WHAT_GATES in what:
-        sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, full=args.fullExport)
+        if not endpoint.is_sonarcloud():
+            sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, full=args.fullExport)
+        else:
+            utilities.logger.warning("Quality gates export not yet supported for SonarCloud")
     if options.WHAT_PROJECTS in what:
         sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys, full=args.fullExport, threads=args.threads)
     if options.WHAT_APPS in what:
