@@ -16,3 +16,4 @@ tmp/
 !test/config.json
 .venv/
 test/*-sonar/
+.DS_Store
