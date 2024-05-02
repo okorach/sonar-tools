@@ -24,6 +24,9 @@ class SonarException(Exception):
         super().__init__()
         self.message = message
 
+    def __str__(self):
+        return self.message
+
 
 class ObjectNotFound(SonarException):
     """
