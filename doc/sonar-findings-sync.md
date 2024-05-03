@@ -19,9 +19,11 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 - `-k <projectKey>`: Key of the source project
 - `-K <projectKey>`: Optional. Key of the target project. Assumed to the the same as source project key if not specified
 - `-b <sourceBranch>`: Optional. Name of the source branch. Only required when doing synchronization between 2 branches of a same project of a same instance
+- `-o <sourceOrganization>`: Optional. If source project is on SonarCloud
 - `-B <targetBranch>`: Optional. Name of the target branch. Only required when doing synchronization between 2 branches of a same project of a same instance
-- `-U <targetUrl>`: Optional. URL of the target SonarQube instance, when synchronizing between 2 different instances
+- `-U <targetUrl>`: Optional. URL of the target SonarQube instance or SonarCloud, when synchronizing between 2 different instances
 - `-T <targetToken>`: Optional. Token if the synchronization service account on the target SonarQube instance, when sync'ing between 2 instances
+- `-O <targetOrganization>`: Optional. If target project is on SonarCloud, and if organization is different than the source project or if the source project is not on SonarCloud
 - `-f <file>`: Sends a summary report of synchronization to `<file>`, `stdout` is the default. The output format is JSON
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
 
@@ -53,6 +55,9 @@ Synchronizes issues changelog between:
 - All branches with same name between 2 projects from different SonarQube instances:
   `sonar-issue-sync --login issue-syncer -k <sourceProjectKey> -u <sourceUrl> -t <sourceToken> -K <targetProjectKey> -U <targetUrl> -T <targetToken>`
   There is no requirements on the 2 SonarQube instances: They do not need to be of same edition, version or have the same list of plugins
+- **main** branch of a source project key **myProject** in a SonarQube instance and **master** branch of the same project in SonarCloud:
+  `sonar-issue-sync --login myuser@github -k myProject -u https://sonar.acme.com -t <sourceToken> -K myProject -U https://sonarcloud.io -T <targetToken> -O myOrganization`
+
 
 Issues changelog synchronization includes:
 - Change of issue type

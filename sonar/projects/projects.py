@@ -814,7 +814,7 @@ class Project(components.Component):
         if hooks is not None:
             json_data["webhooks"] = hooks
         json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
-        settings_dict = settings.get_bulk(endpoint=self, component=self, settings_list=settings_list, include_not_set=False)
+        settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
         # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
         for s in settings_dict.values():
             if not include_inherited and s.inherited:

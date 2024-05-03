@@ -23,7 +23,7 @@
 
 import re
 import json
-from sonar import sqobject
+from sonar import sqobject, exceptions
 import sonar.utilities as util
 
 DEVOPS_INTEGRATION = "devopsIntegration"
@@ -56,13 +56,39 @@ DEFAULT_SETTING = "__default__"
 
 _OBJECTS = {}
 
-_PRIVATE_SETTINGS = (
+_SQ_INTERNAL_SETTINGS = (
     "sonaranalyzer",
     "sonar.updatecenter",
     "sonar.plugins.risk.consent",
     "sonar.core.id",
     "sonar.core.startTime",
     "sonar.plsql.jdbc.driver.class",
+)
+
+_SC_INTERNAL_SETTINGS = (
+    "sonaranalyzer",
+    "sonar.updatecenter",
+    "sonar.plugins.risk.consent",
+    "sonar.core.id",
+    "sonar.core.startTime",
+    "sonar.plsql.jdbc.driver.class",
+    "sonar.dbcleaner",
+    "sonar.core.serverBaseURL",
+    "email.",
+    "sonar.builtIn",
+    "sonar.issues.defaultAssigneeLogin",
+    "sonar.filesize.limit",
+    "sonar.kubernetes.activate",
+    "sonar.lf",
+    "sonar.notifications",
+    "sonar.plugins.loadAll",
+    "sonar.plugins.loadAll",
+    "sonar.qualityProfiles.allowDisableInheritedRules",
+    "sonar.scm.disabled",
+    "sonar.technicalDebt",
+    "sonar.issue.",
+    "sonar.global",
+    "sonar.forceAuthentication",
 )
 
 _INLINE_SETTINGS = (
@@ -97,13 +123,19 @@ class Setting(sqobject.SqObject):
         uu = _uuid_p(key, component)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
-        if key == NEW_CODE_PERIOD:
+        if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
             params = get_component_params(component, name="project")
             data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)
         else:
+            if key == NEW_CODE_PERIOD:
+                key = "sonar.leak.period.type"
             params = get_component_params(component)
             params.update({"keys": key})
-            data = json.loads(endpoint.get(_API_GET, params=params).text)["settings"][0]
+            data = json.loads(endpoint.get(_API_GET, params=params).text)["settings"]
+            if not endpoint.is_sonarcloud() and len(data) > 0:
+                data = data[0]
+            else:
+                data = {"inherited": True}
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
 
     @classmethod
@@ -138,7 +170,7 @@ class Setting(sqobject.SqObject):
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == COMPONENT_VISIBILITY:
-            self.value = data["visibility"]
+            self.value = data.get("visibility", None)
         elif self.key.startswith("sonar.issue."):
             self.value = data.get("fieldValues", None)
         else:
@@ -170,8 +202,8 @@ class Setting(sqobject.SqObject):
 
     def set(self, value):
         util.logger.debug("%s set to '%s'", str(self), str(value))
-        if not is_valid(self.key, self.endpoint):
-            util.logger.error("Setting '%s' does not seem to be a valid setting, trying to set anyway...", str(self))
+        if not self.is_settable():
+            util.logger.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
         if value is None or value == "":
             # TODO: return endpoint.reset_setting(key)
             return True
@@ -195,8 +227,36 @@ class Setting(sqobject.SqObject):
             params["value"] = value
         return self.post(_API_SET, params=params).ok
 
-    def to_json(self):
+    def to_json(self) -> dict[str, str]:
         return {self.key: encode(self.key, self.value)}
+
+    def is_global(self) -> bool:
+        """Returns whether a setting global or specific for one component (project, branch, application, portfolio)"""
+        return self.component is None
+
+    def is_internal(self) -> bool:
+        """Returns whether a setting is internal to the platform and is useless to expose externally"""
+        internal_settings = _SQ_INTERNAL_SETTINGS
+        if self.endpoint.is_sonarcloud():
+            internal_settings = _SC_INTERNAL_SETTINGS
+            if self.is_global():
+                util.logger.debug("Checking if SonarCloud setting is internal")
+                (categ, _) = self.category()
+                if categ in ("languages", "analysisScope", "tests", "authentication"):
+                    return True
+
+        for prefix in internal_settings:
+            if self.key.startswith(prefix):
+                return True
+        return False
+
+    def is_settable(self) -> bool:
+        """Returns whether a setting can be set"""
+        if len(VALID_SETTINGS) == 0:
+            get_bulk(endpoint=self.endpoint, include_not_set=True)
+        if self.key not in VALID_SETTINGS:
+            return False
+        return not self.is_internal()
 
     def category(self):
         m = re.match(
@@ -248,6 +308,27 @@ def get_object(key, component=None):
     return _OBJECTS.get(_uuid_p(key, component), None)
 
 
+def __get_settings(endpoint: object, data: dict[str, str], component: object = None) -> dict[str, Setting]:
+    """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
+    settings = {}
+    settings_type_list = ["settings"]
+    # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
+    if component is None:
+        settings_type_list += ["setSecuredSettings"]
+
+    for setting_type in settings_type_list:
+        util.logger.debug("Looking at %s", setting_type)
+        for s in data.get(setting_type, {}):
+            (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
+            o = Setting(key=key, endpoint=endpoint, component=component, data=None)
+            if o.is_internal():
+                util.logger.debug("Skipping internal setting %s", s["key"])
+                continue
+            o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
+            settings[o.key] = o
+    return settings
+
+
 def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False):
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
@@ -259,34 +340,23 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
                 continue
             o = Setting.load(key=s["key"], endpoint=endpoint, data=s, component=component)
             settings_dict[o.key] = o
-    if settings_list is None:
-        pass
-    elif isinstance(settings_list, list):
+
+    if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
-    else:
-        params["keys"] = util.csv_normalize(settings_list)
+
     data = json.loads(endpoint.get(_API_GET, params=params).text)
-    settings_type_list = ["settings"]
-    # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
-    if component is None:
-        settings_type_list = ["setSecuredSettings"]
-    settings_type_list += ["settings"]
-    for setting_type in settings_type_list:
-        util.logger.debug("Looking at %s", setting_type)
-        for s in data.get(setting_type, {}):
-            (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            if is_private(key) > 0:
-                util.logger.debug("Skipping private setting %s", s["key"])
-                continue
-            o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
-            settings_dict[o.key] = o
+    settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
-    o = get_visibility(endpoint, component)
-    settings_dict[o.key] = o
+    try:
+        o = get_visibility(endpoint, component)
+        settings_dict[o.key] = o
+    except exceptions.UnsupportedOperation as e:
+        util.logger.info("%s", str(e))
 
-    o = get_new_code_period(endpoint, component)
-    settings_dict[o.key] = o
+    if not endpoint.is_sonarcloud():
+        o = get_new_code_period(endpoint, component)
+        settings_dict[o.key] = o
     VALID_SETTINGS.update(set(settings_dict.keys()))
     VALID_SETTINGS.update({"sonar.scm.provider"})
     return settings_dict
@@ -323,7 +393,8 @@ def new_code_to_string(data):
         return f"{data['type']} = {data['value']}"
 
 
-def get_new_code_period(endpoint, project_or_branch):
+def get_new_code_period(endpoint: object, project_or_branch: object) -> Setting:
+    """returns the new code period, either the default global setting, or specific to a project/branch"""
     return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
 
@@ -346,6 +417,8 @@ def get_visibility(endpoint, component):
         data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
         return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])
     else:
+        if endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarCloud")
         data = json.loads(endpoint.get(_API_GET, params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
@@ -416,18 +489,3 @@ def get_component_params(component, name="component"):
         return {name: component.project.key, "branch": component.key}
     else:
         return {name: component.key}
-
-
-def is_valid(setting_key, endpoint):
-    if len(VALID_SETTINGS) == 0:
-        get_bulk(endpoint=endpoint, include_not_set=True)
-    if setting_key not in VALID_SETTINGS:
-        return False
-    return not is_private(setting_key)
-
-
-def is_private(setting_key):
-    for prefix in _PRIVATE_SETTINGS:
-        if setting_key.startswith(prefix):
-            return True
-    return False

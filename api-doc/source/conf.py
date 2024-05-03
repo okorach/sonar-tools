@@ -1,5 +1,9 @@
-# Configuration file for the Sphinx documentation builder.
-#
+"""
+
+Configuration file for the sphinx doc builder
+
+"""
+
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
@@ -23,7 +27,7 @@ copyright = "2022-2024, Olivier Korach"
 author = "Olivier Korach"
 
 # The full version, including alpha/beta/rc tags
-release = "2.4"
+release = "3.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,7 +39,9 @@ release = "2.4"
 extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
 ]
+
 autodoc_default_options = {
     "members": True,
     "show-inheritance": True,

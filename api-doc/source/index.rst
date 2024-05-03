@@ -19,6 +19,7 @@ Welcome to sonar-tools documentation
    users
    applications
    portfolios
+   organizations
    :maxdepth: 2
    :caption: Main modules:
 
@@ -27,7 +28,6 @@ Welcome to sonar-tools documentation
    platform
    components
    metrics
-   rules
    aggregations
    findings
    tokens
@@ -37,6 +37,15 @@ Welcome to sonar-tools documentation
    webhooks
    tasks
    permissions
+   global_permissions
+   permission_templates
+   project_permissions
+   aggregation_permissions
+   application_permissions
+   portfolio_permissions
+   quality_permissions
+   qualitygate_permissions
+   qualityprofile_permissions
    :maxdepth: 2
    :caption: Other modules:
 

@@ -411,7 +411,7 @@ def search(endpoint, params=None):
 def get_list(endpoint, key_list=None, use_cache=True):
     """
     :return: List of Applications (all of them if key_list is None or empty)
-    :param key_list: List of app keys to get, if None or empty all portfolios are returned
+    :param key_list: List of app keys to get, if None or empty all applications are returned
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :type use_cache: bool
     :rtype: dict{<branchName>: <Branch>}
@@ -426,7 +426,7 @@ def get_list(endpoint, key_list=None, use_cache=True):
     return object_list
 
 
-def export(endpoint, key_list=None, full=False):
+def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> dict[str, str]:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -437,6 +437,10 @@ def export(endpoint, key_list=None, full=False):
     :return: Dict of applications settings
     :rtype: dict
     """
+    if endpoint.is_sonarcloud():
+        # util.logger.info("Applications do not exist in SonarCloud, export skipped")
+        raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
+
     apps_settings = {k: app.export(full) for k, app in get_list(endpoint, key_list).items()}
     for k in apps_settings:
         # remove key from JSON value, it's already the dict key

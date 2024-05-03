@@ -26,7 +26,8 @@ from sonar.audit import rules, problem
 
 _OBJECTS = {}
 
-SEARCH_API = "users/search"
+_SEARCH_API_SQ = "users/search"
+_SEARCH_API_SC = "organizations/search_members"
 CREATE_API = "users/create"
 UPDATE_API = "users/update"
 DEACTIVATE_API = "users/deactivate"
@@ -134,7 +135,10 @@ class User(sqobject.SqObject):
 
         :return:  Nothing
         """
-        data = self.get(SEARCH_API, params={"q": self.login})
+        api = _SEARCH_API_SQ
+        if self.endpoint.is_sonarcloud():
+            api = _SEARCH_API_SC
+        data = self.get(api, params={"q": self.login})
         for d in data["users"]:
             if d["login"] == self.login:
                 self.__load(d)
@@ -334,15 +338,16 @@ class User(sqobject.SqObject):
         scm = self.scm_accounts
         json_data["scmAccounts"] = util.list_to_csv(scm) if scm else None
         my_groups = self.groups.copy()
-        my_groups.remove("sonar-users")
+        if "sonar-users" in my_groups:
+            my_groups.remove("sonar-users")
         json_data["groups"] = util.list_to_csv(my_groups, ", ", True)
-        if not full and not json_data["local"]:
+        if not self.endpoint.is_sonarcloud() and not full and not json_data["local"]:
             json_data.pop("local")
         return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, full))
 
 
-def search(endpoint, params=None):
-    """Searches users in SonarQube
+def search(endpoint: object, params: dict[str, str] = None) -> dict[str, object]:
+    """Searches users in SonarQube or SonarCloud
 
     :param endpoint: Reference to the SonarQube platform
     :type endpoint: Platform
@@ -352,7 +357,15 @@ def search(endpoint, params=None):
     :rtype: dict{login: User}
     """
     util.logger.debug("Searching users with params %s", str(params))
-    return sqobject.search_objects(api=SEARCH_API, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
+    api = _SEARCH_API_SQ
+    if endpoint.is_sonarcloud():
+        api = _SEARCH_API_SC
+        if params is None:
+            params = {"organization": endpoint.organization}
+        else:
+            params["organization"] = endpoint.organization
+
+    return sqobject.search_objects(api=api, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
 
 
 def export(endpoint, full=False):

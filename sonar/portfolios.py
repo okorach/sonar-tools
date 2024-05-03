@@ -657,10 +657,22 @@ def search_by_key(endpoint, key):
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
-def export(endpoint, key_list=None, full=False):
+def export(endpoint: object, key_list: list[str] = None, full=False) -> dict[str, str]:
+    """Exports portfolios as JSON
+
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param key_list: list of portfoliios keys to export as csv or list, defaults to all if None
+    :type key_list: list, optional
+    :param full: Whether to export all attributes, including those that can't be set, defaults to False
+    :type full: bool
+    :return: Dict of applications settings
+    :rtype: dict
+    """
     if endpoint.edition() in ("community", "developer"):
-        util.logger.info("No portfolios in community and developer editions")
-        return None
+        raise exceptions.UnsupportedOperation("Portfolios do not exist in community and developer edition, export skipped")
+    if endpoint.is_sonarcloud():
+        raise exceptions.UnsupportedOperation("Portfolios do not exist in SonarCloud, export skipped")
+
     util.logger.info("Exporting portfolios")
     if key_list:
         nb_portfolios = len(key_list)

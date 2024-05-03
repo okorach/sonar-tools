@@ -18,11 +18,20 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""
+
+Exceptions raised but the sonar python APIs
+
+"""
+
 
 class SonarException(Exception):
     def __init__(self, message):
         super().__init__()
         self.message = message
+
+    def __str__(self) -> str:
+        return self.message
 
 
 class ObjectNotFound(SonarException):

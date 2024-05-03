@@ -55,6 +55,7 @@ or `http://localhost:9000` by default if the environment variable is not set
 The default is environment variable `$SONAR_TOKEN`.
 Using login/password is not possible.
 The user corresponding to the token must have enough permissions to achieve the tool tasks
+- `-o` : Organization, for SonarCloud - Ignored if running against a SonarQube instance
 - `-v` : Logging verbosity level (`WARN`, `ÌNFO` or `DEBUG`). The default is `INFO`.
 `ERROR` and above is always active.
 - `-c` or `--clientCert` : Allows to specify an optional client certificate file (as .pem file)
