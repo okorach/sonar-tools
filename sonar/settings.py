@@ -202,8 +202,8 @@ class Setting(sqobject.SqObject):
 
     def set(self, value):
         util.logger.debug("%s set to '%s'", str(self), str(value))
-        if not is_valid(self.key, self.endpoint):
-            util.logger.error("Setting '%s' does not seem to be a valid setting, trying to set anyway...", str(self))
+        if not self.is_settable():
+            util.logger.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
         if value is None or value == "":
             # TODO: return endpoint.reset_setting(key)
             return True
@@ -227,12 +227,36 @@ class Setting(sqobject.SqObject):
             params["value"] = value
         return self.post(_API_SET, params=params).ok
 
-    def to_json(self):
+    def to_json(self) -> dict[str, str]:
         return {self.key: encode(self.key, self.value)}
+
+    def is_global(self) -> bool:
+        """Returns whether a setting global or specific for one component (project, branch, application, portfolio)"""
+        return self.component is None
 
     def is_internal(self) -> bool:
         """Returns whether a setting is internal to the platform and is useless to expose externally"""
-        return _is_internal(self.key, self.endpoint.is_sonarcloud())
+        internal_settings = _SQ_INTERNAL_SETTINGS
+        if self.endpoint.is_sonarcloud():
+            internal_settings = _SC_INTERNAL_SETTINGS
+            if self.is_global():
+                util.logger.debug("Checking if SonarCloud setting is internal")
+                (categ, _) = self.category()
+                if categ in ("languages", "analysisScope", "tests", "authentication"):
+                    return True
+
+        for prefix in internal_settings:
+            if self.key.startswith(prefix):
+                return True
+        return False
+
+    def is_settable(self) -> bool:
+        """Returns whether a setting can be set"""
+        if len(VALID_SETTINGS) == 0:
+            get_bulk(endpoint=self.endpoint, include_not_set=True)
+        if self.key not in VALID_SETTINGS:
+            return False
+        return not self.is_internal()
 
     def category(self):
         m = re.match(
@@ -285,7 +309,7 @@ def get_object(key, component=None):
 
 
 def __get_settings(endpoint: object, data: dict[str, str], component: object = None) -> dict[str, Setting]:
-    """Returns settings of the global platform or a specific componennt object (Project, App, Portfolio)"""
+    """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
     settings = {}
     settings_type_list = ["settings"]
     # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
@@ -296,7 +320,8 @@ def __get_settings(endpoint: object, data: dict[str, str], component: object = N
         util.logger.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            if _is_internal(key, endpoint.is_sonarcloud()):
+            o = Setting(key=key, endpoint=endpoint, component=component, data=None)
+            if o.is_internal():
                 util.logger.debug("Skipping internal setting %s", s["key"])
                 continue
             o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
@@ -464,22 +489,3 @@ def get_component_params(component, name="component"):
         return {name: component.project.key, "branch": component.key}
     else:
         return {name: component.key}
-
-
-def is_valid(setting_key, endpoint):
-    if len(VALID_SETTINGS) == 0:
-        get_bulk(endpoint=endpoint, include_not_set=True)
-    if setting_key not in VALID_SETTINGS:
-        return False
-    return not _is_internal(setting_key, endpoint.is_sonarcloud())
-
-
-def _is_internal(setting_key: str, is_sonarcloud: bool = False) -> bool:
-    """Returns whether a setting is internal to the platform and is useless to expose externally"""
-    internal_settings = _SQ_INTERNAL_SETTINGS
-    if is_sonarcloud:
-        internal_settings = _SC_INTERNAL_SETTINGS
-    for prefix in internal_settings:
-        if setting_key.startswith(prefix):
-            return True
-    return False
