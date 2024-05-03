@@ -346,7 +346,7 @@ class User(sqobject.SqObject):
         return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, full))
 
 
-def search(endpoint: object, params: dict[str, str] = None):
+def search(endpoint: object, params: dict[str, str] = None) -> dict[str, object]:
     """Searches users in SonarQube or SonarCloud
 
     :param endpoint: Reference to the SonarQube platform
