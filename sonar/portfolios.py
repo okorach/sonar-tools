@@ -232,14 +232,12 @@ class Portfolio(aggregations.Aggregation):
             data["permissions"] = self.permissions().export()
             data["visibility"] = self._visibility
 
-        if not self._sub_portfolios:
-            return data
-
-        for key, subp in self._sub_portfolios:
-            data["subPortfolios"][key] = subp.to_json()
-            if not subp.is_subportfolio:
-                data["subPortfolios"][key]["byReference"] = True
-        return data
+        if self._sub_portfolios:
+            for key, subp in self._sub_portfolios:
+                data["subPortfolios"][key] = subp.to_json()
+                if not subp.is_subportfolio:
+                    data["subPortfolios"][key]["byReference"] = True
+        return util.remove_nones(data)
 
     def create_sub_portfolios(self):
         util.logger.debug("Creating subportfolios for %s with JSON %s", str(self), str(self._json))
