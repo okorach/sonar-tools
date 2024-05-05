@@ -177,7 +177,7 @@ class Portfolio(aggregations.Aggregation):
         return self._selection_mode
 
     def root_portfolio(self):
-        if self.parent is None:
+        if self.parent is None or self.parent.key == self.key:
             util.logger.debug("Found root for %s, parent = %s", self.key, str(self.parent))
             self._root_portfolio = self
         else:
@@ -216,29 +216,53 @@ class Portfolio(aggregations.Aggregation):
         self.create_sub_portfolios()
         return self._sub_portfolios
 
+    def to_json(self) -> dict[str, str]:
+        """Returns the portfolio representation as JSON"""
+        data = {
+            "key": self.key,
+            "name": self.name,
+            "description": None if self._description == "" else self._description,
+            _PROJECT_SELECTION_MODE: self.selection_mode(),
+            "visibility": self._visibility,
+            _PROJECT_SELECTION_REGEXP: self.regexp(),
+            _PROJECT_SELECTION_BRANCH: self._selection_branch,
+            _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
+        }
+        if not self.is_sub_portfolio:
+            data["permissions"] = self.permissions().export()
+            data["visibility"] = self._visibility
+
+        if self._sub_portfolios:
+            for key, subp in self._sub_portfolios:
+                data["subPortfolios"][key] = subp.to_json()
+                if not subp.is_subportfolio:
+                    data["subPortfolios"][key]["byReference"] = True
+        return util.remove_nones(data)
+
     def create_sub_portfolios(self):
-        if "subViews" in self._json and len(self._json["subViews"]) > 0:
-            util.logger.debug("Inspecting %s subportfolios data = %s", str(self), util.json_dump(self._json["subViews"]))
-            self._sub_portfolios = {}
-            for oldp in self._json["subViews"]:
-                p = oldp.copy()
-                util.logger.debug("Found subport data = %s", util.json_dump(p))
-                if p["qualifier"] == _PORTFOLIO_QUALIFIER:
-                    key = p.get("originalKey", None)
-                    if key is None:
-                        key = p.pop("key").split(":")[-1]
-                else:
-                    key = p.pop("key")
-                try:
-                    subp = Portfolio.get_object(self.endpoint, key)
+        util.logger.debug("Creating subportfolios for %s with JSON %s", str(self), str(self._json))
+        if "subViews" not in self._json or len(self._json["subViews"]) == 0:
+            return
+
+        util.logger.debug("Inspecting %s subportfolios data = %s", str(self), util.json_dump(self._json["subViews"]))
+        self._sub_portfolios = {}
+        for oldp in self._json["subViews"]:
+            p = oldp.copy()
+            util.logger.debug("Found subport data = %s", util.json_dump(p))
+            key = p.pop("key")
+            if p["qualifier"] == _PORTFOLIO_QUALIFIER:
+                key = p.get("originalKey", key.split(":")[-1])
+            try:
+                subp = Portfolio.get_object(self.endpoint, key)
+                if p["qualifier"] == _SUBPORTFOLIO_QUALIFIER:
                     subp.set_parent(self)
-                except exceptions.ObjectNotFound:
-                    subp = Portfolio.create(self.endpoint, name=p.pop("name"), key=key, parent=self.key, description=p.pop("desc", None), **p)
-                util.logger.debug("Subp = %s", str(subp))
-                subp.reload(oldp)
-                self._sub_portfolios[subp.key] = subp
-                subp.create_sub_portfolios()
-                subp.projects()
+            except exceptions.ObjectNotFound:
+                subp = Portfolio.create(self.endpoint, name=p.pop("name"), key=key, parent=self.key, description=p.pop("desc", None), **p)
+            util.logger.debug("%s Subp = %s", str(self), str(subp))
+            subp.reload(oldp)
+            self._sub_portfolios[subp.key] = subp
+            subp.create_sub_portfolios()
+            subp.projects()
 
     def regexp(self):
         if self.selection_mode() != SELECTION_MODE_REGEXP:
@@ -294,9 +318,11 @@ class Portfolio(aggregations.Aggregation):
         util.logger.info("Exporting %s", str(self))
         self.refresh()
         json_data = self._json
-        subp = self.sub_portfolios(full=full)
-        if subp:
-            json_data.update(subp)
+        subportfolios = self.sub_portfolios(full=full)
+        if subportfolios:
+            json_data["subPortfolios"] = {}
+            for s in subportfolios.values():
+                json_data["subPortfolios"][s.key] = s.to_json()
         json_data.update(
             {
                 "key": self.key,

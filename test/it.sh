@@ -71,14 +71,34 @@ do
     logmsg "Install sonar-tools current local version: root = $TMP"
     cd $REPO_ROOT; ./deploy.sh nodoc; cd -
 
-    id="it$$"
-    logmsg "Running with environment $env - sonarId $id"
-    sonar create --id $id --tag $env --port 8000 --pg_port 7999 --pg_backup ~/backup/db.$env.backup
+    if [ "$env" = "sonarcloud " ]; then
+        export SONAR_TOKEN=$SONAR_TOKEN_SONARCLOUD
+        export SONAR_HOST_URL=$SONAR_HOST_URL_SONARCLOUD
+        f="$TMP/measures-$env-unrel.csv"; run_test $f sonar-measures-export -b -f $f -m _main --withURL
 
-    export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
-    export SONAR_HOST_URL="http://localhost:8000"
+        # Restore previous version if 3.0 or higher
+        logmsg "Restore sonar-tools last released version"
+        echo "Y" | pip uninstall sonar-tools
+        pip install sonar-tools
+    fi
+
+
+
+
+
+    if [ "$env" = "sonarcloud " ]; then
+        logmsg "Running with environment $env"
+        export SONAR_TOKEN=$SONAR_TOKEN_SONARCLOUD
+        export SONAR_HOST_URL=$SONAR_HOST_URL_SONARCLOUD        
+    else
+        id="it$$"
+        logmsg "Running with environment $env - sonarId $id"
+        sonar create --id $id --tag $env --port 8000 --pg_port 7999 --pg_backup ~/backup/db.$env.backup
+        export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
+        export SONAR_HOST_URL="http://localhost:8000"
+    fi
+
     logmsg "IT $env sonar-measures-export"
-
     f="$TMP/measures-$env-unrel.csv"; run_test $f sonar-measures-export -b -f $f -m _main --withURL
     f="$TMP/measures-$env-2.csv";     run_test_stdout $f sonar-measures-export -b -m _main --withURL
     f="$TMP/measures-$env-3.csv";     run_test_stdout $f sonar-measures-export -b -p -r -d -m _all
@@ -95,14 +115,19 @@ do
     f="$TMP/findings-$env-3.json";     run_test_stdout $f sonar-findings-export -v DEBUG --format json -k okorach_audio-video-tools,okorach_sonar-tools --useFindings
     f="$TMP/findings-$env-4.csv";      run_test_stdout $f sonar-findings-export --format csv -k okorach_audio-video-tools,okorach_sonar-tools --csvSeparator '+'
     
-    logmsg "IT $env sonar-audit"
-    f="$TMP/audit-$env-unrel.csv";     run_test_stdout $f sonar-audit
-    f="$TMP/audit-$env-1.json";        run_test $f sonar-audit -f $f
-    f="$TMP/audit-$env-2.json";        run_test_stdout $f sonar-audit --format json --what qualitygates,qualityprofiles,settings
-    f="$TMP/audit-$env-3.csv";         run_test_stdout $f sonar-audit  --csvSeparator '+' --format csv
+    if [ "$env" = "sonarcloud" ]; then
+        logmsg "IT $env sonar-audit SKIPPED"
+        logmsg "IT $env sonar-housekeeper SKIPPED"
+    else
+        logmsg "IT $env sonar-audit"
+        f="$TMP/audit-$env-unrel.csv";     run_test_stdout $f sonar-audit
+        f="$TMP/audit-$env-1.json";        run_test $f sonar-audit -f $f
+        f="$TMP/audit-$env-2.json";        run_test_stdout $f sonar-audit --format json --what qualitygates,qualityprofiles,settings
+        f="$TMP/audit-$env-3.csv";         run_test_stdout $f sonar-audit  --csvSeparator '+' --format csv
 
-    logmsg "IT $env sonar-housekeeper"
-    f="$TMP/housekeeper-$env-1.csv";   run_test_stdout $f sonar-housekeeper -P 365 -B 90 -T 180 -R 30
+        logmsg "IT $env sonar-housekeeper"
+        f="$TMP/housekeeper-$env-1.csv";   run_test_stdout $f sonar-housekeeper -P 365 -B 90 -T 180 -R 30
+    fi
 
     logmsg "IT $env sonar-loc"
     f="$TMP/loc-$env-1.csv";           run_test_stdout $f sonar-loc
@@ -122,6 +147,8 @@ do
 
     if [ $noExport -eq 1 ]; then
         logmsg "sonar-projects-export $env test skipped"
+    elif [ "$env" = "sonarcloud" ]; then
+        logmsg "sonar-projects-export $env SKIPPED"
     else
         logmsg "sonar-projects-export $env"
         sonar-projects-export
@@ -130,9 +157,13 @@ do
     logmsg "sonar-findings-export $env ADMIN export"
     f1="$TMP/findings-$env-admin.csv";   run_test $f1 sonar-findings-export -v DEBUG -f $f1 -k okorach_audio-video-tools,okorach_sonar-tools
 
-    logmsg "sonar-findings-export $env USER export"
-    export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
-    f2="$TMP/findings-$env-user.csv";    run_test $f2 sonar-findings-export -v DEBUG -f $f2 -k okorach_audio-video-tools,okorach_sonar-tools
+    if [ "$env" = "sonarcloud" ]; then
+        logmsg "sonar-projects-export $env SKIPPED"
+    else
+        logmsg "sonar-findings-export $env USER export"
+        export SONAR_TOKEN=$SONAR_TOKEN_USER_USER
+        f2="$TMP/findings-$env-user.csv";    run_test $f2 sonar-findings-export -v DEBUG -f $f2 -k okorach_audio-video-tools,okorach_sonar-tools
+    fi
 
     # Restore admin token as long as previous version is 2.9 or less
     logmsg "Restore sonar-tools last released version"
@@ -143,7 +174,9 @@ do
     logmsg "IT released tools $env"
     sonar-measures-export -b -f $TMP/measures-$env-rel.csv -m _main --withURL
     sonar-findings-export -f $TMP/findings-$env-rel.csv
-    sonar-audit >$TMP/audit-$env-rel.csv || echo "OK"
+    if [ "$env" != "sonarcloud" ]; then
+        sonar-audit >$TMP/audit-$env-rel.csv || echo "OK"
+    fi
     sonar-loc -n -a >$TMP/loc-$env-rel.csv 
     sonar-config -e >$TMP/config-$env-rel.json 
 
@@ -173,8 +206,10 @@ do
     f2="$TMP/findings-$env-user.csv"
     diff $f1 $f2 | tee -a $IT_LOG_FILE || echo ""
 
-    logmsg "Deleting environment sonarId $id"
-    sonar delete --id $id
+    if [ "$env" != "sonarcloud" ]; then
+        logmsg "Deleting environment sonarId $id"
+        sonar delete --id $id
+    fi
 done
 
 logmsg "====================================="
