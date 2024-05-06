@@ -222,13 +222,13 @@ class Platform:
     ) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         api = _normalize_api(api)
-        util.logger.debug("%s: %s", getattr(request, "__name__", repr(request)).upper(), self.__urlstring(api, params))
         headers = _SONAR_TOOLS_AGENT
+        if params is None:
+            params = {}
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
-            if params is None:
-                params = {}
             params["organization"] = self.organization
+        util.logger.debug("%s: %s", getattr(request, "__name__", repr(request)).upper(), self.__urlstring(api, params))
 
         try:
             retry = True

@@ -240,7 +240,6 @@ class Setting(sqobject.SqObject):
         if self.endpoint.is_sonarcloud():
             internal_settings = _SC_INTERNAL_SETTINGS
             if self.is_global():
-                util.logger.debug("Checking if SonarCloud setting is internal")
                 (categ, _) = self.category()
                 if categ in ("languages", "analysisScope", "tests", "authentication"):
                     return True
