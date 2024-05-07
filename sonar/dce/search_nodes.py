@@ -94,20 +94,22 @@ class SearchNode(nodes.DceNode):
         try:
             space_avail = util.int_memory(self.json[_ES_STATE]["Disk Available"])
         except ValueError:
-            space_avail = None
-        if space_avail is None:
             util.logger.warning("%s: disk space available not found in SIF, skipping this check", str(self))
             return []
         store_size = self.store_size()
-        if store_size * 4 > space_avail or space_avail < 10000:
-            rule = rules.get_rule(rules.RuleId.LOW_FREE_DISK_SPACE)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), store_size // 1024, space_avail // 1024))]
         util.logger.info(
-            "%s: Search server available disk size of %d MB is correct wrt to store size of %d MB",
+            "%s: Search server available disk size of %d MB and store size is %d MB",
             str(self),
             space_avail,
             store_size,
         )
+        if space_avail < 10000:
+            rule = rules.get_rule(rules.RuleId.LOW_FREE_DISK_SPACE_2)
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), space_avail // 1024))]
+        elif store_size * 2 > space_avail:
+            rule = rules.get_rule(rules.RuleId.LOW_FREE_DISK_SPACE_1)
+            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), space_avail // 1024, store_size // 1024))]
+
         return []
 
 

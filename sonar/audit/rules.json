@@ -17,7 +17,7 @@
     "BELOW_LTS": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
-        "message": "SonarQube version ({}) is lower than the Long Term Support version {}"
+        "message": "SonarQube version ({}) is lower than the Long Term Active version {}"
     },
     "LTS_PATCH_MISSING": {
         "severity": "LOW",
@@ -144,10 +144,15 @@
         "type": "OPERATIONS",
         "message": "{}: SonarQube {} is running on Java {} which is not a supported Java version for this release"
     },
-    "LOW_FREE_DISK_SPACE": {
+    "LOW_FREE_DISK_SPACE_1": {
         "severity": "HIGH",
         "type": "OPERATIONS",
-        "message": "Disk available for '{}' ({} MB) is too low, please ensure at least 10 GB of free space"
+        "message": "Disk free space for '{}' ({} GB) is too low for a store size of {} GB"
+    },
+    "LOW_FREE_DISK_SPACE_2": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "message": "Disk free space for '{}' ({} GB) is too low, please ensure at least 10 GB of free space"
     },
     "SETTING_ES_NO_HEAP": {
         "severity": "HIGH",
