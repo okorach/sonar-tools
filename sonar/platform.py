@@ -55,8 +55,8 @@ _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-cen
 
 LTS = None
 LATEST = None
-_HARDCODED_LTS = (9, 9, 4)
-_HARDCODED_LATEST = (10, 4, 1)
+_HARDCODED_LTS = (9, 9, 5)
+_HARDCODED_LATEST = (10, 5, 1)
 
 _SERVER_ID_KEY = "Server ID"
 
