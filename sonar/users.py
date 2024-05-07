@@ -19,6 +19,7 @@
 #
 
 import datetime as dt
+import json
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
@@ -32,6 +33,7 @@ CREATE_API = "users/create"
 UPDATE_API = "users/update"
 DEACTIVATE_API = "users/deactivate"
 UPDATE_LOGIN_API = "users/update_login"
+_GROUPS_API_SC = "users/groups"
 
 SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
 
@@ -47,7 +49,7 @@ class User(sqobject.SqObject):
         super().__init__(login, endpoint)
         self.login = login  #: User login (str)
         self.name = None  #: User name (str)
-        self.groups = None  #: User groups (list)
+        self._groups = None  #: User groups (list)
         self.scm_accounts = None  #: User SCM accounts (list)
         self.email = None  #: User email (str)
         self.is_local = None  #: Whether user is local (bool) - read-only
@@ -121,14 +123,25 @@ class User(sqobject.SqObject):
 
     def __load(self, data):
         self.name = data["name"]  #: User name
-        self.groups = data.get("groups", [])  #: User groups
         self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local - read-only
         self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login - read-only
         self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
         self.__tokens = None
+        self._groups = self.groups(data)  #: User groups
         self._json = data
+
+    def groups(self, data: dict[str, str] = None) -> list[str]:
+        """Returns the list of groups of a user"""
+        if self._groups is not None:
+            return self._groups
+        if self.endpoint.is_sonarcloud():
+            data = json.loads(self.get(_GROUPS_API_SC, {"login": self.key}).text)["groups"]
+            self._groups = [g["name"] for g in data]
+        else:
+            self._groups = data.get("groups", [])  #: User groups
+        return self._groups
 
     def refresh(self):
         """Refreshes a User object from SonarQube data
@@ -242,14 +255,14 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         ok = True
-        for g in list(set(group_list) - set(self.groups)):
+        for g in list(set(group_list) - set(self.groups())):
             if g != "sonar-users":
                 ok = ok and self.add_to_group(g)
-        for g in list(set(self.groups) - set(group_list)):
+        for g in list(set(self.groups()) - set(group_list)):
             if g != "sonar-users":
                 ok = ok and self.remove_from_group(g)
         if ok:
-            self.groups = group_list
+            self._groups = group_list
         else:
             self.refresh()
         return ok
@@ -337,7 +350,7 @@ class User(sqobject.SqObject):
         json_data = self._json.copy()
         scm = self.scm_accounts
         json_data["scmAccounts"] = util.list_to_csv(scm) if scm else None
-        my_groups = self.groups.copy()
+        my_groups = self.groups().copy()
         if "sonar-users" in my_groups:
             my_groups.remove("sonar-users")
         json_data["groups"] = util.list_to_csv(my_groups, ", ", True)
