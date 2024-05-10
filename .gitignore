@@ -2,7 +2,6 @@
 .scannerwork
 *.xlsx
 **/*.pyc
-.vscode/
 **/*.csv
 **/*.gz
 **/*.log
@@ -13,7 +12,8 @@ dist/
 tmp/
 .coverage
 *.json
-!test/config.json
 .venv/
-test/*-sonar/
 .DS_Store
+
+!test/config.json
+!.vscode/*.json
