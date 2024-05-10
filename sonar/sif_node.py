@@ -34,6 +34,7 @@ import sonar.audit.problem as pb
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
 _RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
 _RELEASE_DATE_8_9 = datetime.datetime(2021, 5, 4) + relativedelta(months=+6)
+_RELEASE_DATE_9_9 = datetime.datetime(2023, 2, 1) + relativedelta(months=+6)
 
 _CE_TASKS = "Compute Engine Tasks"
 _WORKER_COUNT = "Worker Count"
@@ -155,7 +156,7 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     if (java_version == 17 and sq_version >= (9, 6, 0)) or (
         java_version == 11 and (7, 9, 0) <= sq_version <= (9, 8, 0) or (java_version == 8 and (7, 9, 0) <= sq_version < (8, 9, 0))
     ):
-        util.logger.info("%s: SonarQube %s running on a supported java version (java %d)", sq_v_str, obj_name, java_version)
+        util.logger.info("%s: SonarQube %s running on a supported java version (java %d)", obj_name, sq_v_str, java_version)
         return []
     rule = rules.get_rule(rules.RuleId.SETTING_WEB_WRONG_JAVA_VERSION)
     return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, sq_v_str, java_version), concerned_object=obj)]
@@ -239,10 +240,13 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
     """
     sq_version = obj.version()
     if sq_version is None:
-        util.logger.warning("%s: Version information is missing, audit on node version is skipped...")
+        util.logger.warning("%s: Version information is missing, audit on node version is skipped...", obj_name)
         return []
     st_time = obj.start_time()
-    if st_time > _RELEASE_DATE_8_9:
+    util.logger.debug("%s: version %s, start time = %s", obj_name, obj.version(as_string=True), str(st_time))
+    if st_time > _RELEASE_DATE_9_9:
+        current_lts = (9, 9, 0)
+    elif st_time > _RELEASE_DATE_8_9:
         current_lts = (8, 9, 0)
     elif st_time > _RELEASE_DATE_7_9:
         current_lts = (7, 9, 0)
