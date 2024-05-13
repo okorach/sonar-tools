@@ -4,6 +4,9 @@
     - `sonar-measures-export`
     - `sonar-findings-export`
     - `sonar-findings-sync`
+  - Migration of wording from LTS to LTA, to align with Sonar
+  - Couple of improvements on **sonar-audit**
+  - Fix crashes of **sonar-findings-sync**
 
 # Version 2.11 - April 29th, 2024
 
@@ -87,7 +90,7 @@
 
 ## sonar-audit
 - Tool is now multi-threaded, this can dramatically increase speed of audit on large platforms with a lot of projects (which is the object consuming most of the auditing time)
-- Tool now uses live data for Sonar update center (instead of hardcoding versions) to determine what version re LTS and LATEST
+- Tool now uses live data for Sonar update center (instead of hardcoding versions) to determine what version are LTA (ex-LTS) and LATEST
 - Tool now allows to audit a selection of project or portfolios (chosen by their key)
 - Tool now gracefully fails when a non existing project key is specified
 - Tool now allows to add a link to the concerned object in the audit report (makes it easy to navigate to the object to fix)

@@ -14,20 +14,20 @@
         "type": "BAD_PRACTICE",
         "message": "{}"
     },
-    "BELOW_LTS": {
+    "BELOW_LTA": {
         "severity": "CRITICAL",
         "type": "OPERATIONS",
         "message": "SonarQube version ({}) is lower than the Long Term Active version {}"
     },
-    "LTS_PATCH_MISSING": {
+    "LTA_PATCH_MISSING": {
         "severity": "LOW",
         "type": "OPERATIONS",
-        "message": "SonarQube version ({}) missed a Long Term Support patch ({})"
+        "message": "SonarQube version ({}) missed a Long Term Active patch ({})"
     },
     "BELOW_LATEST": {
         "severity": "LOW",
         "type": "OPERATIONS",
-        "message": "SonarQube version ({}) is greater than the LTS version but not on LATEST {}"
+        "message": "SonarQube version ({}) is greater than the LTA (ex-LTS) version but not on LATEST {}"
     },
     "LOG4SHELL_ES": {
         "severity": "CRITICAL",

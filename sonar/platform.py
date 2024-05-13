@@ -53,9 +53,9 @@ _HTTP_ERROR = "%s Error: %s HTTP status code %d"
 _SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
 
-LTS = None
+LTA = None
 LATEST = None
-_HARDCODED_LTS = (9, 9, 5)
+_HARDCODED_LTA = (9, 9, 5)
 _HARDCODED_LATEST = (10, 5, 1)
 
 _SERVER_ID_KEY = "Server ID"
@@ -526,7 +526,7 @@ class Platform:
         problems += (
             _audit_maintainability_rating_grid(platform_settings, audit_settings, settings_url)
             + self._audit_admin_password()
-            + self._audit_lts_latest()
+            + self._audit_lta_latest()
             + sif.Sif(pf_sif, self).audit(audit_settings)
             + permission_templates.audit(self, audit_settings)
         )
@@ -617,17 +617,17 @@ class Platform:
         util.logger.info("--- Auditing global permissions ---")
         return self.__audit_user_permissions() + self.__audit_group_permissions()
 
-    def _audit_lts_latest(self):
+    def _audit_lta_latest(self):
         if self.is_sonarcloud():
             return []
         sq_vers, v = self.version(3), None
-        if sq_vers < lts(2):
-            rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-            v = lts()
-        elif sq_vers < lts(3):
-            rule = rules.get_rule(rules.RuleId.LTS_PATCH_MISSING)
-            v = lts()
-        elif sq_vers[:2] > lts(2) and sq_vers < latest(2):
+        if sq_vers < lta(2):
+            rule = rules.get_rule(rules.RuleId.BELOW_LTA)
+            v = lta()
+        elif sq_vers < lta(3):
+            rule = rules.get_rule(rules.RuleId.LTA_PATCH_MISSING)
+            v = lta()
+        elif sq_vers[:2] > lta(2) and sq_vers < latest(2):
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
             v = latest()
         if not v:
@@ -768,10 +768,10 @@ def _version_as_string(a_version):
     return ".".join([str(n) for n in a_version])
 
 
-def __lts_and_latest():
-    global LTS
+def __lta_and_latest():
+    global LTA
     global LATEST
-    if LTS is None:
+    if LTA is None:
         util.logger.debug("Attempting to reach Sonar update center")
         _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
         try:
@@ -782,33 +782,33 @@ def __lts_and_latest():
             v = upd_center_props.get("ltsVersion", "9.9.0").split(".")
             if len(v) == 2:
                 v.append("0")
-            LTS = tuple(int(n) for n in v)
+            LTA = tuple(int(n) for n in v)
             v = upd_center_props.get("publicVersions", "10.4").split(",")[-1].split(".")
             if len(v) == 2:
                 v.append("0")
             LATEST = tuple(int(n) for n in v)
-            util.logger.debug("Sonar update center says LTS = %s, LATEST = %s", str(LTS), str(LATEST))
+            util.logger.debug("Sonar update center says LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
         except (EnvironmentError, requests.exceptions.HTTPError):
-            LTS = _HARDCODED_LTS
+            LTA = _HARDCODED_LTA
             LATEST = _HARDCODED_LATEST
-            util.logger.debug("Sonar update center read failed, hardcoding LTS = %s, LATEST = %s", str(LTS), str(LATEST))
+            util.logger.debug("Sonar update center read failed, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
         try:
             os.remove(tmpfile)
         except EnvironmentError:
             pass
-    return (LTS, LATEST)
+    return (LTA, LATEST)
 
 
-def lts(digits=3):
+def lta(digits=3):
     """
-    :return: the current SonarQube LTS version
+    :return: the current SonarQube LTA (ex-LTS) version
     :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
     :type digits: int, optional
     :rtype: tuple (x, y, z)
     """
     if digits < 1 or digits > 3:
         digits = 3
-    return __lts_and_latest()[0][0:digits]
+    return __lta_and_latest()[0][0:digits]
 
 
 def latest(digits=3):
@@ -820,7 +820,7 @@ def latest(digits=3):
     """
     if digits < 1 or digits > 3:
         digits = 3
-    return __lts_and_latest()[1][0:digits]
+    return __lta_and_latest()[1][0:digits]
 
 
 def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
