@@ -617,7 +617,7 @@ class Platform:
         util.logger.info("--- Auditing global permissions ---")
         return self.__audit_user_permissions() + self.__audit_group_permissions()
 
-    def _audit_lta_latest(self):
+    def _audit_lta_latest(self) -> list[pb.Problem]:
         if self.is_sonarcloud():
             return []
         sq_vers, v = self.version(3), None
@@ -768,7 +768,7 @@ def _version_as_string(a_version):
     return ".".join([str(n) for n in a_version])
 
 
-def __lta_and_latest():
+def __lta_and_latest() -> tuple[tuple[int], tuple[int]]:
     """Returns the current version of LTA and LATEST, if possible querying the update center,
     using hardcoded values as fallback"""
     global LTA
@@ -801,7 +801,7 @@ def __lta_and_latest():
     return LTA, LATEST
 
 
-def lta(digits=3):
+def lta(digits=3) -> tuple[int]:
     """
     :return: the current SonarQube LTA (ex-LTS) version
     :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
