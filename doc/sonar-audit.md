@@ -6,6 +6,7 @@ The detail of what is audited is listed at the bottom of this page
 ## Requirements and Installation
 
 `sonar-audit` is installed through the **sonar-tools** [general installation](../README.md#install)
+
 :warning: **sonar-tools** 2.7 or higher is required for `sonar-audit` compatibility with SonarQube 10
 
 ## Common command line parameters
@@ -16,7 +17,7 @@ The detail of what is audited is listed at the bottom of this page
 
 `sonar-audit [-u <url>] [-t <token>] [--what <auditSelection>] [--sif <SIF>] [-f <file>] [--format [json|csv]] [-h] [-v <debugLevel>]`
 
-`--what` can be followed by a list of comma separated items to audit
+`--what` can be followed by a list of comma separated items to audit.
 When `--what` is not specified, everything is audited
 
 - `--what settings`: Audits global settings and general system data (system info in particular)
@@ -77,8 +78,8 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
 
 - General checks: (if `audit.globalSettings = yes`, default `yes`)
   - The `admin` user password is the default value `admin`
-  - The platform is of version lower than LTS
-  - The platform is not on most recent LTS patch level
+  - The platform is of version lower than LTA (ex-LTS)
+  - The platform is not on most recent LTA (ex-LTS) patch level
   - The instance is not an official distribution
   - The log4shell fix is has not been implemented (either with recent enough SonarQube patch level or the `-Dlog4j2.formatMsgNoLookups=true` option)
   - Commercial edition but not using branch analysis

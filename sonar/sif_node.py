@@ -229,7 +229,7 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]) 
 
 def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
     """Audits the SIF for SonarQube version (global SIF or App Node level),
-    and returns Problem if it is below LTS
+    and returns Problem if it is below LTA (ex-LTS)
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
@@ -245,22 +245,22 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
     st_time = obj.start_time()
     util.logger.debug("%s: version %s, start time = %s", obj_name, obj.version(as_string=True), str(st_time))
     if st_time > _RELEASE_DATE_9_9:
-        current_lts = (9, 9, 0)
+        current_lta = (9, 9, 0)
     elif st_time > _RELEASE_DATE_8_9:
-        current_lts = (8, 9, 0)
+        current_lta = (8, 9, 0)
     elif st_time > _RELEASE_DATE_7_9:
-        current_lts = (7, 9, 0)
+        current_lta = (7, 9, 0)
     elif st_time > _RELEASE_DATE_6_7:
-        current_lts = (6, 7, 0)
+        current_lta = (6, 7, 0)
     else:
-        current_lts = (5, 9, 0)
-    lts_str = f"{current_lts[0]}.{current_lts[1]}"
-    if sq_version >= current_lts:
-        util.logger.info("%s: Version %s is correct wrt LTS %s", obj_name, obj.version(as_string=True), lts_str)
+        current_lta = (5, 9, 0)
+    lta_str = f"{current_lta[0]}.{current_lta[1]}"
+    if sq_version >= current_lta:
+        util.logger.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, obj.version(as_string=True), lta_str)
         return []
 
-    rule = rules.get_rule(rules.RuleId.BELOW_LTS)
-    return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lts_str))]
+    rule = rules.get_rule(rules.RuleId.BELOW_LTA)
+    return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lta_str))]
 
 
 def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]) -> list[pb.Problem]:

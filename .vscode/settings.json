@@ -1,6 +1,6 @@
 {
     "sonarlint.connectedMode.project": {
-        "connectionId": "sonarcloud",
+        "connectionId": "LATEST",
         "projectKey": "okorach_sonar-tools"
     }
 }

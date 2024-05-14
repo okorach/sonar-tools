@@ -26,7 +26,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
 - [sonar-config](#sonar-config): Exports or Imports a SonarQube platform configuration to/from configuration as code file (JSON file).
 
-:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTS (Long Term Support, currently 9.9.x) and LATEST versions**
+:information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTA (Long Term Active, currently 9.9.x) and LATEST versions**
 :warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
 
 # What's New - Release notes
