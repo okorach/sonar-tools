@@ -43,7 +43,7 @@ deletes tokens created since more than a certain number of days
   - Download the `.whl` file from https://pypi.org/project/sonar-tools or attached to the release at https://github.com/okorach/sonar-tools/releases. The file should be something like. **sonar_tools-\<VERSION\>-py3-none-any.whl**
   - Copy the downloaded file on the install machine
   - On the install machine, run `python3 -m pip install sonar_tools-<VERSION>-py3-none-any.whl`
-  - Note: The package is dependent upon `pytz`, `argparse`, `datetime`, `python-dateutil`, `requests` and `jprops` python packages that are automatically installed when installing `sonar-tools`
+  - Note: The package is dependent upon `argparse`, `datetime`, `python-dateutil`, `requests` and `jprops` python packages that are automatically installed when installing `sonar-tools`
 
 # Common command line parameters
 

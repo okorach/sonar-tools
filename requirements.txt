@@ -1,4 +1,3 @@
-pytz
 argparse
 datetime
 python-dateutil
