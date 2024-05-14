@@ -769,6 +769,8 @@ def _version_as_string(a_version):
 
 
 def __lta_and_latest():
+    """Returns the current version of LTA and LATEST, if possible querying the update center,
+    using hardcoded values as fallback"""
     global LTA
     global LATEST
     if LTA is None:
