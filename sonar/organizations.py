@@ -122,8 +122,8 @@ class Organization(sqobject.SqObject):
 
     def new_code_period(self) -> tuple[str, str]:
         if "defaultLeakPeriodType" in self.json_data and self.json_data["defaultLeakPeriodType"] == "days":
-            return ("DAYS", self.json_data["defaultLeakPeriod"])
-        return ("PREVIOUS_VERSION", None)
+            return "DAYS", self.json_data["defaultLeakPeriod"]
+        return "PREVIOUS_VERSION", None
 
     def subscription(self) -> str:
         return self.json_data.get("subscription", "UNKNOWN")
