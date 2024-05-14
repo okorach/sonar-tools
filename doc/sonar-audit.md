@@ -6,6 +6,7 @@ The detail of what is audited is listed at the bottom of this page
 ## Requirements and Installation
 
 `sonar-audit` is installed through the **sonar-tools** [general installation](../README.md#install)
+
 :warning: **sonar-tools** 2.7 or higher is required for `sonar-audit` compatibility with SonarQube 10
 
 ## Common command line parameters
@@ -16,7 +17,7 @@ The detail of what is audited is listed at the bottom of this page
 
 `sonar-audit [-u <url>] [-t <token>] [--what <auditSelection>] [--sif <SIF>] [-f <file>] [--format [json|csv]] [-h] [-v <debugLevel>]`
 
-`--what` can be followed by a list of comma separated items to audit
+`--what` can be followed by a list of comma separated items to audit.
 When `--what` is not specified, everything is audited
 
 - `--what settings`: Audits global settings and general system data (system info in particular)
