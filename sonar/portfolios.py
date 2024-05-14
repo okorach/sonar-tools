@@ -683,7 +683,7 @@ def search_by_key(endpoint, key):
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
-def export(endpoint: object, key_list: list[str] = None, full=False) -> dict[str, str]:
+def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> dict[str, str]:
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
