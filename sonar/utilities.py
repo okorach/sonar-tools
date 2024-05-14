@@ -19,7 +19,7 @@
 #
 """
 
-    Utilities for SonarQube API
+    Utilities for sonar-tools
 
 """
 from http import HTTPStatus
@@ -31,10 +31,10 @@ import logging
 import argparse
 import json
 import datetime
+from datetime import timezone
 import random
 from typing import Union
 import requests
-import pytz
 from sonar import options, version
 
 OPT_URL = "url"
@@ -315,7 +315,7 @@ def age(some_date, rounded=True):
     """
     if not some_date:
         return None
-    delta = datetime.datetime.today().replace(tzinfo=pytz.UTC) - some_date
+    delta = datetime.datetime.today().replace(tzinfo=timezone.utc) - some_date
     return delta.days if rounded else delta
 
 
