@@ -796,7 +796,7 @@ def __lta_and_latest():
             os.remove(tmpfile)
         except EnvironmentError:
             pass
-    return (LTA, LATEST)
+    return LTA, LATEST
 
 
 def lta(digits=3):
@@ -828,5 +828,5 @@ def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
     if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
         new_url = "/".join(response.history[0].headers["Location"].split("/")[0:3])
         util.logger.debug("Moved permanently to URL %s", new_url)
-        return (True, new_url)
-    return (False, None)
+        return True, new_url
+    return False, None
