@@ -27,6 +27,7 @@ WITH_URL = "withURL"
 WITH_NAME = "withName"
 WITH_LAST_ANALYSIS = "withLastAnalysis"
 WITH_BRANCHES = "withBranches"
+WITH_HISTORY = "history"
 NBR_THREADS = "threads"
 DATES_WITHOUT_TIME = "datesWithoutTime"
 
