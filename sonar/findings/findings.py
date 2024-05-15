@@ -161,14 +161,14 @@ class Finding(sq.SqObject):
             util.logger.warning("Can't find file name for %s", str(self))
             return None
 
-    def to_csv(self, separator=","):
+    def to_csv(self, separator: str = ",", without_time: bool = False):
         """
         :param separator: CSV separator, defaults to ","
         :type separator: str, optional
         :return: The finding as CSV
         :rtype: str
         """
-        data = self.to_json()
+        data = self.to_json(without_time)
         for field in _CSV_FIELDS:
             if data.get(field, None) is None:
                 data[field] = ""
@@ -177,18 +177,21 @@ class Finding(sq.SqObject):
         data["projectName"] = projects.Project.get_object(key=self.projectKey, endpoint=self.endpoint).name
         return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
-    def to_json(self):
+    def to_json(self, without_time: bool = False):
         """
         :return: The finding as dict
         :rtype: dict
         """
+        fmt = util.SQ_DATETIME_FORMAT
+        if without_time:
+            fmt = util.SQ_DATE_FORMAT
         data = vars(self).copy()
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
         data["effort"] = ""
         data["file"] = self.file()
-        data["creationDate"] = self.creation_date.strftime(util.SQ_DATETIME_FORMAT)
-        data["updateDate"] = self.modification_date.strftime(util.SQ_DATETIME_FORMAT)
+        data["creationDate"] = self.creation_date.strftime(fmt)
+        data["updateDate"] = self.modification_date.strftime(fmt)
         for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
         for k in data.copy():

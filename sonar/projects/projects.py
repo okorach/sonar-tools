@@ -251,9 +251,13 @@ class Project(components.Component):
         :rtype: dict
         """
         m = measures.get(self, metrics_list)
-        if "ncloc" in m:
+        if "ncloc" in m and m["ncloc"]:
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
+
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list)
 
     def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
         """

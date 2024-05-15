@@ -193,12 +193,12 @@ class Issue(findings.Finding):
                 self._debt = int(self._json["effort"])
         return self._debt
 
-    def to_json(self):
+    def to_json(self, without_time: bool = False):
         """
         :return: The issue attributes as JSON
         :rtype: dict
         """
-        data = super().to_json()
+        data = super().to_json(without_time)
         data["url"] = self.url()
         data["effort"] = self.debt()
         return data

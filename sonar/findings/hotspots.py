@@ -103,12 +103,12 @@ class Hotspot(findings.Finding):
             branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
         return f"{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
 
-    def to_json(self):
+    def to_json(self, without_time: bool = False):
         """
         :return: JSON representation of the hotspot
         :rtype: dict
         """
-        data = super().to_json()
+        data = super().to_json(without_time)
         data["url"] = self.url()
         return data
 
