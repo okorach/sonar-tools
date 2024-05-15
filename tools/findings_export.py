@@ -52,6 +52,7 @@ TOTAL_FINDINGS = 0
 IS_FIRST = True
 TOTAL_SEM = threading.Semaphore()
 FIRST_SEM = threading.Semaphore()
+DATES_WITHOUT_TIME = False
 
 
 def parse_args(desc):
@@ -120,6 +121,13 @@ def parse_args(desc):
         action="store_true",
         help="Generate finding URL in the report, false by default",
     )
+    parser.add_argument(
+        f"--{options.DATES_WITHOUT_TIME}",
+        action="store_true",
+        default=False,
+        required=False,
+        help="Reports timestamps only with date, not time",
+    )
     args = util.parse_and_check(parser)
     return args
 
@@ -185,7 +193,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
             if i == 0:
                 comma = ""
             if file_format == "json":
-                finding_json = finding.to_json()
+                finding_json = finding.to_json(DATES_WITHOUT_TIME)
                 if not kwargs[options.WITH_URL]:
                     finding_json.pop("url", None)
                 print(f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end="")
@@ -195,7 +203,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
             else:
                 if kwargs[options.WITH_URL]:
                     url = f'{sep}"{finding.url()}"'
-                print(f"{finding.to_csv(sep)}{url}", file=f)
+                print(f"{finding.to_csv(sep, DATES_WITHOUT_TIME)}{url}", file=f)
     util.logger.debug("File written")
 
 
@@ -240,7 +248,7 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
 def __dump_compact(finding_list, file, **kwargs):
     new_dict = {}
     for finding in finding_list.values():
-        f_json = finding.to_json()
+        f_json = finding.to_json(DATES_WITHOUT_TIME)
         if not kwargs[options.WITH_URL]:
             f_json.pop("url", None)
         pkey = f_json.pop("projectKey")
@@ -375,7 +383,9 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 
 
 def main():
+    global DATES_WITHOUT_TIME
     kwargs = vars(parse_args("Sonar findings export"))
+    DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     sqenv = platform.Platform(
         some_url=kwargs["url"],
         some_token=kwargs["token"],
