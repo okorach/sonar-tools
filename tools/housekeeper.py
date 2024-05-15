@@ -48,14 +48,21 @@ def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads
         "audit.projects.duplicates": False,
         "audit.projects.visibility": False,
         "audit.projects.permissions": False,
+        "audit.projects.failedTasks": False,
+        "audit.projects.exclusions": False,
+        "audit.project.scm.disabled": False,
+        "audit.projects.analysisWarnings": False,
     }
     settings = config.load(config_name="sonar-audit", settings=settings)
     settings["threads"] = nb_threads
     problems = projects.audit(endpoint=endpoint, audit_settings=settings)
     nb_proj = 0
     total_loc = 0
+    project_list = []
     for p in problems:
-        if p.concerned_object is not None and isinstance(p.concerned_object, projects.Project):
+        key = p.concerned_object.key if p.concerned_object is not None else None
+        if key not in project_list and isinstance(p.concerned_object, projects.Project):
+            project_list.append(key)
             nb_proj += 1
             total_loc += int(p.concerned_object.get_measure("ncloc", fallback="0"))
 

@@ -453,16 +453,16 @@ class Task(sq.SqObject):
         util.logger.debug("Auditing %s", str(self))
         problems = []
         if self.has_scanner_context():
-            problems = []
-            context = self.scanner_context()
-            susp_exclusions = _get_suspicious_exclusions(audit_settings.get("audit.projects.suspiciousExclusionsPatterns", ""))
-            susp_exceptions = _get_suspicious_exceptions(audit_settings.get("audit.projects.suspiciousExclusionsExceptions", ""))
-            for prop in ("sonar.exclusions", "sonar.global.exclusions"):
-                if context.get(prop, None) is None:
-                    continue
-                for excl in util.csv_to_list(context[prop]):
-                    util.logger.debug("Pattern = '%s'", excl)
-                    problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
+            if audit_settings.get("audit.projects.exclusions", True):
+                context = self.scanner_context()
+                susp_exclusions = _get_suspicious_exclusions(audit_settings.get("audit.projects.suspiciousExclusionsPatterns", ""))
+                susp_exceptions = _get_suspicious_exceptions(audit_settings.get("audit.projects.suspiciousExclusionsExceptions", ""))
+                for prop in ("sonar.exclusions", "sonar.global.exclusions"):
+                    if context.get(prop, None) is None:
+                        continue
+                    for excl in util.csv_to_list(context[prop]):
+                        util.logger.debug("Pattern = '%s'", excl)
+                        problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
             problems += self.__audit_disabled_scm(audit_settings, context)
         elif type(self.concerned_object).__name__ == "Project":
             util.logger.debug("Last background task of %s has no scanner context, can't audit it", str(self.concerned_object))
