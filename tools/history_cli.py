@@ -164,7 +164,7 @@ def __parse_args(desc: str) -> object:
     )
     parser.add_argument(
         "-d",
-        "--datesWithoutTime",
+        f"--{options.DATES_WITHOUT_TIME}",
         action="store_true",
         default=False,
         required=False,
