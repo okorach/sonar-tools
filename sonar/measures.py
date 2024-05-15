@@ -135,6 +135,43 @@ def get(concerned_object, metrics_list, **kwargs):
     return m_dict
 
 
+def get_history(concerned_object: object, metrics_list: list[str], **kwargs) -> list[str, str, str]:
+    """Reads the history of measures of a component (project, branch, application or portfolio)
+
+    :param concerned_object: Concerned object (project, branch, pull request, application or portfolio)
+    :type concerned_object: Project, Branch, PullRequest, Application or Portfolio
+    :param metrics_list: List of metrics to read
+    :type metrics_list: list
+    :param kwargs: List of filters to search for the measures history, defaults to None
+    :type kwargs: dict, optional
+    :return: List of found history of measures
+    :rtype: list[<date>, <metricKey>, <value>]
+    """
+    # http://localhost:9999/api/measures/search_history?component=okorach_sonar-tools&metrics=ncloc&p=1&ps=1000
+
+    params = util.replace_keys(("project", "application", "portfolio"), "component", concerned_object.search_params())
+    params["metrics"] = util.list_to_csv(metrics_list)
+    util.logger.debug("Getting measures history with %s", str(params))
+
+    try:
+        data = json.loads(concerned_object.endpoint.get(Measure.API_HISTORY, params={**kwargs, **params}).text)
+    except HTTPError as e:
+        if e.response.status_code == HTTPStatus.NOT_FOUND:
+            raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
+    res_list = []
+    last_metric, last_date = "", ""
+    for m in reversed(data["measures"]):
+        m_key = m["metric"]
+        for dt in m["history"]:
+            if "value" in dt:
+                cur_date = dt["date"].split("T")[0]
+                if cur_date != last_date or last_metric != m_key:
+                    res_list.append([dt["date"], m_key, dt["value"]])
+                    last_date = cur_date
+                    last_metric = m_key
+    return res_list
+
+
 def get_rating_letter(rating):
     """
     :params rating:

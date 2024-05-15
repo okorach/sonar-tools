@@ -255,6 +255,10 @@ class Project(components.Component):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list)
+
     def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
         """
         :return: Dict of branches of the project

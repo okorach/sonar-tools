@@ -74,6 +74,7 @@ setuptools.setup(
             "sonar-config = tools.config:main",
             "support-audit = tools.support:main",
             "sonar-rules = tools.rules_cli:main",
+            "sonar-history = tools.history_cli:main",
         ]
     },
     python_requires=">=3.6",
