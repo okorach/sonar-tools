@@ -185,7 +185,6 @@ class Finding(sq.SqObject):
         fmt = util.SQ_DATETIME_FORMAT
         if without_time:
             fmt = util.SQ_DATE_FORMAT
-        util.logger.debug("Exporting dates in format %s", fmt)
         data = vars(self).copy()
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
