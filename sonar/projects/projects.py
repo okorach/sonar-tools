@@ -251,7 +251,7 @@ class Project(components.Component):
         :rtype: dict
         """
         m = measures.get(self, metrics_list)
-        if "ncloc" in m:
+        if "ncloc" in m and m["ncloc"]:
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 

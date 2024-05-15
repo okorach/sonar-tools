@@ -132,6 +132,7 @@ def get(concerned_object, metrics_list, **kwargs):
     m_dict = {m: None for m in metrics_list}
     for m in data["component"]["measures"]:
         m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
+    util.logger.debug("Returning measures %s", str(m_dict))
     return m_dict
 
 

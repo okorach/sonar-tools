@@ -97,7 +97,7 @@ def __get_csv_measures_history(obj: object, wanted_metrics: list[str], **kwargs)
 
 def __get_object_measures(obj, wanted_metrics):
     util.logger.info("Getting measures for %s", str(obj))
-    measures_d = {k: v.value if v else "" for k, v in obj.get_measures(wanted_metrics).items()}
+    measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d["lastAnalysis"] = __last_analysis(obj)
     measures_d["url"] = obj.url()
     proj = obj
@@ -151,7 +151,7 @@ def __get_wanted_metrics(args, endpoint):
         wanted_metrics = main_metrics + "," + util.list_to_csv(set(all_metrics) - set(metrics.MAIN_METRICS))
     elif wanted_metrics == "_main" or wanted_metrics is None:
         wanted_metrics = main_metrics
-    return wanted_metrics
+    return util.csv_to_list(wanted_metrics)
 
 
 def __get_fmt_and_file(args):
