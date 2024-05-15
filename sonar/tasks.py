@@ -41,6 +41,9 @@ __SUSPICIOUS_EXCEPTIONS = None
 
 SCANNER_VERSIONS = {
     "ScannerCLI": {
+        "5.0.1": datetime.datetime(2023, 8, 4),
+        "5.0.0": datetime.datetime(2023, 7, 31),
+        "4.8.1": datetime.datetime(2023, 8, 14),
         "4.8.0": datetime.datetime(2022, 2, 6),
         "4.7.0": datetime.datetime(2022, 2, 2),
         "4.6.2": datetime.datetime(2021, 5, 7),
@@ -53,7 +56,9 @@ SCANNER_VERSIONS = {
         "4.1.0": datetime.datetime(2019, 9, 9),
     },
     "ScannerMaven": {
-        "3.9.1": datetime.datetime(2021, 11, 1),
+        "3.11.0": datetime.datetime(2024, 3, 13),
+        "3.10.0": datetime.datetime(2023, 9, 15),
+        "3.9.1": datetime.datetime(2021, 12, 1),
         "3.9.0": datetime.datetime(2021, 4, 1),
         "3.8.0": datetime.datetime(2021, 1, 1),
         "3.7.0": datetime.datetime(2019, 10, 1),
@@ -71,6 +76,10 @@ SCANNER_VERSIONS = {
         "3.0.0": datetime.datetime(2016, 1, 1),
     },
     "ScannerGradle": {
+        "5.0.0": datetime.datetime(2024, 3, 26),
+        "4.4.1": datetime.datetime(2023, 10, 3),
+        "4.3.1": datetime.datetime(2023, 9, 1),
+        "4.2.1": datetime.datetime(2023, 6, 12),
         "4.0.0": datetime.datetime(2023, 2, 17),
         "3.5.0": datetime.datetime(2022, 10, 27),
         "3.4.0": datetime.datetime(2022, 6, 8),
@@ -82,6 +91,13 @@ SCANNER_VERSIONS = {
         "2.8.0": datetime.datetime(2019, 10, 1),
     },
     "ScannerMSBuild": {
+        "6.2.0": datetime.datetime(2024, 2, 16),
+        "6.1.0": datetime.datetime(2024, 1, 29),
+        "6.0.0": datetime.datetime(2023, 12, 4),
+        "5.15.1": datetime.datetime(2024, 3, 26),
+        "5.15.0": datetime.datetime(2023, 11, 20),
+        "5.14.0": datetime.datetime(2023, 10, 2),
+        "5.13.1": datetime.datetime(2023, 8, 14),
         "5.13.0": datetime.datetime(2023, 4, 5),
         "5.12.0": datetime.datetime(2023, 3, 17),
         "5.11.0": datetime.datetime(2023, 1, 27),
@@ -116,6 +132,11 @@ SCANNER_VERSIONS = {
         "4.7.0": datetime.datetime(2019, 9, 3),
     },
     "ScannerNpm": {
+        "3.5.0": datetime.datetime(2024, 5, 1),
+        "3.4.0": datetime.datetime(2024, 3, 27),
+        "3.3.0": datetime.datetime(2023, 11, 16),
+        "3.2.0": datetime.datetime(2023, 11, 6),
+        "3.1.0": datetime.datetime(2023, 8, 31),
         "3.0.1": datetime.datetime(2023, 2, 10),
         "3.0.0": datetime.datetime(2023, 1, 4),
         "2.9.0": datetime.datetime(2022, 12, 4),
