@@ -28,6 +28,7 @@ WITH_NAME = "withName"
 WITH_LAST_ANALYSIS = "withLastAnalysis"
 WITH_BRANCHES = "withBranches"
 NBR_THREADS = "threads"
+DATES_WITHOUT_TIME = "datesWithoutTime"
 
 WHAT_SETTINGS = "settings"
 WHAT_USERS = "users"
