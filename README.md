@@ -150,6 +150,8 @@ Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format json|csv] [-b
 - `-n | --withName`: Outputs the project or portfolio name in addition to the key
 - `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
 - `--withURL`: Outputs the URL of the project or portfolio for each record
+- `--history`: Export measures history instead of only the last value
+
 
 ## Required Permissions
 

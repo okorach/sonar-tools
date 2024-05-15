@@ -171,7 +171,16 @@ class Component(sq.SqObject):
         settings.set_visibility(self.endpoint, visibility=visibility, component=self)
         self._visibility = visibility
 
-    def _audit_bg_task(self, audit_settings):
+    def _audit_bg_task(self, audit_settings: dict[str, str]):
+        """Audits project background tasks"""
+        if (
+            not audit_settings.get("audit.projects.exclusions", True)
+            and not audit_settings.get("audit.projects.analysisWarnings", True)
+            and not audit_settings.get("audit.projects.failedTasks", True)
+            and not audit_settings.get("audit.project.scm.disabled", True)
+        ):
+            util.logger.debug("%s: Background task audit disabled, audit skipped", str(self))
+            return []
         util.logger.debug("Auditing last background task of %s", str(self))
         last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
         if last_task:

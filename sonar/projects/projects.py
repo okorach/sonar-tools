@@ -391,7 +391,7 @@ class Project(components.Component):
             severity = severities.Severity.HIGH if age > 365 else rule.severity
             loc = self.get_measure("ncloc", fallback="0")
             msg = rule.msg.format(str(self), loc, age)
-            problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
+            problems.append(pb.Problem(broken_rule=rule, severity=severity, msg=msg, concerned_object=self))
 
         util.logger.debug("%s last analysis is %d days old", str(self), age)
         return problems
