@@ -100,6 +100,7 @@ def __get_object_measures(obj, wanted_metrics):
     measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d["lastAnalysis"] = __last_analysis(obj)
     measures_d["url"] = obj.url()
+    measures_d.pop("quality_gate_details", None)
     proj = obj
     if not isinstance(obj, projects.Project):
         proj = obj.concerned_object
