@@ -124,7 +124,7 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     overall_metrics = "projectKey" + sep + "projectName"
     if kwargs[options.WITH_BRANCHES]:
         overall_metrics += sep + "branch"
-    overall_metrics += sep + "lastAnalysis" + sep + wanted_metrics
+    overall_metrics += sep + "lastAnalysis" + sep + util.list_to_csv(wanted_metrics)
     if kwargs[options.WITH_BRANCHES]:
         overall_metrics += sep + "url"
     line = ""
