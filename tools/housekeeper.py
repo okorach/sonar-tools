@@ -209,7 +209,7 @@ def _delete_objects(problems, mode):
 def main():
     args = _parse_arguments()
 
-    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout, org=args.organization)
     mode = args.mode
     problems = []
     if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:
