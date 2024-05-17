@@ -18,7 +18,7 @@ The following utilities are available:
 - [sonar-audit](#sonar-audit): Audits a SonarQube instance, and reports all the problems
 - [sonar-housekeeper](#sonar-housekeeper): Deletes projects, branches, PR  that have not been analyzed since a certain number of days, or
 deletes tokens created since more than a certain number of days
-- [sonar-loc](#sonar-loc): Computes lines of code per project and in total, as they would be coputed by the license
+- [sonar-loc](#sonar-loc): Computes lines of code per project and in total, as they would be computed by SonarQube (and the licensing system on commercial editions)
 - [sonar-measures-export](#sonar-measures-export): Exports measures/metrics of one, several or all projects of the instance in CSV
 - [sonar-findings-export](#sonar-findings-export) (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
 - [sonar-findings-sync](#sonar-findings-sync): Synchronizes issues and hotspots changelog between branches, projects or even SonarQube instances (formerly **sonar-issues-sync**, now deprecated)
@@ -27,6 +27,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-config](#sonar-config): Exports or Imports a SonarQube platform configuration to/from configuration as code file (JSON file).
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTA (Long Term Active, currently 9.9.x) and LATEST versions**
+
 :warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
 
 # What's New - Release notes
