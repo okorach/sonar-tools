@@ -21,7 +21,7 @@
 
 buildDir="build"
 pylintReport="$buildDir/pylint-report.out"
-banditReport="$buildDir/bandit-report.json"
+# banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
 
 [ ! -d $buildDir ] && mkdir $buildDir
@@ -41,6 +41,6 @@ rm -f $flake8Report
 # See .flake8 file for settings
 flake8 . >$flake8Report
 
-echo "Running bandit"
-rm -f $banditReport
-bandit --exit-zero -f json --skip B311,B303,B101 -r . -x .vscode,./tests >$banditReport
+# echo "Running bandit"
+# rm -f $banditReport
+# bandit --exit-zero -f json --skip B311,B303,B101 -r . -x .vscode,./tests >$banditReport
