@@ -31,6 +31,7 @@ Collections of utilities for SonarQube:
 - sonar-loc: Produces a list of projects with their LoC count as computed by the SonarQube
   commercial licenses (ie taking the largest branch or PR)
 - sonar-measures-export: Exports measures/metrics of one, several or all projects of the platform in CSV or JSON
+  (Can also export measures history)
 - sonar-findings-export: Exports findings (potentially filtered) from the platform in CSV or JSON
   (also available as sonar-issues-export for backward compatibility, but deprecated)
 - sonar-findings-sync: Synchronizes issues between 2 branches of a same project, a whole project
