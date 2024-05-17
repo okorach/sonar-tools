@@ -6,7 +6,7 @@
     - `sonar-findings-sync`
     - `sonar-housekeeper`
   - Migration of wording from LTS to LTA, to align with Sonar
-  - Couple of improvements on **sonar-audit**
+  - Couple of improvements on **sonar-audit**,  **sonar-housekeeper**, **sonar-measures-export** 
   - Fix crashes of **sonar-findings-sync**
   - **sonar-measures-export** can now export measures history instead on only last value
   - Updated recent versions of scanner to check of deprecated scanner version usage (in audits)
