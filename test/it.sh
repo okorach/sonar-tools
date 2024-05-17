@@ -22,6 +22,8 @@ set -euo pipefail
 
 cur_dir=$(dirname $0)
 
+DB_BACKUPS_DIR=~/backup
+
 function logmsg {
     echo $* | tee -a $IT_LOG_FILE
 }
@@ -82,10 +84,6 @@ do
         pip install sonar-tools
     fi
 
-
-
-
-
     if [ "$env" = "sonarcloud " ]; then
         logmsg "Running with environment $env"
         export SONAR_TOKEN=$SONAR_TOKEN_SONARCLOUD
@@ -94,7 +92,7 @@ do
         id="it$$"
         logmsg "Running with environment $env - sonarId $id"
         sqport=8000
-        sonar create -i $id -t $env -s $sqport -p 7999 -f ~/backup/db.$env.backup
+        sonar create -i $id -t $env -s $sqport -p 7999 -f "$DB_BACKUPS_DIR/db.$env.backup"
         export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
         export SONAR_HOST_URL="http://localhost:$sqport"
     fi
