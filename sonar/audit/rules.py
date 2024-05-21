@@ -157,6 +157,10 @@ class RuleId(enum.Enum):
 
     GROUP_EMPTY = 5200
 
+    ERROR_IN_LOGS = 6000
+    WARNING_IN_LOGS = 6001
+    DEPRECATION_WARNINGS = 6002
+
     def __str__(self):
         return repr(self.name)[1:-1]
 

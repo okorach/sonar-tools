@@ -588,5 +588,23 @@
         "type": "OPERATIONS",
         "object": "Webhook",
         "message": "{} last delivery was failed"
+    },
+    "ERROR_IN_LOGS": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "object": "Logs",
+        "message": "Error found in {}: {}"
+    },
+    "WARNING_IN_LOGS": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "object": "Logs",
+        "message": "Warning found in {}: {}"
+    },
+    "DEPRECATION_WARNINGS": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "object": "Logs",
+        "message": "{} deprecation warnings found in deprecation.log"
     }
 }
