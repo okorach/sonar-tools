@@ -28,7 +28,7 @@ import sys
 import csv
 from http import HTTPStatus
 from requests.exceptions import HTTPError
-from sonar import measures, metrics, platform, options, exceptions
+from sonar import metrics, platform, options, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
 
@@ -98,32 +98,15 @@ def __get_object_measures(obj, wanted_metrics):
     return measures_d
 
 
-def __empty_measures(obj: object, metrics_list: list[str], sep: str = ",") -> str:
-    """Returns an empty CSV of measures"""
-    line = ""
-    for metric in metrics_list:
-        val = ""
-        if metric == "projectKey":
-            if isinstance(obj, projects.Project):
-                val = obj.key
-            else:
-                val = obj.concerned_object.key
-        elif metric == "branch":
-            val = obj.key
-        elif metric == "url":
-            val = obj.url()
-        line += val + sep
-    return line[: -len(sep)]
-
-
 def __get_wanted_metrics(args, endpoint):
     main_metrics = util.list_to_csv(metrics.MAIN_METRICS)
     wanted_metrics = args.metricKeys
     if wanted_metrics == "_all":
-        all_metrics = metrics.search(endpoint).keys()
+        all_metrics = list(metrics.search(endpoint).keys())
+        all_metrics.remove("quality_gate_details")
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
         if endpoint.version() < (8, 0, 0):
-            all_metrics.pop("new_development_cost")
+            all_metrics.remove("new_development_cost")
         util.logger.info("Exporting %s metrics", len(all_metrics))
         wanted_metrics = main_metrics + "," + util.list_to_csv(set(all_metrics) - set(metrics.MAIN_METRICS))
     elif wanted_metrics == "_main" or wanted_metrics is None:
@@ -252,13 +235,14 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         csvwriter.writerow(header_list)
+        w_name, w_br, w_url = kwargs[options.WITH_NAME], kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
         for project_data in data:
             key = project_data["projectKey"]
-            if kwargs[options.WITH_NAME]:
+            if w_name:
                 name = project_data["projectName"]
-            if kwargs[options.WITH_BRANCHES]:
+            if w_br:
                 branch = project_data["branch"]
-            if kwargs[options.WITH_BRANCHES]:
+            if w_url:
                 url = project_data["url"]
             row = []
             hist_data = {}
@@ -268,22 +252,28 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
                 ts = __get_ts(h[0], **kwargs)
                 if ts not in hist_data:
                     hist_data[ts] = {"projectKey": key}
-                    if kwargs[options.WITH_NAME]:
+                    if w_name:
                         hist_data[ts]["projectName"] = name
-                    if kwargs[options.WITH_BRANCHES]:
+                    if w_br:
                         hist_data[ts]["branch"] = branch
-                    if kwargs[options.WITH_BRANCHES]:
+                    if w_url:
                         hist_data[ts]["url"] = url
                 hist_data[ts].update({h[1]: h[2]})
 
             for ts, data in hist_data.items():
                 row = [data["projectKey"], ts]
+                if w_name:
+                    row.append(data.get("projectName", ""))
+                if w_br:
+                    row.append(data.get("branch", ""))
                 for m in wanted_metrics:
                     row.append(data.get(m, ""))
+                if w_url:
+                    row.append(data.get("url", ""))
                 csvwriter.writerow(row)
 
 
-def __write_measures_history_csv_as_list(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
+def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
     header_list = ["timestamp", "projectKey"]
@@ -306,7 +296,7 @@ def __write_measures_history_csv(file: str, wanted_metrics: list[str], data: dic
     if kwargs["asTable"]:
         __write_measures_history_csv_as_table(file, wanted_metrics, data, **kwargs)
     else:
-        __write_measures_history_csv_as_list(file, wanted_metrics, data, **kwargs)
+        __write_measures_history_csv_as_list(file, data, **kwargs)
 
 
 def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
@@ -390,7 +380,6 @@ def main():
             else:
                 util.logger.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
             continue
-        util.logger.debug("COLLECTED = %s", util.json_dump(data))
         measure_list += [data]
 
     if fmt == "json":
