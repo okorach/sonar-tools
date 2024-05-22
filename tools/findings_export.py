@@ -41,6 +41,7 @@ import datetime
 from queue import Queue
 import threading
 from threading import Thread
+from requests.exceptions import HTTPError
 
 from sonar import platform, options, exceptions
 from sonar.projects import projects
@@ -316,15 +317,22 @@ def __get_project_findings(queue, write_queue):
 
         util.logger.debug("WriteQueue %s task %s put", str(write_queue), key)
         if search_findings:
-            findings_list = findings.export_findings(endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None))
-
+            try:
+                findings_list = findings.export_findings(
+                    endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
+                )
+            except HTTPError as e:
+                findings_list = {}
             write_queue.put([findings_list, False])
         else:
             new_params = issues.get_search_criteria(params)
             new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
-                findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
+                try:
+                    findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
+                except HTTPError as e:
+                    findings_list = {}
             else:
                 util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
                 util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
@@ -332,7 +340,10 @@ def __get_project_findings(queue, write_queue):
             if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
                 new_params = hotspots.get_search_criteria(params)
                 new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
-                findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=new_params))
+                try:
+                    findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=new_params))
+                except HTTPError:
+                    pass
             else:
                 util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
@@ -345,21 +356,24 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
     for key, project in project_list.items():
-        branches = __get_list(project, params.pop("branches", None), "branch")
-        prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
-        for b in branches:
-            params["branch"] = b
-            util.logger.debug("Queue %s task %s put", str(my_queue), key)
-            my_queue.put((key, endpoint, params.copy()))
-        params.pop("branch", None)
-        for p in prs:
-            params["pullRequest"] = p
-            util.logger.debug("Queue %s task %s put", str(my_queue), key)
-            my_queue.put((key, endpoint, params.copy()))
-        params.pop("pullRequest", None)
-        if not (branches or prs):
-            util.logger.debug("Queue %s task %s put", str(my_queue), key)
-            my_queue.put((key, endpoint, params.copy()))
+        try:
+            branches = __get_list(project, params.pop("branches", None), "branch")
+            prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
+            for b in branches:
+                params["branch"] = b
+                util.logger.debug("Queue %s task %s put", str(my_queue), key)
+                my_queue.put((key, endpoint, params.copy()))
+            params.pop("branch", None)
+            for p in prs:
+                params["pullRequest"] = p
+                util.logger.debug("Queue %s task %s put", str(my_queue), key)
+                my_queue.put((key, endpoint, params.copy()))
+            params.pop("pullRequest", None)
+            if not (branches or prs):
+                util.logger.debug("Queue %s task %s put", str(my_queue), key)
+                my_queue.put((key, endpoint, params.copy()))
+        except HTTPError as e:
+            util.logger.warning("Error = %s, issue export of %s skipped", str(e), str(project))
 
     for i in range(threads):
         util.logger.debug("Starting finding search thread 'findingSearch%d'", i)
