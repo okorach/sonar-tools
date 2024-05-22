@@ -335,10 +335,11 @@ class Project(components.Component):
                     # Hack: 8.9 returns 404, 9.x returns 400
                     self._binding["has_binding"] = False
                 else:
-                    util.exit_fatal(
-                        f"alm_settings/get_binding returning status code {e.response.status_code}, exiting",
-                        options.ERR_SONAR_API,
+                    util.logger.error(
+                        "alm_settings/get_binding returning status code %d",
+                        e.response.status_code,
                     )
+                    raise e
         return self._binding["binding"]
 
     def is_part_of_monorepo(self):
@@ -798,32 +799,39 @@ class Project(components.Component):
         :rtype: dict
         """
         util.logger.info("Exporting %s", str(self))
-        json_data = self._json.copy()
-        json_data.update({"key": self.key, "name": self.name})
-        json_data["binding"] = self.__export_get_binding()
-        nc = self.new_code()
-        if nc != "":
-            json_data[settings.NEW_CODE_PERIOD] = nc
-        json_data["qualityProfiles"] = self.__export_get_qp()
-        json_data["links"] = self.links()
-        json_data["permissions"] = self.permissions().to_json(csv=True)
-        json_data["branches"] = self.__get_branch_export()
-        json_data["tags"] = util.list_to_csv(self.tags(), separator=", ")
-        json_data["visibility"] = self.visibility()
-        (json_data["qualityGate"], qg_is_default) = self.quality_gate()
-        if qg_is_default:
-            json_data.pop("qualityGate")
+        try:
+            json_data = self._json.copy()
+            json_data.update({"key": self.key, "name": self.name})
+            json_data["binding"] = self.__export_get_binding()
+            nc = self.new_code()
+            if nc != "":
+                json_data[settings.NEW_CODE_PERIOD] = nc
+            json_data["qualityProfiles"] = self.__export_get_qp()
+            json_data["links"] = self.links()
+            json_data["permissions"] = self.permissions().to_json(csv=True)
+            json_data["branches"] = self.__get_branch_export()
+            json_data["tags"] = util.list_to_csv(self.tags(), separator=", ")
+            json_data["visibility"] = self.visibility()
+            (json_data["qualityGate"], qg_is_default) = self.quality_gate()
+            if qg_is_default:
+                json_data.pop("qualityGate")
 
-        hooks = webhooks.export(self.endpoint, self.key)
-        if hooks is not None:
-            json_data["webhooks"] = hooks
-        json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
-        settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
-        # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
-        for s in settings_dict.values():
-            if not include_inherited and s.inherited:
-                continue
-            json_data.update(s.to_json())
+            hooks = webhooks.export(self.endpoint, self.key)
+            if hooks is not None:
+                json_data["webhooks"] = hooks
+            json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
+            settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
+            # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
+            for s in settings_dict.values():
+                if not include_inherited and s.inherited:
+                    continue
+                json_data.update(s.to_json())
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.FORBIDDEN:
+                util.logger.critical("Insufficient privileges to access %s, export of this project skipped", str(self))
+            else:
+                util.logger.critical("HTTP error %s while exporting %s, export of this project skipped", str(e), str(self))
+            json_data = {}
         return util.remove_nones(json_data)
 
     def new_code(self):
@@ -1230,7 +1238,7 @@ def __export_thread(queue, results, full):
     while not queue.empty():
         project = queue.get()
         results[project.key] = project.export(full=full)
-        results[project.key].pop("key")
+        results[project.key].pop("key", None)
         queue.task_done()
 
 
