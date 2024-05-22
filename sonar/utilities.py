@@ -589,7 +589,8 @@ def http_error(response: requests.models.Response) -> tuple[str, int]:
     return err_code, f"{tool_msg}: {sq_msg}"
 
 
-def log_and_exit(response: requests.models.Response):
+def log_and_exit(response: requests.models.Response) -> None:
+    """If HTTP response is not OK, display an error log and exit"""
     err_code, msg = http_error(response)
     if err_code is None:
         return
