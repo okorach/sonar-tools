@@ -116,33 +116,6 @@ def __empty_measures(obj: object, metrics_list: list[str], sep: str = ",") -> st
     return line[: -len(sep)]
 
 
-def __get_csv_measures(obj, wanted_metrics: str, **kwargs) -> str:
-    sep = kwargs[options.CSV_SEPARATOR]
-    overall_metrics = "projectKey" + sep + "projectName"
-    if kwargs[options.WITH_BRANCHES]:
-        overall_metrics += sep + "branch"
-    overall_metrics += sep + "lastAnalysis" + sep + util.list_to_csv(wanted_metrics)
-    if kwargs[options.WITH_BRANCHES]:
-        overall_metrics += sep + "url"
-    metrics_list = util.csv_to_list(overall_metrics)
-    try:
-        measures_d = __get_object_measures(obj, wanted_metrics)
-    except HTTPError as e:
-        util.logger.error("HTTP Error %s, measures export of %s skipped", str(e), str(obj))
-        return __empty_measures(obj, metrics_list)
-
-    line = ""
-    for metric in util.csv_to_list(overall_metrics):
-        val = ""
-        if metric in measures_d and measures_d[metric] is not None:
-            if isinstance(measures_d[metric], str) and sep in measures_d[metric]:
-                val = util.quote(measures_d[metric], sep)
-            else:
-                val = str(measures.format(metric, measures_d[metric], **CONVERT_OPTIONS))
-        line += val + sep
-    return line[: -len(sep)]
-
-
 def __get_wanted_metrics(args, endpoint):
     main_metrics = util.list_to_csv(metrics.MAIN_METRICS)
     wanted_metrics = args.metricKeys
