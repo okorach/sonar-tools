@@ -152,6 +152,13 @@ def __get_wanted_metrics(args, endpoint):
         wanted_metrics = main_metrics + "," + util.list_to_csv(set(all_metrics) - set(metrics.MAIN_METRICS))
     elif wanted_metrics == "_main" or wanted_metrics is None:
         wanted_metrics = main_metrics
+    else:
+        # Verify that requested metrics do exist
+        m_list = util.csv_to_list(wanted_metrics)
+        all_metrics = metrics.search(endpoint).keys()
+        for m in m_list:
+            if m not in all_metrics:
+                util.exit_fatal(f"Requested metric key '{m}' does not exist", options.ERR_NO_SUCH_KEY)
     return util.csv_to_list(wanted_metrics)
 
 
