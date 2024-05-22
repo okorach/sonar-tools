@@ -246,7 +246,7 @@ class Platform:
                     self.url = new_url
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            if exit_on_error or (r.status_code not in mute and r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)):
+            if exit_on_error or (r.status_code not in mute and r.status_code == HTTPStatus.UNAUTHORIZED):
                 util.log_and_exit(r)
             else:
                 _, msg = util.http_error(r)

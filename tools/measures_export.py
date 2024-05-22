@@ -25,6 +25,7 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 """
 import sys
+from requests.exceptions import HTTPError
 from sonar import measures, metrics, platform, options, exceptions
 from sonar.projects import projects
 import sonar.utilities as util
@@ -119,8 +120,25 @@ def __get_json_measures(obj, wanted_metrics, **kwargs):
     return d
 
 
-def __get_csv_measures(obj, wanted_metrics, **kwargs):
-    measures_d = __get_object_measures(obj, wanted_metrics)
+def __empty_measures(obj: object, metrics_list: list[str], sep: str = ",") -> str:
+    """Returns an empty CSV of measures"""
+    line = ""
+    for metric in metrics_list:
+        val = ""
+        if metric == "projectKey":
+            if isinstance(obj, projects.Project):
+                val = obj.key
+            else:
+                val = obj.concerned_object.key
+        elif metric == "branch":
+            val = obj.key
+        elif metric == "url":
+            val = obj.url()
+        line += val + sep
+    return line[: -len(sep)]
+
+
+def __get_csv_measures(obj, wanted_metrics: str, **kwargs) -> str:
     sep = kwargs[options.CSV_SEPARATOR]
     overall_metrics = "projectKey" + sep + "projectName"
     if kwargs[options.WITH_BRANCHES]:
@@ -128,6 +146,13 @@ def __get_csv_measures(obj, wanted_metrics, **kwargs):
     overall_metrics += sep + "lastAnalysis" + sep + util.list_to_csv(wanted_metrics)
     if kwargs[options.WITH_BRANCHES]:
         overall_metrics += sep + "url"
+    metrics_list = util.csv_to_list(overall_metrics)
+    try:
+        measures_d = __get_object_measures(obj, wanted_metrics)
+    except HTTPError as e:
+        util.logger.warning("Error = %s, measures export of %s skipped", str(e), str(obj))
+        return __empty_measures(obj, metrics_list)
+
     line = ""
     for metric in util.csv_to_list(overall_metrics):
         val = ""
@@ -309,7 +334,11 @@ def __write_measures_csv(file: str, args: object, obj_list: list[object], wanted
         else:
             print(base, file=fd)
         for obj in obj_list:
-            print(__get_csv_measures(obj, wanted_metrics, **vars(args)), file=fd)
+            try:
+                print(__get_csv_measures(obj, wanted_metrics, **vars(args)), file=fd)
+            except HTTPError as e:
+                util.logger.warning("Error = %s, measures export of %s skipped", str(e), str(obj))
+                print()
 
 
 def main():

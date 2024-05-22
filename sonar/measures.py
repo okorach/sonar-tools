@@ -129,6 +129,7 @@ def get(concerned_object, metrics_list, **kwargs):
     except HTTPError as e:
         if e.response.status_code == HTTPStatus.NOT_FOUND:
             raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
+        raise e
     m_dict = {m: None for m in metrics_list}
     for m in data["component"]["measures"]:
         m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
