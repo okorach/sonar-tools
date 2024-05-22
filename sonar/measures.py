@@ -160,6 +160,7 @@ def get_history(concerned_object: object, metrics_list: list[str], **kwargs) -> 
     except HTTPError as e:
         if e.response.status_code == HTTPStatus.NOT_FOUND:
             raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
+        raise e
     res_list = []
     last_metric, last_date = "", ""
     for m in reversed(data["measures"]):

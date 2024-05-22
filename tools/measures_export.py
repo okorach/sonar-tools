@@ -51,7 +51,11 @@ def __last_analysis(project_or_branch):
 def __get_object_measures_history(obj: object, wanted_metrics: list[str], **kwargs) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
     data = {}
-    data["history"] = obj.get_measures_history(wanted_metrics)
+    try:
+        data["history"] = obj.get_measures_history(wanted_metrics)
+    except HTTPError as e:
+        util.logger.warning("Error = %s, measures history export of %s skipped", str(e), str(obj))
+        return data
     if kwargs[options.DATES_WITHOUT_TIME]:
         for item in data["history"]:
             item[0] = item[0].split("T")[0]
@@ -68,6 +72,8 @@ def __get_object_measures_history(obj: object, wanted_metrics: list[str], **kwar
 def __get_json_measures_history(obj: object, wanted_metrics: list[str], **kwargs) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio) as JSON"""
     d = __get_object_measures_history(obj, wanted_metrics, **kwargs)
+    if len(d) == 0:
+        return d
     if not kwargs[options.WITH_URL]:
         d.pop("url", None)
     if not kwargs[options.WITH_BRANCHES]:
@@ -78,6 +84,8 @@ def __get_json_measures_history(obj: object, wanted_metrics: list[str], **kwargs
 def __get_csv_measures_history(obj: object, wanted_metrics: list[str], **kwargs) -> str:
     """Returns a CSV list of measures history of an object, as CSV string"""
     data = __get_json_measures_history(obj, wanted_metrics, **kwargs)
+    if len(data) == 0:
+        return ""
     sep = kwargs[options.CSV_SEPARATOR]
 
     line = ""
@@ -334,11 +342,7 @@ def __write_measures_csv(file: str, args: object, obj_list: list[object], wanted
         else:
             print(base, file=fd)
         for obj in obj_list:
-            try:
-                print(__get_csv_measures(obj, wanted_metrics, **vars(args)), file=fd)
-            except HTTPError as e:
-                util.logger.warning("Error = %s, measures export of %s skipped", str(e), str(obj))
-                print()
+            print(__get_csv_measures(obj, wanted_metrics, **vars(args)), file=fd)
 
 
 def main():
