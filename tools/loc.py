@@ -24,6 +24,7 @@
 import sys
 import csv
 
+from requests.exceptions import HTTPError
 from sonar import platform, portfolios, options
 from sonar.projects import projects
 import sonar.utilities as util
@@ -58,17 +59,25 @@ def __dump_csv(object_list, fd, **kwargs):
     for o in object_list.values():
         if obj_type is None:
             obj_type = type(o).__name__.lower()
-        loc = o.loc()
-        arr = [o.key, o.loc()]
+        try:
+            loc = o.loc()
+        except HTTPError as e:
+            util.logger.warning("Error = %s, LoC export of %s skipped", str(e), str(o))
+            loc = ""
+        arr = [o.key, loc]
         if kwargs.get(options.WITH_NAME, False):
             arr.append(o.name)
         if kwargs.get(options.WITH_LAST_ANALYSIS, False):
-            arr.append(o.last_analysis())
+            if loc != "":
+                arr.append(o.last_analysis())
+            else:
+                arr.append("")
         if kwargs.get(options.WITH_URL, False):
             arr.append(o.url())
         writer.writerow(arr)
         nb_objects += 1
-        nb_loc += loc
+        if loc != "":
+            nb_loc += loc
 
         if nb_objects % 50 == 0:
             util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
