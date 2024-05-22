@@ -60,29 +60,6 @@ def __get_json_measures_history(obj: object, wanted_metrics: list[str]) -> dict[
     return data
 
 
-def __get_csv_measures_history(obj: object, wanted_metrics: list[str], **kwargs) -> str:
-    """Returns a CSV list of measures history of an object, as CSV string"""
-    data = __get_json_measures_history(obj, wanted_metrics, **kwargs)
-    if len(data) == 0:
-        return ""
-    sep = kwargs[options.CSV_SEPARATOR]
-
-    line = ""
-    projkey = data["projectKey"]
-    projname = data["projectName"]
-    branch = data.get("branch", "")
-    for m in data["history"]:
-        if m[1] == "quality_gate_details":
-            continue
-        if CONVERT_OPTIONS["dates"] == "dateonly":
-            m[0] = m[0].split("T")[0]
-        line += projkey + sep + projname + sep
-        if kwargs[options.WITH_BRANCHES]:
-            line += branch + sep
-        line += sep.join(m) + "\n"
-    return line[:-1]
-
-
 def __get_object_measures(obj, wanted_metrics):
     util.logger.info("Getting measures for %s", str(obj))
     measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
