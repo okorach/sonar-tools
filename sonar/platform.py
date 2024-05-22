@@ -513,6 +513,7 @@ class Platform:
         problems += (
             self._audit_project_default_visibility()
             + self._audit_global_permissions()
+            + self._audit_logs(audit_settings)
             + webhooks.audit(self)
             + permission_templates.audit(self, audit_settings)
         )
@@ -530,6 +531,34 @@ class Platform:
             + sif.Sif(pf_sif, self).audit(audit_settings)
             + permission_templates.audit(self, audit_settings)
         )
+        return problems
+
+    def _audit_logs(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+        if not audit_settings.get("audit.logs", True):
+            util.logger.info("Logs audit is disabled, skipping logs audit...")
+            return []
+        log_map = {"app": "sonar.log", "ce": "ce.log", "web": "web.log", "es": "es.log"}
+        problems = []
+        for logtype, logfile in log_map.items():
+            logs = self.get("system/logs", params={"name": logtype}).text
+            for line in logs.splitlines():
+                (_, level, _) = line.split(" ", maxsplit=2)
+                rule = None
+                if level == "ERROR":
+                    util.logger.warning("Error found in %s: %s", logfile, line)
+                    rule = rules.get_rule(rules.RuleId.ERROR_IN_LOGS)
+                elif level == "WARN":
+                    util.logger.warning("Warning found in %s: %s", logfile, line)
+                    rule = rules.get_rule(rules.RuleId.WARNING_IN_LOGS)
+                if rule is not None:
+                    problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(logfile, line), concerned_object=f"{self.url}/admin/system"))
+        logs = self.get("system/logs", params={"name": "deprecation"}).text
+        nb_deprecation = len(logs.splitlines())
+        if nb_deprecation > 0:
+            rule = rules.get_rule(rules.RuleId.DEPRECATION_WARNINGS)
+            msg = rule.msg.format(nb_deprecation)
+            problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=f"{self.url}/admin/system"))
+            util.logger.warning(msg)
         return problems
 
     def _audit_project_default_visibility(self):
