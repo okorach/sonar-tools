@@ -26,6 +26,7 @@
 """
 import sys
 import csv
+from http import HTTPStatus
 from requests.exceptions import HTTPError
 from sonar import measures, metrics, platform, options, exceptions
 from sonar.projects import projects
@@ -281,6 +282,8 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
                 url = project_data["branch"]
             row = []
             hist_data = {}
+            if "history" not in project_data:
+                continue
             for h in project_data["history"]:
                 if h[0] not in hist_data:
                     hist_data[h[0]] = {"projectKey": key}
@@ -389,13 +392,20 @@ def main():
     measure_list = []
     for obj in obj_list:
         data = __general_object_data(obj=obj, **kwargs)
-        if args.history:
-            data.update(__get_json_measures_history(obj, wanted_metrics))
-            if kwargs[options.DATES_WITHOUT_TIME]:
-                for item in data["history"]:
-                    item[0] = item[0].split("T")[0]
-        else:
-            data.update(__get_object_measures(obj, wanted_metrics))
+        try:
+            if args.history:
+                data.update(__get_json_measures_history(obj, wanted_metrics))
+                if kwargs[options.DATES_WITHOUT_TIME]:
+                    for item in data["history"]:
+                        item[0] = item[0].split("T")[0]
+            else:
+                data.update(__get_object_measures(obj, wanted_metrics))
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.FORBIDDEN:
+                util.logger.error("Insufficient permission to retrieve measures of %s, export skipped for this object", str(obj))
+            else:
+                util.logger.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
+            continue
         util.logger.debug("COLLECTED = %s", util.json_dump(data))
         measure_list += [data]
 
@@ -407,6 +417,8 @@ def main():
     else:
         __write_measures_csv(file=file, wanted_metrics=wanted_metrics, data=measure_list, **kwargs)
 
+    if file:
+        util.logger.info("File '%s' created", file)
     util.logger.info("%d PROJECTS %d branches", len(project_list), nb_branches)
     sys.exit(0)
 
