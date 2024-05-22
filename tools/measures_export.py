@@ -204,7 +204,6 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
         header_list.append("projectName")
     if kwargs[options.WITH_BRANCHES]:
         header_list.append("branch")
-    header_list.append("lastAnalysis")
     header_list += wanted_metrics
     if kwargs[options.WITH_URL]:
         header_list.append("url")
