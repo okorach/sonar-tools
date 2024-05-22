@@ -42,7 +42,6 @@ from queue import Queue
 import threading
 from threading import Thread
 from requests.exceptions import HTTPError
-from http import HTTPStatus
 
 from sonar import platform, options, exceptions
 from sonar.projects import projects
