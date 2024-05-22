@@ -42,6 +42,7 @@ from queue import Queue
 import threading
 from threading import Thread
 from requests.exceptions import HTTPError
+from http import HTTPStatus
 
 from sonar import platform, options, exceptions
 from sonar.projects import projects
@@ -322,6 +323,7 @@ def __get_project_findings(queue, write_queue):
                     endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
                 )
             except HTTPError as e:
+                util.logger.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
                 findings_list = {}
             write_queue.put([findings_list, False])
         else:
@@ -332,6 +334,7 @@ def __get_project_findings(queue, write_queue):
                 try:
                     findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
                 except HTTPError as e:
+                    util.logger.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
                     findings_list = {}
             else:
                 util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
@@ -342,8 +345,8 @@ def __get_project_findings(queue, write_queue):
                 new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
                 try:
                     findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=new_params))
-                except HTTPError:
-                    pass
+                except HTTPError as e:
+                    util.logger.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
             else:
                 util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
@@ -373,7 +376,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
                 util.logger.debug("Queue %s task %s put", str(my_queue), key)
                 my_queue.put((key, endpoint, params.copy()))
         except HTTPError as e:
-            util.logger.warning("Error = %s, issue export of %s skipped", str(e), str(project))
+            util.logger.critical("Error %s while exporting findings of object key %s, skipped", str(e), str(project))
 
     for i in range(threads):
         util.logger.debug("Starting finding search thread 'findingSearch%d'", i)

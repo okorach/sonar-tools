@@ -54,7 +54,7 @@ def __get_object_measures_history(obj: object, wanted_metrics: list[str], **kwar
     try:
         data["history"] = obj.get_measures_history(wanted_metrics)
     except HTTPError as e:
-        util.logger.warning("Error = %s, measures history export of %s skipped", str(e), str(obj))
+        util.logger.error("HTTP Error %s, measures history export of %s skipped", str(e), str(obj))
         return data
     if kwargs[options.DATES_WITHOUT_TIME]:
         for item in data["history"]:
@@ -158,7 +158,7 @@ def __get_csv_measures(obj, wanted_metrics: str, **kwargs) -> str:
     try:
         measures_d = __get_object_measures(obj, wanted_metrics)
     except HTTPError as e:
-        util.logger.warning("Error = %s, measures export of %s skipped", str(e), str(obj))
+        util.logger.error("HTTP Error %s, measures export of %s skipped", str(e), str(obj))
         return __empty_measures(obj, metrics_list)
 
     line = ""

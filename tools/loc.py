@@ -62,7 +62,7 @@ def __dump_csv(object_list, fd, **kwargs):
         try:
             loc = o.loc()
         except HTTPError as e:
-            util.logger.warning("Error = %s, LoC export of %s skipped", str(e), str(o))
+            util.logger.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
             loc = ""
         arr = [o.key, loc]
         if kwargs.get(options.WITH_NAME, False):
