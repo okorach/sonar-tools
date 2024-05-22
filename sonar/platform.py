@@ -48,7 +48,7 @@ from sonar import sif
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
-_HTTP_ERROR = "%s Error: %s HTTP status code %d"
+_HTTP_ERROR = "%s Error: %s HTTP status code %d - %s"
 
 _SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
@@ -249,10 +249,11 @@ class Platform:
             if exit_on_error or (r.status_code not in mute and r.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)):
                 util.log_and_exit(r)
             else:
+                _, msg = util.http_error(r)
                 if r.status_code in mute:
-                    util.logger.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
+                    util.logger.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
                 else:
-                    util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code)
+                    util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
                 raise e
         except requests.exceptions.Timeout as e:
             util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)

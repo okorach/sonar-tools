@@ -566,9 +566,10 @@ def search_by_key(endpoint, key, api, returned_field, extra_params=None):
     return None
 
 
-def log_and_exit(response):
+def http_error(response: requests.models.Response) -> tuple[str, int]:
+    """Returns the Sonar error code of an API HTTP response, or None if no error"""
     if response.ok:
-        return
+        return None, None
     tool_msg = f"For request URL {response.request.url}\n"
     code = response.status_code
     try:
@@ -585,7 +586,14 @@ def log_and_exit(response):
     else:
         tool_msg += f"HTTP error {code} - Exiting"
         err_code = options.ERR_SONAR_API
-    exit_fatal(f"{tool_msg}: {sq_msg}", err_code)
+    return err_code, f"{tool_msg}: {sq_msg}"
+
+
+def log_and_exit(response: requests.models.Response):
+    err_code, msg = http_error(response)
+    if err_code is None:
+        return
+    exit_fatal(msg, err_code)
 
 
 def object_key(key_or_obj):
