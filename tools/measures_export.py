@@ -25,6 +25,7 @@
     - Or a custom selection of measures (-m <measure1,measure2,measure3...>)
 """
 import sys
+import csv
 from requests.exceptions import HTTPError
 from sonar import measures, metrics, platform, options, exceptions
 from sonar.projects import projects
@@ -48,37 +49,14 @@ def __last_analysis(project_or_branch):
     return last_analysis
 
 
-def __get_object_measures_history(obj: object, wanted_metrics: list[str], **kwargs) -> dict[str, str]:
+def __get_json_measures_history(obj: object, wanted_metrics: list[str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
     data = {}
     try:
         data["history"] = obj.get_measures_history(wanted_metrics)
     except HTTPError as e:
         util.logger.error("HTTP Error %s, measures history export of %s skipped", str(e), str(obj))
-        return data
-    if kwargs[options.DATES_WITHOUT_TIME]:
-        for item in data["history"]:
-            item[0] = item[0].split("T")[0]
-    data["url"] = obj.url()
-    proj = obj
-    if not isinstance(obj, projects.Project):
-        proj = obj.concerned_object
-        data["branch"] = obj.name
-    data["projectKey"] = proj.key
-    data["projectName"] = proj.name
     return data
-
-
-def __get_json_measures_history(obj: object, wanted_metrics: list[str], **kwargs) -> dict[str, str]:
-    """Returns the measure history of an object (project, branch, application, portfolio) as JSON"""
-    d = __get_object_measures_history(obj, wanted_metrics, **kwargs)
-    if len(d) == 0:
-        return d
-    if not kwargs[options.WITH_URL]:
-        d.pop("url", None)
-    if not kwargs[options.WITH_BRANCHES]:
-        d.pop("branch", None)
-    return d
 
 
 def __get_csv_measures_history(obj: object, wanted_metrics: list[str], **kwargs) -> str:
@@ -117,15 +95,6 @@ def __get_object_measures(obj, wanted_metrics):
     measures_d["projectKey"] = proj.key
     measures_d["projectName"] = proj.name
     return measures_d
-
-
-def __get_json_measures(obj, wanted_metrics, **kwargs):
-    d = __get_object_measures(obj, wanted_metrics)
-    if not kwargs[options.WITH_URL]:
-        d.pop("url", None)
-    if not kwargs[options.WITH_BRANCHES]:
-        d.pop("branch", None)
-    return d
 
 
 def __empty_measures(obj: object, metrics_list: list[str], sep: str = ",") -> str:
@@ -268,6 +237,13 @@ def __parse_args(desc):
         required=False,
         help="Add projects/branches URLs in report",
     )
+    parser.add_argument(
+        "--asTable",
+        action="store_true",
+        default=False,
+        required=False,
+        help="Report measures history as table, instead of <date>,<metric>,<measure>",
+    )
     args = util.parse_and_check(parser)
     if args.ratingsAsNumbers:
         CONVERT_OPTIONS["ratings"] = "numbers"
@@ -279,70 +255,104 @@ def __parse_args(desc):
     return args
 
 
-def __write_measures_history_csv(file: str, args: object, obj_list: list[object], wanted_metrics: list[str]) -> None:
+def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
-    kwargs = vars(args)
-    sep = kwargs[options.CSV_SEPARATOR]
-    if not kwargs[options.WITH_BRANCHES]:
-        header = f"# Project Key:1{sep}Project Name:2{sep}Last Analysis:3"
-        i = 4
-    else:
-        header = "# Project Key:1{sep}Project Name:2{sep}Branch:3{sep}Last Analysis:4"
-        i = 5
-    for m in util.csv_to_list(wanted_metrics):
-        header += f"{sep}{m}:{i}"
-        i += 1
+
+    header_list = ["projectKey", "date"]
+    if kwargs[options.WITH_NAME]:
+        header_list.append("projectName")
+    if kwargs[options.WITH_BRANCHES]:
+        header_list.append("branch")
+    header_list.append("lastAnalysis")
+    header_list += wanted_metrics
     if kwargs[options.WITH_URL]:
-        header += f"{sep}URL:{i}"
+        header_list.append("url")
+
     with util.open_file(file) as fd:
-        print(header, file=fd)
-        for obj in obj_list:
-            print(__get_csv_measures_history(obj, wanted_metrics, **vars(args)), file=fd)
+        csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        csvwriter.writerow(header_list)
+        for project_data in data:
+            key = project_data["projectKey"]
+            if kwargs[options.WITH_NAME]:
+                name = project_data["projectName"]
+            if kwargs[options.WITH_BRANCHES]:
+                branch = project_data["branch"]
+            if kwargs[options.WITH_BRANCHES]:
+                url = project_data["branch"]
+            row = []
+            hist_data = {}
+            for h in project_data["history"]:
+                if h[0] not in hist_data:
+                    hist_data[h[0]] = {"projectKey": key}
+                hist_data[h[0]].update({h[1]: h[2]})
+
+            util.logger.debug("HIST DATA = %s", util.json_dump(hist_data))
+            for ts, data in hist_data.items():
+                row = [data["projectKey"], ts]
+                for m in wanted_metrics:
+                    row.append(data.get(m, ""))
+                csvwriter.writerow(row)
 
 
-def __write_measures_history_json(file: str, args: object, obj_list: list[object], wanted_metrics: list[str]) -> None:
-    """Bl"""
-    is_first = True
+def __write_measures_history_csv_as_list(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
+    """Writes measures history of object list in CSV format"""
+
+    header_list = ["timestamp", "projectKey"]
+    if kwargs[options.WITH_BRANCHES]:
+        header_list.append("branch")
+    header_list += ["metric", "value"]
     with util.open_file(file) as fd:
-        print("[", end="", file=fd)
-        for obj in obj_list:
-            if not is_first:
-                print(",", end="", file=fd)
-            values = __get_json_measures_history(obj, wanted_metrics, **vars(args))
-            json_str = util.json_dump(values)
-            print(json_str, file=fd)
-            is_first = False
-        print("\n]\n", file=fd)
+        csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        csvwriter.writerow(header_list)
+        for project_data in data:
+            key = project_data["projectKey"]
+            for metric_data in project_data["history"]:
+                csvwriter.writerow([metric_data[0], key, metric_data[1], metric_data[2]])
 
 
-def __write_measures_json(file: str, args: object, obj_list: list[object], wanted_metrics: list[str]) -> None:
-    """writes measures"""
-    is_first = True
-    with util.open_file(file) as fd:
-        print("[", end="", file=fd)
-
-        for obj in obj_list:
-            if not is_first:
-                print(",", end="", file=fd)
-            json_str = util.json_dump(__get_json_measures(obj, wanted_metrics, **vars(args)))
-            print(json_str, file=fd)
-            is_first = False
-        print("\n]\n", file=fd)
+def __write_measures_history_csv(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
+    """Writes measures history of object list in CSV format"""
+    if kwargs["asTable"]:
+        __write_measures_history_csv_as_table(file, wanted_metrics, data, **kwargs)
+    else:
+        __write_measures_history_csv_as_list(file, wanted_metrics, data, **kwargs)
 
 
-def __write_measures_csv(file: str, args: object, obj_list: list[object], wanted_metrics: list[str]) -> None:
+def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
-    kwargs = vars(args)
-    sep = kwargs[options.CSV_SEPARATOR]
-    with_br = kwargs[options.WITH_BRANCHES]
-    base = f"# Project Key:1{sep}Project Name:2{sep}Date:3{sep}Metric:4{sep}Value:5"
+    header_list = ["projectKey"]
+    if kwargs[options.WITH_NAME]:
+        header_list.append("projectName")
+    if kwargs[options.WITH_BRANCHES]:
+        header_list.append("branch")
+    header_list.append("lastAnalysis")
+    header_list += wanted_metrics
+    if kwargs[options.WITH_URL]:
+        header_list.append("url")
+    util.logger.debug("DATA WRITE CSV = %s", util.json_dump(data))
     with util.open_file(file) as fd:
-        if with_br:
-            print(f"{base}{sep}Branch:6", file=fd)
-        else:
-            print(base, file=fd)
-        for obj in obj_list:
-            print(__get_csv_measures(obj, wanted_metrics, **vars(args)), file=fd)
+        csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        csvwriter.writerow(header_list)
+        for project_data in data:
+            row = []
+            for m in header_list:
+                row.append(project_data.get(m, ""))
+            csvwriter.writerow(row)
+
+
+def __general_object_data(obj: object, **kwargs) -> dict[str, str]:
+    """Return general project/branch data"""
+    data = {}
+    proj = obj
+    if kwargs[options.WITH_BRANCHES] and not isinstance(obj, projects.Project):
+        proj = obj.concerned_object
+        data["branch"] = obj.key
+    data["projectKey"] = proj.key
+    if kwargs[options.WITH_URL]:
+        data["url"] = obj.url()
+    if kwargs[options.WITH_NAME]:
+        data["projectName"] = proj.name
+    return data
 
 
 def main():
@@ -372,19 +382,33 @@ def main():
 
     if endpoint.edition() == "community":
         args.withBranches = False
-    if args.history:
-        if fmt == "json":
-            __write_measures_history_json(file, args, obj_list, wanted_metrics)
-        else:
-            __write_measures_history_csv(file, args, obj_list, wanted_metrics)
-    else:
-        if fmt == "json":
-            __write_measures_json(file, args, obj_list, wanted_metrics)
-        else:
-            __write_measures_csv(file, args, obj_list, wanted_metrics)
 
-        util.logger.info("%d PROJECTS %d branches", len(project_list), nb_branches)
-        sys.exit(0)
+    kwargs = vars(args)
+    kwargs[options.WITH_NAME] = True
+    kwargs.pop("file", None)
+    measure_list = []
+    for obj in obj_list:
+        data = __general_object_data(obj=obj, **kwargs)
+        if args.history:
+            data.update(__get_json_measures_history(obj, wanted_metrics))
+            if kwargs[options.DATES_WITHOUT_TIME]:
+                for item in data["history"]:
+                    item[0] = item[0].split("T")[0]
+        else:
+            data.update(__get_object_measures(obj, wanted_metrics))
+        util.logger.debug("COLLECTED = %s", util.json_dump(data))
+        measure_list += [data]
+
+    if fmt == "json":
+        with util.open_file(file) as fd:
+            print(util.json_dump(measure_list), file=fd)
+    elif kwargs["history"]:
+        __write_measures_history_csv(file, wanted_metrics, measure_list, **kwargs)
+    else:
+        __write_measures_csv(file=file, wanted_metrics=wanted_metrics, data=measure_list, **kwargs)
+
+    util.logger.info("%d PROJECTS %d branches", len(project_list), nb_branches)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
