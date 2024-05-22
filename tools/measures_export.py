@@ -256,6 +256,13 @@ def __parse_args(desc):
     return args
 
 
+def __get_ts(ts: str, **kwargs) -> str:
+    """Return datetime or date only depending on cmd line options"""
+    if kwargs[options.DATES_WITHOUT_TIME]:
+        ts = ts.split("T")[0]
+    return ts
+
+
 def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
@@ -279,17 +286,23 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
             if kwargs[options.WITH_BRANCHES]:
                 branch = project_data["branch"]
             if kwargs[options.WITH_BRANCHES]:
-                url = project_data["branch"]
+                url = project_data["url"]
             row = []
             hist_data = {}
             if "history" not in project_data:
                 continue
             for h in project_data["history"]:
-                if h[0] not in hist_data:
-                    hist_data[h[0]] = {"projectKey": key}
-                hist_data[h[0]].update({h[1]: h[2]})
+                ts = __get_ts(h[0], **kwargs)
+                if ts not in hist_data:
+                    hist_data[ts] = {"projectKey": key}
+                    if kwargs[options.WITH_NAME]:
+                        hist_data[ts]["projectName"] = name
+                    if kwargs[options.WITH_BRANCHES]:
+                        hist_data[ts]["branch"] = branch
+                    if kwargs[options.WITH_BRANCHES]:
+                        hist_data[ts]["url"] = url
+                hist_data[ts].update({h[1]: h[2]})
 
-            util.logger.debug("HIST DATA = %s", util.json_dump(hist_data))
             for ts, data in hist_data.items():
                 row = [data["projectKey"], ts]
                 for m in wanted_metrics:
@@ -309,8 +322,10 @@ def __write_measures_history_csv_as_list(file: str, wanted_metrics: list[str], d
         csvwriter.writerow(header_list)
         for project_data in data:
             key = project_data["projectKey"]
+            if "history" not in project_data:
+                continue
             for metric_data in project_data["history"]:
-                csvwriter.writerow([metric_data[0], key, metric_data[1], metric_data[2]])
+                csvwriter.writerow([__get_ts(metric_data[0], **kwargs), key, metric_data[1], metric_data[2]])
 
 
 def __write_measures_history_csv(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
@@ -332,7 +347,6 @@ def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, s
     header_list += wanted_metrics
     if kwargs[options.WITH_URL]:
         header_list.append("url")
-    util.logger.debug("DATA WRITE CSV = %s", util.json_dump(data))
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         csvwriter.writerow(header_list)
@@ -395,9 +409,6 @@ def main():
         try:
             if args.history:
                 data.update(__get_json_measures_history(obj, wanted_metrics))
-                if kwargs[options.DATES_WITHOUT_TIME]:
-                    for item in data["history"]:
-                        item[0] = item[0].split("T")[0]
             else:
                 data.update(__get_object_measures(obj, wanted_metrics))
         except HTTPError as e:
