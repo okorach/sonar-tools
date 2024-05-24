@@ -214,12 +214,9 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
         w_name, w_br, w_url = kwargs[options.WITH_NAME], kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
         for project_data in data:
             key = project_data["projectKey"]
-            if w_name:
-                name = project_data["projectName"]
-            if w_br:
-                branch = project_data["branch"]
-            if w_url:
-                url = project_data["url"]
+            name = project_data["projectName"]
+            branch = project_data.get("branch", "")
+            url = project_data.get("url", "")
             row = []
             hist_data = {}
             if "history" not in project_data:
@@ -227,13 +224,7 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
             for h in project_data["history"]:
                 ts = __get_ts(h[0], **kwargs)
                 if ts not in hist_data:
-                    hist_data[ts] = {"projectKey": key}
-                    if w_name:
-                        hist_data[ts]["projectName"] = name
-                    if w_br:
-                        hist_data[ts]["branch"] = branch
-                    if w_url:
-                        hist_data[ts]["url"] = url
+                    hist_data[ts] = {"projectKey": key, "projectName": name, "branch": branch, "url": url}
                 hist_data[ts].update({h[1]: h[2]})
 
             for ts, data in hist_data.items():
