@@ -196,7 +196,7 @@ def __get_ts(ts: str, **kwargs) -> str:
     return ts
 
 
-def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
+def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], row_data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
     header_list = ["projectKey", "date"]
@@ -212,7 +212,7 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         csvwriter.writerow(header_list)
         w_name, w_br, w_url = kwargs[options.WITH_NAME], kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
-        for project_data in data:
+        for project_data in row_data:
             key = project_data["projectKey"]
             name = project_data["projectName"]
             branch = project_data.get("branch", "")
@@ -227,16 +227,16 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
                     hist_data[ts] = {"projectKey": key, "projectName": name, "branch": branch, "url": url}
                 hist_data[ts].update({h[1]: h[2]})
 
-            for ts, data in hist_data.items():
-                row = [data["projectKey"], ts]
+            for ts, row_data in hist_data.items():
+                row = [row_data["projectKey"], ts]
                 if w_name:
-                    row.append(data.get("projectName", ""))
+                    row.append(row_data.get("projectName", ""))
                 if w_br:
-                    row.append(data.get("branch", ""))
+                    row.append(row_data.get("branch", ""))
                 for m in wanted_metrics:
-                    row.append(data.get(m, ""))
+                    row.append(row_data.get(m, ""))
                 if w_url:
-                    row.append(data.get("url", ""))
+                    row.append(row_data.get("url", ""))
                 csvwriter.writerow(row)
 
 
@@ -308,31 +308,26 @@ def main():
         some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
 
-    with_branches = args.withBranches
-    if endpoint.edition() == "community":
-        with_branches = False
-
     wanted_metrics = __get_wanted_metrics(args, endpoint)
     (fmt, file) = __get_fmt_and_file(args)
+    kwargs = vars(args)
+    if endpoint.edition() == "community":
+        kwargs[options.WITH_BRANCHES] = False
+    kwargs[options.WITH_NAME] = True
+    kwargs.pop("file", None)
 
     try:
         project_list = projects.get_list(endpoint=endpoint, key_list=args.projectKeys)
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     obj_list = []
-    if with_branches:
+    if kwargs[options.WITH_BRANCHES]:
         for project in project_list.values():
             obj_list += project.branches().values()
     else:
         obj_list = project_list.values()
     nb_branches = len(obj_list)
 
-    if endpoint.edition() == "community":
-        args.withBranches = False
-
-    kwargs = vars(args)
-    kwargs[options.WITH_NAME] = True
-    kwargs.pop("file", None)
     measure_list = []
     for obj in obj_list:
         data = __general_object_data(obj=obj, **kwargs)
