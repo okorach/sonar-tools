@@ -106,6 +106,10 @@ do
     f="$TMP/measures-$env-2.json";    run_test_stdout $f sonar-measures-export -b -p -r -d -m _all --format json
     f="$TMP/measures-$env-3.csv";     run_test $f sonar-measures-export -b -f $f --csvSeparator '+' -m _main
 
+    f="$TMP/measures-history-$env-1.csv";     run_test $f sonar-measures-export -b -f $f --history
+    f="$TMP/measures-history-$env-2.csv";     run_test $f sonar-measures-export -b -f $f -k okorach_sonar-tools --history --asTable
+    f="$TMP/measures-history-$env-3.json";    run_test $f sonar-measures-export -b -f $f --history
+
     logmsg "IT $env sonar-findings-export"
 
     f="$TMP/findings-$env-unrel.csv";  run_test $f sonar-findings-export -v DEBUG -f $f
