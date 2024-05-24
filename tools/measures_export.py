@@ -196,28 +196,25 @@ def __get_ts(ts: str, **kwargs) -> str:
     return ts
 
 
-def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], row_data: dict[str, str], **kwargs) -> None:
+def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
-    header_list = ["projectKey", "date"]
-    if kwargs[options.WITH_NAME]:
-        header_list.append("projectName")
-    if kwargs[options.WITH_BRANCHES]:
-        header_list.append("branch")
-    header_list += wanted_metrics
-    if kwargs[options.WITH_URL]:
-        header_list.append("url")
+    w_br, w_url = kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
+    row = ["projectKey", "date", "projectName"]
+    if w_br:
+        row.append("branch")
+    row += wanted_metrics
+    if w_url:
+        row.append("url")
 
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
-        csvwriter.writerow(header_list)
-        w_name, w_br, w_url = kwargs[options.WITH_NAME], kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
-        for project_data in row_data:
+        csvwriter.writerow(row)
+        for project_data in data:
             key = project_data["projectKey"]
             name = project_data["projectName"]
             branch = project_data.get("branch", "")
             url = project_data.get("url", "")
-            row = []
             hist_data = {}
             if "history" not in project_data:
                 continue
@@ -228,13 +225,10 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
                 hist_data[ts].update({h[1]: h[2]})
 
             for ts, row_data in hist_data.items():
-                row = [row_data["projectKey"], ts]
-                if w_name:
-                    row.append(row_data.get("projectName", ""))
+                row = [row_data["projectKey"], ts, row_data.get("projectName", "")]
                 if w_br:
                     row.append(row_data.get("branch", ""))
-                for m in wanted_metrics:
-                    row.append(row_data.get(m, ""))
+                row += [row_data.get(m, "") for m in wanted_metrics]
                 if w_url:
                     row.append(row_data.get("url", ""))
                 csvwriter.writerow(row)
