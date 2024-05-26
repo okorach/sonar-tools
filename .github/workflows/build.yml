@@ -52,7 +52,7 @@ jobs:
           chmod +x ./run_linters.sh
           ./run_linters.sh
       #- name: Cache SonarQube packages
-      #  uses: actions/cache@v1
+      #  uses: actions/cache@v4
       #  with:
       #    path: ./.sonar
       #    key: ${{ runner.os }}-sonar-cache
