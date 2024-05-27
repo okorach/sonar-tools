@@ -35,7 +35,7 @@ JSON_FILE = "temp.json"
 STD_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), '-t', os.getenv("SONAR_TOKEN")]
 STD_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), '-t', os.getenv("SONAR_TOKEN_ADMIN_USER")]
 
-def file_not_empty(file: str) -> bool:
+def __file_not_empty(file: str) -> bool:
     """Returns whether a file exists and is not empty"""
     if not os.path.isfile(file):
         return False
@@ -48,6 +48,7 @@ def test_measures_export():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_measures_conversion():
@@ -57,6 +58,7 @@ def test_measures_conversion():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_measures_export_with_url():
@@ -66,6 +68,7 @@ def test_measures_export_with_url():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 
@@ -75,6 +78,8 @@ def test_measures_export_json():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
+    assert __file_not_empty(JSON_FILE)
+    os.remove(JSON_FILE)
 
 def test_measures_export_all():
     os.remove(CSV_FILE)
@@ -83,7 +88,7 @@ def test_measures_export_all():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert file_not_empty(CSV_FILE)
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_measures_export_json_all():
@@ -92,7 +97,8 @@ def test_measures_export_json_all():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert file_not_empty(JSON_FILE)
+    assert __file_not_empty(JSON_FILE)
+    os.remove(JSON_FILE)
 
 def test_measures_export_history():
     os.remove(CSV_FILE)
@@ -101,7 +107,7 @@ def test_measures_export_history():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert file_not_empty(CSV_FILE)
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_measures_export_history_as_table():
@@ -111,7 +117,7 @@ def test_measures_export_history_as_table():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert file_not_empty(CSV_FILE)
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_measures_export_history_as_table_no_time():
@@ -121,7 +127,7 @@ def test_measures_export_history_as_table_no_time():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert file_not_empty(CSV_FILE)
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_measures_export_history_as_table_with_url():
@@ -131,7 +137,7 @@ def test_measures_export_history_as_table_with_url():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert file_not_empty(CSV_FILE)
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_measures_export_dateonly():
@@ -141,7 +147,7 @@ def test_measures_export_dateonly():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert file_not_empty(CSV_FILE)
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_specific_measure():
@@ -151,7 +157,7 @@ def test_specific_measure():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-            assert file_not_empty(CSV_FILE)
+    assert __file_not_empty(CSV_FILE)
     os.remove(CSV_FILE)
 
 def test_non_existing_measure():
@@ -161,8 +167,8 @@ def test_non_existing_measure():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == options.ERR_NO_SUCH_KEY
-            assert not os.path.isfile(CSV_FILE)
-
+    assert not os.path.isfile(CSV_FILE)
+    os.remove(CSV_FILE)
 
 def test_non_existing_project():
     os.remove(CSV_FILE)
@@ -171,4 +177,5 @@ def test_non_existing_project():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == options.ERR_NO_SUCH_KEY
-            assert not os.path.isfile(CSV_FILE)
+    assert not os.path.isfile(CSV_FILE)
+    os.remove(CSV_FILE)
