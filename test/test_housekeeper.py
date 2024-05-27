@@ -19,15 +19,20 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-import os
+
+"""
+    sonar-housekeeper tests
+"""
+
 import sys
 from unittest.mock import patch
-import test.utilities as testutil
+import utilities as testutil
 from tools import housekeeper
 
 CMD = "sonar-housekeeper.py"
 
-def test_housekeeper():
+def test_housekeeper() -> None:
+    """test_housekeeper"""
     with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS):
         try:
             housekeeper.main()
@@ -36,7 +41,8 @@ def test_housekeeper():
     assert True
 
 
-def test_housekeeper_2():
+def test_housekeeper_2() -> None:
+    """test_housekeeper_2"""
     with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + ["--threads", "1"]):
         try:
             housekeeper.main()
@@ -45,7 +51,8 @@ def test_housekeeper_2():
     assert True
 
 
-def test_housekeeper_3():
+def test_housekeeper_3() -> None:
+    """test_housekeeper_3"""
     with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + ["-P", "30"]):
         try:
             housekeeper.main()

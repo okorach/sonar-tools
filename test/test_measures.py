@@ -19,10 +19,14 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""
+    sonar-measures-export tests
+"""
+
 import sys
 import os
 from unittest.mock import patch
-import test.utilities as testutil
+import utilities as testutil
 from sonar import options
 from tools import measures_export
 
@@ -30,7 +34,8 @@ CMD = "sonar-measures-export.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
-def test_measures_export():
+def test_measures_export() -> None:
+    """test_measures_export"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS):
         try:
@@ -41,7 +46,8 @@ def test_measures_export():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_measures_conversion():
+def test_measures_conversion() -> None:
+    """test_measures_conversion"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-r", "-p", "--withTags"]):
         try:
@@ -52,7 +58,8 @@ def test_measures_conversion():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_measures_export_with_url():
+def test_measures_export_with_url() -> None:
+    """test_measures_export_with_url"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-b", "-m", "_main", "--withURL"]):
         try:
@@ -63,7 +70,8 @@ def test_measures_export_with_url():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_measures_export_json():
+def test_measures_export_json() -> None:
+    """test_measures_export_json"""
     with patch.object(sys, "argv", JSON_OPTS + ["-b", "-m", "_main"]):
         try:
             measures_export.main()
@@ -73,7 +81,8 @@ def test_measures_export_json():
     testutil.clean(testutil.JSON_FILE)
 
 
-def test_measures_export_all():
+def test_measures_export_all() -> None:
+    """test_measures_export_all"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-b", "-m", "_all"]):
         try:
@@ -84,7 +93,8 @@ def test_measures_export_all():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_measures_export_json_all():
+def test_measures_export_json_all() -> None:
+    """test_measures_export_json_all"""
     with patch.object(sys, "argv", JSON_OPTS + ["-b", "-m", "_all"]):
         try:
             measures_export.main()
@@ -94,7 +104,8 @@ def test_measures_export_json_all():
     testutil.clean(testutil.JSON_FILE)
 
 
-def test_measures_export_history():
+def test_measures_export_history() -> None:
+    """test_measures_export_history"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--history", "-m", "_all"]):
         try:
@@ -105,7 +116,8 @@ def test_measures_export_history():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_measures_export_history_as_table():
+def test_measures_export_history_as_table() -> None:
+    """test_measures_export_history_as_table"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable"]):
         try:
@@ -116,7 +128,8 @@ def test_measures_export_history_as_table():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_measures_export_history_as_table_no_time():
+def test_measures_export_history_as_table_no_time() -> None:
+    """test_measures_export_history_as_table_no_time"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-d"]):
         try:
@@ -127,7 +140,8 @@ def test_measures_export_history_as_table_no_time():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_measures_export_history_as_table_with_url():
+def test_measures_export_history_as_table_with_url() -> None:
+    """test_measures_export_history_as_table_with_url"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "--withURL"]):
         try:
@@ -138,7 +152,8 @@ def test_measures_export_history_as_table_with_url():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_measures_export_dateonly():
+def test_measures_export_dateonly() -> None:
+    """test_measures_export_dateonly"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-d"]):
         try:
@@ -149,7 +164,8 @@ def test_measures_export_dateonly():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_specific_measure():
+def test_specific_measure() -> None:
+    """test_specific_measure"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,coverage"]):
         try:
@@ -160,7 +176,8 @@ def test_specific_measure():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_non_existing_measure():
+def test_non_existing_measure() -> None:
+    """test_non_existing_measure"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,bad_measure"]):
         try:
@@ -171,7 +188,8 @@ def test_non_existing_measure():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_non_existing_project():
+def test_non_existing_project() -> None:
+    """test_non_existing_project"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
         try:

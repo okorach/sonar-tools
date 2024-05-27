@@ -19,17 +19,22 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""
+    sonar-findings-export tests
+"""
+
 import os
 import sys
 from unittest.mock import patch
-import test.utilities as testutil
+import utilities as testutil
 from tools import findings_export
 
 CMD = "sonar-findings-export.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
-def test_findings_export():
+def test_findings_export() -> None:
+    """test_findings_export"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS):
         try:
@@ -40,7 +45,8 @@ def test_findings_export():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_findings_export_json():
+def test_findings_export_json() -> None:
+    """test_findings_export_json"""
     testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS + ["--format", "json"]):
         try:
@@ -62,7 +68,8 @@ def test_findings_export_json():
 #     testutil.clean(testutil.JSON_FILE)
 
 
-def test_findings_export_with_url():
+def test_findings_export_with_url() -> None:
+    """test_findings_export_with_url"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--withURL"]):
         try:
@@ -73,7 +80,8 @@ def test_findings_export_with_url():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_findings_export_statuses():
+def test_findings_export_statuses() -> None:
+    """test_findings_export_statuses"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "OPEN,CLOSED"]):
         try:
@@ -84,7 +92,8 @@ def test_findings_export_statuses():
     os.remove(testutil.CSV_FILE)
 
 
-def test_findings_export_date():
+def test_findings_export_date() -> None:
+    """test_findings_export_date"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--createdBefore", "2024-05-01"]):
         try:
@@ -95,7 +104,8 @@ def test_findings_export_date():
     os.remove(testutil.CSV_FILE)
 
 
-def test_findings_export_resolutions():
+def test_findings_export_resolutions() -> None:
+    """test_findings_export_resolutions"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "FALSE-POSITIVE,REMOVED"]):
         try:
@@ -106,7 +116,8 @@ def test_findings_export_resolutions():
     os.remove(testutil.CSV_FILE)
 
 
-def test_findings_export_mixed():
+def test_findings_export_mixed() -> None:
+    """test_findings_export_mixed"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL"]):
         try:
@@ -117,7 +128,8 @@ def test_findings_export_mixed():
     os.remove(testutil.CSV_FILE)
 
 
-def test_findings_export_key():
+def test_findings_export_key() -> None:
+    """test_findings_export_key"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools"]):
         try:
@@ -128,7 +140,8 @@ def test_findings_export_key():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_findings_export_alt_api():
+def test_findings_export_alt_api() -> None:
+    """test_findings_export_alt_api"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--useFindings"]):
         try:

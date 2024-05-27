@@ -19,6 +19,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""
+    test utilities
+"""
+
 import os
 
 LATEST = "http://localhost:9999"
@@ -38,6 +42,7 @@ def file_not_empty(file: str) -> bool:
 
 
 def clean(file: str) -> None:
+    """Deletes a file if exists"""
     try:
         os.remove(file)
     except FileNotFoundError:

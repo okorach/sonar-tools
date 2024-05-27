@@ -19,9 +19,13 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""
+    sonar-loc tests
+"""
+
 import sys
 from unittest.mock import patch
-import test.utilities as testutil
+import utilities as testutil
 from tools import loc
 
 CMD = "sonar-loc.py"
@@ -29,7 +33,8 @@ CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
 
-def test_loc():
+def test_loc() -> None:
+    """test_loc"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS):
         try:
@@ -40,7 +45,8 @@ def test_loc():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_loc_json():
+def test_loc_json() -> None:
+    """test_loc_json"""
     testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS):
         try:
@@ -51,7 +57,8 @@ def test_loc_json():
     testutil.clean(testutil.JSON_FILE)
 
 
-def test_loc_json_fmt():
+def test_loc_json_fmt() -> None:
+    """test_loc_json_fmt"""
     testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS + ["--format", "json", "-n", "-a", "--withURL"]):
         try:
@@ -62,7 +69,8 @@ def test_loc_json_fmt():
     testutil.clean(testutil.JSON_FILE)
 
 
-def test_loc_project():
+def test_loc_project() -> None:
+    """test_loc_project"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools"]):
         try:
@@ -73,7 +81,8 @@ def test_loc_project():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_loc_project_with_all_options():
+def test_loc_project_with_all_options() -> None:
+    """test_loc_project_with_all_options"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools", "--withURL", "-n", "-a"]):
         try:
@@ -84,7 +93,8 @@ def test_loc_project_with_all_options():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_loc_portfolios():
+def test_loc_portfolios() -> None:
+    """test_loc_portfolios"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--portfolios", "--topLevelOnly", "--withURL"]):
         try:
@@ -95,7 +105,8 @@ def test_loc_portfolios():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_loc_separator():
+def test_loc_separator() -> None:
+    """test_loc_separator"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--csvSeparator", "+"]):
         try:

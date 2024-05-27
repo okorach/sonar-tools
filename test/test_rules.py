@@ -19,17 +19,22 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-import os
+
+"""
+    sonar-rules tests
+"""
+
 import sys
 from unittest.mock import patch
-import test.utilities as testutil
+import utilities as testutil
 from tools import rules_cli
 
 CMD = "rules_cli.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
-def test_rules():
+def test_rules() -> None:
+    """test_rules"""
     testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS):
         try:
@@ -40,7 +45,8 @@ def test_rules():
     testutil.clean(testutil.CSV_FILE)
 
 
-def test_rules_json_format():
+def test_rules_json_format() -> None:
+    """test_rules_json_format"""
     testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS + ["--format", "json"]):
         try:
