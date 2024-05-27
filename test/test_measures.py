@@ -19,69 +19,48 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-import os
 import sys
+import os
 from unittest.mock import patch
+import test.utilities as testutil
 from sonar import options
 from tools import measures_export
 
-LATEST = "http://localhost:9999"
-LTA = "http://localhost:9000"
-
 CMD = "sonar-measures-export.py"
-CSV_FILE = "temp.csv"
-JSON_FILE = "temp.json"
-
-STD_OPTS = [CMD, "-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")]
-CSV_OPTS = STD_OPTS + ["-f", CSV_FILE]
-JSON_OPTS = STD_OPTS + ["-f", JSON_FILE]
-
-
-def __file_not_empty(file: str) -> bool:
-    """Returns whether a file exists and is not empty"""
-    if not os.path.isfile(file):
-        return False
-    return os.stat(file).st_size > 0
-
-
-def __clean(file: str) -> None:
-    try:
-        os.remove(file)
-    except FileNotFoundError:
-        pass
-
+CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
+JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
 def test_measures_export():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_measures_conversion():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-r", "-p", "--withTags"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_measures_export_with_url():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-b", "-m", "_main", "--withURL"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_measures_export_json():
@@ -90,19 +69,19 @@ def test_measures_export_json():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(JSON_FILE)
-    os.remove(JSON_FILE)
+    assert testutil.file_not_empty(testutil.JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
 
 
 def test_measures_export_all():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-b", "-m", "_all"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_measures_export_json_all():
@@ -111,93 +90,93 @@ def test_measures_export_json_all():
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(JSON_FILE)
-    os.remove(JSON_FILE)
+    assert testutil.file_not_empty(testutil.JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
 
 
 def test_measures_export_history():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--history", "-m", "_all"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_measures_export_history_as_table():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_measures_export_history_as_table_no_time():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-d"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_measures_export_history_as_table_with_url():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "--withURL"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_measures_export_dateonly():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-d"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_specific_measure():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,coverage"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_non_existing_measure():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,bad_measure"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == options.ERR_NO_SUCH_KEY
-    assert not os.path.isfile(CSV_FILE)
-    __clean(CSV_FILE)
+    assert not os.path.isfile(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_non_existing_project():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == options.ERR_NO_SUCH_KEY
-    assert not os.path.isfile(CSV_FILE)
-    __clean(CSV_FILE)
+    assert not os.path.isfile(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)

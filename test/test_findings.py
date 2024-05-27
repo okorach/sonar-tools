@@ -22,140 +22,118 @@
 import os
 import sys
 from unittest.mock import patch
-from sonar import options
+import test.utilities as testutil
 from tools import findings_export
 
-LATEST = "http://localhost:9999"
-LTA = "http://localhost:9000"
-
 CMD = "sonar-findings-export.py"
-CSV_FILE = "temp.csv"
-JSON_FILE = "temp.json"
-
-STD_OPTS = [CMD, "-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")]
-CSV_OPTS = STD_OPTS + ["-f", CSV_FILE]
-JSON_OPTS = STD_OPTS + ["-f", JSON_FILE]
-
-
-def __file_not_empty(file: str) -> bool:
-    """Returns whether a file exists and is not empty"""
-    if not os.path.isfile(file):
-        return False
-    return os.stat(file).st_size > 0
-
-
-def __clean(file: str) -> None:
-    try:
-        os.remove(file)
-    except FileNotFoundError:
-        pass
-
+CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
+JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
 def test_findings_export():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_findings_export_json():
-    __clean(JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS + ["--format", "json"]):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(JSON_FILE)
-    __clean(JSON_FILE)
+    assert testutil.file_not_empty(testutil.JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
 
 
 # def test_findings_export_sarif():
-#     __clean(JSON_FILE)
+#     testutil.clean(testutil.JSON_FILE)
 #     with patch.object(sys, 'argv', JSON_OPTS + ["--format", "sarif"]):
 #         try:
 #             findings_export.main()
 #         except SystemExit as e:
 #             assert int(str(e)) == 0
-#     assert __file_not_empty(JSON_FILE)
-#     __clean(JSON_FILE)
+#     assert testutil.file_not_empty(testutil.JSON_FILE)
+#     testutil.clean(testutil.JSON_FILE)
 
 
 def test_findings_export_with_url():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--withURL"]):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_findings_export_statuses():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "OPEN,CLOSED"]):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    os.remove(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    os.remove(testutil.CSV_FILE)
 
 
 def test_findings_export_date():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--createdBefore", "2024-05-01"]):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    os.remove(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    os.remove(testutil.CSV_FILE)
 
 
 def test_findings_export_resolutions():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "FALSE-POSITIVE,REMOVED"]):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    os.remove(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    os.remove(testutil.CSV_FILE)
 
 
 def test_findings_export_mixed():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL"]):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    os.remove(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    os.remove(testutil.CSV_FILE)
 
 
 def test_findings_export_key():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools"]):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_findings_export_alt_api():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--useFindings"]):
         try:
             findings_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)

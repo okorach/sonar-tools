@@ -19,52 +19,29 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-import os
 import sys
-import json
 from unittest.mock import patch
+import test.utilities as testutil
 from sonar import options
 from tools import audit
 
-LATEST = "http://localhost:9999"
-LTA = "http://localhost:9000"
-
 CMD = "sonar-audit.py"
-CSV_FILE = "temp.csv"
-JSON_FILE = "temp.json"
-
-STD_OPTS = [CMD, "-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")]
-CSV_OPTS = STD_OPTS + ["-f", CSV_FILE]
-JSON_OPTS = STD_OPTS + ["-f", JSON_FILE]
-
-
-def __file_not_empty(file: str) -> bool:
-    """Returns whether a file exists and is not empty"""
-    if not os.path.isfile(file):
-        return False
-    return os.stat(file).st_size > 0
-
-
-def __clean(file: str) -> None:
-    try:
-        os.remove(file)
-    except FileNotFoundError:
-        pass
-
+CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
+JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
 def test_audit():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS):
         try:
             audit.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_audit_stdout():
-    with patch.object(sys, "argv", STD_OPTS):
+    with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS):
         try:
             audit.main()
         except SystemExit as e:
@@ -72,51 +49,51 @@ def test_audit_stdout():
 
 
 def test_audit_json():
-    __clean(JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS):
         try:
             audit.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(JSON_FILE)
-    __clean(JSON_FILE)
+    assert testutil.file_not_empty(testutil.JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
 
 
 def test_sif_1():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--sif", "test/sif1.json"]):
         try:
             audit.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_sif_2():
-    __clean(JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif2.json"]):
         try:
             audit.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(JSON_FILE)
-    __clean(JSON_FILE)
+    assert testutil.file_not_empty(testutil.JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
 
 
 def test_audit_proj_key():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools"]):
         try:
             audit.main()
         except SystemExit as e:
             assert int(str(e)) == 0
-    assert __file_not_empty(CSV_FILE)
-    __clean(CSV_FILE)
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
 
 
 def test_audit_proj_non_existing_key():
-    __clean(CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
     with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools,bad_key"]):
         try:
             audit.main()
@@ -125,7 +102,7 @@ def test_audit_proj_non_existing_key():
 
 
 def test_sif_broken():
-    __clean(JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_broken.json"]):
         try:
             audit.main()
@@ -142,7 +119,7 @@ def test_deduct_fmt() -> None:
 
 
 def test_sif_non_existing():
-    __clean(JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_non_existing.json"]):
         try:
             audit.main()
@@ -151,7 +128,7 @@ def test_sif_non_existing():
 
 
 def test_sif_not_readable():
-    __clean(JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_not_readable.json"]):
         try:
             audit.main()

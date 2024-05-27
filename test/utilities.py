@@ -20,35 +20,25 @@
 #
 
 import os
-import sys
-from unittest.mock import patch
-import test.utilities as testutil
-from tools import housekeeper
 
-CMD = "sonar-housekeeper.py"
+LATEST = "http://localhost:9999"
+LTA = "http://localhost:9000"
 
-def test_housekeeper():
-    with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS):
-        try:
-            housekeeper.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert True
+CSV_FILE = "temp.csv"
+JSON_FILE = "temp.json"
+
+STD_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 
 
-def test_housekeeper_2():
-    with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + ["--threads", "1"]):
-        try:
-            housekeeper.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert True
+def file_not_empty(file: str) -> bool:
+    """Returns whether a file exists and is not empty"""
+    if not os.path.isfile(file):
+        return False
+    return os.stat(file).st_size > 0
 
 
-def test_housekeeper_3():
-    with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + ["-P", "30"]):
-        try:
-            housekeeper.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert True
+def clean(file: str) -> None:
+    try:
+        os.remove(file)
+    except FileNotFoundError:
+        pass
