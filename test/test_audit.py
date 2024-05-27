@@ -1,4 +1,4 @@
-#!/usr/bin/env env python3
+#!/usr/bin/env python3
 #
 # sonar-tools tests
 # Copyright (C) 2024 Olivier Korach
@@ -33,7 +33,9 @@ CMD = 'sonar-audit.py'
 CSV_FILE = "temp.csv"
 JSON_FILE = "temp.json"
 
-STD_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), '-t', os.getenv("SONAR_TOKEN_ADMIN_USER")]
+STD_OPTS = [CMD, "-u", os.getenv("SONAR_HOST_URL"), '-t', os.getenv("SONAR_TOKEN_ADMIN_USER")]
+CSV_OPTS = STD_OPTS + ["-f", CSV_FILE]
+JSON_OPTS = STD_OPTS + ["-f", JSON_FILE]
 
 def __file_not_empty(file: str) -> bool:
     """Returns whether a file exists and is not empty"""
@@ -49,7 +51,7 @@ def __clean(file: str) -> None:
 
 def test_audit():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["-f", CSV_FILE]):
+    with patch.object(sys, 'argv', CSV_OPTS):
         try:
             audit.main()
         except SystemExit as e:
@@ -58,7 +60,7 @@ def test_audit():
     __clean(CSV_FILE)
 
 def test_audit_stdout():
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS):
+    with patch.object(sys, 'argv', STD_OPTS):
         try:
             audit.main()
         except SystemExit as e:
@@ -66,7 +68,7 @@ def test_audit_stdout():
 
 def test_audit_json():
     __clean(JSON_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["-f", JSON_FILE]):
+    with patch.object(sys, 'argv', JSON_OPTS):
         try:
             audit.main()
         except SystemExit as e:
@@ -76,7 +78,7 @@ def test_audit_json():
 
 def test_sif_1():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["--sif", "test/sif1.json", "-f", CSV_FILE]):
+    with patch.object(sys, 'argv', CSV_OPTS + ["--sif", "test/sif1.json"]):
         try:
             audit.main()
         except SystemExit as e:
@@ -86,7 +88,7 @@ def test_sif_1():
 
 def test_sif_2():
     __clean(JSON_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["--sif", "test/sif2.json", "-f", JSON_FILE]):
+    with patch.object(sys, 'argv', JSON_OPTS + ["--sif", "test/sif2.json"]):
         try:
             audit.main()
         except SystemExit as e:
@@ -96,7 +98,7 @@ def test_sif_2():
 
 def test_audit_proj_key():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools", "-f", CSV_FILE]):
+    with patch.object(sys, 'argv', CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools"]):
         try:
             audit.main()
         except SystemExit as e:
@@ -106,7 +108,7 @@ def test_audit_proj_key():
 
 def test_audit_proj_non_existing_key():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools,bad_key", "-f", CSV_FILE]):
+    with patch.object(sys, 'argv', CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools,bad_key"]):
         try:
             audit.main()
         except SystemExit as e:
@@ -114,7 +116,7 @@ def test_audit_proj_non_existing_key():
 
 def test_sif_broken():
     __clean(JSON_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["--sif", "test/sif_broken.json", "-f", JSON_FILE]):
+    with patch.object(sys, 'argv', JSON_OPTS + ["--sif", "test/sif_broken.json"]):
         try:
             audit.main()
         except SystemExit as e:
@@ -129,7 +131,7 @@ def test_deduct_fmt() -> None:
 
 def test_sif_non_existing():
     __clean(JSON_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["--sif", "test/sif_non_existing.json", "-f", JSON_FILE]):
+    with patch.object(sys, 'argv', JSON_OPTS + ["--sif", "test/sif_non_existing.json"]):
         try:
             audit.main()
         except SystemExit as e:
@@ -137,7 +139,7 @@ def test_sif_non_existing():
 
 def test_sif_not_readable():
     __clean(JSON_FILE)
-    with patch.object(sys, 'argv', [CMD] + STD_OPTS + ["--sif", "test/sif_not_readable.json", "-f", JSON_FILE]):
+    with patch.object(sys, 'argv', JSON_OPTS + ["--sif", "test/sif_not_readable.json"]):
         try:
             audit.main()
         except SystemExit as e:
