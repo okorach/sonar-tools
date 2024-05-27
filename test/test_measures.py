@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# test measures
+# sonar-tools tests
 # Copyright (C) 2024 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #

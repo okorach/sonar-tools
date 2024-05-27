@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# test measures
+# sonar-tools tests
 # Copyright (C) 2024 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
@@ -22,7 +22,6 @@
 import os
 import sys
 from unittest.mock import patch
-from sonar import options
 from tools import loc
 
 LATEST = 'http://localhost:9999'
