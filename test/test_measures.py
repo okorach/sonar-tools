@@ -25,16 +25,17 @@ from unittest.mock import patch
 from sonar import options
 from tools import measures_export
 
-LATEST = 'http://localhost:9999'
-LTA = 'http://localhost:9000'
+LATEST = "http://localhost:9999"
+LTA = "http://localhost:9000"
 
-CMD = 'sonar-measures-export.py'
+CMD = "sonar-measures-export.py"
 CSV_FILE = "temp.csv"
 JSON_FILE = "temp.json"
 
-STD_OPTS = [CMD, "-u", os.getenv("SONAR_HOST_URL"), '-t', os.getenv("SONAR_TOKEN_ADMIN_USER")]
+STD_OPTS = [CMD, "-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 CSV_OPTS = STD_OPTS + ["-f", CSV_FILE]
 JSON_OPTS = STD_OPTS + ["-f", JSON_FILE]
+
 
 def __file_not_empty(file: str) -> bool:
     """Returns whether a file exists and is not empty"""
@@ -42,25 +43,28 @@ def __file_not_empty(file: str) -> bool:
         return False
     return os.stat(file).st_size > 0
 
+
 def __clean(file: str) -> None:
     try:
         os.remove(file)
     except FileNotFoundError:
         pass
 
+
 def test_measures_export():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS):
+    with patch.object(sys, "argv", CSV_OPTS):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
+
 
 def test_measures_conversion():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["-r", "-p", "--withTags"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["-r", "-p", "--withTags"]):
         try:
             measures_export.main()
         except SystemExit as e:
@@ -68,9 +72,10 @@ def test_measures_conversion():
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
 
+
 def test_measures_export_with_url():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["-b", "-m", "_main", "--withURL"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["-b", "-m", "_main", "--withURL"]):
         try:
             measures_export.main()
         except SystemExit as e:
@@ -80,17 +85,18 @@ def test_measures_export_with_url():
 
 
 def test_measures_export_json():
-    with patch.object(sys, 'argv', JSON_OPTS + ["-b", "-m", "_main"]):
+    with patch.object(sys, "argv", JSON_OPTS + ["-b", "-m", "_main"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
     assert __file_not_empty(JSON_FILE)
     os.remove(JSON_FILE)
+
 
 def test_measures_export_all():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["-b", "-m", "_all"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["-b", "-m", "_all"]):
         try:
             measures_export.main()
         except SystemExit as e:
@@ -98,8 +104,9 @@ def test_measures_export_all():
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
 
+
 def test_measures_export_json_all():
-    with patch.object(sys, 'argv', JSON_OPTS + ["-b", "-m", "_all"]):
+    with patch.object(sys, "argv", JSON_OPTS + ["-b", "-m", "_all"]):
         try:
             measures_export.main()
         except SystemExit as e:
@@ -107,59 +114,65 @@ def test_measures_export_json_all():
     assert __file_not_empty(JSON_FILE)
     os.remove(JSON_FILE)
 
+
 def test_measures_export_history():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["--history", "-m", "_all"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["--history", "-m", "_all"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
+
 
 def test_measures_export_history_as_table():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["--history", "--asTable"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
+
 
 def test_measures_export_history_as_table_no_time():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["--history", "--asTable", "-d"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-d"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
+
 
 def test_measures_export_history_as_table_with_url():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["--history", "--asTable", "--withURL"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "--withURL"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
+
 
 def test_measures_export_dateonly():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["-d"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["-d"]):
         try:
             measures_export.main()
         except SystemExit as e:
             assert int(str(e)) == 0
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
+
 
 def test_specific_measure():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["-m", "ncloc,sqale_index,coverage"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,coverage"]):
         try:
             measures_export.main()
         except SystemExit as e:
@@ -167,9 +180,10 @@ def test_specific_measure():
     assert __file_not_empty(CSV_FILE)
     __clean(CSV_FILE)
 
+
 def test_non_existing_measure():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["-m", "ncloc,sqale_index,bad_measure"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,bad_measure"]):
         try:
             measures_export.main()
         except SystemExit as e:
@@ -177,9 +191,10 @@ def test_non_existing_measure():
     assert not os.path.isfile(CSV_FILE)
     __clean(CSV_FILE)
 
+
 def test_non_existing_project():
     __clean(CSV_FILE)
-    with patch.object(sys, 'argv', CSV_OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
+    with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
         try:
             measures_export.main()
         except SystemExit as e:
