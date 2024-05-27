@@ -23,7 +23,7 @@
 """
 import sys
 import csv
-from sonar import rules, platform, options
+from sonar import rules, platform
 import sonar.utilities as util
 
 
