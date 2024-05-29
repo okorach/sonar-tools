@@ -31,6 +31,7 @@ from tools import housekeeper
 
 CMD = "sonar-housekeeper.py"
 
+
 def test_housekeeper() -> None:
     """test_housekeeper"""
     with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS):

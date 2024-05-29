@@ -34,6 +34,7 @@ from tools import config
 CMD = "config.py"
 OPTS = [CMD] + testutil.STD_OPTS + ["-e", "-f", testutil.JSON_FILE]
 
+
 def __test_config_cmd(arguments: list[str]) -> None:
     """Runs a test command"""
     testutil.clean(testutil.JSON_FILE)
@@ -44,6 +45,7 @@ def __test_config_cmd(arguments: list[str]) -> None:
             assert int(str(e)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
+
 
 def test_config_export() -> None:
     """test_config_export"""
@@ -80,6 +82,7 @@ def test_config_export_wrong() -> None:
             assert int(str(e)) == options.ERR_ARGS_ERROR
     assert not os.path.isfile(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
+
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""

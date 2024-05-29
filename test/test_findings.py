@@ -33,6 +33,7 @@ CMD = "sonar-findings-export.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
+
 def test_findings_export() -> None:
     """test_findings_export"""
     testutil.clean(testutil.CSV_FILE)

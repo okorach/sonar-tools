@@ -33,6 +33,7 @@ CMD = "rules_cli.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
+
 def test_rules() -> None:
     """test_rules"""
     testutil.clean(testutil.CSV_FILE)
