@@ -34,7 +34,8 @@ from tools import config
 CMD = "config.py"
 OPTS = [CMD] + testutil.STD_OPTS + ["-e", "-f", testutil.JSON_FILE]
 
-def __test_config_cmd(arguments: list[str]):
+def __test_config_cmd(arguments: list[str]) -> None:
+    """Runs a test command"""
     testutil.clean(testutil.JSON_FILE)
     with patch.object(sys, "argv", arguments):
         try:
