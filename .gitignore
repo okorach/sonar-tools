@@ -16,4 +16,5 @@ tmp/
 .DS_Store
 
 !test/config.json
+!test/sif*.json
 !.vscode/*.json

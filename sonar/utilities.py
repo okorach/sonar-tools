@@ -235,6 +235,7 @@ def check_last_sonar_tools_version() -> None:
         r.raise_for_status()
     except (requests.RequestException, requests.exceptions.HTTPError, requests.exceptions.Timeout) as e:
         logger.info("Can't access pypi.org, error %s", str(e))
+        return
     txt_version = json.loads(r.text)["versions"][-1]
     logger.info("Latest sonar-tools version is %s", txt_version)
     if tuple(".".split(txt_version)) > tuple(".".split(version.PACKAGE_VERSION)):

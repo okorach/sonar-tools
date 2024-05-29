@@ -23,7 +23,7 @@
 """
 import sys
 import csv
-from sonar import rules, platform, options
+from sonar import rules, platform
 import sonar.utilities as util
 
 
@@ -42,27 +42,7 @@ def __get_fmt_and_file(args: object) -> tuple[str]:
 def __parse_args(desc: str) -> object:
     """Sets and parses CLI arguments"""
     parser = util.set_common_args(desc)
-    parser = util.set_key_arg(parser)
     parser = util.set_output_file_args(parser)
-    parser.add_argument(
-        "-m",
-        "--metricKeys",
-        required=False,
-        help="Comma separated list of metrics or _all or _main",
-    )
-    parser.add_argument(
-        "-e",
-        required=False,
-        action="store_true",
-    )
-    parser.add_argument(
-        "--" + options.WITH_URL,
-        action="store_true",
-        default=False,
-        required=False,
-        help="Add rules URLs in report",
-    )
-
     args = util.parse_and_check(parser)
     return args
 

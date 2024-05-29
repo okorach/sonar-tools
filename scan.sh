@@ -20,15 +20,16 @@
 #
 
 dolint=true
-tests=pytest
+dotest=false
+
 while [ $# -ne 0 ]
 do
   case "$1" in
     -nolint)
       dolint=false
       ;;
-    -unittest)
-      tests=unittest
+    -test)
+      dotest=true
       ;;
     *)
       scanOpts="$scanOpts $1"
@@ -46,14 +47,9 @@ coverageReport="$buildDir/coverage.xml"
 [ ! -d $buildDir ] && mkdir $buildDir
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
-echo "Running tests"
-if [ "$tests" != "unittest" ]; then
-  coverage run -m pytest
-  # pytest --cov=mediatools --cov-branch --cov-report=xml:$coverageReport testpytest/
-else
-  coverage run --source=. --branch -m unittest discover
+if [ "$dotest" == "true" ]; then
+  ./run_tests.sh
 fi
-coverage xml -o $coverageReport
 
 if [ "$dolint" != "false" ]; then
   ./run_linters.sh
