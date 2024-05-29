@@ -392,10 +392,16 @@ class Branch(components.Component):
         """
         if audit_settings.get("audit.project.branches", True):
             util.logger.debug("Auditing %s", str(self))
-            return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
+            try:
+                return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
+            except HTTPError as e:
+                if e.response.status_code == HTTPStatus.FORBIDDEN:
+                    util.logger.error("Not enough permission to fully audit %s", str(self))
+                else:
+                    util.logger.error("HTTP error %s while auditing %s", str(e), str(self))
         else:
             util.logger.debug("Branch audit disabled, skipping audit of %s", str(self))
-            return []
+        return []
 
     def search_params(self):
         """Return params used to search for that object
