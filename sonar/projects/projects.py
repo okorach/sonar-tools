@@ -537,17 +537,23 @@ class Project(components.Component):
         :rtype: list[Problem]
         """
         util.logger.debug("Auditing %s", str(self))
-        return (
-            self.__audit_last_analysis(audit_settings)
-            + self.__audit_branches(audit_settings)
-            + self.__audit_pull_requests(audit_settings)
-            + self.__audit_visibility(audit_settings)
-            + self.__audit_languages(audit_settings)
-            + self.permissions().audit(audit_settings)
-            + self._audit_bg_task(audit_settings)
-            + self.__audit_binding_valid(audit_settings)
-            + self.__audit_zero_loc(audit_settings)
-        )
+        problems = []
+        try:
+            problems = self.__audit_last_analysis(audit_settings)
+            problems += self.__audit_visibility(audit_settings)
+            problems += self.__audit_zero_loc(audit_settings)
+            problems += self.__audit_languages(audit_settings)
+            problems += self.permissions().audit(audit_settings)
+            problems += self.__audit_branches(audit_settings)
+            problems += self.__audit_pull_requests(audit_settings)
+            problems += self._audit_bg_task(audit_settings)
+            problems += self.__audit_binding_valid(audit_settings)
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.FORBIDDEN:
+                util.logger.error("Not enough permission to fully audit %s", str(self))
+            else:
+                util.logger.error("HTTP error %s while auditing %s", str(e), str(self))
+        return problems
 
     def export_zip(self, timeout=180):
         """Exports project as zip file, synchronously
@@ -1181,18 +1187,24 @@ def __audit_thread(queue, results, audit_settings, bindings):
         util.logger.debug("Picking from the queue")
         project = queue.get()
         results += project.audit(audit_settings)
-        if project.endpoint.edition() == "community" or not audit_bindings or project.is_part_of_monorepo():
-            queue.task_done()
-            util.logger.debug("%s audit done", str(project))
-            continue
-        bindkey = project.binding_key()
-        if bindkey and bindkey in bindings:
-            rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE_BINDING)
-            results.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(project), str(bindings[bindkey])), concerned_object=project))
-        else:
-            bindings[bindkey] = project
+        try:
+            if project.endpoint.edition() == "community" or not audit_bindings or project.is_part_of_monorepo():
+                queue.task_done()
+                util.logger.debug("%s audit done", str(project))
+                continue
+            bindkey = project.binding_key()
+            if bindkey and bindkey in bindings:
+                rule = rules.get_rule(rules.RuleId.PROJ_DUPLICATE_BINDING)
+                results.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(project), str(bindings[bindkey])), concerned_object=project))
+            else:
+                bindings[bindkey] = project
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.FORBIDDEN:
+                util.logger.error("Not enough permission to fully audit %s", str(project))
+            else:
+                util.logger.error("HTTP error %s while auditing %s", str(e), str(project))
         queue.task_done()
-        util.logger.debug("%s audit done", str(project))
+        util.logger.debug("%s audit complete", str(project))
     util.logger.debug("Queue empty, exiting thread")
 
 
