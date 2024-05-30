@@ -53,7 +53,7 @@ def main():
 
     try:
         dump = projects.export_zip(endpoint=sq, key_list=args.projectKeys, export_timeout=args.exportTimeout, threads=args.threads)
-    except exceptions.ObjectNotFound as e:
+    except exceptions.ObjectNotFound:
         sys.exit(options.ERR_NO_SUCH_KEY)
 
     with utilities.open_file(args.file) as fd:
