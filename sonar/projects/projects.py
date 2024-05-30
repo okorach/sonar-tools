@@ -74,7 +74,7 @@ class Project(components.Component):
     """
 
     @classmethod
-    def get_object(cls, endpoint, key):
+    def get_object(cls, endpoint: object, key: str):
         """Creates a project from a search in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -88,14 +88,15 @@ class Project(components.Component):
         try:
             data = json.loads(endpoint.get(_SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             if len(data["components"]) == 0:
-                raise exceptions.ObjectNotFound(key, f"Project key {key} not found")
+                util.logger.error("Project key '%s' not found", key)
+                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data["components"][0])
         except HTTPError as e:
             if e.response.status_code != HTTPStatus.FORBIDDEN:
                 raise
             data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
             if "errors" in data:
-                raise exceptions.ObjectNotFound(key, f"Project key {key} not found")
+                raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data)
 
     @classmethod
