@@ -93,10 +93,14 @@ def __dump_json(object_list, fd, **kwargs):
     for o in object_list.values():
         if obj_type is None:
             obj_type = type(o).__name__.lower()
-        d = {"key": o.key, "ncloc": o.loc()}
+        d = {"key": o.key, "ncloc": ""}
+        try:
+            d["ncloc"] = o.loc()
+        except HTTPError as e:
+            util.logger.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
         if kwargs.get(options.WITH_NAME, False):
             d["name"] = o.name
-        if kwargs.get(options.WITH_LAST_ANALYSIS, False):
+        if d["ncloc"] != "" and kwargs.get(options.WITH_LAST_ANALYSIS, False):
             d["lastAnalysis"] = util.date_to_string(o.last_analysis())
         if kwargs.get(options.WITH_URL, False):
             d["url"] = o.url()

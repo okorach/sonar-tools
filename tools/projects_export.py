@@ -25,7 +25,7 @@
 """
 import sys
 import datetime
-from sonar import options, platform, utilities
+from sonar import options, platform, utilities, exceptions
 from sonar.projects import projects
 
 
@@ -51,11 +51,14 @@ def main():
             options.ERR_UNSUPPORTED_OPERATION,
         )
 
+    try:
+        dump = projects.export_zip(endpoint=sq, key_list=args.projectKeys, export_timeout=args.exportTimeout, threads=args.threads)
+    except exceptions.ObjectNotFound:
+        sys.exit(options.ERR_NO_SUCH_KEY)
+
     with utilities.open_file(args.file) as fd:
-        print(
-            utilities.json_dump(projects.export_zip(endpoint=sq, key_list=args.projectKeys, export_timeout=args.exportTimeout, threads=args.threads)),
-            file=fd,
-        )
+        print(utilities.json_dump(dump), file=fd)
+
     utilities.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
