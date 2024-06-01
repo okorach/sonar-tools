@@ -153,6 +153,18 @@ def test_measures_export_history_as_table_with_url() -> None:
     testutil.clean(testutil.CSV_FILE)
 
 
+def test_measures_export_history_as_table_with_branch() -> None:
+    """test_measures_export_history_as_table_with_url"""
+    testutil.clean(testutil.CSV_FILE)
+    with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-b"]):
+        try:
+            measures_export.main()
+        except SystemExit as e:
+            assert int(str(e)) == 0
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
+
+
 def test_measures_export_dateonly() -> None:
     """test_measures_export_dateonly"""
     testutil.clean(testutil.CSV_FILE)
