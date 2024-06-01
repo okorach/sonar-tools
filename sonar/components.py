@@ -25,7 +25,7 @@
 
 import json
 import sonar.sqobject as sq
-from sonar import settings, tasks
+from sonar import settings, tasks, measures
 import sonar.utilities as util
 
 SEARCH_API = "components/search"
@@ -187,6 +187,10 @@ class Component(sq.SqObject):
             last_task.concerned_object = self
             return last_task.audit(audit_settings)
         return []
+
+    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+        """Returns the history of a project metrics"""
+        return measures.get_history(self, metrics_list)
 
 
 def get_components(component_types, endpoint):
