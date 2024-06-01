@@ -162,16 +162,16 @@ def get_history(concerned_object: object, metrics_list: list[str], **kwargs) -> 
             raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
         raise e
     res_list = []
-    last_metric, last_date = "", ""
+    # last_metric, last_date = "", ""
     for m in reversed(data["measures"]):
         m_key = m["metric"]
         for dt in m["history"]:
             if "value" in dt:
-                cur_date = dt["date"].split("T")[0]
-                if cur_date != last_date or last_metric != m_key:
-                    res_list.append([dt["date"], m_key, dt["value"]])
-                    last_date = cur_date
-                    last_metric = m_key
+                # cur_date = dt["date"].split("T")[0]
+                # if cur_date != last_date or last_metric != m_key:
+                res_list.append([dt["date"], m_key, dt["value"]])
+                # last_date = cur_date
+                # last_metric = m_key
     return res_list
 
 
