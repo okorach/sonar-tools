@@ -27,6 +27,8 @@
 
 """
 import sys
+import logging
+
 from sonar import platform, tokens, users, groups, options
 from sonar.projects import projects, branches, pull_requests
 import sonar.utilities as util
@@ -81,31 +83,23 @@ def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads
 def get_user_problems(max_days, endpoint):
     settings = {
         "audit.tokens.maxAge": max_days,
-        "audit.tokens.maxUnusedAge": 30,
-        "audit.groups.empty": True,
+        "audit.tokens.maxUnusedAge": 90,
+        # "audit.groups.empty": True,
     }
     settings = config.load(config_name="sonar-audit", settings=settings)
     user_problems = users.audit(endpoint=endpoint, audit_settings=settings)
     nb_problems = len(user_problems)
+    loglevel = logging.WARNING
     if nb_problems == 0:
-        util.logger.info(
-            "%d user tokens older than %d days found during audit",
-            nb_problems,
-            max_days,
-        )
-    else:
-        util.logger.warning(
-            "%d user tokens older than %d days found during audit",
-            nb_problems,
-            max_days,
-        )
-    group_problems = groups.audit(endpoint=endpoint, audit_settings=settings)
-    user_problems += group_problems
-    nb_problems = len(group_problems)
-    if nb_problems == 0:
-        util.logger.info("%d empty groups found during audit", nb_problems)
-    else:
-        util.logger.warning("%d empty groups found during audit", nb_problems)
+        loglevel = logging.INFO
+    util.logger.log(loglevel, "%d user tokens older than %d days, or unused since 90 days, found during audit", nb_problems, max_days)
+    # group_problems = groups.audit(endpoint=endpoint, audit_settings=settings)
+    # user_problems += group_problems
+    # nb_problems = len(group_problems)
+    # loglevel = logging.WARNING
+    # if nb_problems == 0:
+    #     loglevel = logging.INFO
+    # util.logger.log(loglevel, "%d empty groups found during audit", nb_problems)
     return user_problems
 
 
