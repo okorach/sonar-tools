@@ -1,3 +1,9 @@
+# Version 3.1
+  - Several bug fixes, in particular Sonar Tools would hang if providing a token with insufficient permissions for projects (Browse is minimally needed)
+  - `sonar-findings-export` now exports more meaningful issue status (FP, ACCEPTED etc...) instead of simply RESOLVED
+  - Small improvement: `sonar-measures-export --history` can export measures history as history table
+  - Small improvement: `sonar-audit` now checks for SonarQube logs to detect any suspicious error or warning
+
 # Version 3.0
   - Compatibility with SonarCloud of the following tools:
     - `sonar-loc`
