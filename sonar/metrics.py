@@ -129,7 +129,7 @@ class Metric(sqobject.SqObject):
         :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
         :rtype: bool
         """
-        return self.type in METRICS_BY_TYPE[metric_type]
+        return metric_type in METRICS_BY_TYPE and self.type in METRICS_BY_TYPE[metric_type]
 
 
 def is_a_rating(metric_key):
@@ -196,7 +196,7 @@ def is_of_type(metric_key, metric_type):
     :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
     :rtype: bool
     """
-    return metric_key in METRICS_BY_TYPE[metric_type]
+    return metric_type in METRICS_BY_TYPE and metric_key in METRICS_BY_TYPE[metric_type]
 
 
 def count(endpoint, use_cache=True):
