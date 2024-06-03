@@ -38,7 +38,6 @@ _JSON_FIELDS_PRIVATE = (
     "_debt",
     "component",
     "language",
-    "resolution",
 )
 
 _CSV_FIELDS = (
@@ -192,6 +191,13 @@ class Finding(sq.SqObject):
         data["file"] = self.file()
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
+        if data.get("resolution", None):
+            data["status"] = data.pop("resolution")
+        status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "FIXED"}
+        for old, new in status_conversion.items():
+            if data["status"] == old:
+                data["status"] = new
+                break
         for field in _JSON_FIELDS_PRIVATE:
             data.pop(field, None)
         for k in data.copy():
