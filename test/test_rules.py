@@ -28,7 +28,7 @@ import sys
 from unittest.mock import patch
 import utilities as testutil
 from tools import rules_cli
-from sonar import rules
+from sonar import rules, exceptions
 
 CMD = "rules_cli.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
@@ -69,8 +69,11 @@ def test_get_rule() -> None:
 
 def test_get_nonexisting_rule() -> None:
     """test_get_nonexisting_rule"""
-    myrule = rules.Rule.get_object(endpoint=testutil.SONARQUBE, key="badlang:S127")
-    assert myrule is None
+    try:
+        _ = rules.Rule.get_object(endpoint=testutil.SONARQUBE, key="badlang:S127")
+        assert False
+    except exceptions.ObjectNotFound as e:
+        assert e.key == "badlang:S127"
 
 
 def test_export_all() -> None:
