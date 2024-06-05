@@ -141,13 +141,7 @@ def __parse_args(desc):
         action="store_true",
         help="Also list the last analysis date on top of nbr of LoC",
     )
-    parser.add_argument(
-        "--" + options.WITH_URL,
-        required=False,
-        default=False,
-        action="store_true",
-        help="Also list the URL of the objects",
-    )
+    options.add_url_arg(parser)
     parser.add_argument(
         "--portfolios",
         required=False,

@@ -151,13 +151,7 @@ def __parse_args(desc):
         required=False,
         help="Reports measures history not just last value",
     )
-    parser.add_argument(
-        "--" + options.WITH_URL,
-        action="store_true",
-        default=False,
-        required=False,
-        help="Add projects/branches URLs in report",
-    )
+    options.add_url_arg(parser)
     parser.add_argument(
         "--asTable",
         action="store_true",

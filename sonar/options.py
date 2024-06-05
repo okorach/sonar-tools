@@ -112,3 +112,14 @@ def add_dateformat_arg(parser: object) -> object:
         help="Reports timestamps only with date, not time",
     )
     return parser
+
+def add_url_arg(parser: object) -> object:
+    """Adds the option to export URL of objects"""
+    parser.add_argument(
+        f"--{WITH_URL}",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Also list the URL of the objects",
+    )
+    return parser
