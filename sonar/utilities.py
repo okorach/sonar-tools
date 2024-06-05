@@ -41,8 +41,6 @@ OPT_URL = "url"
 OPT_VERBOSE = "verbosity"
 OPT_SKIP_VERSION_CHECK = "skipVersionCheck"
 
-OPT_LOGFILE_SHORT = "l"
-OPT_LOGFILE_LONG = "logfile"
 DEFAULT_LOGGER = "sonar-tools"
 DEFAULT_LOGFILE = f"{DEFAULT_LOGGER}.log"
 LOG_FORMAT = "%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s"
@@ -133,8 +131,8 @@ def set_common_args(desc):
         help="Prevents sonar-tools to occasionnally check from more recent version",
     )
     parser.add_argument(
-        f"-{OPT_LOGFILE_SHORT}",
-        f"--{OPT_LOGFILE_LONG}",
+        f"-{options.LOGFILE_SHORT}",
+        f"--{options.LOGFILE}",
         required=False,
         default=None,
         help="Define location of logfile, logs are only sent to stderr if not set",
