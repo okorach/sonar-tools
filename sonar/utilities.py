@@ -72,9 +72,10 @@ def __set_logger(filename: str = None, logger_name: str = None) -> None:
     if logger_name is not None:
         logger = logging.getLogger(logger_name)
     if filename is not None:
-        new_fh = logging.FileHandler(filename)
-        logger.addHandler(new_fh)
-        new_fh.setFormatter(FORMATTER)
+        fh = logging.FileHandler(filename)
+        logger.addHandler(fh)
+        fh.setFormatter(FORMATTER)
+        logger.addHandler(ch)
 
 
 def set_common_args(desc):
