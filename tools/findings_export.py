@@ -129,7 +129,7 @@ def parse_args(desc):
         required=False,
         help="Reports timestamps only with date, not time",
     )
-    args = util.parse_and_check(parser)
+    args = util.parse_and_check(parser=parser, logger_name="sonar-findings-export")
     return args
 
 

@@ -162,7 +162,7 @@ def __parse_args(desc):
         action="store_true",
         help="Extracts only toplevel portfolios LoCs, not sub-portfolios",
     )
-    args = util.parse_and_check(parser)
+    args = util.parse_and_check(parser=parser, logger_name="sonar-loc")
     return args
 
 

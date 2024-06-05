@@ -41,7 +41,7 @@ def main():
         default=180,
         help="Maximum wait time for export",
     )
-    args = utilities.parse_and_check(parser)
+    args = utilities.parse_and_check(parser=parser, logger_name="sonar-projects-export")
     start_time = datetime.datetime.today()
     sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
 

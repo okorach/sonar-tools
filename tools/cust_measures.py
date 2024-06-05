@@ -34,7 +34,7 @@ def parse_args(desc):
     parser.add_argument("-m", "--metricKey", required=True, help="What custom metric to work on")
     parser.add_argument("--value", required=False, help="Updates the value of the metric")
     parser.add_argument("--description", required=False, help="Updates the description of the metric")
-    return utilities.parse_and_check(parser)
+    return utilities.parse_and_check(parser, logger_name="sonar-custom-measures")
 
 
 def main():

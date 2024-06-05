@@ -55,7 +55,7 @@ def _check_sq_environments(import_sq, export_sq):
 def main():
     parser = util.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
-    args = util.parse_and_check(parser)
+    args = util.parse_and_check(parser=parser, logger_name="sonar-projects-import")
     sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
 
     with open(args.projectsFile, "r", encoding="utf-8") as file:

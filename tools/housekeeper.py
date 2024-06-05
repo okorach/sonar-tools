@@ -152,7 +152,7 @@ def _parse_arguments():
         default=_DEFAULT_TOKEN_OBSOLESCENCE,
         help=f"Deletes user tokens older than a certain number of days, by default {_DEFAULT_TOKEN_OBSOLESCENCE} days",
     )
-    args = util.parse_and_check(parser)
+    args = util.parse_and_check(parser=parser, logger_name="sonar-housekeeper")
     return args
 
 
