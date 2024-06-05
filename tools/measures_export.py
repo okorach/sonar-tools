@@ -119,13 +119,7 @@ def __parse_args(desc):
         required=False,
         help="Comma separated list of metrics or _all or _main",
     )
-    parser.add_argument(
-        "-b",
-        "--" + options.WITH_BRANCHES,
-        required=False,
-        action="store_true",
-        help="Also extract branches metrics",
-    )
+    options.add_branch_arg(parser)
     parser.add_argument(
         "--withTags",
         required=False,
@@ -149,14 +143,7 @@ def __parse_args(desc):
         required=False,
         help="Reports percentages as string xy.z%% instead of float values 0.xyz",
     )
-    parser.add_argument(
-        "-d",
-        f"--{options.DATES_WITHOUT_TIME}",
-        action="store_true",
-        default=False,
-        required=False,
-        help="Reports timestamps only with date, not time",
-    )
+    options.add_dateformat_arg(parser)
     parser.add_argument(
         f"--{options.WITH_HISTORY}",
         action="store_true",
