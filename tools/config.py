@@ -98,7 +98,7 @@ def __parse_args(desc):
         help="Also exports informative data that would be ignored as part of an import. Informative field are prefixed with _."
         "This option is ignored in case of import",
     )
-    args = utilities.parse_and_check(parser)
+    args = utilities.parse_and_check(parser=parser, logger_name="sonar-config")
     return args
 
 

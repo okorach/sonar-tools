@@ -43,7 +43,7 @@ def __parse_args(desc: str) -> object:
     """Sets and parses CLI arguments"""
     parser = util.set_common_args(desc)
     parser = util.set_output_file_args(parser)
-    args = util.parse_and_check(parser)
+    args = util.parse_and_check(parser=parser, logger_name="sonar-rules")
     return args
 
 

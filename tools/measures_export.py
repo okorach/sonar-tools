@@ -178,7 +178,7 @@ def __parse_args(desc):
         required=False,
         help="Report measures history as table, instead of <date>,<metric>,<measure>",
     )
-    args = util.parse_and_check(parser)
+    args = util.parse_and_check(parser=parser, logger_name="sonar-measures-export")
     if args.ratingsAsNumbers:
         CONVERT_OPTIONS["ratings"] = "numbers"
     if args.percentsAsString:

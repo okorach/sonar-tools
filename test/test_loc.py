@@ -24,6 +24,7 @@
 """
 
 import sys
+import os
 from unittest.mock import patch
 import utilities as testutil
 from tools import loc
@@ -36,12 +37,14 @@ JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 def test_loc() -> None:
     """test_loc"""
     testutil.clean(testutil.CSV_FILE)
+    testutil.clean("sonar-tools.log")
     with patch.object(sys, "argv", CSV_OPTS):
         try:
             loc.main()
         except SystemExit as e:
             assert int(str(e)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
+    assert not os.path.isfile("sonar-tools.log")
     testutil.clean(testutil.CSV_FILE)
 
 
@@ -115,3 +118,24 @@ def test_loc_separator() -> None:
             assert int(str(e)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
+
+
+def test_logging_options() -> None:
+    """test logging options"""
+    testutil.clean(testutil.CSV_FILE)
+    testutil.clean("sonar-tools.log")
+    logfile = "sonar-loc-logging.log"
+    testutil.clean(logfile)
+    with patch.object(sys, "argv", CSV_OPTS + ["-l", logfile]):
+        try:
+            loc.main()
+        except SystemExit as e:
+            assert int(str(e)) == 0
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    assert testutil.file_not_empty(logfile)
+    with open(logfile, encoding="utf-8") as f:
+        first_line = f.readline()
+    assert "| sonar-loc |" in first_line
+    testutil.clean(testutil.CSV_FILE)
+    testutil.clean("sonar-tools.log")
+    testutil.clean("sonar-loc-logging.log")

@@ -40,6 +40,14 @@ from sonar import options, version
 OPT_URL = "url"
 OPT_VERBOSE = "verbosity"
 OPT_SKIP_VERSION_CHECK = "skipVersionCheck"
+
+OPT_LOGFILE_SHORT = "l"
+OPT_LOGFILE_LONG = "logfile"
+DEFAULT_LOGGER = "sonar-tools"
+DEFAULT_LOGFILE = f"{DEFAULT_LOGGER}.log"
+LOG_FORMAT = "%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s"
+FORMATTER = logging.Formatter(LOG_FORMAT)
+
 OPT_ORGANIZATION = "organization"
 OPT_MODE = "mode"
 DRY_RUN = "dryrun"
@@ -53,25 +61,22 @@ SQ_TIME_FORMAT = "%H:%M:%S"
 
 CSV_SEPARATOR = ","
 
-logger = logging.getLogger("sonar-tools")
-formatter = logging.Formatter("%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s")
-fh = logging.FileHandler("sonar-tools.log")
+# By default log as sonar-tools on stderr only
+logger = logging.getLogger(DEFAULT_LOGGER)
 ch = logging.StreamHandler()
-logger.addHandler(fh)
 logger.addHandler(ch)
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
+ch.setFormatter(FORMATTER)
 
 
-def set_logger(name):
+def __set_logger(filename: str = None, logger_name: str = None) -> None:
+    """Sets the logging file (stderr only by default) and the logger name"""
     global logger
-    logger = logging.getLogger(name)
-    new_fh = logging.FileHandler(name + ".log")
-    new_ch = logging.StreamHandler()
-    logger.addHandler(new_fh)
-    logger.addHandler(new_ch)
-    new_fh.setFormatter(formatter)
-    new_ch.setFormatter(formatter)
+    if logger_name is not None:
+        logger = logging.getLogger(logger_name)
+    if filename is not None:
+        new_fh = logging.FileHandler(filename)
+        logger.addHandler(new_fh)
+        new_fh.setFormatter(FORMATTER)
 
 
 def set_common_args(desc):
@@ -126,6 +131,13 @@ def set_common_args(desc):
         default=False,
         action="store_true",
         help="Prevents sonar-tools to occasionnally check from more recent version",
+    )
+    parser.add_argument(
+        f"-{OPT_LOGFILE_SHORT}",
+        f"--{OPT_LOGFILE_LONG}",
+        required=False,
+        default=None,
+        help="Define location of logfile, logs are only sent to stderr if not set",
     )
     return parser
 
@@ -222,7 +234,8 @@ def get_logging_level(level):
     return lvl
 
 
-def set_debug_level(level):
+def __set_debug_level(level: str) -> None:
+    """Sets the logging level"""
     logger.setLevel(get_logging_level(level))
     logger.info("Set debug level to %s", level)
 
@@ -242,11 +255,12 @@ def check_last_sonar_tools_version() -> None:
         logger.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
 
 
-def parse_and_check(parser: argparse.ArgumentParser, verify_token: bool = True) -> object:
-    """Parses arguments and perform common environment checks"""
+def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> object:
+    """Parses arguments, applies default settings and perform common environment checks"""
     args = parser.parse_args()
     kwargs = vars(args)
-    set_debug_level(kwargs[OPT_VERBOSE])
+    __set_logger(filename=kwargs[OPT_LOGFILE_LONG], logger_name=logger_name)
+    __set_debug_level(kwargs[OPT_VERBOSE])
     logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
 
     # Verify version randomly once every 10 runs

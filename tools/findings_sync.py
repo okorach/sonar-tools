@@ -79,7 +79,7 @@ def __parse_args(desc):
         help="If specified, will not add a link to source issue in the target issue comments",
     )
 
-    args = util.parse_and_check(parser)
+    args = util.parse_and_check(parser=parser, logger_name="sonar-findings-sync")
     return args
 
 

@@ -109,7 +109,7 @@ def __parser_args(desc):
         action="store_true",
         help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
     )
-    args = util.parse_and_check(parser, verify_token=False)
+    args = util.parse_and_check(parser=parser, logger_name="sonar-audit", verify_token=False)
     if args.sif is None and args.config is None:
         util.check_token(args.token)
     return args
