@@ -113,6 +113,7 @@ def add_dateformat_arg(parser: object) -> object:
     )
     return parser
 
+
 def add_url_arg(parser: object) -> object:
     """Adds the option to export URL of objects"""
     parser.add_argument(
