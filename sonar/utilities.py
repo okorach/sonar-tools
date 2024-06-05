@@ -257,7 +257,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     """Parses arguments, applies default settings and perform common environment checks"""
     args = parser.parse_args()
     kwargs = vars(args)
-    __set_logger(filename=kwargs[OPT_LOGFILE_LONG], logger_name=logger_name)
+    __set_logger(filename=kwargs[options.LOGFILE], logger_name=logger_name)
     __set_debug_level(kwargs[OPT_VERBOSE])
     logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
 
