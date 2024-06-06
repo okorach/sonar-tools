@@ -21,6 +21,8 @@
 
 import json
 import re
+from http import HTTPStatus
+from requests.exceptions import HTTPError
 import requests.utils
 import sonar.utilities as util
 from sonar import syncer, users
@@ -382,16 +384,19 @@ def search(endpoint, page=None, params=None):
             new_params["p"] = p
         else:
             new_params["p"] = page
-        resp = endpoint.get("hotspots/search", params=new_params)
-        data = json.loads(resp.text)
-        nbr_hotspots = data["paging"]["total"]
+        try:
+            resp = endpoint.get("hotspots/search", params=new_params, mute=(HTTPStatus.NOT_FOUND,))
+            data = json.loads(resp.text)
+            nbr_hotspots = data["paging"]["total"]
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                util.logger.warning("No hotspots found with search params %s", str(params))
+                nbr_hotspots = 0
+                return {}
+            else:
+                raise e
         nbr_pages = (nbr_hotspots + 499) // 500
-        util.logger.debug(
-            "Number of issues: %d - Page: %d/%d",
-            nbr_hotspots,
-            new_params["p"],
-            nbr_pages,
-        )
+        util.logger.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, new_params["p"], nbr_pages)
         if page is None and nbr_hotspots > 10000:
             raise TooManyHotspotsError(
                 nbr_hotspots,
