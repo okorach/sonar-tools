@@ -29,6 +29,8 @@ from sonar import platform, portfolios, options
 from sonar.projects import projects
 import sonar.utilities as util
 
+OPT_PORTFOLIOS = "portfolios"
+
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
@@ -184,7 +186,7 @@ def __parse_args(desc):
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
     parser.add_argument(
-        "--portfolios",
+        f"--{OPT_PORTFOLIOS}",
         required=False,
         default=False,
         action="store_true",
@@ -208,15 +210,16 @@ def main():
     )
     kwargs = vars(args)
     kwargs[options.FORMAT] = options.output_format(**kwargs)
-    ofile = kwargs.pop("file", None)
-
+    ofile = kwargs.pop(options.OUTPUTFILE, None)
+    if kwargs[OPT_PORTFOLIOS]:
+        kwargs[options.WITH_BRANCHES] = False
     if args.portfolios:
         params = {}
         if args.topLevelOnly:
             params["qualifiers"] = "VW"
-        objects_list = portfolios.search(endpoint, params=params).values()
+        objects_list = list(portfolios.search(endpoint, params=params).values())
     else:
-        objects_list = projects.search(endpoint).values()
+        objects_list = list(projects.search(endpoint).values())
         if kwargs[options.WITH_BRANCHES]:
             if endpoint.edition() == "community":
                 util.logger.warning("No branches in community edition, option to export by branch is ignored")
