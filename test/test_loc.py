@@ -139,3 +139,36 @@ def test_logging_options() -> None:
     testutil.clean(testutil.CSV_FILE)
     testutil.clean("sonar-tools.log")
     testutil.clean("sonar-loc-logging.log")
+
+
+def test_loc_branches() -> None:
+    """test_loc"""
+    testutil.clean(testutil.CSV_FILE)
+    with patch.object(sys, "argv", CSV_OPTS + ["-b", "--withURL", "-a", "-n"]):
+        try:
+            loc.main()
+        except SystemExit as e:
+            assert int(str(e)) == 0
+    testutil.clean(testutil.CSV_FILE)
+
+
+def test_loc_branches_json() -> None:
+    """test_loc"""
+    testutil.clean(testutil.JSON_FILE)
+    with patch.object(sys, "argv", CSV_OPTS + ["-b", "-f", testutil.JSON_FILE, "-a", "-n", "--withURL"]):
+        try:
+            loc.main()
+        except SystemExit as e:
+            assert int(str(e)) == 0
+    testutil.clean(testutil.JSON_FILE)
+
+
+def test_loc_portfolios_all_options() -> None:
+    """test_loc"""
+    testutil.clean(testutil.CSV_FILE)
+    with patch.object(sys, "argv", CSV_OPTS + ["-b", "--portfolios", "--withURL", "-a", "-n"]):
+        try:
+            loc.main()
+        except SystemExit as e:
+            assert int(str(e)) == 0
+    testutil.clean(testutil.CSV_FILE)

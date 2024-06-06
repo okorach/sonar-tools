@@ -141,6 +141,41 @@ def test_findings_export_key() -> None:
     testutil.clean(testutil.CSV_FILE)
 
 
+def test_findings_export_all_branches() -> None:
+    """test_findings_export_all_branches"""
+    testutil.clean(testutil.CSV_FILE)
+    with patch.object(sys, "argv", CSV_OPTS + ["-k", "training:security", "-b", "*"]):
+        try:
+            findings_export.main()
+        except SystemExit as e:
+            assert int(str(e)) == 0
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
+
+
+def test_findings_export_some_branch() -> None:
+    """test_findings_export_some_branch"""
+    testutil.clean(testutil.CSV_FILE)
+    with patch.object(sys, "argv", CSV_OPTS + ["-k", "training:security", "-b", "develop,some-branch"]):
+        try:
+            findings_export.main()
+        except SystemExit as e:
+            assert int(str(e)) == 0
+    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.CSV_FILE)
+
+
+def test_findings_export_non_existing_branch() -> None:
+    """test_findings_export_non_existing_branch"""
+    testutil.clean(testutil.CSV_FILE)
+    with patch.object(sys, "argv", CSV_OPTS + ["-k", "training:security", "-b", "non-existing-branch"]):
+        try:
+            findings_export.main()
+        except SystemExit as e:
+            assert int(str(e)) == 0
+    testutil.clean(testutil.CSV_FILE)
+
+
 def test_findings_export_alt_api() -> None:
     """test_findings_export_alt_api"""
     testutil.clean(testutil.CSV_FILE)
