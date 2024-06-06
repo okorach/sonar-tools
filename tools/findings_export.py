@@ -115,20 +115,8 @@ def parse_args(desc):
         action="store_true",
         help="Use export_findings() whenever possible",
     )
-    parser.add_argument(
-        "--" + options.WITH_URL,
-        required=False,
-        default=False,
-        action="store_true",
-        help="Generate finding URL in the report, false by default",
-    )
-    parser.add_argument(
-        f"--{options.DATES_WITHOUT_TIME}",
-        action="store_true",
-        default=False,
-        required=False,
-        help="Reports timestamps only with date, not time",
-    )
+    options.add_url_arg(parser)
+    options.add_dateformat_arg(parser)
     args = util.parse_and_check(parser=parser, logger_name="sonar-findings-export")
     return args
 

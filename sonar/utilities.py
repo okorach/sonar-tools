@@ -41,8 +41,6 @@ OPT_URL = "url"
 OPT_VERBOSE = "verbosity"
 OPT_SKIP_VERSION_CHECK = "skipVersionCheck"
 
-OPT_LOGFILE_SHORT = "l"
-OPT_LOGFILE_LONG = "logfile"
 DEFAULT_LOGGER = "sonar-tools"
 DEFAULT_LOGFILE = f"{DEFAULT_LOGGER}.log"
 LOG_FORMAT = "%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s"
@@ -63,9 +61,6 @@ CSV_SEPARATOR = ","
 
 # By default log as sonar-tools on stderr only
 logger = logging.getLogger(DEFAULT_LOGGER)
-ch = logging.StreamHandler()
-logger.addHandler(ch)
-ch.setFormatter(FORMATTER)
 
 
 def __set_logger(filename: str = None, logger_name: str = None) -> None:
@@ -74,9 +69,13 @@ def __set_logger(filename: str = None, logger_name: str = None) -> None:
     if logger_name is not None:
         logger = logging.getLogger(logger_name)
     if filename is not None:
-        new_fh = logging.FileHandler(filename)
-        logger.addHandler(new_fh)
-        new_fh.setFormatter(FORMATTER)
+        fh = logging.FileHandler(filename)
+        logger.addHandler(fh)
+        fh.setFormatter(FORMATTER)
+    ch = logging.StreamHandler()
+    logger.addHandler(ch)
+    ch.setFormatter(FORMATTER)
+    logger.addHandler(ch)
 
 
 def set_common_args(desc):
@@ -133,8 +132,8 @@ def set_common_args(desc):
         help="Prevents sonar-tools to occasionnally check from more recent version",
     )
     parser.add_argument(
-        f"-{OPT_LOGFILE_SHORT}",
-        f"--{OPT_LOGFILE_LONG}",
+        f"-{options.LOGFILE_SHORT}",
+        f"--{options.LOGFILE}",
         required=False,
         default=None,
         help="Define location of logfile, logs are only sent to stderr if not set",
@@ -178,32 +177,26 @@ def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sa
         help="Output file for the report, stdout by default",
     )
     fmt_choice = []
-    default_format = None
     if csv_fmt:
         fmt_choice.append("csv")
-        default_format = "csv"
     if json_fmt:
         fmt_choice.append("json")
-        if default_format is None:
-            default_format = "json"
     if sarif_fmt:
         fmt_choice.append("sarif")
-        if default_format is None:
-            default_format = "sarif"
     if json_fmt and csv_fmt:
         parser.add_argument(
-            "--" + options.FORMAT,
+            f"--{options.FORMAT}",
             choices=fmt_choice,
             required=False,
-            default=default_format,
+            default=None,
             help="Output format for generated report.\nIf not specified, it is the output file extension if json or csv, then csv by default",
         )
     if csv_fmt:
         parser.add_argument(
-            "--" + options.CSV_SEPARATOR,
+            f"--{options.CSV_SEPARATOR}",
             required=False,
             default=CSV_SEPARATOR,
-            help=f"CSV separator (for CSV output), default {CSV_SEPARATOR}",
+            help=f"CSV separator (for CSV output), default '{CSV_SEPARATOR}'",
         )
 
     return parser
@@ -259,7 +252,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     """Parses arguments, applies default settings and perform common environment checks"""
     args = parser.parse_args()
     kwargs = vars(args)
-    __set_logger(filename=kwargs[OPT_LOGFILE_LONG], logger_name=logger_name)
+    __set_logger(filename=kwargs[options.LOGFILE], logger_name=logger_name)
     __set_debug_level(kwargs[OPT_VERBOSE])
     logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
 

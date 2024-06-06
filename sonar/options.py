@@ -23,12 +23,25 @@
 
 """
 
+# Command line options
+
 WITH_URL = "withURL"
 WITH_NAME = "withName"
 WITH_LAST_ANALYSIS = "withLastAnalysis"
+
+WITH_BRANCHES_SHORT = "b"
 WITH_BRANCHES = "withBranches"
+
+OUTPUTFILE_SHORT = "f"
+OUTPUTFILE = "file"
+
+LOGFILE_SHORT = "l"
+LOGFILE = "logfile"
+
 WITH_HISTORY = "history"
 NBR_THREADS = "threads"
+
+DATES_WITHOUT_TIME_SHORT = "d"
 DATES_WITHOUT_TIME = "datesWithoutTime"
 
 WHAT_SETTINGS = "settings"
@@ -46,6 +59,8 @@ CSV_SEPARATOR = "csvSeparator"
 FORMAT = "format"
 
 DEFAULT = "__default__"
+
+# Sonar Tools error codes
 
 ERR_SONAR_API_AUTHENTICATION = 1
 ERR_SONAR_API_AUTHORIZATION = 2
@@ -74,3 +89,51 @@ def set_url_arg(parser):
 def add_thread_arg(parser, action):
     parser.add_argument(f"--{NBR_THREADS}", required=False, type=int, default=8, help=f"Define number of threads for {action}, default 8")
     return parser
+
+
+def add_branch_arg(parser: object) -> object:
+    """Adds the branch argument to the parser"""
+    parser.add_argument(
+        f"-{WITH_BRANCHES_SHORT}",
+        f"--{WITH_BRANCHES}",
+        required=False,
+        action="store_true",
+        help="Also extract desired information for branches",
+    )
+    return parser
+
+
+def add_dateformat_arg(parser: object) -> object:
+    """Adds the date format argument to the parser"""
+    parser.add_argument(
+        f"--{DATES_WITHOUT_TIME_SHORT}",
+        f"--{DATES_WITHOUT_TIME}",
+        action="store_true",
+        default=False,
+        required=False,
+        help="Reports timestamps only with date, not time",
+    )
+    return parser
+
+
+def add_url_arg(parser: object) -> object:
+    """Adds the option to export URL of objects"""
+    parser.add_argument(
+        f"--{WITH_URL}",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Also list the URL of the objects",
+    )
+    return parser
+
+
+def output_format(**kwargs) -> str:
+    """returns the output format, based on the format CLI option or the output file extension, or the default"""
+    if kwargs[FORMAT] is not None:
+        return kwargs[FORMAT]
+    if kwargs[OUTPUTFILE] is not None:
+        ext = kwargs[OUTPUTFILE].split(".").pop(-1).lower()
+        if ext in ("json", "sarif", "csv"):
+            return ext
+    return "csv"
