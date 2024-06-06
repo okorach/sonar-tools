@@ -315,7 +315,7 @@ class Project(components.Component):
         :rtype: bool
         """
         _ = self.binding()
-        return self._binding["has_binding"]
+        return self._binding.get("has_binding", False)
 
     def binding(self):
         """
@@ -771,8 +771,8 @@ class Project(components.Component):
             # Remove redundant fields
             binding.pop("alm", None)
             binding.pop("url", None)
-            if not binding["monorepo"]:
-                binding.pop("monorepo")
+            if not binding.get("monorepo", False):
+                binding.pop("monorepo", None)
         return binding
 
     def __export_get_qp(self):

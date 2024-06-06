@@ -543,7 +543,12 @@ class Platform:
         for logtype, logfile in log_map.items():
             logs = self.get("system/logs", params={"name": logtype}).text
             for line in logs.splitlines():
-                (_, level, _) = line.split(" ", maxsplit=2)
+                util.logger.debug("Inspection log line %s", line)
+                try:
+                    (_, level, _) = line.split(" ", maxsplit=2)
+                except ValueError:
+                    # Not the standard log line, must be a stacktrace or something, just skip
+                    continue
                 rule = None
                 if level == "ERROR":
                     util.logger.warning("Error found in %s: %s", logfile, line)
