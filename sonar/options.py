@@ -32,6 +32,8 @@ WITH_LAST_ANALYSIS = "withLastAnalysis"
 WITH_BRANCHES_SHORT = "b"
 WITH_BRANCHES = "withBranches"
 
+OUTPUTFILE_SHORT = "f"
+OUTPUTFILE = "file"
 
 LOGFILE_SHORT = "l"
 LOGFILE = "logfile"
@@ -124,3 +126,14 @@ def add_url_arg(parser: object) -> object:
         help="Also list the URL of the objects",
     )
     return parser
+
+
+def output_format(**kwargs) -> str:
+    """returns the output format, based on the format CLI option or the output file extension, or the default"""
+    if kwargs[FORMAT] is not None:
+        return kwargs[FORMAT]
+    if kwargs[OUTPUTFILE] is not None:
+        ext = kwargs[OUTPUTFILE].split(".").pop(-1).lower()
+        if ext in ("json", "sarif", "csv"):
+            return ext
+    return "csv"
