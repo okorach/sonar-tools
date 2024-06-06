@@ -106,7 +106,7 @@ def add_branch_arg(parser: object) -> object:
 def add_dateformat_arg(parser: object) -> object:
     """Adds the date format argument to the parser"""
     parser.add_argument(
-        f"--{DATES_WITHOUT_TIME_SHORT}",
+        f"-{DATES_WITHOUT_TIME_SHORT}",
         f"--{DATES_WITHOUT_TIME}",
         action="store_true",
         default=False,
