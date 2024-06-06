@@ -151,7 +151,6 @@ def __parse_args(desc):
         required=False,
         help="Reports measures history not just last value",
     )
-    options.add_url_arg(parser)
     parser.add_argument(
         "--asTable",
         action="store_true",
@@ -159,6 +158,8 @@ def __parse_args(desc):
         required=False,
         help="Report measures history as table, instead of <date>,<metric>,<measure>",
     )
+    options.add_dateformat_arg(parser)
+    options.add_url_arg(parser)
     args = util.parse_and_check(parser=parser, logger_name="sonar-measures-export")
     if args.ratingsAsNumbers:
         CONVERT_OPTIONS["ratings"] = "numbers"
