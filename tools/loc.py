@@ -23,15 +23,15 @@
 """
 import sys
 import csv
-
+from typing import TextIO
 from requests.exceptions import HTTPError
 from sonar import platform, portfolios, options
 from sonar.projects import projects
 import sonar.utilities as util
 
 
-def __dump_csv(object_list: list[object], fd, **kwargs):
-    """Dumps LoC of passed list of objects [project, portfoliosas CSV"""
+def __dump_csv(object_list: list[object], fd: TextIO, **kwargs) -> None:
+    """Dumps LoC of passed list of objects (projects, branches or portfolios) as CSV"""
     writer = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
 
     nb_loc, nb_objects = 0, 0
@@ -47,7 +47,6 @@ def __dump_csv(object_list: list[object], fd, **kwargs):
         arr.append("URL")
     writer.writerow(arr)
 
-    util.logger.info("%d objects with LoCs to export...", len(object_list))
     obj_type = None
     for o in object_list:
         if obj_type is None:
@@ -84,10 +83,10 @@ def __dump_csv(object_list: list[object], fd, **kwargs):
     util.logger.info("%d %ss and %d LoCs in total", len(object_list), obj_type, nb_loc)
 
 
-def __dump_json(object_list: list[object], fd, **kwargs):
+def __dump_json(object_list: list[object], fd: TextIO, **kwargs) -> None:
+    """Dumps LoC of passed list of objects (projects, branches or portfolios) as JSON"""
     nb_loc, nb_objects = 0, 0
     data = []
-    util.logger.info("%d objects with LoCs to export...", len(object_list))
     obj_type = None
     for o in object_list:
         if obj_type is None:
@@ -118,7 +117,8 @@ def __dump_json(object_list: list[object], fd, **kwargs):
     util.logger.info("%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc)
 
 
-def __dump_loc(object_list: list[object], file, **kwargs):
+def __dump_loc(object_list: list[object], file: str, **kwargs):
+    util.logger.info("%d objects with LoCs to export, in format %s...", len(object_list), kwargs[options.FORMAT])
     with util.open_file(file) as fd:
         if kwargs[options.FORMAT] == "json":
             __dump_json(object_list, fd, **kwargs)
