@@ -177,21 +177,15 @@ def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sa
         help="Output file for the report, stdout by default",
     )
     fmt_choice = []
-    default_format = None
     if csv_fmt:
         fmt_choice.append("csv")
-        default_format = "csv"
     if json_fmt:
         fmt_choice.append("json")
-        if default_format is None:
-            default_format = "json"
     if sarif_fmt:
         fmt_choice.append("sarif")
-        if default_format is None:
-            default_format = "sarif"
     if json_fmt and csv_fmt:
         parser.add_argument(
-            "--" + options.FORMAT,
+            f"--{options.FORMAT}",
             choices=fmt_choice,
             required=False,
             default=None,
@@ -199,10 +193,10 @@ def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sa
         )
     if csv_fmt:
         parser.add_argument(
-            "--" + options.CSV_SEPARATOR,
+            f"--{options.CSV_SEPARATOR}",
             required=False,
             default=CSV_SEPARATOR,
-            help=f"CSV separator (for CSV output), default {CSV_SEPARATOR}",
+            help=f"CSV separator (for CSV output), default '{CSV_SEPARATOR}'",
         )
 
     return parser
