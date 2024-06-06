@@ -143,7 +143,6 @@ def __parse_args(desc):
         required=False,
         help="Reports percentages as string xy.z%% instead of float values 0.xyz",
     )
-    options.add_dateformat_arg(parser)
     parser.add_argument(
         f"--{options.WITH_HISTORY}",
         action="store_true",
