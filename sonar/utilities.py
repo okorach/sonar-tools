@@ -61,9 +61,6 @@ CSV_SEPARATOR = ","
 
 # By default log as sonar-tools on stderr only
 logger = logging.getLogger(DEFAULT_LOGGER)
-ch = logging.StreamHandler()
-logger.addHandler(ch)
-ch.setFormatter(FORMATTER)
 
 
 def __set_logger(filename: str = None, logger_name: str = None) -> None:
@@ -75,7 +72,10 @@ def __set_logger(filename: str = None, logger_name: str = None) -> None:
         fh = logging.FileHandler(filename)
         logger.addHandler(fh)
         fh.setFormatter(FORMATTER)
-        logger.addHandler(ch)
+    ch = logging.StreamHandler()
+    logger.addHandler(ch)
+    ch.setFormatter(FORMATTER)
+    logger.addHandler(ch)
 
 
 def set_common_args(desc):
