@@ -34,15 +34,20 @@ OPT_PORTFOLIOS = "portfolios"
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    if kwargs[options.WITH_BRANCHES]:
-        arr = ["# projectKey", "branch"]
+    if kwargs[OPT_PORTFOLIOS]:
+        arr = ["# portfolio key"]
+    elif kwargs[options.WITH_BRANCHES]:
+        arr = ["# project key", "branch"]
     else:
-        arr = ["# Key"]
+        arr = ["# project key"]
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
-        arr.append("projectName")
+        if kwargs[OPT_PORTFOLIOS]:
+            arr.append("portfolio name")
+        else:
+            arr.append("project name")
     if kwargs[options.WITH_LAST_ANALYSIS]:
-        arr.append("lastAnalysis")
+        arr.append("last analysis")
     if kwargs[options.WITH_URL]:
         arr.append("URL")
     return arr
@@ -212,6 +217,11 @@ def main():
     kwargs[options.FORMAT] = options.output_format(**kwargs)
     ofile = kwargs.pop(options.OUTPUTFILE, None)
     if kwargs[OPT_PORTFOLIOS]:
+        if kwargs[options.WITH_BRANCHES]:
+            util.logger.warning("Portfolio LoC export selected, branch option is ignored")
+        if kwargs[options.WITH_LAST_ANALYSIS]:
+            util.logger.warning("Portfolio LoC export selected, last analysis option is ignored")
+        kwargs[options.WITH_LAST_ANALYSIS] = False
         kwargs[options.WITH_BRANCHES] = False
     if args.portfolios:
         params = {}
