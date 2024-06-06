@@ -194,7 +194,7 @@ def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sa
             "--" + options.FORMAT,
             choices=fmt_choice,
             required=False,
-            default=default_format,
+            default=None,
             help="Output format for generated report.\nIf not specified, it is the output file extension if json or csv, then csv by default",
         )
     if csv_fmt:
