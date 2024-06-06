@@ -30,17 +30,6 @@ from sonar.projects import projects
 import sonar.utilities as util
 
 
-def __deduct_format(fmt, file):
-    if fmt is not None:
-        return fmt
-    if file is not None:
-        ext = file.split(".").pop(-1).lower()
-        util.logger.debug("File extension = %s", ext)
-        if ext == "json":
-            return ext
-    return "csv"
-
-
 def __dump_csv(object_list: list[object], fd, **kwargs):
     """Dumps LoC of passed list of objects [project, portfoliosas CSV"""
     writer = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
@@ -183,8 +172,8 @@ def main():
         some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
     kwargs = vars(args)
+    kwargs[options.FORMAT] = options.output_format(**kwargs)
     ofile = kwargs.pop("file", None)
-    args.format = __deduct_format(args.format, ofile)
 
     if args.portfolios:
         params = {}
@@ -202,7 +191,7 @@ def main():
                     branch_list += proj.branches().values()
                 objects_list = branch_list
 
-    __dump_loc(objects_list, ofile, **vars(args))
+    __dump_loc(objects_list, ofile, **kwargs)
     sys.exit(0)
 
 
