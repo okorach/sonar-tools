@@ -160,7 +160,8 @@ def __dump_json(object_list: list[object], file: str, **kwargs) -> None:
         util.logger.info("%d %ss dumped in total", len(object_list), str(obj_type))
 
 
-def __dump_loc(object_list: list[object], file: str, **kwargs):
+def __dump_loc(object_list: list[object], file: str, **kwargs) -> None:
+    """Dumps the LoC of collection of objects either in CSV or JSON format"""
     util.logger.info("%d objects with LoCs to export, in format %s...", len(object_list), kwargs[options.FORMAT])
     if kwargs[options.FORMAT] == "json":
         __dump_json(object_list, file, **kwargs)
@@ -209,7 +210,7 @@ def __parse_args(desc):
 
 
 def main():
-    args = __parse_args("Extract projects or portfolios lines of code, as computed for the licence")
+    args = __parse_args("Extract projects, branches or portfolios lines of code - for Projects LoC it is as computed for the license")
     endpoint = platform.Platform(
         some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
