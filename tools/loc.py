@@ -41,22 +41,26 @@ def __deduct_format(fmt, file):
     return "csv"
 
 
-def __dump_csv(object_list, fd, **kwargs):
+def __dump_csv(object_list: list[object], fd, **kwargs):
+    """Dumps LoC of passed list of objects [project, portfoliosas CSV"""
     writer = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
 
     nb_loc, nb_objects = 0, 0
-    arr = ["# Key", "ncloc"]
-    if kwargs.get(options.WITH_NAME, False):
+    arr = ["# Key"]
+    if kwargs[options.WITH_BRANCHES]:
+        arr.append("branch")
+    arr.append("ncloc")
+    if kwargs[options.WITH_NAME]:
         arr.append("name")
-    if kwargs.get(options.WITH_LAST_ANALYSIS, False):
+    if kwargs[options.WITH_LAST_ANALYSIS]:
         arr.append("lastAnalysis")
-    if kwargs.get(options.WITH_URL, False):
+    if kwargs[options.WITH_URL]:
         arr.append("URL")
     writer.writerow(arr)
 
     util.logger.info("%d objects with LoCs to export...", len(object_list))
     obj_type = None
-    for o in object_list.values():
+    for o in object_list:
         if obj_type is None:
             obj_type = type(o).__name__.lower()
         try:
@@ -64,15 +68,21 @@ def __dump_csv(object_list, fd, **kwargs):
         except HTTPError as e:
             util.logger.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
             loc = ""
-        arr = [o.key, loc]
-        if kwargs.get(options.WITH_NAME, False):
-            arr.append(o.name)
-        if kwargs.get(options.WITH_LAST_ANALYSIS, False):
+        if kwargs[options.WITH_BRANCHES]:
+            arr = [o.concerned_object.key, o.key, loc]
+        else:
+            arr = [o.key, loc]
+        if kwargs[options.WITH_NAME]:
+            if kwargs[options.WITH_BRANCHES]:
+                arr.append(o.concerned_object.name)
+            else:
+                arr.append(o.name)
+        if kwargs[options.WITH_LAST_ANALYSIS]:
             if loc != "":
                 arr.append(o.last_analysis())
             else:
                 arr.append("")
-        if kwargs.get(options.WITH_URL, False):
+        if kwargs[options.WITH_URL]:
             arr.append(o.url())
         writer.writerow(arr)
         nb_objects += 1
@@ -85,21 +95,27 @@ def __dump_csv(object_list, fd, **kwargs):
     util.logger.info("%d %ss and %d LoCs in total", len(object_list), obj_type, nb_loc)
 
 
-def __dump_json(object_list, fd, **kwargs):
+def __dump_json(object_list: list[object], fd, **kwargs):
     nb_loc, nb_objects = 0, 0
     data = []
     util.logger.info("%d objects with LoCs to export...", len(object_list))
     obj_type = None
-    for o in object_list.values():
+    for o in object_list:
         if obj_type is None:
             obj_type = type(o).__name__.lower()
-        d = {"key": o.key, "ncloc": ""}
+        if kwargs[options.WITH_BRANCHES]:
+            d = {"projectKey": o.concerned_object.key, "branch": o.key, "ncloc": ""}
+        else:
+            d = {"key": o.key, "ncloc": ""}
         try:
             d["ncloc"] = o.loc()
         except HTTPError as e:
             util.logger.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
         if kwargs.get(options.WITH_NAME, False):
-            d["name"] = o.name
+            if kwargs[options.WITH_BRANCHES]:
+                d["name"] = o.concerned_object.name
+            else:
+                d["name"] = o.name
         if d["ncloc"] != "" and kwargs.get(options.WITH_LAST_ANALYSIS, False):
             d["lastAnalysis"] = util.date_to_string(o.last_analysis())
         if kwargs.get(options.WITH_URL, False):
@@ -113,7 +129,7 @@ def __dump_json(object_list, fd, **kwargs):
     util.logger.info("%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc)
 
 
-def __dump_loc(object_list, file, **kwargs):
+def __dump_loc(object_list: list[object], file, **kwargs):
     with util.open_file(file) as fd:
         if kwargs[options.FORMAT] == "json":
             __dump_json(object_list, fd, **kwargs)
@@ -142,6 +158,7 @@ def __parse_args(desc):
         help="Also list the last analysis date on top of nbr of LoC",
     )
     options.add_url_arg(parser)
+    options.add_branch_arg(parser)
     parser.add_argument(
         "--portfolios",
         required=False,
@@ -173,9 +190,18 @@ def main():
         params = {}
         if args.topLevelOnly:
             params["qualifiers"] = "VW"
-        objects_list = portfolios.search(endpoint, params=params)
+        objects_list = portfolios.search(endpoint, params=params).values()
     else:
-        objects_list = projects.search(endpoint)
+        objects_list = projects.search(endpoint).values()
+        if kwargs[options.WITH_BRANCHES]:
+            if endpoint.edition() == "community":
+                util.logger.warning("No branches in community edition, option to export by branch is ignored")
+            else:
+                branch_list = []
+                for proj in objects_list:
+                    branch_list += proj.branches().values()
+                objects_list = branch_list
+
     __dump_loc(objects_list, ofile, **vars(args))
     sys.exit(0)
 
