@@ -214,9 +214,8 @@ class Sif:
     def __process_cmdline(self, process):
         opts = [x.format(process) for x in _JVM_OPTS]
         if _SETTINGS in self.json:
-            return self.json[_SETTINGS][opts[1]] + " " + self.json[_SETTINGS][opts[0]]
-        else:
-            return None
+            return f"{self.json[_SETTINGS][opts[1]].strip()} {self.json[_SETTINGS][opts[0]].strip()}".strip()
+        return None
 
     def web_jvm_cmdline(self):
         return self.__process_cmdline("web")
