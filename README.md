@@ -36,7 +36,7 @@ deletes tokens created since more than a certain number of days
 
 # Requirements and Installation
 - `sonar-tools` requires python 3.6 or higher
-- Installation is based on [pip](/https://pypi.org/project/pip/).
+- Installation is based on [pip](https://pypi.org/project/pip/).
 - Online installation.
   - Run: `python3 -m pip install sonar-tools` (or `python3 -m pip upgrade sonar-tools`)
   If install does not behave as expected you can try the **pip** `--force-reinstall` option (see **pip** documentation)
