@@ -62,7 +62,7 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        _uuid = uuid(concerned_object.key, branch_name)
+        _uuid = uuid(concerned_object.key, branch_name, concerned_object.endpoint.url)
         if _uuid in _OBJECTS:
             return _OBJECTS[_uuid]
         try:
@@ -89,7 +89,7 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        _uuid = uuid(concerned_object.key, branch_name)
+        _uuid = uuid(concerned_object.key, branch_name, concerned_object.endpoint.url)
         o = _OBJECTS[_uuid] if _uuid in _OBJECTS else cls(concerned_object, branch_name)
         o._load(data)
         return o
@@ -150,7 +150,7 @@ class Branch(components.Component):
         :return: the UUID
         :rtype: str
         """
-        return uuid(self.concerned_object.key, self.name)
+        return uuid(self.concerned_object.key, self.name, self.endpoint.url)
 
     def last_analysis(self):
         """
@@ -267,9 +267,9 @@ class Branch(components.Component):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
-        _OBJECTS.pop(uuid(self.concerned_object.key, self.name), None)
+        _OBJECTS.pop(uuid(self.concerned_object.key, self.name, self.concerned_object.endpoint.url), None)
         self.name = new_name
-        _OBJECTS[uuid(self.concerned_object.key, self.name)] = self
+        _OBJECTS[uuid(self.concerned_object.key, self.name, self.concerned_object.endpoint.url)] = self
         return True
 
     def __audit_zero_loc(self):
@@ -344,6 +344,7 @@ class Branch(components.Component):
         :rtype: tuple(report, counters)
         """
         report, counters = [], {}
+        util.logger.info("Syncing %s (%s) and %s (%s) issues", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
         (report, counters) = syncer.sync_lists(
             self.get_issues(),
             another_branch.get_issues(),
@@ -351,6 +352,7 @@ class Branch(components.Component):
             another_branch,
             sync_settings=sync_settings,
         )
+        util.logger.info("Syncing %s and %s hotspots", str(self), str(another_branch))
         (tmp_report, tmp_counts) = syncer.sync_lists(
             self.get_hotspots(),
             another_branch.get_hotspots(),
@@ -411,7 +413,7 @@ class Branch(components.Component):
         return {"project": self.concerned_object.key, "branch": self.name}
 
 
-def uuid(project_key, branch_name):
+def uuid(project_key: str, branch_name: str, url: str) -> str:
     """Computes a uuid for the branch that can serve as index
 
     :param str project_key: The project key
@@ -419,7 +421,7 @@ def uuid(project_key, branch_name):
     :return: the UUID
     :rtype: str
     """
-    return f"{project_key} {branch_name}"
+    return f"{project_key} {branch_name} {url}"
 
 
 def get_list(project):
