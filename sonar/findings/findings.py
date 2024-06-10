@@ -368,6 +368,9 @@ class Finding(sq.SqObject):
                 util.logger.debug("Issues %s and %s are not siblings", self.key, key)
         return (exact_matches, approx_matches, match_but_modified)
 
+    def do_transition(self, transition: str) -> bool:
+        return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
+
 
 def export_findings(endpoint, project_key, branch=None, pull_request=None):
     """Export all findings of a given project

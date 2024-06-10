@@ -342,14 +342,21 @@ class Issue(findings.Finding):
         util.logger.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
         return self.post(API_SET_TYPE, {"issue": self.key, "type": new_type}).ok
 
-    def is_wont_fix(self):
+    def is_wont_fix(self) -> bool:
         """
         :return: Whether the issue is won't fix
         :rtype: bool
         """
         return self.resolution == "WONT-FIX"
 
-    def is_false_positive(self):
+    def is_accepted(self) -> bool:
+        """
+        :return: Whether the issue is won't fix
+        :rtype: bool
+        """
+        return self.resolution == "ACCEPTED"
+
+    def is_false_positive(self) -> bool:
         """
         :return: Whether the issue is a false positive
         :rtype: bool
@@ -370,62 +377,68 @@ class Issue(findings.Finding):
             self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False)
         )
 
-    def __do_transition(self, transition):
-        return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
-
-    def reopen(self):
+    def reopen(self) -> bool:
         """Re-opens an issue
 
         :return: Whether the operation succeeded
         :rtype: bool
         """
         util.logger.debug("Reopening %s", str(self))
-        return self.__do_transition("reopen")
+        return self.do_transition("reopen")
 
-    def mark_as_false_positive(self):
+    def mark_as_false_positive(self) -> bool:
         """Sets an issue as false positive
 
         :return: Whether the operation succeeded
         :rtype: bool
         """
         util.logger.debug("Marking %s as false positive", str(self))
-        return self.__do_transition("falsepositive")
+        return self.do_transition("falsepositive")
 
-    def confirm(self):
+    def confirm(self) -> bool:
         """Confirms an issue
 
         :return: Whether the operation succeeded
         :rtype: bool
         """
         util.logger.debug("Confirming %s", str(self))
-        return self.__do_transition("confirm")
+        return self.do_transition("confirm")
 
-    def unconfirm(self):
+    def unconfirm(self) -> bool:
         """Unconfirms an issue
 
         :return: Whether the operation succeeded
         :rtype: bool
         """
         util.logger.debug("Unconfirming %s", str(self))
-        return self.__do_transition("unconfirm")
+        return self.do_transition("unconfirm")
 
-    def resolve_as_fixed(self):
+    def resolve_as_fixed(self) -> bool:
         """Marks an issue as resolved as fixed
 
         :return: Whether the operation succeeded
         :rtype: bool
         """
         util.logger.debug("Marking %s as fixed", str(self))
-        return self.__do_transition("resolve")
+        return self.do_transition("resolve")
 
-    def mark_as_wont_fix(self):
+    def mark_as_wont_fix(self) -> bool:
         """Marks an issue as resolved as won't fix
 
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        util.logger.debug("Marking %s as won't fix", str(self))
-        return self.__do_transition("wontfix")
+        util.logger.warning("Marking %s as won't fix - Warning: Won't fix is deprecated, Accept will be teh replacement", str(self))
+        return self.do_transition("wontfix")
+
+    def accept(self) -> bool:
+        """Marks an issue as resolved as won't fix
+
+        :return: Whether the operation succeeded
+        :rtype: bool
+        """
+        util.logger.debug("Marking %s as accepted", str(self))
+        return self.do_transition("accept")
 
     def __apply_event(self, event, settings):
         util.logger.debug("Applying event %s", str(event))
@@ -449,6 +462,9 @@ class Issue(findings.Finding):
         elif event_type == "WONT-FIX":
             self.mark_as_wont_fix()
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
+        elif event_type == "ACCEPT":
+            self.accept()
+            # self.add_comment(f"Accept {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "CONFIRM":
             self.confirm()
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
