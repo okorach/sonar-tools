@@ -220,7 +220,7 @@ class Issue(findings.Finding):
         """
         if self._changelog is None:
             data = json.loads(self.get("issues/changelog", {"issue": self.key, "format": "json"}).text)
-            util.json_dump_debug(data["changelog"], f"{str(self)} Changelog = ")
+            # util.json_dump_debug(data["changelog"], f"{str(self)} Changelog = ")
             self._changelog = {}
             seq = 1
             for l in data["changelog"]:
@@ -509,7 +509,6 @@ class Issue(findings.Finding):
 
         change_nbr = 0
         start_change = len(self.changelog()) + 1
-        util.logger.debug("Issue %s: Changelog = %s", str(self), str(self.changelog()))
         util.logger.info(
             "Applying changelog of issue %s to issue %s, from change %d",
             source_issue.key,
