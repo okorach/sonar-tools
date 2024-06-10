@@ -265,7 +265,7 @@ class Finding(sq.SqObject):
         :return: Whether the finding has a changelog
         :rtype: bool
         """
-        util.logger.debug("%s has %d changelogs", str(self), len(self.changelog()))
+        # util.logger.debug("%s has %d changelogs", str(self), len(self.changelog()))
         return len(self.changelog()) > 0
 
     def has_comments(self):
@@ -310,12 +310,21 @@ class Finding(sq.SqObject):
         """
         :meta private:
         """
+        prelim_check = True
+        if self.rule in ("python:S6540"):
+            try:
+                col1 = self._json["textRange"]["startOffset"]
+                col2 = another_finding._json["textRange"]["startOffset"]
+                prelim_check = col1 == col2
+            except KeyError:
+                pass
         return (
             self.rule == another_finding.rule
             and self.hash == another_finding.hash
             and self.message == another_finding.message
             and self.file() == another_finding.file()
             and (self.component == another_finding.component or ignore_component)
+            and prelim_check
         )
 
     def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
