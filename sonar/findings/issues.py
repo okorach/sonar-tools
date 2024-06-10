@@ -349,7 +349,7 @@ class Issue(findings.Finding):
         """
         return self.resolution == "WONT-FIX"
 
-    def accept(self) -> bool:
+    def is_accepted(self) -> bool:
         """
         :return: Whether the issue is won't fix
         :rtype: bool
