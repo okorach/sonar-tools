@@ -35,6 +35,7 @@ CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
+
 def test_audit_sif() -> None:
     """test_audit_sif"""
     testutil.clean(testutil.CSV_FILE)
