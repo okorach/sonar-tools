@@ -676,7 +676,7 @@ class Project(components.Component):
         """
         if self.endpoint.edition() == "community":
             report, counters = [], {}
-            util.logger.info("Syncing %s issues", str(self))
+            util.logger.info("Syncing %s and %s issues", str(self), str(another_project))
             (report, counters) = syncer.sync_lists(
                 self.get_issues(),
                 another_project.get_issues(),
@@ -684,7 +684,7 @@ class Project(components.Component):
                 another_project,
                 sync_settings=sync_settings,
             )
-            util.logger.info("Syncing %s issues", str(self))
+            util.logger.info("Syncing %s and %s hotspots", str(self), str(another_project))
             (tmp_report, tmp_counts) = syncer.sync_lists(
                 self.get_hotspots(),
                 another_project.get_hotspots(),
