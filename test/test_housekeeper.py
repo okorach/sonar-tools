@@ -37,6 +37,7 @@ __GOOD_OPTS = [
     ["-P", "30"],
 ]
 
+
 def test_housekeeper() -> None:
     """test_housekeeper"""
     for opts in __GOOD_OPTS:
