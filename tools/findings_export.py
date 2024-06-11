@@ -234,32 +234,15 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
     util.logger.debug("End of write findings")
 
 
-def __dump_compact(finding_list, file, **kwargs):
-    new_dict = {}
-    for finding in finding_list.values():
-        f_json = finding.to_json(DATES_WITHOUT_TIME)
-        if not kwargs[options.WITH_URL]:
-            f_json.pop("url", None)
-        pkey = f_json.pop("projectKey")
-        ftype = f_json.pop("type")
-        if pkey in new_dict:
-            if ftype in new_dict[pkey]:
-                new_dict[pkey][ftype].append(f_json)
-            else:
-                new_dict[pkey].update({ftype: [f_json]})
-        else:
-            new_dict[pkey] = {ftype: [f_json]}
-    with util.open_file(file) as f:
-        print(util.json_dump(new_dict, indent=1), file=f)
-
-
-def __get_list(project, list_str, list_type):
+def __get_list(project: object, list_str: str, list_type: str) -> list[str]:
     if list_str == "*":
-        list_array = project.branches().keys() if list_type == "branch" else project.pull_requests().keys()
-    elif list_str is not None:
-        list_array = util.csv_to_list(list_str)
+        if list_type == "branch":
+            list_array = project.branches().keys()
+        else:
+            list_array = project.pull_requests().keys()
     else:
-        list_array = []
+        list_array = util.csv_to_list(list_str)
+
     return list_array
 
 

@@ -26,6 +26,7 @@ coverageReport="$buildDir/coverage.xml"
 
 echo "Running tests"
 chmod u-rw test/sif_not_readable.json
-coverage run --source=. -m pytest  test/
+export SONAR_HOST_URL=${1:-${SONAR_HOST_URL_TEST}}
+coverage run --source=. -m pytest test/
 coverage xml -o $coverageReport
 chmod u+rw test/sif_not_readable.json

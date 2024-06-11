@@ -28,6 +28,7 @@
     Only issues with a 100% match are synchronized. When there's a doubt, nothing is done
 """
 
+import sys
 from sonar import platform, syncer, options, exceptions
 from sonar.projects import projects
 from sonar.projects.branches import Branch
@@ -185,6 +186,7 @@ def main():
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

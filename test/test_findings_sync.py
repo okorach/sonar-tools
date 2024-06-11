@@ -19,29 +19,32 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-
 """
-    sonar-housekeeper tests
+    sonar-findings-export tests
 """
 
+import os
 import sys
 from unittest.mock import patch
 import pytest
 import utilities as testutil
-from tools import housekeeper
+from tools import findings_sync
+from sonar import utilities
 
-CMD = "sonar-housekeeper.py"
-__GOOD_OPTS = [
-    [],
-    ["--threads", "1"],
-    ["-P", "30"],
-]
+CMD = "sonar-findings-sync.py"
+PLAT_OPTS = (["-u", os.getenv("SONAR_HOST_URL_LATEST"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")] +
+            ["-U", os.getenv("SONAR_HOST_URL_TEST"), "-T", os.getenv("SONAR_TOKEN_SYNC_USER")])
+SYNC_OPTS = ["--login", "syncer", "-k", "TESTSYNC", "-K", "TESTSYNC"]
+ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + ["-f", testutil.JSON_FILE]
 
 
-def test_housekeeper() -> None:
-    """test_housekeeper"""
-    for opts in __GOOD_OPTS:
-        with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + opts):
-                housekeeper.main()
-        assert int(str(e.value)) == 0
+def test_sync() -> None:
+    """test_sync"""
+    testutil.clean(testutil.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", ALL_OPTS):
+            utilities.logger.info("Running %s", " ".join(ALL_OPTS))
+            findings_sync.main()
+    assert int(str(e.value)) == 0
+    assert testutil.file_not_empty(testutil.JSON_FILE)
+    testutil.clean(testutil.JSON_FILE)
