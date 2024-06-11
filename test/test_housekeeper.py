@@ -26,37 +26,21 @@
 
 import sys
 from unittest.mock import patch
+import pytest
 import utilities as testutil
 from tools import housekeeper
 
 CMD = "sonar-housekeeper.py"
-
+__GOOD_OPTS = [
+    [],
+    ["--threads", "1"],
+    ["-P", "30"],
+]
 
 def test_housekeeper() -> None:
     """test_housekeeper"""
-    with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS):
-        try:
-            housekeeper.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert True
-
-
-def test_housekeeper_2() -> None:
-    """test_housekeeper_2"""
-    with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + ["--threads", "1"]):
-        try:
-            housekeeper.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert True
-
-
-def test_housekeeper_3() -> None:
-    """test_housekeeper_3"""
-    with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + ["-P", "30"]):
-        try:
-            housekeeper.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert True
+    for opts in __GOOD_OPTS:
+        with pytest.raises(SystemExit) as e:
+            with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + opts):
+                housekeeper.main()
+        assert int(str(e.value)) == 0
