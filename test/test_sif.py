@@ -27,6 +27,7 @@ import sys
 import json
 import datetime
 from unittest.mock import patch
+import pytest
 import utilities as testutil
 from sonar import sif
 from tools import audit
@@ -85,12 +86,10 @@ def test_modified_sif() -> None:
     assert sif.Sif(json_sif).license_type() is None
 
 
-def test_json_not_sif():
-    """test_audit_sif_ut"""
-    with open("test/config.json", "r", encoding="utf-8") as f:
-        json_sif = json.loads(f.read())
-    try:
-        _ = sif.Sif(json_sif)
-        assert False
-    except sif.NotSystemInfo:
-        assert True
+def test_json_not_sif() -> None:
+    """Tests that the right exception is raised if JSON file is not a SIF"""
+    with pytest.raises(sif.NotSystemInfo) as e:
+        with open("test/config.json", "r", encoding="utf-8") as f:
+            json_sif = json.loads(f.read())
+            _ = sif.Sif(json_sif)
+    assert e.type == sif.NotSystemInfo
