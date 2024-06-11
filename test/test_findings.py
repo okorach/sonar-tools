@@ -29,34 +29,57 @@ from unittest.mock import patch
 import pytest
 import utilities as testutil
 from tools import findings_export
-from sonar import options
+from sonar import options, utilities
 
 CMD = "sonar-findings-export.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 
+__GOOD_OPTS = [
+    ["--format", "json", "-l", "sonar-tools.log", "-v", "DEBUG"],
+    ["--format", "json", "-f", testutil.JSON_FILE],
+    ["--withURL", "--threads", "4", "-f", testutil.CSV_FILE],
+    ["--csvSeparator", "';'", "-d", "--tags", "cwe,convention", "-f", testutil.CSV_FILE],
+    ["--statuses", "OPEN,CLOSED", "-f", testutil.CSV_FILE],
+    ["--createdBefore", "2024-05-01", "-f", testutil.JSON_FILE],
+    ["--createdAfter", "2023-05-01", "-f", testutil.CSV_FILE],
+    ["--resolutions", "FALSE-POSITIVE,REMOVED", "-f", testutil.CSV_FILE],
+    ["--types", "BUG,VULNERABILITY", "-f", testutil.CSV_FILE],
+    ["--statuses", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL", "-f", testutil.CSV_FILE],
+    ["-k", "okorach_sonar-tools", "-b", "*", "-f", testutil.CSV_FILE],
+    ["-k", "training:security", "-b", "main", "-f", testutil.CSV_FILE],
+    ["--useFindings", "-f", testutil.CSV_FILE],
+]
+
+__WRONG_FILTER_OPTS = [
+    ["--statuses", "OPEN,NOT_OPEN"],
+    ["--resolutions", "ACCEPTED,SAFE,DO_FIX,WONTFIX"],
+    ["--types", "BUG,VULN"],
+]
+
+
+__WRONG_OPTS = [
+    ["-k", "non-existing-project-key"],
+]
+
 
 def test_findings_export() -> None:
     """test_findings_export"""
+    for opts in __GOOD_OPTS:
+        testutil.clean(testutil.CSV_FILE)
+        testutil.clean(testutil.JSON_FILE)
+        with pytest.raises(SystemExit) as e:
+            fullcmd = [CMD] + testutil.STD_OPTS + opts
+            utilities.logger.info("Running %s", " ".join(fullcmd))
+            with patch.object(sys, "argv", fullcmd):
+                findings_export.main()
+        assert int(str(e.value)) == 0
+        if testutil.CSV_FILE in opts:
+            assert testutil.file_not_empty(testutil.CSV_FILE)
+        elif testutil.JSON_FILE in opts:
+            assert testutil.file_not_empty(testutil.JSON_FILE)
+        utilities.logger.info("SUCCESS running: %s", " ".join(fullcmd))
     testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
-
-
-def test_findings_export_json() -> None:
-    """test_findings_export_json"""
-    testutil.clean(testutil.JSON_FILE)
-    with patch.object(sys, "argv", JSON_OPTS + ["--format", "json"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 
 
@@ -71,99 +94,30 @@ def test_findings_export_json() -> None:
 #     testutil.clean(testutil.JSON_FILE)
 
 
-def test_findings_export_with_url() -> None:
-    """test_findings_export_with_url"""
+def test_wrong_filters() -> None:
+    """test_wrong_filters"""
     testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--withURL"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
+    testutil.clean(testutil.JSON_FILE)
+    for bad_opts in __WRONG_FILTER_OPTS:
+        with pytest.raises(SystemExit) as e:
+            with patch.object(sys, "argv", CSV_OPTS + bad_opts):
+                findings_export.main()
+        assert int(str(e.value)) == options.ERR_WRONG_SEARCH_CRITERIA
+        assert not os.path.isfile(testutil.CSV_FILE)
+        assert not os.path.isfile(testutil.JSON_FILE)
+
+
+def test_wrong_opts() -> None:
+    """test_wrong_opts"""
     testutil.clean(testutil.CSV_FILE)
-
-
-def test_findings_export_statuses() -> None:
-    """test_findings_export_statuses"""
-    testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "OPEN,CLOSED"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    os.remove(testutil.CSV_FILE)
-
-
-def test_findings_export_date() -> None:
-    """test_findings_export_date"""
-    testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--createdBefore", "2024-05-01"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    os.remove(testutil.CSV_FILE)
-
-
-def test_findings_export_resolutions() -> None:
-    """test_findings_export_resolutions"""
-    testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "FALSE-POSITIVE,REMOVED"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    os.remove(testutil.CSV_FILE)
-
-
-def test_findings_export_mixed() -> None:
-    """test_findings_export_mixed"""
-    testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    os.remove(testutil.CSV_FILE)
-
-
-def test_findings_export_key() -> None:
-    """test_findings_export_key"""
-    testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
-
-
-def test_findings_export_all_branches() -> None:
-    """test_findings_export_all_branches"""
-    testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools", "-b", "*"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
-
-
-def test_findings_export_some_branch() -> None:
-    """test_findings_export_some_branch"""
-    testutil.clean(testutil.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-k", "training:security", "-b", "main"]):
-            findings_export.main()
-    assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    testutil.clean(testutil.JSON_FILE)
+    for bad_opts in __WRONG_OPTS:
+        with pytest.raises(SystemExit) as e:
+            with patch.object(sys, "argv", CSV_OPTS + bad_opts):
+                findings_export.main()
+        assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
+        assert not os.path.isfile(testutil.CSV_FILE)
+        assert not os.path.isfile(testutil.JSON_FILE)
 
 
 def test_findings_export_non_existing_branch() -> None:
@@ -180,42 +134,3 @@ def test_findings_export_non_existing_branch() -> None:
     assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
-
-def test_findings_export_alt_api() -> None:
-    """test_findings_export_alt_api"""
-    testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--useFindings"]):
-        try:
-            findings_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
-
-
-def test_wrong_filters() -> None:
-    """test_wrong_filters"""
-    testutil.clean(testutil.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "OPEN,NOT_OPEN"]):
-            findings_export.main()
-    assert int(str(e.value)) == options.ERR_WRONG_SEARCH_CRITERIA
-    assert not os.path.isfile(testutil.CSV_FILE)
-
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "ACCEPTED,SAFE,DO_FIX,WONTFIX"]):
-            findings_export.main()
-    assert int(str(e.value)) == options.ERR_WRONG_SEARCH_CRITERIA
-    assert not os.path.isfile(testutil.CSV_FILE)
-
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--types", "BUG,VULN"]):
-            findings_export.main()
-    assert int(str(e.value)) == options.ERR_WRONG_SEARCH_CRITERIA
-    assert not os.path.isfile(testutil.CSV_FILE)
-
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--types", "BUG,VULN"]):
-            findings_export.main()
-    assert int(str(e.value)) == options.ERR_WRONG_SEARCH_CRITERIA
-    assert not os.path.isfile(testutil.CSV_FILE)
