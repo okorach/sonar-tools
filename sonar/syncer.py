@@ -39,6 +39,7 @@ TGT_KEY = "targetFindingKey"
 TGT_URL = "targetFindingUrl"
 SYNC_STATUS = "syncStatus"
 SYNC_SINCE_DATE = "syncSinceDate"
+SYNC_THREADS = "threads"
 
 
 def __name(obj):
@@ -180,8 +181,8 @@ def __sync_findings_list(src_findings, tgt_findings, settings):
 def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings=None):
     # Mass collect changelogs with multithreading, that will be needed later
     min_date = sync_settings[SYNC_SINCE_DATE]
-    issues.get_changelogs(issue_list=list(src_findings.values()), added_after=min_date, threads=8)
-    issues.get_changelogs(issue_list=list(tgt_findings.values()), added_after=min_date, threads=8)
+    issues.get_changelogs(issue_list=list(src_findings.values()), added_after=min_date, threads=sync_settings[SYNC_THREADS])
+    issues.get_changelogs(issue_list=list(tgt_findings.values()), added_after=min_date, threads=sync_settings[SYNC_THREADS])
 
     interesting_src_findings = {}
     if len(src_findings) == 0 or len(tgt_findings) == 0:

@@ -77,6 +77,7 @@ def __parse_args(desc):
         default=None,
         help="If specified, only sync issues that had a change since the given date (YYYY-MM-DD format)",
     )
+    options.add_thread_arg(parser, "issue sync")
     # parser.add_argument('--noassign', required=False, default=False, action='store_true',
     #                    help="If specified, will not apply issue assignment in the target issue")
     parser.add_argument(
@@ -130,6 +131,7 @@ def main():
         syncer.SYNC_IGNORE_COMPONENTS: False,
         syncer.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(args.login),
         syncer.SYNC_SINCE_DATE: since,
+        syncer.SYNC_THREADS: params["threads"],
     }
 
     report = []
