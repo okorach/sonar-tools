@@ -25,7 +25,7 @@ from http import HTTPStatus
 from requests.exceptions import HTTPError
 import requests.utils
 import sonar.utilities as util
-from sonar import syncer, users
+from sonar import syncer, users, sqobject
 from sonar.projects import projects
 from sonar.findings import findings, changelog
 
@@ -415,10 +415,11 @@ def search(endpoint, page=None, params=None):
     return hotspots_list
 
 
-def get_object(key, data=None, endpoint=None, from_export=False):
-    if key not in _OBJECTS:
+def get_object(key, endpoint: object, data: dict[str] = None, from_export: bool = False) -> Hotspot:
+    uu = sqobject.uuid(key, endpoint.url)
+    if uu not in _OBJECTS:
         _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
-    return _OBJECTS[key]
+    return _OBJECTS[uu]
 
 
 def get_search_criteria(params):
