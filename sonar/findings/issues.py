@@ -26,7 +26,7 @@ from threading import Thread
 import requests.utils
 
 from sonar.projects import projects
-from sonar import users, syncer
+from sonar import users, syncer, sqobject
 from sonar.findings import findings, changelog
 import sonar.utilities as util
 
@@ -77,7 +77,7 @@ STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED")
 RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
-_ISSUES = {}
+_OBJECTS = {}
 
 
 class TooManyIssuesError(Exception):
@@ -137,7 +137,7 @@ class Issue(findings.Finding):
         if data is not None:
             self.component = data.get("component", None)
         # util.logger.debug("Loaded issue: %s", util.json_dump(data))
-        _ISSUES[self.uuid()] = self
+        _OBJECTS[self.uuid()] = self
 
     def __str__(self):
         """
@@ -834,9 +834,10 @@ def __get_issues_search_params(params):
 
 
 def get_object(key, data=None, endpoint=None, from_export=False):
-    if key not in _ISSUES:
+    uu = sqobject.uuid(key, endpoint.url)
+    if uu not in _OBJECTS:
         _ = Issue(key=key, data=data, endpoint=endpoint, from_export=from_export)
-    return _ISSUES[key]
+    return _OBJECTS[uu]
 
 
 def get_search_criteria(params):

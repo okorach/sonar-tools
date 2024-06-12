@@ -38,7 +38,7 @@ class SqObject:
         self._json = None
 
     def uuid(self):
-        return self.key
+        return uuid(self.key, self.endpoint.url)
 
     def reload(self, data):
         if self._json is None:
@@ -137,3 +137,8 @@ def delete_object(object, api, params, map):
             map.pop(object.uuid(), None)
             raise exceptions.ObjectNotFound(object.key, f"{str(object)} not found for delete")
         raise
+
+
+def uuid(key: str, url: str) -> str:
+    """Returns a SonarQube object uuid"""
+    return f"{key}@{url}"
