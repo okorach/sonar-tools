@@ -29,6 +29,7 @@
 """
 
 import sys
+import datetime
 from sonar import platform, syncer, options, exceptions
 from sonar.projects import projects
 from sonar.projects.branches import Branch
@@ -70,6 +71,12 @@ def __parse_args(desc):
         action="store_true",
         help="If specified, will not comment related to the sync in the target issue",
     )
+    parser.add_argument(
+        "--sinceDate",
+        required=False,
+        default=None,
+        help="If specified, only sync issues that had a change since the given date (YYYY-MM-DD format)",
+    )
     # parser.add_argument('--noassign', required=False, default=False, action='store_true',
     #                    help="If specified, will not apply issue assignment in the target issue")
     parser.add_argument(
@@ -110,14 +117,21 @@ def main():
     source_branch = params.get("sourceBranch", None)
     target_branch = params.get("targetBranch", None)
     target_url = params.get("urlTarget", None)
-
+    since = None
+    if params["sinceDate"] is not None:
+        try:
+            since = datetime.datetime.strptime(params["sinceDate"], util.SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
+        except (ValueError, TypeError):
+            util.logger.warning("sinceDate value '%s' is not in the expected YYYY-MM-DD date format, ignored", params["sinceDate"])
     settings = {
         syncer.SYNC_ADD_COMMENTS: not params["nocomment"],
         syncer.SYNC_ADD_LINK: not params["nolink"],
         syncer.SYNC_ASSIGN: True,
         syncer.SYNC_IGNORE_COMPONENTS: False,
         syncer.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(args.login),
+        syncer.SYNC_SINCE_DATE: since,
     }
+
     report = []
     try:
         if not projects.exists(source_key, endpoint=source_env):
