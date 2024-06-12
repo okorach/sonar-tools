@@ -19,6 +19,7 @@
 #
 
 import re
+import datetime
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.projects import projects
@@ -260,12 +261,14 @@ class Finding(sq.SqObject):
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
-    def has_changelog(self):
+    def has_changelog(self, added_after: datetime.datetime = None) -> bool:
         """
         :return: Whether the finding has a changelog
         :rtype: bool
         """
         # util.logger.debug("%s has %d changelogs", str(self), len(self.changelog()))
+        if added_after is not None and added_after > self.modification_date:
+            return False
         return len(self.changelog()) > 0
 
     def has_comments(self):

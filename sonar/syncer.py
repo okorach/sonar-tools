@@ -21,6 +21,7 @@
 """Findings syncer"""
 
 import sonar.utilities as util
+from sonar.findings import issues
 
 
 SYNC_IGNORE_COMPONENTS = "ignore_components"
@@ -37,6 +38,8 @@ SYNC_MATCHES = "matches"
 TGT_KEY = "targetFindingKey"
 TGT_URL = "targetFindingUrl"
 SYNC_STATUS = "syncStatus"
+SYNC_SINCE_DATE = "syncSinceDate"
+SYNC_THREADS = "threads"
 
 
 def __name(obj):
@@ -176,6 +179,11 @@ def __sync_findings_list(src_findings, tgt_findings, settings):
 
 
 def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings=None):
+    # Mass collect changelogs with multithreading, that will be needed later
+    min_date = sync_settings[SYNC_SINCE_DATE]
+    issues.get_changelogs(issue_list=list(src_findings.values()), added_after=min_date, threads=sync_settings[SYNC_THREADS])
+    issues.get_changelogs(issue_list=list(tgt_findings.values()), added_after=min_date, threads=sync_settings[SYNC_THREADS])
+
     interesting_src_findings = {}
     if len(src_findings) == 0 or len(tgt_findings) == 0:
         util.logger.info("source or target list of findings to sync empty, skipping...")
@@ -198,15 +206,13 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
         str(tgt_object),
     )
     for key1, finding in src_findings.items():
-        if not (finding.has_changelog() or finding.has_comments()):
-            util.logger.info("%s has no changelog or comments, skipped in sync", str(finding))
-            continue
         if finding.is_closed():
-            util.logger.info(
-                "%s is closed, so it will not be synchronized despite having a changelog",
-                str(finding),
-            )
+            util.logger.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
             continue
+        if not (finding.has_changelog(added_after=min_date) or finding.has_comments()):
+            util.logger.debug("%s has no changelog or comments added after %s, skipped in sync", str(finding), str(min_date))
+            continue
+
         modifiers = finding.modifiers().union(finding.commenters())
         # TODO - Manage more than 1 sync account - diff the 2 lists
         syncer = sync_settings[SYNC_SERVICE_ACCOUNTS][0]
