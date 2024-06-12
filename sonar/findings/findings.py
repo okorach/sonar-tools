@@ -302,8 +302,11 @@ class Finding(sq.SqObject):
             str(self.modifiers()),
             str(user_list),
         )
+        # If no account dedicated to sync is provided, finding can be synced only if no changelog
         if user_list is None:
+            util.logger.debug("Allowed user list empty, checking if issue has changelog")
             return not self.has_changelog()
+        # Else, finding can be synced only if changes were performed by syncer accounts
         for u in self.modifiers():
             if u not in user_list:
                 return False
@@ -313,6 +316,8 @@ class Finding(sq.SqObject):
         """
         :meta private:
         """
+        if self.key == another_finding.key:
+            return True
         prelim_check = True
         if self.rule in ("python:S6540"):
             try:
@@ -361,24 +366,35 @@ class Finding(sq.SqObject):
         exact_matches = []
         approx_matches = []
         match_but_modified = []
-        for key, finding in findings_list.items():
-            if key == self.key:
+        util.logger.debug("Searching for an exact match of %s", self.uuid())
+        for finding in findings_list.values():
+            if self.uuid() == finding.uuid():
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
-                util.logger.debug("Issues %s and %s are strictly identical", self.key, key)
                 if finding.can_be_synced(allowed_users):
+                    util.logger.info("Issues %s and %s are strictly identical and can be synced", self.uuid(), finding.uuid())
                     exact_matches.append(finding)
                 else:
+                    util.logger.info(
+                        "Issues %s and %s are strictly identical but target already has changes, cannot be synced", self.uuid(), finding.uuid()
+                    )
                     match_but_modified.append(finding)
-            elif finding.almost_identical_to(self, ignore_component, **kwargs):
-                util.logger.debug("Issues %s and %s are almost identical", self.key, key)
+                return exact_matches, approx_matches, match_but_modified
+
+        util.logger.debug("No exact match, searching for an approximate match of %s", self.uuid())
+        for finding in findings_list.items():
+            if finding.almost_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
+                    util.logger.info("Issues %s and %s are almost identical and could be synced", self.uuid(), finding.uuid())
                     approx_matches.append(finding)
                 else:
+                    util.logger.info(
+                        "Issues %s and %s are almost identical but target already has changes, cannot be synced", self.uuid(), finding.uuid()
+                    )
                     match_but_modified.append(finding)
             else:
-                util.logger.debug("Issues %s and %s are not siblings", self.key, key)
-        return (exact_matches, approx_matches, match_but_modified)
+                util.logger.debug("Issues %s and %s are not siblings", self.uuid(), finding.uuid())
+        return exact_matches, approx_matches, match_but_modified
 
     def do_transition(self, transition: str) -> bool:
         return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
