@@ -102,7 +102,9 @@ def __dump_report(report, file):
         with open(file, "w", encoding="utf-8") as fh:
             print(txt, file=fh)
 
-def main():
+
+def main() -> int:
+    """Main entry point"""
     args = __parse_args(
         "Synchronizes issues changelog of different branches of same or different projects, "
         "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
@@ -127,8 +129,7 @@ def main():
         params["login"] = target_env.user()
     if params["login"] == "admin":
         util.exit_fatal(
-            "sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync",
-            options.ERR_ARGS_ERROR
+            "sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync", options.ERR_ARGS_ERROR
         )
 
     since = None
