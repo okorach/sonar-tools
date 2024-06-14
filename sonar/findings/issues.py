@@ -695,7 +695,7 @@ def search_all(endpoint, params=None):
     :rtype: dict{<key>: <Issue>}
     """
     new_params = {} if params is None else params.copy()
-    util.logger.info("Issue search all with %s", str(params))
+    util.logger.debug("Issue search all with %s", str(params))
     issue_list = {}
     try:
         issue_list = search(endpoint=endpoint, params=params)
