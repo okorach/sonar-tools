@@ -295,8 +295,8 @@ class Branch(components.Component):
         """
         return measures.get(self, metrics_list)
 
-    def get_issues(self):
-        """Returns a branch list of issues
+    def get_issues(self) -> dict[str, issues.Issue]:
+        """Returns a branch dict of issues
 
         :return: dict of Issues, with issue key as key
         :rtype: dict{key: Issue}
@@ -310,8 +310,8 @@ class Branch(components.Component):
             },
         )
 
-    def get_hotspots(self):
-        """Returns a branch list of hotspots
+    def get_hotspots(self) -> dict[str, hotspots.Hotspot]:
+        """Returns a branch dict of hotspots
 
         :return: dict of Hotspots, with hotspot key as key
         :rtype: dict{key: Hotspot}
@@ -346,16 +346,16 @@ class Branch(components.Component):
         report, counters = [], {}
         util.logger.info("Syncing %s (%s) and %s (%s) issues", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
         (report, counters) = syncer.sync_lists(
-            self.get_issues(),
-            another_branch.get_issues(),
+            list(self.get_issues().values()),
+            list(another_branch.get_issues().values()),
             self,
             another_branch,
             sync_settings=sync_settings,
         )
         util.logger.info("Syncing %s and %s hotspots", str(self), str(another_branch))
         (tmp_report, tmp_counts) = syncer.sync_lists(
-            self.get_hotspots(),
-            another_branch.get_hotspots(),
+            list(self.get_hotspots().values()),
+            list(another_branch.get_hotspots().values()),
             self,
             another_branch,
             sync_settings=sync_settings,
