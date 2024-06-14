@@ -862,11 +862,13 @@ def __get_changelog(queue: Queue[Issue], added_after: datetime.datetime = None) 
         issue.has_changelog(added_after=added_after)
         issue.has_comments()
         queue.task_done()
-    util.logger.info("Queue empty, exiting thread")
+    util.logger.debug("Queue empty, exiting thread")
 
 
 def get_changelogs(issue_list: list[Issue], added_after: datetime.datetime = None, threads: int = 8) -> None:
     """Performs a mass, multithreaded collection of issue changelogs (one API call per issue)"""
+    if len(issue_list) == 0:
+        return
     util.logger.info("Mass changelog collection for %d issues on %d threads", len(issue_list), threads)
     q = Queue(maxsize=0)
     for issue in issue_list:
