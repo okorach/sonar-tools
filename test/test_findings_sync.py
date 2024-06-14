@@ -32,8 +32,12 @@ from tools import findings_sync
 from sonar import utilities
 
 CMD = "sonar-findings-sync.py"
-PLAT_OPTS = (["-u", os.getenv("SONAR_HOST_URL_LATEST"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")] +
-            ["-U", os.getenv("SONAR_HOST_URL_TEST"), "-T", os.getenv("SONAR_TOKEN_SYNC_USER")])
+PLAT_OPTS = ["-u", os.getenv("SONAR_HOST_URL_LATEST"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")] + [
+    "-U",
+    os.getenv("SONAR_HOST_URL_TEST"),
+    "-T",
+    os.getenv("SONAR_TOKEN_SYNC_USER"),
+]
 SYNC_OPTS = ["--login", "syncer", "-k", "TESTSYNC", "-K", "TESTSYNC"]
 ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + ["-f", testutil.JSON_FILE]
 
