@@ -61,8 +61,8 @@ def __parse_args(desc):
     )
     parser.add_argument(
         "--login",
-        required=True,
-        help="One (or several comma separated) service account(s) used for issue-sync",
+        required=False,
+        help="DEPRECATED, IGNORED: One (or several comma separated) service account(s) used for issue-sync",
     )
     parser.add_argument(
         "--nocomment",
@@ -102,22 +102,35 @@ def __dump_report(report, file):
         with open(file, "w", encoding="utf-8") as fh:
             print(txt, file=fh)
 
-
 def main():
     args = __parse_args(
         "Synchronizes issues changelog of different branches of same or different projects, "
         "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
     )
 
+    params = vars(args)
     source_env = platform.Platform(
         some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
-    params = vars(args)
     source_key = params["projectKeys"]
     target_key = params.get("targetProjectKey", None)
     source_branch = params.get("sourceBranch", None)
     target_branch = params.get("targetBranch", None)
     target_url = params.get("urlTarget", None)
+    if target_url is None:
+        params["login"] = source_env.user()
+    else:
+        util.check_token(args.tokenTarget)
+        target_env = platform.Platform(
+            some_url=args.urlTarget, some_token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
+        )
+        params["login"] = target_env.user()
+    if params["login"] == "admin":
+        util.exit_fatal(
+            "sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync",
+            options.ERR_ARGS_ERROR
+        )
+
     since = None
     if params["sinceDate"] is not None:
         try:
@@ -160,10 +173,6 @@ def main():
             (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
 
         elif target_url is not None and target_key is not None:
-            util.check_token(args.tokenTarget)
-            target_env = platform.Platform(
-                some_url=args.urlTarget, some_token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
-            )
             if not projects.exists(target_key, endpoint=target_env):
                 raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
