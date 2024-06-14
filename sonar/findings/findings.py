@@ -362,7 +362,9 @@ class Finding(sq.SqObject):
         # Need at least 7 / 9 to match
         return score >= 7
 
-    def search_siblings(self, findings_list: list[Finding], allowed_users: bool = None, ignore_component: bool = False, **kwargs):
+    def search_siblings(
+        self, findings_list: list[Finding], allowed_users: bool = None, ignore_component: bool = False, **kwargs
+    ) -> tuple[list[Finding], list[Finding], list[Finding]]:
         """
         :meta private:
         """
