@@ -21,7 +21,7 @@
 """Findings syncer"""
 
 import sonar.utilities as util
-from sonar.findings import issues
+from sonar.findings import findings
 
 
 SYNC_IGNORE_COMPONENTS = "ignore_components"
@@ -42,10 +42,6 @@ SYNC_SINCE_DATE = "syncSinceDate"
 SYNC_THREADS = "threads"
 
 
-def __name(obj):
-    return type(obj).__name__.lower()
-
-
 def __get_findings(findings_list):
     find_list = []
     for finding in findings_list:
@@ -56,9 +52,9 @@ def __get_findings(findings_list):
 def __process_exact_sibling(finding, sibling, settings):
     if finding.has_changelog() or finding.has_comments():
         sibling.apply_changelog(finding, settings)
-        msg = f"Source {__name(finding)} changelog applied successfully"
+        msg = f"Source {util.class_name(finding).lower()} changelog applied successfully"
     else:
-        msg = f"Source {__name(finding)} has no changelog"
+        msg = f"Source {util.class_name(finding).lower()} has no changelog"
     return {
         SRC_KEY: finding.key,
         SRC_URL: finding.url(),
@@ -74,13 +70,13 @@ def __process_no_match(finding):
         SRC_KEY: finding.key,
         SRC_URL: finding.url(),
         SYNC_STATUS: "no match",
-        SYNC_MSG: f"Source {__name(finding)} has no match in target project",
+        SYNC_MSG: f"Source {util.class_name(finding).lower()} has no match in target project",
     }
 
 
 def __process_multiple_exact_siblings(finding, siblings):
     util.logger.info("Multiple matches for %s, cannot automatically apply changelog", str(finding))
-    name = __name(finding)
+    name = util.class_name(finding).lower()
     for sib in siblings:
         comment = ""
         i = 0
@@ -129,28 +125,20 @@ def __process_modified_siblings(finding, siblings):
         TGT_KEY: siblings[0].key,
         TGT_URL: siblings[0].url(),
         SYNC_STATUS: "unsynchronized",
-        SYNC_MSG: f"Target {__name(finding)} already has a changelog",
+        SYNC_MSG: f"Target {util.class_name(finding).lower()} already has a changelog",
     }
 
 
-def __sync_findings_list(src_findings, tgt_findings, settings):
-    counters = {
-        "nb_to_sync": len(src_findings),
-        "nb_applies": 0,
-        "nb_approx_match": 0,
-        "nb_tgt_has_changelog": 0,
-        "nb_multiple_matches": 0,
-    }
+def __sync_curated_list(
+    src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: dict[str, str]
+) -> tuple[list[dict[str, str]], dict[str, int]]:
+    """Syncs 2 list of findingss"""
+    counters = {k: 0 for k in ("nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches")}
+    counters["nb_to_sync"] = len(src_findings)
+    name = "finding" if len(src_findings) == 0 else util.class_name(src_findings[0]).lower()
     report = []
-    name = __name(list(src_findings.values())[0])
-    util.logger.info(
-        "%d %ss to sync, %d %ss in target",
-        len(src_findings),
-        name,
-        len(tgt_findings),
-        name,
-    )
-    for _, finding in src_findings.items():
+    util.logger.info("%d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
+    for finding in src_findings:
         util.logger.debug("Searching sibling for %s", str(finding))
         (exact_siblings, approx_siblings, modified_siblings) = finding.search_siblings(
             tgt_findings,
@@ -174,28 +162,28 @@ def __sync_findings_list(src_findings, tgt_findings, settings):
     counters["nb_no_match"] = counters["nb_to_sync"] - (
         counters["nb_applies"] + counters["nb_tgt_has_changelog"] + counters["nb_multiple_matches"] + counters["nb_approx_match"]
     )
-    util.json_dump_debug(counters, "COUNTERS")
     return (report, counters)
 
 
-def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings=None):
+def sync_lists(
+    src_findings: list[findings.Finding],
+    tgt_findings: list[findings.Finding],
+    src_object: object,
+    tgt_object: object,
+    sync_settings: dict[str, str] = None,
+) -> tuple[list[dict[str, str]], dict[str, int]]:
+    """Syncs 2 list of findings and returns report and count of syncs"""
     # Mass collect changelogs with multithreading, that will be needed later
     min_date = sync_settings[SYNC_SINCE_DATE]
-    issues.get_changelogs(issue_list=list(src_findings.values()), added_after=min_date, threads=sync_settings[SYNC_THREADS])
-    issues.get_changelogs(issue_list=list(tgt_findings.values()), added_after=min_date, threads=sync_settings[SYNC_THREADS])
+    findings.get_changelogs(issue_list=src_findings, added_after=min_date, threads=sync_settings[SYNC_THREADS])
+    findings.get_changelogs(issue_list=tgt_findings, added_after=min_date, threads=sync_settings[SYNC_THREADS])
 
-    interesting_src_findings = {}
+    interesting_src_findings = []
+    counters = {k: 0 for k in ("nb_to_sync", "nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches")}
     if len(src_findings) == 0 or len(tgt_findings) == 0:
         util.logger.info("source or target list of findings to sync empty, skipping...")
-        counters = {
-            "nb_to_sync": 0,
-            "nb_applies": 0,
-            "nb_approx_match": 0,
-            "nb_tgt_has_changelog": 0,
-            "nb_multiple_matches": 0,
-        }
         return ([], counters)
-    name = __name(list(src_findings.values())[0])
+    name = util.class_name(src_findings[0]).lower()
     util.logger.info(
         "Syncing %d %ss from %s into %d %ss from %s",
         len(src_findings),
@@ -205,7 +193,7 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
         name,
         str(tgt_object),
     )
-    for key1, finding in src_findings.items():
+    for finding in src_findings:
         if finding.is_closed():
             util.logger.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
             continue
@@ -228,21 +216,7 @@ def sync_lists(src_findings, tgt_findings, src_object, tgt_object, sync_settings
                 syncer,
             )
             continue
-        interesting_src_findings[key1] = finding
-    util.logger.info(
-        "Found %d %ss with manual changes in %s",
-        len(interesting_src_findings),
-        name,
-        str(src_object),
-    )
-    if len(interesting_src_findings) <= 0:
-        util.logger.info("No %ss with manual changes in %s, skipping...", name, str(src_object))
-        counters = {
-            "nb_to_sync": 0,
-            "nb_applies": 0,
-            "nb_approx_match": 0,
-            "nb_tgt_has_changelog": 0,
-            "nb_multiple_matches": 0,
-        }
-        return ([], counters)
-    return __sync_findings_list(interesting_src_findings, tgt_findings, sync_settings)
+        interesting_src_findings.append(finding)
+
+    util.logger.info("Found %d %ss with manual changes in %s", len(interesting_src_findings), name, str(src_object))
+    return __sync_curated_list(interesting_src_findings, tgt_findings, sync_settings)
