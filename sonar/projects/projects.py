@@ -665,21 +665,21 @@ class Project(components.Component):
             },
         )
 
-    def __sync_community(self, another_project: object, sync_settings: dict[str, str]):
+    def __sync_community(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""
         report, counters = [], {}
         util.logger.info("Syncing %s and %s issues", str(self), str(another_project))
         (report, counters) = syncer.sync_lists(
-            self.get_issues(),
-            another_project.get_issues(),
+            list(self.get_issues().values()),
+            list(another_project.get_issues().values()),
             self,
             another_project,
             sync_settings=sync_settings,
         )
         util.logger.info("Syncing %s and %s hotspots", str(self), str(another_project))
         (tmp_report, tmp_counts) = syncer.sync_lists(
-            self.get_hotspots(),
-            another_project.get_hotspots(),
+            list(self.get_hotspots().values()),
+            list(another_project.get_hotspots().values()),
             self,
             another_project,
             sync_settings=sync_settings,
