@@ -56,8 +56,7 @@ def __parse_args(desc):
         "-K",
         "--targetProjectKey",
         required=False,
-        help="""key of the target project when synchronizing 2 projects
-                        or 2 branches on a same platform""",
+        help="""key of the target project when synchronizing 2 projects or 2 branches on a same platform""",
     )
     parser.add_argument(
         "--login",
@@ -115,12 +114,16 @@ def main() -> int:
         some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
     source_key = params["projectKeys"]
-    target_key = params.get("targetProjectKey", source_key)
+    target_key = params.get("targetProjectKey", None)
+    if target_key is None:
+        target_key = source_key
     source_url = params["url"]
     source_branch = params.get("sourceBranch", None)
     target_branch = params.get("targetBranch", None)
     target_url = params.get("urlTarget", None)
     if target_url is None:
+        if source_key == target_key and source_branch is None or target_branch is None:
+            util.exit_fatal("Branches must be specified when sync'ing within a same project", options.ERR_ARGS_ERROR)
         target_env, target_url = source_env, source_url
     else:
         util.check_token(args.tokenTarget)
