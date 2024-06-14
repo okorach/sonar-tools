@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
 from http import HTTPStatus
 import json
 from urllib.parse import unquote
@@ -295,7 +296,7 @@ class Branch(components.Component):
         """
         return measures.get(self, metrics_list)
 
-    def get_issues(self) -> dict[str, issues.Issue]:
+    def get_issues(self):
         """Returns a branch dict of issues
 
         :return: dict of Issues, with issue key as key
@@ -310,7 +311,7 @@ class Branch(components.Component):
             },
         )
 
-    def get_hotspots(self) -> dict[str, hotspots.Hotspot]:
+    def get_hotspots(self):
         """Returns a branch dict of hotspots
 
         :return: dict of Hotspots, with hotspot key as key
@@ -333,7 +334,7 @@ class Branch(components.Component):
         """
         return self.get_issues() + self.get_hotspots()
 
-    def sync(self, another_branch, sync_settings):
+    def sync(self, another_branch: Branch, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs branch findings with another branch
 
         :param another_branch: other branch to sync issues into (not necesssarily of same project)
@@ -352,7 +353,7 @@ class Branch(components.Component):
             another_branch,
             sync_settings=sync_settings,
         )
-        util.logger.info("Syncing %s and %s hotspots", str(self), str(another_branch))
+        util.logger.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
         (tmp_report, tmp_counts) = syncer.sync_lists(
             list(self.get_hotspots().values()),
             list(another_branch.get_hotspots().values()),
