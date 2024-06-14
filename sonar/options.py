@@ -128,6 +128,22 @@ def add_url_arg(parser: object) -> object:
     return parser
 
 
+def add_import_export_arg(parser: object, topic: str, import_opt: bool = True, export_opt: bool = True) -> object:
+    """Adds the CLI params for export/import"""
+    group = parser.add_mutually_exclusive_group()
+    if export_opt:
+        msg = ""
+        if import_opt:
+            msg = " (exclusive of --import)"
+        group.add_argument("-e", "--export", required=False, default=False, action="store_true", help=f"To export {topic}{msg}")
+    if import_opt:
+        msg = ""
+        if export_opt:
+            msg = " (exclusive of --export)"
+        group.add_argument("-i", "--import", required=False, default=False, action="store_true", help=f"To import {topic}{msg}")
+    return parser
+
+
 def output_format(**kwargs) -> str:
     """returns the output format, based on the format CLI option or the output file extension, or the default"""
     if kwargs[FORMAT] is not None:
