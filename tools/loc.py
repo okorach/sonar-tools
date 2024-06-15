@@ -212,7 +212,7 @@ def __parse_args(desc):
 def main():
     args = __parse_args("Extract projects, branches or portfolios lines of code - for Projects LoC it is as computed for the license")
     endpoint = platform.Platform(
-        some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
+        url=args.url, token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
     kwargs = vars(args)
     kwargs[options.FORMAT] = options.output_format(**kwargs)

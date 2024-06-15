@@ -374,8 +374,8 @@ def main():
     kwargs = vars(parse_args("Sonar findings export"))
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     sqenv = platform.Platform(
-        some_url=kwargs["url"],
-        some_token=kwargs["token"],
+        url=kwargs["url"],
+        token=kwargs["token"],
         org=kwargs["organization"],
         cert_file=kwargs["clientCert"],
         http_timeout=kwargs["httpTimeout"],

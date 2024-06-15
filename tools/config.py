@@ -170,7 +170,7 @@ def main():
 
     start_time = datetime.datetime.today()
     endpoint = platform.Platform(
-        some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
+        url=args.url, token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
     what = utilities.check_what(args.what, _EVERYTHING, "exported or imported")
     args.projectKeys = utilities.csv_to_list(args.projectKeys)

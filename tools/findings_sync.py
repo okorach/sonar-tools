@@ -111,7 +111,7 @@ def main() -> int:
 
     params = vars(args)
     source_env = platform.Platform(
-        some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
+        url=args.url, token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
     source_key = params["projectKeys"]
     target_key = params.get("targetProjectKey", None)
@@ -128,7 +128,7 @@ def main() -> int:
     else:
         util.check_token(args.tokenTarget)
         target_env = platform.Platform(
-            some_url=args.urlTarget, some_token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
+            url=args.urlTarget, token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
         )
     params["login"] = target_env.user()
     if params["login"] == "admin":

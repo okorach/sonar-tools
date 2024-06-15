@@ -51,7 +51,7 @@ def __parse_args(desc: str) -> object:
 def main() -> int:
     """Main entry point"""
     args = __parse_args("Extract rules")
-    endpoint = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    endpoint = platform.Platform(url=args.url, token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
 
     (fmt, file) = __get_fmt_and_file(args)
 
