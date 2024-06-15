@@ -215,8 +215,7 @@ def main():
         __parse_args("Extract projects, branches or portfolios lines of code - for Projects LoC it is as computed for the license")
     )
     endpoint = platform.Platform(**kwargs)
-    kwargs[options.FORMAT] = options.output_format(**kwargs)
-    ofile = kwargs.pop(options.OUTPUTFILE, None)
+    kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
     if kwargs[OPT_PORTFOLIOS]:
         if kwargs[options.WITH_BRANCHES]:
             util.logger.warning("Portfolio LoC export selected, branch option is ignored")
@@ -239,7 +238,7 @@ def main():
                     branch_list += proj.branches().values()
                 objects_list = branch_list
 
-    __dump_loc(objects_list, ofile, **kwargs)
+    __dump_loc(objects_list, **kwargs)
     util.stop_clock(start_time)
     sys.exit(0)
 

@@ -391,17 +391,14 @@ def main():
             params["useFindings"] = False
             break
     try:
-        project_list = projects.get_list(endpoint=sqenv, key_list=util.csv_to_list(kwargs.get("projectKeys", None)))
+        project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get("projectKeys", None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
     fmt, fname = kwargs.pop("format", None), kwargs.pop("file", None)
-    if fmt is None and fname is not None:
-        ext = fname.split(".")[-1].lower()
-        if os.path.exists(fname):
-            os.remove(fname)
-        if ext in ("csv", "json"):
-            fmt = ext
+    fmt = util.deduct_format(fmt, fname)
+    if fname is not None and os.path.exists(fname):
+        os.remove(fname)
 
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
     __write_header(fname, fmt)

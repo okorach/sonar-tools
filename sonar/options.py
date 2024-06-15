@@ -142,14 +142,3 @@ def add_import_export_arg(parser: object, topic: str, import_opt: bool = True, e
             msg = " (exclusive of --export)"
         group.add_argument("-i", "--import", required=False, default=False, action="store_true", help=f"To import {topic}{msg}")
     return parser
-
-
-def output_format(**kwargs) -> str:
-    """returns the output format, based on the format CLI option or the output file extension, or the default"""
-    if kwargs[FORMAT] is not None:
-        return kwargs[FORMAT]
-    if kwargs[OUTPUTFILE] is not None:
-        ext = kwargs[OUTPUTFILE].split(".").pop(-1).lower()
-        if ext in ("json", "sarif", "csv"):
-            return ext
-    return "csv"

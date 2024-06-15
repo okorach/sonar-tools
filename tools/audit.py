@@ -44,16 +44,6 @@ _ALL_AUDITABLE = [
 ]
 
 
-def __deduct_format__(fmt, file):
-    if fmt is not None:
-        return fmt
-    if file is not None:
-        ext = file.split(".").pop(-1).lower()
-        if ext in ("csv", "json"):
-            return ext
-    return "csv"
-
-
 def _audit_sif(sysinfo, audit_settings):
     util.logger.info("Auditing SIF file '%s'", sysinfo)
     try:
@@ -151,8 +141,8 @@ def main():
         except exceptions.ObjectNotFound as e:
             util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
-    kwargs["format"] = __deduct_format__(kwargs["format"], kwargs["file"])
-    ofile = kwargs.pop("file", None)
+    ofile = kwargs.pop("file")
+    kwargs["format"] = util.deduct_format(kwargs["format"], ofile)
     problem.dump_report(problems, ofile, server_id, **kwargs)
 
     util.logger.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))

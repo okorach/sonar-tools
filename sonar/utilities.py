@@ -174,6 +174,7 @@ def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sa
         "-f",
         "--file",
         required=False,
+        default=None,
         help="Output file for the report, stdout by default",
     )
     fmt_choice = []
@@ -727,3 +728,12 @@ def start_clock() -> datetime.datetime:
 def stop_clock(start_time: datetime.datetime) -> None:
     """Logs execution time"""
     logger.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
+
+
+def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json")) -> str:
+    """Deducts output format from CLI format and filename"""
+    if fmt is None and filename is not None:
+        fmt = filename.split(".").pop(-1).lower()
+    if fmt not in allowed_formats:
+        fmt = "csv"
+    return fmt

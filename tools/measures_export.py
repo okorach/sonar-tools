@@ -97,16 +97,6 @@ def __get_wanted_metrics(kwargs: dict[str, str], endpoint: platform.Platform) ->
     return wanted_metrics
 
 
-def __get_fmt_and_file(kwargs: dict[str, str]):
-    fmt = kwargs["format"]
-    fname = kwargs.get("file", None)
-    if fname is not None:
-        ext = fname.split(".")[-1].lower()
-        if ext in ("csv", "json"):
-            fmt = ext
-    return (fmt, fname)
-
-
 def __parse_args(desc):
     parser = util.set_common_args(desc)
     parser = util.set_key_arg(parser)
@@ -282,11 +272,11 @@ def main():
     endpoint = platform.Platform(**kwargs)
 
     wanted_metrics = __get_wanted_metrics(kwargs, endpoint)
-    (fmt, file) = __get_fmt_and_file(kwargs)
+    file = kwargs.pop("file")
+    fmt = util.deduct_format(kwargs["format"], file)
     if endpoint.edition() == "community":
         kwargs[options.WITH_BRANCHES] = False
     kwargs[options.WITH_NAME] = True
-    kwargs.pop("file", None)
 
     try:
         project_list = projects.get_list(endpoint=endpoint, key_list=kwargs["projectKeys"])
