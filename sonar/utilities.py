@@ -257,6 +257,8 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
     if "projectKeys" in kwargs:
         kwargs["projectKeys"] = csv_to_list(kwargs["projectKeys"])
+    if "metricKeys" in kwargs:
+        kwargs["metricKeys"] = csv_to_list(kwargs["metricKeys"])
 
     # Verify version randomly once every 10 runs
     if not kwargs[OPT_SKIP_VERSION_CHECK] and random.randrange(10) == 0:
