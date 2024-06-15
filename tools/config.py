@@ -92,7 +92,7 @@ def __check_projects_existence(endpoint: object, key_list: list[str]) -> None:
             utilities.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
 
 
-def __export_config(endpoint: object, what: list[str], **kwargs) -> None:
+def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
     if "projects" in what:
         __check_projects_existence(endpoint, kwargs["projectKeys"])
@@ -138,7 +138,7 @@ def __export_config(endpoint: object, what: list[str], **kwargs) -> None:
     utilities.logger.info("Exporting configuration from %s completed", kwargs["url"])
 
 
-def __import_config(endpoint, what, **kwargs):
+def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     utilities.logger.info("Importing configuration to %s", kwargs["url"])
     key_list = kwargs["projectKeys"]
     data = utilities.load_json_file(kwargs["file"])
