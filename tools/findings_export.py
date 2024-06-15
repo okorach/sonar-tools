@@ -372,7 +372,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 def main():
     global DATES_WITHOUT_TIME
 
-    start_time = datetime.datetime.today()
+    start_time = util.start_clock()
     kwargs = util.convert_args(parse_args("Sonar findings export"))
     sqenv = platform.Platform(**kwargs)
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
@@ -416,7 +416,8 @@ def main():
         csv_separator=kwargs[options.CSV_SEPARATOR],
     )
     __write_footer(fname, fmt)
-    util.logger.info("Returned findings: %d - Total execution time: %s", TOTAL_FINDINGS, str(datetime.datetime.today() - start_time))
+    util.logger.info("Returned findings: %d", TOTAL_FINDINGS)
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

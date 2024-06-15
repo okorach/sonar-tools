@@ -25,6 +25,7 @@
         Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 """
 
+import sys
 from sonar import custom_measures, platform, utilities, options
 
 
@@ -38,6 +39,7 @@ def parse_args(desc):
 
 
 def main():
+    start_time = utilities.start_clock()
     kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
     sqenv = platform.Platform(**kwargs)
     if sqenv.version() >= (9, 0, 0):
@@ -53,6 +55,8 @@ def main():
             value=params["value"],
             description=params.get("description", None),
         )
+    utilities.stop_clock(start_time)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

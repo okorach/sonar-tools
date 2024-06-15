@@ -116,9 +116,9 @@ def __parser_args(desc):
 
 
 def main():
+    start_time = util.start_clock()
     kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
     sq = platform.Platform(**kwargs)
-    start_time = datetime.datetime.today()
 
     settings = config.load("sonar-audit")
     settings["threads"] = kwargs["threads"]
@@ -160,6 +160,7 @@ def main():
         util.logger.warning("%d issues found during audit", len(problems))
     else:
         util.logger.info("%d issues found during audit", len(problems))
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

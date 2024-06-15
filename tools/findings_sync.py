@@ -104,6 +104,7 @@ def __dump_report(report, file):
 
 def main() -> int:
     """Main entry point"""
+    start_time = util.start_clock()
     args = __parse_args(
         "Synchronizes issues changelog of different branches of same or different projects, "
         "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
@@ -194,6 +195,7 @@ def main() -> int:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

@@ -277,6 +277,7 @@ def __general_object_data(obj: object, **kwargs) -> dict[str, str]:
 
 
 def main():
+    start_time = util.start_clock()
     kwargs = util.convert_args(__parse_args("Extract measures of projects"))
     endpoint = platform.Platform(**kwargs)
 
@@ -326,6 +327,7 @@ def main():
     if file:
         util.logger.info("File '%s' created", file)
     util.logger.info("%d PROJECTS %d branches", len(project_list), nb_branches)
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

@@ -201,6 +201,7 @@ def _delete_objects(problems, mode):
 
 
 def main():
+    start_time = util.start_clock()
     kwargs = util.convert_args(_parse_arguments())
     sq = platform.Platform(**kwargs)
     mode, proj_age, branch_age, pr_age, token_age = kwargs["mode"], kwargs["projects"], kwargs["branches"], kwargs["pullrequests"], kwargs["tokens"]
@@ -222,6 +223,7 @@ def main():
     util.logger.info("%d branches older than %d days %s", deleted_branches, branch_age, op)
     util.logger.info("%d pull requests older than %d days %s", deleted_prs, pr_age, op)
     util.logger.info("%d tokens older than %d days revoked", revoked_tokens, token_age)
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

@@ -166,7 +166,7 @@ def __import_config(endpoint, what, **kwargs):
 
 
 def main():
-    start_time = datetime.datetime.today()
+    start_time = utilities.start_clock()
     kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
     if not kwargs["export"] and not kwargs["import"]:
         utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
@@ -180,7 +180,7 @@ def main():
             utilities.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     if kwargs["import"]:
         __import_config(endpoint, what, **kwargs)
-    utilities.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
+    utilities.stop_clock(start_time)
     sys.exit(0)
 
 

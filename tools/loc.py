@@ -210,6 +210,7 @@ def __parse_args(desc):
 
 
 def main():
+    start_time = util.start_clock()
     kwargs = util.convert_args(
         __parse_args("Extract projects, branches or portfolios lines of code - for Projects LoC it is as computed for the license")
     )
@@ -239,6 +240,7 @@ def main():
                 objects_list = branch_list
 
     __dump_loc(objects_list, ofile, **kwargs)
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

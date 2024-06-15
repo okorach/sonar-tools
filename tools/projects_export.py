@@ -24,13 +24,12 @@
 
 """
 import sys
-import datetime
 from sonar import options, platform, utilities, exceptions
 from sonar.projects import projects
 
 
 def main():
-    start_time = datetime.datetime.today()
+    start_time = utilities.start_clock()
     parser = utilities.set_common_args("Exports all projects of a SonarQube platform")
     parser = utilities.set_key_arg(parser)
     parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
@@ -59,7 +58,7 @@ def main():
     with utilities.open_file(kwargs["file"]) as fd:
         print(utilities.json_dump(dump), file=fd)
 
-    utilities.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
+    utilities.stop_clock(start_time)
     sys.exit(0)
 
 

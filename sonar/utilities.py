@@ -717,3 +717,13 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
         kwargs["url"] = kwargs.pop("urlTarget", kwargs["url"])
         kwargs["token"] = kwargs.pop("tokenTarget", kwargs["token"])
     return kwargs
+
+
+def start_clock() -> datetime.datetime:
+    """Returns the now timestamp"""
+    return datetime.datetime.now()
+
+
+def stop_clock(start_time: datetime.datetime) -> None:
+    """Logs execution time"""
+    logger.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
