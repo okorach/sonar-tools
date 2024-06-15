@@ -79,6 +79,7 @@ class Platform:
         self.url = some_url.rstrip("/").lower()  #: SonarQube URL
         self.__token = some_token
         self.__cert_file = cert_file
+        self.__user_data = None
         self._version = None
         self.__sys_info = None
         self.__global_nav = None
@@ -131,6 +132,16 @@ class Platform:
             return util.edition_normalize(self.global_nav()["edition"])
         else:
             return util.edition_normalize(self.sys_info()["Statistics"]["edition"])
+
+    def user(self) -> str:
+        """Returns the user corresponding to the provided token"""
+        return self.user_data()["login"]
+
+    def user_data(self) -> dict[str, str]:
+        """Returns the user data corresponding to the provided token"""
+        if self.__user_data is None:
+            self.__user_data = json.loads(self.get("api/users/current").text)
+        return self.__user_data
 
     def server_id(self):
         """

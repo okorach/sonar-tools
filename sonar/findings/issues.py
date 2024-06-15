@@ -695,7 +695,7 @@ def search_all(endpoint, params=None):
     :rtype: dict{<key>: <Issue>}
     """
     new_params = {} if params is None else params.copy()
-    util.logger.info("Issue search all with %s", str(params))
+    util.logger.debug("Issue search all with %s", str(params))
     issue_list = {}
     try:
         issue_list = search(endpoint=endpoint, params=params)
@@ -853,28 +853,3 @@ def get_search_criteria(params):
         criterias["resolutions"] = util.allowed_values_string(criterias["resolutions"], RESOLUTIONS)
     criterias = util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
     return criterias
-
-
-def __get_changelog(queue: Queue[Issue], added_after: datetime.datetime = None) -> None:
-    """Collect the changelog and comments of an issue"""
-    while not queue.empty():
-        issue = queue.get()
-        issue.has_changelog(added_after=added_after)
-        issue.has_comments()
-        queue.task_done()
-    util.logger.info("Queue empty, exiting thread")
-
-
-def get_changelogs(issue_list: list[Issue], added_after: datetime.datetime = None, threads: int = 8) -> None:
-    """Performs a mass, multithreaded collection of issue changelogs (one API call per issue)"""
-    util.logger.info("Mass changelog collection for %d issues on %d threads", len(issue_list), threads)
-    q = Queue(maxsize=0)
-    for issue in issue_list:
-        q.put(issue)
-    for i in range(threads):
-        util.logger.debug("Starting issue changelog thread %d", i)
-        worker = Thread(target=__get_changelog, args=(q, added_after))
-        worker.setDaemon(True)
-        worker.setName(f"Changelog{i}")
-        worker.start()
-    q.join()

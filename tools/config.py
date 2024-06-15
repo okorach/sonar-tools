@@ -73,23 +73,7 @@ def __parse_args(desc):
     parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
     parser = options.add_thread_arg(parser, "project export")
     parser = utilities.set_what(parser, what_list=_EVERYTHING, operation="export or import")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
-        "-e",
-        "--export",
-        required=False,
-        default=False,
-        action="store_true",
-        help="to export configuration (exclusive of --import)",
-    )
-    group.add_argument(
-        "-i",
-        "--import",
-        required=False,
-        default=False,
-        action="store_true",
-        help="to import configuration (exclusive of --export)",
-    )
+    parser = options.add_import_export_arg(parser, "configuration")
     parser.add_argument(
         "--fullExport",
         required=False,

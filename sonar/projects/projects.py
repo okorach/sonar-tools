@@ -665,45 +665,67 @@ class Project(components.Component):
             },
         )
 
-    def sync(self, another_project, sync_settings):
-        """Syncs project issues with another project
+    def __sync_community(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
+        """Syncs 2 projects findings on a community edition"""
+        report, counters = [], {}
+        util.logger.info("Syncing %s and %s issues", str(self), str(another_project))
+        (report, counters) = syncer.sync_lists(
+            list(self.get_issues().values()),
+            list(another_project.get_issues().values()),
+            self,
+            another_project,
+            sync_settings=sync_settings,
+        )
+        util.logger.info("Syncing %s and %s hotspots", str(self), str(another_project))
+        (tmp_report, tmp_counts) = syncer.sync_lists(
+            list(self.get_hotspots().values()),
+            list(another_project.get_hotspots().values()),
+            self,
+            another_project,
+            sync_settings=sync_settings,
+        )
+        report += tmp_report
+        counters = util.dict_add(counters, tmp_counts)
+        return report, counters
 
-        :param Project another_project: other project to sync issues into
-        :type another_project:
+    def sync(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
+        """Syncs project findings with another project
+
+        :param Project another_project: other project to sync findings into
         :param dict sync_settings: Parameters to configure the sync
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
         if self.endpoint.edition() == "community":
-            report, counters = [], {}
-            util.logger.info("Syncing %s and %s issues", str(self), str(another_project))
-            (report, counters) = syncer.sync_lists(
-                self.get_issues(),
-                another_project.get_issues(),
-                self,
-                another_project,
-                sync_settings=sync_settings,
+            return self.__sync_community(another_project, sync_settings)
+
+        src_branches = self.branches()
+        tgt_branches = another_project.branches()
+        src_branches_list = list(src_branches.keys())
+        tgt_branches_list = list(tgt_branches.keys())
+        diff = list(set(src_branches_list) - set(tgt_branches_list))
+        if len(diff) > 0:
+            util.logger.warning(
+                "Source %s has branches that do not exist for target %s, these branches will be ignored: %s",
+                str(self),
+                str(another_project),
+                ", ".join(diff),
             )
-            util.logger.info("Syncing %s and %s hotspots", str(self), str(another_project))
-            (tmp_report, tmp_counts) = syncer.sync_lists(
-                self.get_hotspots(),
-                another_project.get_hotspots(),
-                self,
-                another_project,
-                sync_settings=sync_settings,
+        diff = list(set(tgt_branches_list) - set(src_branches_list))
+        if len(diff) > 0:
+            util.logger.warning(
+                "Target %s has branches that do not exist for source %s, these branches will be ignored: %s",
+                str(self),
+                str(another_project),
+                ", ".join(diff),
             )
+        report = []
+        counters = {}
+        intersect = list(set(src_branches_list) & set(tgt_branches_list))
+        for branch_name in intersect:
+            (tmp_report, tmp_counts) = src_branches[branch_name].sync(tgt_branches[branch_name], sync_settings=sync_settings)
             report += tmp_report
             counters = util.dict_add(counters, tmp_counts)
-        else:
-            tgt_branches = another_project.branches().values()
-            report = []
-            counters = {}
-            for b_src in self.branches().values():
-                for b_tgt in tgt_branches:
-                    if b_src.name == b_tgt.name:
-                        (tmp_report, tmp_counts) = b_src.sync(b_tgt, sync_settings=sync_settings)
-                        report += tmp_report
-                        counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
     def sync_branches(self, sync_settings):

@@ -696,3 +696,8 @@ def is_sonarcloud_url(url: str) -> bool:
     :rtype: str
     """
     return url.rstrip("/").lower().endswith("sonarcloud.io")
+
+
+def class_name(obj: object) -> str:
+    """Returns the class name of an object"""
+    return type(obj).__name__

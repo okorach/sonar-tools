@@ -56,13 +56,12 @@ def __parse_args(desc):
         "-K",
         "--targetProjectKey",
         required=False,
-        help="""key of the target project when synchronizing 2 projects
-                        or 2 branches on a same platform""",
+        help="""key of the target project when synchronizing 2 projects or 2 branches on a same platform""",
     )
     parser.add_argument(
         "--login",
-        required=True,
-        help="One (or several comma separated) service account(s) used for issue-sync",
+        required=False,
+        help="DEPRECATED, IGNORED: One (or several comma separated) service account(s) used for issue-sync",
     )
     parser.add_argument(
         "--nocomment",
@@ -103,21 +102,40 @@ def __dump_report(report, file):
             print(txt, file=fh)
 
 
-def main():
+def main() -> int:
+    """Main entry point"""
     args = __parse_args(
         "Synchronizes issues changelog of different branches of same or different projects, "
         "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
     )
 
+    params = vars(args)
     source_env = platform.Platform(
         some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
     )
-    params = vars(args)
     source_key = params["projectKeys"]
     target_key = params.get("targetProjectKey", None)
+    if target_key is None:
+        target_key = source_key
+    source_url = params["url"]
     source_branch = params.get("sourceBranch", None)
     target_branch = params.get("targetBranch", None)
     target_url = params.get("urlTarget", None)
+    if target_url is None:
+        if source_key == target_key and source_branch is None or target_branch is None:
+            util.exit_fatal("Branches must be specified when sync'ing within a same project", options.ERR_ARGS_ERROR)
+        target_env, target_url = source_env, source_url
+    else:
+        util.check_token(args.tokenTarget)
+        target_env = platform.Platform(
+            some_url=args.urlTarget, some_token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
+        )
+    params["login"] = target_env.user()
+    if params["login"] == "admin":
+        util.exit_fatal(
+            "sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync", options.ERR_ARGS_ERROR
+        )
+
     since = None
     if params["sinceDate"] is not None:
         try:
@@ -138,45 +156,22 @@ def main():
     try:
         if not projects.exists(source_key, endpoint=source_env):
             raise exceptions.ObjectNotFound(source_key, f"Project key '{source_key}' does not exist")
-        if target_url is None and target_key is None and source_branch is None and target_branch is None:
-            util.logger.info("Syncing findings between all branches of a same project")
-            (report, counters) = projects.Project.get_object(key=source_key, endpoint=source_env).sync_branches(sync_settings=settings)
-        elif target_url is None and target_key is None and source_branch is not None and target_branch is not None:
-            util.logger.info("Syncing findings between 2 branches of same project")
-            if source_branch != target_branch:
+        if not projects.exists(target_key, endpoint=target_env):
+            raise exceptions.ObjectNotFound(source_key, f"Project key '{target_key}' does not exist")
+        if source_branch is not None and target_branch is not None:
+            util.logger.info("Syncing findings between 2 branches")
+            if source_url != target_url or source_branch != target_branch:
                 src_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
                 tgt_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
-
-        elif target_url is None and target_key is not None:
-            util.logger.info("Syncing findings between 2 different projects of same platform")
-            if not projects.exists(target_key, endpoint=source_env):
-                raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
+        else:
+            util.logger.info("Syncing findings between 2 projects (branch by branch)")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
-            src_branch = Branch.get_object(projects.Project.get_object(key=source_key, endpoint=source_env), source_branch)
-            tgt_branch = Branch.get_object(projects.Project.get_object(key=target_key, endpoint=source_env), target_branch)
-            (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
-
-        elif target_url is not None and target_key is not None:
-            util.check_token(args.tokenTarget)
-            target_env = platform.Platform(
-                some_url=args.urlTarget, some_token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
-            )
-            if not projects.exists(target_key, endpoint=target_env):
-                raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
-            settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
-            if source_branch is not None or target_branch is not None:
-                util.logger.info("Syncing findings between main branch of 2 projects of different platforms")
-                src_branch = Branch.get_object(projects.Project.get_object(key=source_key, endpoint=source_env), source_branch)
-                tgt_branch = Branch.get_object(projects.Project.get_object(key=target_key, endpoint=target_env), target_branch)
-                (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
-            else:
-                util.logger.info("Syncing findings between all branches of 2 projects of different platforms")
-                src_project = projects.Project.get_object(key=source_key, endpoint=source_env)
-                tgt_project = projects.Project.get_object(key=target_key, endpoint=target_env)
-                (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
+            src_project = projects.Project.get_object(key=source_key, endpoint=source_env)
+            tgt_project = projects.Project.get_object(key=target_key, endpoint=target_env)
+            (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
 
         __dump_report(report, args.file)
         util.logger.info("%d issues needed to be synchronized", counters.get("nb_to_sync", 0))

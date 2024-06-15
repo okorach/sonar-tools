@@ -18,8 +18,11 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
 import re
 import datetime
+from queue import Queue
+from threading import Thread
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.projects import projects
@@ -359,7 +362,9 @@ class Finding(sq.SqObject):
         # Need at least 7 / 9 to match
         return score >= 7
 
-    def search_siblings(self, findings_list, allowed_users=None, ignore_component=False, **kwargs):
+    def search_siblings(
+        self, findings_list: list[Finding], allowed_users: bool = None, ignore_component: bool = False, **kwargs
+    ) -> tuple[list[Finding], list[Finding], list[Finding]]:
         """
         :meta private:
         """
@@ -367,7 +372,7 @@ class Finding(sq.SqObject):
         approx_matches = []
         match_but_modified = []
         util.logger.debug("Searching for an exact match of %s", self.uuid())
-        for finding in findings_list.values():
+        for finding in findings_list:
             if self.uuid() == finding.uuid():
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
@@ -382,7 +387,7 @@ class Finding(sq.SqObject):
                 return exact_matches, approx_matches, match_but_modified
 
         util.logger.debug("No exact match, searching for an approximate match of %s", self.uuid())
-        for finding in findings_list.items():
+        for finding in findings_list:
             if finding.almost_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
                     util.logger.info("Issues %s and %s are almost identical and could be synced", self.uuid(), finding.uuid())
@@ -423,3 +428,30 @@ def to_csv_header(separator=","):
     :meta private:
     """
     return "# " + separator.join(_CSV_FIELDS)
+
+
+def __get_changelog(queue: Queue[Finding], added_after: datetime.datetime = None) -> None:
+    """Collect the changelog and comments of an issue"""
+    while not queue.empty():
+        findings = queue.get()
+        findings.has_changelog(added_after=added_after)
+        findings.has_comments()
+        queue.task_done()
+    util.logger.debug("Queue empty, exiting thread")
+
+
+def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = None, threads: int = 8) -> None:
+    """Performs a mass, multithreaded collection of finding changelogs (one API call per issue)"""
+    if len(issue_list) == 0:
+        return
+    util.logger.info("Mass changelog collection for %d findings on %d threads", len(issue_list), threads)
+    q = Queue(maxsize=0)
+    for finding in issue_list:
+        q.put(finding)
+    for i in range(threads):
+        util.logger.debug("Starting issue changelog thread %d", i)
+        worker = Thread(target=__get_changelog, args=(q, added_after))
+        worker.setDaemon(True)
+        worker.setName(f"Changelog{i}")
+        worker.start()
+    q.join()
