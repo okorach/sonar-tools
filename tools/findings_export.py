@@ -371,15 +371,10 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 
 def main():
     global DATES_WITHOUT_TIME
-    kwargs = vars(parse_args("Sonar findings export"))
+
+    kwargs = util.convert_args(parse_args("Sonar findings export"))
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
-    sqenv = platform.Platform(
-        url=kwargs["url"],
-        token=kwargs["token"],
-        org=kwargs["organization"],
-        cert_file=kwargs["clientCert"],
-        http_timeout=kwargs["httpTimeout"],
-    )
+    sqenv = platform.Platform(**kwargs)
     del kwargs["token"]
     start_time = datetime.datetime.today()
     params = util.remove_nones(kwargs.copy())

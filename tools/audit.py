@@ -117,8 +117,8 @@ def __parser_args(desc):
 
 def main():
     args = __parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)")
-    kwargs = vars(args)
-    sq = platform.Platform(url=args.url, token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    kwargs = util.convert_args(args)
+    sq = platform.Platform(**kwargs)
     start_time = datetime.datetime.today()
 
     settings = config.load("sonar-audit")

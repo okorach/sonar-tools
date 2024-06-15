@@ -43,7 +43,8 @@ def main():
     )
     args = utilities.parse_and_check(parser=parser, logger_name="sonar-projects-export")
     start_time = datetime.datetime.today()
-    sq = platform.Platform(url=args.url, token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    kwargs = utilities.convert_args(args)
+    sq = platform.Platform(**kwargs)
 
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
         utilities.exit_fatal(

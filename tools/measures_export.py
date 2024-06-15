@@ -279,9 +279,8 @@ def __general_object_data(obj: object, **kwargs) -> dict[str, str]:
 
 def main():
     args = __parse_args("Extract measures of projects")
-    endpoint = platform.Platform(
-        url=args.url, token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
-    )
+    kwargs = util.convert_args(args)
+    endpoint = platform.Platform(**kwargs)
 
     wanted_metrics = __get_wanted_metrics(args, endpoint)
     (fmt, file) = __get_fmt_and_file(args)

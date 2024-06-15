@@ -56,7 +56,8 @@ def main():
     parser = util.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
     args = util.parse_and_check(parser=parser, logger_name="sonar-projects-import")
-    sq = platform.Platform(url=args.url, token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    kwargs = util.convert_args(args)
+    sq = platform.Platform(**kwargs)
 
     with open(args.projectsFile, "r", encoding="utf-8") as file:
         data = json.load(file)

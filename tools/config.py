@@ -164,14 +164,12 @@ def __import_config(endpoint, what, args):
 
 def main():
     args = __parse_args("Extract SonarQube platform configuration")
-    kwargs = vars(args)
+    kwargs = utilities.convert_args(args)
     if not kwargs["export"] and not kwargs["import"]:
         utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
 
     start_time = datetime.datetime.today()
-    endpoint = platform.Platform(
-        url=args.url, token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
-    )
+    endpoint = platform.Platform(**kwargs)
     what = utilities.check_what(args.what, _EVERYTHING, "exported or imported")
     args.projectKeys = utilities.csv_to_list(args.projectKeys)
     if kwargs["export"]:

@@ -701,3 +701,15 @@ def is_sonarcloud_url(url: str) -> bool:
 def class_name(obj: object) -> str:
     """Returns the class name of an object"""
     return type(obj).__name__
+
+
+def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
+    """Converts CLI args int kwargs compatible with a platform"""
+    kwargs = vars(args).copy()
+    kwargs["org"] = kwargs.pop("organization", None)
+    kwargs["cert_file"] = kwargs.pop("clientCert", None)
+    kwargs["http_timeout"] = kwargs.pop("httpTimeout", None)
+    if second_platform:
+        kwargs["url"] = kwargs.pop("urlTarget", kwargs["url"])
+        kwargs["token"] = kwargs.pop("tokenTarget", kwargs["token"])
+    return kwargs

@@ -109,10 +109,8 @@ def main() -> int:
         "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
     )
 
-    params = vars(args)
-    source_env = platform.Platform(
-        url=args.url, token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
-    )
+    params = util.convert_args(args)
+    source_env = platform.Platform(**params)
     source_key = params["projectKeys"]
     target_key = params.get("targetProjectKey", None)
     if target_key is None:
@@ -127,9 +125,8 @@ def main() -> int:
         target_env, target_url = source_env, source_url
     else:
         util.check_token(args.tokenTarget)
-        target_env = platform.Platform(
-            url=args.urlTarget, token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
-        )
+        target_params = util.convert_args(args, second_platform=True)
+        target_env = platform.Platform(**target_params)
     params["login"] = target_env.user()
     if params["login"] == "admin":
         util.exit_fatal(
