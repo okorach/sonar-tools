@@ -75,31 +75,29 @@ def __get_object_measures(obj, wanted_metrics):
     return measures_d
 
 
-def __get_wanted_metrics(args, endpoint):
-    main_metrics = util.list_to_csv(metrics.MAIN_METRICS)
-    wanted_metrics = args.metricKeys
-    if wanted_metrics == "_all":
+def __get_wanted_metrics(kwargs: dict[str, str], endpoint: platform.Platform) -> list[str]:
+    """Returns an ordered list of metrics based on CLI inputs"""
+    wanted_metrics = kwargs["metricKeys"]
+    if wanted_metrics[0] == "_all":
         all_metrics = list(metrics.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
         if endpoint.version() < (8, 0, 0):
             all_metrics.remove("new_development_cost")
-        util.logger.info("Exporting %s metrics", len(all_metrics))
-        wanted_metrics = main_metrics + "," + util.list_to_csv(set(all_metrics) - set(metrics.MAIN_METRICS))
-    elif wanted_metrics == "_main" or wanted_metrics is None:
-        wanted_metrics = main_metrics
+        wanted_metrics = list(metrics.MAIN_METRICS + tuple(set(all_metrics) - set(metrics.MAIN_METRICS)))
+    elif wanted_metrics[0] == "_main":
+        wanted_metrics = list(metrics.MAIN_METRICS)
     else:
         # Verify that requested metrics do exist
-        m_list = util.csv_to_list(wanted_metrics)
-        all_metrics = metrics.search(endpoint).keys()
-        for m in m_list:
-            if m not in all_metrics:
-                util.exit_fatal(f"Requested metric key '{m}' does not exist", options.ERR_NO_SUCH_KEY)
-    return util.csv_to_list(wanted_metrics)
+        non_existing_metrics = util.difference(wanted_metrics, metrics.search(endpoint).keys())
+        if len(non_existing_metrics) > 0:
+            miss = ",".join(non_existing_metrics)
+            util.exit_fatal(f"Requested metric keys '{miss}' don't exist", options.ERR_NO_SUCH_KEY)
+    util.logger.info("Exporting %s metrics", len(wanted_metrics))
+    return wanted_metrics
 
 
-def __get_fmt_and_file(args):
-    kwargs = vars(args)
+def __get_fmt_and_file(kwargs: dict[str, str]):
     fmt = kwargs["format"]
     fname = kwargs.get("file", None)
     if fname is not None:
@@ -117,6 +115,7 @@ def __parse_args(desc):
         "-m",
         "--metricKeys",
         required=False,
+        default="_main",
         help="Comma separated list of metrics or _all or _main",
     )
     options.add_branch_arg(parser)
@@ -278,20 +277,18 @@ def __general_object_data(obj: object, **kwargs) -> dict[str, str]:
 
 
 def main():
-    args = __parse_args("Extract measures of projects")
-    kwargs = util.convert_args(args)
+    kwargs = util.convert_args(__parse_args("Extract measures of projects"))
     endpoint = platform.Platform(**kwargs)
 
-    wanted_metrics = __get_wanted_metrics(args, endpoint)
-    (fmt, file) = __get_fmt_and_file(args)
-    kwargs = vars(args)
+    wanted_metrics = __get_wanted_metrics(kwargs, endpoint)
+    (fmt, file) = __get_fmt_and_file(kwargs)
     if endpoint.edition() == "community":
         kwargs[options.WITH_BRANCHES] = False
     kwargs[options.WITH_NAME] = True
     kwargs.pop("file", None)
 
     try:
-        project_list = projects.get_list(endpoint=endpoint, key_list=args.projectKeys)
+        project_list = projects.get_list(endpoint=endpoint, key_list=kwargs["projectKeys"])
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     obj_list = []
@@ -306,7 +303,7 @@ def main():
     for obj in obj_list:
         data = __general_object_data(obj=obj, **kwargs)
         try:
-            if args.history:
+            if kwargs["history"]:
                 data.update(__get_json_measures_history(obj, wanted_metrics))
             else:
                 data.update(__get_object_measures(obj, wanted_metrics))
