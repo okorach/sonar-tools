@@ -38,8 +38,7 @@ def parse_args(desc):
 
 
 def main():
-    args = parse_args("Manipulate custom metrics")
-    kwargs = utilities.convert_args(args)
+    kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
     sqenv = platform.Platform(**kwargs)
     if sqenv.version() >= (9, 0, 0):
         utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", options.ERR_UNSUPPORTED_OPERATION)

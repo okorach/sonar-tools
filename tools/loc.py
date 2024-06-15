@@ -210,8 +210,9 @@ def __parse_args(desc):
 
 
 def main():
-    args = __parse_args("Extract projects, branches or portfolios lines of code - for Projects LoC it is as computed for the license")
-    kwargs = util.convert_args(args)
+    kwargs = util.convert_args(
+        __parse_args("Extract projects, branches or portfolios lines of code - for Projects LoC it is as computed for the license")
+    )
     endpoint = platform.Platform(**kwargs)
     kwargs[options.FORMAT] = options.output_format(**kwargs)
     ofile = kwargs.pop(options.OUTPUTFILE, None)
@@ -222,9 +223,8 @@ def main():
             util.logger.warning("Portfolio LoC export selected, last analysis option is ignored")
         kwargs[options.WITH_LAST_ANALYSIS] = False
         kwargs[options.WITH_BRANCHES] = False
-    if args.portfolios:
         params = {}
-        if args.topLevelOnly:
+        if kwargs["topLevelOnly"]:
             params["qualifiers"] = "VW"
         objects_list = list(portfolios.search(endpoint, params=params).values())
     else:

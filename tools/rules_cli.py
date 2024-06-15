@@ -27,9 +27,8 @@ from sonar import rules, platform, options
 import sonar.utilities as util
 
 
-def __get_fmt_and_file(args: object) -> tuple[str]:
+def __get_fmt_and_file(kwargs: dict[str, str]) -> tuple[str]:
     """Returns the desired format and file of export from the CLI args"""
-    kwargs = vars(args)
     fmt = kwargs["format"]
     fname = kwargs.get("file", None)
     if fname is not None:
@@ -50,11 +49,10 @@ def __parse_args(desc: str) -> object:
 
 def main() -> int:
     """Main entry point"""
-    args = __parse_args("Extract rules")
-    kwargs = util.convert_args(args)
+    kwargs = util.convert_args(__parse_args("Extract rules"))
     endpoint = platform.Platform(**kwargs)
 
-    (fmt, file) = __get_fmt_and_file(args)
+    (fmt, file) = __get_fmt_and_file(kwargs)
 
     rule_list = rules.get_list(endpoint=endpoint)
 
@@ -62,7 +60,7 @@ def main() -> int:
         if fmt == "json":
             print("[", end="", file=fd)
         elif fmt == "csv":
-            csvwriter = csv.writer(fd, delimiter=args.csvSeparator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csvwriter = csv.writer(fd, delimiter=kwargs["csvSeparator"], quotechar='"', quoting=csv.QUOTE_MINIMAL)
         is_first = True
         for rule in rule_list.values():
             if fmt == "csv":

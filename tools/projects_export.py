@@ -30,6 +30,7 @@ from sonar.projects import projects
 
 
 def main():
+    start_time = datetime.datetime.today()
     parser = utilities.set_common_args("Exports all projects of a SonarQube platform")
     parser = utilities.set_key_arg(parser)
     parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
@@ -41,9 +42,7 @@ def main():
         default=180,
         help="Maximum wait time for export",
     )
-    args = utilities.parse_and_check(parser=parser, logger_name="sonar-projects-export")
-    start_time = datetime.datetime.today()
-    kwargs = utilities.convert_args(args)
+    kwargs = utilities.convert_args(utilities.parse_and_check(parser=parser, logger_name="sonar-projects-export"))
     sq = platform.Platform(**kwargs)
 
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
@@ -53,11 +52,11 @@ def main():
         )
 
     try:
-        dump = projects.export_zip(endpoint=sq, key_list=args.projectKeys, export_timeout=args.exportTimeout, threads=args.threads)
+        dump = projects.export_zip(endpoint=sq, key_list=kwargs["projectKeys"], export_timeout=kwargs["exportTimeout"], threads=kwargs["threads"])
     except exceptions.ObjectNotFound:
         sys.exit(options.ERR_NO_SUCH_KEY)
 
-    with utilities.open_file(args.file) as fd:
+    with utilities.open_file(kwargs["file"]) as fd:
         print(utilities.json_dump(dump), file=fd)
 
     utilities.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
