@@ -111,7 +111,7 @@ def main() -> int:
 
     params = util.convert_args(args)
     source_env = platform.Platform(**params)
-    source_key = params["projectKeys"]
+    source_key = params["projectKeys"][0]
     target_key = params.get("targetProjectKey", None)
     if target_key is None:
         target_key = source_key
