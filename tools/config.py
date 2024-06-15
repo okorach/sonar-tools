@@ -139,6 +139,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
 
 def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
+    """Imports a platform configuration from a JSON file"""
     utilities.logger.info("Importing configuration to %s", kwargs["url"])
     key_list = kwargs["projectKeys"]
     data = utilities.load_json_file(kwargs["file"])
@@ -179,6 +180,8 @@ def main():
         except exceptions.ObjectNotFound as e:
             utilities.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     if kwargs["import"]:
+        if kwargs["file"] is None:
+            utilities.exit_fatal("--file is mandatory to import configuration", options.ERR_ARGS_ERROR)
         __import_config(endpoint, what, **kwargs)
     utilities.stop_clock(start_time)
     sys.exit(0)
