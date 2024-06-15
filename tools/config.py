@@ -92,53 +92,56 @@ def __check_projects_existence(endpoint: object, key_list: list[str]) -> None:
             utilities.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
 
 
-def __export_config(endpoint: object, what: list[str], args: object) -> None:
+def __export_config(endpoint: object, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
-    if "projects" in args.what:
-        __check_projects_existence(endpoint, args.projectKeys)
+    if "projects" in what:
+        __check_projects_existence(endpoint, kwargs["projectKeys"])
 
-    utilities.logger.info("Exporting configuration from %s", args.url)
+    utilities.logger.info("Exporting configuration from %s", kwargs["url"])
+    full = kwargs["fullExport"]
+    key_list = kwargs["projectKeys"]
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
     if options.WHAT_SETTINGS in what:
-        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(full=args.fullExport)
+        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(full=full)
     if options.WHAT_RULES in what:
-        sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=args.fullExport)
+        sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=full)
     if options.WHAT_PROFILES in what:
         if options.WHAT_RULES not in what:
-            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=args.fullExport)
-        sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, full=args.fullExport)
+            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=full)
+        sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, full=full)
     if options.WHAT_GATES in what:
         if not endpoint.is_sonarcloud():
-            sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, full=args.fullExport)
+            sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, full=full)
         else:
             utilities.logger.warning("Quality gates export not yet supported for SonarCloud")
     if options.WHAT_PROJECTS in what:
-        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=args.projectKeys, full=args.fullExport, threads=args.threads)
+        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=key_list, full=full, threads=kwargs["threads"])
     if options.WHAT_APPS in what:
         try:
-            sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
+            sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=key_list, full=full)
         except exceptions.UnsupportedOperation as e:
             utilities.logger.info("%s", e.message)
     if options.WHAT_PORTFOLIOS in what:
         try:
-            sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=args.projectKeys, full=args.fullExport)
+            sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=key_list, full=full)
         except exceptions.UnsupportedOperation as e:
             utilities.logger.info("%s", e.message)
     if options.WHAT_USERS in what:
-        sq_settings[__JSON_KEY_USERS] = users.export(endpoint, full=args.fullExport)
+        sq_settings[__JSON_KEY_USERS] = users.export(endpoint, full=full)
     if options.WHAT_GROUPS in what:
         sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint)
 
     utilities.remove_nones(sq_settings)
-    with utilities.open_file(args.file) as fd:
+    with utilities.open_file(kwargs["file"]) as fd:
         print(utilities.json_dump(sq_settings), file=fd)
-    utilities.logger.info("Exporting configuration from %s completed", args.url)
+    utilities.logger.info("Exporting configuration from %s completed", kwargs["url"])
 
 
-def __import_config(endpoint, what, args):
-    utilities.logger.info("Importing configuration to %s", args.url)
-    data = utilities.load_json_file(args.file)
+def __import_config(endpoint, what, **kwargs):
+    utilities.logger.info("Importing configuration to %s", kwargs["url"])
+    key_list = kwargs["projectKeys"]
+    data = utilities.load_json_file(kwargs["file"])
     if options.WHAT_GROUPS in what:
         groups.import_config(endpoint, data)
     if options.WHAT_USERS in what:
@@ -154,31 +157,29 @@ def __import_config(endpoint, what, args):
     if options.WHAT_SETTINGS in what:
         endpoint.import_config(data)
     if options.WHAT_PROJECTS in what:
-        projects.import_config(endpoint, data, key_list=args.projectKeys)
+        projects.import_config(endpoint, data, key_list=key_list)
     if options.WHAT_APPS in what:
-        applications.import_config(endpoint, data, key_list=args.projectKeys)
+        applications.import_config(endpoint, data, key_list=key_list)
     if options.WHAT_PORTFOLIOS in what:
-        portfolios.import_config(endpoint, data, key_list=args.projectKeys)
-    utilities.logger.info("Importing configuration to %s completed", args.url)
+        portfolios.import_config(endpoint, data, key_list=key_list)
+    utilities.logger.info("Importing configuration to %s completed", kwargs["url"])
 
 
 def main():
-    args = __parse_args("Extract SonarQube platform configuration")
-    kwargs = utilities.convert_args(args)
+    start_time = datetime.datetime.today()
+    kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
     if not kwargs["export"] and not kwargs["import"]:
         utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
 
-    start_time = datetime.datetime.today()
     endpoint = platform.Platform(**kwargs)
-    what = utilities.check_what(args.what, _EVERYTHING, "exported or imported")
-    args.projectKeys = utilities.csv_to_list(args.projectKeys)
+    what = utilities.check_what(kwargs.pop("what", None), _EVERYTHING, "exported or imported")
     if kwargs["export"]:
         try:
-            __export_config(endpoint, what, args)
+            __export_config(endpoint, what, **kwargs)
         except exceptions.ObjectNotFound as e:
             utilities.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     if kwargs["import"]:
-        __import_config(endpoint, what, args)
+        __import_config(endpoint, what, **kwargs)
     utilities.logger.info("Total execution time: %s", str(datetime.datetime.today() - start_time))
     sys.exit(0)
 
