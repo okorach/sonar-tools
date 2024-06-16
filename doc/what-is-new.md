@@ -1,5 +1,9 @@
 # Version 3.1
   - Several bug fixes, in particular Sonar Tools would hang if providing a token with insufficient permissions for projects (Browse is minimally needed)
+  - Major `sonar-finding-sync` hardening
+    - Significant performance improvement through multithreading
+    - Addition of the `--since` option to only sync issues modified since a date (likely to significantly speed up the syncing process)
+    - Deprecation of the `--login` parameter of ` sonar-finding-sync`
   - `sonar-findings-export` now exports more meaningful issue status (FP, ACCEPTED etc...) instead of simply RESOLVED
   - Small improvement: `sonar-measures-export --history` can export measures history as history table
   - Small improvement: `sonar-audit` now checks for SonarQube logs to detect any suspicious error or warning
