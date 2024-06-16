@@ -31,8 +31,7 @@
 import sys
 import datetime
 from sonar import platform, syncer, options, exceptions
-from sonar.projects import projects
-from sonar.projects.branches import Branch
+from sonar.projects import projects, branches
 import sonar.utilities as util
 
 _WITH_COMMENTS = {"additionalFields": "comments"}
@@ -159,8 +158,8 @@ def main() -> int:
         if source_branch is not None and target_branch is not None:
             util.logger.info("Syncing findings between 2 branches")
             if source_url != target_url or source_branch != target_branch:
-                src_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
-                tgt_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), target_branch)
+                src_branch = branches.Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
+                tgt_branch = branches.Branch.get_object(projects.Project.get_object(source_key, source_env), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
