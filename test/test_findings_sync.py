@@ -42,6 +42,14 @@ SYNC_OPTS = ["--login", "syncer", "-k", "TESTSYNC", "-K", "TESTSYNC"]
 ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + ["-f", testutil.JSON_FILE]
 
 
+def test_sync_help() -> None:
+    """test_sync"""
+    testutil.clean(testutil.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", [CMD, "-h"]):
+            findings_sync.main()
+    assert not os.path.isfile(testutil.JSON_FILE)
+
 def test_sync() -> None:
     """test_sync"""
     testutil.clean(testutil.JSON_FILE)
