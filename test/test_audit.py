@@ -28,6 +28,7 @@ from unittest.mock import patch
 import utilities as testutil
 from sonar import options
 from tools import audit
+import sonar.utilities as util
 
 CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
@@ -125,11 +126,12 @@ def test_sif_broken() -> None:
 
 def test_deduct_fmt() -> None:
     """test_deduct_fmt"""
-    assert audit.__deduct_format__("csv", None) == "csv"
-    assert audit.__deduct_format__("foo", "file.csv") == "foo"
-    assert audit.__deduct_format__(None, "file.json") == "json"
-    assert audit.__deduct_format__(None, "file.csv") == "csv"
-    assert audit.__deduct_format__(None, "file.txt") == "csv"
+    assert util.deduct_format("csv", None) == "csv"
+    assert util.deduct_format("foo", "file.csv") == "csv"
+    assert util.deduct_format("foo", "file.json") == "csv"
+    assert util.deduct_format(None, "file.json") == "json"
+    assert util.deduct_format(None, "file.csv") == "csv"
+    assert util.deduct_format(None, "file.txt") == "csv"
 
 
 def test_sif_non_existing() -> None:

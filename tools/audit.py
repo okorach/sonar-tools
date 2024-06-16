@@ -44,16 +44,6 @@ _ALL_AUDITABLE = [
 ]
 
 
-def __deduct_format__(fmt, file):
-    if fmt is not None:
-        return fmt
-    if file is not None:
-        ext = file.split(".").pop(-1).lower()
-        if ext in ("csv", "json"):
-            return ext
-    return "csv"
-
-
 def _audit_sif(sysinfo, audit_settings):
     util.logger.info("Auditing SIF file '%s'", sysinfo)
     try:
@@ -116,10 +106,9 @@ def __parser_args(desc):
 
 
 def main():
-    args = __parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)")
-    kwargs = vars(args)
-    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
-    start_time = datetime.datetime.today()
+    start_time = util.start_clock()
+    kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
+    sq = platform.Platform(**kwargs)
 
     settings = config.load("sonar-audit")
     settings["threads"] = kwargs["threads"]
@@ -141,19 +130,19 @@ def main():
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
     else:
         server_id = sq.server_id()
-        util.check_token(args.token)
-        key_list = util.csv_to_list(args.projectKeys)
-        if len(key_list) > 0 and "projects" in util.csv_to_list(args.what):
+        util.check_token(kwargs["token"])
+        key_list = kwargs["projectKeys"]
+        if len(key_list) > 0 and "projects" in util.csv_to_list(kwargs["what"]):
             for key in key_list:
                 if not projects.exists(key, sq):
                     util.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
         try:
-            problems = _audit_sq(sq, settings, what_to_audit=util.check_what(args.what, _ALL_AUDITABLE, "audited"), key_list=key_list)
+            problems = _audit_sq(sq, settings, what_to_audit=util.check_what(kwargs["what"], _ALL_AUDITABLE, "audited"), key_list=key_list)
         except exceptions.ObjectNotFound as e:
             util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
 
-    kwargs["format"] = __deduct_format__(args.format, args.file)
-    ofile = kwargs.pop("file", None)
+    ofile = kwargs.pop("file")
+    kwargs["format"] = util.deduct_format(kwargs["format"], ofile)
     problem.dump_report(problems, ofile, server_id, **kwargs)
 
     util.logger.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
@@ -161,6 +150,7 @@ def main():
         util.logger.warning("%d issues found during audit", len(problems))
     else:
         util.logger.info("%d issues found during audit", len(problems))
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

@@ -201,16 +201,16 @@ def _delete_objects(problems, mode):
 
 
 def main():
-    args = _parse_arguments()
-
-    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout, org=args.organization)
-    mode = args.mode
+    start_time = util.start_clock()
+    kwargs = util.convert_args(_parse_arguments())
+    sq = platform.Platform(**kwargs)
+    mode, proj_age, branch_age, pr_age, token_age = kwargs["mode"], kwargs["projects"], kwargs["branches"], kwargs["pullrequests"], kwargs["tokens"]
     problems = []
-    if args.projects > 0 or args.branches > 0 or args.pullrequests > 0:
-        problems = get_project_problems(args.projects, args.branches, args.pullrequests, args.threads, sq)
+    if proj_age > 0 or branch_age > 0 or pr_age > 0:
+        problems = get_project_problems(proj_age, branch_age, pr_age, kwargs["threads"], sq)
 
-    if args.tokens:
-        problems += get_user_problems(args.tokens, sq)
+    if token_age:
+        problems += get_user_problems(token_age, sq)
 
     problem.dump_report(problems, file=None, file_format="csv")
 
@@ -219,10 +219,11 @@ def main():
         op = "deleted"
     (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
 
-    util.logger.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, args.projects, deleted_loc, op)
-    util.logger.info("%d branches older than %d days %s", deleted_branches, args.branches, op)
-    util.logger.info("%d pull requests older than %d days %s", deleted_prs, args.pullrequests, op)
-    util.logger.info("%d tokens older than %d days revoked", revoked_tokens, args.tokens)
+    util.logger.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, proj_age, deleted_loc, op)
+    util.logger.info("%d branches older than %d days %s", deleted_branches, branch_age, op)
+    util.logger.info("%d pull requests older than %d days %s", deleted_prs, pr_age, op)
+    util.logger.info("%d tokens older than %d days revoked", revoked_tokens, token_age)
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

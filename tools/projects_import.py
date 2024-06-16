@@ -53,12 +53,13 @@ def _check_sq_environments(import_sq, export_sq):
 
 
 def main():
+    start_time = util.start_clock()
     parser = util.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
-    args = util.parse_and_check(parser=parser, logger_name="sonar-projects-import")
-    sq = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    kwargs = util.convert_args(util.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
+    sq = platform.Platform(**kwargs)
 
-    with open(args.projectsFile, "r", encoding="utf-8") as file:
+    with open(kwargs["projectsFile"], "r", encoding="utf-8") as file:
         data = json.load(file)
     project_list = data["project_exports"]
     _check_sq_environments(sq, data["sonarqube_environment"])
@@ -95,6 +96,7 @@ def main():
         for k, v in statuses.items():
             summary += f"{k}:{v}, "
         util.logger.info("%s", summary[:-2])
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

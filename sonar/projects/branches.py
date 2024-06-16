@@ -27,7 +27,6 @@ import requests.utils
 import sonar.sqobject as sq
 from sonar import measures, components, syncer, settings, exceptions
 from sonar.projects import projects
-from sonar.findings import issues, hotspots
 import sonar.utilities as util
 
 from sonar.audit import rules, problem
@@ -302,6 +301,8 @@ class Branch(components.Component):
         :return: dict of Issues, with issue key as key
         :rtype: dict{key: Issue}
         """
+        from sonar.findings import issues
+
         return issues.search_all(
             endpoint=self.endpoint,
             params={
@@ -317,6 +318,8 @@ class Branch(components.Component):
         :return: dict of Hotspots, with hotspot key as key
         :rtype: dict{key: Hotspot}
         """
+        from sonar.findings import hotspots
+
         return hotspots.search(
             endpoint=self.endpoint,
             params={

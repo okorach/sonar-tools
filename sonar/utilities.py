@@ -174,6 +174,7 @@ def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sa
         "-f",
         "--file",
         required=False,
+        default=None,
         help="Output file for the report, stdout by default",
     )
     fmt_choice = []
@@ -255,6 +256,10 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     __set_logger(filename=kwargs[options.LOGFILE], logger_name=logger_name)
     __set_debug_level(kwargs[OPT_VERBOSE])
     logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    if "projectKeys" in kwargs:
+        kwargs["projectKeys"] = csv_to_list(kwargs["projectKeys"])
+    if "metricKeys" in kwargs:
+        kwargs["metricKeys"] = csv_to_list(kwargs["metricKeys"])
 
     # Verify version randomly once every 10 runs
     if not kwargs[OPT_SKIP_VERSION_CHECK] and random.randrange(10) == 0:
@@ -701,3 +706,34 @@ def is_sonarcloud_url(url: str) -> bool:
 def class_name(obj: object) -> str:
     """Returns the class name of an object"""
     return type(obj).__name__
+
+
+def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
+    """Converts CLI args int kwargs compatible with a platform"""
+    kwargs = vars(args).copy()
+    kwargs["org"] = kwargs.pop("organization", None)
+    kwargs["cert_file"] = kwargs.pop("clientCert", None)
+    kwargs["http_timeout"] = kwargs.pop("httpTimeout", None)
+    if second_platform:
+        kwargs["url"] = kwargs.pop("urlTarget", kwargs["url"])
+        kwargs["token"] = kwargs.pop("tokenTarget", kwargs["token"])
+    return kwargs
+
+
+def start_clock() -> datetime.datetime:
+    """Returns the now timestamp"""
+    return datetime.datetime.now()
+
+
+def stop_clock(start_time: datetime.datetime) -> None:
+    """Logs execution time"""
+    logger.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
+
+
+def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json")) -> str:
+    """Deducts output format from CLI format and filename"""
+    if fmt is None and filename is not None:
+        fmt = filename.split(".").pop(-1).lower()
+    if fmt not in allowed_formats:
+        fmt = "csv"
+    return fmt

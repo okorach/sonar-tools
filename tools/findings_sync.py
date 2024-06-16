@@ -31,8 +31,7 @@
 import sys
 import datetime
 from sonar import platform, syncer, options, exceptions
-from sonar.projects import projects
-from sonar.projects.branches import Branch
+from sonar.projects import projects, branches
 import sonar.utilities as util
 
 _WITH_COMMENTS = {"additionalFields": "comments"}
@@ -104,16 +103,15 @@ def __dump_report(report, file):
 
 def main() -> int:
     """Main entry point"""
+    start_time = util.start_clock()
     args = __parse_args(
         "Synchronizes issues changelog of different branches of same or different projects, "
         "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
     )
 
-    params = vars(args)
-    source_env = platform.Platform(
-        some_url=args.url, some_token=args.token, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
-    )
-    source_key = params["projectKeys"]
+    params = util.convert_args(args)
+    source_env = platform.Platform(**params)
+    source_key = params["projectKeys"][0]
     target_key = params.get("targetProjectKey", None)
     if target_key is None:
         target_key = source_key
@@ -127,9 +125,8 @@ def main() -> int:
         target_env, target_url = source_env, source_url
     else:
         util.check_token(args.tokenTarget)
-        target_env = platform.Platform(
-            some_url=args.urlTarget, some_token=args.tokenTarget, org=args.organization, cert_file=args.clientCert, http_timeout=args.httpTimeout
-        )
+        target_params = util.convert_args(args, second_platform=True)
+        target_env = platform.Platform(**target_params)
     params["login"] = target_env.user()
     if params["login"] == "admin":
         util.exit_fatal(
@@ -161,8 +158,8 @@ def main() -> int:
         if source_branch is not None and target_branch is not None:
             util.logger.info("Syncing findings between 2 branches")
             if source_url != target_url or source_branch != target_branch:
-                src_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
-                tgt_branch = Branch.get_object(projects.Project.get_object(source_key, source_env), target_branch)
+                src_branch = branches.Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
+                tgt_branch = branches.Branch.get_object(projects.Project.get_object(source_key, source_env), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
@@ -197,6 +194,7 @@ def main() -> int:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+    util.stop_clock(start_time)
     sys.exit(0)
 
 

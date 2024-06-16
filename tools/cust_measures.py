@@ -25,6 +25,7 @@
         Usage: cust_measures.py -t <SQ_TOKEN> -u <SQ_URL> -k <projectKey> -m <metricKey> --updateValue <value>
 """
 
+import sys
 from sonar import custom_measures, platform, utilities, options
 
 
@@ -38,20 +39,15 @@ def parse_args(desc):
 
 
 def main():
-    args = parse_args("Manipulate custom metrics")
-    sqenv = platform.Platform(some_url=args.url, some_token=args.token, cert_file=args.clientCert, http_timeout=args.httpTimeout)
+    start_time = utilities.start_clock()
+    kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
+    sqenv = platform.Platform(**kwargs)
     if sqenv.version() >= (9, 0, 0):
         utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", options.ERR_UNSUPPORTED_OPERATION)
     else:
         utilities.logger.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
-    # Remove unset params from the dict
-    params = vars(args)
-    for key in params.copy():
-        if params[key] is None:
-            del params[key]
-    # Add SQ environment
-    params.update({"env": sqenv})
 
+    params = utilities.remove_nones(kwargs).update({"env": sqenv})
     if params.get("value", None) is not None:
         custom_measures.update(
             project_key=params["componentKeys"],
@@ -59,6 +55,8 @@ def main():
             value=params["value"],
             description=params.get("description", None),
         )
+    utilities.stop_clock(start_time)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

@@ -371,17 +371,12 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 
 def main():
     global DATES_WITHOUT_TIME
-    kwargs = vars(parse_args("Sonar findings export"))
+
+    start_time = util.start_clock()
+    kwargs = util.convert_args(parse_args("Sonar findings export"))
+    sqenv = platform.Platform(**kwargs)
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
-    sqenv = platform.Platform(
-        some_url=kwargs["url"],
-        some_token=kwargs["token"],
-        org=kwargs["organization"],
-        cert_file=kwargs["clientCert"],
-        http_timeout=kwargs["httpTimeout"],
-    )
     del kwargs["token"]
-    start_time = datetime.datetime.today()
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
 
@@ -396,17 +391,14 @@ def main():
             params["useFindings"] = False
             break
     try:
-        project_list = projects.get_list(endpoint=sqenv, key_list=util.csv_to_list(kwargs.get("projectKeys", None)))
+        project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get("projectKeys", None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
-    fmt = kwargs.pop("format", None)
-    fname = kwargs.pop("file", None)
-    if fmt is None and fname is not None:
-        ext = fname.split(".")[-1].lower()
-        if os.path.exists(fname):
-            os.remove(fname)
-        if ext in ("csv", "json"):
-            fmt = ext
+
+    fmt, fname = kwargs.pop("format", None), kwargs.pop("file", None)
+    fmt = util.deduct_format(fmt, fname)
+    if fname is not None and os.path.exists(fname):
+        os.remove(fname)
 
     util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
     __write_header(fname, fmt)
@@ -421,7 +413,8 @@ def main():
         csv_separator=kwargs[options.CSV_SEPARATOR],
     )
     __write_footer(fname, fmt)
-    util.logger.info("Returned findings: %d - Total execution time: %s", TOTAL_FINDINGS, str(datetime.datetime.today() - start_time))
+    util.logger.info("Returned findings: %d", TOTAL_FINDINGS)
+    util.stop_clock(start_time)
     sys.exit(0)
 
 
