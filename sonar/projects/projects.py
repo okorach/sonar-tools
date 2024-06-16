@@ -32,7 +32,6 @@ from requests.exceptions import HTTPError
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, exceptions, syncer
 import sonar.permissions.permissions as perms
 from sonar.projects import pull_requests, branches
-from sonar.findings import issues, hotspots
 import sonar.utilities as util
 import sonar.permissions.project_permissions as pperms
 
@@ -612,6 +611,8 @@ class Project(components.Component):
         :return: JSON of all findings, with finding key as key
         :rtype: dict{key: Finding}
         """
+        from sonar.findings import issues, hotspots
+
         if self.endpoint.version() < (9, 1, 0) or self.endpoint.edition() not in ("enterprise", "datacenter"):
             util.logger.warning("export_findings only available in EE and DCE starting from SonarQube 9.1, returning no issues")
             return {}
@@ -657,6 +658,8 @@ class Project(components.Component):
         :return: dict of Hotspots, with hotspot key as key
         :rtype: dict{key: Hotspot}
         """
+        from sonar.findings import hotspots
+
         return hotspots.search(
             endpoint=self.endpoint,
             params={
