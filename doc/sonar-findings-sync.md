@@ -13,7 +13,7 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 
 ## Usage
 
-`sonar-findings-sync --login <user> -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--nocomment] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
+`sonar-findings-sync --login <user> -k <projectKey> [-b <sourceBranch>] [-B <targetBranch>] [-K <targetProjectKey>] [-B <targetBranch>] [-U <targetUrl> [-T <targetToken>] [-f <file>] [--nolink] [--nocomment] [--since <YYYY-MM-DD>] [-h] [-u <sqUrl>] [-t <token>] [-v <debugLevel>]`
 
 - `--login`: **DEPRECATED**. Login of the dedicated technical account used for syncing. This parameter is now automatically deducted from the target token. Using a dedicated account for sync'ing is recommended to detect previous synchronization when issue sync is performed repeatedly.
 - `-k <projectKey>`: Key of the source project.
@@ -24,6 +24,7 @@ Note: Replaces `sonar-issues-sync`, which deprecated
 - `-U <targetUrl>`: Optional. URL of the target SonarQube instance or SonarCloud, when synchronizing between 2 different instances. If not specified, the same URL as the source is assumed.
 - `-T <targetToken>`: Optional. Token if the synchronization service account on the target SonarQube instance, when sync'ing between 2 instances. If not specified, the same token as the source is assumed.
 - `-O <targetOrganization>`: Optional. If target project is on SonarCloud, and if organization is different than the source project or if the source project is not on SonarCloud. If not specified, the same organization as the source is assumed.
+- `--since <YYYY-MM-DD>`: Only sync issues modified since a give date in the source project/branch. This generally allows to significantly reduce the number of issues involved in the sync, and therefore to significantly accelerate the sync process
 - `-f <file>`: Sends a summary report of synchronization to `<file>`, `stdout` is the default. The output format is JSON
 the target token.
 - `-u`, `-t`, `-h`, `-v`: See **sonar-tools** [common parameters](../README.md#common-params)
