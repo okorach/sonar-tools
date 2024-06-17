@@ -50,6 +50,7 @@ def test_sync_help() -> None:
             findings_sync.main()
     assert not os.path.isfile(testutil.JSON_FILE)
 
+
 def test_sync() -> None:
     """test_sync"""
     testutil.clean(testutil.JSON_FILE)
