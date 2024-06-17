@@ -50,6 +50,50 @@ check() {
     fi
 }
 
+function backup_for {
+    case $1 in
+        lts|lta|lts-ce|lta-ce|lts-de|lta-de)
+            db="$DB_BACKUPS_DIR/db.lts.backup"
+            ;;
+        lts-audit|lta-audit|lts-audit-ce|lta-audit-ce|lts-audit-de|lta-audit-de)
+            db="$DB_BACKUPS_DIR/db.lts-audit.backup"
+            ;;
+        latest|latest-ce|latest-de|latest-audit|latest-audit-ce|latest-audit|de)
+            db="$DB_BACKUPS_DIR/db.latest.backup"
+            ;;
+        *)
+            logmsg "ERROR: Instance $1 has no correspon ding DB backup"
+            db="NO_DB_BACKUP"
+    esac
+    echo $db
+}
+
+function tag_for {
+    case $1 in
+        lts|lta|lts-audit|lta-audit)
+            tag="lts-enterprise"
+            ;;
+        lts-ce|lta-ce|lts-audit-ce|lta-audit-ce)
+            tag="lts-community"
+            ;;
+        lts-de|lta-de|lts-de-audit|lta-de-audit)
+            tag="lts-developer"
+            ;;
+        latest|latest-audit)
+            tag="enterprise"
+            ;;
+        latest-de|latest-audit-de)
+            tag="developer"
+            ;;
+        latest-ce|latest-audit-ce)
+            tag="latest"
+            ;;
+        *)
+            logmsg "ERROR: Instance $1 has no corresponding tag"
+            tag="NO_TAG"
+    esac
+    echo $tag
+}
 
 [ $# -eq 0 ] && echo "Usage: $0 <env1> [... <envN>]" && exit 1
 
@@ -73,26 +117,16 @@ do
     logmsg "Install sonar-tools current local version: root = $TMP"
     cd $REPO_ROOT; ./deploy.sh nodoc; cd -
 
-    if [ "$env" = "sonarcloud " ]; then
-        export SONAR_TOKEN=$SONAR_TOKEN_SONARCLOUD
-        export SONAR_HOST_URL=$SONAR_HOST_URL_SONARCLOUD
-        f="$TMP/measures-$env-unrel.csv"; run_test $f sonar-measures-export -b -f $f -m _main --withURL
-
-        # Restore previous version if 3.0 or higher
-        logmsg "Restore sonar-tools last released version"
-        echo "Y" | pip uninstall sonar-tools
-        pip install sonar-tools
-    fi
-
-    if [ "$env" = "sonarcloud " ]; then
+    if [ "$env" = "sonarcloud" ]; then
         logmsg "Running with environment $env"
         export SONAR_TOKEN=$SONAR_TOKEN_SONARCLOUD
         export SONAR_HOST_URL=$SONAR_HOST_URL_SONARCLOUD        
     else
         id="it$$"
         logmsg "Running with environment $env - sonarId $id"
-        sqport=8000
-        sonar create -i $id -t $env -s $sqport -p 7999 -f "$DB_BACKUPS_DIR/db.$env.backup"
+        sqport=10020
+        echo sonar create -i $id -t "$(tag_for $env)" -s $sqport -p 6020 -f "$(backup_for $env)"
+        sonar create -i $id -t "$(tag_for $env)" -s $sqport -p 6020 -f "$(backup_for $env)"
         export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
         export SONAR_HOST_URL="http://localhost:$sqport"
     fi
