@@ -28,7 +28,7 @@ import sys
 from unittest.mock import patch
 import pytest
 import utilities as testutil
-from tools import findings_export
+from cli import findings_export
 from sonar import options, utilities
 
 CMD = "sonar-findings-export.py"

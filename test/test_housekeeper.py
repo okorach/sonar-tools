@@ -28,7 +28,7 @@ import sys
 from unittest.mock import patch
 import pytest
 import utilities as testutil
-from tools import housekeeper
+from cli import housekeeper
 
 CMD = "sonar-housekeeper.py"
 __GOOD_OPTS = [

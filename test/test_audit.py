@@ -28,7 +28,7 @@ from unittest.mock import patch
 import pytest
 import utilities as testutil
 from sonar import options
-from tools import audit
+from cli import audit
 import sonar.utilities as util
 
 CMD = "sonar-audit.py"

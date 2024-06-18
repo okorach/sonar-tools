@@ -30,7 +30,7 @@ from unittest.mock import patch
 import pytest
 import utilities as testutil
 from sonar import sif
-from tools import audit
+from cli import audit
 
 CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]

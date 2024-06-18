@@ -28,7 +28,7 @@ import sys
 from unittest.mock import patch
 import pytest
 import utilities as testutil
-from tools import rules_cli
+from cli import rules_cli
 from sonar import rules, exceptions
 
 CMD = "rules_cli.py"

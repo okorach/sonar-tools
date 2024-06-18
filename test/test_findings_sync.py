@@ -28,7 +28,7 @@ import sys
 from unittest.mock import patch
 import pytest
 import utilities as testutil
-from tools import findings_sync
+from cli import findings_sync
 from sonar import utilities
 
 CMD = "sonar-findings-sync.py"
