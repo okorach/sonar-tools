@@ -44,9 +44,10 @@ def file_not_empty(file: str) -> bool:
     return os.stat(file).st_size > 0
 
 
-def clean(file: str) -> None:
-    """Deletes a file if exists"""
-    try:
-        os.remove(file)
-    except FileNotFoundError:
-        pass
+def clean(*files: str) -> None:
+    """Deletes a list of file if they exists"""
+    for file in files:
+        try:
+            os.remove(file)
+        except FileNotFoundError:
+            pass
