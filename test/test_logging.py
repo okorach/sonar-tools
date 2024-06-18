@@ -34,6 +34,7 @@ from tools import loc
 CMD = "sonar-loc.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
 
+
 def test_no_log_file() -> None:
     """Tests that when no log file is specified, no file is produced"""
     testutil.clean("sonar-tools.log")
@@ -43,6 +44,7 @@ def test_no_log_file() -> None:
     assert int(str(e.value)) == 0
     assert not os.path.isfile("sonar-tools.log")
     testutil.clean(testutil.CSV_FILE)
+
 
 def test_custom_log_file() -> None:
     """Tests that when a specific log file is given, logs come in that file"""
