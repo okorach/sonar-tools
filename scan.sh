@@ -73,8 +73,8 @@ cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
   -Dsonar.externalIssuesReportPaths=$externalIssuesReport \
-  $pr_branch \
-  "${scanOpts[@]}" "
+  $pr_branch" \
+  "${scanOpts[@]}"
 
 if [ -f "$coverageReport" ]; then
    cmd="$cmd -Dsonar.python.coverage.reportPaths=$coverageReport"
