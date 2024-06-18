@@ -24,7 +24,7 @@
 import sys
 import datetime
 from sonar import platform, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities, exceptions
-from sonar.projects import projects
+from sonar import projects
 
 _EVERYTHING = [
     options.WHAT_SETTINGS,

@@ -31,7 +31,7 @@ from queue import Queue
 from requests.exceptions import HTTPError
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, exceptions, syncer
 import sonar.permissions.permissions as perms
-from sonar.projects import pull_requests, branches
+from sonar import pull_requests, branches
 import sonar.utilities as util
 import sonar.permissions.project_permissions as pperms
 

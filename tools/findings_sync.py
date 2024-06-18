@@ -30,8 +30,7 @@
 
 import sys
 import datetime
-from sonar import platform, syncer, options, exceptions
-from sonar.projects import projects, branches
+from sonar import platform, syncer, options, exceptions, projects, branches
 import sonar.utilities as util
 
 _WITH_COMMENTS = {"additionalFields": "comments"}

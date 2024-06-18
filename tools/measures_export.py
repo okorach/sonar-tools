@@ -28,8 +28,7 @@ import sys
 import csv
 from http import HTTPStatus
 from requests.exceptions import HTTPError
-from sonar import metrics, platform, options, exceptions
-from sonar.projects import projects
+from sonar import metrics, platform, options, exceptions, projects
 import sonar.utilities as util
 
 RATINGS = "letters"

@@ -26,8 +26,7 @@ from requests.exceptions import HTTPError
 import requests.utils
 import sonar.utilities as util
 from sonar import syncer, users, sqobject
-from sonar.projects import projects
-from sonar import findings, changelog
+from sonar import findings, changelog, projects
 
 SEARCH_CRITERIAS = (
     "branch",

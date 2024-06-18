@@ -24,8 +24,7 @@
 
 """
 import sys
-from sonar import options, platform, utilities, exceptions
-from sonar.projects import projects
+from sonar import options, platform, utilities, exceptions, projects
 
 
 def main():

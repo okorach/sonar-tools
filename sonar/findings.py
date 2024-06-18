@@ -25,7 +25,7 @@ from queue import Queue
 from threading import Thread
 import sonar.sqobject as sq
 import sonar.utilities as util
-from sonar.projects import projects
+from sonar import projects
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
