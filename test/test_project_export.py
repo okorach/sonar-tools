@@ -30,7 +30,7 @@ from unittest.mock import patch
 import pytest
 import utilities as testutil
 from sonar import options
-from tools import projects_export
+from cli import projects_export
 
 CMD = "projects_export.py"
 OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]

@@ -29,7 +29,7 @@ from unittest.mock import patch
 import pytest
 import utilities as testutil
 from sonar import options
-from tools import measures_export
+from cli import measures_export
 
 CMD = "sonar-measures-export.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]

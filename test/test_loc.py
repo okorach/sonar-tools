@@ -28,7 +28,7 @@ import os
 from unittest.mock import patch
 import pytest
 import utilities as testutil
-from tools import loc
+from cli import loc
 
 CMD = "sonar-loc.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
