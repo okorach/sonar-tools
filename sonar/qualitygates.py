@@ -29,7 +29,7 @@ from requests.exceptions import HTTPError
 import sonar.sqobject as sq
 from sonar import measures, exceptions
 import sonar.permissions.qualitygate_permissions as permissions
-from sonar.projects import projects
+from sonar import projects
 import sonar.utilities as util
 
 from sonar.audit import rules

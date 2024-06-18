@@ -25,8 +25,7 @@ from queue import Queue
 from threading import Thread
 import requests.utils
 
-from sonar.projects import projects
-from sonar import users, syncer, sqobject
+from sonar import users, syncer, sqobject, projects
 from sonar.findings import findings, changelog
 import sonar.utilities as util
 

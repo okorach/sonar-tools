@@ -25,8 +25,7 @@ import sys
 import csv
 from typing import TextIO
 from requests.exceptions import HTTPError
-from sonar import platform, portfolios, options
-from sonar.projects import projects
+from sonar import platform, portfolios, options, projects
 import sonar.utilities as util
 
 OPT_PORTFOLIOS = "portfolios"

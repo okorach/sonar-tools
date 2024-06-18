@@ -22,8 +22,7 @@ import json
 from http import HTTPStatus
 from threading import Lock
 from requests.exceptions import HTTPError
-from sonar import components, exceptions, settings
-from sonar.projects import projects, branches
+from sonar import components, exceptions, settings, projects, branches
 from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr

@@ -25,8 +25,7 @@ from urllib.parse import unquote
 from requests.exceptions import HTTPError
 import requests.utils
 import sonar.sqobject as sq
-from sonar import measures, components, syncer, settings, exceptions
-from sonar.projects import projects
+from sonar import measures, components, syncer, settings, exceptions, projects
 import sonar.utilities as util
 
 from sonar.audit import rules, problem

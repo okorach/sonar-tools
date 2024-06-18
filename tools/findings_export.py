@@ -43,8 +43,7 @@ import threading
 from threading import Thread
 from requests.exceptions import HTTPError
 
-from sonar import platform, options, exceptions
-from sonar.projects import projects
+from sonar import platform, options, exceptions, projects
 import sonar.utilities as util
 from sonar.findings import findings, issues, hotspots
 

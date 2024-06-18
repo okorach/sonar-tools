@@ -26,7 +26,7 @@ from requests.exceptions import HTTPError
 import requests.utils
 import sonar.utilities as util
 from sonar import syncer, users, sqobject
-from sonar.projects import projects
+from sonar import projects
 from sonar.findings import findings, changelog
 
 SEARCH_CRITERIAS = (
