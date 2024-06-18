@@ -128,7 +128,7 @@ def test_measures_export_history_as_table_no_time() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-d"]):
             measures_export.main()
-    assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -150,7 +150,7 @@ def test_measures_export_history_as_table_with_branch() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-b"]):
             measures_export.main()
-    assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
