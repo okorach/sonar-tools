@@ -1,5 +1,5 @@
 Findings
 ========
 
-.. automodule:: sonar.findings.findings
+.. automodule:: sonar.findings
 
