@@ -35,6 +35,7 @@ from datetime import timezone
 import random
 from typing import Union
 import requests
+
 from sonar import options, version, errcodes
 
 OPT_URL = "url"

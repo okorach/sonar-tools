@@ -27,7 +27,8 @@ import sys
 import datetime
 import json
 
-from sonar import errcodes, platform, users, groups, qualityprofiles, qualitygates, sif, options, portfolios, applications, exceptions, projects
+from sonar import errcodes, options, exceptions
+from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
 from sonar.audit import problem, config
 

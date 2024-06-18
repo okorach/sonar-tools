@@ -28,6 +28,7 @@ import sys
 import csv
 from http import HTTPStatus
 from requests.exceptions import HTTPError
+
 from sonar import metrics, platform, options, exceptions, projects, errcodes
 import sonar.utilities as util
 

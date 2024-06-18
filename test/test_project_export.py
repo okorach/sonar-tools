@@ -20,14 +20,13 @@
 #
 
 
-"""
-    sonar-config tests
-"""
+""" sonar-config tests """
 
 import os
 import sys
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
 from sonar import errcodes
 from cli import projects_export

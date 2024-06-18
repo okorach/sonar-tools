@@ -35,15 +35,12 @@ import jprops
 from requests.exceptions import HTTPError
 
 import sonar.utilities as util
-
-from sonar import errcodes, settings, devops, webhooks, version
+from sonar import errcodes, settings, devops, webhooks, version, sif
 from sonar.permissions import permissions, global_permissions, permission_templates
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
 import sonar.audit.problem as pb
-
-from sonar import sif
 
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 

@@ -19,17 +19,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-    sonar-audit tests
-"""
+""" sonar-audit tests """
 
 import sys
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
-from sonar import errcodes
+from sonar import errcodes, utilities
 from cli import audit
-import sonar.utilities as util
 
 CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
@@ -119,12 +117,12 @@ def test_sif_broken() -> None:
 
 def test_deduct_fmt() -> None:
     """test_deduct_fmt"""
-    assert util.deduct_format("csv", None) == "csv"
-    assert util.deduct_format("foo", "file.csv") == "csv"
-    assert util.deduct_format("foo", "file.json") == "csv"
-    assert util.deduct_format(None, "file.json") == "json"
-    assert util.deduct_format(None, "file.csv") == "csv"
-    assert util.deduct_format(None, "file.txt") == "csv"
+    assert utilities.deduct_format("csv", None) == "csv"
+    assert utilities.deduct_format("foo", "file.csv") == "csv"
+    assert utilities.deduct_format("foo", "file.json") == "csv"
+    assert utilities.deduct_format(None, "file.json") == "json"
+    assert utilities.deduct_format(None, "file.csv") == "csv"
+    assert utilities.deduct_format(None, "file.txt") == "csv"
 
 
 def test_sif_non_existing() -> None:

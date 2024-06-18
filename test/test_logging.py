@@ -19,14 +19,13 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-    Logging tests
-"""
+""" Logging tests """
 
 import sys
 import os
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
 from sonar import errcodes
 from cli import loc

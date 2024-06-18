@@ -30,6 +30,7 @@
 
 import sys
 import datetime
+
 from sonar import platform, syncer, options, exceptions, projects, branches, errcodes
 import sonar.utilities as util
 
@@ -128,9 +129,7 @@ def main() -> int:
         target_env = platform.Platform(**target_params)
     params["login"] = target_env.user()
     if params["login"] == "admin":
-        util.exit_fatal(
-            "sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync", errcodes.ARGS_ERROR
-        )
+        util.exit_fatal("sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync", errcodes.ARGS_ERROR)
 
     since = None
     if params["sinceDate"] is not None:

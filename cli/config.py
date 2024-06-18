@@ -22,9 +22,10 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
-import datetime
-from sonar import platform, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities, exceptions, errcodes
-from sonar import projects
+
+from sonar import options, exceptions, errcodes, utilities
+from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
+from sonar import projects, portfolios, applications
 
 _EVERYTHING = [
     options.WHAT_SETTINGS,

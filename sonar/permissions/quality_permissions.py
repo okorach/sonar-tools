@@ -20,6 +20,7 @@
 
 import json
 from http import HTTPStatus
+
 from sonar import utilities, errcodes
 from sonar.permissions import permissions
 

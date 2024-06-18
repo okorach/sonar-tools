@@ -25,7 +25,8 @@
 """
 import sys
 import json
-from sonar import errcodes, platform, exceptions, projects
+
+from sonar import errcodes, exceptions, platform, projects
 import sonar.utilities as util
 
 

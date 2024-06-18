@@ -24,6 +24,7 @@
 
 """
 import sys
+
 from sonar import options, platform, utilities, exceptions, projects, errcodes
 
 

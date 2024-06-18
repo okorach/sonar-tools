@@ -21,6 +21,7 @@
 import json
 from http import HTTPStatus
 from abc import ABC, abstractmethod
+
 from sonar import utilities, errcodes
 
 COMMUNITY_GLOBAL_PERMISSIONS = {

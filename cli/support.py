@@ -29,10 +29,10 @@ import os
 import json
 import argparse
 import requests
+
 from sonar import sif, errcodes
-from sonar.audit import severities
+from sonar.audit import problem, severities, config
 import sonar.utilities as util
-from sonar.audit import problem, config
 
 PRIVATE_COMMENT = [{"key": "sd.public.comment", "value": {"internal": "true"}}]
 

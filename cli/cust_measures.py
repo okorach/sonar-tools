@@ -26,6 +26,7 @@
 """
 
 import sys
+
 from sonar import custom_measures, platform, utilities, errcodes
 
 

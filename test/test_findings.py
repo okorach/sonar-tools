@@ -19,14 +19,13 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-    sonar-findings-export tests
-"""
+""" sonar-findings-export tests """
 
 import os
 import sys
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
 from cli import findings_export
 from sonar import errcodes, utilities
