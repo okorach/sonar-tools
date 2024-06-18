@@ -43,10 +43,9 @@ import threading
 from threading import Thread
 from requests.exceptions import HTTPError
 
-from sonar import platform, options, exceptions
+from sonar import platform, options, exceptions, findings, issues, hotspots
 from sonar.projects import projects
 import sonar.utilities as util
-from sonar.findings import findings, issues, hotspots
 
 WRITE_END = object()
 TOTAL_FINDINGS = 0
