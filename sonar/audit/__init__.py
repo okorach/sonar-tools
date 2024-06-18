@@ -17,11 +17,11 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-import sys
+
 from sonar.audit import rules
-from sonar import utilities, options
+from sonar import utilities, errcodes
 
 try:
     rules.load()
 except rules.RuleConfigError as e:
-    utilities.exit_fatal(e.message, options.ERR_RULES_LOADING_FAILED)
+    utilities.exit_fatal(e.message, errcodes.ERR_RULES_LOADING_FAILED)

@@ -36,7 +36,7 @@ from requests.exceptions import HTTPError
 
 import sonar.utilities as util
 
-from sonar import options, settings, devops, webhooks, version
+from sonar import errcodes, settings, devops, webhooks, version
 from sonar.permissions import permissions, global_permissions, permission_templates
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
@@ -267,9 +267,9 @@ class Platform:
                     util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
                 raise e
         except requests.exceptions.Timeout as e:
-            util.exit_fatal(str(e), options.ERR_REQUEST_TIMEOUT)
+            util.exit_fatal(str(e), errcodes.ERR_REQUEST_TIMEOUT)
         except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
+            util.exit_fatal(str(e), errcodes.ERR_SONAR_API)
         return r
 
     def global_permissions(self):
@@ -608,7 +608,7 @@ class Platform:
             else:
                 util.logger.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
-            util.exit_fatal(str(e), options.ERR_SONAR_API)
+            util.exit_fatal(str(e), errcodes.ERR_SONAR_API)
         return problems
 
     def __audit_group_permissions(self):

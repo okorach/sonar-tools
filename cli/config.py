@@ -23,7 +23,7 @@
 """
 import sys
 import datetime
-from sonar import platform, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities, exceptions
+from sonar import platform, rules, qualityprofiles, qualitygates, portfolios, applications, users, groups, options, utilities, exceptions, errcodes
 from sonar import projects
 
 _EVERYTHING = [
@@ -89,7 +89,7 @@ def __parse_args(desc):
 def __check_projects_existence(endpoint: object, key_list: list[str]) -> None:
     for key in key_list:
         if not projects.exists(key, endpoint):
-            utilities.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
+            utilities.exit_fatal(f"Project key '{key}' does not exist", errcodes.ERR_NO_SUCH_KEY)
 
 
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
@@ -170,7 +170,7 @@ def main():
     start_time = utilities.start_clock()
     kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
     if not kwargs["export"] and not kwargs["import"]:
-        utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=options.ERR_ARGS_ERROR)
+        utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=errcodes.ERR_ARGS_ERROR)
 
     endpoint = platform.Platform(**kwargs)
     what = utilities.check_what(kwargs.pop("what", None), _EVERYTHING, "exported or imported")
@@ -178,10 +178,10 @@ def main():
         try:
             __export_config(endpoint, what, **kwargs)
         except exceptions.ObjectNotFound as e:
-            utilities.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
+            utilities.exit_fatal(e.message, errcodes.ERR_NO_SUCH_KEY)
     if kwargs["import"]:
         if kwargs["file"] is None:
-            utilities.exit_fatal("--file is mandatory to import configuration", options.ERR_ARGS_ERROR)
+            utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ERR_ARGS_ERROR)
         __import_config(endpoint, what, **kwargs)
     utilities.stop_clock(start_time)
     sys.exit(0)

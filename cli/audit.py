@@ -27,7 +27,7 @@ import sys
 import datetime
 import json
 
-from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, options, portfolios, applications, exceptions, projects
+from sonar import errcodes, platform, users, groups, qualityprofiles, qualitygates, sif, options, portfolios, applications, exceptions, projects
 import sonar.utilities as util
 from sonar.audit import problem, config
 
@@ -116,7 +116,7 @@ def main():
         sys.exit(0)
 
     if kwargs.get("sif", None) is not None:
-        err = options.ERR_SIF_AUDIT_ERROR
+        err = errcodes.ERR_SIF_AUDIT_ERROR
         try:
             (server_id, problems) = _audit_sif(kwargs["sif"], settings)
         except json.decoder.JSONDecodeError:
@@ -134,11 +134,11 @@ def main():
         if len(key_list) > 0 and "projects" in util.csv_to_list(kwargs["what"]):
             for key in key_list:
                 if not projects.exists(key, sq):
-                    util.exit_fatal(f"Project key '{key}' does not exist", options.ERR_NO_SUCH_KEY)
+                    util.exit_fatal(f"Project key '{key}' does not exist", errcodes.ERR_NO_SUCH_KEY)
         try:
             problems = _audit_sq(sq, settings, what_to_audit=util.check_what(kwargs["what"], _ALL_AUDITABLE, "audited"), key_list=key_list)
         except exceptions.ObjectNotFound as e:
-            util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
+            util.exit_fatal(e.message, errcodes.ERR_NO_SUCH_KEY)
 
     ofile = kwargs.pop("file")
     kwargs["format"] = util.deduct_format(kwargs["format"], ofile)

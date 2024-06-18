@@ -20,7 +20,7 @@
 
 import json
 from http import HTTPStatus
-from sonar import utilities, options
+from sonar import utilities, errcodes
 from sonar.permissions import permissions
 
 MAX_PERMS = 25
@@ -70,7 +70,7 @@ class QualityPermissions(permissions.Permissions):
                 perms += [p[ret_field] for p in data[perm_type]]
             elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 # Hack: Different versions of SonarQube return different codes (400 or 404)
-                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", errcodes.ERR_SONAR_API)
             else:
                 break
             page, nbr_pages = page + 1, utilities.nbr_pages(data)
