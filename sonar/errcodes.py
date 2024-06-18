@@ -20,38 +20,38 @@
 
 """sonar-tools error codes"""
 
-ERR_OK = 0
+OK = 0
 
 # HTTP 401
-ERR_SONAR_API_AUTHENTICATION = 1
+SONAR_API_AUTHENTICATION = 1
 
 # HTTP 403
-ERR_SONAR_API_AUTHORIZATION = 2
+SONAR_API_AUTHORIZATION = 2
 
 # General Sonar Web API error
-ERR_SONAR_API = 3
+SONAR_API = 3
 
 # Auth token not provided
-ERR_TOKEN_MISSING = 4
+TOKEN_MISSING = 4
 
 # Project, Branch, Application, Portfolio, Metric key provided on cmd line does not exist
-ERR_NO_SUCH_KEY = 5
+NO_SUCH_KEY = 5
 
 # Issue search criteria incorrect
-ERR_WRONG_SEARCH_CRITERIA = 6
+WRONG_SEARCH_CRITERIA = 6
 
 # Requested operation unsupported on this platform (version or edition incompatible)
-ERR_UNSUPPORTED_OPERATION = 7
+UNSUPPORTED_OPERATION = 7
 
-ERR_RULES_LOADING_FAILED = 8
+RULES_LOADING_FAILED = 8
 
-ERR_SIF_AUDIT_ERROR = 9
+SIF_AUDIT_ERROR = 9
 
 # Incorrect sonar-tool CLI argument
-ERR_ARGS_ERROR = 10
+ARGS_ERROR = 10
 
 # if a global analysis or project analysis token is provided
-ERR_TOKEN_NOT_SUITED = 11
+TOKEN_NOT_SUITED = 11
 
 # HTTP request timeout
-ERR_REQUEST_TIMEOUT = 12
+HTTP_TIMEOUT = 12

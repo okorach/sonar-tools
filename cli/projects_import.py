@@ -34,7 +34,7 @@ def _check_sq_environments(import_sq, export_sq):
     if imp_version != export_sq["version"]:
         util.exit_fatal(
             "Export was not performed with same SonarQube version, aborting...",
-            errcodes.ERR_UNSUPPORTED_OPERATION,
+            errcodes.UNSUPPORTED_OPERATION,
         )
     for export_plugin in export_sq["plugins"]:
         e_name = export_plugin["name"]
@@ -47,7 +47,7 @@ def _check_sq_environments(import_sq, export_sq):
         if not found:
             util.exit_fatal(
                 f"Plugin '{e_name}' version '{e_vers}' was not found or not in same version on import platform, aborting...",
-                errcodes.ERR_UNSUPPORTED_OPERATION,
+                errcodes.UNSUPPORTED_OPERATION,
             )
 
 

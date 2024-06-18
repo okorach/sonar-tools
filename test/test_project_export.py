@@ -68,7 +68,7 @@ def test_export_non_existing_project() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
             projects_export.main()
-    assert int(str(e.value)) == errcodes.ERR_NO_SUCH_KEY
+    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 

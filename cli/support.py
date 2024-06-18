@@ -76,7 +76,7 @@ def __get_args(desc):
     parser.add_argument("-t", "--ticket", required=True, help="Support ticket to audit, in format SUPPORT-XXXXX or XXXXX")
     args = parser.parse_args()
     if not args.login or not args.password:
-        util.exit_fatal("Login and Password are required to authenticate to ServiceDesk", errcodes.ERR_TOKEN_MISSING)
+        util.exit_fatal("Login and Password are required to authenticate to ServiceDesk", errcodes.TOKEN_MISSING)
     return args
 
 
@@ -89,7 +89,7 @@ def __get_issue_id(**kwargs):
         if r.status_code == HTTPStatus.NOT_FOUND:
             return None
         else:
-            util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", errcodes.ERR_SONAR_API)
+            util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", errcodes.SONAR_API)
     return json.loads(r.text)["issueId"]
 
 
@@ -108,7 +108,7 @@ def __get_sysinfo_from_ticket(**kwargs):
             print(f"Ticket {tix} not found")
             sys.exit(3)
         else:
-            util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", errcodes.ERR_SONAR_API)
+            util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", errcodes.SONAR_API)
 
     data = json.loads(r.text)
     util.logger.debug("Ticket %s found: searching SIF", tix)
@@ -125,7 +125,7 @@ def __get_sysinfo_from_ticket(**kwargs):
             util.logger.info("Ticket %s: Verifying attachment '%s' found", tix, attachment_file)
             r = requests.get(attachment_url, auth=kwargs["creds"], timeout=10)
             if not r.ok:
-                util.exit_fatal(f"ERROR: Ticket {tix} get attachment status code {r.status_code}", errcodes.ERR_SONAR_API)
+                util.exit_fatal(f"ERROR: Ticket {tix} get attachment status code {r.status_code}", errcodes.SONAR_API)
             try:
                 sif_list[attachment_file] = json.loads(r.text)
             except json.decoder.JSONDecodeError:

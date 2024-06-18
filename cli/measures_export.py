@@ -91,7 +91,7 @@ def __get_wanted_metrics(kwargs: dict[str, str], endpoint: platform.Platform) ->
         non_existing_metrics = util.difference(wanted_metrics, metrics.search(endpoint).keys())
         if len(non_existing_metrics) > 0:
             miss = ",".join(non_existing_metrics)
-            util.exit_fatal(f"Requested metric keys '{miss}' don't exist", errcodes.ERR_NO_SUCH_KEY)
+            util.exit_fatal(f"Requested metric keys '{miss}' don't exist", errcodes.NO_SUCH_KEY)
     util.logger.info("Exporting %s metrics", len(wanted_metrics))
     return wanted_metrics
 
@@ -280,7 +280,7 @@ def main():
     try:
         project_list = projects.get_list(endpoint=endpoint, key_list=kwargs["projectKeys"])
     except exceptions.ObjectNotFound as e:
-        util.exit_fatal(e.message, errcodes.ERR_NO_SUCH_KEY)
+        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     obj_list = []
     if kwargs[options.WITH_BRANCHES]:
         for project in project_list.values():

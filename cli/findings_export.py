@@ -247,19 +247,19 @@ def __get_list(project: object, list_str: str, list_type: str) -> list[str]:
 def __verify_inputs(params):
     diff = util.difference(util.csv_to_list(params.get("resolutions", None)), issues.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
-        util.exit_fatal(f"Resolutions {str(diff)} are not legit resolutions", errcodes.ERR_WRONG_SEARCH_CRITERIA)
+        util.exit_fatal(f"Resolutions {str(diff)} are not legit resolutions", errcodes.WRONG_SEARCH_CRITERIA)
 
     diff = util.difference(util.csv_to_list(params.get("statuses", None)), issues.STATUSES + hotspots.STATUSES)
     if diff:
-        util.exit_fatal(f"Statuses {str(diff)} are not legit statuses", errcodes.ERR_WRONG_SEARCH_CRITERIA)
+        util.exit_fatal(f"Statuses {str(diff)} are not legit statuses", errcodes.WRONG_SEARCH_CRITERIA)
 
     diff = util.difference(util.csv_to_list(params.get("severities", None)), issues.SEVERITIES + hotspots.SEVERITIES)
     if diff:
-        util.exit_fatal(f"Severities {str(diff)} are not legit severities", errcodes.ERR_WRONG_SEARCH_CRITERIA)
+        util.exit_fatal(f"Severities {str(diff)} are not legit severities", errcodes.WRONG_SEARCH_CRITERIA)
 
     diff = util.difference(util.csv_to_list(params.get("types", None)), issues.TYPES + hotspots.TYPES)
     if diff:
-        util.exit_fatal(f"Types {str(diff)} are not legit types", errcodes.ERR_WRONG_SEARCH_CRITERIA)
+        util.exit_fatal(f"Types {str(diff)} are not legit types", errcodes.WRONG_SEARCH_CRITERIA)
 
     return True
 
@@ -391,7 +391,7 @@ def main():
     try:
         project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get("projectKeys", None))
     except exceptions.ObjectNotFound as e:
-        util.exit_fatal(e.message, errcodes.ERR_NO_SUCH_KEY)
+        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
     fmt, fname = kwargs.pop("format", None), kwargs.pop("file", None)
     fmt = util.deduct_format(fmt, fname)

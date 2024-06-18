@@ -24,4 +24,4 @@ from sonar import utilities, errcodes
 try:
     rules.load()
 except rules.RuleConfigError as e:
-    utilities.exit_fatal(e.message, errcodes.ERR_RULES_LOADING_FAILED)
+    utilities.exit_fatal(e.message, errcodes.RULES_LOADING_FAILED)

@@ -68,4 +68,4 @@ def test_missing_log_filename() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-l"]):
             loc.main()
-    assert int(str(e.value)) == errcodes.ERR_ARGS_ERROR
+    assert int(str(e.value)) == errcodes.ARGS_ERROR

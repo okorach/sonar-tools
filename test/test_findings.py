@@ -98,7 +98,7 @@ def test_wrong_filters() -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
                 findings_export.main()
-        assert int(str(e.value)) == errcodes.ERR_WRONG_SEARCH_CRITERIA
+        assert int(str(e.value)) == errcodes.WRONG_SEARCH_CRITERIA
         assert not os.path.isfile(testutil.CSV_FILE)
         assert not os.path.isfile(testutil.JSON_FILE)
 
@@ -110,7 +110,7 @@ def test_wrong_opts() -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
                 findings_export.main()
-        assert int(str(e.value)) == errcodes.ERR_NO_SUCH_KEY
+        assert int(str(e.value)) == errcodes.NO_SUCH_KEY
         assert not os.path.isfile(testutil.CSV_FILE)
         assert not os.path.isfile(testutil.JSON_FILE)
 
