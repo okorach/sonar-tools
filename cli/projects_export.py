@@ -24,7 +24,8 @@
 
 """
 import sys
-from sonar import options, platform, utilities, exceptions, projects
+
+from sonar import options, platform, utilities, exceptions, projects, errcodes
 
 
 def main():
@@ -46,13 +47,13 @@ def main():
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
         utilities.exit_fatal(
             "Can't export projects on Community and Developer Edition before 9.2, aborting...",
-            options.ERR_UNSUPPORTED_OPERATION,
+            errcodes.UNSUPPORTED_OPERATION,
         )
 
     try:
         dump = projects.export_zip(endpoint=sq, key_list=kwargs["projectKeys"], export_timeout=kwargs["exportTimeout"], threads=kwargs["threads"])
     except exceptions.ObjectNotFound:
-        sys.exit(options.ERR_NO_SUCH_KEY)
+        sys.exit(errcodes.NO_SUCH_KEY)
 
     with utilities.open_file(kwargs["file"]) as fd:
         print(utilities.json_dump(dump), file=fd)

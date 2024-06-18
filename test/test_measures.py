@@ -19,16 +19,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-    sonar-measures-export tests
-"""
+""" sonar-measures-export tests """
 
 import sys
 import os
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
-from sonar import options
+from sonar import errcodes
 from cli import measures_export
 
 CMD = "sonar-measures-export.py"
@@ -183,7 +182,7 @@ def test_non_existing_measure() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,bad_measure"]):
             measures_export.main()
-    assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
+    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -194,6 +193,6 @@ def test_non_existing_project() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
             measures_export.main()
-    assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
+    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)

@@ -30,7 +30,8 @@
 
 import sys
 import datetime
-from sonar import platform, syncer, options, exceptions, projects, branches
+
+from sonar import platform, syncer, options, exceptions, projects, branches, errcodes
 import sonar.utilities as util
 
 _WITH_COMMENTS = {"additionalFields": "comments"}
@@ -120,7 +121,7 @@ def main() -> int:
     target_url = params.get("urlTarget", None)
     if target_url is None:
         if source_key == target_key and source_branch is None or target_branch is None:
-            util.exit_fatal("Branches must be specified when sync'ing within a same project", options.ERR_ARGS_ERROR)
+            util.exit_fatal("Branches must be specified when sync'ing within a same project", errcodes.ARGS_ERROR)
         target_env, target_url = source_env, source_url
     else:
         util.check_token(args.tokenTarget)
@@ -128,9 +129,7 @@ def main() -> int:
         target_env = platform.Platform(**target_params)
     params["login"] = target_env.user()
     if params["login"] == "admin":
-        util.exit_fatal(
-            "sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync", options.ERR_ARGS_ERROR
-        )
+        util.exit_fatal("sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync", errcodes.ARGS_ERROR)
 
     since = None
     if params["sinceDate"] is not None:
@@ -190,9 +189,9 @@ def main() -> int:
         )
 
     except exceptions.ObjectNotFound as e:
-        util.exit_fatal(e.message, options.ERR_NO_SUCH_KEY)
+        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     except exceptions.UnsupportedOperation as e:
-        util.exit_fatal(e.message, options.ERR_UNSUPPORTED_OPERATION)
+        util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
     util.stop_clock(start_time)
     sys.exit(0)
 

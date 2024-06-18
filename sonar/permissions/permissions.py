@@ -21,7 +21,8 @@
 import json
 from http import HTTPStatus
 from abc import ABC, abstractmethod
-from sonar import utilities, options
+
+from sonar import utilities, errcodes
 
 COMMUNITY_GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
@@ -239,7 +240,7 @@ class Permissions(ABC):
                         counter += 1
             elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 # Hack: Different versions of SonarQube return different codes (400 or 404)
-                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", options.ERR_SONAR_API)
+                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", errcodes.SONAR_API)
             page, nbr_pages = page + 1, utilities.nbr_pages(data)
             if counter > 5 or not resp.ok:
                 break

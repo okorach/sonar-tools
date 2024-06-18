@@ -1,4 +1,4 @@
 Projects
 ========
 
-.. automodule:: sonar.projects.projects
+.. automodule:: sonar.projects

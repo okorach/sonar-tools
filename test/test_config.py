@@ -19,17 +19,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-
-"""
-    sonar-config tests
-"""
+""" sonar-config tests """
 
 import os
 import sys
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
-from sonar import options
+from sonar import errcodes
 from cli import config
 
 CMD = "config.py"
@@ -78,7 +76,7 @@ def test_config_export_wrong() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", OPTS + ["-w", "settings,wrong,users"]):
             config.main()
-    assert int(str(e.value)) == options.ERR_ARGS_ERROR
+    assert int(str(e.value)) == errcodes.ARGS_ERROR
     assert not os.path.isfile(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 
@@ -89,6 +87,6 @@ def test_config_non_existing_project() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
             config.main()
-    assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
+    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)

@@ -19,17 +19,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-    sonar-audit tests
-"""
+""" sonar-audit tests """
 
 import sys
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
-from sonar import options
+from sonar import errcodes, utilities
 from cli import audit
-import sonar.utilities as util
 
 CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
@@ -105,7 +103,7 @@ def test_audit_proj_non_existing_key() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools,bad_key"]):
             audit.main()
-    assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
+    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
 
 
 def test_sif_broken() -> None:
@@ -114,17 +112,17 @@ def test_sif_broken() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_broken.json"]):
             audit.main()
-    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == errcodes.SIF_AUDIT_ERROR
 
 
 def test_deduct_fmt() -> None:
     """test_deduct_fmt"""
-    assert util.deduct_format("csv", None) == "csv"
-    assert util.deduct_format("foo", "file.csv") == "csv"
-    assert util.deduct_format("foo", "file.json") == "csv"
-    assert util.deduct_format(None, "file.json") == "json"
-    assert util.deduct_format(None, "file.csv") == "csv"
-    assert util.deduct_format(None, "file.txt") == "csv"
+    assert utilities.deduct_format("csv", None) == "csv"
+    assert utilities.deduct_format("foo", "file.csv") == "csv"
+    assert utilities.deduct_format("foo", "file.json") == "csv"
+    assert utilities.deduct_format(None, "file.json") == "json"
+    assert utilities.deduct_format(None, "file.csv") == "csv"
+    assert utilities.deduct_format(None, "file.txt") == "csv"
 
 
 def test_sif_non_existing() -> None:
@@ -133,7 +131,7 @@ def test_sif_non_existing() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_non_existing.json"]):
             audit.main()
-    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == errcodes.SIF_AUDIT_ERROR
 
 
 def test_sif_not_readable() -> None:
@@ -142,4 +140,4 @@ def test_sif_not_readable() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_not_readable.json"]):
             audit.main()
-    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == errcodes.SIF_AUDIT_ERROR

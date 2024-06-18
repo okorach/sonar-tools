@@ -29,7 +29,9 @@ from http import HTTPStatus
 from threading import Thread, Lock
 from queue import Queue
 from requests.exceptions import HTTPError
-from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, options, settings, webhooks, devops, measures, exceptions, syncer
+
+from sonar import options, exceptions, errcodes
+from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, measures, syncer
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
 import sonar.utilities as util
@@ -523,7 +525,7 @@ class Project(components.Component):
                 rule = rules.get_rule(rules.RuleId.PROJ_INVALID_BINDING)
                 return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
             else:
-                util.exit_fatal(f"alm_settings/validate_binding returning status code {e.response.status_code}, exiting", options.ERR_SONAR_API)
+                util.exit_fatal(f"alm_settings/validate_binding returning status code {e.response.status_code}, exiting", errcodes.SONAR_API)
 
     def audit(self, audit_settings):
         """Audits a project and returns the list of problems found
@@ -1375,7 +1377,7 @@ def __export_zip_thread(queue, results, statuses, export_timeout):
             dump = project.export_zip(timeout=export_timeout)
         except exceptions.UnsupportedOperation:
             queue.task_done()
-            util.exit_fatal("Zip export unsupported on your SonarQube version", options.ERR_UNSUPPORTED_OPERATION)
+            util.exit_fatal("Zip export unsupported on your SonarQube version", errcodes.UNSUPPORTED_OPERATION)
         status = dump["status"]
         statuses[status] = 1 if status not in statuses else statuses[status] + 1
         data = {"key": project.key, "status": status}

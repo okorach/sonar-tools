@@ -60,26 +60,6 @@ FORMAT = "format"
 
 DEFAULT = "__default__"
 
-# Sonar Tools error codes
-
-ERR_SONAR_API_AUTHENTICATION = 1
-ERR_SONAR_API_AUTHORIZATION = 2
-ERR_SONAR_API = 3
-ERR_TOKEN_MISSING = 4
-
-ERR_NO_SUCH_KEY = 5
-ERR_WRONG_SEARCH_CRITERIA = 6
-ERR_UNSUPPORTED_OPERATION = 7
-ERR_RULES_LOADING_FAILED = 8
-ERR_SIF_AUDIT_ERROR = 9
-
-ERR_ARGS_ERROR = 10
-# if a global analysis or project analysis token is provided
-ERR_TOKEN_NOT_SUITED = 11
-
-# HTTP request timeout
-ERR_REQUEST_TIMEOUT = 12
-
 
 def set_url_arg(parser):
     parser.add_argument(f"--{WITH_URL}", action="store_true", default=False, required=False, help="Add objects URLs in report")

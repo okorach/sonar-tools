@@ -26,7 +26,8 @@
 """
 
 import sys
-from sonar import custom_measures, platform, utilities, options
+
+from sonar import custom_measures, platform, utilities, errcodes
 
 
 def parse_args(desc):
@@ -43,7 +44,7 @@ def main():
     kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
     sqenv = platform.Platform(**kwargs)
     if sqenv.version() >= (9, 0, 0):
-        utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", options.ERR_UNSUPPORTED_OPERATION)
+        utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", errcodes.UNSUPPORTED_OPERATION)
     else:
         utilities.logger.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
 

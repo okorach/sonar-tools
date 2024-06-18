@@ -19,17 +19,16 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-    sonar-findings-export tests
-"""
+""" sonar-findings-export tests """
 
 import os
 import sys
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
 from cli import findings_export
-from sonar import options, utilities
+from sonar import errcodes, utilities
 
 CMD = "sonar-findings-export.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
@@ -98,7 +97,7 @@ def test_wrong_filters() -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
                 findings_export.main()
-        assert int(str(e.value)) == options.ERR_WRONG_SEARCH_CRITERIA
+        assert int(str(e.value)) == errcodes.WRONG_SEARCH_CRITERIA
         assert not os.path.isfile(testutil.CSV_FILE)
         assert not os.path.isfile(testutil.JSON_FILE)
 
@@ -110,7 +109,7 @@ def test_wrong_opts() -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
                 findings_export.main()
-        assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
+        assert int(str(e.value)) == errcodes.NO_SUCH_KEY
         assert not os.path.isfile(testutil.CSV_FILE)
         assert not os.path.isfile(testutil.JSON_FILE)
 
@@ -124,7 +123,7 @@ def test_findings_export_non_existing_branch() -> None:
 
     # FIXME: findings-export ignores the branch option see https://github.com/okorach/sonar-tools/issues/1115
     # So passing a non existing branch succeeds
-    # assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
+    # assert int(str(e.value)) == errcodes.ERR_NO_SUCH_KEY
     # assert not os.path.isfile(testutil.CSV_FILE)
     assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)

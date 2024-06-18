@@ -1,6 +1,6 @@
 #
 # sonar-tools
-# Copyright (C) 2019-2024 Olivier Korach
+# Copyright (C) 2024 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -18,10 +18,40 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-from sonar.audit import rules
-from sonar import utilities, errcodes
+"""sonar-tools error codes"""
 
-try:
-    rules.load()
-except rules.RuleConfigError as e:
-    utilities.exit_fatal(e.message, errcodes.RULES_LOADING_FAILED)
+OK = 0
+
+# HTTP 401
+SONAR_API_AUTHENTICATION = 1
+
+# HTTP 403
+SONAR_API_AUTHORIZATION = 2
+
+# General Sonar Web API error
+SONAR_API = 3
+
+# Auth token not provided
+TOKEN_MISSING = 4
+
+# Project, Branch, Application, Portfolio, Metric key provided on cmd line does not exist
+NO_SUCH_KEY = 5
+
+# Issue search criteria incorrect
+WRONG_SEARCH_CRITERIA = 6
+
+# Requested operation unsupported on this platform (version or edition incompatible)
+UNSUPPORTED_OPERATION = 7
+
+RULES_LOADING_FAILED = 8
+
+SIF_AUDIT_ERROR = 9
+
+# Incorrect sonar-tool CLI argument
+ARGS_ERROR = 10
+
+# if a global analysis or project analysis token is provided
+TOKEN_NOT_SUITED = 11
+
+# HTTP request timeout
+HTTP_TIMEOUT = 12

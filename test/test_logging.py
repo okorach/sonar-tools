@@ -19,16 +19,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-"""
-    Logging tests
-"""
+""" Logging tests """
 
 import sys
 import os
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
-from sonar import options
+from sonar import errcodes
 from cli import loc
 
 CMD = "sonar-loc.py"
@@ -68,4 +67,4 @@ def test_missing_log_filename() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-l"]):
             loc.main()
-    assert int(str(e.value)) == options.ERR_ARGS_ERROR
+    assert int(str(e.value)) == errcodes.ARGS_ERROR

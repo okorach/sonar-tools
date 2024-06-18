@@ -35,7 +35,8 @@ from datetime import timezone
 import random
 from typing import Union
 import requests
-from sonar import options, version
+
+from sonar import options, version, errcodes
 
 OPT_URL = "url"
 OPT_VERBOSE = "verbosity"
@@ -254,7 +255,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     try:
         args = parser.parse_args()
     except SystemExit:
-        sys.exit(options.ERR_ARGS_ERROR)
+        sys.exit(errcodes.ARGS_ERROR)
 
     kwargs = vars(args)
     __set_logger(filename=kwargs[options.LOGFILE], logger_name=logger_name)
@@ -288,12 +289,12 @@ def check_token(token: str, is_sonarcloud: bool = False) -> None:
     if token is None:
         exit_fatal(
             "Token is missing (Argument -t/--token)",
-            options.ERR_SONAR_API_AUTHENTICATION,
+            errcodes.SONAR_API_AUTHENTICATION,
         )
     if not is_sonarcloud and token_type(token) != "user":
         exit_fatal(
             f"The provided token {redacted_token(token)} is a {token_type(token)} token, a user token is required for sonar-tools",
-            options.ERR_TOKEN_NOT_SUITED,
+            errcodes.TOKEN_NOT_SUITED,
         )
 
 
@@ -596,13 +597,13 @@ def http_error(response: requests.models.Response) -> tuple[str, int]:
 
     if code == HTTPStatus.UNAUTHORIZED:
         tool_msg += f"HTTP error {code} - Authentication error. Is token valid ?"
-        err_code = options.ERR_SONAR_API_AUTHENTICATION
+        err_code = errcodes.SONAR_API_AUTHENTICATION
     elif code == HTTPStatus.FORBIDDEN:
         tool_msg += f"HTTP error {code} - Insufficient permissions to perform operation"
-        err_code = options.ERR_SONAR_API_AUTHORIZATION
+        err_code = errcodes.SONAR_API_AUTHORIZATION
     else:
         tool_msg += f"HTTP error {code} - Exiting"
-        err_code = options.ERR_SONAR_API
+        err_code = errcodes.SONAR_API
     return err_code, f"{tool_msg}: {sq_msg}"
 
 
@@ -630,7 +631,7 @@ def check_what(what, allowed_values, operation="processed"):
             continue
         exit_fatal(
             f"'{w}' is not something that can be {operation}, chose among {','.join(allowed_values)}",
-            exit_code=options.ERR_ARGS_ERROR,
+            exit_code=errcodes.ARGS_ERROR,
         )
     return what
 
