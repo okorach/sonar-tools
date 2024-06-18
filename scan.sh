@@ -22,6 +22,8 @@
 dolint=true
 dotest=false
 
+scanOpts=()
+
 while [ $# -ne 0 ]
 do
   case "$1" in
@@ -32,7 +34,7 @@ do
       dotest=true
       ;;
     *)
-      scanOpts="$scanOpts $1"
+      scanOpts=("${scanOpts[@]}" "$1")
       ;;
   esac
   shift
@@ -56,12 +58,11 @@ if [ "$dolint" != "false" ]; then
   ./run_linters.sh
 fi
 
-version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed "s/[\'\" ]//g")
-version=$(echo $version)
+version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//"s)
 pr_branch=""
-for o in $scanOpts
+for o in "${scanOpts[@]}"
 do
-  key="$(echo $o | cut -d '=' -f 1)"
+  key="$(echo "$o" | cut -d '=' -f 1)"
   if [ "$key" = "-Dsonar.pullrequest.key" ]; then
     pr_branch="-Dsonar.pullrequest.branch=foo"
   fi
@@ -73,7 +74,7 @@ cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.bandit.reportPaths=$banditReport \
   -Dsonar.externalIssuesReportPaths=$externalIssuesReport \
   $pr_branch \
-  $scanOpts"
+  "${scanOpts[@]}" "
 
 if [ -f "$coverageReport" ]; then
    cmd="$cmd -Dsonar.python.coverage.reportPaths=$coverageReport"
