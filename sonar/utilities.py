@@ -38,21 +38,11 @@ import requests
 
 from sonar import options, version, errcodes
 
-OPT_URL = "url"
-OPT_VERBOSE = "verbosity"
-OPT_SKIP_VERSION_CHECK = "skipVersionCheck"
-
 DEFAULT_LOGGER = "sonar-tools"
 DEFAULT_LOGFILE = f"{DEFAULT_LOGGER}.log"
 LOG_FORMAT = "%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s"
 FORMATTER = logging.Formatter(LOG_FORMAT)
 
-OPT_ORGANIZATION = "organization"
-OPT_MODE = "mode"
-DRY_RUN = "dryrun"
-CONFIRM = "confirm"
-BATCH = "batch"
-RUN_MODE = DRY_RUN
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
 SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 SQ_DATE_FORMAT = "%Y-%m-%d"
@@ -64,7 +54,7 @@ CSV_SEPARATOR = ","
 logger = logging.getLogger(DEFAULT_LOGGER)
 
 
-def __set_logger(filename: str = None, logger_name: str = None) -> None:
+def set_logger(filename: str = None, logger_name: str = None) -> None:
     """Sets the logging file (stderr only by default) and the logger name"""
     global logger
     if logger_name is not None:
@@ -77,142 +67,6 @@ def __set_logger(filename: str = None, logger_name: str = None) -> None:
     logger.addHandler(ch)
     ch.setFormatter(FORMATTER)
     logger.addHandler(ch)
-
-
-def set_common_args(desc):
-    """Parses options common to all sonar-tools scripts"""
-    parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument(
-        "-t",
-        "--token",
-        required=False,
-        default=os.getenv("SONAR_TOKEN", None),
-        help="""Token to authenticate to the source SonarQube, default is environment variable $SONAR_TOKEN
-        - Unauthenticated usage is not possible""",
-    )
-    parser.add_argument(
-        "-u",
-        f"--{OPT_URL}",
-        required=False,
-        default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
-        help="""Root URL of the source SonarQube or SonarCloud server,
-        default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set""",
-    )
-    parser.add_argument(
-        "-o",
-        f"--{OPT_ORGANIZATION}",
-        required=False,
-        help="SonarCloud organization when using sonar-tools with SonarCloud",
-    )
-    parser.add_argument(
-        "-v",
-        "--" + OPT_VERBOSE,
-        required=False,
-        choices=["WARN", "INFO", "DEBUG"],
-        default="INFO",
-        help="Logging verbosity level",
-    )
-    parser.add_argument(
-        "-c",
-        "--clientCert",
-        required=False,
-        default=None,
-        help="Optional client certificate file (as .pem file)",
-    )
-    parser.add_argument(
-        "--httpTimeout",
-        required=False,
-        default=10,
-        help="HTTP timeout for requests to SonarQube, 10s by default",
-    )
-    parser.add_argument(
-        f"--{OPT_SKIP_VERSION_CHECK}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Prevents sonar-tools to occasionnally check from more recent version",
-    )
-    parser.add_argument(
-        f"-{options.LOGFILE_SHORT}",
-        f"--{options.LOGFILE}",
-        required=False,
-        default=None,
-        help="Define location of logfile, logs are only sent to stderr if not set",
-    )
-    return parser
-
-
-def set_key_arg(parser):
-    parser.add_argument(
-        "-k",
-        "--projectKeys",
-        "--keys",
-        "--projectKey",
-        required=False,
-        help="Commas separated keys of the objects to select",
-    )
-    return parser
-
-
-def set_target_sonar_args(parser):
-    parser.add_argument(
-        "-U",
-        "--urlTarget",
-        required=False,
-        help="Root URL of the target SonarQube server",
-    )
-    parser.add_argument(
-        "-T",
-        "--tokenTarget",
-        required=False,
-        help="Token to authenticate to target SonarQube - Unauthenticated usage is not possible",
-    )
-    return parser
-
-
-def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False):
-    parser.add_argument(
-        "-f",
-        "--file",
-        required=False,
-        default=None,
-        help="Output file for the report, stdout by default",
-    )
-    fmt_choice = []
-    if csv_fmt:
-        fmt_choice.append("csv")
-    if json_fmt:
-        fmt_choice.append("json")
-    if sarif_fmt:
-        fmt_choice.append("sarif")
-    if json_fmt and csv_fmt:
-        parser.add_argument(
-            f"--{options.FORMAT}",
-            choices=fmt_choice,
-            required=False,
-            default=None,
-            help="Output format for generated report.\nIf not specified, it is the output file extension if json or csv, then csv by default",
-        )
-    if csv_fmt:
-        parser.add_argument(
-            f"--{options.CSV_SEPARATOR}",
-            required=False,
-            default=CSV_SEPARATOR,
-            help=f"CSV separator (for CSV output), default '{CSV_SEPARATOR}'",
-        )
-
-    return parser
-
-
-def set_what(parser, what_list, operation):
-    parser.add_argument(
-        "-w",
-        "--what",
-        required=False,
-        default="",
-        help=f"What to {operation} {','.join(what_list)}",
-    )
-    return parser
 
 
 def get_logging_level(level):
@@ -229,7 +83,7 @@ def get_logging_level(level):
     return lvl
 
 
-def __set_debug_level(level: str) -> None:
+def set_debug_level(level: str) -> None:
     """Sets the logging level"""
     logger.setLevel(get_logging_level(level))
     logger.info("Set debug level to %s", level)
@@ -248,31 +102,6 @@ def check_last_sonar_tools_version() -> None:
     logger.info("Latest sonar-tools version is %s", txt_version)
     if tuple(".".split(txt_version)) > tuple(".".split(version.PACKAGE_VERSION)):
         logger.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
-
-
-def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> object:
-    """Parses arguments, applies default settings and perform common environment checks"""
-    try:
-        args = parser.parse_args()
-    except SystemExit:
-        sys.exit(errcodes.ARGS_ERROR)
-
-    kwargs = vars(args)
-    __set_logger(filename=kwargs[options.LOGFILE], logger_name=logger_name)
-    __set_debug_level(kwargs[OPT_VERBOSE])
-    logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
-    if "projectKeys" in kwargs:
-        kwargs["projectKeys"] = csv_to_list(kwargs["projectKeys"])
-    if "metricKeys" in kwargs:
-        kwargs["metricKeys"] = csv_to_list(kwargs["metricKeys"])
-
-    # Verify version randomly once every 10 runs
-    if not kwargs[OPT_SKIP_VERSION_CHECK] and random.randrange(10) == 0:
-        check_last_sonar_tools_version()
-
-    if verify_token:
-        check_token(args.token, is_sonarcloud_url(kwargs[OPT_URL]))
-    return args
 
 
 def token_type(token):
