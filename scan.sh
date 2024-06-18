@@ -43,6 +43,7 @@ pylintReport="$buildDir/pylint-report.out"
 banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
 coverageReport="$buildDir/coverage.xml"
+externalIssuesReport="$buildDir/external-issue-report.json"
 
 [ ! -d $buildDir ] && mkdir $buildDir
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
@@ -70,6 +71,7 @@ cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
+  -Dsonar.externalIssuesReportPaths=$externalIssuesReport \
   $pr_branch \
   $scanOpts"
 
