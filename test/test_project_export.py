@@ -27,6 +27,7 @@
 import os
 import sys
 from unittest.mock import patch
+import pytest
 import utilities as testutil
 from sonar import options
 from tools import projects_export
@@ -38,11 +39,10 @@ OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 def __test_project_export(arguments: list[str], file: str) -> None:
     """Runs a test command"""
     testutil.clean(file)
-    with patch.object(sys, "argv", arguments):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", arguments):
             projects_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(file)
     testutil.clean(file)
 
@@ -65,11 +65,10 @@ def test_export_timeout() -> None:
 def test_export_non_existing_project() -> None:
     """test_config_non_existing_project"""
     testutil.clean(testutil.JSON_FILE)
-    with patch.object(sys, "argv", OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
             projects_export.main()
-        except SystemExit as e:
-            assert int(str(e)) == options.ERR_NO_SUCH_KEY
+    assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
     assert not os.path.isfile(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 

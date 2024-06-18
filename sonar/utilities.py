@@ -251,7 +251,11 @@ def check_last_sonar_tools_version() -> None:
 
 def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> object:
     """Parses arguments, applies default settings and perform common environment checks"""
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        sys.exit(options.ERR_ARGS_ERROR)
+
     kwargs = vars(args)
     __set_logger(filename=kwargs[options.LOGFILE], logger_name=logger_name)
     __set_debug_level(kwargs[OPT_VERBOSE])

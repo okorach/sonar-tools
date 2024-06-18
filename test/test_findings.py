@@ -66,8 +66,7 @@ __WRONG_OPTS = [
 def test_findings_export() -> None:
     """test_findings_export"""
     for opts in __GOOD_OPTS:
-        testutil.clean(testutil.CSV_FILE)
-        testutil.clean(testutil.JSON_FILE)
+        testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
         with pytest.raises(SystemExit) as e:
             fullcmd = [CMD] + testutil.STD_OPTS + opts
             utilities.logger.info("Running %s", " ".join(fullcmd))
@@ -79,25 +78,22 @@ def test_findings_export() -> None:
         elif testutil.JSON_FILE in opts:
             assert testutil.file_not_empty(testutil.JSON_FILE)
         utilities.logger.info("SUCCESS running: %s", " ".join(fullcmd))
-    testutil.clean(testutil.CSV_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
 
 
 # def test_findings_export_sarif():
 #     testutil.clean(testutil.JSON_FILE)
-#     with patch.object(sys, 'argv', JSON_OPTS + ["--format", "sarif"]):
-#         try:
+#     with pytest.raises(SystemExit) as e:
+#         with patch.object(sys, 'argv', JSON_OPTS + ["--format", "sarif"]):
 #             findings_export.main()
-#         except SystemExit as e:
-#             assert int(str(e)) == 0
+#     assert int(str(e.value)) == 0
 #     assert testutil.file_not_empty(testutil.JSON_FILE)
 #     testutil.clean(testutil.JSON_FILE)
 
 
 def test_wrong_filters() -> None:
     """test_wrong_filters"""
-    testutil.clean(testutil.CSV_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
     for bad_opts in __WRONG_FILTER_OPTS:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
@@ -109,8 +105,7 @@ def test_wrong_filters() -> None:
 
 def test_wrong_opts() -> None:
     """test_wrong_opts"""
-    testutil.clean(testutil.CSV_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
     for bad_opts in __WRONG_OPTS:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):

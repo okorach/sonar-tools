@@ -89,9 +89,9 @@ fi
 #SONAR_JDBC_PASSWORD=
 
 if [ "$op" = "start" ]; then
-    echo "docker run -d --name sonar-$version-$edition $DEFAULT_OPTS -p $port:9000 sonarqube:${pfx}${edition}"
-    docker run -d --name sonar-$version-$edition "$DEFAULT_OPTS" -p $port:9000 sonarqube:${pfx}${edition}
+    echo "docker run -d --name \"sonar-$version-$edition\" $DEFAULT_OPTS -p \"$port:9000\" sonarqube:${pfx}${edition}"
+    docker run -d --name "sonar-$version-$edition" "$DEFAULT_OPTS" -p "$port:9000" "sonarqube:${pfx}${edition}"
 else
-    docker stop sonar-$version-$edition
-    docker rm sonar-$version-$edition
+    docker stop "sonar-$version-$edition"
+    docker rm "sonar-$version-$edition"
 fi

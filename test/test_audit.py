@@ -25,6 +25,7 @@
 
 import sys
 from unittest.mock import patch
+import pytest
 import utilities as testutil
 from sonar import options
 from tools import audit
@@ -38,32 +39,29 @@ JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 def test_audit() -> None:
     """test_audit"""
     testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
 
 def test_audit_stdout() -> None:
     """test_audit_stdout"""
-    with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
 
 
 def test_audit_json() -> None:
     """test_audit_json"""
     testutil.clean(testutil.JSON_FILE)
-    with patch.object(sys, "argv", JSON_OPTS):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 
@@ -71,11 +69,10 @@ def test_audit_json() -> None:
 def test_sif_1() -> None:
     """test_sif_1"""
     testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--sif", "test/sif1.json"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--sif", "test/sif1.json"]):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -83,11 +80,10 @@ def test_sif_1() -> None:
 def test_sif_2() -> None:
     """test_sif_2"""
     testutil.clean(testutil.JSON_FILE)
-    with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif2.json"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif2.json"]):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 
@@ -95,11 +91,10 @@ def test_sif_2() -> None:
 def test_audit_proj_key() -> None:
     """test_audit_proj_key"""
     testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools"]):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -107,21 +102,19 @@ def test_audit_proj_key() -> None:
 def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
     testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools,bad_key"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools,bad_key"]):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == options.ERR_NO_SUCH_KEY
+    assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
 
 
 def test_sif_broken() -> None:
     """test_sif_broken"""
     testutil.clean(testutil.JSON_FILE)
-    with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_broken.json"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_broken.json"]):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
 
 
 def test_deduct_fmt() -> None:
@@ -137,18 +130,16 @@ def test_deduct_fmt() -> None:
 def test_sif_non_existing() -> None:
     """test_sif_non_existing"""
     testutil.clean(testutil.JSON_FILE)
-    with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_non_existing.json"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_non_existing.json"]):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
 
 
 def test_sif_not_readable() -> None:
     """test_sif_not_readable"""
     testutil.clean(testutil.JSON_FILE)
-    with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_not_readable.json"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_not_readable.json"]):
             audit.main()
-        except SystemExit as e:
-            assert int(str(e)) == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
