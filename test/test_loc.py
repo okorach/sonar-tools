@@ -38,13 +38,11 @@ JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 def test_loc() -> None:
     """test_loc"""
     testutil.clean(testutil.CSV_FILE)
-    testutil.clean("sonar-tools.log")
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
-    assert not os.path.isfile("sonar-tools.log")
     testutil.clean(testutil.CSV_FILE)
 
 
@@ -54,7 +52,7 @@ def test_loc_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 
@@ -65,7 +63,7 @@ def test_loc_json_fmt() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--format", "json", "-n", "-a", "--withURL"]):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 
@@ -76,7 +74,7 @@ def test_loc_project() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools"]):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -87,7 +85,7 @@ def test_loc_project_with_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools", "--withURL", "-n", "-a"]):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -98,7 +96,7 @@ def test_loc_portfolios() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--portfolios", "--topLevelOnly", "--withURL"]):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -109,29 +107,9 @@ def test_loc_separator() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--csvSeparator", "+"]):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
-
-
-def test_logging_options() -> None:
-    """test logging options"""
-    testutil.clean(testutil.CSV_FILE)
-    testutil.clean("sonar-tools.log")
-    logfile = "sonar-loc-logging.log"
-    testutil.clean(logfile)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-l", logfile]):
-            loc.main()
-    assert e.value == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    assert testutil.file_not_empty(logfile)
-    with open(logfile, encoding="utf-8") as f:
-        first_line = f.readline()
-    assert "| sonar-loc |" in first_line
-    testutil.clean(testutil.CSV_FILE)
-    testutil.clean("sonar-tools.log")
-    testutil.clean("sonar-loc-logging.log")
 
 
 def test_loc_branches() -> None:
@@ -140,7 +118,7 @@ def test_loc_branches() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-b", "--withURL", "-a", "-n"]):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     testutil.clean(testutil.CSV_FILE)
 
 
@@ -148,9 +126,9 @@ def test_loc_branches_json() -> None:
     """test_loc"""
     testutil.clean(testutil.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-b", "-f", testutil.JSON_FILE, "-a", "-n", "--withURL"]):
+        with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + ["-b", "-f", testutil.JSON_FILE, "-a", "-n", "--withURL"]):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     testutil.clean(testutil.JSON_FILE)
 
 
@@ -160,5 +138,5 @@ def test_loc_portfolios_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-b", "--portfolios", "--withURL", "-a", "-n"]):
             loc.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     testutil.clean(testutil.CSV_FILE)

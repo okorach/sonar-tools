@@ -42,7 +42,7 @@ def test_audit() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS):
             audit.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -52,7 +52,7 @@ def test_audit_stdout() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS):
             audit.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
 
 
 def test_audit_json() -> None:
@@ -61,7 +61,7 @@ def test_audit_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS):
             audit.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 
@@ -72,7 +72,7 @@ def test_sif_1() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--sif", "test/sif1.json"]):
             audit.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -83,7 +83,7 @@ def test_sif_2() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif2.json"]):
             audit.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 
@@ -94,7 +94,7 @@ def test_audit_proj_key() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools"]):
             audit.main()
-    assert e.value == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -105,7 +105,7 @@ def test_audit_proj_non_existing_key() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools,bad_key"]):
             audit.main()
-    assert e.value == options.ERR_NO_SUCH_KEY
+    assert int(str(e.value)) == options.ERR_NO_SUCH_KEY
 
 
 def test_sif_broken() -> None:
@@ -114,7 +114,7 @@ def test_sif_broken() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_broken.json"]):
             audit.main()
-    assert e.value == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
 
 
 def test_deduct_fmt() -> None:
@@ -133,7 +133,7 @@ def test_sif_non_existing() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_non_existing.json"]):
             audit.main()
-    assert e.value == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
 
 
 def test_sif_not_readable() -> None:
@@ -142,4 +142,4 @@ def test_sif_not_readable() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_not_readable.json"]):
             audit.main()
-    assert e.value == options.ERR_SIF_AUDIT_ERROR
+    assert int(str(e.value)) == options.ERR_SIF_AUDIT_ERROR
