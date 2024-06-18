@@ -26,6 +26,7 @@
 
 import sys
 from unittest.mock import patch
+import pytest
 import utilities as testutil
 from tools import rules_cli
 from sonar import rules, exceptions
@@ -38,11 +39,10 @@ JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
 def test_rules() -> None:
     """test_rules"""
     testutil.clean(testutil.CSV_FILE)
-    with patch.object(sys, "argv", CSV_OPTS):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS):
             rules_cli.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.CSV_FILE)
     testutil.clean(testutil.CSV_FILE)
 
@@ -50,11 +50,10 @@ def test_rules() -> None:
 def test_rules_json_format() -> None:
     """test_rules_json_format"""
     testutil.clean(testutil.JSON_FILE)
-    with patch.object(sys, "argv", JSON_OPTS + ["--format", "json"]):
-        try:
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ["--format", "json"]):
             rules_cli.main()
-        except SystemExit as e:
-            assert int(str(e)) == 0
+    assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)
     testutil.clean(testutil.JSON_FILE)
 

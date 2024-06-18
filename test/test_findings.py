@@ -85,11 +85,10 @@ def test_findings_export() -> None:
 
 # def test_findings_export_sarif():
 #     testutil.clean(testutil.JSON_FILE)
-#     with patch.object(sys, 'argv', JSON_OPTS + ["--format", "sarif"]):
-#         try:
+#     with pytest.raises(SystemExit) as e:
+#         with patch.object(sys, 'argv', JSON_OPTS + ["--format", "sarif"]):
 #             findings_export.main()
-#         except SystemExit as e:
-#             assert int(str(e)) == 0
+#     assert int(str(e.value)) == 0
 #     assert testutil.file_not_empty(testutil.JSON_FILE)
 #     testutil.clean(testutil.JSON_FILE)
 
