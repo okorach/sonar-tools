@@ -98,9 +98,9 @@ def __get_wanted_metrics(kwargs: dict[str, str], endpoint: platform.Platform) ->
 
 
 def __parse_args(desc):
-    parser = util.set_common_args(desc)
-    parser = util.set_key_arg(parser)
-    parser = util.set_output_file_args(parser)
+    parser = options.set_common_args(desc)
+    parser = options.set_key_arg(parser)
+    parser = options.set_output_file_args(parser)
     parser.add_argument(
         "-m",
         "--metricKeys",
@@ -148,7 +148,7 @@ def __parse_args(desc):
     )
     options.add_dateformat_arg(parser)
     options.add_url_arg(parser)
-    args = util.parse_and_check(parser=parser, logger_name="sonar-measures-export")
+    args = options.parse_and_check(parser=parser, logger_name="sonar-measures-export")
     if args.ratingsAsNumbers:
         CONVERT_OPTIONS["ratings"] = "numbers"
     if args.percentsAsString:

@@ -26,7 +26,8 @@
 import sys
 import json
 
-from sonar import errcodes, exceptions, platform, projects
+from sonar import errcodes, exceptions, options
+from sonar import platform, projects
 import sonar.utilities as util
 
 
@@ -54,9 +55,9 @@ def _check_sq_environments(import_sq, export_sq):
 
 def main():
     start_time = util.start_clock()
-    parser = util.set_common_args("Imports a list of projects in a SonarQube platform")
+    parser = options.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
-    kwargs = util.convert_args(util.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
+    kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
     sq = platform.Platform(**kwargs)
 
     with open(kwargs["projectsFile"], "r", encoding="utf-8") as file:

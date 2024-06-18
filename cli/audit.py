@@ -85,12 +85,12 @@ def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
 
 
 def __parser_args(desc):
-    parser = util.set_common_args(desc)
-    parser = util.set_key_arg(parser)
-    parser = util.set_output_file_args(parser)
+    parser = options.set_common_args(desc)
+    parser = options.set_key_arg(parser)
+    parser = options.set_output_file_args(parser)
     parser = options.set_url_arg(parser)
     parser = options.add_thread_arg(parser, "project audit")
-    parser = util.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
+    parser = options.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
     parser.add_argument(
         "--config",
@@ -99,7 +99,7 @@ def __parser_args(desc):
         action="store_true",
         help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
     )
-    args = util.parse_and_check(parser=parser, logger_name="sonar-audit", verify_token=False)
+    args = options.parse_and_check(parser=parser, logger_name="sonar-audit", verify_token=False)
     if args.sif is None and args.config is None:
         util.check_token(args.token)
     return args

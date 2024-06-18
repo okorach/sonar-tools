@@ -169,9 +169,9 @@ def __dump_loc(object_list: list[object], file: str, **kwargs) -> None:
 
 
 def __parse_args(desc):
-    parser = util.set_common_args(desc)
-    parser = util.set_key_arg(parser)
-    parser = util.set_output_file_args(parser)
+    parser = options.set_common_args(desc)
+    parser = options.set_key_arg(parser)
+    parser = options.set_output_file_args(parser)
     parser.add_argument(
         "-n",
         "--withName",
@@ -204,7 +204,7 @@ def __parse_args(desc):
         action="store_true",
         help="Extracts only toplevel portfolios LoCs, not sub-portfolios",
     )
-    args = util.parse_and_check(parser=parser, logger_name="sonar-loc")
+    args = options.parse_and_check(parser=parser, logger_name="sonar-loc")
     return args
 
 

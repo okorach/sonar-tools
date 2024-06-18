@@ -107,7 +107,7 @@ def _parse_arguments():
     _DEFAULT_BRANCH_OBSOLESCENCE = 90
     _DEFAULT_PR_OBSOLESCENCE = 30
     _DEFAULT_TOKEN_OBSOLESCENCE = 365
-    parser = util.set_common_args("Deletes projects, branches, PR, user tokens not used since a given number of days")
+    parser = options.set_common_args("Deletes projects, branches, PR, user tokens not used since a given number of days")
     parser = options.add_thread_arg(parser, "auditing before housekeeping")
     parser.add_argument(
         "--mode",
@@ -151,7 +151,7 @@ def _parse_arguments():
         default=_DEFAULT_TOKEN_OBSOLESCENCE,
         help=f"Deletes user tokens older than a certain number of days, by default {_DEFAULT_TOKEN_OBSOLESCENCE} days",
     )
-    args = util.parse_and_check(parser=parser, logger_name="sonar-housekeeper")
+    args = options.parse_and_check(parser=parser, logger_name="sonar-housekeeper")
     return args
 
 

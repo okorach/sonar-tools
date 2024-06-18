@@ -69,11 +69,11 @@ def __map(k):
 
 
 def __parse_args(desc):
-    parser = utilities.set_common_args(desc)
-    parser = utilities.set_key_arg(parser)
-    parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
+    parser = options.set_common_args(desc)
+    parser = options.set_key_arg(parser)
+    parser = options.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
     parser = options.add_thread_arg(parser, "project export")
-    parser = utilities.set_what(parser, what_list=_EVERYTHING, operation="export or import")
+    parser = options.set_what(parser, what_list=_EVERYTHING, operation="export or import")
     parser = options.add_import_export_arg(parser, "configuration")
     parser.add_argument(
         "--fullExport",
@@ -83,7 +83,7 @@ def __parse_args(desc):
         help="Also exports informative data that would be ignored as part of an import. Informative field are prefixed with _."
         "This option is ignored in case of import",
     )
-    args = utilities.parse_and_check(parser=parser, logger_name="sonar-config")
+    args = options.parse_and_check(parser=parser, logger_name="sonar-config")
     return args
 
 
