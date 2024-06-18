@@ -30,7 +30,6 @@ SHELLCHECK = "shellcheck"
 
 
 def main() -> None:
-
     """Main script entry point"""
     text = ""
 
@@ -45,36 +44,33 @@ def main() -> None:
             "ruleId": f"{SHELLCHECK}:{issue['code']}",
             "effortMinutes": 5,
             "primaryLocation": {
-                "message": issue['message'],
-                "filePath": issue['file'],
+                "message": issue["message"],
+                "filePath": issue["file"],
                 "textRange": {
-                    "startLine": issue['line'],
-                    "endLine": issue['endLine'],
-                    "startColumn": issue['column'] - 1,
-                    "endColumn": max(issue['column'], issue['endColumn'] - 1),
-                }
-            }
+                    "startLine": issue["line"],
+                    "endLine": issue["endLine"],
+                    "startColumn": issue["column"] - 1,
+                    "endColumn": max(issue["column"], issue["endColumn"] - 1),
+                },
+            },
         }
         issue_list.append(sonar_issue)
-        if issue['level'] in ("info", "style"):
-            sev = 'LOW'
-        elif issue['level'] == "warning":
-            sev = 'MEDIUM'
+        if issue["level"] in ("info", "style"):
+            sev = "LOW"
+        elif issue["level"] == "warning":
+            sev = "MEDIUM"
         else:
-            sev = 'HIGH'
+            sev = "HIGH"
         rules_dict[f"{SHELLCHECK}:{issue['code']}"] = {
             "id": f"{SHELLCHECK}:{issue['code']}",
             "name": f"{SHELLCHECK}:{issue['code']}",
             "engineId": SHELLCHECK,
             "cleanCodeAttribute": "LOGICAL",
-            "impacts": [{"softwareQuality": "MAINTAINABILITY", 'severity': sev}]
+            "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": sev}],
         }
 
-    external_issues = {
-        "rules": list(rules_dict.values()),
-        "issues": issue_list
-    }
-    print(json.dumps(external_issues, indent=3, separators=(',', ": ")))
+    external_issues = {"rules": list(rules_dict.values()), "issues": issue_list}
+    print(json.dumps(external_issues, indent=3, separators=(",", ": ")))
 
 
 if __name__ == "__main__":
