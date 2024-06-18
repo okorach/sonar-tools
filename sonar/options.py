@@ -74,6 +74,9 @@ WHAT_PORTFOLIOS = "portfolios"
 WHAT_AUDITABLE = [WHAT_SETTINGS, WHAT_USERS, WHAT_GROUPS, WHAT_GATES, WHAT_PROFILES, WHAT_PROJECTS, WHAT_APPS, WHAT_PORTFOLIOS]
 
 CSV_SEPARATOR = "csvSeparator"
+
+__DEFAULT_CSV_SEPARATOR = ","
+
 FORMAT = "format"
 
 DEFAULT = "__default__"
@@ -285,8 +288,8 @@ def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sa
         parser.add_argument(
             f"--{CSV_SEPARATOR}",
             required=False,
-            default=CSV_SEPARATOR,
-            help=f"CSV separator (for CSV output), default '{CSV_SEPARATOR}'",
+            default=__DEFAULT_CSV_SEPARATOR,
+            help=f"CSV separator (for CSV output), default '{__DEFAULT_CSV_SEPARATOR}'",
         )
     return parser
 

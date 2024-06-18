@@ -48,7 +48,6 @@ SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 SQ_DATE_FORMAT = "%Y-%m-%d"
 SQ_TIME_FORMAT = "%H:%M:%S"
 
-CSV_SEPARATOR = ","
 
 # By default log as sonar-tools on stderr only
 logger = logging.getLogger(DEFAULT_LOGGER)

@@ -27,16 +27,16 @@
 
 import sys
 
-from sonar import custom_measures, platform, utilities, errcodes
+from sonar import custom_measures, platform, utilities, errcodes, options
 
 
 def parse_args(desc):
-    parser = utilities.set_common_args(desc)
-    parser = utilities.set_key_arg(parser)
+    parser = options.set_common_args(desc)
+    parser = options.set_key_arg(parser)
     parser.add_argument("-m", "--metricKey", required=True, help="What custom metric to work on")
     parser.add_argument("--value", required=False, help="Updates the value of the metric")
     parser.add_argument("--description", required=False, help="Updates the description of the metric")
-    return utilities.parse_and_check(parser, logger_name="sonar-custom-measures")
+    return options.parse_and_check(parser, logger_name="sonar-custom-measures")
 
 
 def main():

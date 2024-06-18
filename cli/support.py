@@ -30,7 +30,7 @@ import json
 import argparse
 import requests
 
-from sonar import sif, errcodes
+from sonar import sif, errcodes, options
 from sonar.audit import problem, severities, config
 import sonar.utilities as util
 
@@ -58,7 +58,7 @@ def __get_args(desc):
     )
     parser.add_argument(
         "-v",
-        "--" + util.OPT_VERBOSE,
+        "--" + options.OPT_VERBOSE,
         required=False,
         choices=["ERROR", "WARN", "INFO", "DEBUG"],
         default="ERROR",

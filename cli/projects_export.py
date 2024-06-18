@@ -30,9 +30,9 @@ from sonar import options, platform, utilities, exceptions, projects, errcodes
 
 def main():
     start_time = utilities.start_clock()
-    parser = utilities.set_common_args("Exports all projects of a SonarQube platform")
-    parser = utilities.set_key_arg(parser)
-    parser = utilities.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
+    parser = options.set_common_args("Exports all projects of a SonarQube platform")
+    parser = options.set_key_arg(parser)
+    parser = options.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
     parser = options.add_thread_arg(parser, "projects zip export")
     parser.add_argument(
         "--exportTimeout",
@@ -41,7 +41,7 @@ def main():
         default=180,
         help="Maximum wait time for export",
     )
-    kwargs = utilities.convert_args(utilities.parse_and_check(parser=parser, logger_name="sonar-projects-export"))
+    kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-export"))
     sq = platform.Platform(**kwargs)
 
     if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
