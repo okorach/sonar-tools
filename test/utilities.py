@@ -26,13 +26,13 @@
 import os
 from sonar import platform
 
-LATEST = "http://localhost:9999"
+LATEST = "http://localhost:10000"
 LTA = "http://localhost:9000"
 
 CSV_FILE = "temp.csv"
 JSON_FILE = "temp.json"
 
-STD_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+STD_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER"), "-l", "sonar-tools.log"]
 
 SONARQUBE = platform.Platform(url=os.getenv("SONAR_HOST_URL"), token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
 
