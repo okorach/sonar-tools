@@ -27,9 +27,8 @@ from http import HTTPStatus
 import json
 from requests.exceptions import HTTPError
 import sonar.sqobject as sq
-from sonar import measures, exceptions
+from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
-from sonar import projects
 import sonar.utilities as util
 
 from sonar.audit import rules

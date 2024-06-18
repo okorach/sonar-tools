@@ -1,5 +1,5 @@
 Issues
 ======
 
-.. automodule:: sonar.findings.issues
+.. automodule:: sonar.issues
 

@@ -25,8 +25,8 @@ from queue import Queue
 from threading import Thread
 import requests.utils
 
-from sonar import users, syncer, sqobject, projects
-from sonar.findings import findings, changelog
+
+from sonar import users, syncer, sqobject, findings, changelog, projects
 import sonar.utilities as util
 
 API_SET_TAGS = "issues/set_tags"

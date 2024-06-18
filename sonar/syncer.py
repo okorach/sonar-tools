@@ -21,7 +21,7 @@
 """Findings syncer"""
 
 import sonar.utilities as util
-from sonar.findings import findings
+from sonar import findings
 
 
 SYNC_IGNORE_COMPONENTS = "ignore_components"

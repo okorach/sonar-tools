@@ -58,7 +58,7 @@ if [ "$dolint" != "false" ]; then
   ./run_linters.sh
 fi
 
-version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//"s)
+version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 pr_branch=""
 for o in "${scanOpts[@]}"
 do

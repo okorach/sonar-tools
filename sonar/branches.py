@@ -300,7 +300,7 @@ class Branch(components.Component):
         :return: dict of Issues, with issue key as key
         :rtype: dict{key: Issue}
         """
-        from sonar.findings import issues
+        from sonar import issues
 
         return issues.search_all(
             endpoint=self.endpoint,
@@ -317,7 +317,7 @@ class Branch(components.Component):
         :return: dict of Hotspots, with hotspot key as key
         :rtype: dict{key: Hotspot}
         """
-        from sonar.findings import hotspots
+        from sonar import hotspots
 
         return hotspots.search(
             endpoint=self.endpoint,

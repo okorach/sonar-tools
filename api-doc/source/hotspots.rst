@@ -1,5 +1,5 @@
 Hotspots
 ========
 
-.. automodule:: sonar.findings.hotspots
+.. automodule:: sonar.hotspots
 
