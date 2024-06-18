@@ -31,10 +31,7 @@ SHELLCHECK = "shellcheck"
 
 def main() -> None:
     """Main script entry point"""
-    text = ""
-
-    for line in sys.stdin:
-        text += line
+    text = "".join(sys.stdin)
 
     rules_dict = {}
     issue_list = []
