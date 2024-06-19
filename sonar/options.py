@@ -28,6 +28,7 @@ import sys
 import random
 import argparse
 
+import sonar.logging as log
 from sonar import errcodes, version, utilities
 
 OPT_URL = "url"
@@ -90,9 +91,9 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
         sys.exit(errcodes.ARGS_ERROR)
 
     kwargs = vars(args)
-    utilities.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
-    utilities.set_debug_level(kwargs[OPT_VERBOSE])
-    utilities.logger.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
+    log.set_debug_level(kwargs[OPT_VERBOSE])
+    log.info("sonar-tools version %s", version.PACKAGE_VERSION)
     if "projectKeys" in kwargs:
         kwargs["projectKeys"] = utilities.csv_to_list(kwargs["projectKeys"])
     if "metricKeys" in kwargs:

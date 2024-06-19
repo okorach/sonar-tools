@@ -20,6 +20,8 @@
 import os
 import pathlib
 import jprops
+
+import sonar.logging as log
 import sonar.utilities as util
 
 _CONFIG_SETTINGS = None
@@ -29,12 +31,12 @@ def _load_properties_file(file):
     settings = {}
     try:
         with open(file, "r", encoding="utf-8") as fp:
-            util.logger.info("Loading config file %s", file)
+            log.info("Loading config file %s", file)
             settings = jprops.load_properties(fp)
     except FileNotFoundError:
         pass
     except PermissionError:
-        util.logger.warning(
+        log.warning(
             "Insufficient permissions to open file %s, configuration will be skipped",
             file,
         )
@@ -56,7 +58,7 @@ def load(config_name=None, settings=None):
     for key, value in _CONFIG_SETTINGS.items():
         _CONFIG_SETTINGS[key] = util.convert_string(value)
 
-    util.logger.debug("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
+    log.debug("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
     return _CONFIG_SETTINGS
 
 
@@ -73,12 +75,12 @@ def configure():
 
     config_file = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
     if os.path.isfile(config_file):
-        util.logger.info(
+        log.info(
             "Config file '%s' already exists, sending configuration to stdout",
             config_file,
         )
         print(text)
     else:
-        util.logger.info("Creating file '%s'", config_file)
+        log.info("Creating file '%s'", config_file)
         with open(config_file, "w", encoding="utf-8") as fh:
             print(text, file=fh)

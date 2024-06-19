@@ -29,7 +29,8 @@
 import sys
 import logging
 
-from sonar import platform, tokens, users, groups, options, projects, branches, pull_requests
+import sonar.logging as log
+from sonar import platform, tokens, users, options, projects, branches, pull_requests
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import config, problem
@@ -38,7 +39,7 @@ from sonar.audit import config, problem
 def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads, endpoint):
     problems = []
     if max_days_proj < 90:
-        util.logger.error("As a safety measure, can't delete projects more recent than 90 days")
+        log.error("As a safety measure, can't delete projects more recent than 90 days")
         return problems
 
     settings = {
@@ -68,9 +69,9 @@ def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads
             total_loc += int(p.concerned_object.get_measure("ncloc", fallback="0"))
 
     if nb_proj == 0:
-        util.logger.info("%d projects older than %d days found during audit", nb_proj, max_days_proj)
+        log.info("%d projects older than %d days found during audit", nb_proj, max_days_proj)
     else:
-        util.logger.warning(
+        log.warning(
             "%d projects older than %d days for a total of %d LoC found during audit",
             nb_proj,
             max_days_proj,
@@ -91,14 +92,14 @@ def get_user_problems(max_days, endpoint):
     loglevel = logging.WARNING
     if nb_problems == 0:
         loglevel = logging.INFO
-    util.logger.log(loglevel, "%d user tokens older than %d days, or unused since 90 days, found during audit", nb_problems, max_days)
+    log.log(loglevel, "%d user tokens older than %d days, or unused since 90 days, found during audit", nb_problems, max_days)
     # group_problems = groups.audit(endpoint=endpoint, audit_settings=settings)
     # user_problems += group_problems
     # nb_problems = len(group_problems)
     # loglevel = logging.WARNING
     # if nb_problems == 0:
     #     loglevel = logging.INFO
-    # util.logger.log(loglevel, "%d empty groups found during audit", nb_problems)
+    # log.log(loglevel, "%d empty groups found during audit", nb_problems)
     return user_problems
 
 
@@ -169,26 +170,26 @@ def _delete_objects(problems, mode):
             if isinstance(obj, projects.Project):
                 loc = int(obj.get_measure("ncloc", fallback="0"))
                 if mode == "delete":
-                    util.logger.info("Deleting %s, %d LoC", str(obj), loc)
+                    log.info("Deleting %s, %d LoC", str(obj), loc)
                 else:
-                    util.logger.info("%s, %d LoC should be deleted", str(obj), loc)
+                    log.info("%s, %d LoC should be deleted", str(obj), loc)
                 if mode != "delete" or obj.delete():
                     deleted_projects[obj.key] = obj
                     deleted_loc += loc
             if isinstance(obj, branches.Branch):
                 if obj.concerned_object.key in deleted_projects:
-                    util.logger.info("%s deleted, so no need to delete %s", str(obj.concerned_object), str(obj))
+                    log.info("%s deleted, so no need to delete %s", str(obj.concerned_object), str(obj))
                 elif mode != "delete" or obj.delete():
                     deleted_branch_count += 1
             if isinstance(obj, pull_requests.PullRequest):
                 if obj.project.key in deleted_projects:
-                    util.logger.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
+                    log.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
                 elif mode != "delete" or obj.delete():
                     deleted_pr_count += 1
             if isinstance(obj, tokens.UserToken) and (mode != "delete" or obj.revoke()):
                 revoked_token_count += 1
         except ex.ObjectNotFound:
-            util.logger.warning("%s does not exist, deletion skipped...", str(obj))
+            log.warning("%s does not exist, deletion skipped...", str(obj))
 
     return (
         len(deleted_projects),
@@ -218,10 +219,10 @@ def main():
         op = "deleted"
     (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
 
-    util.logger.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, proj_age, deleted_loc, op)
-    util.logger.info("%d branches older than %d days %s", deleted_branches, branch_age, op)
-    util.logger.info("%d pull requests older than %d days %s", deleted_prs, pr_age, op)
-    util.logger.info("%d tokens older than %d days revoked", revoked_tokens, token_age)
+    log.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, proj_age, deleted_loc, op)
+    log.info("%d branches older than %d days %s", deleted_branches, branch_age, op)
+    log.info("%d pull requests older than %d days %s", deleted_prs, pr_age, op)
+    log.info("%d tokens older than %d days revoked", revoked_tokens, token_age)
     util.stop_clock(start_time)
     sys.exit(0)
 

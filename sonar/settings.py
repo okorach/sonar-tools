@@ -23,6 +23,8 @@
 
 import re
 import json
+
+import sonar.logging as log
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
@@ -119,7 +121,7 @@ VALID_SETTINGS = set()
 class Setting(sqobject.SqObject):
     @classmethod
     def read(cls, key, endpoint, component=None):
-        util.logger.debug("Reading setting '%s' for %s", key, str(component))
+        log.debug("Reading setting '%s' for %s", key, str(component))
         uu = _uuid_p(key, component)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
@@ -140,7 +142,7 @@ class Setting(sqobject.SqObject):
 
     @classmethod
     def create(cls, key, endpoint, value=None, component=None):
-        util.logger.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
+        log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
         r = endpoint.post(_CREATE_API, params={"key": key, "component": component})
         if not r.ok:
             return None
@@ -149,7 +151,7 @@ class Setting(sqobject.SqObject):
 
     @classmethod
     def load(cls, key, endpoint, data, component=None):
-        util.logger.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
+        log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
         uu = _uuid_p(key, component)
         o = _OBJECTS[uu] if uu in _OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
@@ -161,7 +163,7 @@ class Setting(sqobject.SqObject):
         self.value = None
         self.inherited = None
         self.reload(data)
-        util.logger.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
+        log.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
         _OBJECTS[self.uuid()] = self
 
     def reload(self, data):
@@ -201,9 +203,9 @@ class Setting(sqobject.SqObject):
             return f"setting '{self.key}' of {str(self.component)}"
 
     def set(self, value):
-        util.logger.debug("%s set to '%s'", str(self), str(value))
+        log.debug("%s set to '%s'", str(self), str(value))
         if not self.is_settable():
-            util.logger.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
+            log.error("Setting '%s' does not seem to be a settable setting, trying to set anyway...", str(self))
         if value is None or value == "":
             # TODO: return endpoint.reset_setting(key)
             return True
@@ -214,7 +216,7 @@ class Setting(sqobject.SqObject):
         if self.endpoint.version() > (9, 4, 0) or not __is_cobol_setting(self.key):
             value = decode(self.key, value)
 
-        util.logger.debug("Setting %s to value '%s'", str(self), str(value))
+        log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None}
         if isinstance(value, list):
             if isinstance(value[0], str):
@@ -316,12 +318,12 @@ def __get_settings(endpoint: object, data: dict[str, str], component: object = N
         settings_type_list += ["setSecuredSettings"]
 
     for setting_type in settings_type_list:
-        util.logger.debug("Looking at %s", setting_type)
+        log.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
             o = Setting(key=key, endpoint=endpoint, component=component, data=None)
             if o.is_internal():
-                util.logger.debug("Skipping internal setting %s", s["key"])
+                log.debug("Skipping internal setting %s", s["key"])
                 continue
             o = Setting.load(key=key, endpoint=endpoint, component=component, data=sdata)
             settings[o.key] = o
@@ -351,7 +353,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
         o = get_visibility(endpoint, component)
         settings_dict[o.key] = o
     except exceptions.UnsupportedOperation as e:
-        util.logger.info("%s", str(e))
+        log.info("%s", str(e))
 
     if not endpoint.is_sonarcloud():
         o = get_new_code_period(endpoint, component)
@@ -402,9 +404,7 @@ def string_to_new_code(value):
 
 
 def set_new_code_period(endpoint, nc_type, nc_value, project_key=None, branch=None):
-    util.logger.debug(
-        "Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value)
-    )
+    log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
 
 
@@ -424,10 +424,10 @@ def get_visibility(endpoint, component):
 
 def set_visibility(endpoint, visibility, component=None):
     if component:
-        util.logger.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
+        log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
         return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility})
     else:
-        util.logger.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
+        log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
         r = endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility})
         return r
 
@@ -477,7 +477,7 @@ def decode(setting_key, setting_value):
 
 
 def reset_setting(endpoint, setting_key, project_key=None):
-    util.logger.info("Resetting setting '%s", setting_key)
+    log.info("Resetting setting '%s", setting_key)
     return endpoint.post("settings/reset", params={"key": setting_key, "component": project_key})
 
 

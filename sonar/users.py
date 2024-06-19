@@ -20,6 +20,8 @@
 
 import datetime as dt
 import json
+
+import sonar.logging as log
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
@@ -57,7 +59,7 @@ class User(sqobject.SqObject):
         self.nb_tokens = None  #: Nbr of tokens (int) - read-only
         self.__tokens = None
         self.__load(data)
-        util.logger.debug("Created %s", str(self))
+        log.debug("Created %s", str(self))
         _OBJECTS[self.login] = self
 
     @classmethod
@@ -71,7 +73,7 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User or None
         """
-        util.logger.debug("Loading user '%s'", data["login"])
+        log.debug("Loading user '%s'", data["login"])
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
@@ -89,7 +91,7 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User or None
         """
-        util.logger.debug("Creating user '%s'", login)
+        log.debug("Creating user '%s'", login)
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password if password else login
@@ -108,7 +110,7 @@ class User(sqobject.SqObject):
         """
         if login in _OBJECTS:
             return _OBJECTS[login]
-        util.logger.debug("Getting user '%s'", login)
+        log.debug("Getting user '%s'", login)
         for k, o in search(endpoint, params={"q": login}).items():
             if k == login:
                 return o
@@ -198,7 +200,7 @@ class User(sqobject.SqObject):
         :return: self
         :rtype: User
         """
-        util.logger.debug("Updating %s with %s", str(self), str(kwargs))
+        log.debug("Updating %s with %s", str(self), str(kwargs))
         params = {"login": self.login}
         my_data = vars(self)
         if self.is_local:
@@ -228,7 +230,7 @@ class User(sqobject.SqObject):
         """
         group = groups.Group.read(endpoint=self.endpoint, name=group_name)
         if not group:
-            util.logger.warning("Group '%s' does not exists, can't add membership for %s", group_name, str(self))
+            log.warning("Group '%s' does not exists, can't add membership for %s", group_name, str(self))
             return False
         return group.add_user(self.login)
 
@@ -278,7 +280,7 @@ class User(sqobject.SqObject):
         accounts_list = util.csv_to_list(accounts_list)
         if len(accounts_list) == 0:
             return False
-        util.logger.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
+        log.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
         return self.set_scm_accounts(list(set(self.scm_accounts) | set(accounts_list)))
 
     def set_scm_accounts(self, accounts_list):
@@ -290,7 +292,7 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         accounts_list = util.csv_to_list(accounts_list)
-        util.logger.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
+        log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
         r = self.post(UPDATE_API, params={"login": self.login, "scmAccount": accounts_list})
         if not r.ok:
             self.scm_accounts = []
@@ -307,10 +309,10 @@ class User(sqobject.SqObject):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        util.logger.debug("Auditing %s", str(self))
+        log.debug("Auditing %s", str(self))
         protected_users = util.csv_to_list(settings.get("audit.tokens.neverExpire", ""))
         if self.login in protected_users:
-            util.logger.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
+            log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
         today = dt.datetime.today().replace(tzinfo=dt.timezone.utc)
@@ -369,7 +371,7 @@ def search(endpoint: object, params: dict[str, str] = None) -> dict[str, object]
     :return: list of projects
     :rtype: dict{login: User}
     """
-    util.logger.debug("Searching users with params %s", str(params))
+    log.debug("Searching users with params %s", str(params))
     api = _SEARCH_API_SQ
     if endpoint.is_sonarcloud():
         api = _SEARCH_API_SC
@@ -391,7 +393,7 @@ def export(endpoint, full=False):
     :return: list of projects
     :rtype: dict{key: Project}
     """
-    util.logger.info("Exporting users")
+    log.info("Exporting users")
     u_list = {}
     for u_login, u_obj in search(endpoint=endpoint).items():
         u_list[u_login] = u_obj.to_json(full)
@@ -410,9 +412,9 @@ def audit(endpoint, audit_settings):
     :rtype: list[Problem]
     """
     if not audit_settings.get("audit.users", True):
-        util.logger.info("Auditing users is disabled, skipping...")
+        log.info("Auditing users is disabled, skipping...")
         return []
-    util.logger.info("--- Auditing users ---")
+    log.info("--- Auditing users ---")
     problems = []
     for _, u in search(endpoint=endpoint).items():
         problems += u.audit(audit_settings)
@@ -434,7 +436,7 @@ def get_login_from_name(name, endpoint):
     if not u_list:
         return None
     if len(u_list) > 1:
-        util.logger.warning("More than 1 user with name '%s', will return the 1st one", name)
+        log.warning("More than 1 user with name '%s', will return the 1st one", name)
     return list(u_list.keys()).pop(0)
 
 
@@ -448,9 +450,9 @@ def import_config(endpoint, config_data):
     :return: Nothing
     """
     if "users" not in config_data:
-        util.logger.info("No users to import")
+        log.info("No users to import")
         return
-    util.logger.info("Importing users")
+    log.info("Importing users")
     for login, data in config_data["users"].items():
         data = _decode(data)
         data.pop("login", None)

@@ -19,8 +19,9 @@
 #
 import enum
 import json
+
+import sonar.logging as log
 from sonar.audit import severities, types
-import sonar.utilities as util
 
 __RULES = {}
 
@@ -191,7 +192,7 @@ def load():
     global __RULES
     import pathlib
 
-    util.logger.info("Loading audit rules")
+    log.info("Loading audit rules")
     path = pathlib.Path(__file__).parent
     with open(path / "rules.json", "r", encoding="utf-8") as rulefile:
         rules = json.loads(rulefile.read())

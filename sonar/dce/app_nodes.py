@@ -25,6 +25,8 @@
 
 import datetime
 from dateutil.relativedelta import relativedelta
+
+import sonar.logging as log
 import sonar.utilities as util
 from sonar.audit import rules
 import sonar.sif_node as sifn
@@ -67,7 +69,7 @@ class AppNode(dce_nodes.DceNode):
         return self.json["Name"]
 
     def audit(self, audit_settings: dict[str, str] = None):
-        util.logger.info("Auditing %s", str(self))
+        log.info("Auditing %s", str(self))
         return (
             self.__audit_official()
             + self.__audit_health()
@@ -76,17 +78,17 @@ class AppNode(dce_nodes.DceNode):
         )
 
     def __audit_health(self):
-        util.logger.info("%s: Auditing node health", str(self))
+        log.info("%s: Auditing node health", str(self))
         if self.health() != dce_nodes.HEALTH_GREEN:
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_NOT_GREEN)
             return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), self.health()))]
 
-        util.logger.info("%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN)
+        log.info("%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN)
         return []
 
     def __audit_official(self):
         if _SYSTEM not in self.json:
-            util.logger.warning(
+            log.warning(
                 "%s: Official distribution information missing, audit skipped...",
                 str(self),
             )
@@ -95,7 +97,7 @@ class AppNode(dce_nodes.DceNode):
             rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)
             return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)))]
         else:
-            util.logger.debug("%s: Node is official distribution", str(self))
+            log.debug("%s: Node is official distribution", str(self))
             return []
 
 

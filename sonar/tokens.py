@@ -19,6 +19,8 @@
 #
 
 import json
+
+import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.utilities as util
 
@@ -50,7 +52,7 @@ class UserToken(sq.SqObject):
         if "lastConnectionDate" in json_data:
             self.last_connection_date = util.string_to_date(json_data["lastConnectionDate"])
         self.token = token
-        util.logger.debug("Created '%s'", str(self))
+        log.debug("Created '%s'", str(self))
 
     def __str__(self):
         """
@@ -66,7 +68,7 @@ class UserToken(sq.SqObject):
         """
         if self.name is None:
             return False
-        util.logger.info("Revoking token '%s' of user login '%s'", self.name, self.login)
+        log.info("Revoking token '%s' of user login '%s'", self.name, self.login)
         return self.post(UserToken.API_REVOKE, {"name": self.name, "login": self.login}).ok
 
 

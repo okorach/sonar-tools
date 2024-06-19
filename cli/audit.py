@@ -28,6 +28,7 @@ import datetime
 import json
 
 from sonar import errcodes, options, exceptions
+import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
 import sonar.utilities as util
 from sonar.audit import problem, config
@@ -45,18 +46,18 @@ _ALL_AUDITABLE = [
 
 
 def _audit_sif(sysinfo, audit_settings):
-    util.logger.info("Auditing SIF file '%s'", sysinfo)
+    log.info("Auditing SIF file '%s'", sysinfo)
     try:
         with open(sysinfo, "r", encoding="utf-8") as f:
             sysinfo = json.loads(f.read())
     except json.decoder.JSONDecodeError:
-        util.logger.critical("File %s does not seem to be a legit JSON file", sysinfo)
+        log.critical("File %s does not seem to be a legit JSON file", sysinfo)
         raise
     except FileNotFoundError:
-        util.logger.critical("File %s does not exist", sysinfo)
+        log.critical("File %s does not exist", sysinfo)
         raise
     except PermissionError:
-        util.logger.critical("No permission to open file %s", sysinfo)
+        log.critical("No permission to open file %s", sysinfo)
         raise
     sif_obj = sif.Sif(sysinfo)
     server_id = sif_obj.server_id()
@@ -145,11 +146,11 @@ def main():
     kwargs["format"] = util.deduct_format(kwargs["format"], ofile)
     problem.dump_report(problems, ofile, server_id, **kwargs)
 
-    util.logger.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
+    log.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
     if problems:
-        util.logger.warning("%d issues found during audit", len(problems))
+        log.warning("%d issues found during audit", len(problems))
     else:
-        util.logger.info("%d issues found during audit", len(problems))
+        log.info("%d issues found during audit", len(problems))
     util.stop_clock(start_time)
     sys.exit(0)
 

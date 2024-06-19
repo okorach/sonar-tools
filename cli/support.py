@@ -101,7 +101,7 @@ def __add_comment(comment, **kwargs):
 def __get_sysinfo_from_ticket(**kwargs):
     tix = kwargs["ticket"]
     url = f"{kwargs['url']}/rest/servicedeskapi/request/{tix}"
-    util.logger.debug("Check %s - URL %s", kwargs["ticket"], url)
+    log.debug("Check %s - URL %s", kwargs["ticket"], url)
     r = requests.get(url, auth=kwargs["creds"], timeout=10)
     if not r.ok:
         if r.status_code == HTTPStatus.NOT_FOUND:
@@ -111,7 +111,7 @@ def __get_sysinfo_from_ticket(**kwargs):
             util.exit_fatal(f"Ticket {tix}: URL '{url}' status code {r.status_code}", errcodes.SONAR_API)
 
     data = json.loads(r.text)
-    util.logger.debug("Ticket %s found: searching SIF", tix)
+    log.debug("Ticket %s found: searching SIF", tix)
     sif_list = {}
     for d in data["requestFieldValues"]:
         if d.get("fieldId", "") != "attachment":
@@ -122,14 +122,14 @@ def __get_sysinfo_from_ticket(**kwargs):
                 continue
             attachment_url = v["content"]
             attachment_file = attachment_url.split("/")[-1]
-            util.logger.info("Ticket %s: Verifying attachment '%s' found", tix, attachment_file)
+            log.info("Ticket %s: Verifying attachment '%s' found", tix, attachment_file)
             r = requests.get(attachment_url, auth=kwargs["creds"], timeout=10)
             if not r.ok:
                 util.exit_fatal(f"ERROR: Ticket {tix} get attachment status code {r.status_code}", errcodes.SONAR_API)
             try:
                 sif_list[attachment_file] = json.loads(r.text)
             except json.decoder.JSONDecodeError:
-                util.logger.info("Ticket %s: Attachment '%s' is not a JSON file, skipping", tix, attachment_file)
+                log.info("Ticket %s: Attachment '%s' is not a JSON file, skipping", tix, attachment_file)
                 continue
     return sif_list
 
@@ -154,18 +154,18 @@ def main():
             print(f"SIF file '{file}' audit:")
             if problems:
                 found_problems = True
-                util.logger.warning("%d issues found during audit", len(problems))
+                log.warning("%d issues found during audit", len(problems))
                 problem.dump_report(problems, None, format="csv")
                 for p in problems:
                     sev = "(x)" if p.severity in (severities.Severity.HIGH, severities.Severity.CRITICAL) else "(!)"
                     comment += f"{sev} {p.message}\n"
             else:
-                util.logger.info("%d issues found during audit", len(problems))
+                log.info("%d issues found during audit", len(problems))
                 print("No issues found is SIFs")
                 comment += "(y) No issues found\n"
 
         except sif.NotSystemInfo:
-            util.logger.info("File '%s' does not seem to be a legit JSON file, skipped", file)
+            log.info("File '%s' does not seem to be a legit JSON file, skipped", file)
 
     if kwargs.pop("comment"):
         __add_comment(comment, **kwargs)

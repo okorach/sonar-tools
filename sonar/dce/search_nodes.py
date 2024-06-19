@@ -24,6 +24,8 @@
 """
 
 from typing import Union
+
+import sonar.logging as log
 import sonar.utilities as util
 from sonar.audit import rules
 import sonar.audit.problem as pb
@@ -48,7 +50,7 @@ class SearchNode(nodes.DceNode):
         return "SEARCH"
 
     def audit(self):
-        util.logger.info("%s: Auditing...", str(self))
+        log.info("%s: Auditing...", str(self))
         return self.__audit_store_size() + self.__audit_available_disk()
 
     def max_heap(self) -> Union[int, None]:
@@ -57,15 +59,15 @@ class SearchNode(nodes.DceNode):
         try:
             sz = self.json[_ES_STATE]["JVM Heap Max"]
         except KeyError:
-            util.logger.warning("%s: Can't retrieve heap allocated, skipping this check", str(self))
+            log.warning("%s: Can't retrieve heap allocated, skipping this check", str(self))
             return None
         return int(float(sz.split(" ")[0]) * 1024)
 
     def __audit_store_size(self):
-        util.logger.info("%s: Auditing store size", str(self))
+        log.info("%s: Auditing store size", str(self))
         es_heap = self.max_heap()
         if es_heap is None:
-            util.logger.warning("%s: No ES heap found, audit of ES head is skipped", str(self))
+            log.warning("%s: No ES heap found, audit of ES head is skipped", str(self))
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             return [pb.Problem(broken_rule=rule, msg=rule.msg)]
 
@@ -75,7 +77,7 @@ class SearchNode(nodes.DceNode):
         es_max = 32 * 1024
         es_pb = []
         if index_size is None:
-            util.logger.warning("%s: Search server store size missing, audit of ES index vs heap skipped...", str(self))
+            log.warning("%s: Search server store size missing, audit of ES index vs heap skipped...", str(self))
         elif index_size == 0:
             rule = rules.get_rule(rules.RuleId.DCE_ES_INDEX_EMPTY)
             es_pb = [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)))]
@@ -86,18 +88,18 @@ class SearchNode(nodes.DceNode):
             rule = rules.get_rule(rules.RuleId.ES_HEAP_TOO_HIGH)
             es_pb = [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), es_heap, 32 * 1024))]
         else:
-            util.logger.info("%s: Search server memory %d MB is correct wrt to store size of %d MB", str(self), es_heap, index_size)
+            log.info("%s: Search server memory %d MB is correct wrt to store size of %d MB", str(self), es_heap, index_size)
         return es_pb
 
     def __audit_available_disk(self) -> list[pb.Problem]:
-        util.logger.info("%s: Auditing available disk space", str(self))
+        log.info("%s: Auditing available disk space", str(self))
         try:
             space_avail = util.int_memory(self.json[_ES_STATE]["Disk Available"])
         except ValueError:
-            util.logger.warning("%s: disk space available not found in SIF, skipping this check", str(self))
+            log.warning("%s: disk space available not found in SIF, skipping this check", str(self))
             return []
         store_size = self.store_size()
-        util.logger.info(
+        log.info(
             "%s: Search server available disk size of %d MB and store size is %d MB",
             str(self),
             space_avail,
@@ -114,7 +116,7 @@ class SearchNode(nodes.DceNode):
 
 
 def __audit_index_balance(searchnodes):
-    util.logger.info("Auditing search nodes store size balance")
+    log.info("Auditing search nodes store size balance")
     nbr_search_nodes = len(searchnodes)
     for i in range(nbr_search_nodes):
         size_i = searchnodes[i].store_size()
@@ -129,18 +131,18 @@ def __audit_index_balance(searchnodes):
                 continue
             rule = rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX)
             return [pb.Problem(broken_rule=rule, msg=rule.msg.format())]
-    util.logger.info("Search nodes store size balance acceptable")
+    log.info("Search nodes store size balance acceptable")
     return []
 
 
 def audit(sub_sif, sif):
-    util.logger.info("Auditing search node(s)")
+    log.info("Auditing search node(s)")
     searchnodes = []
     problems = []
     for n in sub_sif:
         searchnodes.append(SearchNode(n, sif))
     nbr_search_nodes = len(searchnodes)
-    util.logger.info("Auditing number of search nodes")
+    log.info("Auditing number of search nodes")
     if nbr_search_nodes < 3:
         rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_NOT_HA)
         problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format()))
@@ -151,7 +153,7 @@ def audit(sub_sif, sif):
             rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES)
         problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(nbr_search_nodes)))
     else:
-        util.logger.info("%d search nodes found, all OK", nbr_search_nodes)
+        log.info("%d search nodes found, all OK", nbr_search_nodes)
     for i in range(nbr_search_nodes):
         problems += searchnodes[i].audit()
     problems += __audit_index_balance(searchnodes)

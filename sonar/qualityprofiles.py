@@ -26,6 +26,8 @@ from queue import Queue
 from threading import Thread, Lock
 from requests import HTTPError
 import requests.utils
+
+import sonar.logging as log
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
 import sonar.sqobject as sq
@@ -80,7 +82,7 @@ class QualityProfile(sq.SqObject):
         self.__last_use = util.string_to_date(data.get("lastUsed", None))
         self.__last_update = util.string_to_date(data.get("rulesUpdatedAt", None))
 
-        util.logger.debug("Created %s", str(self))
+        log.debug("Created %s", str(self))
         _MAP[_format(self.name, self.language)] = self.key
         _OBJECTS[self.key] = self
 
@@ -98,9 +100,9 @@ class QualityProfile(sq.SqObject):
         :rtype: QualityProfile or None if not found
         """
         if not languages.exists(endpoint=endpoint, language=language):
-            util.logger.error("Language '%s' does not exist, quality profile creation aborted")
+            log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
-        util.logger.debug("Reading quality profile '%s' of language '%s'", name, language)
+        log.debug("Reading quality profile '%s' of language '%s'", name, language)
         key = get_id(name, language)
         if key in _OBJECTS:
             return _OBJECTS[key]
@@ -121,9 +123,9 @@ class QualityProfile(sq.SqObject):
         :rtype: QualityProfile or None if creation failed
         """
         if not languages.exists(endpoint=endpoint, language=language):
-            util.logger.error("Language '%s' does not exist, quality profile creation aborted")
+            log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
-        util.logger.debug("Creating quality profile '%s' of language '%s'", name, language)
+        log.debug("Creating quality profile '%s' of language '%s'", name, language)
         r = endpoint.post(_CREATE_API, params={"name": name, "language": language})
         if not r.ok:
             return None
@@ -140,7 +142,7 @@ class QualityProfile(sq.SqObject):
         :return: The quality profile object
         :rtype: QualityProfile
         """
-        util.logger.debug("Loading quality profile '%s' of language '%s'", data["name"], data["language"])
+        log.debug("Loading quality profile '%s' of language '%s'", data["name"], data["language"])
         return cls(endpoint=endpoint, key=data["key"], data=data)
 
     def __str__(self):
@@ -182,14 +184,14 @@ class QualityProfile(sq.SqObject):
         if parent_name is None:
             return False
         if get_object(name=parent_name, language=self.language) is None:
-            util.logger.warning("Can't set parent name '%s' to %s, parent not found", str(parent_name), str(self))
+            log.warning("Can't set parent name '%s' to %s, parent not found", str(parent_name), str(self))
             return False
         if self.parent_name is None or self.parent_name != parent_name:
             params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
             r = self.post("qualityprofiles/change_parent", params=params)
             return r.ok
         else:
-            util.logger.debug("Won't set parent of %s. It's the same as currently", str(self))
+            log.debug("Won't set parent of %s. It's the same as currently", str(self))
             return True
 
     def set_as_default(self):
@@ -260,9 +262,9 @@ class QualityProfile(sq.SqObject):
             api_params["params"] = ";".join([f"{k}={v}" for k, v in params.items()])
         r = self.post("qualityprofiles/activate_rule", params=api_params)
         if r.status_code == HTTPStatus.NOT_FOUND:
-            util.logger.error("Rule %s not found, can't activate it in %s", rule_key, str(self))
+            log.error("Rule %s not found, can't activate it in %s", rule_key, str(self))
         elif r.status_code == HTTPStatus.BAD_REQUEST:
-            util.logger.error("HTTP error %d while trying to activate rule %s in %s", r.status_code, rule_key, str(self))
+            log.error("HTTP error %d while trying to activate rule %s in %s", r.status_code, rule_key, str(self))
         return r.ok
 
     def activate_rules(self, ruleset):
@@ -274,7 +276,7 @@ class QualityProfile(sq.SqObject):
             return False
         ok = True
         for r_key, r_data in ruleset.items():
-            util.logger.debug("Activating rule %s in QG %s data %s", r_key, str(self), str(r_data))
+            log.debug("Activating rule %s in QG %s data %s", r_key, str(self), str(r_data))
             try:
                 sev = r_data if isinstance(r_data, str) else r_data.get("severity", None)
                 if "params" in r_data:
@@ -283,16 +285,16 @@ class QualityProfile(sq.SqObject):
                     ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
             except HTTPError as e:
                 ok = False
-                util.logger.warning("Activation of rule '%s' in %s failed: HTTP Error %d", r_key, str(self), e.response.status_code)
+                log.warning("Activation of rule '%s' in %s failed: HTTP Error %d", r_key, str(self), e.response.status_code)
         return ok
 
     def update(self, data, queue):
         if self.is_built_in:
-            util.logger.debug("Not updating built-in %s", str(self))
+            log.debug("Not updating built-in %s", str(self))
         else:
-            util.logger.debug("Updating %s with %s", str(self), str(data))
+            log.debug("Updating %s with %s", str(self), str(data))
             if "name" in data and data["name"] != self.name:
-                util.logger.info("Renaming %s with %s", str(self), data["name"])
+                log.info("Renaming %s with %s", str(self), data["name"])
                 self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
                 _MAP.pop(_format(self.name, self.language), None)
                 self.name = data["name"]
@@ -385,7 +387,7 @@ class QualityProfile(sq.SqObject):
         :return: dict result of the diff ("inLeft", "modified")
         :rtype: dict
         """
-        util.logger.debug("Comparing %s and %s", str(self), str(another_qp))
+        log.debug("Comparing %s and %s", str(self), str(another_qp))
         compare_result = self.compare(another_qp)
         diff_rules = {"addedRules": {}, "modifiedRules": {}}
         if len(compare_result["inLeft"]) > 0:
@@ -397,7 +399,7 @@ class QualityProfile(sq.SqObject):
         elif self.endpoint.version() >= (10, 3, 0):
             diff_rules["removedRules"] = {}
 
-        util.logger.debug("Returning QP diff %s", str(diff_rules))
+        log.debug("Returning QP diff %s", str(diff_rules))
         if qp_json_data is None:
             return (diff_rules, qp_json_data)
         for index in ("addedRules", "modifiedRules", "removedRules"):
@@ -425,7 +427,7 @@ class QualityProfile(sq.SqObject):
                 while more:
                     params["p"] = page
                     data = json.loads(self.get("qualityprofiles/projects", params=params).text)
-                    util.logger.debug("Got QP %s data = %s", self.key, str(data))
+                    log.debug("Got QP %s data = %s", self.key, str(data))
                     self._projects += [p["key"] for p in data["results"]]
                     page += 1
                     if self.endpoint.version() >= (10, 0, 0):
@@ -434,7 +436,7 @@ class QualityProfile(sq.SqObject):
                     else:
                         more = data["more"]
 
-                util.logger.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
+                log.debug("Projects for %s = '%s'", str(self), ", ".join(self._projects))
         return self._projects
 
     def used_by_project(self, project):
@@ -471,12 +473,12 @@ class QualityProfile(sq.SqObject):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        util.logger.debug("Auditing %s", str(self))
+        log.debug("Auditing %s", str(self))
         if self.is_built_in:
-            util.logger.info("%s is built-in, skipping audit", str(self))
+            log.info("%s is built-in, skipping audit", str(self))
             return []
 
-        util.logger.debug("Auditing %s (key '%s')", str(self), self.key)
+        log.debug("Auditing %s (key '%s')", str(self), self.key)
         problems = []
         age = util.age(self.last_update(), rounded=True)
         if age > audit_settings.get("audit.qualityProfiles.maxLastChangeAge", 180):
@@ -551,7 +553,7 @@ def audit(endpoint, audit_settings=None):
     :return: list of problems found
     :rtype: list[Problem]
     """
-    util.logger.info("--- Auditing quality profiles ---")
+    log.info("--- Auditing quality profiles ---")
     get_list(endpoint=endpoint)
     problems = []
     langs = {}
@@ -575,15 +577,15 @@ def hierarchize(qp_list):
     :return: Same list with child profiles nested in their parent
     :rtype: {<language>: {<qp_name>: {"children": <qp_list>; <qp_data>}}}
     """
-    util.logger.info("Organizing quality profiles in hierarchy")
+    log.info("Organizing quality profiles in hierarchy")
     for lang, qpl in qp_list.copy().items():
         for qp_name, qp_json_data in qpl.copy().items():
-            util.logger.debug("Treating %s:%s", lang, qp_name)
+            log.debug("Treating %s:%s", lang, qp_name)
             if "parentName" not in qp_json_data:
                 continue
             parent_qp_name = qp_json_data["parentName"]
             qp_json_data.pop("rules", None)
-            util.logger.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_json_data["parentName"])
+            log.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_json_data["parentName"])
             if _CHILDREN_KEY not in qp_list[lang][qp_json_data["parentName"]]:
                 qp_list[lang][qp_json_data["parentName"]][_CHILDREN_KEY] = {}
 
@@ -607,10 +609,10 @@ def export(endpoint, in_hierarchy=True, full=False):
     :return: dict structure of all quality profiles
     :rtype: dict
     """
-    util.logger.info("Exporting quality profiles")
+    log.info("Exporting quality profiles")
     qp_list = {}
     for qp in get_list(endpoint=endpoint).values():
-        util.logger.info("Exporting %s", str(qp))
+        log.info("Exporting %s", str(qp))
         json_data = qp.to_json(full=full)
         lang = json_data.pop("language")
         name = json_data.pop("name")
@@ -644,7 +646,7 @@ def get_object(name: str, language: str, endpoint: object = None) -> Union[Quali
 def _create_or_update_children(name, language, endpoint, children, queue):
     for qp_name, qp_data in children.items():
         qp_data[_KEY_PARENT] = name
-        util.logger.debug("Adding child profile '%s' to update queue", qp_name)
+        log.debug("Adding child profile '%s' to update queue", qp_name)
         queue.put((qp_name, language, endpoint, qp_data))
 
 
@@ -654,9 +656,9 @@ def __import_thread(queue):
         o = get_object(name=name, language=lang, endpoint=endpoint)
         if o is None:
             o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
-        util.logger.info("Importing quality profile '%s' of language '%s'", name, lang)
+        log.info("Importing quality profile '%s' of language '%s'", name, lang)
         o.update(qp_data, queue)
-        util.logger.info("Imported quality profile '%s' of language '%s'", name, lang)
+        log.info("Imported quality profile '%s' of language '%s'", name, lang)
         queue.task_done()
 
 
@@ -672,19 +674,19 @@ def import_config(endpoint, config_data, threads=8):
     :return: Nothing
     """
     if "qualityProfiles" not in config_data:
-        util.logger.info("No quality profiles to import")
+        log.info("No quality profiles to import")
         return
-    util.logger.info("Importing quality profiles")
+    log.info("Importing quality profiles")
     q = Queue(maxsize=0)
     get_list(endpoint=endpoint)
     for lang, lang_data in config_data["qualityProfiles"].items():
         if not languages.exists(endpoint=endpoint, language=lang):
-            util.logger.warning("Language '%s' does not exist, quality profile '%s' import skipped", lang, name)
+            log.warning("Language '%s' does not exist, quality profile '%s' import skipped", lang, name)
             continue
         for name, qp_data in lang_data.items():
             q.put((name, lang, endpoint, qp_data))
     for i in range(threads):
-        util.logger.debug("Starting quality profile import thread %d", i)
+        log.debug("Starting quality profile import thread %d", i)
         worker = Thread(target=__import_thread, args=[q])
         worker.setDaemon(True)
         worker.start()

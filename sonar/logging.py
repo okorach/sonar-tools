@@ -66,6 +66,41 @@ def get_logging_level(level: str) -> int:
     return lvl
 
 
+def debug(*params) -> None:
+    """DEBUG log"""
+    logger.debug(*params)
+
+
+def info(*params) -> None:
+    """INFO log"""
+    logger.info(*params)
+
+
+def warning(*params) -> None:
+    """WARNING log"""
+    logger.warning(*params)
+
+
+def warn(*params) -> None:
+    """WARNING log"""
+    warning(*params)
+
+
+def error(*params) -> None:
+    """ERROR log"""
+    logger.error(*params)
+
+
+def critical(*params) -> None:
+    """CRITICAL log"""
+    logger.critical(*params)
+
+
+def log(*params) -> None:
+    """Log with variable log level"""
+    logger.log(*params)
+
+
 def set_debug_level(level: str) -> None:
     """Sets the logging level"""
     logger.setLevel(get_logging_level(level))

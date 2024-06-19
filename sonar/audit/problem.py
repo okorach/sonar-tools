@@ -19,6 +19,8 @@
 #
 
 import csv
+
+import sonar.logging as log
 from sonar import utilities, options
 
 
@@ -37,7 +39,7 @@ class Problem:
             self.rule_id = broken_rule.id
             self.message = msg
 
-        utilities.logger.warning(msg)
+        log.warning(msg)
 
     def __str__(self):
         return f"Type: {self.type} - Severity: {self.severity} - Description: {self.message}"
@@ -65,7 +67,7 @@ def dump_report(problems: list[Problem], file: str, server_id: str = None, **kwa
     :return: Nothing
     :rtype: None
     """
-    utilities.logger.info("Writing report to %s", f"file '{file}'" if file else "stdout")
+    log.info("Writing report to %s", f"file '{file}'" if file else "stdout")
     if kwargs.get("format", "csv") == "json":
         __dump_json(problems=problems, file=file, server_id=server_id, **kwargs)
     else:

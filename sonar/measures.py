@@ -23,6 +23,8 @@ import re
 from http import HTTPStatus
 from requests.exceptions import HTTPError
 from sonar import metrics, exceptions
+
+import sonar.logging as log
 import sonar.utilities as util
 import sonar.sqobject as sq
 
@@ -122,7 +124,7 @@ def get(concerned_object, metrics_list, **kwargs):
     """
     params = util.replace_keys(("project", "application", "portfolio"), "component", concerned_object.search_params())
     params["metricKeys"] = util.list_to_csv(metrics_list)
-    util.logger.debug("Getting measures with %s", str(params))
+    log.debug("Getting measures with %s", str(params))
 
     try:
         data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
@@ -133,7 +135,7 @@ def get(concerned_object, metrics_list, **kwargs):
     m_dict = {m: None for m in metrics_list}
     for m in data["component"]["measures"]:
         m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
-    util.logger.debug("Returning measures %s", str(m_dict))
+    log.debug("Returning measures %s", str(m_dict))
     return m_dict
 
 
@@ -153,7 +155,7 @@ def get_history(concerned_object: object, metrics_list: list[str], **kwargs) -> 
 
     params = util.replace_keys(("project", "application", "portfolio"), "component", concerned_object.search_params())
     params["metrics"] = util.list_to_csv(metrics_list)
-    util.logger.debug("Getting measures history with %s", str(params))
+    log.debug("Getting measures history with %s", str(params))
 
     try:
         data = json.loads(concerned_object.endpoint.get(Measure.API_HISTORY, params={**kwargs, **params}).text)

@@ -25,6 +25,8 @@
 
 import json
 import requests.utils
+
+import sonar.logging as log
 from sonar import measures, components, sqobject, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
@@ -44,7 +46,7 @@ class PullRequest(components.Component):
         self.json = data
         self._last_analysis = None
         _OBJECTS[self._uuid()] = self
-        util.logger.debug("Created object %s", str(self))
+        log.debug("Created object %s", str(self))
 
     def __str__(self):
         return f"pull request key '{self.key}' of {str(self.project)}"
@@ -61,7 +63,7 @@ class PullRequest(components.Component):
         return self._last_analysis
 
     def get_measures(self, metrics_list):
-        util.logger.debug("self.endpoint = %s", str(self.endpoint))
+        log.debug("self.endpoint = %s", str(self.endpoint))
         m = measures.get(self, metrics_list)
         if "ncloc" in m:
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
@@ -80,7 +82,7 @@ class PullRequest(components.Component):
             rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
             problems.append(problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self), age), concerned_object=self))
         else:
-            util.logger.debug("%s age is %d days", str(self), age)
+            log.debug("%s age is %d days", str(self), age)
         return problems
 
     def search_params(self):
@@ -97,7 +99,7 @@ def _uuid(project_key, pull_request_key):
 
 def get_object(pull_request_key, project, data=None):
     if project.endpoint.edition() == "community":
-        util.logger.debug("Pull requests not available in Community Edition")
+        log.debug("Pull requests not available in Community Edition")
         return None
     p_id = _uuid(project.key, pull_request_key)
     if p_id not in _OBJECTS:
@@ -114,7 +116,7 @@ def get_list(project):
     :rtype: dict{PR_ID: PullRequest}
     """
     if project.endpoint.edition() == "community":
-        util.logger.debug(_UNSUPPORTED_IN_CE)
+        log.debug(_UNSUPPORTED_IN_CE)
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
     data = json.loads(project.get("project_pull_requests/list", params={"project": project.key}).text)

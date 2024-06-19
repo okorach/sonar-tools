@@ -34,6 +34,7 @@ import requests
 import jprops
 from requests.exceptions import HTTPError
 
+import sonar.logging as log
 import sonar.utilities as util
 from sonar import errcodes, settings, devops, webhooks, version, sif
 from sonar.permissions import permissions, global_permissions, permission_templates
@@ -112,7 +113,7 @@ class Platform:
             digits = 3
         if self._version is None:
             self._version = self.get("/api/server/version").text.split(".")
-            util.logger.debug("Version = %s", self._version)
+            log.debug("Version = %s", self._version)
         if as_string:
             return ".".join(self._version[0:digits])
         else:
@@ -236,7 +237,7 @@ class Platform:
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
             params["organization"] = self.organization
-        util.logger.debug("%s: %s", getattr(request, "__name__", repr(request)).upper(), self.__urlstring(api, params))
+        log.debug("%s: %s", getattr(request, "__name__", repr(request)).upper(), self.__urlstring(api, params))
 
         try:
             retry = True
@@ -259,9 +260,9 @@ class Platform:
             else:
                 _, msg = util.http_error(r)
                 if r.status_code in mute:
-                    util.logger.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
+                    log.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
                 else:
-                    util.logger.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
+                    log.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
                 raise e
         except requests.exceptions.Timeout as e:
             util.exit_fatal(str(e), errcodes.HTTP_TIMEOUT)
@@ -295,7 +296,7 @@ class Platform:
                 except HTTPError as e:
                     # Hack: SonarQube randomly returns Error 500 on this API, retry up to 10 times
                     if e.response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR and counter < 10:
-                        util.logger.error("HTTP Error 500 for api/system/info, retrying...")
+                        log.error("HTTP Error 500 for api/system/info, retrying...")
                         time.sleep(0.5)
                         counter += 1
                     else:
@@ -358,7 +359,7 @@ class Platform:
         return platform_settings
 
     def __settings(self, settings_list=None, include_not_set=False):
-        util.logger.info("getting global settings")
+        log.info("getting global settings")
         return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
 
     def get_setting(self, key):
@@ -424,7 +425,7 @@ class Platform:
         :return: dict of all properties with their values
         :rtype: dict
         """
-        util.logger.info("Exporting platform global settings")
+        log.info("Exporting platform global settings")
         json_data = {}
         for s in self.__settings(include_not_set=True).values():
             if s.is_internal():
@@ -457,9 +458,9 @@ class Platform:
         # FIXME: Handle several webhooks with same name
         current_wh_names = [wh.name for wh in current_wh.values()]
         wh_map = {wh.name: k for k, wh in current_wh.items()}
-        util.logger.debug("Current WH %s", str(current_wh_names))
+        log.debug("Current WH %s", str(current_wh_names))
         for wh_name, wh in webhooks_data.items():
-            util.logger.debug("Updating wh with name %s", wh_name)
+            log.debug("Updating wh with name %s", wh_name)
             if wh_name in current_wh_names:
                 current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
             else:
@@ -473,7 +474,7 @@ class Platform:
         :return: Nothing
         """
         if "globalSettings" not in config_data:
-            util.logger.info("No global settings to import")
+            log.info("No global settings to import")
             return
         config_data = config_data["globalSettings"]
         for section in ("analysisScope", "authentication", "generalSettings", "linters", "sastConfig", "tests", "thirdParty"):
@@ -505,7 +506,7 @@ class Platform:
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        util.logger.info("--- Auditing global settings ---")
+        log.info("--- Auditing global settings ---")
         problems = []
         platform_settings = self.get_settings()
         settings_url = f"{self.url}/admin/settings"
@@ -544,14 +545,14 @@ class Platform:
 
     def _audit_logs(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         if not audit_settings.get("audit.logs", True):
-            util.logger.info("Logs audit is disabled, skipping logs audit...")
+            log.info("Logs audit is disabled, skipping logs audit...")
             return []
         log_map = {"app": "sonar.log", "ce": "ce.log", "web": "web.log", "es": "es.log"}
         problems = []
         for logtype, logfile in log_map.items():
             logs = self.get("system/logs", params={"name": logtype}).text
             for line in logs.splitlines():
-                util.logger.debug("Inspection log line %s", line)
+                log.debug("Inspection log line %s", line)
                 try:
                     (_, level, _) = line.split(" ", maxsplit=2)
                 except ValueError:
@@ -559,10 +560,10 @@ class Platform:
                     continue
                 rule = None
                 if level == "ERROR":
-                    util.logger.warning("Error found in %s: %s", logfile, line)
+                    log.warning("Error found in %s: %s", logfile, line)
                     rule = rules.get_rule(rules.RuleId.ERROR_IN_LOGS)
                 elif level == "WARN":
-                    util.logger.warning("Warning found in %s: %s", logfile, line)
+                    log.warning("Warning found in %s: %s", logfile, line)
                     rule = rules.get_rule(rules.RuleId.WARNING_IN_LOGS)
                 if rule is not None:
                     problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(logfile, line), concerned_object=f"{self.url}/admin/system"))
@@ -572,11 +573,11 @@ class Platform:
             rule = rules.get_rule(rules.RuleId.DEPRECATION_WARNINGS)
             msg = rule.msg.format(nb_deprecation)
             problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=f"{self.url}/admin/system"))
-            util.logger.warning(msg)
+            log.warning(msg)
         return problems
 
     def _audit_project_default_visibility(self):
-        util.logger.info("Auditing project default visibility")
+        log.info("Auditing project default visibility")
         problems = []
         if self.version() < (8, 7, 0):
             resp = self.get(
@@ -587,14 +588,14 @@ class Platform:
         else:
             resp = self.get("settings/values", params={"keys": "projects.default.visibility"})
             visi = json.loads(resp.text)["settings"][0]["value"]
-        util.logger.info("Project default visibility is '%s'", visi)
+        log.info("Project default visibility is '%s'", visi)
         if config.get_property("checkDefaultProjectVisibility") and visi != "private":
             rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
             problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(visi), concerned_object=f"{self.url}/admin/projects_management"))
         return problems
 
     def _audit_admin_password(self):
-        util.logger.info("Auditing admin password")
+        log.info("Auditing admin password")
         problems = []
         try:
             r = requests.get(url=self.url + "/api/authentication/validate", auth=("admin", "admin"), timeout=self.http_timeout)
@@ -603,13 +604,13 @@ class Platform:
                 rule = rules.get_rule(rules.RuleId.DEFAULT_ADMIN_PASSWORD)
                 problems.append(pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self.url))
             else:
-                util.logger.info("User 'admin' default password has been changed")
+                log.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
             util.exit_fatal(str(e), errcodes.SONAR_API)
         return problems
 
     def __audit_group_permissions(self):
-        util.logger.info("Auditing group global permissions")
+        log.info("Auditing group global permissions")
         problems = []
         perms_url = f"{self.url}/admin/permissions"
         groups = self.global_permissions().groups()
@@ -638,7 +639,7 @@ class Platform:
         return problems
 
     def __audit_user_permissions(self):
-        util.logger.info("Auditing users global permissions")
+        log.info("Auditing users global permissions")
         problems = []
         perms_url = f"{self.url}/admin/permissions"
         users = self.global_permissions().users()
@@ -657,7 +658,7 @@ class Platform:
         return problems
 
     def _audit_global_permissions(self):
-        util.logger.info("--- Auditing global permissions ---")
+        log.info("--- Auditing global permissions ---")
         return self.__audit_user_permissions() + self.__audit_group_permissions()
 
     def _audit_lta_latest(self) -> list[pb.Problem]:
@@ -701,12 +702,12 @@ def _normalize_api(api):
 def _audit_setting_value(key, platform_settings, audit_settings, url):
     v = _get_multiple_values(4, audit_settings[key], "MEDIUM", "CONFIGURATION")
     if v is None:
-        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
+        log.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
     if v[0] not in platform_settings:
-        util.logger.warning(_NON_EXISTING_SETTING_SKIPPED, v[0])
+        log.warning(_NON_EXISTING_SETTING_SKIPPED, v[0])
         return []
-    util.logger.info("Auditing that setting %s has common/recommended value '%s'", v[0], v[1])
+    log.info("Auditing that setting %s has common/recommended value '%s'", v[0], v[1])
     s = platform_settings.get(v[0], "")
     if s == v[1]:
         return []
@@ -718,16 +719,16 @@ def _audit_setting_value(key, platform_settings, audit_settings, url):
 def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, url):
     v = _get_multiple_values(5, audit_settings[key], "MEDIUM", "CONFIGURATION")
     if v is None:
-        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
+        log.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
     if v[0] not in platform_settings:
-        util.logger.warning(_NON_EXISTING_SETTING_SKIPPED, v[0])
+        log.warning(_NON_EXISTING_SETTING_SKIPPED, v[0])
         return []
     if v[0] == "sonar.dbcleaner.daysBeforeDeletingInactiveShortLivingBranches" and sq_version >= (8, 0, 0):
-        util.logger.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit", v[0])
+        log.error("Setting %s is ineffective on SonaQube 8.0+, skipping audit", v[0])
         return []
     value, min_v, max_v = float(platform_settings[v[0]]), float(v[1]), float(v[2])
-    util.logger.info(
+    log.info(
         "Auditing that setting %s is within recommended range [%.2f-%.2f]",
         v[0],
         min_v,
@@ -743,24 +744,24 @@ def _audit_setting_in_range(key, platform_settings, audit_settings, sq_version, 
 def _audit_setting_set(key, check_is_set, platform_settings, audit_settings, url):
     v = _get_multiple_values(3, audit_settings[key], "MEDIUM", "CONFIGURATION")
     if v is None:
-        util.logger.error(WRONG_CONFIG_MSG, key, audit_settings[key])
+        log.error(WRONG_CONFIG_MSG, key, audit_settings[key])
         return []
-    util.logger.info("Auditing whether setting %s is set or not", v[0])
+    log.info("Auditing whether setting %s is set or not", v[0])
     if platform_settings.get(v[0], "") == "":  # Setting is not set
         if check_is_set:
             rule = rules.get_rule(rules.RuleId.SETTING_NOT_SET)
             return [pb.Problem(broken_rule=rule, msg=rule.msg.format(v[0]), concerned_object=url)]
-        util.logger.info("Setting %s is not set", v[0])
+        log.info("Setting %s is not set", v[0])
     else:
         if not check_is_set:
             rule = rules.get_rule(rules.RuleId.SETTING_SET)
             return [pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=url)]
-        util.logger.info("Setting %s is set with value %s", v[0], platform_settings[v[0]])
+        log.info("Setting %s is set with value %s", v[0], platform_settings[v[0]])
     return []
 
 
 def _audit_maintainability_rating_range(value: float, range: tuple[float, float], rating_letter: str, url: str):
-    util.logger.info(
+    log.info(
         "Checking that maintainability rating threshold %.1f%% for '%s' is within recommended range [%.1f%%-%.1f%%]",
         value * 100,
         rating_letter,
@@ -777,13 +778,13 @@ def _audit_maintainability_rating_range(value: float, range: tuple[float, float]
 def _audit_maintainability_rating_grid(platform_settings, audit_settings, url):
     thresholds = util.csv_to_list(platform_settings["sonar.technicalDebt.ratingGrid"])
     problems = []
-    util.logger.info("Auditing maintainability rating grid")
+    log.info("Auditing maintainability rating grid")
     for key in audit_settings:
         if not key.startswith("audit.globalSettings.maintainabilityRating"):
             continue
         (_, _, _, letter, _, _) = key.split(".")
         if letter not in ["A", "B", "C", "D"]:
-            util.logger.error("Incorrect audit configuration setting %s, skipping audit", key)
+            log.error("Incorrect audit configuration setting %s, skipping audit", key)
             continue
         value = float(thresholds[ord(letter.upper()) - 65])
         v = _get_multiple_values(4, audit_settings[key], sev.Severity.MEDIUM, typ.Type.CONFIGURATION)
@@ -817,7 +818,7 @@ def __lta_and_latest() -> tuple[tuple[int], tuple[int]]:
     global LTA
     global LATEST
     if LTA is None:
-        util.logger.debug("Attempting to reach Sonar update center")
+        log.debug("Attempting to reach Sonar update center")
         _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
         try:
             with open(tmpfile, "w", encoding="utf-8") as fp:
@@ -832,11 +833,11 @@ def __lta_and_latest() -> tuple[tuple[int], tuple[int]]:
             if len(v) == 2:
                 v.append("0")
             LATEST = tuple(int(n) for n in v)
-            util.logger.debug("Sonar update center says LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
+            log.debug("Sonar update center says LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
         except (EnvironmentError, requests.exceptions.HTTPError):
             LTA = _HARDCODED_LTA
             LATEST = _HARDCODED_LATEST
-            util.logger.debug("Sonar update center read failed, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
+            log.debug("Sonar update center read failed, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
         try:
             os.remove(tmpfile)
         except EnvironmentError:
@@ -872,6 +873,6 @@ def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
     """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
     if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
         new_url = "/".join(response.history[0].headers["Location"].split("/")[0:3])
-        util.logger.debug("Moved permanently to URL %s", new_url)
+        log.debug("Moved permanently to URL %s", new_url)
         return True, new_url
     return False, None

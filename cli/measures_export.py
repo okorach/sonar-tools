@@ -29,6 +29,7 @@ import csv
 from http import HTTPStatus
 from requests.exceptions import HTTPError
 
+import sonar.logging as log
 from sonar import metrics, platform, options, exceptions, projects, errcodes
 import sonar.utilities as util
 
@@ -56,12 +57,12 @@ def __get_json_measures_history(obj: object, wanted_metrics: list[str]) -> dict[
     try:
         data["history"] = obj.get_measures_history(wanted_metrics)
     except HTTPError as e:
-        util.logger.error("HTTP Error %s, measures history export of %s skipped", str(e), str(obj))
+        log.error("HTTP Error %s, measures history export of %s skipped", str(e), str(obj))
     return data
 
 
 def __get_object_measures(obj, wanted_metrics):
-    util.logger.info("Getting measures for %s", str(obj))
+    log.info("Getting measures for %s", str(obj))
     measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d["lastAnalysis"] = __last_analysis(obj)
     measures_d["url"] = obj.url()
@@ -93,7 +94,7 @@ def __get_wanted_metrics(kwargs: dict[str, str], endpoint: platform.Platform) ->
         if len(non_existing_metrics) > 0:
             miss = ",".join(non_existing_metrics)
             util.exit_fatal(f"Requested metric keys '{miss}' don't exist", errcodes.NO_SUCH_KEY)
-    util.logger.info("Exporting %s metrics", len(wanted_metrics))
+    log.info("Exporting %s metrics", len(wanted_metrics))
     return wanted_metrics
 
 
@@ -300,9 +301,9 @@ def main():
                 data.update(__get_object_measures(obj, wanted_metrics))
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.FORBIDDEN:
-                util.logger.error("Insufficient permission to retrieve measures of %s, export skipped for this object", str(obj))
+                log.error("Insufficient permission to retrieve measures of %s, export skipped for this object", str(obj))
             else:
-                util.logger.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
+                log.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
             continue
         measure_list += [data]
 
@@ -315,8 +316,8 @@ def main():
         __write_measures_csv(file=file, wanted_metrics=wanted_metrics, data=measure_list, **kwargs)
 
     if file:
-        util.logger.info("File '%s' created", file)
-    util.logger.info("%d PROJECTS %d branches", len(project_list), nb_branches)
+        log.info("File '%s' created", file)
+    log.info("%d PROJECTS %d branches", len(project_list), nb_branches)
     util.stop_clock(start_time)
     sys.exit(0)
 

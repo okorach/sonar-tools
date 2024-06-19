@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-import sonar.utilities as util
+import sonar.logging as log
 
 
 class Changelog:
@@ -199,5 +199,5 @@ class Changelog:
         elif self.is_technical_change():
             ctype = ("INTERNAL", None)
         else:
-            util.logger.warning("Could not determine changelog type for %s", str(self))
+            log.warning("Could not determine changelog type for %s", str(self))
         return ctype

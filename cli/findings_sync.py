@@ -31,6 +31,7 @@
 import sys
 import datetime
 
+import sonar.logging as log
 from sonar import platform, syncer, options, exceptions, projects, branches, errcodes
 import sonar.utilities as util
 
@@ -93,10 +94,10 @@ def __parse_args(desc):
 def __dump_report(report, file):
     txt = util.json_dump(report)
     if file is None:
-        util.logger.info("Dumping report to stdout")
+        log.info("Dumping report to stdout")
         print(txt)
     else:
-        util.logger.info("Dumping report to file '%s'", file)
+        log.info("Dumping report to file '%s'", file)
         with open(file, "w", encoding="utf-8") as fh:
             print(txt, file=fh)
 
@@ -136,7 +137,7 @@ def main() -> int:
         try:
             since = datetime.datetime.strptime(params["sinceDate"], util.SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
         except (ValueError, TypeError):
-            util.logger.warning("sinceDate value '%s' is not in the expected YYYY-MM-DD date format, ignored", params["sinceDate"])
+            log.warning("sinceDate value '%s' is not in the expected YYYY-MM-DD date format, ignored", params["sinceDate"])
     settings = {
         syncer.SYNC_ADD_COMMENTS: not params["nocomment"],
         syncer.SYNC_ADD_LINK: not params["nolink"],
@@ -154,36 +155,36 @@ def main() -> int:
         if not projects.exists(target_key, endpoint=target_env):
             raise exceptions.ObjectNotFound(source_key, f"Project key '{target_key}' does not exist")
         if source_branch is not None and target_branch is not None:
-            util.logger.info("Syncing findings between 2 branches")
+            log.info("Syncing findings between 2 branches")
             if source_url != target_url or source_branch != target_branch:
                 src_branch = branches.Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
                 tgt_branch = branches.Branch.get_object(projects.Project.get_object(source_key, source_env), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
-                util.logger.critical("Can't sync same source and target branch or a same project, aborting...")
+                log.critical("Can't sync same source and target branch or a same project, aborting...")
         else:
-            util.logger.info("Syncing findings between 2 projects (branch by branch)")
+            log.info("Syncing findings between 2 projects (branch by branch)")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
             src_project = projects.Project.get_object(key=source_key, endpoint=source_env)
             tgt_project = projects.Project.get_object(key=target_key, endpoint=target_env)
             (report, counters) = src_project.sync(tgt_project, sync_settings=settings)
 
         __dump_report(report, args.file)
-        util.logger.info("%d issues needed to be synchronized", counters.get("nb_to_sync", 0))
-        util.logger.info("%d issues were synchronized successfully", counters.get("nb_applies", 0))
-        util.logger.info(
+        log.info("%d issues needed to be synchronized", counters.get("nb_to_sync", 0))
+        log.info("%d issues were synchronized successfully", counters.get("nb_applies", 0))
+        log.info(
             "%d issues could not be synchronized because no match was found in target",
             counters.get("nb_no_match", 0),
         )
-        util.logger.info(
+        log.info(
             "%d issues could not be synchronized because there were multiple matches",
             counters.get("nb_multiple_matches", 0),
         )
-        util.logger.info(
+        log.info(
             "%d issues could not be synchronized because the match was approximate",
             counters.get("nb_approx_match", 0),
         )
-        util.logger.info(
+        log.info(
             "%d issues could not be synchronized because target issue already had a changelog",
             counters.get("nb_tgt_has_changelog", 0),
         )

@@ -18,7 +18,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-from sonar import utilities
+"""Projects permissions class"""
+
+import sonar.logging as log
 from sonar.permissions import permissions
 from sonar.audit import rules, problem
 
@@ -64,7 +66,7 @@ class ProjectPermissions(permissions.Permissions):
         return self
 
     def _set_perms(self, new_perms, apis, field, diff_func, **kwargs):
-        utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
+        log.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
         for p in permissions.PERMISSION_TYPES:
@@ -90,9 +92,9 @@ class ProjectPermissions(permissions.Permissions):
 
     def audit(self, audit_settings):
         if not audit_settings.get("audit.projects.permissions", True):
-            utilities.logger.debug("Auditing project permissions is disabled by configuration, skipping")
+            log.debug("Auditing project permissions is disabled by configuration, skipping")
             return []
-        utilities.logger.debug("Auditing %s", str(self))
+        log.debug("Auditing %s", str(self))
         return self.__audit_user_permissions(audit_settings) + self.__audit_group_permissions(audit_settings)
 
     def __audit_user_permissions(self, audit_settings):

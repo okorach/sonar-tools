@@ -22,9 +22,11 @@ import time
 import datetime
 import json
 import re
-from sonar.audit import rules, problem
+
+import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.utilities as util
+from sonar.audit import rules, problem
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -305,7 +307,7 @@ class Task(sq.SqObject):
                 status = t["status"]
             if wait_time >= timeout and status not in (SUCCESS, FAILED, CANCELED):
                 status = TIMEOUT
-            util.logger.debug("%s is '%s'", str(self), status)
+            log.debug("%s is '%s'", str(self), status)
         return status
 
     def scanner_context(self):
@@ -351,7 +353,7 @@ class Task(sq.SqObject):
             is_exception = False
             for exception in susp_exceptions:
                 if re.search(rf"{exception}", exclusion_pattern):
-                    util.logger.debug("Exclusion %s matches exception %s, no audit problem will be raised", exclusion_pattern, exception)
+                    log.debug("Exclusion %s matches exception %s, no audit problem will be raised", exclusion_pattern, exception)
                     is_exception = True
                     break
             if not is_exception:
@@ -363,7 +365,7 @@ class Task(sq.SqObject):
 
     def __audit_disabled_scm(self, audit_settings, scan_context):
         if not audit_settings.get("audit.project.scm.disabled", True):
-            util.logger.info("Auditing disabled SCM integration is turned off, skipping...")
+            log.info("Auditing disabled SCM integration is turned off, skipping...")
             return []
 
         if scan_context.get("sonar.scm.disabled", "false") == "false":
@@ -373,7 +375,7 @@ class Task(sq.SqObject):
 
     def __audit_warnings(self, audit_settings):
         if not audit_settings.get("audit.projects.analysisWarnings", True):
-            util.logger.info("Project analysis warnings auditing disabled, skipping...")
+            log.info("Project analysis warnings auditing disabled, skipping...")
             return []
         pbs = []
         warnings = self.warnings()
@@ -392,10 +394,10 @@ class Task(sq.SqObject):
 
     def __audit_failed_task(self, audit_settings):
         if not audit_settings.get("audit.projects.failedTasks", True):
-            util.logger.debug("Project failed background tasks auditing disabled, skipping...")
+            log.debug("Project failed background tasks auditing disabled, skipping...")
             return []
         if self._json["status"] != "FAILED":
-            util.logger.debug("Last bg task of %s has status %s...", str(self.concerned_object), self._json["status"])
+            log.debug("Last bg task of %s has status %s...", str(self.concerned_object), self._json["status"])
             return []
         rule = rules.get_rule(rules.RuleId.BG_TASK_FAILED)
         msg = rule.msg.format(str(self.concerned_object))
@@ -407,16 +409,16 @@ class Task(sq.SqObject):
         context = self.scanner_context()
         scanner_type = context.get("sonar.scanner.app", None)
         scanner_version = context.get("sonar.scanner.appVersion", None)
-        util.logger.debug("Scanner type = %s, Scanner version = %s", scanner_type, scanner_version)
+        log.debug("Scanner type = %s, Scanner version = %s", scanner_type, scanner_version)
         if not scanner_version:
-            util.logger.warning(
+            log.warning(
                 "%s has been scanned with scanner '%s' with no version, skipping check scanner version obsolescence",
                 str(self.concerned_object),
                 scanner_type,
             )
             return []
         if scanner_type not in SCANNER_VERSIONS:
-            util.logger.warning(
+            log.warning(
                 "%s has been scanned with scanner '%s' which is not inventoried, skipping check on scanner obsolescence",
                 str(self.concerned_object),
                 scanner_type,
@@ -437,11 +439,11 @@ class Task(sq.SqObject):
         scanner_version = tuple(scanner_version[0:3])
         str_version = ".".join([str(n) for n in scanner_version])
         versions_list = SCANNER_VERSIONS[scanner_type].keys()
-        util.logger.debug("versions = %s", str(versions_list))
+        log.debug("versions = %s", str(versions_list))
         try:
             release_date = SCANNER_VERSIONS[scanner_type][str_version]
         except KeyError:
-            util.logger.warning(
+            log.warning(
                 "Scanner '%s' version '%s' is not referenced in sonar-tools. "
                 "Scanner obsolescence check skipped. "
                 "Please report to author at https://github.com/okorach/sonar-tools/issues",
@@ -457,7 +459,7 @@ class Task(sq.SqObject):
 
         delta_days = (datetime.datetime.today() - release_date).days
         index = tuple_version_list.index(scanner_version)
-        util.logger.debug("Scanner used is %d versions old", index)
+        log.debug("Scanner used is %d versions old", index)
         if delta_days > audit_settings.get("audit.projects.scannerMaxAge", 730):
             rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER) if index >= 3 else rules.get_rule(rules.RuleId.NOT_LATEST_SCANNER)
             msg = rule.msg.format(str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False))
@@ -469,9 +471,9 @@ class Task(sq.SqObject):
         :meta private:
         """
         if not audit_settings.get("audit.projects.exclusions", True):
-            util.logger.debug("Project exclusions auditing disabled, skipping...")
+            log.debug("Project exclusions auditing disabled, skipping...")
             return []
-        util.logger.debug("Auditing %s", str(self))
+        log.debug("Auditing %s", str(self))
         problems = []
         if self.has_scanner_context():
             if audit_settings.get("audit.projects.exclusions", True):
@@ -482,11 +484,11 @@ class Task(sq.SqObject):
                     if context.get(prop, None) is None:
                         continue
                     for excl in util.csv_to_list(context[prop]):
-                        util.logger.debug("Pattern = '%s'", excl)
+                        log.debug("Pattern = '%s'", excl)
                         problems += self.__audit_exclusions(excl, susp_exclusions, susp_exceptions)
             problems += self.__audit_disabled_scm(audit_settings, context)
         elif type(self.concerned_object).__name__ == "Project":
-            util.logger.debug("Last background task of %s has no scanner context, can't audit it", str(self.concerned_object))
+            log.debug("Last background task of %s has no scanner context, can't audit it", str(self.concerned_object))
 
         problems += self.__audit_warnings(audit_settings)
         problems += self.__audit_failed_task(audit_settings)

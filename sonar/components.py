@@ -24,9 +24,10 @@
 """
 
 import json
+
+import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import settings, tasks, measures
-import sonar.utilities as util
 
 SEARCH_API = "components/search"
 _DETAILS_API = "components/show"
@@ -85,7 +86,7 @@ class Component(sq.SqObject):
         }
         data = json.loads(self.get("measures/component_tree", params=parms).text)
         nb_comp = data["paging"]["total"]
-        util.logger.debug("Found %d subcomponents to %s", nb_comp, str(self))
+        log.debug("Found %d subcomponents to %s", nb_comp, str(self))
         nb_pages = (nb_comp + 500 - 1) // 500
         comp_list = {}
         parms["ps"] = 500
@@ -97,11 +98,11 @@ class Component(sq.SqObject):
                 for m in d["measures"]:
                     nbr_issues += int(m["value"])
                 if with_issues and nbr_issues == 0:
-                    util.logger.debug("Subcomponent %s has 0 issues, skipping", d["key"])
+                    log.debug("Subcomponent %s has 0 issues, skipping", d["key"])
                     continue
                 comp_list[d["key"]] = Component(d["key"], self.endpoint, data=d)
                 comp_list[d["key"]].nbr_issues = nbr_issues
-                util.logger.debug("Component %s has %d issues", d["key"], nbr_issues)
+                log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list
 
     def get_number_of_filtered_issues(self, params):
@@ -179,9 +180,9 @@ class Component(sq.SqObject):
             and not audit_settings.get("audit.projects.failedTasks", True)
             and not audit_settings.get("audit.project.scm.disabled", True)
         ):
-            util.logger.debug("%s: Background task audit disabled, audit skipped", str(self))
+            log.debug("%s: Background task audit disabled, audit skipped", str(self))
             return []
-        util.logger.debug("Auditing last background task of %s", str(self))
+        log.debug("Auditing last background task of %s", str(self))
         last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
         if last_task:
             last_task.concerned_object = self

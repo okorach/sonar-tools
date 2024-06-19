@@ -24,9 +24,9 @@
 """
 
 import datetime
-from typing import Union
+
+import sonar.logging as log
 from dateutil.relativedelta import relativedelta
-import sonar.utilities as util
 
 from sonar.audit import rules
 import sonar.audit.problem as pb
@@ -52,11 +52,11 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, str]
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
-    util.logger.info("%s: Auditing CE background tasks", obj_name)
+    log.info("%s: Auditing CE background tasks", obj_name)
     problems = []
     ce_tasks = ce_data.get(_CE_TASKS)
     if ce_tasks is None:
-        util.logger.warning("%s: Can't find Compute Engine Tasks in SIF, audit on CE task is skipped", obj_name)
+        log.warning("%s: Can't find Compute Engine Tasks in SIF, audit on CE task is skipped", obj_name)
         return []
     ce_success = ce_tasks["Processed With Success"]
     ce_error = ce_tasks["Processed With Error"]
@@ -69,7 +69,7 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, str]
             rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_VERY_HIGH)
         problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(int(failure_rate * 100)), concerned_object=obj))
     else:
-        util.logger.info(
+        log.info(
             "%s: Number of failed background tasks (%d), and failure rate %d%% is OK",
             obj_name,
             ce_error,
@@ -83,7 +83,7 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, str]
         rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
         problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(ce_pending), concerned_object=obj))
     else:
-        util.logger.info("%s: Number of pending background tasks (%d) is OK", obj_name, ce_pending)
+        log.info("%s: Number of pending background tasks (%d) is OK", obj_name, ce_pending)
     return problems
 
 
@@ -99,16 +99,16 @@ def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limi
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
-    util.logger.info("%s: Auditing JVM RAM", obj_name)
+    log.info("%s: Auditing JVM RAM", obj_name)
     # On DCE we expect between 2 and 4 GB of RAM per App Node Web JVM
     (min_heap, max_heap) = heap_limits
     try:
         heap = jvm_state["Heap Max (MB)"]
     except KeyError:
-        util.logger.warning("%s: Can't find JVM Heap in SIF, auditing this part is skipped", obj_name)
+        log.warning("%s: Can't find JVM Heap in SIF, auditing this part is skipped", obj_name)
         return []
     if min_heap <= heap <= max_heap:
-        util.logger.info("%s: Heap of %d MB is within recommended range [%d-%d]", obj_name, heap, min_heap, max_heap)
+        log.info("%s: Heap of %d MB is within recommended range [%d-%d]", obj_name, heap, min_heap, max_heap)
         return []
 
     if heap < min_heap:
@@ -138,25 +138,25 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
-    util.logger.info("%s: Auditing JVM version", obj_name)
+    log.info("%s: Auditing JVM version", obj_name)
     try:
         str_v = jvm_props["java.specification.version"]
         if str_v.startswith("1."):
             str_v = str_v.split(".")[-1]
         java_version = int(str_v)
     except KeyError:
-        util.logger.warning("%s: Can't find Java version in SIF, auditing this part is skipped", obj_name)
+        log.warning("%s: Can't find Java version in SIF, auditing this part is skipped", obj_name)
         return []
     try:
         sq_version = obj.version()
     except KeyError:
-        util.logger.warning("%s: Can't find SonarQube version in SIF, auditing this part is skipped", obj_name)
+        log.warning("%s: Can't find SonarQube version in SIF, auditing this part is skipped", obj_name)
         return []
     sq_v_str = ".".join([str(i) for i in sq_version])
     if (java_version == 17 and sq_version >= (9, 6, 0)) or (
         java_version == 11 and (7, 9, 0) <= sq_version <= (9, 8, 0) or (java_version == 8 and (7, 9, 0) <= sq_version < (8, 9, 0))
     ):
-        util.logger.info("%s: SonarQube %s running on a supported java version (java %d)", obj_name, sq_v_str, java_version)
+        log.info("%s: SonarQube %s running on a supported java version (java %d)", obj_name, sq_v_str, java_version)
         return []
     rule = rules.get_rule(rules.RuleId.SETTING_WEB_WRONG_JAVA_VERSION)
     return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, sq_v_str, java_version), concerned_object=obj)]
@@ -176,12 +176,12 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
     """
     ed = obj.edition()
     if ed in ("community", "developer"):
-        util.logger.info("%s: %s edition, CE workers audit skipped...", obj_name, ed)
+        log.info("%s: %s edition, CE workers audit skipped...", obj_name, ed)
         return []
     try:
         ce_workers = ce_data[_CE_TASKS][_WORKER_COUNT]
     except KeyError:
-        util.logger.warning("%s: CE section missing from SIF, CE workers audit skipped...", obj_name)
+        log.warning("%s: CE section missing from SIF, CE workers audit skipped...", obj_name)
         return []
     MAX_WORKERS = 4  # EE
     if ed == "datacenter":
@@ -190,7 +190,7 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
         rule = rules.get_rule(rules.RuleId.TOO_MANY_CE_WORKERS)
         return [pb.Problem(broken_rule=rule, msg=rule.msg.format(ce_workers, MAX_WORKERS), concerned_object=obj)]
     else:
-        util.logger.info(
+        log.info(
             "%s: %d CE workers configured, correct compared to the max %d recommended",
             obj_name,
             ce_workers,
@@ -212,10 +212,10 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]) 
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
-    util.logger.info("%s: Auditing log level", obj_name)
+    log.info("%s: Auditing log level", obj_name)
     lvl = logging_data.get("Logs Level", None)
     if lvl is None:
-        util.logger.warning("%s: log level is missing, audit of log level is skipped...", obj_name)
+        log.warning("%s: log level is missing, audit of log level is skipped...", obj_name)
         return []
     if lvl == "TRACE":
         rule = rules.get_rule(rules.RuleId.LOGS_IN_TRACE_MODE)
@@ -223,7 +223,7 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]) 
     if lvl == "DEBUG":
         rule = rules.get_rule(rules.RuleId.LOGS_IN_DEBUG_MODE)
         return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name), concerned_object=obj)]
-    util.logger.info("%s: Log level is '%s', this is fine", obj_name, lvl)
+    log.info("%s: Log level is '%s', this is fine", obj_name, lvl)
     return []
 
 
@@ -240,10 +240,10 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
     """
     sq_version = obj.version()
     if sq_version is None:
-        util.logger.warning("%s: Version information is missing, audit on node version is skipped...", obj_name)
+        log.warning("%s: Version information is missing, audit on node version is skipped...", obj_name)
         return []
     st_time = obj.start_time()
-    util.logger.debug("%s: version %s, start time = %s", obj_name, obj.version(as_string=True), str(st_time))
+    log.debug("%s: version %s, start time = %s", obj_name, obj.version(as_string=True), str(st_time))
     if st_time > _RELEASE_DATE_9_9:
         current_lta = (9, 9, 0)
     elif st_time > _RELEASE_DATE_8_9:
@@ -256,7 +256,7 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
         current_lta = (5, 9, 0)
     lta_str = f"{current_lta[0]}.{current_lta[1]}"
     if sq_version >= current_lta:
-        util.logger.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, obj.version(as_string=True), lta_str)
+        log.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, obj.version(as_string=True), lta_str)
         return []
 
     rule = rules.get_rule(rules.RuleId.BELOW_LTA)

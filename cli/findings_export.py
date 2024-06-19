@@ -37,12 +37,12 @@
 import sys
 import os
 import time
-import datetime
 from queue import Queue
 import threading
 from threading import Thread
 from requests.exceptions import HTTPError
 
+import sonar.logging as log
 from sonar import platform, options, exceptions, projects, issues, hotspots, findings, errcodes
 import sonar.utilities as util
 
@@ -120,7 +120,7 @@ def parse_args(desc):
 
 
 def __write_header(file, format):
-    util.logger.info("Dumping report to %s", f"file '{file}'" if file else "stdout")
+    log.info("Dumping report to %s", f"file '{file}'" if file else "stdout")
     with util.open_file(file) as f:
         if format == "json":
             print("[", file=f)
@@ -170,7 +170,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
     :return: Nothing
     """
     i = len(findings_list)
-    util.logger.info("Writing %d more findings to %s in format %s", i, f"file '{file}'" if file else "stdout", file_format)
+    log.info("Writing %d more findings to %s in format %s", i, f"file '{file}'" if file else "stdout", file_format)
     with util.open_file(file, mode="a") as f:
         url = ""
         sep = kwargs.get(options.CSV_SEPARATOR, ",")
@@ -191,7 +191,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
                 if kwargs[options.WITH_URL]:
                     url = f'{sep}"{finding.url()}"'
                 print(f"{finding.to_csv(sep, DATES_WITHOUT_TIME)}{url}", file=f)
-    util.logger.debug("File written")
+    log.debug("File written")
 
 
 def __write_findings(queue, file_to_write, file_format, with_url, separator):
@@ -202,11 +202,11 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
             time.sleep(0.5)
         (data, _) = queue.get()
         if data == WRITE_END:
-            util.logger.debug("End of write queue reached")
+            log.debug("End of write queue reached")
             queue.task_done()
             break
 
-        util.logger.debug("Processing write queue for project")
+        log.debug("Processing write queue for project")
         if len(data) == 0:
             queue.task_done()
             continue
@@ -229,7 +229,7 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
 
         __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
         queue.task_done()
-    util.logger.debug("End of write findings")
+    log.debug("End of write findings")
 
 
 def __get_list(project: object, list_str: str, list_type: str) -> list[str]:
@@ -284,14 +284,14 @@ def __get_project_findings(queue, write_queue):
         if status_list or resol_list or type_list or sev_list:
             search_findings = False
 
-        util.logger.debug("WriteQueue %s task %s put", str(write_queue), key)
+        log.debug("WriteQueue %s task %s put", str(write_queue), key)
         if search_findings:
             try:
                 findings_list = findings.export_findings(
                     endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
                 )
             except HTTPError as e:
-                util.logger.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
                 findings_list = {}
             write_queue.put([findings_list, False])
         else:
@@ -302,11 +302,11 @@ def __get_project_findings(queue, write_queue):
                 try:
                     findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
                 except HTTPError as e:
-                    util.logger.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                    log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
                     findings_list = {}
             else:
-                util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
-                util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
+                log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
+                log.info("Selected types, severities, resolutions or statuses disables issue search")
 
             if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
                 new_params = hotspots.get_search_criteria(params)
@@ -314,12 +314,12 @@ def __get_project_findings(queue, write_queue):
                 try:
                     findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=new_params))
                 except HTTPError as e:
-                    util.logger.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                    log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
             else:
-                util.logger.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
-                util.logger.info("Selected types, severities, resolutions or statuses disables issue search")
+                log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
+                log.info("Selected types, severities, resolutions or statuses disables issue search")
             write_queue.put([findings_list, False])
-        util.logger.debug("Queue %s task %s done", str(queue), key)
+        log.debug("Queue %s task %s done", str(queue), key)
         queue.task_done()
 
 
@@ -332,28 +332,28 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
             prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
             for b in branches:
                 params["branch"] = b
-                util.logger.debug("Queue %s task %s put", str(my_queue), key)
+                log.debug("Queue %s task %s put", str(my_queue), key)
                 my_queue.put((key, endpoint, params.copy()))
             params.pop("branch", None)
             for p in prs:
                 params["pullRequest"] = p
-                util.logger.debug("Queue %s task %s put", str(my_queue), key)
+                log.debug("Queue %s task %s put", str(my_queue), key)
                 my_queue.put((key, endpoint, params.copy()))
             params.pop("pullRequest", None)
             if not (branches or prs):
-                util.logger.debug("Queue %s task %s put", str(my_queue), key)
+                log.debug("Queue %s task %s put", str(my_queue), key)
                 my_queue.put((key, endpoint, params.copy()))
         except HTTPError as e:
-            util.logger.critical("Error %s while exporting findings of object key %s, skipped", str(e), str(project))
+            log.critical("Error %s while exporting findings of object key %s, skipped", str(e), str(project))
 
     for i in range(threads):
-        util.logger.debug("Starting finding search thread 'findingSearch%d'", i)
+        log.debug("Starting finding search thread 'findingSearch%d'", i)
         worker = Thread(target=__get_project_findings, args=[my_queue, write_queue])
         worker.setDaemon(True)
         worker.setName(f"findingSearch{i}")
         worker.start()
 
-    util.logger.info("Starting finding writer thread 'findingWriter'")
+    log.info("Starting finding writer thread 'findingWriter'")
     write_worker = Thread(target=__write_findings, args=[write_queue, file, format, with_url, csv_separator])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
@@ -361,10 +361,10 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
 
     my_queue.join()
     # Tell the writer thread that writing is complete
-    util.logger.debug("WriteQueue %s task WRITE_END put", str(write_queue))
+    log.debug("WriteQueue %s task WRITE_END put", str(write_queue))
     write_queue.put((WRITE_END, True))
     write_queue.join()
-    util.logger.debug("WriteQueue joined")
+    log.debug("WriteQueue joined")
 
 
 def main():
@@ -379,13 +379,13 @@ def main():
     __verify_inputs(params)
 
     if util.is_sonarcloud_url(params["url"]) and params["useFindings"]:
-        util.logger.warning("--useFindings option is not available with SonarCloud, disabling the option to proceed")
+        log.warning("--useFindings option is not available with SonarCloud, disabling the option to proceed")
         params["useFindings"] = False
 
     for p in ("statuses", "createdAfter", "createdBefore", "resolutions", "severities", "types", "tags"):
         if params.get(p, None) is not None:
             if params["useFindings"]:
-                util.logger.warning("Selected search criteria %s will disable --useFindings", params[p])
+                log.warning("Selected search criteria %s will disable --useFindings", params[p])
             params["useFindings"] = False
             break
     try:
@@ -398,7 +398,7 @@ def main():
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
-    util.logger.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
+    log.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
     __write_header(fname, fmt)
     store_findings(
         project_list,
@@ -411,7 +411,7 @@ def main():
         csv_separator=kwargs[options.CSV_SEPARATOR],
     )
     __write_footer(fname, fmt)
-    util.logger.info("Returned findings: %d", TOTAL_FINDINGS)
+    log.info("Returned findings: %d", TOTAL_FINDINGS)
     util.stop_clock(start_time)
     sys.exit(0)
 

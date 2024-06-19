@@ -19,6 +19,8 @@
 #
 
 import json
+
+import sonar.logging as log
 import sonar.utilities as util
 import sonar.sqobject as sq
 
@@ -101,7 +103,7 @@ def search(endpoint, params=None):
 
 
 def get_list(endpoint, project_key=None):
-    util.logger.debug("Getting webhooks for project key %s", str(project_key))
+    log.debug("Getting webhooks for project key %s", str(project_key))
     params = None
     if project_key is not None:
         params = {"project": project_key}
@@ -131,7 +133,7 @@ def update(endpoint, name, **kwargs):
 
 
 def get_object(name, endpoint, project_key=None, data=None):
-    util.logger.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
+    log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
     u = _uuid(name, project_key)
     if u not in _OBJECTS:
         _ = WebHook(name=name, endpoint=endpoint, data=data)
@@ -148,7 +150,7 @@ def audit(endpoint):
     """
     :meta private:
     """
-    util.logger.info("Auditing webhooks")
+    log.info("Auditing webhooks")
     problems = []
     for wh in search(endpoint=endpoint).values():
         problems += wh.audit()

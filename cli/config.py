@@ -24,6 +24,7 @@
 import sys
 
 from sonar import options, exceptions, errcodes, utilities
+import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
 
@@ -98,7 +99,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     if "projects" in what:
         __check_projects_existence(endpoint, kwargs["projectKeys"])
 
-    utilities.logger.info("Exporting configuration from %s", kwargs["url"])
+    log.info("Exporting configuration from %s", kwargs["url"])
     full = kwargs["fullExport"]
     key_list = kwargs["projectKeys"]
     sq_settings = {}
@@ -115,19 +116,19 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         if not endpoint.is_sonarcloud():
             sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, full=full)
         else:
-            utilities.logger.warning("Quality gates export not yet supported for SonarCloud")
+            log.warning("Quality gates export not yet supported for SonarCloud")
     if options.WHAT_PROJECTS in what:
         sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=key_list, full=full, threads=kwargs["threads"])
     if options.WHAT_APPS in what:
         try:
             sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=key_list, full=full)
         except exceptions.UnsupportedOperation as e:
-            utilities.logger.info("%s", e.message)
+            log.info("%s", e.message)
     if options.WHAT_PORTFOLIOS in what:
         try:
             sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=key_list, full=full)
         except exceptions.UnsupportedOperation as e:
-            utilities.logger.info("%s", e.message)
+            log.info("%s", e.message)
     if options.WHAT_USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint, full=full)
     if options.WHAT_GROUPS in what:
@@ -136,12 +137,12 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     utilities.remove_nones(sq_settings)
     with utilities.open_file(kwargs["file"]) as fd:
         print(utilities.json_dump(sq_settings), file=fd)
-    utilities.logger.info("Exporting configuration from %s completed", kwargs["url"])
+    log.info("Exporting configuration from %s completed", kwargs["url"])
 
 
 def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Imports a platform configuration from a JSON file"""
-    utilities.logger.info("Importing configuration to %s", kwargs["url"])
+    log.info("Importing configuration to %s", kwargs["url"])
     key_list = kwargs["projectKeys"]
     data = utilities.load_json_file(kwargs["file"])
     if options.WHAT_GROUPS in what:
@@ -164,7 +165,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         applications.import_config(endpoint, data, key_list=key_list)
     if options.WHAT_PORTFOLIOS in what:
         portfolios.import_config(endpoint, data, key_list=key_list)
-    utilities.logger.info("Importing configuration to %s completed", kwargs["url"])
+    log.info("Importing configuration to %s completed", kwargs["url"])
 
 
 def main():

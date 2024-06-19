@@ -24,6 +24,8 @@ import json
 from urllib.parse import unquote
 from requests.exceptions import HTTPError
 import requests.utils
+
+import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import measures, components, syncer, settings, exceptions, projects
 import sonar.utilities as util
@@ -109,7 +111,7 @@ class Branch(components.Component):
         self._last_analysis = None
         self._keep_when_inactive = None
         _OBJECTS[self.uuid()] = self
-        util.logger.debug("Created object %s", str(self))
+        log.debug("Created object %s", str(self))
 
     def __str__(self):
         return f"branch '{self.name}' of {str(self.concerned_object)}"
@@ -191,7 +193,7 @@ class Branch(components.Component):
             return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                util.logger.warning("Can't delete %s, it's the main branch", str(self))
+                log.warning("Can't delete %s, it's the main branch", str(self))
             return False
 
     def new_code(self) -> str:
@@ -224,7 +226,7 @@ class Branch(components.Component):
         :return: The branch new code period definition
         :rtype: str
         """
-        util.logger.debug("Exporting %s", str(self))
+        log.debug("Exporting %s", str(self))
         data = {settings.NEW_CODE_PERIOD: self.new_code()}
         if self.is_main():
             data["isMain"] = True
@@ -258,9 +260,9 @@ class Branch(components.Component):
             raise exceptions.UnsupportedOperation(f"{str(self)} can't be renamed since it's not the main branch")
 
         if self.name == new_name:
-            util.logger.debug("Skipping rename %s with same new name", str(self))
+            log.debug("Skipping rename %s with same new name", str(self))
             return False
-        util.logger.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
+        log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         try:
             self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name})
         except HTTPError as e:
@@ -347,7 +349,7 @@ class Branch(components.Component):
         :rtype: tuple(report, counters)
         """
         report, counters = [], {}
-        util.logger.info("Syncing %s (%s) and %s (%s) issues", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
+        log.info("Syncing %s (%s) and %s (%s) issues", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
         (report, counters) = syncer.sync_lists(
             list(self.get_issues().values()),
             list(another_branch.get_issues().values()),
@@ -355,7 +357,7 @@ class Branch(components.Component):
             another_branch,
             sync_settings=sync_settings,
         )
-        util.logger.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
+        log.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
         (tmp_report, tmp_counts) = syncer.sync_lists(
             list(self.get_hotspots().values()),
             list(another_branch.get_hotspots().values()),
@@ -375,15 +377,15 @@ class Branch(components.Component):
         max_age = audit_settings.get("audit.projects.branches.maxLastAnalysisAge", 30)
         problems = []
         if self.is_main():
-            util.logger.debug("%s is main (not purgeable)", str(self))
+            log.debug("%s is main (not purgeable)", str(self))
         elif self.is_kept_when_inactive():
-            util.logger.debug("%s is kept when inactive (not purgeable)", str(self))
+            log.debug("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
             rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
             msg = rule.msg.format(str(self), age)
             problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         else:
-            util.logger.debug("%s age is %d days", str(self), age)
+            log.debug("%s age is %d days", str(self), age)
         return problems
 
     def audit(self, audit_settings):
@@ -396,16 +398,16 @@ class Branch(components.Component):
         :rtype: list[Problem]
         """
         if audit_settings.get("audit.project.branches", True):
-            util.logger.debug("Auditing %s", str(self))
+            log.debug("Auditing %s", str(self))
             try:
                 return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.FORBIDDEN:
-                    util.logger.error("Not enough permission to fully audit %s", str(self))
+                    log.error("Not enough permission to fully audit %s", str(self))
                 else:
-                    util.logger.error("HTTP error %s while auditing %s", str(e), str(self))
+                    log.error("HTTP error %s while auditing %s", str(e), str(self))
         else:
-            util.logger.debug("Branch audit disabled, skipping audit of %s", str(self))
+            log.debug("Branch audit disabled, skipping audit of %s", str(self))
         return []
 
     def search_params(self):
@@ -436,10 +438,10 @@ def get_list(project):
     :rtype: dict{branch_name: Branch}
     """
     if project.endpoint.edition() == "community":
-        util.logger.debug(_UNSUPPORTED_IN_CE)
+        log.debug(_UNSUPPORTED_IN_CE)
         raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
 
-    util.logger.debug("Reading all branches of %s", str(project))
+    log.debug("Reading all branches of %s", str(project))
     data = json.loads(project.endpoint.get(APIS["list"], params={"project": project.key}).text)
     return {branch["name"]: Branch.load(project, branch["name"], data=branch) for branch in data.get("branches", {})}
 

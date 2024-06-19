@@ -23,6 +23,8 @@ import re
 import datetime
 from queue import Queue
 from threading import Thread
+
+import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar import projects
@@ -161,7 +163,7 @@ class Finding(sq.SqObject):
         elif "path" in self._json:
             return self._json["path"]
         else:
-            util.logger.warning("Can't find file name for %s", str(self))
+            log.warning("Can't find file name for %s", str(self))
             return None
 
     def to_csv(self, separator: str = ",", without_time: bool = False):
@@ -269,7 +271,7 @@ class Finding(sq.SqObject):
         :return: Whether the finding has a changelog
         :rtype: bool
         """
-        # util.logger.debug("%s has %d changelogs", str(self), len(self.changelog()))
+        # log.debug("%s has %d changelogs", str(self), len(self.changelog()))
         if added_after is not None and added_after > self.modification_date:
             return False
         return len(self.changelog()) > 0
@@ -299,7 +301,7 @@ class Finding(sq.SqObject):
         """
         :meta private:
         """
-        util.logger.debug(
+        log.debug(
             "Issue %s: Checking if modifiers %s are different from user %s",
             str(self),
             str(self.modifiers()),
@@ -307,7 +309,7 @@ class Finding(sq.SqObject):
         )
         # If no account dedicated to sync is provided, finding can be synced only if no changelog
         if user_list is None:
-            util.logger.debug("Allowed user list empty, checking if issue has changelog")
+            log.debug("Allowed user list empty, checking if issue has changelog")
             return not self.has_changelog()
         # Else, finding can be synced only if changes were performed by syncer accounts
         for u in self.modifiers():
@@ -371,34 +373,30 @@ class Finding(sq.SqObject):
         exact_matches = []
         approx_matches = []
         match_but_modified = []
-        util.logger.debug("Searching for an exact match of %s", self.uuid())
+        log.debug("Searching for an exact match of %s", self.uuid())
         for finding in findings_list:
             if self.uuid() == finding.uuid():
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
-                    util.logger.info("Issues %s and %s are strictly identical and can be synced", self.uuid(), finding.uuid())
+                    log.info("Issues %s and %s are strictly identical and can be synced", self.uuid(), finding.uuid())
                     exact_matches.append(finding)
                 else:
-                    util.logger.info(
-                        "Issues %s and %s are strictly identical but target already has changes, cannot be synced", self.uuid(), finding.uuid()
-                    )
+                    log.info("Issues %s and %s are strictly identical but target already has changes, cannot be synced", self.uuid(), finding.uuid())
                     match_but_modified.append(finding)
                 return exact_matches, approx_matches, match_but_modified
 
-        util.logger.debug("No exact match, searching for an approximate match of %s", self.uuid())
+        log.debug("No exact match, searching for an approximate match of %s", self.uuid())
         for finding in findings_list:
             if finding.almost_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
-                    util.logger.info("Issues %s and %s are almost identical and could be synced", self.uuid(), finding.uuid())
+                    log.info("Issues %s and %s are almost identical and could be synced", self.uuid(), finding.uuid())
                     approx_matches.append(finding)
                 else:
-                    util.logger.info(
-                        "Issues %s and %s are almost identical but target already has changes, cannot be synced", self.uuid(), finding.uuid()
-                    )
+                    log.info("Issues %s and %s are almost identical but target already has changes, cannot be synced", self.uuid(), finding.uuid())
                     match_but_modified.append(finding)
             else:
-                util.logger.debug("Issues %s and %s are not siblings", self.uuid(), finding.uuid())
+                log.debug("Issues %s and %s are not siblings", self.uuid(), finding.uuid())
         return exact_matches, approx_matches, match_but_modified
 
     def do_transition(self, transition: str) -> bool:
@@ -419,7 +417,7 @@ def export_findings(endpoint, project_key, branch=None, pull_request=None):
     :return: list of Findings (Issues or Hotspots)
     :rtype: dict{<key>: <Finding>}
     """
-    util.logger.info("Using new export findings to speed up issue export")
+    log.info("Using new export findings to speed up issue export")
     return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch, pull_request)
 
 
@@ -437,19 +435,19 @@ def __get_changelog(queue: Queue[Finding], added_after: datetime.datetime = None
         findings.has_changelog(added_after=added_after)
         findings.has_comments()
         queue.task_done()
-    util.logger.debug("Queue empty, exiting thread")
+    log.debug("Queue empty, exiting thread")
 
 
 def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = None, threads: int = 8) -> None:
     """Performs a mass, multithreaded collection of finding changelogs (one API call per issue)"""
     if len(issue_list) == 0:
         return
-    util.logger.info("Mass changelog collection for %d findings on %d threads", len(issue_list), threads)
+    log.info("Mass changelog collection for %d findings on %d threads", len(issue_list), threads)
     q = Queue(maxsize=0)
     for finding in issue_list:
         q.put(finding)
     for i in range(threads):
-        util.logger.debug("Starting issue changelog thread %d", i)
+        log.debug("Starting issue changelog thread %d", i)
         worker = Thread(target=__get_changelog, args=(q, added_after))
         worker.setDaemon(True)
         worker.setName(f"Changelog{i}")

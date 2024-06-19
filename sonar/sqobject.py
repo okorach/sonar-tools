@@ -28,6 +28,8 @@ from http import HTTPStatus
 from queue import Queue
 from threading import Thread
 from requests.exceptions import HTTPError
+
+import sonar.logging as log
 from sonar import utilities, exceptions
 
 
@@ -82,7 +84,7 @@ def __search_thread(queue):
         (endpoint, api, objects, key_field, returned_field, object_class, params, page) = queue.get()
         page_params = params.copy()
         page_params["p"] = page
-        utilities.logger.debug("Threaded search: API = %s params = %s", api, str(params))
+        log.debug("Threaded search: API = %s params = %s", api, str(params))
         data = json.loads(endpoint.get(api, params=page_params).text)
         for obj in data[returned_field]:
             if object_class.__name__ in ("QualityProfile", "QualityGate", "Groups", "Portfolio", "Project"):
@@ -116,7 +118,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
     for page in range(2, nb_pages + 1):
         q.put((endpoint, api, objects_list, key_field, returned_field, object_class, new_params, page))
     for i in range(threads):
-        utilities.logger.debug("Starting %s search thread %d", object_class.__name__, i)
+        log.debug("Starting %s search thread %d", object_class.__name__, i)
         worker = Thread(target=__search_thread, args=[q])
         worker.setDaemon(True)
         worker.setName(f"Search{i}")
@@ -127,10 +129,10 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
 
 def delete_object(object, api, params, map):
     try:
-        utilities.logger.info("Deleting %s", str(object))
+        log.info("Deleting %s", str(object))
         r = object.post(api, params=params, mute=(HTTPStatus.NOT_FOUND,))
         map.pop(object.uuid(), None)
-        utilities.logger.info("Successfully deleted %s", str(object))
+        log.info("Successfully deleted %s", str(object))
         return r.ok
     except HTTPError as e:
         if e.response.status_code == HTTPStatus.NOT_FOUND:

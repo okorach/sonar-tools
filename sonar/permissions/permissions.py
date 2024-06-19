@@ -18,10 +18,13 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstract permissions class, parent of sub-objects permissions classes"""
+
 import json
 from http import HTTPStatus
 from abc import ABC, abstractmethod
 
+import sonar.logging as log
 from sonar import utilities, errcodes
 
 COMMUNITY_GLOBAL_PERMISSIONS = {
@@ -196,7 +199,7 @@ class Permissions(ABC):
             allowed_perms += list(ENTERPRISE_GLOBAL_PERMISSIONS.keys())
         for p in perms.copy():
             if p not in allowed_perms:
-                utilities.logger.warning("Can't set permission '%s' on a %s edition", ENTERPRISE_GLOBAL_PERMISSIONS[p], ed)
+                log.warning("Can't set permission '%s' on a %s edition", ENTERPRISE_GLOBAL_PERMISSIONS[p], ed)
                 perms.remove(p)
         return perms
 
@@ -218,7 +221,7 @@ class Permissions(ABC):
                 if perm_filter is None:
                     continue
                 perm_counter += len([1 for p in elem_perms if p in perm_filter])
-        utilities.logger.debug("Perm counts = %d", (elem_counter if perm_filter is None else perm_counter))
+        log.debug("Perm counts = %d", (elem_counter if perm_filter is None else perm_counter))
         return elem_counter if perm_filter is None else perm_counter
 
     def _get_api(self, api, perm_type, ret_field, **extra_params):
