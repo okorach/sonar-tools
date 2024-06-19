@@ -80,8 +80,6 @@ __DEFAULT_CSV_SEPARATOR = ","
 
 FORMAT = "format"
 
-DEFAULT = "__default__"
-
 
 def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> argparse.ArgumentParser:
     """Parses arguments, applies default settings and perform common environment checks"""
