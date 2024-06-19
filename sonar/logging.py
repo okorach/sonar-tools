@@ -17,12 +17,12 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-""" sonar-tools logger """
+""" sonar-tools logging module """
 
 import logging
 
 __DEFAULT_LOGGER_NAME = "sonar-tools"
-__DEFAULT_LOGFILE = f"{__DEFAULT_LOGGER_NAME}.log"
+__LOGGER = logging.getLogger(__DEFAULT_LOGGER_NAME)
 __DEFAULT_LOG_FORMAT = "%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s"
 __FORMATTER = logging.Formatter(__DEFAULT_LOG_FORMAT)
 
@@ -32,23 +32,19 @@ SQ_DATE_FORMAT = "%Y-%m-%d"
 SQ_TIME_FORMAT = "%H:%M:%S"
 
 
-# By default log as sonar-tools on stderr only
-logger = logging.getLogger(__DEFAULT_LOGGER_NAME)
-
-
 def set_logger(filename: str = None, logger_name: str = None) -> None:
     """Sets the logging file (stderr only by default) and the logger name"""
-    global logger
+    global __LOGGER
     if logger_name is not None:
-        logger = logging.getLogger(logger_name)
+        __LOGGER = logging.getLogger(logger_name)
     if filename is not None:
         fh = logging.FileHandler(filename)
-        logger.addHandler(fh)
+        __LOGGER.addHandler(fh)
         fh.setFormatter(__FORMATTER)
     ch = logging.StreamHandler()
-    logger.addHandler(ch)
+    __LOGGER.addHandler(ch)
     ch.setFormatter(__FORMATTER)
-    logger.addHandler(ch)
+    __LOGGER.addHandler(ch)
 
 
 def get_logging_level(level: str) -> int:
@@ -68,17 +64,17 @@ def get_logging_level(level: str) -> int:
 
 def debug(*params) -> None:
     """DEBUG log"""
-    logger.debug(*params)
+    __LOGGER.debug(*params)
 
 
 def info(*params) -> None:
     """INFO log"""
-    logger.info(*params)
+    __LOGGER.info(*params)
 
 
 def warning(*params) -> None:
     """WARNING log"""
-    logger.warning(*params)
+    __LOGGER.warning(*params)
 
 
 def warn(*params) -> None:
@@ -88,20 +84,25 @@ def warn(*params) -> None:
 
 def error(*params) -> None:
     """ERROR log"""
-    logger.error(*params)
+    __LOGGER.error(*params)
 
 
 def critical(*params) -> None:
     """CRITICAL log"""
-    logger.critical(*params)
+    __LOGGER.critical(*params)
+
+
+def fatal(*params) -> None:
+    """FATAL log"""
+    __LOGGER.fatal(*params)
 
 
 def log(*params) -> None:
     """Log with variable log level"""
-    logger.log(*params)
+    __LOGGER.log(*params)
 
 
 def set_debug_level(level: str) -> None:
     """Sets the logging level"""
-    logger.setLevel(get_logging_level(level))
-    logger.info("Set logging level to %s", level)
+    __LOGGER.setLevel(get_logging_level(level))
+    __LOGGER.info("Set logging level to %s", level)

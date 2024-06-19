@@ -33,7 +33,8 @@ from datetime import timezone
 from typing import Union
 import requests
 
-from sonar import version, errcodes, logging
+import sonar.logging as log
+from sonar import version, errcodes
 
 
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
@@ -44,17 +45,17 @@ SQ_TIME_FORMAT = "%H:%M:%S"
 
 def check_last_sonar_tools_version() -> None:
     """Checks last version of sonar-tools on pypi and displays a warning if the currently used version is older"""
-    logging.logger.info("Checking latest sonar-version on pypi.org")
+    log.info("Checking latest sonar-version on pypi.org")
     try:
         r = requests.get(url="https://pypi.org/simple/sonar-tools", headers={"Accept": "application/vnd.pypi.simple.v1+json"}, timeout=10)
         r.raise_for_status()
     except (requests.RequestException, requests.exceptions.HTTPError, requests.exceptions.Timeout) as e:
-        logging.logger.info("Can't access pypi.org, error %s", str(e))
+        log.info("Can't access pypi.org, error %s", str(e))
         return
     txt_version = json.loads(r.text)["versions"][-1]
-    logging.logger.info("Latest sonar-tools version is %s", txt_version)
+    log.info("Latest sonar-tools version is %s", txt_version)
     if tuple(".".split(txt_version)) > tuple(".".split(version.PACKAGE_VERSION)):
-        logging.logger.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
+        log.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
 
 
 def token_type(token):
@@ -81,7 +82,7 @@ def check_token(token: str, is_sonarcloud: bool = False) -> None:
 
 
 def json_dump_debug(json_data, pre_string=""):
-    logging.logger.debug("%s%s", pre_string, json_dump(json_data))
+    log.debug("%s%s", pre_string, json_dump(json_data))
 
 
 def format_date_ymd(year, month, day):
@@ -235,9 +236,9 @@ def jvm_heap(cmdline):
             elif unit == "K":
                 return val // 1024
         except ValueError:
-            logging.logger.warning("JVM -Xmx heap specified seems invalid in '%s'", cmdline)
+            log.warning("JVM -Xmx heap specified seems invalid in '%s'", cmdline)
             return None
-    logging.logger.warning("No JVM heap memory settings specified in '%s'", cmdline)
+    log.warning("No JVM heap memory settings specified in '%s'", cmdline)
     return None
 
 
@@ -272,7 +273,7 @@ def dict_add(dict1, dict2):
 
 
 def exit_fatal(err_msg, exit_code):
-    logging.logger.fatal(err_msg)
+    log.fatal(err_msg)
     print(f"FATAL: {err_msg}", file=sys.stderr)
     sys.exit(exit_code)
 
@@ -327,10 +328,10 @@ def nbr_pages(sonar_api_json):
 @contextlib.contextmanager
 def open_file(file=None, mode="w"):
     if file and file != "-":
-        logging.logger.debug("Opening file '%s'", file)
+        log.debug("Opening file '%s'", file)
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
     else:
-        logging.logger.debug("Writing to stdout")
+        log.debug("Writing to stdout")
         fd = sys.stdout
     try:
         yield fd
@@ -514,7 +515,7 @@ def start_clock() -> datetime.datetime:
 
 def stop_clock(start_time: datetime.datetime) -> None:
     """Logs execution time"""
-    logging.logger.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
+    log.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
 
 
 def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json")) -> str:
