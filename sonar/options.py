@@ -83,7 +83,7 @@ FORMAT = "format"
 DEFAULT = "__default__"
 
 
-def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> object:
+def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> argparse.ArgumentParser:
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
         args = parser.parse_args()
@@ -118,7 +118,7 @@ def add_thread_arg(parser, action):
     return parser
 
 
-def add_branch_arg(parser: object) -> object:
+def add_branch_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Adds the branch argument to the parser"""
     parser.add_argument(
         f"-{WITH_BRANCHES_SHORT}",
@@ -130,7 +130,7 @@ def add_branch_arg(parser: object) -> object:
     return parser
 
 
-def add_dateformat_arg(parser: object) -> object:
+def add_dateformat_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Adds the date format argument to the parser"""
     parser.add_argument(
         f"-{DATES_WITHOUT_TIME_SHORT}",
@@ -143,7 +143,7 @@ def add_dateformat_arg(parser: object) -> object:
     return parser
 
 
-def add_url_arg(parser: object) -> object:
+def add_url_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Adds the option to export URL of objects"""
     parser.add_argument(
         f"--{WITH_URL}",
@@ -155,7 +155,7 @@ def add_url_arg(parser: object) -> object:
     return parser
 
 
-def add_import_export_arg(parser: object, topic: str, import_opt: bool = True, export_opt: bool = True) -> object:
+def add_import_export_arg(parser: argparse.ArgumentParser, topic: str, import_opt: bool = True, export_opt: bool = True) -> argparse.ArgumentParser:
     """Adds the CLI params for export/import"""
     group = parser.add_mutually_exclusive_group()
     if export_opt:
@@ -171,7 +171,7 @@ def add_import_export_arg(parser: object, topic: str, import_opt: bool = True, e
     return parser
 
 
-def set_common_args(desc):
+def set_common_args(desc: str) -> argparse.ArgumentParser:
     """Parses options common to all sonar-tools scripts"""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument(
@@ -246,7 +246,7 @@ def set_key_arg(parser):
     return parser
 
 
-def set_target_sonar_args(parser):
+def set_target_sonar_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
         "-U",
         "--urlTarget",
@@ -262,7 +262,7 @@ def set_target_sonar_args(parser):
     return parser
 
 
-def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False):
+def set_output_file_args(parser: argparse.ArgumentParser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False) -> argparse.ArgumentParser:
     parser.add_argument(
         "-f",
         "--file",
@@ -295,7 +295,7 @@ def set_output_file_args(parser, json_fmt: bool = True, csv_fmt: bool = True, sa
     return parser
 
 
-def set_what(parser, what_list, operation):
+def set_what(parser: argparse.ArgumentParser, what_list: list[str], operation: str) -> argparse.ArgumentParser:
     parser.add_argument(
         "-w",
         "--what",
