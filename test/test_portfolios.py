@@ -30,34 +30,39 @@ EXISTING_PROJECT = "okorach_sonar-tools"
 EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 TEST_KEY = "MY_PPPPORTFOLIO_KEY"
 
+
 def get_object() -> None:
-    """ Test get_object and verify that if requested twice the same object is returned """
+    """Test get_object and verify that if requested twice the same object is returned"""
     portf = portfolios.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
     assert portf.key == EXISTING_PORTFOLIO
     portf2 = portfolios.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
     assert portf2.key == EXISTING_PORTFOLIO
     assert portf == portf2
 
+
 def get_object_non_existing() -> None:
-    """ Test exception raised when providing non existing portfolio key """
+    """Test exception raised when providing non existing portfolio key"""
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = portfolios.Portfolio.get_object(endpoint=util.SQ, key="NON_EXISTING")
     assert str(e.value) == "Portfolio key 'NON_EXISTING' not found"
 
+
 def exists() -> None:
-    """ Test exist """
+    """Test exist"""
     assert portfolios.exists(endpoint=util.SQ, key="PORT_FAV_PROJECTS")
     assert not portfolios.exists(endpoint=util.SQ, key="NON_EXISTING")
 
+
 def get_list() -> None:
-    """ Test portfolio get_list """
+    """Test portfolio get_list"""
     p_dict = portfolios.get_list(endpoint=util.SQ, key_list="PORT_FAV_PROJECTS,PORTFOLIO_ALL")
     assert "PORT_FAV_PROJECTS" in p_dict
     assert "PORTFOLIO_ALL" in p_dict
     assert len(p_dict) == 2
 
+
 def create_delete() -> None:
-    """ Test portfolio create delete """
+    """Test portfolio create delete"""
     portfolio = portfolios.Portfolio.create(endpoint=util.SQ, name="MY PPPPPORFOLIO", key=TEST_KEY, description="Creationtest")
     assert portfolio is not None
     assert portfolio.key == TEST_KEY
@@ -66,8 +71,9 @@ def create_delete() -> None:
     portfolio.delete()
     assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 
+
 def add_project() -> None:
-    """ Test addition of a project in manual mode """
+    """Test addition of a project in manual mode"""
     portfolio = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
     project = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
     portfolio.set_projects({"okorach_sonar-tools": project})
