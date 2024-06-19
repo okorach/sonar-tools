@@ -30,7 +30,7 @@ from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import aggregations, options, exceptions
+from sonar import aggregations, exceptions
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
@@ -200,13 +200,13 @@ class Portfolio(aggregations.Aggregation):
         log.debug("%s: Read projects %s", str(self), str(self._projects))
         if self.endpoint.version() < (9, 3, 0):
             for p in self._json.get("projects", {}):
-                self._projects[p] = options.DEFAULT
+                self._projects[p] = util.DEFAULT
             return self._projects
         for p in self._json.get("selectedProjects", {}):
             if "selectedBranches" in p:
                 self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
-                self._projects[p["projectKey"]] = options.DEFAULT
+                self._projects[p["projectKey"]] = util.DEFAULT
         log.debug("%s: PROJ4 Read projects %s", str(self), str(self._projects))
         log.debug("%s projects = %s", str(self), util.json_dump(self._projects))
         return self._projects
@@ -373,14 +373,14 @@ class Portfolio(aggregations.Aggregation):
             try:
                 r = self.post("views/add_project", params={"key": self.key, "project": proj})
                 ok = ok and r.ok
-                current_projects[proj] = options.DEFAULT
+                current_projects[proj] = util.DEFAULT
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.key, f"Project '{proj}' not found, can't be added to portfolio '{self.key}'")
                 raise
 
             for branch in util.csv_to_list(branches):
-                if branch == options.DEFAULT or branch in util.csv_to_list(current_projects[proj]):
+                if branch == util.DEFAULT or branch in util.csv_to_list(current_projects[proj]):
                     log.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
                     continue
                 if self.endpoint.version() < (9, 2, 0):
@@ -554,18 +554,6 @@ def audit(audit_settings, endpoint=None, key_list=None):
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
         problems += p.audit(audit_settings)
     return problems
-
-
-def loc_csv_header(**kwargs):
-    arr = ["# Portfolio Key"]
-    if kwargs[options.WITH_NAME]:
-        arr.append("Portfolio name")
-    arr.append("LoC")
-    if kwargs[options.WITH_LAST_ANALYSIS]:
-        arr.append("Last Recomputation")
-    if kwargs[options.WITH_URL]:
-        arr.append("URL")
-    return arr
 
 
 def __cleanup_portfolio_json(p):

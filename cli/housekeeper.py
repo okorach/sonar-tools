@@ -29,8 +29,9 @@
 import sys
 import logging
 
+from cli import options
 import sonar.logging as log
-from sonar import platform, tokens, users, options, projects, branches, pull_requests
+from sonar import platform, tokens, users, projects, branches, pull_requests
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import config, problem
@@ -212,7 +213,7 @@ def main():
     if token_age:
         problems += get_user_problems(token_age, sq)
 
-    problem.dump_report(problems, file=None, file_format="csv")
+    problem.dump_report(problems, file=None, format="csv")
 
     op = "to delete"
     if mode == "delete":

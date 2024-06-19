@@ -21,7 +21,7 @@
 import csv
 
 import sonar.logging as log
-from sonar import utilities, options
+from sonar import utilities
 
 
 class Problem:
@@ -58,7 +58,7 @@ class Problem:
         return d
 
 
-def dump_report(problems: list[Problem], file: str, server_id: str = None, **kwargs) -> None:
+def dump_report(problems: list[Problem], file: str, server_id: str = None, format: str = "csv", with_url: bool = False, separator: str = ",") -> None:
     """Dumps to file a report about a list of problems
 
     :param list[Problems] problems: List of problems to dump
@@ -68,13 +68,13 @@ def dump_report(problems: list[Problem], file: str, server_id: str = None, **kwa
     :rtype: None
     """
     log.info("Writing report to %s", f"file '{file}'" if file else "stdout")
-    if kwargs.get("format", "csv") == "json":
-        __dump_json(problems=problems, file=file, server_id=server_id, **kwargs)
+    if format == "json":
+        __dump_json(problems=problems, file=file, server_id=server_id, with_url=with_url)
     else:
-        __dump_csv(problems=problems, file=file, server_id=server_id, **kwargs)
+        __dump_csv(problems=problems, file=file, server_id=server_id, with_url=with_url, separator=separator)
 
 
-def __dump_csv(problems: list[Problem], file: str, server_id: str = None, **kwargs) -> None:
+def __dump_csv(problems: list[Problem], file: str, server_id: str = None, with_url: bool = False, separator: str = ",") -> None:
     """Writes a list of problems in CSV format
 
     :param list[Problems] problems: List of problems to dump
@@ -83,16 +83,16 @@ def __dump_csv(problems: list[Problem], file: str, server_id: str = None, **kwar
     :rtype: None
     """
     with utilities.open_file(file, "w") as fd:
-        csvwriter = csv.writer(fd, delimiter=kwargs.get("separator", ","))
+        csvwriter = csv.writer(fd, delimiter=separator)
         for p in problems:
             data = []
             if server_id is not None:
                 data = [server_id]
-            data += list(p.to_json(kwargs.get(options.WITH_URL, False)).values())
+            data += list(p.to_json(with_url).values())
             csvwriter.writerow(data)
 
 
-def __dump_json(problems: list[Problem], file: str, server_id: str = None, **kwargs) -> None:
+def __dump_json(problems: list[Problem], file: str, server_id: str = None, with_url: bool = False) -> None:
     """Writes a list of problems in JSON format
 
     :param list[Problems] problems: List of problems to dump
@@ -103,6 +103,6 @@ def __dump_json(problems: list[Problem], file: str, server_id: str = None, **kwa
     sid_dict = {}
     if server_id is not None:
         sid_dict = {"server_id": server_id}
-    json = [{**p.to_json(kwargs.get(options.WITH_URL, False)), **sid_dict} for p in problems]
+    json = [{**p.to_json(with_url), **sid_dict} for p in problems]
     with utilities.open_file(file) as fd:
         print(utilities.json_dump(json), file=fd)

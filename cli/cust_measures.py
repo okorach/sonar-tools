@@ -27,8 +27,9 @@
 
 import sys
 
+from cli import options
 import sonar.logging as log
-from sonar import custom_measures, platform, utilities, errcodes, options
+from sonar import custom_measures, platform, utilities, errcodes
 
 
 def parse_args(desc):

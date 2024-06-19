@@ -41,6 +41,7 @@ ISO_DATE_FORMAT = "%04d-%02d-%02d"
 SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 SQ_DATE_FORMAT = "%Y-%m-%d"
 SQ_TIME_FORMAT = "%H:%M:%S"
+DEFAULT = "__default__"
 
 
 def check_last_sonar_tools_version() -> None:

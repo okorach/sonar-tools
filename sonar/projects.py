@@ -31,7 +31,7 @@ from queue import Queue
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import options, exceptions, errcodes
+from sonar import exceptions, errcodes
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, measures, syncer
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
@@ -1324,18 +1324,6 @@ def exists(key, endpoint):
         return True
     except exceptions.ObjectNotFound:
         return False
-
-
-def loc_csv_header(**kwargs):
-    arr = ["# Project Key"]
-    if kwargs[options.WITH_NAME]:
-        arr.append("Project name")
-    arr.append("LoC")
-    if kwargs[options.WITH_LAST_ANALYSIS]:
-        arr.append("Last analysis")
-    if kwargs[options.WITH_URL]:
-        arr.append("URL")
-    return arr
 
 
 def import_config(endpoint, config_data, key_list=None):

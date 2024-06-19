@@ -25,7 +25,8 @@
 """
 import sys
 
-from sonar import options, platform, utilities, exceptions, projects, errcodes
+from cli import options
+from sonar import platform, utilities, exceptions, projects, errcodes
 
 
 def main():
