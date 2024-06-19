@@ -23,6 +23,7 @@
 
 """
 
+from __future__ import annotations
 import time
 import json
 from http import HTTPStatus
@@ -398,23 +399,46 @@ class Portfolio(aggregations.Aggregation):
                         raise
         return ok
 
-    def set_tag_mode(self, tags, branch):
+    def set_manual_mode(self) -> Portfolio:
+        """Sets a portfolio to manual mode"""
+        self.post("views/set_manual_mode", params={"portfolio": self.key})
+        self._selection_mode = SELECTION_MODE_MANUAL
+        return self
+
+    def set_tag_mode(self, tags: list[str], branch: str) -> Portfolio:
+        """Sets a portfolio to tag mode"""
         self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
+        self._selection_mode = SELECTION_MODE_TAGS
+        self._projects = {}
+        return self
 
-    def set_regexp_mode(self, regexp, branch):
+    def set_regexp_mode(self, regexp: str, branch: str) -> Portfolio:
+        """Sets a portfolio to regexp mode"""
         self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
+        self._selection_mode = SELECTION_MODE_REGEXP
+        self._projects = {}
+        return self
 
-    def set_remaining_projects_mode(self, branch):
+    def set_remaining_projects_mode(self, branch: str) -> Portfolio:
+        """Sets a portfolio to remaining projects mode"""
         self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
+        self._selection_mode = SELECTION_MODE_OTHERS
+        self._projects = {}
+        return self
 
-    def none(self):
+    def set_none_mode(self) -> Portfolio:
+        """Sets a portfolio to none mode"""
         # Hack: API change between 9.0 and 9.1
         if self.endpoint.version() < (9, 1, 0):
             self.post("views/mode", params={"key": self.key, "selectionMode": "NONE"})
         else:
             self.post("views/set_none_mode", params={"portfolio": self.key})
+        self._selection_mode = SELECTION_MODE_NONE
+        self._projects = {}
+        return self
 
-    def set_selection_mode(self, selection_mode, projects=None, regexp=None, tags=None, branch=None):
+    def set_selection_mode(self, selection_mode: str, projects: list[str] = None, regexp: str = None, tags: list[str] = None, branch: str = None) -> Portfolio:
+        """Sets a portfolio selection mode"""
         log.debug("Setting selection mode %s for %s", str(selection_mode), str(self))
         if selection_mode == SELECTION_MODE_MANUAL:
             self.set_projects(projects)
@@ -425,11 +449,10 @@ class Portfolio(aggregations.Aggregation):
         elif selection_mode == SELECTION_MODE_OTHERS:
             self.set_remaining_projects_mode(branch)
         elif selection_mode == SELECTION_MODE_NONE:
-            self.none()
+            self.set_none_mode()
         else:
             log.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
-            return self
-        self._selection_mode = selection_mode
+
         return self
 
     def add_subportfolio(self, key, name=None, by_ref=False):
