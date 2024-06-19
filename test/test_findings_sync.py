@@ -27,9 +27,11 @@ import os
 import sys
 from unittest.mock import patch
 import pytest
+
 import utilities as testutil
+import sonar.logging as log
 from cli import findings_sync
-from sonar import utilities
+
 
 CMD = "sonar-findings-sync.py"
 PLAT_OPTS = ["-u", os.getenv("SONAR_HOST_URL_LATEST"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")] + [
@@ -56,7 +58,7 @@ def test_sync() -> None:
     testutil.clean(testutil.JSON_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", ALL_OPTS):
-            utilities.logger.info("Running %s", " ".join(ALL_OPTS))
+            log.info("Running %s", " ".join(ALL_OPTS))
             findings_sync.main()
     assert int(str(e.value)) == 0
     assert testutil.file_not_empty(testutil.JSON_FILE)

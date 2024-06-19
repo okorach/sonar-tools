@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar import exceptions
@@ -52,7 +53,7 @@ class Group(sq.SqObject):
         self._json = data
         _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
-        util.logger.debug("Created %s object", str(self))
+        log.debug("Created %s object", str(self))
 
     @classmethod
     def read(cls, endpoint, name):
@@ -64,7 +65,7 @@ class Group(sq.SqObject):
         :return: The group object
         :rtype: Group or None if not found
         """
-        util.logger.debug("Reading group '%s'", name)
+        log.debug("Reading group '%s'", name)
         if name in _MAP:
             return _OBJECTS[_MAP[name]]
         data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
@@ -89,7 +90,7 @@ class Group(sq.SqObject):
         :return: The group object
         :rtype: Group or None
         """
-        util.logger.debug("Creating group '%s'", name)
+        log.debug("Creating group '%s'", name)
         endpoint.post(_CREATE_API, params={"name": name, "description": description})
         return cls.read(endpoint=endpoint, name=name)
 
@@ -164,7 +165,7 @@ class Group(sq.SqObject):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        util.logger.debug("Auditing %s", str(self))
+        log.debug("Auditing %s", str(self))
         problems = []
         if audit_settings.get("audit.groups.empty", True) and self.__members_count == 0:
             rule = rules.get_rule(rules.RuleId.GROUP_EMPTY)
@@ -197,9 +198,9 @@ class Group(sq.SqObject):
         :rtype: bool
         """
         if description is None or description == self.description:
-            util.logger.debug("No description to update for %s", str(self))
+            log.debug("No description to update for %s", str(self))
             return True
-        util.logger.debug("Updating %s with description = %s", str(self), description)
+        log.debug("Updating %s with description = %s", str(self), description)
         r = self.post(_UPDATE_API, params={"id": self.key, "description": description})
         if r.ok:
             self.description = description
@@ -214,9 +215,9 @@ class Group(sq.SqObject):
         :rtype: bool
         """
         if name is None or name == self.name:
-            util.logger.debug("No name to update for %s", str(self))
+            log.debug("No name to update for %s", str(self))
             return True
-        util.logger.debug("Updating %s with name = %s", str(self), name)
+        log.debug("Updating %s with name = %s", str(self), name)
         r = self.post(_UPDATE_API, params={"id": self.key, "name": name})
         if r.ok:
             _MAP.pop(self.name, None)
@@ -248,7 +249,7 @@ def get_list(endpoint, params=None):
     :return: The group data as dict
     :rtype: dict
     """
-    util.logger.info("Listing groups")
+    log.info("Listing groups")
     return search(params=params, endpoint=endpoint)
 
 
@@ -261,7 +262,7 @@ def export(endpoint):
     :return: list of groups
     :rtype: dict{name: description}
     """
-    util.logger.info("Exporting groups")
+    log.info("Exporting groups")
     g_list = {}
     for g_name, g_obj in search(endpoint=endpoint).items():
         if g_obj.is_default():
@@ -281,9 +282,9 @@ def audit(audit_settings, endpoint=None):
     :rtype: list[Problem]
     """
     if not audit_settings.get("audit.groups", True):
-        util.logger.info("Auditing groups is disabled, skipping...")
+        log.info("Auditing groups is disabled, skipping...")
         return []
-    util.logger.info("--- Auditing groups ---")
+    log.info("--- Auditing groups ---")
     problems = []
     for _, g in search(endpoint=endpoint).items():
         problems += g.audit(audit_settings)
@@ -321,7 +322,7 @@ def create_or_update(endpoint, name, description):
     """
     o = get_object(endpoint=endpoint, name=name)
     if o is None:
-        util.logger.debug("Group '%s' does not exist, creating...", name)
+        log.debug("Group '%s' does not exist, creating...", name)
         return Group.create(endpoint, name, description)
     else:
         return o.set_description(description)
@@ -337,9 +338,9 @@ def import_config(endpoint, config_data):
     :return: Nothing
     """
     if "groups" not in config_data:
-        util.logger.info("No groups to import")
+        log.info("No groups to import")
         return
-    util.logger.info("Importing groups")
+    log.info("Importing groups")
     for name, data in config_data["groups"].items():
         if isinstance(data, dict):
             desc = data["description"]

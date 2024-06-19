@@ -18,7 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-from sonar import utilities
+
+import sonar.logging as log
 from sonar.permissions import permissions
 
 
@@ -41,7 +42,7 @@ class GlobalPermissions(permissions.Permissions):
         return self
 
     def set(self, new_perms):
-        utilities.logger.debug("Setting %s to %s", str(self), str(new_perms))
+        log.debug("Setting %s to %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
         ed = self.endpoint.edition()
@@ -59,9 +60,9 @@ class GlobalPermissions(permissions.Permissions):
 def import_config(endpoint, config_data):
     my_permissions = config_data.get("permissions", {})
     if len(my_permissions) == 0:
-        utilities.logger.info("No global permissions in config, skipping import...")
+        log.info("No global permissions in config, skipping import...")
         return
-    utilities.logger.info("Importing global permissions")
+    log.info("Importing global permissions")
     global_perms = GlobalPermissions(endpoint)
     global_perms.set(my_permissions)
 
@@ -69,6 +70,6 @@ def import_config(endpoint, config_data):
 def edition_filter(perms, ed):
     for p in perms.copy():
         if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
-            utilities.logger.warning("Can't remove permission '%s' on a %s edition", p, ed)
+            log.warning("Can't remove permission '%s' on a %s edition", p, ed)
             perms.remove(p)
     return perms

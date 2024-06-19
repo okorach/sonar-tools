@@ -26,6 +26,8 @@ import json
 from typing import Union
 from http import HTTPStatus
 from requests.exceptions import HTTPError
+
+import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import utilities, exceptions
 
@@ -42,7 +44,7 @@ class Rule(sq.SqObject):
     def get_object(cls, endpoint, key):
         if key in _OBJECTS:
             return _OBJECTS[key]
-        utilities.logger.debug("Reading rule key '%s'", key)
+        log.debug("Reading rule key '%s'", key)
         try:
             r = endpoint.get(_DETAILS_API, params={"key": key})
         except HTTPError as e:
@@ -54,7 +56,7 @@ class Rule(sq.SqObject):
     def create(cls, key, endpoint, **kwargs):
         params = kwargs.copy()
         (_, params["custom_key"]) = key.split(":")
-        utilities.logger.debug("Creating rule key '%s'", key)
+        log.debug("Creating rule key '%s'", key)
         r = endpoint.post(_CREATE_API, params=params)
         if not r.ok:
             return None
@@ -72,11 +74,11 @@ class Rule(sq.SqObject):
     def instantiate(cls, key, template_key, endpoint, data):
         try:
             rule = Rule.get_object(endpoint, key)
-            utilities.logger.info("Rule key '%s' already exists, instantiation skipped...", key)
+            log.info("Rule key '%s' already exists, instantiation skipped...", key)
             return rule
         except exceptions.ObjectNotFound:
             pass
-        utilities.logger.info("Instantiating rule key '%s' from template key '%s'", key, template_key)
+        log.info("Instantiating rule key '%s' from template key '%s'", key, template_key)
         rule_params = ";".join([f"{k}={v}" for k, v in data["params"].items()])
         return Rule.create(
             key=key,
@@ -90,7 +92,7 @@ class Rule(sq.SqObject):
 
     def __init__(self, key, endpoint, data):
         super().__init__(key, endpoint)
-        utilities.logger.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
+        log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
         self._json = data
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
@@ -135,14 +137,14 @@ class Rule(sq.SqObject):
             return
         if isinstance(tags, list):
             tags = utilities.list_to_csv(tags)
-        utilities.logger.debug("Settings custom tags '%s' to %s", tags, str(self))
+        log.debug("Settings custom tags '%s' to %s", tags, str(self))
         self.post("rules/update", params={"key": self.key, "tags": tags})
         self.tags = tags
 
     def set_description(self, description):
         if description is None:
             return
-        utilities.logger.debug("Settings custom description '%s' to %s", description, str(self))
+        log.debug("Settings custom description '%s' to %s", description, str(self))
         self.post("rules/update", params={"key": self.key, "markdown_note": description})
 
     def clean_code_attribute(self) -> dict:
@@ -187,7 +189,7 @@ def get_object(key: str, endpoint: object) -> Union[Rule, None]:
 
 
 def export_all(endpoint, full=False):
-    utilities.logger.info("Exporting rules")
+    log.info("Exporting rules")
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
     for rule_key, rule in get_list(endpoint=endpoint).items():
         rule_export = rule.export(full)
@@ -256,7 +258,7 @@ def export(endpoint: object, instantiated: bool = True, extended: bool = True, s
     :param full standard: Include full rule information in the export
     :rtype: dict{ruleKey: Rule}
     """
-    utilities.logger.info("Exporting rules")
+    log.info("Exporting rules")
     if standard:
         return export_all(endpoint, full)
     else:
@@ -265,33 +267,33 @@ def export(endpoint: object, instantiated: bool = True, extended: bool = True, s
 
 def import_config(endpoint, config_data):
     if "rules" not in config_data:
-        utilities.logger.info("No customized rules (custom tags, extended description) to import")
+        log.info("No customized rules (custom tags, extended description) to import")
         return
-    utilities.logger.info("Importing customized (custom tags, extended description) rules")
+    log.info("Importing customized (custom tags, extended description) rules")
     get_list(endpoint=endpoint)
     for key, custom in config_data["rules"].get("extended", {}).items():
         try:
             rule = Rule.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
-            utilities.logger.warning("Rule key '%s' does not exist, can't import it", key)
+            log.warning("Rule key '%s' does not exist, can't import it", key)
             continue
         rule.set_description(custom.get("description", None))
         rule.set_tags(custom.get("tags", None))
 
-    utilities.logger.debug("get_list from import")
+    log.debug("get_list from import")
     get_list(endpoint=endpoint, templates=True)
-    utilities.logger.info("Importing custom rules (instantiated from rule templates)")
+    log.info("Importing custom rules (instantiated from rule templates)")
     for key, instantiation_data in config_data["rules"].get("instantiated", {}).items():
         try:
             rule = Rule.get_object(endpoint, key)
-            utilities.logger.debug("Instantiated rule key '%s' already exists, instantiation skipped", key)
+            log.debug("Instantiated rule key '%s' already exists, instantiation skipped", key)
             continue
         except exceptions.ObjectNotFound:
             pass
         try:
             template_rule = Rule.get_object(endpoint, instantiation_data["templateKey"])
         except exceptions.ObjectNotFound:
-            utilities.logger.warning("Rule template key '%s' does not exist, can't instantiate it", key)
+            log.warning("Rule template key '%s' does not exist, can't instantiate it", key)
             continue
         Rule.instantiate(key, template_rule.key, endpoint, instantiation_data)
 

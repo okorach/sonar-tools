@@ -18,7 +18,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-from sonar import utilities
+"""Permissions templates permissions class"""
+
+import sonar.logging as log
 from sonar.permissions import permissions, project_permissions
 
 
@@ -45,7 +47,7 @@ class TemplatePermissions(project_permissions.ProjectPermissions):
         return self
 
     def set(self, new_perms):
-        utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
+        log.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
         for p in permissions.PERMISSION_TYPES:

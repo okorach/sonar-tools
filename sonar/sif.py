@@ -27,8 +27,9 @@ import datetime
 import re
 from typing import Union
 from dateutil.relativedelta import relativedelta
-import sonar.utilities as util
 
+import sonar.logging as log
+import sonar.utilities as util
 from sonar.audit import rules
 import sonar.audit.problem as pb
 import sonar.sif_node as sifn
@@ -62,7 +63,7 @@ class NotSystemInfo(Exception):
 class Sif:
     def __init__(self, json_sif, concerned_object=None):
         if not is_sysinfo(json_sif):
-            util.logger.critical("Provided JSON does not seem to be a system info")
+            log.critical("Provided JSON does not seem to be a system info")
             raise NotSystemInfo("JSON is not a system info nor a support info")
         self.json = json_sif
         self.concerned_object = concerned_object
@@ -88,10 +89,10 @@ class Sif:
                 except KeyError:
                     pass
         if "Application Nodes" in self.json:
-            util.logger.debug("DCE edition detected from the presence in SIF of the 'Application Nodes' key")
+            log.debug("DCE edition detected from the presence in SIF of the 'Application Nodes' key")
             ed = "datacenter"
         if ed is None:
-            util.logger.warning("Could not find edition in SIF")
+            log.warning("Could not find edition in SIF")
             return None
 
         # Old SIFs could return "Enterprise Edition"
@@ -152,11 +153,11 @@ class Sif:
         return util.int_memory(setting)
 
     def audit(self, audit_settings):
-        util.logger.info("Auditing System Info")
+        log.info("Auditing System Info")
         problems = self.__audit_jdbc_url()
-        util.logger.debug("Edition = %s", self.edition())
+        log.debug("Edition = %s", self.edition())
         if self.edition() == "datacenter":
-            util.logger.info("DCE SIF audit")
+            log.info("DCE SIF audit")
             problems += self.__audit_dce_settings()
         else:
             problems += (
@@ -171,7 +172,7 @@ class Sif:
     def __audit_branch_use(self):
         if self.edition() == "community":
             return []
-        util.logger.info("Auditing usage of branch analysis")
+        log.info("Auditing usage of branch analysis")
         try:
             use_br = self.json[_STATS]["usingBranches"]
             if use_br:
@@ -179,11 +180,11 @@ class Sif:
             rule = rules.get_rule(rules.RuleId.NOT_USING_BRANCH_ANALYSIS)
             return [pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self)]
         except KeyError:
-            util.logger.info("Branch usage information not in SIF, ignoring audit...")
+            log.info("Branch usage information not in SIF, ignoring audit...")
             return []
 
     def __audit_undetected_scm(self):
-        util.logger.info("Auditing SCM integration")
+        log.info("Auditing SCM integration")
         try:
             scm_count, undetected_scm_count = 0, 0
             for scm in self.json[_STATS]["projectCountByScm"]:
@@ -195,7 +196,7 @@ class Sif:
             rule = rules.get_rule(rules.RuleId.SIF_UNDETECTED_SCM)
             return [pb.Problem(broken_rule=rule, msg=rule.msg.format(undetected_scm_count), concerned_object=self)]
         except KeyError:
-            util.logger.info("SCM information not in SIF, ignoring audit...")
+            log.info("SCM information not in SIF, ignoring audit...")
             return []
 
     def __get_field(self, name, node_type=_APP_NODES):
@@ -237,7 +238,7 @@ class Sif:
         if not self.__eligible_to_log4shell_check():
             return []
 
-        util.logger.info("Auditing log4shell vulnerability fix")
+        log.info("Auditing log4shell vulnerability fix")
         sq_version = self.version()
         if sq_version < (8, 9, 6) or ((9, 0, 0) <= sq_version < (9, 2, 4)):
             for s in jvm_settings.split(" "):
@@ -248,10 +249,10 @@ class Sif:
         return []
 
     def __audit_jdbc_url(self) -> list[pb.Problem]:
-        util.logger.info("Auditing JDBC settings")
+        log.info("Auditing JDBC settings")
         stats = self.json.get(_SETTINGS)
         if stats is None:
-            util.logger.error("Can't verify Database settings in System Info File, was it corrupted or redacted ?")
+            log.error("Can't verify Database settings in System Info File, was it corrupted or redacted ?")
             return []
         jdbc_url = stats.get("sonar.jdbc.url", None)
         if jdbc_url is None:
@@ -266,44 +267,44 @@ class Sif:
                 rule = rules.get_rule(rules.RuleId.DB_ON_SAME_HOST)
                 return [pb.Problem(broken_rule=rule, msg=rule.msg.format(jdbc_url), concerned_object=self)]
             else:
-                util.logger.info("JDBC URL %s is on localhost but this is not a production license. So be it!", jdbc_url)
+                log.info("JDBC URL %s is on localhost but this is not a production license. So be it!", jdbc_url)
         else:
-            util.logger.info("JDBC URL %s does not use localhost, all good!", jdbc_url)
+            log.info("JDBC URL %s does not use localhost, all good!", jdbc_url)
         return []
 
     def __audit_dce_settings(self):
-        util.logger.info("Auditing DCE settings for version %s", str(self.version()))
+        log.info("Auditing DCE settings for version %s", str(self.version()))
         problems = []
         sq_edition = self.edition()
         if sq_edition is None:
-            util.logger.error("Can't verify edition in System Info File (2_), was it corrupted or redacted ?")
+            log.error("Can't verify edition in System Info File (2_), was it corrupted or redacted ?")
             return problems
         if sq_edition != "datacenter":
-            util.logger.info("Not a Data Center Edition, skipping DCE checks")
+            log.info("Not a Data Center Edition, skipping DCE checks")
             return problems
         if _APP_NODES in self.json:
             problems += appnodes.audit(self.json[_APP_NODES], self)
         else:
-            util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
+            log.info("Sys Info too old (pre-8.9), can't check plugins")
 
         if _ES_NODES in self.json:
             problems += searchnodes.audit(self.json[_ES_NODES], self)
         else:
-            util.logger.info("Sys Info too old (pre-8.9), can't check plugins")
+            log.info("Sys Info too old (pre-8.9), can't check plugins")
         return problems
 
     def __audit_es_settings(self):
-        util.logger.info("Auditing Search Server settings")
+        log.info("Auditing Search Server settings")
         problems = []
         jvm_cmdline = self.search_jvm_cmdline()
         if jvm_cmdline is None:
-            util.logger.warning("Can't retrieve search JVM command line, heap and logshell checks skipped")
+            log.warning("Can't retrieve search JVM command line, heap and logshell checks skipped")
             return []
         es_ram = util.jvm_heap(jvm_cmdline)
         index_size = self.store_size()
 
         if index_size is None:
-            util.logger.warning("Search server index size is missing. Audit of ES heap vs index size is skipped...")
+            log.warning("Search server index size is missing. Audit of ES heap vs index size is skipped...")
         elif es_ram is None:
             rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
             problems.append(pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self))
@@ -314,7 +315,7 @@ class Sif:
             rule = rules.get_rule(rules.RuleId.ES_HEAP_TOO_HIGH)
             problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format("ES", es_ram, 32 * 1024), concerned_object=self))
         else:
-            util.logger.debug(
+            log.debug(
                 "Search server memory %d MB is correct wrt to index size of %d MB",
                 es_ram,
                 index_size,

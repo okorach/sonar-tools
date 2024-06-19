@@ -26,6 +26,8 @@
 from http import HTTPStatus
 import json
 from requests.exceptions import HTTPError
+
+import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
@@ -162,7 +164,7 @@ class QualityGate(sq.SqObject):
                     raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
             data = json.loads(resp.text)
             for prj in data["results"]:
-                util.logger.info("Proj = %s", str(prj))
+                log.info("Proj = %s", str(prj))
                 key = prj["key"] if "key" in prj else prj["id"]
                 self._projects[key] = projects.Project.get_object(self.endpoint, key)
             nb_pages = util.nbr_pages(data)
@@ -197,9 +199,9 @@ class QualityGate(sq.SqObject):
         :return: Nothing
         """
         if self.is_built_in:
-            util.logger.debug("Can't clear conditions of built-in %s", str(self))
+            log.debug("Can't clear conditions of built-in %s", str(self))
         else:
-            util.logger.debug("Clearing conditions of %s", str(self))
+            log.debug("Clearing conditions of %s", str(self))
             for c in self.conditions():
                 self.post("qualitygates/delete_condition", params={"id": c["id"]})
             self._conditions = None
@@ -214,10 +216,10 @@ class QualityGate(sq.SqObject):
         if not conditions_list or len(conditions_list) == 0:
             return True
         if self.is_built_in:
-            util.logger.debug("Can't set conditions of built-in %s", str(self))
+            log.debug("Can't set conditions of built-in %s", str(self))
             return False
         self.clear_conditions()
-        util.logger.debug("Setting conditions of %s", str(self))
+        log.debug("Setting conditions of %s", str(self))
         params = {"gateName": self.name}
         ok = True
         for cond in conditions_list:
@@ -263,7 +265,7 @@ class QualityGate(sq.SqObject):
         :param dict data: Considered keys: "name", "conditions", "permissions"
         """
         if "name" in data and data["name"] != self.name:
-            util.logger.info("Renaming %s with %s", str(self), data["name"])
+            log.info("Renaming %s with %s", str(self), data["name"])
             self.post(APIS["rename"], params={"id": self.key, "name": data["name"]})
             _MAP.pop(self.name, None)
             self.name = data["name"]
@@ -285,7 +287,7 @@ class QualityGate(sq.SqObject):
                 continue
             val = int(c["error"])
             (mini, maxi, precise_msg) = GOOD_QG_CONDITIONS[m]
-            util.logger.info("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
+            log.info("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
                 rule = rules.get_rule(rules.RuleId.QG_WRONG_THRESHOLD)
                 msg = rule.msg.format(str(self), str(val), str(m), str(mini), str(maxi), precise_msg)
@@ -297,13 +299,13 @@ class QualityGate(sq.SqObject):
         :meta private:
         """
         my_name = str(self)
-        util.logger.debug("Auditing %s", my_name)
+        log.debug("Auditing %s", my_name)
         problems = []
         if self.is_built_in:
             return problems
         max_cond = int(util.get_setting(audit_settings, "audit.qualitygates.maxConditions", 8))
         nb_conditions = len(self.conditions())
-        util.logger.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
+        log.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
         if nb_conditions == 0:
             rule = rules.get_rule(rules.RuleId.QG_NO_COND)
             msg = rule.msg.format(my_name)
@@ -313,7 +315,7 @@ class QualityGate(sq.SqObject):
             msg = rule.msg.format(my_name, nb_conditions, max_cond)
             problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         problems += self.__audit_conditions()
-        util.logger.debug("Auditing that %s has some assigned projects", my_name)
+        log.debug("Auditing that %s has some assigned projects", my_name)
         if not self.is_default and len(self.projects()) == 0:
             rule = rules.get_rule(rules.RuleId.QG_NOT_USED)
             msg = rule.msg.format(my_name)
@@ -339,12 +341,12 @@ def audit(endpoint=None, audit_settings=None):
     """
     :meta private:
     """
-    util.logger.info("--- Auditing quality gates ---")
+    log.info("--- Auditing quality gates ---")
     problems = []
     quality_gates_list = get_list(endpoint)
     max_qg = util.get_setting(audit_settings, "audit.qualitygates.maxNumber", 5)
     nb_qg = len(quality_gates_list)
-    util.logger.debug("Auditing that there are no more than %s quality gates", str(max_qg))
+    log.debug("Auditing that there are no more than %s quality gates", str(max_qg))
     if nb_qg > max_qg:
         rule = rules.get_rule(rules.RuleId.QG_TOO_MANY_GATES)
         problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(nb_qg, 5), concerned_object=f"{endpoint.url}/quality_gates"))
@@ -358,11 +360,11 @@ def get_list(endpoint):
     :return: The whole list of quality gates
     :rtype: dict {<name>: <QualityGate>}
     """
-    util.logger.info("Getting quality gates")
+    log.info("Getting quality gates")
     data = json.loads(endpoint.get(APIS["list"]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
-        util.logger.debug("Getting QG %s", str(qg))
+        log.debug("Getting QG %s", str(qg))
         qg_obj = QualityGate(name=qg["name"], endpoint=endpoint, data=qg)
         if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
             qg_obj.is_default = True
@@ -375,7 +377,7 @@ def export(endpoint, full=False):
     :return: The list of quality gates in their JSON representation
     :rtype: dict
     """
-    util.logger.info("Exporting quality gates")
+    log.info("Exporting quality gates")
     qg_list = {}
     for k, qg in get_list(endpoint).items():
         qg_list[k] = qg.to_json(full)
@@ -392,9 +394,9 @@ def import_config(endpoint, config_data):
     :rtype: bool
     """
     if "qualityGates" not in config_data:
-        util.logger.info("No quality gates to import")
+        log.info("No quality gates to import")
         return True
-    util.logger.info("Importing quality gates")
+    log.info("Importing quality gates")
     ok = True
     for name, data in config_data["qualityGates"].items():
         try:

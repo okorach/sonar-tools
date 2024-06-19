@@ -19,6 +19,8 @@
 #
 
 import json
+
+import sonar.logging as log
 from sonar import sqobject, utilities
 from sonar.permissions import template_permissions
 
@@ -42,8 +44,8 @@ class PermissionTemplate(sqobject.SqObject):
         self.project_key_pattern = None
         self._permissions = None
         if create_data is not None:
-            utilities.logger.info("Creating permission template '%s'", name)
-            utilities.logger.debug("from create_data %s", utilities.json_dump(create_data))
+            log.info("Creating permission template '%s'", name)
+            log.debug("from create_data %s", utilities.json_dump(create_data))
             create_data["name"] = name
             self.post(_CREATE_API, params=create_data)
             data = search_by_name(endpoint, name)
@@ -54,8 +56,8 @@ class PermissionTemplate(sqobject.SqObject):
             data = search_by_name(endpoint, name)
             self.key = data.get("id", None)
             self.permissions().read()
-            utilities.logger.info("Creating permission template '%s'", name)
-            utilities.logger.debug("from sync data %s", utilities.json_dump(data))
+            log.info("Creating permission template '%s'", name)
+            log.debug("from sync data %s", utilities.json_dump(data))
         self._json = data
         self.name = name
         data.pop("name")
@@ -98,7 +100,7 @@ class PermissionTemplate(sqobject.SqObject):
         params["name"] = pt_data.get("name", self.name if self.name else "")
         params["description"] = pt_data.get("description", self.description if self.description else "")
         params["projectKeyPattern"] = pt_data.get("pattern", self.project_key_pattern)
-        utilities.logger.info("Updating %s with %s", str(self), str(params))
+        log.info("Updating %s with %s", str(self), str(params))
         self.post(_UPDATE_API, params=params)
         _MAP.pop(self.name, None)
         self.name = params["name"]
@@ -114,12 +116,12 @@ class PermissionTemplate(sqobject.SqObject):
         return self._permissions
 
     def set_as_default(self, what_list):
-        utilities.logger.debug("Setting %s as default for %s", str(self), str(what_list))
+        log.debug("Setting %s as default for %s", str(self), str(what_list))
         ed = self.endpoint.edition()
         for d in what_list:
             qual = _QUALIFIER_REVERSE_MAP.get(d, d)
             if (ed == "community" and qual in ("VW", "APP")) or (ed == "developer" and qual == "VW"):
-                utilities.logger.warning("Can't set permission template as default for %s on a %s edition", qual, ed)
+                log.warning("Can't set permission template as default for %s on a %s edition", qual, ed)
                 continue
             self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
 
@@ -155,7 +157,7 @@ class PermissionTemplate(sqobject.SqObject):
         return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def audit(self, audit_settings):
-        utilities.logger.debug("Auditing %s", str(self))
+        log.debug("Auditing %s", str(self))
         return self.permissions().audit(audit_settings)
 
 
@@ -169,10 +171,10 @@ def get_object(name, endpoint=None):
 
 
 def create_or_update(name, endpoint, kwargs):
-    utilities.logger.debug("Create or update permission template '%s'", name)
+    log.debug("Create or update permission template '%s'", name)
     o = get_object(endpoint=endpoint, name=name)
     if o is None:
-        utilities.logger.debug("Permission template '%s' does not exist, creating...", name)
+        log.debug("Permission template '%s' does not exist, creating...", name)
         return create(name, endpoint, create_data=kwargs)
     else:
         return o.update(name=name, **kwargs)
@@ -183,12 +185,12 @@ def create(name, endpoint=None, create_data=None):
     if o is None:
         o = PermissionTemplate(name=name, endpoint=endpoint, create_data=create_data)
     else:
-        utilities.logger.info("%s already exists, skipping creation...", str(o))
+        log.info("%s already exists, skipping creation...", str(o))
     return o
 
 
 def search(endpoint, params=None):
-    utilities.logger.debug("Searching all permission templates")
+    log.debug("Searching all permission templates")
     objects_list = {}
     data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
     for obj in data["permissionTemplates"]:
@@ -214,7 +216,7 @@ def _load_default_templates(data=None, endpoint=None):
 
 
 def export(endpoint, full=False):
-    utilities.logger.info("Exporting permission templates")
+    log.info("Exporting permission templates")
     pt_list = get_list(endpoint)
     json_data = {}
     for pt in pt_list.values():
@@ -227,9 +229,9 @@ def export(endpoint, full=False):
 
 def import_config(endpoint, config_data):
     if "permissionTemplates" not in config_data:
-        utilities.logger.info("No permissions templates in config, skipping import...")
+        log.info("No permissions templates in config, skipping import...")
         return
-    utilities.logger.info("Importing permission templates")
+    log.info("Importing permission templates")
     get_list(endpoint)
     for name, data in config_data["permissionTemplates"].items():
         utilities.json_dump_debug(data, f"Importing: {name}:")
@@ -240,7 +242,7 @@ def import_config(endpoint, config_data):
 
 
 def audit(endpoint, audit_settings):
-    utilities.logger.info("--- Auditing permission templates ---")
+    log.info("--- Auditing permission templates ---")
     problems = []
     for pt in get_list(endpoint=endpoint).values():
         problems += pt.audit(audit_settings)

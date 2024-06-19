@@ -18,7 +18,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-from sonar import utilities
+"""Quality profiles permissions class"""
+
+import sonar.logging as log
 from sonar.permissions import permissions, quality_permissions
 
 
@@ -34,7 +36,7 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
 
     def read(self):
         if self.endpoint.version() < (9, 2, 0):
-            utilities.logger.debug("Can't read %s on SonarQube < 9.2", str(self))
+            log.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
         self._read_perms(
             QualityProfilePermissions.APIS,
@@ -46,7 +48,7 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
 
     def set(self, new_perms):
         if self.endpoint.version() < (6, 6, 0):
-            utilities.logger.debug("Can set %s on SonarQube < 6.6", str(self))
+            log.debug("Can set %s on SonarQube < 6.6", str(self))
             return self
         return self._set_perms(
             new_perms,

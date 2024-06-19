@@ -20,6 +20,8 @@
 
 import json
 from threading import Lock
+
+import sonar.logging as log
 from sonar import sqobject, utilities
 
 #: List of what can be considered the main metrics
@@ -86,7 +88,7 @@ class Metric(sqobject.SqObject):
         _OBJECTS[self.key] = self
 
     def __load(self, data):
-        utilities.logger.debug("Loading metric %s", str(data))
+        log.debug("Loading metric %s", str(data))
         self.type = data["type"]
         self.name = data["name"]
         self.description = data.get("description", "")

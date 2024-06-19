@@ -27,6 +27,7 @@
 
 import sys
 
+import sonar.logging as log
 from sonar import custom_measures, platform, utilities, errcodes, options
 
 
@@ -46,7 +47,7 @@ def main():
     if sqenv.version() >= (9, 0, 0):
         utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", errcodes.UNSUPPORTED_OPERATION)
     else:
-        utilities.logger.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
+        log.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
 
     params = utilities.remove_nones(kwargs).update({"env": sqenv})
     if params.get("value", None) is not None:

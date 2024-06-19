@@ -20,6 +20,7 @@
 
 """Findings syncer"""
 
+import sonar.logging as log
 import sonar.utilities as util
 from sonar import findings
 
@@ -75,7 +76,7 @@ def __process_no_match(finding):
 
 
 def __process_multiple_exact_siblings(finding, siblings):
-    util.logger.info("Multiple matches for %s, cannot automatically apply changelog", str(finding))
+    log.info("Multiple matches for %s, cannot automatically apply changelog", str(finding))
     name = util.class_name(finding).lower()
     for sib in siblings:
         comment = ""
@@ -99,7 +100,7 @@ def __process_multiple_exact_siblings(finding, siblings):
 
 
 def __process_approx_siblings(finding, siblings):
-    util.logger.info(
+    log.info(
         "Found %d approximate siblings for %s, cannot automatically apply changelog",
         len(siblings),
         str(finding),
@@ -114,7 +115,7 @@ def __process_approx_siblings(finding, siblings):
 
 
 def __process_modified_siblings(finding, siblings):
-    util.logger.info(
+    log.info(
         "Found %d siblings for %s, but they already have a changelog, cannot automatically apply changelog",
         len(siblings),
         str(finding),
@@ -137,9 +138,9 @@ def __sync_curated_list(
     counters["nb_to_sync"] = len(src_findings)
     name = "finding" if len(src_findings) == 0 else util.class_name(src_findings[0]).lower()
     report = []
-    util.logger.info("%d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
+    log.info("%d %ss to sync, %d %ss in target", len(src_findings), name, len(tgt_findings), name)
     for finding in src_findings:
-        util.logger.debug("Searching sibling for %s", str(finding))
+        log.debug("Searching sibling for %s", str(finding))
         (exact_siblings, approx_siblings, modified_siblings) = finding.search_siblings(
             tgt_findings,
             allowed_users=settings[SYNC_SERVICE_ACCOUNTS],
@@ -181,10 +182,10 @@ def sync_lists(
     interesting_src_findings = []
     counters = {k: 0 for k in ("nb_to_sync", "nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches")}
     if len(src_findings) == 0 or len(tgt_findings) == 0:
-        util.logger.info("source or target list of findings to sync empty, skipping...")
+        log.info("source or target list of findings to sync empty, skipping...")
         return ([], counters)
     name = util.class_name(src_findings[0]).lower()
-    util.logger.info(
+    log.info(
         "Syncing %d %ss from %s into %d %ss from %s",
         len(src_findings),
         name,
@@ -195,10 +196,10 @@ def sync_lists(
     )
     for finding in src_findings:
         if finding.is_closed():
-            util.logger.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
+            log.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
             continue
         if not (finding.has_changelog(added_after=min_date) or finding.has_comments()):
-            util.logger.debug("%s has no changelog or comments added after %s, skipped in sync", str(finding), str(min_date))
+            log.debug("%s has no changelog or comments added after %s, skipped in sync", str(finding), str(min_date))
             continue
 
         modifiers = finding.modifiers().union(finding.commenters())
@@ -210,7 +211,7 @@ def sync_lists(
             sync_settings[SYNC_SERVICE_ACCOUNTS] = [syncer]
 
         if len(modifiers) == 1 and list(modifiers)[0] == syncer:
-            util.logger.info(
+            log.info(
                 "%s has only been changed by %s, so it will not be synchronized despite having a changelog",
                 str(finding),
                 syncer,
@@ -218,5 +219,5 @@ def sync_lists(
             continue
         interesting_src_findings.append(finding)
 
-    util.logger.info("Found %d %ss with manual changes in %s", len(interesting_src_findings), name, str(src_object))
+    log.info("Found %d %ss with manual changes in %s", len(interesting_src_findings), name, str(src_object))
     return __sync_curated_list(interesting_src_findings, tgt_findings, sync_settings)

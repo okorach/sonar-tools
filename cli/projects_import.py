@@ -26,6 +26,7 @@
 import sys
 import json
 
+import sonar.logging as log
 from sonar import errcodes, exceptions, options
 from sonar import platform, projects
 import sonar.utilities as util
@@ -66,7 +67,7 @@ def main():
     _check_sq_environments(sq, data["sonarqube_environment"])
 
     nb_projects = len(project_list)
-    util.logger.info("%d projects to import", nb_projects)
+    log.info("%d projects to import", nb_projects)
     i = 0
     statuses = {}
     for project in project_list:
@@ -85,7 +86,7 @@ def main():
             else:
                 statuses[s] = 1
         i += 1
-        util.logger.info(
+        log.info(
             "%d/%d exports (%d%%) - Latest: %s - %s",
             i,
             nb_projects,
@@ -96,7 +97,7 @@ def main():
         summary = ""
         for k, v in statuses.items():
             summary += f"{k}:{v}, "
-        util.logger.info("%s", summary[:-2])
+        log.info("%s", summary[:-2])
     util.stop_clock(start_time)
     sys.exit(0)
 

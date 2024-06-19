@@ -22,6 +22,8 @@ import json
 from http import HTTPStatus
 from threading import Lock
 from requests.exceptions import HTTPError
+
+import sonar.logging as log
 from sonar import components, exceptions, settings, projects, branches
 from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
@@ -119,7 +121,7 @@ class Application(aggr.Aggregation):
         self._projects = None
         self._description = None
         self.name = name
-        util.logger.debug("Created object %s", str(self))
+        log.debug("Created object %s", str(self))
         _OBJECTS[self.key] = self
         _MAP[self.name] = self.key
 
@@ -199,7 +201,7 @@ class Application(aggr.Aggregation):
                     bname = o_proj.main_branch().name
                 if not branches.exists(self.endpoint, bname, pkey):
                     ok = False
-                    util.logger.warning("Branch '%s' of %s not found while setting application branch", bname, str(o_proj))
+                    log.warning("Branch '%s' of %s not found while setting application branch", bname, str(o_proj))
                 else:
                     project_list.append(pkey)
                     branch_list.append(bname)
@@ -257,14 +259,14 @@ class Application(aggr.Aggregation):
     def _audit_empty(self, audit_settings):
         """Audits if an application contains 0 projects"""
         if not audit_settings.get("audit.applications.empty", True):
-            util.logger.debug("Auditing empty applications is disabled, skipping...")
+            log.debug("Auditing empty applications is disabled, skipping...")
             return []
         return super()._audit_empty_aggregation(broken_rule=rules.RuleId.APPLICATION_EMPTY)
 
     def _audit_singleton(self, audit_settings):
         """Audits if an application contains a single project (makes littel sense)"""
         if not audit_settings.get("audit.applications.singleton", True):
-            util.logger.debug("Auditing singleton applications is disabled, skipping...")
+            log.debug("Auditing singleton applications is disabled, skipping...")
             return []
         return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
 
@@ -275,7 +277,7 @@ class Application(aggr.Aggregation):
         :return: list of problems found
         :rtype: list [Problem]
         """
-        util.logger.info("Auditing %s", str(self))
+        log.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
     def export(self, full=False):
@@ -284,7 +286,7 @@ class Application(aggr.Aggregation):
         :param full: Whether to do a full export including settings that can't be set, defaults to False
         :type full: bool, optional
         """
-        util.logger.info("Exporting %s", str(self))
+        log.info("Exporting %s", str(self))
         self.refresh()
         json_data = self._json.copy()
         json_data.update(
@@ -325,15 +327,15 @@ class Application(aggr.Aggregation):
         ok = True
         for proj in project_list:
             if proj in current_projects:
-                util.logger.debug("Won't add project '%s' to %s, it's already added", proj, str(self))
+                log.debug("Won't add project '%s' to %s, it's already added", proj, str(self))
                 continue
-            util.logger.debug("Adding project '%s' to %s", proj, str(self))
+            log.debug("Adding project '%s' to %s", proj, str(self))
             try:
                 r = self.post("applications/add_project", params={"application": self.key, "project": proj})
                 ok = ok and r.ok
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    util.logger.warning("Project '%s' not found, can't be added to %s", proj, self)
+                    log.warning("Project '%s' not found, can't be added to %s", proj, self)
                     ok = False
                 else:
                     raise
@@ -417,7 +419,7 @@ def get_list(endpoint, key_list=None, use_cache=True):
     """
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
-            util.logger.info("Listing applications")
+            log.info("Listing applications")
             return search(endpoint=endpoint)
         object_list = {}
         for key in util.csv_to_list(key_list):
@@ -437,7 +439,7 @@ def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> 
     :rtype: dict
     """
     if endpoint.is_sonarcloud():
-        # util.logger.info("Applications do not exist in SonarCloud, export skipped")
+        # log.info("Applications do not exist in SonarCloud, export skipped")
         raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
 
     apps_settings = {k: app.export(full) for k, app in get_list(endpoint, key_list).items()}
@@ -460,9 +462,9 @@ def audit(audit_settings, endpoint=None, key_list=None):
     if endpoint.edition() == "community":
         return []
     if not audit_settings.get("audit.applications", True):
-        util.logger.debug("Auditing applications is disabled, skipping...")
+        log.debug("Auditing applications is disabled, skipping...")
         return []
-    util.logger.info("--- Auditing applications ---")
+    log.info("--- Auditing applications ---")
     problems = []
     for obj in get_list(endpoint, key_list=key_list).values():
         problems += obj.audit(audit_settings)
@@ -480,18 +482,18 @@ def import_config(endpoint, config_data, key_list=None):
     :rtype: bool
     """
     if "applications" not in config_data:
-        util.logger.info("No applications to import")
+        log.info("No applications to import")
         return True
     if endpoint.edition() == "community":
-        util.logger.warning("Can't import applications in a community edition")
+        log.warning("Can't import applications in a community edition")
         return False
-    util.logger.info("Importing applications")
+    log.info("Importing applications")
     search(endpoint=endpoint)
     new_key_list = util.csv_to_list(key_list)
     for key, data in config_data["applications"].items():
         if new_key_list and key not in new_key_list:
             continue
-        util.logger.info("Importing application key '%s'", key)
+        log.info("Importing application key '%s'", key)
         try:
             o = Application.get_object(endpoint, key)
         except exceptions.ObjectNotFound:

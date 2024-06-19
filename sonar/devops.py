@@ -24,6 +24,7 @@ import json
 
 from requests.exceptions import HTTPError
 
+import sonar.logging as log
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
@@ -92,7 +93,7 @@ class DevopsPlatform(sqobject.SqObject):
                 endpoint.post(_CREATE_API_BBCLOUD, params=params)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST and endpoint.edition() == "developer":
-                util.logger.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
+                log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
                 raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
             raise
         o = DevopsPlatform(key, endpoint, plt_type)
@@ -105,7 +106,7 @@ class DevopsPlatform(sqobject.SqObject):
         self.url = None  #: DevOps platform URL
         self._specific = None  #: DevOps platform specific settings
         _OBJECTS[key] = self
-        util.logger.debug("Created object %s", str(self))
+        log.debug("Created object %s", str(self))
 
     def _load(self, data):
         self._json = data
@@ -148,7 +149,7 @@ class DevopsPlatform(sqobject.SqObject):
 
     def set_pat(self, pat, user_name=None):
         if self.type == "github":
-            util.logger.warning("Can't set PAT for GitHub devops platform")
+            log.warning("Can't set PAT for GitHub devops platform")
             return False
         return self.post("alm_integrations/set_pat", params={"almSettings": self.key, "pat": pat, "username": user_name}).ok
 
@@ -162,7 +163,7 @@ class DevopsPlatform(sqobject.SqObject):
         """
         alm_type = kwargs["type"]
         if alm_type != self.type:
-            util.logger.error("DevOps platform type '%s' for update of %s is incompatible", alm_type, str(self))
+            log.error("DevOps platform type '%s' for update of %s is incompatible", alm_type, str(self))
             return False
 
         params = {"key": self.key, "url": kwargs["url"]}
@@ -234,7 +235,7 @@ def export(endpoint, full=False):
     """
     :meta private:
     """
-    util.logger.info("Exporting DevOps integration settings")
+    log.info("Exporting DevOps integration settings")
     json_data = {}
     for s in get_list(endpoint).values():
         json_data[s.uuid()] = s.to_json(full)
@@ -248,12 +249,12 @@ def import_config(endpoint, config_data):
     """
     devops_settings = config_data.get("devopsIntegration", {})
     if len(devops_settings) == 0:
-        util.logger.info("No devops integration settings in config, skipping import...")
+        log.info("No devops integration settings in config, skipping import...")
         return
     if endpoint.edition() == "community":
-        util.logger.warning("Can't import devops integration settings on a community edition")
+        log.warning("Can't import devops integration settings on a community edition")
         return
-    util.logger.info("Importing devops integration settings")
+    log.info("Importing devops integration settings")
     if len(_OBJECTS) == 0:
         get_list(endpoint)
     for name, data in devops_settings.items():

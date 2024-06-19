@@ -29,6 +29,8 @@ import json
 from http import HTTPStatus
 from threading import Lock
 from requests.exceptions import HTTPError
+
+import sonar.logging as log
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
@@ -95,7 +97,7 @@ class Organization(sqobject.SqObject):
         self.json_data = None
         self.description = None
         self.name = name
-        util.logger.debug("Created object %s", str(self))
+        log.debug("Created object %s", str(self))
         _OBJECTS[self.key] = self
 
     def __str__(self) -> str:
@@ -103,7 +105,7 @@ class Organization(sqobject.SqObject):
 
     def export(self) -> dict[str, str]:
         """Exports an organization"""
-        util.logger.info("Exporting %s", str(self))
+        log.info("Exporting %s", str(self))
         json_data = self.json_data.copy()
         json_data.pop("defaultLeakPeriod", None)
         json_data.pop("defaultLeakPeriodType", None)
@@ -141,7 +143,7 @@ def get_list(endpoint: object, key_list: str = None, use_cache: bool = True) -> 
     """
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
-            util.logger.info("Listing organizations")
+            log.info("Listing organizations")
             return search(endpoint=endpoint)
         object_list = {}
         for key in util.csv_to_list(key_list):

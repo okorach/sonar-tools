@@ -24,24 +24,18 @@
 """
 from http import HTTPStatus
 import sys
-import os
 import contextlib
 import re
-import logging
-import argparse
 import json
 import datetime
 from datetime import timezone
-import random
+
 from typing import Union
 import requests
 
-from sonar import options, version, errcodes
+import sonar.logging as log
+from sonar import version, errcodes
 
-DEFAULT_LOGGER = "sonar-tools"
-DEFAULT_LOGFILE = f"{DEFAULT_LOGGER}.log"
-LOG_FORMAT = "%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s"
-FORMATTER = logging.Formatter(LOG_FORMAT)
 
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
 SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
@@ -49,58 +43,19 @@ SQ_DATE_FORMAT = "%Y-%m-%d"
 SQ_TIME_FORMAT = "%H:%M:%S"
 
 
-# By default log as sonar-tools on stderr only
-logger = logging.getLogger(DEFAULT_LOGGER)
-
-
-def set_logger(filename: str = None, logger_name: str = None) -> None:
-    """Sets the logging file (stderr only by default) and the logger name"""
-    global logger
-    if logger_name is not None:
-        logger = logging.getLogger(logger_name)
-    if filename is not None:
-        fh = logging.FileHandler(filename)
-        logger.addHandler(fh)
-        fh.setFormatter(FORMATTER)
-    ch = logging.StreamHandler()
-    logger.addHandler(ch)
-    ch.setFormatter(FORMATTER)
-    logger.addHandler(ch)
-
-
-def get_logging_level(level):
-    if level == "DEBUG":
-        lvl = logging.DEBUG
-    elif level in ("WARN", "WARNING"):
-        lvl = logging.WARNING
-    elif level == "ERROR":
-        lvl = logging.ERROR
-    elif level == "CRITICAL":
-        lvl = logging.CRITICAL
-    else:
-        lvl = logging.INFO
-    return lvl
-
-
-def set_debug_level(level: str) -> None:
-    """Sets the logging level"""
-    logger.setLevel(get_logging_level(level))
-    logger.info("Set debug level to %s", level)
-
-
 def check_last_sonar_tools_version() -> None:
     """Checks last version of sonar-tools on pypi and displays a warning if the currently used version is older"""
-    logger.info("Checking latest sonar-version on pypi.org")
+    log.info("Checking latest sonar-version on pypi.org")
     try:
         r = requests.get(url="https://pypi.org/simple/sonar-tools", headers={"Accept": "application/vnd.pypi.simple.v1+json"}, timeout=10)
         r.raise_for_status()
     except (requests.RequestException, requests.exceptions.HTTPError, requests.exceptions.Timeout) as e:
-        logger.info("Can't access pypi.org, error %s", str(e))
+        log.info("Can't access pypi.org, error %s", str(e))
         return
     txt_version = json.loads(r.text)["versions"][-1]
-    logger.info("Latest sonar-tools version is %s", txt_version)
+    log.info("Latest sonar-tools version is %s", txt_version)
     if tuple(".".split(txt_version)) > tuple(".".split(version.PACKAGE_VERSION)):
-        logger.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
+        log.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
 
 
 def token_type(token):
@@ -127,7 +82,7 @@ def check_token(token: str, is_sonarcloud: bool = False) -> None:
 
 
 def json_dump_debug(json_data, pre_string=""):
-    logger.debug("%s%s", pre_string, json_dump(json_data))
+    log.debug("%s%s", pre_string, json_dump(json_data))
 
 
 def format_date_ymd(year, month, day):
@@ -281,9 +236,9 @@ def jvm_heap(cmdline):
             elif unit == "K":
                 return val // 1024
         except ValueError:
-            logger.warning("JVM -Xmx heap specified seems invalid in '%s'", cmdline)
+            log.warning("JVM -Xmx heap specified seems invalid in '%s'", cmdline)
             return None
-    logger.warning("No JVM heap memory settings specified in '%s'", cmdline)
+    log.warning("No JVM heap memory settings specified in '%s'", cmdline)
     return None
 
 
@@ -318,7 +273,7 @@ def dict_add(dict1, dict2):
 
 
 def exit_fatal(err_msg, exit_code):
-    logger.fatal(err_msg)
+    log.fatal(err_msg)
     print(f"FATAL: {err_msg}", file=sys.stderr)
     sys.exit(exit_code)
 
@@ -373,10 +328,10 @@ def nbr_pages(sonar_api_json):
 @contextlib.contextmanager
 def open_file(file=None, mode="w"):
     if file and file != "-":
-        logger.debug("Opening file '%s'", file)
+        log.debug("Opening file '%s'", file)
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
     else:
-        logger.debug("Writing to stdout")
+        log.debug("Writing to stdout")
         fd = sys.stdout
     try:
         yield fd
@@ -560,7 +515,7 @@ def start_clock() -> datetime.datetime:
 
 def stop_clock(start_time: datetime.datetime) -> None:
     """Logs execution time"""
-    logger.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
+    log.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
 
 
 def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json")) -> str:

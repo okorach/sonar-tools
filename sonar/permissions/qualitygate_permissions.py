@@ -18,7 +18,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-from sonar import utilities, exceptions
+"""Quality gates permissions class"""
+
+import sonar.logging as log
+from sonar import exceptions
 from sonar.permissions import permissions, quality_permissions
 
 
@@ -36,7 +39,7 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
 
     def read(self):
         if self.endpoint.version() < (9, 2, 0):
-            utilities.logger.debug("Can't read %s on SonarQube < 9.2", str(self))
+            log.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
         self._read_perms(QualityGatePermissions.APIS, QualityGatePermissions.API_GET_FIELD, gateName=self.concerned_object.name)
         return self

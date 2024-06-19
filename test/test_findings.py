@@ -27,8 +27,9 @@ from unittest.mock import patch
 import pytest
 
 import utilities as testutil
+import sonar.logging as log
 from cli import findings_export
-from sonar import errcodes, utilities
+from sonar import errcodes
 
 CMD = "sonar-findings-export.py"
 CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
@@ -68,7 +69,7 @@ def test_findings_export() -> None:
         testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
         with pytest.raises(SystemExit) as e:
             fullcmd = [CMD] + testutil.STD_OPTS + opts
-            utilities.logger.info("Running %s", " ".join(fullcmd))
+            log.info("Running %s", " ".join(fullcmd))
             with patch.object(sys, "argv", fullcmd):
                 findings_export.main()
         assert int(str(e.value)) == 0
@@ -76,7 +77,7 @@ def test_findings_export() -> None:
             assert testutil.file_not_empty(testutil.CSV_FILE)
         elif testutil.JSON_FILE in opts:
             assert testutil.file_not_empty(testutil.JSON_FILE)
-        utilities.logger.info("SUCCESS running: %s", " ".join(fullcmd))
+        log.info("SUCCESS running: %s", " ".join(fullcmd))
     testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
 
 

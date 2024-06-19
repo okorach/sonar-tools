@@ -18,9 +18,12 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Parent permissions class for quality gates and quality profiles permissions subclasses"""
+
 import json
 from http import HTTPStatus
 
+import sonar.logging as log
 from sonar import utilities, errcodes
 from sonar.permissions import permissions
 
@@ -79,10 +82,10 @@ class QualityPermissions(permissions.Permissions):
 
     def _set_perms(self, new_perms, apis, field, diff_func, **kwargs):
         if self.concerned_object.is_built_in:
-            utilities.logger.debug("Can't set %s because it's built-in", str(self))
+            log.debug("Can't set %s because it's built-in", str(self))
             self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
             return self
-        utilities.logger.debug("Setting %s with %s", str(self), str(new_perms))
+        log.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
         for p in permissions.PERMISSION_TYPES:
@@ -99,7 +102,7 @@ class QualityPermissions(permissions.Permissions):
     def _read_perms(self, apis, field, **kwargs):
         self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
         if self.concerned_object.is_built_in:
-            utilities.logger.debug("No permissions for %s because it's built-in", str(self))
+            log.debug("No permissions for %s because it's built-in", str(self))
         else:
             for p in permissions.PERMISSION_TYPES:
                 self.permissions[p] = self._get_api(apis["get"][p], p, field[p], **kwargs)

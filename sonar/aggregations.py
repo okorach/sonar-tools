@@ -23,8 +23,10 @@
 
 """
 import json
+
+import sonar.logging as log
 import sonar.components as comp
-from sonar import utilities, measures
+from sonar import measures
 from sonar.audit import rules, problem
 
 
@@ -86,7 +88,7 @@ class Aggregation(comp.Component):
             rule = rules.get_rule(broken_rule)
             problems.append(problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self))
         else:
-            utilities.logger.debug("%s has %d projects", str(self), n)
+            log.debug("%s has %d projects", str(self), n)
         return problems
 
     def _audit_empty_aggregation(self, broken_rule: object) -> list[problem.Problem]:

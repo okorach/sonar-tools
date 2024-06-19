@@ -23,8 +23,9 @@
 """
 import sys
 import csv
-from typing import TextIO
 from requests.exceptions import HTTPError
+
+import sonar.logging as log
 from sonar import platform, portfolios, options, projects
 import sonar.utilities as util
 
@@ -57,7 +58,7 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
     try:
         loc = o.loc()
     except HTTPError as e:
-        util.logger.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
+        log.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
         loc = ""
     arr = [o.key, loc]
     obj_type = type(o).__name__.lower()
@@ -82,7 +83,7 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
     """Dumps LoC of passed list of objects (projects, branches or portfolios) as CSV"""
 
     if len(object_list) <= 0:
-        util.logger.warning("No objects with LoCs to dump, dump skipped")
+        log.warning("No objects with LoCs to dump, dump skipped")
         return
     obj_type = type(object_list[0]).__name__.lower()
     nb_loc, nb_objects = 0, 0
@@ -95,18 +96,18 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
             writer.writerow(arr)
             nb_objects += 1
             if loc != "":
-                util.logger.debug("arr = %s", str(arr))
+                log.debug("arr = %s", str(arr))
                 nb_loc += loc
             if nb_objects % 50 != 0:
                 continue
             if obj_type == "project":
-                util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
+                log.info("%d %ss and %d LoCs, still counting...", nb_objects, obj_type, nb_loc)
             else:
-                util.logger.info("%d %ss objects dumped, still working...", nb_objects, obj_type)
+                log.info("%d %ss objects dumped, still working...", nb_objects, obj_type)
     if obj_type == "project":
-        util.logger.info("%d %ss and %d LoCs in total", len(object_list), obj_type, nb_loc)
+        log.info("%d %ss and %d LoCs in total", len(object_list), obj_type, nb_loc)
     else:
-        util.logger.info("%d %ss objects dumped in total...", len(object_list), obj_type)
+        log.info("%d %ss objects dumped in total...", len(object_list), obj_type)
 
 
 def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
@@ -118,7 +119,7 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     try:
         d["ncloc"] = o.loc()
     except HTTPError as e:
-        util.logger.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
+        log.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
     if kwargs[options.WITH_NAME]:
         d["projectName"] = o.name
         if obj_type == "branch":
@@ -137,7 +138,7 @@ def __dump_json(object_list: list[object], file: str, **kwargs) -> None:
     nb_loc, nb_objects = 0, 0
     data = []
     if len(object_list) <= 0:
-        util.logger.warning("No objects with LoCs to dump, dump skipped")
+        log.warning("No objects with LoCs to dump, dump skipped")
         return
     obj_type = type(object_list[0]).__name__.lower()
     # Collect all objects data
@@ -147,21 +148,21 @@ def __dump_json(object_list: list[object], file: str, **kwargs) -> None:
         if nb_objects % 50 != 0:
             continue
         if obj_type == "project":
-            util.logger.info("%d %ss and %d LoCs, still counting...", nb_objects, str(obj_type), nb_loc)
+            log.info("%d %ss and %d LoCs, still counting...", nb_objects, str(obj_type), nb_loc)
         else:
-            util.logger.info("%d %ss dumped, still counting...", nb_objects, str(obj_type))
+            log.info("%d %ss dumped, still counting...", nb_objects, str(obj_type))
 
     with util.open_file(file) as fd:
         print(util.json_dump(data), file=fd)
     if obj_type == "project":
-        util.logger.info("%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc)
+        log.info("%d %ss and %d LoCs in total", len(object_list), str(obj_type), nb_loc)
     else:
-        util.logger.info("%d %ss dumped in total", len(object_list), str(obj_type))
+        log.info("%d %ss dumped in total", len(object_list), str(obj_type))
 
 
 def __dump_loc(object_list: list[object], file: str, **kwargs) -> None:
     """Dumps the LoC of collection of objects either in CSV or JSON format"""
-    util.logger.info("%d objects with LoCs to export, in format %s...", len(object_list), kwargs[options.FORMAT])
+    log.info("%d objects with LoCs to export, in format %s...", len(object_list), kwargs[options.FORMAT])
     if kwargs[options.FORMAT] == "json":
         __dump_json(object_list, file, **kwargs)
     else:
@@ -217,9 +218,9 @@ def main():
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
     if kwargs[OPT_PORTFOLIOS]:
         if kwargs[options.WITH_BRANCHES]:
-            util.logger.warning("Portfolio LoC export selected, branch option is ignored")
+            log.warning("Portfolio LoC export selected, branch option is ignored")
         if kwargs[options.WITH_LAST_ANALYSIS]:
-            util.logger.warning("Portfolio LoC export selected, last analysis option is ignored")
+            log.warning("Portfolio LoC export selected, last analysis option is ignored")
         kwargs[options.WITH_LAST_ANALYSIS] = False
         kwargs[options.WITH_BRANCHES] = False
         params = {}
@@ -230,7 +231,7 @@ def main():
         objects_list = list(projects.search(endpoint).values())
         if kwargs[options.WITH_BRANCHES]:
             if endpoint.edition() == "community":
-                util.logger.warning("No branches in community edition, option to export by branch is ignored")
+                log.warning("No branches in community edition, option to export by branch is ignored")
             else:
                 branch_list = []
                 for proj in objects_list:

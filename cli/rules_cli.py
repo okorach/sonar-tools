@@ -23,6 +23,8 @@
 """
 import sys
 import csv
+
+import sonar.logging as log
 from sonar import rules, platform, options
 import sonar.utilities as util
 
@@ -62,7 +64,7 @@ def main() -> int:
         if fmt == "json":
             print("\n]\n", file=fd)
 
-    util.logger.info("%d rules exported", len(rule_list))
+    log.info("%d rules exported", len(rule_list))
     sys.exit(0)
 
 
