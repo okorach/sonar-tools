@@ -262,7 +262,9 @@ def set_target_sonar_args(parser: argparse.ArgumentParser) -> argparse.ArgumentP
     return parser
 
 
-def set_output_file_args(parser: argparse.ArgumentParser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False) -> argparse.ArgumentParser:
+def set_output_file_args(
+    parser: argparse.ArgumentParser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False
+) -> argparse.ArgumentParser:
     parser.add_argument(
         "-f",
         "--file",
