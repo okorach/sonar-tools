@@ -519,7 +519,7 @@ def stop_clock(start_time: datetime.datetime) -> None:
     log.info("Total execution time: %s", str(datetime.datetime.now() - start_time))
 
 
-def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json")) -> str:
+def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_formats: tuple[str] = ("csv", "json", "sarif")) -> str:
     """Deducts output format from CLI format and filename"""
     if fmt is None and filename is not None:
         fmt = filename.split(".").pop(-1).lower()
