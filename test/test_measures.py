@@ -26,46 +26,46 @@ import os
 from unittest.mock import patch
 import pytest
 
-import utilities as testutil
+import utilities as util
 from sonar import errcodes
 from cli import measures_export
 
 CMD = "sonar-measures-export.py"
-CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
-JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
 
 
 def test_measures_export() -> None:
     """test_measures_export"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_conversion() -> None:
     """test_measures_conversion"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-r", "-p", "--withTags"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_export_with_url() -> None:
     """test_measures_export_with_url"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-b", "-m", "_main", "--withURL"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_export_json() -> None:
@@ -74,19 +74,19 @@ def test_measures_export_json() -> None:
         with patch.object(sys, "argv", JSON_OPTS + ["-b", "-m", "_main"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.JSON_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    assert util.file_not_empty(util.JSON_FILE)
+    util.clean(util.JSON_FILE)
 
 
 def test_measures_export_all() -> None:
     """test_measures_export_all"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-b", "-m", "_all"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_export_json_all() -> None:
@@ -95,104 +95,104 @@ def test_measures_export_json_all() -> None:
         with patch.object(sys, "argv", JSON_OPTS + ["-b", "-m", "_all"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.JSON_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    assert util.file_not_empty(util.JSON_FILE)
+    util.clean(util.JSON_FILE)
 
 
 def test_measures_export_history() -> None:
     """test_measures_export_history"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--history", "-m", "_all"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_export_history_as_table() -> None:
     """test_measures_export_history_as_table"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_export_history_as_table_no_time() -> None:
     """test_measures_export_history_as_table_no_time"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-d"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_export_history_as_table_with_url() -> None:
     """test_measures_export_history_as_table_with_url"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "--withURL"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_export_history_as_table_with_branch() -> None:
     """test_measures_export_history_as_table_with_url"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable", "-b"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_measures_export_dateonly() -> None:
     """test_measures_export_dateonly"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-d"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_specific_measure() -> None:
     """test_specific_measure"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,coverage"]):
             measures_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_non_existing_measure() -> None:
     """test_non_existing_measure"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-m", "ncloc,sqale_index,bad_measure"]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
-    assert not os.path.isfile(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert not os.path.isfile(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_non_existing_project() -> None:
     """test_non_existing_project"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
             measures_export.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
-    assert not os.path.isfile(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert not os.path.isfile(util.CSV_FILE)
+    util.clean(util.CSV_FILE)

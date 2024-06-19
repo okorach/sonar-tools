@@ -26,29 +26,29 @@ import sys
 from unittest.mock import patch
 import pytest
 
-import utilities as testutil
+import utilities as util
 import sonar.logging as log
 from cli import findings_export
 from sonar import errcodes
 
 CMD = "sonar-findings-export.py"
-CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
-JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
 
 __GOOD_OPTS = [
     ["--format", "json", "-l", "sonar-tools.log", "-v", "DEBUG"],
-    ["--format", "json", "-f", testutil.JSON_FILE],
-    ["--withURL", "--threads", "4", "-f", testutil.CSV_FILE],
-    ["--csvSeparator", "';'", "-d", "--tags", "cwe,convention", "-f", testutil.CSV_FILE],
-    ["--statuses", "OPEN,CLOSED", "-f", testutil.CSV_FILE],
-    ["--createdBefore", "2024-05-01", "-f", testutil.JSON_FILE],
-    ["--createdAfter", "2023-05-01", "-f", testutil.CSV_FILE],
-    ["--resolutions", "FALSE-POSITIVE,REMOVED", "-f", testutil.CSV_FILE],
-    ["--types", "BUG,VULNERABILITY", "-f", testutil.CSV_FILE],
-    ["--statuses", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL", "-f", testutil.CSV_FILE],
-    ["-k", "okorach_sonar-tools", "-b", "*", "-f", testutil.CSV_FILE],
-    ["-k", "training:security", "-b", "main", "-f", testutil.CSV_FILE],
-    ["--useFindings", "-f", testutil.CSV_FILE],
+    ["--format", "json", "-f", util.JSON_FILE],
+    ["--withURL", "--threads", "4", "-f", util.CSV_FILE],
+    ["--csvSeparator", "';'", "-d", "--tags", "cwe,convention", "-f", util.CSV_FILE],
+    ["--statuses", "OPEN,CLOSED", "-f", util.CSV_FILE],
+    ["--createdBefore", "2024-05-01", "-f", util.JSON_FILE],
+    ["--createdAfter", "2023-05-01", "-f", util.CSV_FILE],
+    ["--resolutions", "FALSE-POSITIVE,REMOVED", "-f", util.CSV_FILE],
+    ["--types", "BUG,VULNERABILITY", "-f", util.CSV_FILE],
+    ["--statuses", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL", "-f", util.CSV_FILE],
+    ["-k", "okorach_sonar-tools", "-b", "*", "-f", util.CSV_FILE],
+    ["-k", "training:security", "-b", "main", "-f", util.CSV_FILE],
+    ["--useFindings", "-f", util.CSV_FILE],
 ]
 
 __WRONG_FILTER_OPTS = [
@@ -66,19 +66,19 @@ __WRONG_OPTS = [
 def test_findings_export() -> None:
     """test_findings_export"""
     for opts in __GOOD_OPTS:
-        testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
+        util.clean(util.CSV_FILE, util.JSON_FILE)
         with pytest.raises(SystemExit) as e:
-            fullcmd = [CMD] + testutil.STD_OPTS + opts
+            fullcmd = [CMD] + util.STD_OPTS + opts
             log.info("Running %s", " ".join(fullcmd))
             with patch.object(sys, "argv", fullcmd):
                 findings_export.main()
         assert int(str(e.value)) == 0
-        if testutil.CSV_FILE in opts:
-            assert testutil.file_not_empty(testutil.CSV_FILE)
-        elif testutil.JSON_FILE in opts:
-            assert testutil.file_not_empty(testutil.JSON_FILE)
+        if util.CSV_FILE in opts:
+            assert util.file_not_empty(util.CSV_FILE)
+        elif util.JSON_FILE in opts:
+            assert util.file_not_empty(util.JSON_FILE)
         log.info("SUCCESS running: %s", " ".join(fullcmd))
-    testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
+    util.clean(util.CSV_FILE, util.JSON_FILE)
 
 
 # def test_findings_export_sarif():
@@ -93,31 +93,31 @@ def test_findings_export() -> None:
 
 def test_wrong_filters() -> None:
     """test_wrong_filters"""
-    testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
+    util.clean(util.CSV_FILE, util.JSON_FILE)
     for bad_opts in __WRONG_FILTER_OPTS:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
                 findings_export.main()
         assert int(str(e.value)) == errcodes.WRONG_SEARCH_CRITERIA
-        assert not os.path.isfile(testutil.CSV_FILE)
-        assert not os.path.isfile(testutil.JSON_FILE)
+        assert not os.path.isfile(util.CSV_FILE)
+        assert not os.path.isfile(util.JSON_FILE)
 
 
 def test_wrong_opts() -> None:
     """test_wrong_opts"""
-    testutil.clean(testutil.CSV_FILE, testutil.JSON_FILE)
+    util.clean(util.CSV_FILE, util.JSON_FILE)
     for bad_opts in __WRONG_OPTS:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
                 findings_export.main()
         assert int(str(e.value)) == errcodes.NO_SUCH_KEY
-        assert not os.path.isfile(testutil.CSV_FILE)
-        assert not os.path.isfile(testutil.JSON_FILE)
+        assert not os.path.isfile(util.CSV_FILE)
+        assert not os.path.isfile(util.JSON_FILE)
 
 
 def test_findings_export_non_existing_branch() -> None:
     """test_findings_export_non_existing_branch"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-k", "training:security", "-b", "non-existing-branch"]):
             findings_export.main()
@@ -127,5 +127,5 @@ def test_findings_export_non_existing_branch() -> None:
     # assert int(str(e.value)) == errcodes.ERR_NO_SUCH_KEY
     # assert not os.path.isfile(testutil.CSV_FILE)
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)

@@ -26,23 +26,23 @@ import sys
 from unittest.mock import patch
 import pytest
 
-import utilities as testutil
+import utilities as util
 from sonar import errcodes
 from cli import config
 
 CMD = "config.py"
-OPTS = [CMD] + testutil.STD_OPTS + ["-e", "-f", testutil.JSON_FILE]
+OPTS = [CMD] + util.STD_OPTS + ["-e", "-f", util.JSON_FILE]
 
 
 def __test_config_cmd(arguments: list[str]) -> None:
     """Runs a test command"""
-    testutil.clean(testutil.JSON_FILE)
+    util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", arguments):
             config.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.JSON_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    assert util.file_not_empty(util.JSON_FILE)
+    util.clean(util.JSON_FILE)
 
 
 def test_config_export() -> None:
@@ -72,21 +72,21 @@ def test_config_export_partial_3() -> None:
 
 def test_config_export_wrong() -> None:
     """test_config_export_wrong"""
-    testutil.clean(testutil.JSON_FILE)
+    util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", OPTS + ["-w", "settings,wrong,users"]):
             config.main()
     assert int(str(e.value)) == errcodes.ARGS_ERROR
-    assert not os.path.isfile(testutil.JSON_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    assert not os.path.isfile(util.JSON_FILE)
+    util.clean(util.JSON_FILE)
 
 
 def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    testutil.clean(testutil.JSON_FILE)
+    util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
             config.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
-    assert not os.path.isfile(testutil.JSON_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    assert not os.path.isfile(util.JSON_FILE)
+    util.clean(util.JSON_FILE)

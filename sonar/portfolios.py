@@ -79,7 +79,7 @@ _IMPORTABLE_PROPERTIES = (
 class Portfolio(aggregations.Aggregation):
     @classmethod
     def get_object(cls, endpoint, key):
-        log.debug("Getting object '%s'", key)
+        log.info("Getting portfolio object key '%s'", key)
         # if root_key is None:
         # data = search_by_name(endpoint=endpoint, name=name)
         # else:
@@ -91,7 +91,7 @@ class Portfolio(aggregations.Aggregation):
             return _OBJECTS[key]
         data = search_by_key(endpoint, key)
         if data is None:
-            raise exceptions.ObjectNotFound(key, f"Portfolios '{key}' not found")
+            raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' not found")
         return Portfolio.load(endpoint=endpoint, data=data)
 
     @classmethod
@@ -194,7 +194,7 @@ class Portfolio(aggregations.Aggregation):
         if self._projects is not None:
             log.debug("%s: Projects already set, returning %s", str(self), str(self._projects))
             return self._projects
-        if "selectedProjects" not in self._json:
+        if self._json is None or "selectedProjects" not in self._json:
             self.refresh()
         self._projects = {}
         log.debug("%s: Read projects %s", str(self), str(self._projects))

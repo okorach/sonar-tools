@@ -28,7 +28,7 @@ import sys
 from unittest.mock import patch
 import pytest
 
-import utilities as testutil
+import utilities as util
 import sonar.logging as log
 from cli import findings_sync
 
@@ -41,25 +41,25 @@ PLAT_OPTS = ["-u", os.getenv("SONAR_HOST_URL_LATEST"), "-t", os.getenv("SONAR_TO
     os.getenv("SONAR_TOKEN_SYNC_USER"),
 ]
 SYNC_OPTS = ["--login", "syncer", "-k", "TESTSYNC", "-K", "TESTSYNC"]
-ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + ["-f", testutil.JSON_FILE]
+ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + ["-f", util.JSON_FILE]
 
 
 def test_sync_help() -> None:
     """test_sync"""
-    testutil.clean(testutil.JSON_FILE)
+    util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", [CMD, "-h"]):
             findings_sync.main()
-    assert not os.path.isfile(testutil.JSON_FILE)
+    assert not os.path.isfile(util.JSON_FILE)
 
 
 def test_sync() -> None:
     """test_sync"""
-    testutil.clean(testutil.JSON_FILE)
+    util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", ALL_OPTS):
             log.info("Running %s", " ".join(ALL_OPTS))
             findings_sync.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.JSON_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    assert util.file_not_empty(util.JSON_FILE)
+    util.clean(util.JSON_FILE)
