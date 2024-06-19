@@ -144,8 +144,7 @@ def main():
             util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
     ofile = kwargs.pop("file")
-    kwargs["format"] = util.deduct_format(kwargs["format"], ofile)
-    problem.dump_report(problems, ofile, server_id, **kwargs)
+    problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs["format"], ofile))
 
     log.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
     if problems:

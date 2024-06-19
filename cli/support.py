@@ -157,7 +157,7 @@ def main():
             if problems:
                 found_problems = True
                 log.warning("%d issues found during audit", len(problems))
-                problem.dump_report(problems, None, format="csv")
+                problem.dump_report(problems, file=None, format="csv")
                 for p in problems:
                     sev = "(x)" if p.severity in (severities.Severity.HIGH, severities.Severity.CRITICAL) else "(!)"
                     comment += f"{sev} {p.message}\n"

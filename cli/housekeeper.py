@@ -213,7 +213,7 @@ def main():
     if token_age:
         problems += get_user_problems(token_age, sq)
 
-    problem.dump_report(problems, file=None, file_format="csv")
+    problem.dump_report(problems, file=None, format="csv")
 
     op = "to delete"
     if mode == "delete":
