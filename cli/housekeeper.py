@@ -29,8 +29,9 @@
 import sys
 import logging
 
+from cli import options
 import sonar.logging as log
-from sonar import platform, tokens, users, options, projects, branches, pull_requests
+from sonar import platform, tokens, users, projects, branches, pull_requests
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import config, problem

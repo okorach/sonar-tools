@@ -30,8 +30,9 @@ from threading import Thread, Lock
 from queue import Queue
 from requests.exceptions import HTTPError
 
+from cli import options
 import sonar.logging as log
-from sonar import options, exceptions, errcodes
+from sonar import exceptions, errcodes
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, measures, syncer
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches

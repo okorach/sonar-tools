@@ -29,8 +29,9 @@ import csv
 from http import HTTPStatus
 from requests.exceptions import HTTPError
 
+from cli import options
 import sonar.logging as log
-from sonar import metrics, platform, options, exceptions, projects, errcodes
+from sonar import metrics, platform, exceptions, projects, errcodes
 import sonar.utilities as util
 
 RATINGS = "letters"

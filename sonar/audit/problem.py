@@ -20,8 +20,9 @@
 
 import csv
 
+from cli import options
 import sonar.logging as log
-from sonar import utilities, options
+from sonar import utilities
 
 
 class Problem:

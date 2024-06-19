@@ -42,8 +42,9 @@ import threading
 from threading import Thread
 from requests.exceptions import HTTPError
 
+from cli import options
 import sonar.logging as log
-from sonar import platform, options, exceptions, projects, issues, hotspots, findings, errcodes
+from sonar import platform, exceptions, projects, issues, hotspots, findings, errcodes
 import sonar.utilities as util
 
 WRITE_END = object()

@@ -30,8 +30,9 @@ import json
 import argparse
 import requests
 
+from cli import options
 import sonar.logging as log
-from sonar import sif, errcodes, options
+from sonar import sif, errcodes
 from sonar.audit import problem, severities, config
 import sonar.utilities as util
 

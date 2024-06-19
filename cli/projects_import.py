@@ -26,8 +26,9 @@
 import sys
 import json
 
+from cli import options
 import sonar.logging as log
-from sonar import errcodes, exceptions, options
+from sonar import errcodes, exceptions
 from sonar import platform, projects
 import sonar.utilities as util
 

@@ -24,8 +24,9 @@
 import sys
 import csv
 
+from cli import options
 import sonar.logging as log
-from sonar import rules, platform, options
+from sonar import rules, platform
 import sonar.utilities as util
 
 

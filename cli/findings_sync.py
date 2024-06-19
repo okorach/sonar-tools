@@ -31,8 +31,9 @@
 import sys
 import datetime
 
+from cli import options
 import sonar.logging as log
-from sonar import platform, syncer, options, exceptions, projects, branches, errcodes
+from sonar import platform, syncer, exceptions, projects, branches, errcodes
 import sonar.utilities as util
 
 _WITH_COMMENTS = {"additionalFields": "comments"}

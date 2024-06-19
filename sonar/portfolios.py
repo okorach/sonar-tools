@@ -29,8 +29,9 @@ from http import HTTPStatus
 from threading import Lock
 from requests.exceptions import HTTPError
 
+from cli import options
 import sonar.logging as log
-from sonar import aggregations, options, exceptions
+from sonar import aggregations, exceptions
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq

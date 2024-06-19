@@ -23,7 +23,8 @@
 """
 import sys
 
-from sonar import options, exceptions, errcodes, utilities
+from cli import options
+from sonar import exceptions, errcodes, utilities
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications

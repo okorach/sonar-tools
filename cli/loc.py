@@ -25,8 +25,9 @@ import sys
 import csv
 from requests.exceptions import HTTPError
 
+from cli import options
 import sonar.logging as log
-from sonar import platform, portfolios, options, projects
+from sonar import platform, portfolios, projects
 import sonar.utilities as util
 
 OPT_PORTFOLIOS = "portfolios"
