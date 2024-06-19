@@ -60,16 +60,16 @@ def test_rules_json_format() -> None:
 
 def test_get_rule() -> None:
     """test_get_rule"""
-    myrule = rules.get_object(endpoint=testutil.SONARQUBE, key="java:S127")
+    myrule = rules.get_object(endpoint=testutil.SQ, key="java:S127")
     assert str(myrule) == "rule key 'java:S127'"
-    myrule = rules.Rule.load(endpoint=testutil.SONARQUBE, key="java:S127", data={})
+    myrule = rules.Rule.load(endpoint=testutil.SQ, key="java:S127", data={})
     assert str(myrule) == "rule key 'java:S127'"
 
 
 def test_get_nonexisting_rule() -> None:
     """test_get_nonexisting_rule"""
     try:
-        _ = rules.Rule.get_object(endpoint=testutil.SONARQUBE, key="badlang:S127")
+        _ = rules.Rule.get_object(endpoint=testutil.SQ, key="badlang:S127")
         assert False
     except exceptions.ObjectNotFound as e:
         assert e.key == "badlang:S127"
@@ -77,5 +77,5 @@ def test_get_nonexisting_rule() -> None:
 
 def test_export_all() -> None:
     """test_export_all"""
-    rule_list = rules.export_all(endpoint=testutil.SONARQUBE, full=True)
+    rule_list = rules.export_all(endpoint=testutil.SQ, full=True)
     assert len(rule_list.get("standard", {})) > 3000

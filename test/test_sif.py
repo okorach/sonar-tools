@@ -65,9 +65,9 @@ def test_audit_sif_ut() -> None:
     assert sysinfo.web_jvm_cmdline() == "-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.ce_jvm_cmdline() == "-Xmx1G -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.search_jvm_cmdline() == "-Xmx1G -Xms1G -XX:+HeapDumpOnOutOfMemoryError"
-    sysinfo = sif.Sif(json_sif, concerned_object=testutil.SONARQUBE)
-    assert sysinfo.url() == testutil.SONARQUBE.url
-    assert str(sysinfo).split("@")[1] == testutil.SONARQUBE.url
+    sysinfo = sif.Sif(json_sif, concerned_object=testutil.SQ)
+    assert sysinfo.url() == testutil.SQ.url
+    assert str(sysinfo).split("@")[1] == testutil.SQ.url
 
 
 def test_modified_sif() -> None:
