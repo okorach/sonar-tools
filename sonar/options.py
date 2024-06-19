@@ -247,6 +247,7 @@ def set_key_arg(parser):
 
 
 def set_target_sonar_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """Sets the target SonarQube CLI options"""
     parser.add_argument(
         "-U",
         "--urlTarget",
@@ -265,6 +266,7 @@ def set_target_sonar_args(parser: argparse.ArgumentParser) -> argparse.ArgumentP
 def set_output_file_args(
     parser: argparse.ArgumentParser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False
 ) -> argparse.ArgumentParser:
+    """Sets the output file CLI options"""
     parser.add_argument(
         "-f",
         "--file",
@@ -298,6 +300,7 @@ def set_output_file_args(
 
 
 def set_what(parser: argparse.ArgumentParser, what_list: list[str], operation: str) -> argparse.ArgumentParser:
+    """Sets the argumant to select what to audit or to export as config"""
     parser.add_argument(
         "-w",
         "--what",

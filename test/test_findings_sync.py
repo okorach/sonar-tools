@@ -28,8 +28,8 @@ import sys
 from unittest.mock import patch
 import pytest
 
-import sonar.logging as log
 import utilities as testutil
+import sonar.logging as log
 from cli import findings_sync
 
 

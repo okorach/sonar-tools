@@ -24,10 +24,9 @@
 """
 
 import datetime
-
-import sonar.logging as log
 from dateutil.relativedelta import relativedelta
 
+import sonar.logging as log
 from sonar.audit import rules
 import sonar.audit.problem as pb
 
