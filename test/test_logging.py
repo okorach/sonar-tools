@@ -26,40 +26,40 @@ import os
 from unittest.mock import patch
 import pytest
 
-import utilities as testutil
+import utilities as util
 from sonar import errcodes
 from cli import loc
 
 CMD = "sonar-loc.py"
-CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
 
 
 def test_no_log_file() -> None:
     """Tests that when no log file is specified, no file is produced"""
-    testutil.clean("sonar-tools.log")
+    util.clean("sonar-tools.log")
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS):
             loc.main()
     assert int(str(e.value)) == 0
     assert not os.path.isfile("sonar-tools.log")
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_custom_log_file() -> None:
     """Tests that when a specific log file is given, logs come in that file"""
     logfile = "sonar-loc-logging.log"
-    testutil.clean(testutil.CSV_FILE, "sonar-tools.log", logfile)
+    util.clean(util.CSV_FILE, "sonar-tools.log", logfile)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["-l", logfile]):
             loc.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
     assert not os.path.isfile("sonar-tools.log")
-    assert testutil.file_not_empty(logfile)
+    assert util.file_not_empty(logfile)
     with open(logfile, encoding="utf-8") as f:
         first_line = f.readline()
     assert "| sonar-loc |" in first_line
-    testutil.clean(testutil.CSV_FILE, logfile)
+    util.clean(util.CSV_FILE, logfile)
 
 
 def test_missing_log_filename() -> None:

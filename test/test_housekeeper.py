@@ -27,7 +27,7 @@
 import sys
 from unittest.mock import patch
 import pytest
-import utilities as testutil
+import utilities as util
 from cli import housekeeper
 
 CMD = "sonar-housekeeper.py"
@@ -42,6 +42,6 @@ def test_housekeeper() -> None:
     """test_housekeeper"""
     for opts in __GOOD_OPTS:
         with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", [CMD] + testutil.STD_OPTS + opts):
+            with patch.object(sys, "argv", [CMD] + util.STD_OPTS + opts):
                 housekeeper.main()
         assert int(str(e.value)) == 0

@@ -27,51 +27,51 @@ import sys
 from unittest.mock import patch
 import pytest
 
-import utilities as testutil
+import utilities as util
 from sonar import errcodes
 from cli import projects_export
 
 CMD = "projects_export.py"
-OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
+OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
 
 
 def __test_project_export(arguments: list[str], file: str) -> None:
     """Runs a test command"""
-    testutil.clean(file)
+    util.clean(file)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", arguments):
             projects_export.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(file)
-    testutil.clean(file)
+    assert util.file_not_empty(file)
+    util.clean(file)
 
 
 def test_export_all_proj() -> None:
     """test_export_all_proj"""
-    __test_project_export(OPTS, testutil.JSON_FILE)
+    __test_project_export(OPTS, util.JSON_FILE)
 
 
 def test_export_single_proj() -> None:
     """test_export_single_proj"""
-    __test_project_export(OPTS + ["-k", "okorach_sonar-tools"], testutil.JSON_FILE)
+    __test_project_export(OPTS + ["-k", "okorach_sonar-tools"], util.JSON_FILE)
 
 
 def test_export_timeout() -> None:
     """test_export_timeout"""
-    __test_project_export(OPTS + ["-k", "okorach_sonar-tools", "--exportTimeout", "10"], testutil.JSON_FILE)
+    __test_project_export(OPTS + ["-k", "okorach_sonar-tools", "--exportTimeout", "10"], util.JSON_FILE)
 
 
 def test_export_non_existing_project() -> None:
     """test_config_non_existing_project"""
-    testutil.clean(testutil.JSON_FILE)
+    util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
             projects_export.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
-    assert not os.path.isfile(testutil.JSON_FILE)
-    testutil.clean(testutil.JSON_FILE)
+    assert not os.path.isfile(util.JSON_FILE)
+    util.clean(util.JSON_FILE)
 
 
 def test_two_threads() -> None:
     """test_two_threads"""
-    __test_project_export(OPTS + ["--threads", "2"], testutil.JSON_FILE)
+    __test_project_export(OPTS + ["--threads", "2"], util.JSON_FILE)

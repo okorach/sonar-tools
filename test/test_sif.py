@@ -28,24 +28,24 @@ import json
 import datetime
 from unittest.mock import patch
 import pytest
-import utilities as testutil
+import utilities as util
 from sonar import sif
 from cli import audit
 
 CMD = "sonar-audit.py"
-CSV_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.CSV_FILE]
-JSON_OPTS = [CMD] + testutil.STD_OPTS + ["-f", testutil.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
 
 
 def test_audit_sif() -> None:
     """test_audit_sif"""
-    testutil.clean(testutil.CSV_FILE)
+    util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", "test/sif1.json", "-f", testutil.CSV_FILE]):
+        with patch.object(sys, "argv", [CMD, "--sif", "test/sif1.json", "-f", util.CSV_FILE]):
             audit.main()
     assert int(str(e.value)) == 0
-    assert testutil.file_not_empty(testutil.CSV_FILE)
-    testutil.clean(testutil.CSV_FILE)
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
 
 
 def test_audit_sif_ut() -> None:
@@ -65,9 +65,9 @@ def test_audit_sif_ut() -> None:
     assert sysinfo.web_jvm_cmdline() == "-Xmx512m -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.ce_jvm_cmdline() == "-Xmx1G -Xms128m -XX:+HeapDumpOnOutOfMemoryError"
     assert sysinfo.search_jvm_cmdline() == "-Xmx1G -Xms1G -XX:+HeapDumpOnOutOfMemoryError"
-    sysinfo = sif.Sif(json_sif, concerned_object=testutil.SQ)
-    assert sysinfo.url() == testutil.SQ.url
-    assert str(sysinfo).split("@")[1] == testutil.SQ.url
+    sysinfo = sif.Sif(json_sif, concerned_object=util.SQ)
+    assert sysinfo.url() == util.SQ.url
+    assert str(sysinfo).split("@")[1] == util.SQ.url
 
 
 def test_modified_sif() -> None:
