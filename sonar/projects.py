@@ -30,7 +30,6 @@ from threading import Thread, Lock
 from queue import Queue
 from requests.exceptions import HTTPError
 
-from cli import options
 import sonar.logging as log
 from sonar import exceptions, errcodes
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, measures, syncer
@@ -1325,18 +1324,6 @@ def exists(key, endpoint):
         return True
     except exceptions.ObjectNotFound:
         return False
-
-
-def loc_csv_header(**kwargs):
-    arr = ["# Project Key"]
-    if kwargs[options.WITH_NAME]:
-        arr.append("Project name")
-    arr.append("LoC")
-    if kwargs[options.WITH_LAST_ANALYSIS]:
-        arr.append("Last analysis")
-    if kwargs[options.WITH_URL]:
-        arr.append("URL")
-    return arr
 
 
 def import_config(endpoint, config_data, key_list=None):
