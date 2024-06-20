@@ -514,7 +514,7 @@ class Portfolio(aggregations.Aggregation):
         return {"portfolio": self.key}
 
 
-def count(endpoint=None) -> int:
+def count(endpoint: object) -> int:
     """Counts number of portfolios"""
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
@@ -555,6 +555,7 @@ def search(endpoint: object, params: dict[str, str] = None) -> dict[str, Portfol
 
 
 def audit(endpoint: object, audit_settings: dict[str, str], key_list: list[str, str] = None) -> list[object]:
+    """Audits all portfolios"""
     if not audit_settings.get("audit.portfolios", True):
         log.debug("Auditing portfolios is disabled, skipping...")
         return []
