@@ -58,7 +58,7 @@ SELECTION_MODE_OTHERS = "REST"
 SELECTION_MODE_NONE = "NONE"
 SELECTION_MODES = (SELECTION_MODE_MANUAL, SELECTION_MODE_REGEXP, SELECTION_MODE_TAGS, SELECTION_MODE_OTHERS, SELECTION_MODE_NONE)
 
-_PROJECT_SELECTION_MODE = "projectSelectionMode"
+_PROJECT_SELECTION_MODE = "selectionMode"
 _PROJECT_SELECTION_BRANCH = "projectSelectionBranch"
 _PROJECT_SELECTION_REGEXP = "projectSelectionRegexp"
 _PROJECT_SELECTION_TAGS = "projectSelectionTags"
@@ -69,9 +69,6 @@ _IMPORTABLE_PROPERTIES = (
     "description",
     _PROJECT_SELECTION_MODE,
     "visibility",
-    _PROJECT_SELECTION_REGEXP,
-    _PROJECT_SELECTION_BRANCH,
-    _PROJECT_SELECTION_TAGS,
     "permissions",
     "subPortfolios",
     "projects",
@@ -122,8 +119,6 @@ class Portfolio(aggregations.Aggregation):
         super().__init__(key if key else name, endpoint)
         self.name = name
         self._selection_mode = None  #: Portfolio project selection mode
-        self._selection_branch = None  #: project branches on SonarQube 9.2+
-        self._projects = None  #: Portfolio list of projects when selection mode is MANUAL
         self._regexp = None  #: Project selection regexp is selection mode is REGEXP
         self._tags = []  #: Portfolio tags when selection mode is TAGS
         self._description = None  #: Portfolio description
@@ -143,14 +138,21 @@ class Portfolio(aggregations.Aggregation):
         if "name" in data:
             self.name = data["name"]
         if "selectionMode" in self._json:
-            self._selection_mode = self._json["selectionMode"]
-        if "branch" in self._json:
-            self._selection_branch = self._json["branch"]
-        if "regexp" in self._json:
-            self._regexp = self._json["regexp"]
+            mode = self._json["selectionMode"]
+            self._selection_mode = {"mode": mode}
+            if mode == SELECTION_MODE_MANUAL:
+                self._selection_mode["projects"] = {}
+                for projdata in self._json.get("selectedProjects", {}):
+                    key = projdata["projectKey"]
+                    branch = util.DEFAULT if "selectedBranches" not in projdata else projdata["selectedBranches"][0]
+                    self._selection_mode["projects"].update({key: branch})
+            elif mode == SELECTION_MODE_REGEXP:
+                self._selection_mode.update({"regexp": self._json["regexp"], "branch": self._json.get("branch", util.DEFAULT)})
+            elif mode == SELECTION_MODE_TAGS:
+                self._selection_mode.update({"tags": self._json["tags"], "branch": self._json.get("branch", util.DEFAULT)})
+            elif mode == SELECTION_MODE_OTHERS:
+                self._selection_mode.update({"branch": self._json.get("branch", util.DEFAULT)})
         self.is_sub_portfolio = self._json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
-        if "tags" in self._json:
-            self._tags = self._json["tags"]
         if "visibility" in self._json:
             self._visibility = self._json["visibility"]
         parent = data.get("parentKey", data.get("parent", None))
@@ -186,57 +188,31 @@ class Portfolio(aggregations.Aggregation):
         return self._root_portfolio
 
     def projects(self):
-        if self._selection_mode != SELECTION_MODE_MANUAL:
+        if self._selection_mode.get("mode", None) != SELECTION_MODE_MANUAL:
             log.debug("%s: Not manual mode, no projects", str(self))
-            return self._projects
-        if self._projects is not None:
-            log.debug("%s: Projects already set, returning %s", str(self), str(self._projects))
-            return self._projects
+            return None
+        if self._selection_mode["projects"] is not None:
+            log.debug("%s: Projects already set, returning %s", str(self), str(self._selection_mode["projects"]))
+            return self._selection_mode["projects"]
         if self._json is None or "selectedProjects" not in self._json:
             self.refresh()
-        self._projects = {}
-        log.debug("%s: Read projects %s", str(self), str(self._projects))
         if self.endpoint.version() < (9, 3, 0):
             for p in self._json.get("projects", {}):
-                self._projects[p] = util.DEFAULT
-            return self._projects
+                self._selection_mode["projects"][p] = util.DEFAULT
+            return self._selection_mode["projects"]
         for p in self._json.get("selectedProjects", {}):
             if "selectedBranches" in p:
-                self._projects[p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
+                self._selection_mode["projects"][p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
-                self._projects[p["projectKey"]] = util.DEFAULT
-        log.debug("%s: PROJ4 Read projects %s", str(self), str(self._projects))
-        log.debug("%s projects = %s", str(self), util.json_dump(self._projects))
-        return self._projects
+                self._selection_mode["projects"][p["projectKey"]] = util.DEFAULT
+        log.debug("%s projects = %s", str(self), util.json_dump(self._selection_mode["projects"]))
+        return self._selection_mode["projects"]
 
-    def sub_portfolios(self, full=False):
+    def sub_portfolios(self, full=False) -> dict[str, Portfolio]:
         self.refresh()
         # self._sub_portfolios = _sub_portfolios(self._json, self.endpoint.version(), full=full)
         self.create_sub_portfolios()
         return self._sub_portfolios
-
-    def to_json(self) -> dict[str, str]:
-        """Returns the portfolio representation as JSON"""
-        data = {
-            "key": self.key,
-            "name": self.name,
-            "description": None if self._description == "" else self._description,
-            _PROJECT_SELECTION_MODE: self.selection_mode(),
-            "visibility": self._visibility,
-            _PROJECT_SELECTION_REGEXP: self.regexp(),
-            _PROJECT_SELECTION_BRANCH: self._selection_branch,
-            _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
-        }
-        if not self.is_sub_portfolio:
-            data["permissions"] = self.permissions().export()
-            data["visibility"] = self._visibility
-
-        if self._sub_portfolios:
-            for key, subp in self._sub_portfolios:
-                data["subPortfolios"][key] = subp.to_json()
-                if not subp.is_subportfolio:
-                    data["subPortfolios"][key]["byReference"] = True
-        return util.remove_nones(data)
 
     def create_sub_portfolios(self):
         log.debug("Creating subportfolios for %s with JSON %s", str(self), str(self._json))
@@ -313,11 +289,11 @@ class Portfolio(aggregations.Aggregation):
         log.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
-    def export(self, full=False):
-        log.info("Exporting %s", str(self))
+    def to_json(self) -> dict[str, str]:
+        """Returns the portfolio representation as JSON"""
         self.refresh()
         json_data = self._json
-        subportfolios = self.sub_portfolios(full=full)
+        subportfolios = self.sub_portfolios()
         if subportfolios:
             json_data["subPortfolios"] = {}
             for s in subportfolios.values():
@@ -327,15 +303,16 @@ class Portfolio(aggregations.Aggregation):
                 "key": self.key,
                 "name": self.name,
                 "description": None if self._description == "" else self._description,
-                "projectsSelection": self.selection_mode(),
+                _PROJECT_SELECTION_MODE: self.selection_mode(inline_tags=True),
                 "visibility": self._visibility,
                 "permissions": self.permissions().export(),
             }
         )
-        if self.selection_mode() == SELECTION_MODE_MANUAL:
-            json_data["projects"] = self.projects()
+        return json_data
 
-        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
+    def export(self, full: bool = False):
+        log.info("Exporting %s", str(self))
+        return util.remove_nones(util.filter_export(self.to_json(), _IMPORTABLE_PROPERTIES, full))
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
@@ -353,8 +330,15 @@ class Portfolio(aggregations.Aggregation):
     def set_component_tags(self, tags, api):
         log.warning("Can't set tags on portfolios, operation skipped...")
 
-    def selection_mode(self) -> dict[str, str]:
+    def selection_mode(self, inline_tags: bool = False) -> dict[str, str]:
         """Returns a portfolio selection mode"""
+        if self._selection_mode is None:
+            self.reload(json.loads(self.get(_GET_API, params={"key": self.root_portfolio().key}).text))
+        if inline_tags and self._selection_mode["mode"] == SELECTION_MODE_TAGS:
+            log.debug("Inlining portfolio tags")
+            selection_mode = self._selection_mode.copy()
+            selection_mode["tags"] = ", ".join(selection_mode["tags"])
+            return selection_mode
         return self._selection_mode
 
     def add_projects(self, project_list: list[Union[str, object]]) -> Portfolio:
@@ -479,7 +463,7 @@ class Portfolio(aggregations.Aggregation):
                     decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
                 self.set_permissions(decoded_perms)
                 # self.set_permissions(data.get("permissions", {}))
-            selection_mode = data.get(_PROJECT_SELECTION_MODE, "NONE")
+            selection_mode = data.get("selectionMode", "NONE")
             branch, regexp, tags, projects = None, None, None, None
             if isinstance(selection_mode, str):
                 sel_mode = selection_mode
