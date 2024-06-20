@@ -66,15 +66,63 @@ def test_create_delete() -> None:
     portfolio = portfolios.Portfolio.create(endpoint=util.SQ, name="MY PPPPPORFOLIO", key=TEST_KEY, description="Creationtest")
     assert portfolio is not None
     assert portfolio.key == TEST_KEY
+    assert portfolio.selection_mode()["mode"] == "NONE"
     assert portfolio.name == "MY PPPPPORFOLIO"
-
     portfolio.delete()
     assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 
 
-def tes_add_project() -> None:
+def test_add_project() -> None:
     """Test addition of a project in manual mode"""
-    portfolio = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    assert p.selection_mode()["mode"] == "NONE"
+
     project = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
-    portfolio.add_projects([project])
-    portfolio.delete()
+    p.add_projects(None)
+    assert p.selection_mode()["mode"] == "NONE"
+    p.add_projects([])
+    assert p.selection_mode()["mode"] == "NONE"
+    p.add_projects([project])
+    assert p.selection_mode()["mode"] == "MANUAL"
+    assert p.selection_mode()["projects"] == {"okorach_sonar-tools": None}
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
+
+def test_tags_mode() -> None:
+    """Test tag mode"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    in_tags = ["foss", "favorites"]
+    p.set_tags_mode(in_tags)
+    assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_TAGS
+    assert p.selection_mode()["branch"] is None
+    assert p.selection_mode()["tags"].sort() == in_tags.sort()
+    assert p.tags().sort() == in_tags.sort()
+
+    p.set_tags_mode(tags=in_tags, branch="some_branch")
+    assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_TAGS
+    assert p.selection_mode()["branch"] == "some_branch"
+    assert p.selection_mode()["tags"].sort() == in_tags.sort()
+    assert p.tags().sort() == in_tags.sort()
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
+
+def test_regexp_mode() -> None:
+    """Test regexp mode"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    in_regexp = "^FAVORITES.*$"
+    p.set_regexp_mode(in_regexp)
+    assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_REGEXP
+    assert p.selection_mode()["branch"] is None
+    assert p.selection_mode()["regexp"] == in_regexp
+    assert p.regexp() == in_regexp
+
+    in_regexp = "^BRANCH_FAVORITES.*$"
+    p.set_regexp_mode(regexp=in_regexp, branch="develop")
+    assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_REGEXP
+    assert p.selection_mode()["branch"] == "develop"
+    assert p.selection_mode()["regexp"] == in_regexp
+    assert p.regexp() == in_regexp
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
