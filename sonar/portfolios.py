@@ -208,7 +208,8 @@ class Portfolio(aggregations.Aggregation):
         log.debug("%s projects = %s", str(self), util.json_dump(self._selection_mode["projects"]))
         return self._selection_mode["projects"]
 
-    def sub_portfolios(self, full=False) -> dict[str, Portfolio]:
+    def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
+        """Returns the list of sub portfolios as dict"""
         self.refresh()
         # self._sub_portfolios = _sub_portfolios(self._json, self.endpoint.version(), full=full)
         self.create_sub_portfolios()
@@ -310,7 +311,8 @@ class Portfolio(aggregations.Aggregation):
         )
         return json_data
 
-    def export(self, full: bool = False):
+    def export(self, full: bool = False) -> dict[str, str]:
+        """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
         return util.remove_nones(util.filter_export(self.to_json(), _IMPORTABLE_PROPERTIES, full))
 
