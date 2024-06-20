@@ -119,8 +119,7 @@ class Portfolio(aggregations.Aggregation):
     def __init__(self, endpoint, name, key=None):
         super().__init__(key if key else name, endpoint)
         self.name = name
-        self._selection_mode = None  #: Portfolio project selection mode
-        self._regexp = None  #: Project selection regexp is selection mode is REGEXP
+        self._selection_mode = {"mode": SELECTION_MODE_NONE}  #: Portfolio project selection mode
         self._tags = []  #: Portfolio tags when selection mode is TAGS
         self._description = None  #: Portfolio description
         self.is_sub_portfolio = False  #: Whether the portfolio is a subportfolio
