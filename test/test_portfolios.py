@@ -76,5 +76,5 @@ def add_project() -> None:
     """Test addition of a project in manual mode"""
     portfolio = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
     project = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
-    portfolio.set_projects({"okorach_sonar-tools": project})
+    portfolio.add_projects([project])
     portfolio.delete()
