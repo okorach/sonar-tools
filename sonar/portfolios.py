@@ -327,11 +327,8 @@ class Portfolio(aggregations.Aggregation):
                 "key": self.key,
                 "name": self.name,
                 "description": None if self._description == "" else self._description,
-                _PROJECT_SELECTION_MODE: self.selection_mode(),
+                "projectsSelection": self.selection_mode(),
                 "visibility": self._visibility,
-                _PROJECT_SELECTION_REGEXP: self.regexp(),
-                _PROJECT_SELECTION_BRANCH: self._selection_branch,
-                _PROJECT_SELECTION_TAGS: util.list_to_csv(self.tags(), separator=", "),
                 "permissions": self.permissions().export(),
             }
         )
@@ -340,13 +337,15 @@ class Portfolio(aggregations.Aggregation):
 
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
-    def permissions(self):
+    def permissions(self) -> pperms.PortfolioPermissions:
+        """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
         if self._permissions is None and not self.is_sub_portfolio:
             # No permissions for sub portfolios
             self._permissions = pperms.PortfolioPermissions(self)
         return self._permissions
 
-    def set_permissions(self, portfolio_perms):
+    def set_permissions(self, portfolio_perms: dict[str, str]) -> None:
+        """Sets a portfolio permissions described as JSON"""
         if not self.is_sub_portfolio:
             # No permissions for SVW
             self.permissions().set(portfolio_perms)
@@ -528,7 +527,8 @@ class Portfolio(aggregations.Aggregation):
         return {"portfolio": self.key}
 
 
-def count(endpoint=None):
+def count(endpoint=None) -> int:
+    """Counts number of portfolios"""
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
 
