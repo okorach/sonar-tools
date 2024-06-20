@@ -354,78 +354,19 @@ class Portfolio(aggregations.Aggregation):
     def set_component_tags(self, tags, api):
         log.warning("Can't set tags on portfolios, operation skipped...")
 
-    def set_projects(self, project_list):
-        self.set_manual_mode()
-        current_projects = self.projects()
-        current_project_keys = list(current_projects.keys())
-        log.debug("Project list = %s", str(project_list))
-        if project_list is None:
-            return False
-        log.debug("Current Project list = %s", str(current_project_keys))
-        ok = True
-        for proj, branches in project_list.items():
-            if proj in current_project_keys:
-                log.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
-                continue
-            try:
-                r = self.post("views/add_project", params={"key": self.key, "project": proj})
-                ok = ok and r.ok
-                current_projects[proj] = util.DEFAULT
-            except HTTPError as e:
-                if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(self.key, f"Project '{proj}' not found, can't be added to portfolio '{self.key}'")
-                raise
-
-            for branch in util.csv_to_list(branches):
-                if branch == util.DEFAULT or branch in util.csv_to_list(current_projects[proj]):
-                    log.debug("Won't add project '%s' branch '%s' to %s, it's already added", proj, project_list[proj], str(self))
-                    continue
-                if self.endpoint.version() < (9, 2, 0):
-                    log.warning("Can't add a project branch '%s / %s' in a %s on SonarQube < 9.2", proj, branch, str(self))
-                    ok = False
-                    continue
-                log.debug("Adding project '%s' branch '%s' to %s", proj, str(branch), str(self))
-                try:
-                    ok = ok and self.post("views/add_project_branch", params={"key": self.key, "project": proj, "branch": branch}).ok
-                except HTTPError as e:
-                    if e.response.status_code == HTTPStatus.NOT_FOUND:
-                        log.warning("Branch '%s' of project '%s' not found, can't be added to portfolio '%s'", branch, proj, self.key)
-                        ok = False
-                    else:
-                        raise
-        return ok
-
-    def selection_mode(self) -> tuple[str, any]:
+    def selection_mode(self) -> dict[str, str]:
         """Returns a portfolio selection mode"""
-        mode = self._selection_mode
-        if mode in (SELECTION_MODE_NONE, SELECTION_MODE_OTHERS):
-            return mode, None
-        elif mode == SELECTION_MODE_MANUAL:
-            return mode, self._projects
-        elif mode == SELECTION_MODE_TAGS:
-            return mode, self._tags
-        elif mode == SELECTION_MODE_REGEXP:
-            return mode, self._regexp
-        else:
-            log.critical("%s: Unexpected portfolio selection mode %s found", str(self), str(mode))
-            return None, None
+        return self._selection_mode
 
     def add_projects(self, project_list: list[Union[str, object]]) -> Portfolio:
         """Adds projects main branch to a portfolio"""
-        if not project_list:
+        if not project_list or len(project_list) == 0:
             return self
-        proj_dict = {}
-        for proj in project_list:
-            key = proj if isinstance(proj, str) else proj.key
-            try:
-                self.post("views/add_project", params={"key": self.key, "project": key})
-                proj_dict[key] = util.DEFAULT
-                self._selection_mode = (SELECTION_MODE_MANUAL, proj_dict)
-            except HTTPError as e:
-                if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(self.key, f"Project '{key}' not found, can't be added to {str(self)}")
-                raise
-        return self
+        branch_dict = {}
+        for p in project_list:
+            key = p if isinstance(p, str) else p.key
+            branch_dict[key] = None
+        return self.add_project_branches(branch_dict)
 
     def add_project_branches(self, branch_dict: dict[str, Union[str, object]]) -> Portfolio:
         """Adds projects branches to a portfolio"""
@@ -435,9 +376,12 @@ class Portfolio(aggregations.Aggregation):
         for proj, branch in branch_dict:
             key = proj if isinstance(proj, str) else proj.key
             try:
-                self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch})
+                if branch and branch != util.DEFAULT:
+                    self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch})
+                else:
+                    self.post("views/add_project", params={"key": self.key, "project": key})
                 proj_dict[key] = branch
-                self._selection_mode = (SELECTION_MODE_MANUAL, proj_dict)
+                self._selection_mode["projects"] = proj_dict
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.key, f"Project '{key}' or branch '{branch}' not found, can't be added to {str(self)}")
@@ -447,25 +391,25 @@ class Portfolio(aggregations.Aggregation):
     def set_manual_mode(self) -> Portfolio:
         """Sets a portfolio to manual mode"""
         self.post("views/set_manual_mode", params={"portfolio": self.key})
-        self._selection_mode = (SELECTION_MODE_MANUAL, None)
+        self._selection_mode = {"mode": SELECTION_MODE_MANUAL, "projects": {}}
         return self
 
     def set_tags_mode(self, tags: list[str], branch: str = None) -> Portfolio:
         """Sets a portfolio to tags mode"""
         self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
-        self._selection_mode = (SELECTION_MODE_TAGS, tags, branch)
+        self._selection_mode = {"mode": SELECTION_MODE_TAGS, "tags": tags, "branch": branch}
         return self
 
     def set_regexp_mode(self, regexp: str, branch: str = None) -> Portfolio:
         """Sets a portfolio to regexp mode"""
         self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
-        self._selection_mode = (SELECTION_MODE_REGEXP, regexp, branch)
+        self._selection_mode = {"mode": SELECTION_MODE_REGEXP, "regexp": regexp, "branch": branch}
         return self
 
     def set_remaining_projects_mode(self, branch: str = None) -> Portfolio:
         """Sets a portfolio to remaining projects mode"""
         self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
-        self._selection_mode = (SELECTION_MODE_OTHERS, branch)
+        self._selection_mode = {"mode": SELECTION_MODE_OTHERS, "branch": branch}
         return self
 
     def set_none_mode(self) -> Portfolio:
@@ -475,16 +419,16 @@ class Portfolio(aggregations.Aggregation):
             self.post("views/mode", params={"key": self.key, "selectionMode": "NONE"})
         else:
             self.post("views/set_none_mode", params={"portfolio": self.key})
-        self._selection_mode = (SELECTION_MODE_NONE, None)
+        self._selection_mode = {"mode": SELECTION_MODE_NONE}
         return self
 
     def set_selection_mode(
-        self, selection_mode: str, projects: list[str] = None, regexp: str = None, tags: list[str] = None, branch: str = None
+        self, selection_mode: str, projects: dict[str, str] = None, regexp: str = None, tags: list[str] = None, branch: str = None
     ) -> Portfolio:
         """Sets a portfolio selection mode"""
         log.debug("Setting selection mode %s for %s", str(selection_mode), str(self))
         if selection_mode == SELECTION_MODE_MANUAL:
-            self.set_manual_mode().add_projects(projects)
+            self.set_manual_mode().add_project_branches(projects)
         elif selection_mode == SELECTION_MODE_TAGS:
             self.set_tags_mode(tags=tags, branch=branch)
         elif selection_mode == SELECTION_MODE_REGEXP:
@@ -537,13 +481,24 @@ class Portfolio(aggregations.Aggregation):
                 self.set_permissions(decoded_perms)
                 # self.set_permissions(data.get("permissions", {}))
             selection_mode = data.get(_PROJECT_SELECTION_MODE, "NONE")
-            branch = data.get(_PROJECT_SELECTION_BRANCH, None)
-            regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
-            tags = data.get(_PROJECT_SELECTION_TAGS, None)
-            projects = data.get("projects", None)
+            branch, regexp, tags, projects = None, None, None, None
+            if isinstance(selection_mode, str):
+                sel_mode = selection_mode
+                branch = data.get(_PROJECT_SELECTION_BRANCH, None)
+                regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
+                tags = data.get(_PROJECT_SELECTION_TAGS, None)
+                projects = data.get("projects", None)
+            else:
+                sel_mode = selection_mode["mode"]
+                if sel_mode == SELECTION_MODE_MANUAL:
+                    projects = selection_mode["projects"]
+                elif sel_mode == SELECTION_MODE_REGEXP:
+                    regexp = selection_mode["regexp"]
+                elif sel_mode == SELECTION_MODE_TAGS:
+                    tags = selection_mode["tags"]
             self._root_portfolio = self.root_portfolio()
             log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
-            self.set_selection_mode(selection_mode=selection_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+            self.set_selection_mode(selection_mode=sel_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
         else:
             log.debug("Skipping setting portfolio details, it's a reference")
 
