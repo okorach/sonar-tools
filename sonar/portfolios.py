@@ -188,7 +188,8 @@ class Portfolio(aggregations.Aggregation):
         return self._root_portfolio
 
     def projects(self):
-        if self._selection_mode.get("mode", None) != SELECTION_MODE_MANUAL:
+        """Returns list of projects if selection mode is manual, None otherwise"""
+        if self._selection_mode["mode"] != SELECTION_MODE_MANUAL:
             log.debug("%s: Not manual mode, no projects", str(self))
             return None
         if self._selection_mode["projects"] is not None:
@@ -197,8 +198,7 @@ class Portfolio(aggregations.Aggregation):
         if self._json is None or "selectedProjects" not in self._json:
             self.refresh()
         if self.endpoint.version() < (9, 3, 0):
-            for p in self._json.get("projects", {}):
-                self._selection_mode["projects"][p] = util.DEFAULT
+            self._selection_mode["projects"] = {p: util.DEFAULT for p in self._json.get("projects", {})}
             return self._selection_mode["projects"]
         for p in self._json.get("selectedProjects", {}):
             if "selectedBranches" in p:
