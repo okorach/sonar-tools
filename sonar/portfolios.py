@@ -532,7 +532,7 @@ def count(endpoint=None):
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
 
-def get_list(endpoint, key_list=None, use_cache=True):
+def get_list(endpoint: object, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Portfolio]:
     """
     :return: List of Portfolios (all of them if key_list is None or empty)
     :param key_list: List of portfolios keys to get, if None or empty all portfolios are returned
@@ -550,10 +550,11 @@ def get_list(endpoint, key_list=None, use_cache=True):
     return object_list
 
 
-def search(endpoint, params=None):
+def search(endpoint: object, params: dict[str, str] = None) -> dict[str, Portfolio]:
+    """Search all portfolios of a platform and returns as dict"""
     portfolio_list = {}
     if endpoint.edition() not in ("enterprise", "datacenter"):
-        log.info("No portfolios in %s edition", endpoint.edition())
+        log.warning("No portfolios in %s edition", endpoint.edition())
     else:
         portfolio_list = sq.search_objects(
             api=_SEARCH_API,
@@ -566,7 +567,7 @@ def search(endpoint, params=None):
     return portfolio_list
 
 
-def audit(audit_settings, endpoint=None, key_list=None):
+def audit(endpoint: object, audit_settings: dict[str, str], key_list: list[str, str] = None) -> list[object]:
     if not audit_settings.get("audit.portfolios", True):
         log.debug("Auditing portfolios is disabled, skipping...")
         return []
@@ -575,19 +576,6 @@ def audit(audit_settings, endpoint=None, key_list=None):
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
         problems += p.audit(audit_settings)
     return problems
-
-
-def __cleanup_portfolio_json(p):
-    for k in ("visibility", "qualifier", "branch", "referencedBy", "subViews", "selectedProjects"):
-        p.pop(k, None)
-    if "branch" in p:
-        p["projectBranch"] = p.pop("branch")
-    if "selectionMode" in p:
-        if p["selectionMode"] == SELECTION_MODE_REGEXP:
-            p[_PROJECT_SELECTION_REGEXP] = p.pop("regexp")
-        elif p["selectionMode"] == SELECTION_MODE_TAGS:
-            p[_PROJECT_SELECTION_TAGS] = util.list_to_csv(p.pop("tags"), ", ")
-        p[_PROJECT_SELECTION_MODE] = p.pop("selectionMode")
 
 
 """
@@ -634,7 +622,8 @@ def _projects(json_data, version):
 """
 
 
-def exists(key, endpoint):
+def exists(key: str, endpoint: object) -> bool:
+    """Tells whether a portfolio with a given key exists"""
     try:
         Portfolio.get_object(endpoint, key)
         return True
@@ -642,7 +631,8 @@ def exists(key, endpoint):
         return False
 
 
-def import_config(endpoint, config_data, key_list=None):
+def import_config(endpoint: object, config_data: dict[str, str], key_list: list[str] = None) -> None:
+    """Imports portfolio configuration described in a JSON"""
     if "portfolios" not in config_data:
         log.info("No portfolios to import")
         return
@@ -685,11 +675,13 @@ def import_config(endpoint, config_data, key_list=None):
             log.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
 
 
-def search_by_name(endpoint, name):
+def search_by_name(endpoint: object, name: str) -> dict[str, str]:
+    """Searches portfolio by nmame and and, if found, returns data as JSON"""
     return util.search_by_name(endpoint, name, _SEARCH_API, "components")
 
 
-def search_by_key(endpoint, key):
+def search_by_key(endpoint: object, key: str) -> dict[str, str]:
+    """Searches portfolio by key and and, if found, returns data as JSON"""
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
