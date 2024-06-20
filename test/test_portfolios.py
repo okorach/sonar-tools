@@ -84,7 +84,7 @@ def test_add_project() -> None:
     assert p.selection_mode()["mode"] == "NONE"
     p.add_projects([project])
     assert p.selection_mode()["mode"] == "MANUAL"
-    assert p.selection_mode()["projects"] == {"okorach_sonar-tools": None}
+    assert p.projects() == {"okorach_sonar-tools": None}
     p.delete()
     assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 
@@ -124,5 +124,21 @@ def test_regexp_mode() -> None:
     assert p.selection_mode()["branch"] == "develop"
     assert p.selection_mode()["regexp"] == in_regexp
     assert p.regexp() == in_regexp
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
+def test_permissions_1() -> None:
+    """Test permissions"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    p.set_permissions({"groups": {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
+    # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
+def test_permissions_2() -> None:
+    """Test permissions"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test", visibility="private")
+    p.set_permissions({"groups": {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}})
+    # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}
     p.delete()
     assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
