@@ -242,18 +242,14 @@ class Portfolio(aggregations.Aggregation):
             subp.projects()
 
     def regexp(self):
-        if self.selection_mode() != SELECTION_MODE_REGEXP:
-            self._regexp = None
-        elif self._regexp is None:
-            self._regexp = self._json["regexp"]
-        return self._regexp
+        if self.selection_mode()["mode"] != SELECTION_MODE_REGEXP:
+            return None
+        return self.selection_mode()["regexp"]
 
     def tags(self):
-        if self.selection_mode() != SELECTION_MODE_TAGS:
+        if self.selection_mode()["mode"] != SELECTION_MODE_TAGS:
             self._tags = None
-        elif self._tags is None:
-            self._tags = self._json.pop("tags", [])
-        return self._tags
+        return self.selection_mode()["tags"]
 
     def get_components(self):
         data = json.loads(
@@ -348,6 +344,7 @@ class Portfolio(aggregations.Aggregation):
         """Adds projects main branch to a portfolio"""
         if not project_list or len(project_list) == 0:
             return self
+        self.set_manual_mode()
         branch_dict = {}
         for p in project_list:
             key = p if isinstance(p, str) else p.key
@@ -358,6 +355,7 @@ class Portfolio(aggregations.Aggregation):
         """Adds projects branches to a portfolio"""
         if not branch_dict:
             return self
+        self.set_manual_mode()
         proj_dict = {}
         for proj, branch in branch_dict:
             key = proj if isinstance(proj, str) else proj.key
@@ -376,36 +374,45 @@ class Portfolio(aggregations.Aggregation):
 
     def set_manual_mode(self) -> Portfolio:
         """Sets a portfolio to manual mode"""
-        self.post("views/set_manual_mode", params={"portfolio": self.key})
+        if not self._selection_mode or self._selection_mode["mode"] != SELECTION_MODE_MANUAL:
+            self.post("views/set_manual_mode", params={"portfolio": self.key})
         self._selection_mode = {"mode": SELECTION_MODE_MANUAL, "projects": {}}
         return self
 
     def set_tags_mode(self, tags: list[str], branch: str = None) -> Portfolio:
         """Sets a portfolio to tags mode"""
-        self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
-        self._selection_mode = {"mode": SELECTION_MODE_TAGS, "tags": tags, "branch": branch}
+        mode = self._selection_mode
+        if not mode or mode["mode"] != SELECTION_MODE_TAGS or mode["branch"] != branch:
+            self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
+            self._selection_mode = {"mode": SELECTION_MODE_TAGS, "tags": tags, "branch": branch}
         return self
 
     def set_regexp_mode(self, regexp: str, branch: str = None) -> Portfolio:
         """Sets a portfolio to regexp mode"""
-        self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
-        self._selection_mode = {"mode": SELECTION_MODE_REGEXP, "regexp": regexp, "branch": branch}
+        mode = self._selection_mode
+        if not mode or mode["mode"] != SELECTION_MODE_REGEXP or mode["branch"] != branch:
+            self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
+            self._selection_mode = {"mode": SELECTION_MODE_REGEXP, "regexp": regexp, "branch": branch}
         return self
 
     def set_remaining_projects_mode(self, branch: str = None) -> Portfolio:
         """Sets a portfolio to remaining projects mode"""
-        self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
-        self._selection_mode = {"mode": SELECTION_MODE_OTHERS, "branch": branch}
+        mode = self._selection_mode
+        if not mode or mode["mode"] != SELECTION_MODE_OTHERS or mode["branch"] != branch:
+            self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
+            self._selection_mode = {"mode": SELECTION_MODE_OTHERS, "branch": branch}
         return self
 
     def set_none_mode(self) -> Portfolio:
         """Sets a portfolio to none mode"""
         # Hack: API change between 9.0 and 9.1
-        if self.endpoint.version() < (9, 1, 0):
-            self.post("views/mode", params={"key": self.key, "selectionMode": "NONE"})
-        else:
-            self.post("views/set_none_mode", params={"portfolio": self.key})
-        self._selection_mode = {"mode": SELECTION_MODE_NONE}
+        mode = self._selection_mode
+        if not mode or mode["mode"] != SELECTION_MODE_NONE:
+            if self.endpoint.version() < (9, 1, 0):
+                self.post("views/mode", params={"key": self.key, "selectionMode": "NONE"})
+            else:
+                self.post("views/set_none_mode", params={"portfolio": self.key})
+            self._selection_mode = {"mode": SELECTION_MODE_NONE}
         return self
 
     def set_selection_mode(
