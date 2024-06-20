@@ -30,45 +30,115 @@ EXISTING_PROJECT = "okorach_sonar-tools"
 EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
 TEST_KEY = "MY_PPPPORTFOLIO_KEY"
 
-def get_object() -> None:
-    """ Test get_object and verify that if requested twice the same object is returned """
+
+def test_get_object() -> None:
+    """Test get_object and verify that if requested twice the same object is returned"""
     portf = portfolios.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
     assert portf.key == EXISTING_PORTFOLIO
     portf2 = portfolios.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
     assert portf2.key == EXISTING_PORTFOLIO
     assert portf == portf2
 
-def get_object_non_existing() -> None:
-    """ Test exception raised when providing non existing portfolio key """
+
+def test_get_object_non_existing() -> None:
+    """Test exception raised when providing non existing portfolio key"""
     with pytest.raises(exceptions.ObjectNotFound) as e:
         _ = portfolios.Portfolio.get_object(endpoint=util.SQ, key="NON_EXISTING")
     assert str(e.value) == "Portfolio key 'NON_EXISTING' not found"
 
-def exists() -> None:
-    """ Test exist """
+
+def test_exists() -> None:
+    """Test exist"""
     assert portfolios.exists(endpoint=util.SQ, key="PORT_FAV_PROJECTS")
     assert not portfolios.exists(endpoint=util.SQ, key="NON_EXISTING")
 
-def get_list() -> None:
-    """ Test portfolio get_list """
+
+def test_get_list() -> None:
+    """Test portfolio get_list"""
     p_dict = portfolios.get_list(endpoint=util.SQ, key_list="PORT_FAV_PROJECTS,PORTFOLIO_ALL")
     assert "PORT_FAV_PROJECTS" in p_dict
     assert "PORTFOLIO_ALL" in p_dict
     assert len(p_dict) == 2
 
-def create_delete() -> None:
-    """ Test portfolio create delete """
+
+def test_create_delete() -> None:
+    """Test portfolio create delete"""
     portfolio = portfolios.Portfolio.create(endpoint=util.SQ, name="MY PPPPPORFOLIO", key=TEST_KEY, description="Creationtest")
     assert portfolio is not None
     assert portfolio.key == TEST_KEY
+    assert portfolio.selection_mode()["mode"] == "NONE"
     assert portfolio.name == "MY PPPPPORFOLIO"
-
     portfolio.delete()
     assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 
-def add_project() -> None:
-    """ Test addition of a project in manual mode """
-    portfolio = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+
+def test_add_project() -> None:
+    """Test addition of a project in manual mode"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    assert p.selection_mode()["mode"] == "NONE"
+
     project = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
-    portfolio.set_projects({"okorach_sonar-tools": project})
-    portfolio.delete()
+    p.add_projects(None)
+    assert p.selection_mode()["mode"] == "NONE"
+    p.add_projects([])
+    assert p.selection_mode()["mode"] == "NONE"
+    p.add_projects([project])
+    assert p.selection_mode()["mode"] == "MANUAL"
+    assert p.projects() == {"okorach_sonar-tools": None}
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
+
+def test_tags_mode() -> None:
+    """Test tag mode"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    in_tags = ["foss", "favorites"]
+    p.set_tags_mode(in_tags)
+    assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_TAGS
+    assert p.selection_mode()["branch"] is None
+    assert p.selection_mode()["tags"].sort() == in_tags.sort()
+    assert p.tags().sort() == in_tags.sort()
+
+    p.set_tags_mode(tags=in_tags, branch="some_branch")
+    assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_TAGS
+    assert p.selection_mode()["branch"] == "some_branch"
+    assert p.selection_mode()["tags"].sort() == in_tags.sort()
+    assert p.tags().sort() == in_tags.sort()
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
+
+def test_regexp_mode() -> None:
+    """Test regexp mode"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    in_regexp = "^FAVORITES.*$"
+    p.set_regexp_mode(in_regexp)
+    assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_REGEXP
+    assert p.selection_mode()["branch"] is None
+    assert p.selection_mode()["regexp"] == in_regexp
+    assert p.regexp() == in_regexp
+
+    in_regexp = "^BRANCH_FAVORITES.*$"
+    p.set_regexp_mode(regexp=in_regexp, branch="develop")
+    assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_REGEXP
+    assert p.selection_mode()["branch"] == "develop"
+    assert p.selection_mode()["regexp"] == in_regexp
+    assert p.regexp() == in_regexp
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
+def test_permissions_1() -> None:
+    """Test permissions"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
+    p.set_permissions({"groups": {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
+    # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
+def test_permissions_2() -> None:
+    """Test permissions"""
+    p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test", visibility="private")
+    p.set_permissions({"groups": {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}})
+    # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}
+    p.delete()
+    assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
