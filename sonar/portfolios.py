@@ -356,7 +356,7 @@ class Portfolio(aggregations.Aggregation):
             return self
         self.set_manual_mode()
         proj_dict = {}
-        for proj, branch in branch_dict:
+        for proj, branch in branch_dict.items():
             key = proj if isinstance(proj, str) else proj.key
             try:
                 if branch and branch != util.DEFAULT:
