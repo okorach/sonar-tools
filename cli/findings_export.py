@@ -395,7 +395,7 @@ def main():
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
     fmt, fname = kwargs.pop("format", None), kwargs.pop("file", None)
-    fmt = util.deduct_format(fmt, fname)
+    fmt = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
