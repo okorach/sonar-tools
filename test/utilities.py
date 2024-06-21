@@ -44,6 +44,15 @@ def file_not_empty(file: str) -> bool:
     return os.stat(file).st_size > 0
 
 
+def file_contains(file: str, string: str) -> bool:
+    """Returns whether a file contains a given string"""
+    if not os.path.isfile(file):
+        return False
+    with open(file=file, mode="r", encoding="utf-8") as fh:
+        content = fh.read()
+    return string in content
+
+
 def clean(*files: str) -> None:
     """Deletes a list of file if they exists"""
     for file in files:
