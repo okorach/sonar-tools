@@ -81,14 +81,26 @@ def test_findings_export() -> None:
     util.clean(util.CSV_FILE, util.JSON_FILE)
 
 
-# def test_findings_export_sarif():
-#     testutil.clean(testutil.JSON_FILE)
-#     with pytest.raises(SystemExit) as e:
-#         with patch.object(sys, 'argv', JSON_OPTS + ["--format", "sarif"]):
-#             findings_export.main()
-#     assert int(str(e.value)) == 0
-#     assert testutil.file_not_empty(testutil.JSON_FILE)
-#     testutil.clean(testutil.JSON_FILE)
+def test_findings_export_sarif_explicit() -> None:
+    """Test SARIF export"""
+    util.clean(util.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ["--format", "sarif"]):
+            findings_export.main()
+    assert int(str(e.value)) == 0
+    assert util.file_contains(util.JSON_FILE, "schemas/json/sarif-2.1.0-rtm.4")
+    util.clean(util.JSON_FILE)
+
+
+def test_findings_export_sarif_implicit() -> None:
+    """Test SARIF export for a single project and implicit format"""
+    util.clean("issues.sarif")
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ["-k", "okorach_sonar-tools", "-f", "issues.sarif"]):
+            findings_export.main()
+    assert int(str(e.value)) == 0
+    assert util.file_contains("issues.sarif", "schemas/json/sarif-2.1.0-rtm.4")
+    util.clean("issues.sarif")
 
 
 def test_wrong_filters() -> None:
