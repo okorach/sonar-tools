@@ -94,10 +94,18 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
     log.set_debug_level(kwargs[OPT_VERBOSE])
     log.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    if log.level() == log.DEBUG:
+        sanitized_args = kwargs.copy()
+        sanitized_args["token"] = utilities.redacted_token(sanitized_args["token"])
+        if "tokenTarget" in sanitized_args:
+            sanitized_args["tokenTarget"] = utilities.redacted_token(sanitized_args["tokenTarget"])
+        log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
     if "projectKeys" in kwargs:
         kwargs["projectKeys"] = utilities.csv_to_list(kwargs["projectKeys"])
     if "metricKeys" in kwargs:
         kwargs["metricKeys"] = utilities.csv_to_list(kwargs["metricKeys"])
+    if LANGUAGE_OPT in kwargs:
+        kwargs[LANGUAGE_OPT] = utilities.csv_to_list(kwargs[LANGUAGE_OPT])
 
     # Verify version randomly once every 10 runs
     if not kwargs[OPT_SKIP_VERSION_CHECK] and random.randrange(10) == 0:
@@ -248,8 +256,9 @@ def set_key_arg(parser):
 
 def add_language_arg(parser: argparse.ArgumentParser, object_types: str) -> argparse.ArgumentParser:
     """Adds the language selection option"""
-    parser.add_argument(f"--{LANGUAGE_OPT}", required=False, help=f"Commas separated list of language to filter {object_types}")
+    parser.add_argument(f"--{LANGUAGE_OPT}", required=False, default=None, help=f"Commas separated list of language to filter {object_types}")
     return parser
+
 
 def set_target_sonar_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Sets the target SonarQube CLI options"""

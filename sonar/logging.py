@@ -21,6 +21,15 @@
 
 import logging
 
+CRITICAL = logging.CRITICAL
+FATAL = logging.FATAL
+ERROR = logging.ERROR
+WARNING = logging.WARNING
+WARN = logging.WARN
+INFO = logging.INFO
+DEBUG = logging.DEBUG
+NOTSET = logging.NOTSET
+
 __DEFAULT_LOGGER_NAME = "sonar-tools"
 __LOGGER = logging.getLogger(__DEFAULT_LOGGER_NAME)
 __DEFAULT_LOG_FORMAT = "%(asctime)s | %(name)s | %(levelname)-7s | %(threadName)-15s | %(message)s"
@@ -106,3 +115,8 @@ def set_debug_level(level: str) -> None:
     """Sets the logging level"""
     __LOGGER.setLevel(get_logging_level(level))
     __LOGGER.info("Set logging level to %s", level)
+
+
+def level() -> None:
+    """Returns the logging level"""
+    return __LOGGER.level
