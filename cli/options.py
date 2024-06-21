@@ -94,8 +94,8 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
     log.set_debug_level(kwargs[OPT_VERBOSE])
     log.info("sonar-tools version %s", version.PACKAGE_VERSION)
-    if KEYS_OPT in kwargs:
-        kwargs[KEYS_OPT] = utilities.csv_to_list(kwargs[KEYS_OPT])
+    if "projectKeys" in kwargs:
+        kwargs["projectKeys"] = utilities.csv_to_list(kwargs["projectKeys"])
     if "metricKeys" in kwargs:
         kwargs["metricKeys"] = utilities.csv_to_list(kwargs["metricKeys"])
 
