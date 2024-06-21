@@ -57,6 +57,8 @@ OUTPUTFILE = "file"
 LOGFILE_SHORT = "l"
 LOGFILE = "logfile"
 
+LANGUAGE_OPT = "languages"
+
 WITH_HISTORY = "history"
 NBR_THREADS = "threads"
 
@@ -92,8 +94,8 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
     log.set_debug_level(kwargs[OPT_VERBOSE])
     log.info("sonar-tools version %s", version.PACKAGE_VERSION)
-    if "projectKeys" in kwargs:
-        kwargs["projectKeys"] = utilities.csv_to_list(kwargs["projectKeys"])
+    if KEYS_OPT in kwargs:
+        kwargs[KEYS_OPT] = utilities.csv_to_list(kwargs[KEYS_OPT])
     if "metricKeys" in kwargs:
         kwargs["metricKeys"] = utilities.csv_to_list(kwargs["metricKeys"])
 
@@ -243,6 +245,11 @@ def set_key_arg(parser):
     )
     return parser
 
+
+def add_language_arg(parser: argparse.ArgumentParser, object_types: str) -> argparse.ArgumentParser:
+    """Adds the language selection option"""
+    parser.add_argument(f"--{LANGUAGE_OPT}", required=False, help=f"Commas separated list of language to filter {object_types}")
+    return parser
 
 def set_target_sonar_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Sets the target SonarQube CLI options"""
