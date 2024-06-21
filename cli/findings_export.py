@@ -196,7 +196,9 @@ def __dump_findings(findings_list: list[findings.Finding], file: str, file_forma
     log.debug("File written")
 
 
-def __write_findings(queue: Queue[list[findings.Finding]], file_to_write: str, file_format: str, with_url: bool, separator: str, sarif_full_export: bool):
+def __write_findings(
+    queue: Queue[list[findings.Finding]], file_to_write: str, file_format: str, with_url: bool, separator: str, sarif_full_export: bool
+) -> None:
     """Writes a list of findings in an output file or stdout"""
     global IS_FIRST
     global TOTAL_FINDINGS
@@ -327,7 +329,15 @@ def __get_project_findings(queue, write_queue):
 
 
 def store_findings(
-    project_list: dict[str, projects.Project], params: dict[str, str], endpoint: platform.Platform, file: str, format: str, threads: int = 4, with_url: bool = False, csv_separator: str = ",", sarif_full_export: bool = False
+    project_list: dict[str, projects.Project],
+    params: dict[str, str],
+    endpoint: platform.Platform,
+    file: str,
+    format: str,
+    threads: int = 4,
+    with_url: bool = False,
+    csv_separator: str = ",",
+    sarif_full_export: bool = False,
 ) -> None:
     """Export all findings of a given project list"""
     my_queue = Queue(maxsize=0)
