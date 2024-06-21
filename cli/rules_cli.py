@@ -42,12 +42,16 @@ def __parse_args(desc: str) -> object:
 
 def main() -> int:
     """Main entry point"""
+    start_time = util.start_clock()
     kwargs = util.convert_args(__parse_args("Extract rules"))
     endpoint = platform.Platform(**kwargs)
     file = kwargs["file"]
     fmt = util.deduct_format(kwargs["format"], file)
 
-    rule_list = rules.get_list(endpoint=endpoint)
+    params = {}
+    if options.LANGUAGE_OPT in kwargs:
+        params = {"languages": util.list_to_csv(kwargs[options.LANGUAGE_OPT])}
+    rule_list = rules.get_list(endpoint=endpoint, **params)
 
     with util.open_file(file) as fd:
         if fmt == "json":
@@ -67,6 +71,7 @@ def main() -> int:
             print("\n]\n", file=fd)
 
     log.info("%d rules exported", len(rule_list))
+    util.stop_clock(start_time)
     sys.exit(0)
 
 
