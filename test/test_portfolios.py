@@ -127,6 +127,7 @@ def test_regexp_mode() -> None:
     p.delete()
     assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 
+
 def test_permissions_1() -> None:
     """Test permissions"""
     p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
@@ -134,6 +135,7 @@ def test_permissions_1() -> None:
     # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}
     p.delete()
     assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
+
 
 def test_permissions_2() -> None:
     """Test permissions"""
