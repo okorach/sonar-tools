@@ -58,6 +58,17 @@ LOGFILE_SHORT = "l"
 LOGFILE = "logfile"
 
 LANGUAGE_OPT = "languages"
+LANGUAGE_MAPPING = {
+    "python": "py",
+    "csharp": "cs",
+    "c#": "cs",
+    "javascript": "js",
+    "typescript": "ts",
+    "objective-c": "objc",
+    "objectivec": "objc",
+    "html": "web",
+    "pl1": "pli",
+}
 
 WITH_HISTORY = "history"
 NBR_THREADS = "threads"
@@ -105,7 +116,8 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     if "metricKeys" in kwargs:
         kwargs["metricKeys"] = utilities.csv_to_list(kwargs["metricKeys"])
     if LANGUAGE_OPT in kwargs:
-        kwargs[LANGUAGE_OPT] = utilities.csv_to_list(kwargs[LANGUAGE_OPT])
+        kwargs[LANGUAGE_OPT] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGE_OPT])]
+        kwargs[LANGUAGE_OPT] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in utilities.csv_to_list(kwargs[LANGUAGE_OPT])]
 
     # Verify version randomly once every 10 runs
     if not kwargs[OPT_SKIP_VERSION_CHECK] and random.randrange(10) == 0:
