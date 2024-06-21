@@ -224,7 +224,10 @@ class Finding(sq.SqObject):
         data["message"] = {"text": self.message}
         data["properties"] = self.to_json()
         data["properties"]["url"] = self.url()
-        rg = self._json["textRange"]
+        try:
+            rg = self._json["textRange"]
+        except KeyError:
+            rg = {"startLine": 1, "startOffset": 1, "endLine": 1, "endOffset": 1}
         data["locations"] = [
             {
                 "physicalLocation": {
