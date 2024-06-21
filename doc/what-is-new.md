@@ -1,3 +1,8 @@
+# Next version yet unreleased
+- Several fixes for SARIF export
+- Added option to not export all Sonar findings custom properties in SARIF export for more compact output
+- Refactoring on portfolios for hardening
+
 # Version 3.1
   - Several bug fixes, in particular Sonar Tools would hang if providing a token with insufficient permissions for projects (Browse is minimally needed)
   - Major `sonar-finding-sync` hardening
