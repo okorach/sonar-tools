@@ -107,12 +107,13 @@ def parse_args(desc):
         help="Comma separated types among " + util.list_to_csv(issues.TYPES + hotspots.TYPES),
     )
     parser.add_argument("--tags", help="Comma separated findings tags", required=False)
+    parser.add_argument("--useFindings", required=False, default=False, action="store_true", help="Use export_findings() whenever possible")
     parser.add_argument(
-        "--useFindings",
+        "--sarifNoCustomProperties",
         required=False,
         default=False,
         action="store_true",
-        help="Use export_findings() whenever possible",
+        help="For SARIF export, turn off Sonar custom findings properties, default is turned on",
     )
     options.add_url_arg(parser)
     options.add_dateformat_arg(parser)
@@ -159,7 +160,7 @@ def __write_footer(file, format):
         print(f"{closing_sequence}", file=f)
 
 
-def __dump_findings(findings_list: list[object], file: str, file_format: str, **kwargs) -> None:
+def __dump_findings(findings_list: list[findings.Finding], file: str, file_format: str, **kwargs) -> None:
     """Dumps a list of findings in a file. The findings are appended at the end of the file
 
     :param findings_list: List of findings
@@ -176,7 +177,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
         url = ""
         sep = kwargs.get(options.CSV_SEPARATOR, ",")
         comma = ","
-        for _, finding in findings_list.items():
+        for finding in findings_list.values():
             i -= 1
             if i == 0:
                 comma = ""
@@ -186,7 +187,7 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
                     finding_json.pop("url", None)
                 print(f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end="")
             elif file_format == "sarif":
-                finding_sarif = finding.to_sarif()
+                finding_sarif = finding.to_sarif(kwargs.get("full", True))
                 print(f"{util.json_dump(finding_sarif, indent=1)}{comma}\n", file=f, end="")
             else:
                 if kwargs[options.WITH_URL]:
@@ -195,7 +196,10 @@ def __dump_findings(findings_list: list[object], file: str, file_format: str, **
     log.debug("File written")
 
 
-def __write_findings(queue, file_to_write, file_format, with_url, separator):
+def __write_findings(
+    queue: Queue[list[findings.Finding]], file_to_write: str, file_format: str, with_url: bool, separator: str, sarif_full_export: bool
+) -> None:
+    """Writes a list of findings in an output file or stdout"""
     global IS_FIRST
     global TOTAL_FINDINGS
     while True:
@@ -213,7 +217,7 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
             continue
 
         if file_format in (None, "csv"):
-            __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
+            __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator, full=sarif_full_export)
             queue.task_done()
             with TOTAL_SEM:
                 TOTAL_FINDINGS += len(data)
@@ -228,7 +232,7 @@ def __write_findings(queue, file_to_write, file_format, with_url, separator):
         with TOTAL_SEM:
             TOTAL_FINDINGS += len(data)
 
-        __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator)
+        __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator, full=sarif_full_export)
         queue.task_done()
     log.debug("End of write findings")
 
@@ -324,7 +328,18 @@ def __get_project_findings(queue, write_queue):
         queue.task_done()
 
 
-def store_findings(project_list, params, endpoint, file, format, threads=4, with_url=False, csv_separator=","):
+def store_findings(
+    project_list: dict[str, projects.Project],
+    params: dict[str, str],
+    endpoint: platform.Platform,
+    file: str,
+    format: str,
+    threads: int = 4,
+    with_url: bool = False,
+    csv_separator: str = ",",
+    sarif_full_export: bool = False,
+) -> None:
+    """Export all findings of a given project list"""
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
     for key, project in project_list.items():
@@ -355,7 +370,7 @@ def store_findings(project_list, params, endpoint, file, format, threads=4, with
         worker.start()
 
     log.info("Starting finding writer thread 'findingWriter'")
-    write_worker = Thread(target=__write_findings, args=[write_queue, file, format, with_url, csv_separator])
+    write_worker = Thread(target=__write_findings, args=[write_queue, file, format, with_url, csv_separator, sarif_full_export])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
@@ -395,7 +410,7 @@ def main():
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
     fmt, fname = kwargs.pop("format", None), kwargs.pop("file", None)
-    fmt = util.deduct_format(fmt, fname)
+    fmt = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
@@ -410,6 +425,7 @@ def main():
         threads=kwargs[options.NBR_THREADS],
         with_url=kwargs[options.WITH_URL],
         csv_separator=kwargs[options.CSV_SEPARATOR],
+        sarif_full_export=not kwargs["sarifNoCustomProperties"],
     )
     __write_footer(fname, fmt)
     log.info("Returned findings: %d", TOTAL_FINDINGS)

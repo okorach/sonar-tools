@@ -180,6 +180,15 @@ Exports a list of issues as CSV, JSON or SARIF format. The export is sent to sta
 Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.
 :warning: On large SonarQube instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
+Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomProperties] [-k <projectKeysList>]`
+- `--sarifNoCustomProperties`: For SARIF export. By default all Sonar custom properties are exported which makes the SARIF export quite verbose. Use this option to not export the Sonar custom properties (only the SARIF standard ones)
+- `--statuses <statusList>`: Only export findings with given statuses, comma separated among OPEN,CONFIRMED,REOPENED,RESOLVED,CLOSED,TO_REVIEW,REVIEWED
+- `--resolutions <resolutionList>`: Only export findings with given resolution, comma separated among FALSE-POSITIVE,WONTFIX,FIXED,REMOVED,ACCEPTED,SAFE,ACKNOWLEDGED,FIXED
+- `--severities <severityList>`: Only export findings with given resolution, comma separated among BLOCKER,CRITICAL,MAJOR,MINOR,INFO
+- `--types <typeList>`: Only export findings with given type, comma separated among BUG,VULNERABILITY,CODE_SMELL,SECURITY_HOTSPOT
+- `--createdAfter <YYYY-MM-DD>`: Only export findings created after a given date
+- `--createdBefore <YYYY-MM-DD>`: Only export findings created before a given date
+
 ## Required Permissions
 
 `sonar-findings-export` needs `Browse` permission on all projects for which findings are exported
@@ -202,10 +211,13 @@ sonar-findings-export -r FALSE-POSITIVE,WONTFIX -f fp_wf.json
 sonar-findings-export -a 2020-01-01 -b 2020-12-31 -f issues_created_in_2020.csv
 
 # Exports all vulnerabilities and bugs
-sonar-findings-export -types VULNERABILITY,BUG -f json >bugs_and_vulnerabilities.json
+sonar-findings-export -types VULNERABILITY,BUG --format json >bugs_and_vulnerabilities.json
 
 # Exports all vulnerabilities and bugs in SARIF format
-sonar-findings-export -types VULNERABILITY,BUG -f json --format sarif >bugs_and_vulnerabilities.sarif.json
+sonar-findings-export -types VULNERABILITY,BUG --format sarif >bugs_and_vulnerabilities.sarif.json
+
+# Export all findings of project myProjectKey in SARIF format without the custom Sonar properties
+sonar-findings-export -k myProjectKey ----sarifNoCustomProperties -f myProjectKey.sarif
 ```
 
 # <a name="sonar-projects-export"></a>sonar-projects-export

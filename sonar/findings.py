@@ -211,8 +211,9 @@ class Finding(sq.SqObject):
                 data.pop(k)
         return data
 
-    def to_sarif(self) -> dict[str, str]:
+    def to_sarif(self, full: bool = True) -> dict[str, str]:
         """
+        :param bool full: Whether all properties of the issues should be exported or only the SARIF ones
         :return: The finding in SARIF format
         :rtype: dict
         """
@@ -222,9 +223,13 @@ class Finding(sq.SqObject):
             data["level"] = "error"
         data["ruleId"] = self.rule
         data["message"] = {"text": self.message}
-        data["properties"] = self.to_json()
-        data["properties"]["url"] = self.url()
-        rg = self._json["textRange"]
+        data["properties"] = {"url": self.url()}
+        if full:
+            data["properties"].update(self.to_json())
+        try:
+            rg = self._json["textRange"]
+        except KeyError:
+            rg = {"startLine": 1, "startOffset": 1, "endLine": 1, "endOffset": 1}
         data["locations"] = [
             {
                 "physicalLocation": {
