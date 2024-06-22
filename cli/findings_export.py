@@ -117,6 +117,7 @@ def parse_args(desc):
     )
     options.add_url_arg(parser)
     options.add_dateformat_arg(parser)
+    options.add_language_arg(parser, "findings")
     args = options.parse_and_check(parser=parser, logger_name="sonar-findings-export")
     return args
 
@@ -286,7 +287,7 @@ def __get_project_findings(queue, write_queue):
         i_sevs = util.intersection(sev_list, issues.SEVERITIES)
         h_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
 
-        if status_list or resol_list or type_list or sev_list:
+        if status_list or resol_list or type_list or sev_list or options.LANGUAGE_OPT in params:
             search_findings = False
 
         log.debug("WriteQueue %s task %s put", str(write_queue), key)
@@ -398,7 +399,7 @@ def main():
         log.warning("--useFindings option is not available with SonarCloud, disabling the option to proceed")
         params["useFindings"] = False
 
-    for p in ("statuses", "createdAfter", "createdBefore", "resolutions", "severities", "types", "tags"):
+    for p in ("statuses", "createdAfter", "createdBefore", "resolutions", "severities", "types", "tags", "languages"):
         if params.get(p, None) is not None:
             if params["useFindings"]:
                 log.warning("Selected search criteria %s will disable --useFindings", params[p])

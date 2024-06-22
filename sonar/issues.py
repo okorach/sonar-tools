@@ -850,5 +850,7 @@ def get_search_criteria(params):
         criterias["statuses"] = util.allowed_values_string(criterias["statuses"], STATUSES)
     if criterias.get("resolutions", None) is not None:
         criterias["resolutions"] = util.allowed_values_string(criterias["resolutions"], RESOLUTIONS)
+    if criterias.get("languages", None) is not None:
+        criterias["languages"] = util.list_to_csv(criterias["languages"])
     criterias = util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
     return criterias
