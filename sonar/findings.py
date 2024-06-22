@@ -466,27 +466,17 @@ def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = N
     q.join()
 
 
-def remap_filters(filters: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
-    """Adjust findings search filters based on Sonar version"""
-    if not filters:
-        return {}
-    remapped_filters = filters.copy()
-    for old, new in remapping.items():
-        if old in filters:
-            remapped_filters[new] = util.csv_to_list(remapped_filters.pop(old))
-    return remapped_filters
-
-
-def filter(findings: dict[str, Finding], filters: dict[str, str]) -> dict[str, Finding]:
+def post_search_filter(findings: dict[str, Finding], filters: dict[str, str]) -> dict[str, Finding]:
     """Filters a dict of findings with provided filter"""
     filtered_findings = findings.copy()
+    log.info("Post filtering findings with %s", str(filters))
     if "createdAfter" in filters:
         min_date = util.string_to_date(filters["createdAfter"])
     if "createdBefore" in filters:
         max_date = util.string_to_date(filters["createdBefore"])
     for key, finding in findings.items():
         if "languages" in filters:
-            lang = rules.get_object(endpoint=finding.endpoint, key=finding.rule).language
+            lang = rules.get_object(key=finding.rule, endpoint=finding.endpoint).language
             if lang in filters["languages"]:
                 filtered_findings.pop(key, None)
         if "createdAfter" in filters and finding.creation_date < min_date:

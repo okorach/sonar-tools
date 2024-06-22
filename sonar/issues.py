@@ -673,7 +673,7 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
         key_list = util.csv_to_list(project_key)
     issue_list = {}
     for k in key_list:
-        log.info("Project '%s' issue search", k)
+        log.info("Project '%s' issue search with filters %s", k, str(params))
         if endpoint.version() >= (9, 1, 0) and endpoint.edition() in ("enterprise", "datacenter") and search_findings:
             log.info("Using new export findings to speed up issue export")
             issue_list.update(findings.export_findings(endpoint, k, params.get("branch", None), params.get("pullRequest", None)))
@@ -746,7 +746,7 @@ def search(endpoint, params=None, raise_error=True, threads=8):
     :rtype: dict{<key>: <Issue>}
     :raises: TooManyIssuesError if more than 10'000 issues found
     """
-    new_params = {} if params is None else params.copy()
+    new_params = get_search_criteria(params)
     log.debug("Search params = %s", str(new_params))
     if "ps" not in new_params:
         new_params["ps"] = Issue.MAX_PAGE_SIZE
