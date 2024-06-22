@@ -365,7 +365,7 @@ def search(endpoint: platform.Platform, page: int = None, filters: dict[str, str
     :rtype: dict{<key>: <Hotspot>}
     """
     hotspots_list = {}
-    new_params = findings.remap_filters(_FILTERS_HOTSPOTS_REMAPPING, filters)
+    new_params = findings.remap_filters(filters=filters, remapping=_FILTERS_HOTSPOTS_REMAPPING)
     new_params["ps"] = 500
     p = 1
     while True:

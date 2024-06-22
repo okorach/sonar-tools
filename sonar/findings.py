@@ -473,8 +473,9 @@ def remap_filters(filters: dict[str, str], remapping: dict[str, str]) -> dict[st
     remapped_filters = filters.copy()
     for old, new in remapping.items():
         if old in filters:
-            remapped_filters[new] = util.csv_to_list(filters[old])
+            remapped_filters[new] = util.csv_to_list(remapped_filters.pop(old))
     return remapped_filters
+
 
 def filter(findings: dict[str, Finding], filters: dict[str, str]) -> dict[str, Finding]:
     """Filters a dict of findings with provided filter"""
@@ -483,7 +484,7 @@ def filter(findings: dict[str, Finding], filters: dict[str, str]) -> dict[str, F
         min_date = util.string_to_date(filters["createdAfter"])
     if "createdBefore" in filters:
         max_date = util.string_to_date(filters["createdBefore"])
-    for key, finding in findings:
+    for key, finding in findings.items():
         if "languages" in filters:
             lang = rules.get_object(endpoint=finding.endpoint, key=finding.rule).language
             if lang in filters["languages"]:
