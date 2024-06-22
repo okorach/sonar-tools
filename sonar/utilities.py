@@ -98,7 +98,10 @@ def string_to_date(string):
     try:
         return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
     except (ValueError, TypeError):
-        return string
+        try:
+            return datetime.datetime.strptime(string, SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
+        except (ValueError, TypeError):
+            return string
 
 
 def date_to_string(date, with_time=True):
