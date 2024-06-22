@@ -195,7 +195,6 @@ def test_findings_filter_on_multiple_criteria() -> None:
             assert issue_type == "HOTSPOT"
     util.clean(util.CSV_FILE)
 
-
     # FIXME: findings-export ignores the branch option see https://github.com/okorach/sonar-tools/issues/1115
     # So passing a non existing branch succeeds
     # assert int(str(e.value)) == errcodes.ERR_NO_SUCH_KEY
