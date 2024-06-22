@@ -134,6 +134,68 @@ def test_findings_export_non_existing_branch() -> None:
         with patch.object(sys, "argv", CSV_OPTS + ["-k", "training:security", "-b", "non-existing-branch"]):
             findings_export.main()
 
+
+def test_findings_filter_on_lang() -> None:
+    """test_findings_export_non_existing_branch"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "py,ts"]):
+            findings_export.main()
+
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        fh.readline()
+        for line in fh.readline():
+            (_, lang, _) = line.split(maxsplit=2)
+            assert lang in ("py", "ts")
+    util.clean(util.CSV_FILE)
+
+
+def test_findings_filter_on_type() -> None:
+    """test_findings_export_non_existing_branch"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + ["--types", "VULNERABILITY,BUG"]):
+            findings_export.main()
+
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        fh.readline()
+        for line in fh.readline():
+            (_, _, issue_type, _) = line.split(maxsplit=3)
+            assert issue_type in ("VULNERABILITY", "BUG")
+    util.clean(util.CSV_FILE)
+
+
+def test_findings_filter_on_status() -> None:
+    """test_findings_export_non_existing_branch"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "FALSE-POSITIVE,ACCEPTED"]):
+            findings_export.main()
+
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        fh.readline()
+        for line in fh.readline():
+            (_, _, _, _, status, _) = line.split(maxsplit=5)
+            assert status in ("FALSE-POSITIVE", "ACCEPTED")
+    util.clean(util.CSV_FILE)
+
+
+def test_findings_filter_on_multiple_criteria() -> None:
+    """test_findings_export_non_existing_branch"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "java", "--types", "HOTSPOT"]):
+            findings_export.main()
+
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        fh.readline()
+        for line in fh.readline():
+            (_, lang, issue_type, _) = line.split(maxsplit=2)
+            assert lang == "java"
+            assert issue_type == "HOTSPOT"
+    util.clean(util.CSV_FILE)
+
+
     # FIXME: findings-export ignores the branch option see https://github.com/okorach/sonar-tools/issues/1115
     # So passing a non existing branch succeeds
     # assert int(str(e.value)) == errcodes.ERR_NO_SUCH_KEY
