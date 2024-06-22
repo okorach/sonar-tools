@@ -477,7 +477,7 @@ def post_search_filter(findings: dict[str, Finding], filters: dict[str, str]) ->
     for key, finding in findings.items():
         if "languages" in filters:
             lang = rules.get_object(key=finding.rule, endpoint=finding.endpoint).language
-            if lang in filters["languages"]:
+            if lang not in filters["languages"]:
                 filtered_findings.pop(key, None)
         if "createdAfter" in filters and finding.creation_date < min_date:
             filtered_findings.pop(key, None)
