@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+"""Findings abstraction"""
 
 from __future__ import annotations
 import re
@@ -27,7 +28,7 @@ from threading import Thread
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.utilities as util
-from sonar import projects
+from sonar import projects, rules
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
@@ -63,6 +64,11 @@ _CSV_FIELDS = (
     "effort",
     "message",
 )
+
+FILTERS = ("statuses", "resolutions", "severities", "languages", "pullRequest", "branch", "tags", "types", "createdBefore", "createdAfter")
+
+FILTERS_10_2_REMAPPING = {"statuses": "impactSeverities"}
+FILTERS_10_4_REMAPPING = {"statuses": "issueStatuses"}
 
 
 class Finding(sq.SqObject):
@@ -458,3 +464,15 @@ def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = N
         worker.setName(f"Changelog{i}")
         worker.start()
     q.join()
+
+
+def remap_filters(filters: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
+    """Adjust findings search filters based on Sonar version"""
+    if not filters:
+        return {}
+    remapped_filters = filters.copy()
+    for old, new in remapping.items():
+        if old in filters:
+            remapped_filters[new] = util.csv_to_list(filters[old])
+    return remapped_filters
+
