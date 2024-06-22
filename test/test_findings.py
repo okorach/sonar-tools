@@ -184,7 +184,7 @@ def test_findings_filter_on_multiple_criteria() -> None:
     """test_findings_export_non_existing_branch"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "java", "--types", "HOTSPOT"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "java", "--types", "SECURITY_HOTSPOT"]):
             findings_export.main()
 
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
@@ -192,7 +192,7 @@ def test_findings_filter_on_multiple_criteria() -> None:
         for line in fh.readline():
             (_, lang, issue_type, _) = line.split(maxsplit=2)
             assert lang == "java"
-            assert issue_type == "HOTSPOT"
+            assert issue_type == "SECURITY_HOTSPOT"
     util.clean(util.CSV_FILE)
 
     # FIXME: findings-export ignores the branch option see https://github.com/okorach/sonar-tools/issues/1115
