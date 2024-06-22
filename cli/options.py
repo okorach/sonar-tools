@@ -254,7 +254,8 @@ def set_common_args(desc: str) -> argparse.ArgumentParser:
     return parser
 
 
-def set_key_arg(parser):
+def set_key_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    """Adds the cmd line parameter to select object keys"""
     parser.add_argument(
         "-k",
         "--projectKeys",
