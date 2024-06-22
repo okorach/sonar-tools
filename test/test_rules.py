@@ -62,7 +62,7 @@ def test_rules_filter_language() -> None:
     """Tests that you can export rules for a single or a few languages"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--language", "py,jcl"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "py,jcl"]):
             rules_cli.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -77,7 +77,7 @@ def test_rules_misspelled_language_1() -> None:
     """Tests that you can export rules for a single or a few languages, misspelled"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--language", "Python,TypeScript"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "Python,TypeScript"]):
             rules_cli.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -92,7 +92,7 @@ def test_rules_misspelled_language_2() -> None:
     """Tests that you can export rules for a single or a few languages, misspelled and not fixed"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--language", "Python,gosu , aPex"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "Python,gosu , aPex"]):
             rules_cli.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
