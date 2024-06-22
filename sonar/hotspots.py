@@ -355,7 +355,7 @@ def search_by_project(endpoint: platform.Platform, project_key: str, filters: di
     for k in key_list:
         new_params["projectKey"] = k
         project_hotspots = findings.post_search_filter(search(endpoint=endpoint, filters=new_params), filters)
-        log.debug("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
+        log.info("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
         hotspots.update(project_hotspots)
     return hotspots
 
