@@ -301,7 +301,7 @@ def __get_project_findings(queue, write_queue):
                 findings_list = {}
             write_queue.put([findings_list, False])
         else:
-            new_params = issues.get_search_criteria(params)
+            new_params = params.copy()
             new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
@@ -315,10 +315,8 @@ def __get_project_findings(queue, write_queue):
                 log.info("Selected types, severities, resolutions or statuses disables issue search")
 
             if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
-                new_params = hotspots.get_search_criteria(params)
-                new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
                 try:
-                    findings_list.update(hotspots.search_by_project(key, endpoint=endpoint, params=new_params))
+                    findings_list.update(hotspots.search_by_project(endpoint=endpoint, project_key=key, filters=new_params))
                 except HTTPError as e:
                     log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
             else:
