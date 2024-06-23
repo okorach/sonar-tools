@@ -208,7 +208,10 @@ class Branch(components.Component):
                 data = json.loads(self.get(api=APIS["get_new_code"], params={"project": self.concerned_object.key}).text)
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
+                    raise exceptions.ObjectNotFound(self.concerned_object.key, f"{str(self.concerned_object)} not found")
+                if e.response.status_code == HTTPStatus.FORBIDDEN:
+                    log.error("Error 403 when getting new code period of %s", {str(self)})
+                raise e
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
                 if b["branchKey"] == self.name:
