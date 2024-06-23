@@ -866,6 +866,7 @@ def get_search_criteria(params):
 
 
 def _change_filters_for_10_4(filters: dict[str, str]) -> Union[dict[str, str], None]:
+    """Adjust filters for new 10.4 issues/search API parameters"""
     if not filters:
         return None
     new_filters = util.dict_remap(filters.copy(), _FILTERS_10_4_REMAPPING)
