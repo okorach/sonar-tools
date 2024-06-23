@@ -58,6 +58,51 @@ def test_rules_json_format() -> None:
     util.clean(util.JSON_FILE)
 
 
+def test_rules_filter_language() -> None:
+    """Tests that you can export rules for a single or a few languages"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "py,jcl"]):
+            rules_cli.main()
+    assert int(str(e.value)) == 0
+    assert util.file_not_empty(util.CSV_FILE)
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        for line in fh.readline():
+            (_, lang, _) = line.split(maxsplit=2)
+            assert lang in ("py", "jcl")
+    util.clean(util.CSV_FILE)
+
+
+def test_rules_misspelled_language_1() -> None:
+    """Tests that you can export rules for a single or a few languages, misspelled"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "Python,TypeScript"]):
+            rules_cli.main()
+    assert int(str(e.value)) == 0
+    assert util.file_not_empty(util.CSV_FILE)
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        for line in fh.readline():
+            (_, lang, _) = line.split(maxsplit=2)
+            assert lang in ("py", "ts")
+    util.clean(util.CSV_FILE)
+
+
+def test_rules_misspelled_language_2() -> None:
+    """Tests that you can export rules for a single or a few languages, misspelled and not fixed"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "Python,gosu , aPex"]):
+            rules_cli.main()
+    assert int(str(e.value)) == 0
+    assert util.file_not_empty(util.CSV_FILE)
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        for line in fh.readline():
+            (_, lang, _) = line.split(maxsplit=2)
+            assert lang in ("py", "apex")
+    util.clean(util.CSV_FILE)
+
+
 def test_get_rule() -> None:
     """test_get_rule"""
     myrule = rules.get_object(endpoint=util.SQ, key="java:S127")

@@ -665,7 +665,7 @@ class Project(components.Component):
 
         return hotspots.search(
             endpoint=self.endpoint,
-            params={
+            filters={
                 "projectKey": self.key,
                 "additionalFields": "comments",
             },

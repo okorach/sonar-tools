@@ -323,7 +323,7 @@ class Branch(components.Component):
 
         return hotspots.search(
             endpoint=self.endpoint,
-            params={
+            filters={
                 "projectKey": self.concerned_object.key,
                 "branch": self.name,
                 "additionalFields": "comments",

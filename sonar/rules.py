@@ -183,7 +183,7 @@ def get_object(key: str, endpoint: object) -> Union[Rule, None]:
     if key in _OBJECTS:
         return _OBJECTS[key]
     try:
-        return Rule.get_object(key, endpoint)
+        return Rule.get_object(key=key, endpoint=endpoint)
     except exceptions.ObjectNotFound:
         return None
 

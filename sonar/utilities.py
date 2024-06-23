@@ -98,7 +98,10 @@ def string_to_date(string):
     try:
         return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
     except (ValueError, TypeError):
-        return string
+        try:
+            return datetime.datetime.strptime(string, SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
+        except (ValueError, TypeError):
+            return string
 
 
 def date_to_string(date, with_time=True):
@@ -526,3 +529,29 @@ def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_for
     if fmt not in allowed_formats:
         fmt = "csv"
     return fmt
+
+
+def dict_remap(original_dict: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
+    """Adjust findings search filters based on Sonar version"""
+    if not original_dict:
+        return {}
+    remapped_filters = original_dict.copy()
+    for old, new in remapping.items():
+        if old in original_dict:
+            remapped_filters[new] = remapped_filters.pop(old)
+    return remapped_filters
+
+
+def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:
+    """Covert dict list values into CSV string"""
+    if not original_dict:
+        return {}
+    for k, v in original_dict.copy():
+        if isinstance(v, list):
+            original_dict[k] = list_to_csv(v)
+    return original_dict
+
+
+def dict_remap_and_stringify(original_dict: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
+    """Remaps keys and stringify values of a dict"""
+    return dict_stringify(dict_remap(original_dict, remapping))

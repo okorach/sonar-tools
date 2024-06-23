@@ -19,6 +19,8 @@
 #
 """Abstraction of the SonarQube "hotspot" concept"""
 
+from __future__ import annotations
+
 import json
 import re
 from http import HTTPStatus
@@ -27,7 +29,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.utilities as util
-from sonar import syncer, users, sqobject
+from sonar import syncer, users, sqobject, platform
 from sonar import findings, changelog, projects
 
 SEARCH_CRITERIAS = (
@@ -35,16 +37,22 @@ SEARCH_CRITERIAS = (
     "cwe",
     "files",
     "hotspots",
+    "inNewCodePeriod",
     "onlyMine",
+    "owaspAsvs-4.0",
+    "owaspAsvsLevel",
     "owaspTop10",
     "owaspTop10-2021",
     "p",
-    "ps",
+    "pciDss-3.2",
+    "pciDss-4.0",
+    "project",
     "projectKey",
+    "ps",
     "pullRequest",
     "resolution",
-    "sansTop25",
     "sinceLeakPeriod",
+    "resolution",
     "sonarsourceSecurity",
     "status",
 )
@@ -53,6 +61,9 @@ TYPES = ("SECURITY_HOTSPOT",)
 RESOLUTIONS = ("SAFE", "ACKNOWLEDGED", "FIXED")
 STATUSES = ("TO_REVIEW", "REVIEWED")
 SEVERITIES = ()
+
+# Filters for search of hotspots are different than for issues :-(
+_FILTERS_HOTSPOTS_REMAPPING = {"resolutions": "resolution", "statuses": "status", "componentsKey": "projectKey"}
 
 _OBJECTS = {}
 
@@ -325,59 +336,40 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(project_key, endpoint=None, params=None):
+def search_by_project(endpoint: platform.Platform, project_key: str, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
-    :param project_key: Project key
-    :type project_key: str
-    :param params: Search filters to narrow down the search, defaults to None
-    :type params: dict
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str project_key: Project key
+    :param dict params: Search filters to narrow down the search, defaults to None
     :return: List of found hotspots
     :rtype: dict{<key>: <Hotspot>}
     """
-    new_params = {} if params is None else params.copy()
     if project_key is None:
         key_list = projects.search(endpoint).keys()
     else:
         key_list = util.csv_to_list(project_key)
+    new_params = get_search_filters(params=filters)
     hotspots = {}
+    log.info("Searching hotspots with filters %s", str(new_params))
     for k in key_list:
         new_params["projectKey"] = k
-        project_hotspots = search(endpoint=endpoint, params=new_params)
-        log.debug("Project '%s' has %d hotspots", k, len(project_hotspots))
+        project_hotspots = findings.post_search_filter(search(endpoint=endpoint, filters=new_params), filters)
+        log.info("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
         hotspots.update(project_hotspots)
     return hotspots
 
 
-def search(endpoint, page=None, params=None):
+def search(endpoint: platform.Platform, page: int = None, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
-    :param project_key: Project key
-    :type project_key: str
-    :param params: Search filters to narrow down the search, defaults to None
-    :type params: dict
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param dict[str, str] filters: Search filters to narrow down the search, defaults to None
     :return: List of found hotspots
     :rtype: dict{<key>: <Hotspot>}
     """
     hotspots_list = {}
-    new_params = {} if params is None else params.copy()
-    r_list = util.csv_to_list(params.get("resolution", None))
-    s_list = util.csv_to_list(params.get("status", None))
-    if len(r_list) > 1:
-        for r in r_list:
-            new_params["resolution"] = r
-            hotspots_list.update(search(endpoint, params=new_params))
-        return hotspots_list
-    elif len(s_list) > 1:
-        for s in s_list:
-            new_params["status"] = s
-            hotspots_list.update(search(endpoint, params=new_params))
-        return hotspots_list
-
+    new_params = util.dict_remap(original_dict=filters, remapping=_FILTERS_HOTSPOTS_REMAPPING)
     new_params["ps"] = 500
     p = 1
     while True:
@@ -391,7 +383,7 @@ def search(endpoint, page=None, params=None):
             nbr_hotspots = data["paging"]["total"]
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
-                log.warning("No hotspots found with search params %s", str(params))
+                log.warning("No hotspots found with search params %s", str(filters))
                 nbr_hotspots = 0
                 return {}
             else:
@@ -405,15 +397,15 @@ def search(endpoint, page=None, params=None):
             )
 
         for i in data["hotspots"]:
-            if "branch" in params:
-                i["branch"] = params["branch"]
-            if "pullRequest" in params:
-                i["pullRequest"] = params["pullRequest"]
+            if "branch" in filters:
+                i["branch"] = filters["branch"]
+            if "pullRequest" in filters:
+                i["pullRequest"] = filters["pullRequest"]
             hotspots_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
         if page is not None or p >= nbr_pages:
             break
         p += 1
-    return hotspots_list
+    return findings.post_search_filter(hotspots_list, filters)
 
 
 def get_object(key, endpoint: object, data: dict[str] = None, from_export: bool = False) -> Hotspot:
@@ -423,20 +415,16 @@ def get_object(key, endpoint: object, data: dict[str] = None, from_export: bool 
     return _OBJECTS[uu]
 
 
-def get_search_criteria(params):
-    """Returns the filtered list of params that are allowed for api/issue/search"""
-    criterias = {} if params is None else params.copy()
-    for old, new in {
-        "resolutions": "resolution",
-        "componentsKey": "projectKey",
-        "statuses": "status",
-    }.items():
-        if old in params:
-            criterias[new] = params[old]
-    if criterias.get("status", None) is not None:
+def get_search_filters(params: dict[str, str]) -> dict[str, str]:
+    """Returns the filtered list of params that are allowed for api/hotspots/search"""
+    if params is None:
+        return {}
+    criterias = util.remove_nones(params.copy())
+    criterias = util.dict_remap(criterias, _FILTERS_HOTSPOTS_REMAPPING)
+    if "status" in criterias:
         criterias["status"] = util.allowed_values_string(criterias["status"], STATUSES)
-    if criterias.get("resolution", None) is not None:
+    if "resolution" in criterias:
         criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
-        log.error("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
+        log.warning("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
         criterias["status"] = "REVIEWED"
-    return util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
+    return util.dict_subset(criterias, SEARCH_CRITERIAS)

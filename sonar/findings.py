@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+"""Findings abstraction"""
 
 from __future__ import annotations
 import re
@@ -27,7 +28,7 @@ from threading import Thread
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.utilities as util
-from sonar import projects
+from sonar import projects, rules
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
@@ -63,6 +64,11 @@ _CSV_FIELDS = (
     "effort",
     "message",
 )
+
+FILTERS = ("statuses", "resolutions", "severities", "languages", "pullRequest", "branch", "tags", "types", "createdBefore", "createdAfter")
+
+FILTERS_10_2_REMAPPING = {"statuses": "impactSeverities"}
+FILTERS_10_4_REMAPPING = {"statuses": "issueStatuses"}
 
 
 class Finding(sq.SqObject):
@@ -458,3 +464,24 @@ def get_changelogs(issue_list: list[Finding], added_after: datetime.datetime = N
         worker.setName(f"Changelog{i}")
         worker.start()
     q.join()
+
+
+def post_search_filter(findings: dict[str, Finding], filters: dict[str, str]) -> dict[str, Finding]:
+    """Filters a dict of findings with provided filter"""
+    filtered_findings = findings.copy()
+    log.info("Post filtering findings with %s", str(filters))
+    if "createdAfter" in filters:
+        min_date = util.string_to_date(filters["createdAfter"])
+    if "createdBefore" in filters:
+        max_date = util.string_to_date(filters["createdBefore"])
+    for key, finding in findings.items():
+        if "languages" in filters:
+            lang = rules.get_object(key=finding.rule, endpoint=finding.endpoint).language
+            if lang not in filters["languages"]:
+                filtered_findings.pop(key, None)
+        if "createdAfter" in filters and finding.creation_date < min_date:
+            filtered_findings.pop(key, None)
+        if "createdBefore" in filters and finding.creation_date > max_date:
+            filtered_findings.pop(key, None)
+
+    return filtered_findings
