@@ -75,6 +75,9 @@ SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
 STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED")
 RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
 
+_FILTERS_10_2_REMAPPING = {"severities": "impactSeverities"}
+_FILTERS_10_4_REMAPPING = {"statuses": "issueStatuses"}
+
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 _OBJECTS = {}
 
@@ -747,6 +750,11 @@ def search(endpoint, params=None, raise_error=True, threads=8):
     :raises: TooManyIssuesError if more than 10'000 issues found
     """
     new_params = get_search_criteria(params)
+    # if endpoint.version() > (10, 2, 0):
+    #     new_params = util.dict_remap_and_stringify(new_params, _FILTERS_10_2_REMAPPING)
+    # if endpoint.version() > (10, 4, 0):
+    #     new_params = util.dict_remap_and_stringify(new_params, _FILTERS_10_4_REMAPPING)
+
     log.debug("Search params = %s", str(new_params))
     if "ps" not in new_params:
         new_params["ps"] = Issue.MAX_PAGE_SIZE
