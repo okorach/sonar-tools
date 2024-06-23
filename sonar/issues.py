@@ -21,6 +21,7 @@
 import datetime
 import json
 import re
+from typing import Union
 from queue import Queue
 from threading import Thread
 import requests.utils
@@ -72,8 +73,11 @@ SEARCH_CRITERIAS = (
 
 TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
 SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
-STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED")
+STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE")
 RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
+
+_FILTERS_10_2_REMAPPING = {"severities": "impactSeverities"}
+_FILTERS_10_4_REMAPPING = {"statuses": "issueStatuses"}
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 _OBJECTS = {}
@@ -747,6 +751,11 @@ def search(endpoint, params=None, raise_error=True, threads=8):
     :raises: TooManyIssuesError if more than 10'000 issues found
     """
     new_params = get_search_criteria(params)
+    # if endpoint.version() >= (10, 2, 0):
+    #     new_params = util.dict_remap_and_stringify(new_params, _FILTERS_10_2_REMAPPING)
+    if endpoint.version() >= (10, 4, 0):
+        new_params = _change_filters_for_10_4(new_params)
+
     log.debug("Search params = %s", str(new_params))
     if "ps" not in new_params:
         new_params["ps"] = Issue.MAX_PAGE_SIZE
@@ -854,3 +863,21 @@ def get_search_criteria(params):
         criterias["languages"] = util.list_to_csv(criterias["languages"])
     criterias = util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
     return criterias
+
+
+def _change_filters_for_10_4(filters: dict[str, str]) -> Union[dict[str, str], None]:
+    """Adjust filters for new 10.4 issues/search API parameters"""
+    if not filters:
+        return None
+    new_filters = util.dict_remap(filters.copy(), _FILTERS_10_4_REMAPPING)
+    statuses = []
+    for f in "resolutions", "issueStatuses":
+        if f in new_filters:
+            statuses += util.csv_to_list(new_filters[f])
+    new_filters.pop("resolutions", None)
+    if len(statuses) > 0:
+        if "FALSE-POSITIVE" in statuses:
+            statuses.remove("FALSE-POSITIVE")
+            statuses.append("FALSE_POSITIVE")
+        new_filters["issueStatuses"] = util.list_to_csv(statuses)
+    return new_filters

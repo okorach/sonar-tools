@@ -546,7 +546,7 @@ def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:
     """Covert dict list values into CSV string"""
     if not original_dict:
         return {}
-    for k, v in original_dict.copy():
+    for k, v in original_dict.copy().items():
         if isinstance(v, list):
             original_dict[k] = list_to_csv(v)
     return original_dict

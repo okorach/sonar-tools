@@ -25,6 +25,7 @@
 import os
 import re
 import json
+from typing import Union
 from http import HTTPStatus
 from threading import Thread, Lock
 from queue import Queue
@@ -334,29 +335,26 @@ class Project(components.Component):
                     # Hack: 8.9 returns 404, 9.x returns 400
                     self._binding["has_binding"] = False
                 else:
-                    log.error(
-                        "alm_settings/get_binding returning status code %d",
-                        e.response.status_code,
-                    )
+                    log.error("alm_settings/get_binding returning status code %d", e.response.status_code)
                     raise e
+        log.info("Binding = %s", util.json_dump(self._binding["binding"]))
         return self._binding["binding"]
 
-    def is_part_of_monorepo(self):
+    def is_part_of_monorepo(self) -> bool:
         """
         :return: From the DevOps binding, Whether the project is part of a monorepo
         :rtype: bool
         """
-        if self.binding() is None:
-            return False
-        return self.binding()["monorepo"]
+        bind = self.binding()
+        return bind is not None and bind.get("has_binding", False) and bind.get("monorepo", False)
 
-    def binding_key(self):
+    def binding_key(self) -> Union[str, None]:
         """Computes a unique project binding key
 
         :meta private:
         """
         p_bind = self.binding()
-        if p_bind is None:
+        if p_bind is None or not p_bind.get("has_binding", False):
             return None
         key = p_bind["alm"] + _BIND_SEP + p_bind["repository"]
         if p_bind["alm"] in ("azure", "bitbucket"):

@@ -67,9 +67,6 @@ _CSV_FIELDS = (
 
 FILTERS = ("statuses", "resolutions", "severities", "languages", "pullRequest", "branch", "tags", "types", "createdBefore", "createdAfter")
 
-FILTERS_10_2_REMAPPING = {"statuses": "impactSeverities"}
-FILTERS_10_4_REMAPPING = {"statuses": "issueStatuses"}
-
 
 class Finding(sq.SqObject):
     """
