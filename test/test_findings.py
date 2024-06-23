@@ -214,6 +214,23 @@ def test_findings_filter_on_multiple_criteria_2() -> None:
     # assert not os.path.isfile(testutil.CSV_FILE)
 
 
+def test_findings_filter_on_multiple_criteria_3() -> None:
+    """test_findings_filter_on_multiple_criteria_3"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "ACCEPTED", "--resolutions", "FALSE-POSITIVE"]):
+            findings_export.main()
+
+    first = True
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        for line in fh:
+            if first:
+                first = False
+                continue
+            assert line.split(",")[4] in ("ACCEPTED", "FALSE_POSITIVE", "FALSE-POSITIVE")
+    util.clean(util.CSV_FILE)
+
+
 def test_findings_export() -> None:
     """test_findings_export"""
     for opts in __GOOD_OPTS:
