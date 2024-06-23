@@ -472,7 +472,7 @@ def post_search_filter(findings: dict[str, Finding], filters: dict[str, str]) ->
     if "createdBefore" in filters:
         max_date = util.string_to_date(filters["createdBefore"])
     for key, finding in findings.items():
-        if "languages" in filters:
+        if "languages" in filters and len(filters["languages"]) > 0:
             lang = rules.get_object(key=finding.rule, endpoint=finding.endpoint).language
             if lang not in filters["languages"]:
                 filtered_findings.pop(key, None)
