@@ -151,7 +151,7 @@ def test_findings_filter_on_type() -> None:
                 continue
             (_, _, issue_type, _) = line.split(",", maxsplit=3)
             assert issue_type in ("VULNERABILITY", "BUG")
-    #util.clean(util.CSV_FILE)
+    # util.clean(util.CSV_FILE)
 
 
 def test_findings_filter_on_status() -> None:
@@ -193,7 +193,7 @@ def test_findings_filter_on_multiple_criteria() -> None:
 def test_findings_filter_on_multiple_criteria_2() -> None:
     """test_findings_filter_on_multiple_criteria_2"""
     util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
+    with pytest.raises(SystemExit):
         with patch.object(sys, "argv", CSV_OPTS + ["--createdAfter", "2020-01-10", "--createdBefore", "2020-12-31", "--types", "SECURITY_HOTSPOT"]):
             findings_export.main()
 
