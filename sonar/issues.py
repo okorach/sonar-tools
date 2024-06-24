@@ -579,6 +579,7 @@ def __search_all_by_severities(params, endpoint=None):
 
 
 def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
+    """Search all issues in an interval of dates and given filter params"""
     new_params = params.copy()
     if date_start is None:
         date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
