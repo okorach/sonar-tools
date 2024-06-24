@@ -661,13 +661,7 @@ class Project(components.Component):
         """
         from sonar import hotspots
 
-        return hotspots.search(
-            endpoint=self.endpoint,
-            filters={
-                "projectKey": self.key,
-                "additionalFields": "comments",
-            },
-        )
+        return hotspots.search(endpoint=self.endpoint, filters={"projectKey": self.key, "additionalFields": "comments"})
 
     def __sync_community(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""

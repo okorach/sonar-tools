@@ -357,7 +357,7 @@ def search_by_project(endpoint: Platform, project_key: str, filters: dict[str, s
     return post_search_filter(hotspots, filters=filters)
 
 
-def search(endpoint: Platform, page: int = None, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -369,41 +369,37 @@ def search(endpoint: Platform, page: int = None, filters: dict[str, str] = None)
     new_params = get_search_filters(params=filters)
     new_params = util.dict_remap(original_dict=new_params, remapping=_FILTERS_HOTSPOTS_REMAPPING)
     filters_iterations = split_search_filters(new_params)
-    for filters in filters_iterations:
+    for inline_filters in filters_iterations:
         p = 1
-        filters["ps"] = 500
-        log.info("Searching hotspots with sanitized filters %s", str(filters))
+        inline_filters["ps"] = 500
+        log.info("Searching hotspots with sanitized filters %s", str(inline_filters))
         while True:
-            if page is None:
-                filters["p"] = p
-            else:
-                filters["p"] = page
+            inline_filters["p"] = p
             try:
-                resp = endpoint.get("hotspots/search", params=filters, mute=(HTTPStatus.NOT_FOUND,))
+                resp = endpoint.get("hotspots/search", params=inline_filters, mute=(HTTPStatus.NOT_FOUND,))
                 data = json.loads(resp.text)
                 nbr_hotspots = data["paging"]["total"]
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    log.warning("No hotspots found with search params %s", str(filters))
+                    log.warning("No hotspots found with search params %s", str(inline_filters))
                     nbr_hotspots = 0
                     return {}
-                else:
-                    raise e
+                raise e
             nbr_pages = (nbr_hotspots + 499) // 500
-            log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, filters["p"], nbr_pages)
-            if page is None and nbr_hotspots > 10000:
+            log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)
+            if nbr_hotspots > 10000:
                 raise TooManyHotspotsError(
                     nbr_hotspots,
                     f"{nbr_hotspots} hotpots returned by api/hotspots/search, " "this is more than the max 10000 possible",
                 )
 
             for i in data["hotspots"]:
-                if "branch" in filters:
-                    i["branch"] = filters["branch"]
-                if "pullRequest" in filters:
-                    i["pullRequest"] = filters["pullRequest"]
+                if "branch" in inline_filters:
+                    i["branch"] = inline_filters["branch"]
+                if "pullRequest" in inline_filters:
+                    i["pullRequest"] = inline_filters["pullRequest"]
                 hotspots_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
-            if page is not None or p >= nbr_pages:
+            if p >= nbr_pages:
                 break
             p += 1
     return post_search_filter(hotspots_list, filters)
