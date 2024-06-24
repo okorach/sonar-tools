@@ -149,16 +149,16 @@ def test_findings_filter_on_type() -> None:
             if first:
                 first = False
                 continue
-            (_, _, issue_type, _) = line.split(",", maxsplit=3)
+            issue_type = line.split(",")[2]
             assert issue_type in ("VULNERABILITY", "BUG")
     # util.clean(util.CSV_FILE)
 
 
-def test_findings_filter_on_status() -> None:
-    """test_findings_filter_on_status"""
+def test_findings_filter_on_resolution() -> None:
+    """test_findings_filter_on_resolution"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "FALSE-POSITIVE,ACCEPTED"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "FALSE-POSITIVE,ACCEPTED,SAFE"]):
             findings_export.main()
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
@@ -166,8 +166,25 @@ def test_findings_filter_on_status() -> None:
             if first:
                 first = False
                 continue
-            (_, _, _, _, status, _) = line.split(",", maxsplit=5)
-            assert status in ("FALSE-POSITIVE", "ACCEPTED")
+            status = line.split(",")[4]
+            assert status in ("FALSE-POSITIVE", "ACCEPTED", "SAFE")
+    util.clean(util.CSV_FILE)
+
+
+def test_findings_filter_on_severity() -> None:
+    """test_findings_filter_on_resolution"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + ["--severities", "CRITICAL,MAJOR"]):
+            findings_export.main()
+    first = True
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        for line in fh:
+            if first:
+                first = False
+                continue
+            sev = line.split(",")[3]
+            assert sev in ("CRITICAL", "MAJOR")
     util.clean(util.CSV_FILE)
 
 
