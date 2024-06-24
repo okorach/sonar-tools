@@ -111,11 +111,10 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
         if "tokenTarget" in sanitized_args:
             sanitized_args["tokenTarget"] = utilities.redacted_token(sanitized_args["tokenTarget"])
         log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
-    if "projectKeys" in kwargs:
-        kwargs["projectKeys"] = utilities.csv_to_list(kwargs["projectKeys"])
-    if "metricKeys" in kwargs:
-        kwargs["metricKeys"] = utilities.csv_to_list(kwargs["metricKeys"])
-    if LANGUAGE_OPT in kwargs:
+    for argname in "projectKeys", "resolutions", "metricKeys":
+        if argname in kwargs:
+            kwargs[argname] = utilities.csv_to_list(kwargs[argname])
+    if kwargs.get(LANGUAGE_OPT, None) not in (None, ""):
         kwargs[LANGUAGE_OPT] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGE_OPT])]
         kwargs[LANGUAGE_OPT] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in utilities.csv_to_list(kwargs[LANGUAGE_OPT])]
 
@@ -269,7 +268,7 @@ def set_key_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
 
 def add_language_arg(parser: argparse.ArgumentParser, object_types: str) -> argparse.ArgumentParser:
     """Adds the language selection option"""
-    parser.add_argument(f"--{LANGUAGE_OPT}", required=False, default=None, help=f"Commas separated list of language to filter {object_types}")
+    parser.add_argument(f"--{LANGUAGE_OPT}", required=False, help=f"Commas separated list of language to filter {object_types}")
     return parser
 
 
