@@ -105,32 +105,6 @@ class Component(sq.SqObject):
                 log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list
 
-    def get_number_of_filtered_issues(self, params):
-        from sonar import issues
-
-        params["componentKey"] = self.key
-        params["ps"] = 1
-        returned_data = issues.search(endpoint=self.endpoint, params=params)
-        return returned_data["total"]
-
-    def get_number_of_issues(self):
-        """Returns number of issues of a component"""
-        if self.nbr_issues is None:
-            self.nbr_issues = self.get_number_of_filtered_issues({"componentKey": self.key})
-        return self.nbr_issues
-
-    def get_oldest_issue_date(self):
-        """Returns the oldest date of all issues found"""
-        from sonar import issues
-
-        return issues.get_oldest_issue(endpoint=self.endpoint, params={"componentKeys": self.key})
-
-    def get_newest_issue_date(self):
-        """Returns the newest date of all issues found"""
-        from sonar import issues
-
-        return issues.get_newest_issue(endpoint=self.endpoint, params={"componentKeys": self.key})
-
     def get_issues(self):
         from sonar import issues
 
