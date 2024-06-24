@@ -245,7 +245,7 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
                 first = False
                 continue
             assert line.split(",")[4] in ("ACKNOWLEDGED", "SAFE")
-            assert line.split(",")[8] in ("okorach_sonar-tools", "pytorch")
+            assert line.split(",")[7] in ("okorach_sonar-tools", "pytorch")
     util.clean(util.CSV_FILE)
 
 
