@@ -231,6 +231,24 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
     util.clean(util.CSV_FILE)
 
 
+def test_findings_filter_on_hotspots_multi_1() -> None:
+    """test_findings_filter_on_hotspots_multi_1"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "ACKNOWLEDGED, SAFE", "-k", "okorach_sonar-tools,pytorch"]):
+            findings_export.main()
+
+    first = True
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        for line in fh:
+            if first:
+                first = False
+                continue
+            assert line.split(",")[4] in ("ACKNOWLEDGED", "SAFE")
+            assert line.split(",")[8] in ("okorach_sonar-tools", "pytorch")
+    util.clean(util.CSV_FILE)
+
+
 def test_findings_export() -> None:
     """test_findings_export"""
     for opts in __GOOD_OPTS:
