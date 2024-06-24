@@ -34,7 +34,7 @@ from cli import findings_sync
 
 
 CMD = "sonar-findings-sync.py"
-PLAT_OPTS = ["-u", os.getenv("SONAR_HOST_URL_LATEST"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")] + [
+PLAT_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")] + [
     "-U",
     os.getenv("SONAR_HOST_URL_TEST"),
     "-T",

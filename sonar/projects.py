@@ -641,9 +641,9 @@ class Project(components.Component):
             i["pullRequest"] = pr
             nbr_findings[i["type"]] += 1
             if i["type"] == "SECURITY_HOTSPOT":
-                findings_list[key] = hotspots.get_object(key, endpoint=self.endpoint, data=i, from_export=True)
+                findings_list[key] = hotspots.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
             else:
-                findings_list[key] = issues.get_object(key, endpoint=self.endpoint, data=i, from_export=True)
+                findings_list[key] = issues.get_object(endpoint=self.endpoint, key=key, data=i, from_export=True)
         for t in ("SECURITY_HOTSPOT", "BUG", "CODE_SMELL", "VULNERABILITY"):
             if findings_conflicts[t] > 0:
                 log.warning("%d %s findings missed because of JSON conflict", findings_conflicts[t], t)
@@ -661,13 +661,7 @@ class Project(components.Component):
         """
         from sonar import hotspots
 
-        return hotspots.search(
-            endpoint=self.endpoint,
-            filters={
-                "projectKey": self.key,
-                "additionalFields": "comments",
-            },
-        )
+        return hotspots.search(endpoint=self.endpoint, filters={"projectKey": self.key, "additionalFields": "comments"})
 
     def __sync_community(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""

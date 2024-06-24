@@ -29,8 +29,10 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.utilities as util
-from sonar import syncer, users, sqobject, platform
-from sonar import findings, changelog, projects
+from sonar.platform import Platform
+from sonar.sqobject import uuid
+from sonar import syncer, users
+from sonar import findings, rules, changelog
 
 SEARCH_CRITERIAS = (
     "branch",
@@ -336,7 +338,7 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(endpoint: platform.Platform, project_key: str, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search_by_project(endpoint: Platform, project_key: str, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -345,22 +347,17 @@ def search_by_project(endpoint: platform.Platform, project_key: str, filters: di
     :return: List of found hotspots
     :rtype: dict{<key>: <Hotspot>}
     """
-    if project_key is None:
-        key_list = projects.search(endpoint).keys()
-    else:
-        key_list = util.csv_to_list(project_key)
-    new_params = get_search_filters(params=filters)
+    key_list = util.csv_to_list(project_key)
     hotspots = {}
-    log.info("Searching hotspots with filters %s", str(new_params))
     for k in key_list:
-        new_params["projectKey"] = k
-        project_hotspots = findings.post_search_filter(search(endpoint=endpoint, filters=new_params), filters)
+        filters["projectKey"] = k
+        project_hotspots = search(endpoint=endpoint, filters=filters)
         log.info("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
         hotspots.update(project_hotspots)
-    return hotspots
+    return post_search_filter(hotspots, filters=filters)
 
 
-def search(endpoint: platform.Platform, page: int = None, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -369,47 +366,48 @@ def search(endpoint: platform.Platform, page: int = None, filters: dict[str, str
     :rtype: dict{<key>: <Hotspot>}
     """
     hotspots_list = {}
-    new_params = util.dict_remap(original_dict=filters, remapping=_FILTERS_HOTSPOTS_REMAPPING)
-    new_params["ps"] = 500
-    p = 1
-    while True:
-        if page is None:
-            new_params["p"] = p
-        else:
-            new_params["p"] = page
-        try:
-            resp = endpoint.get("hotspots/search", params=new_params, mute=(HTTPStatus.NOT_FOUND,))
-            data = json.loads(resp.text)
-            nbr_hotspots = data["paging"]["total"]
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                log.warning("No hotspots found with search params %s", str(filters))
-                nbr_hotspots = 0
-                return {}
-            else:
+    new_params = get_search_filters(params=filters)
+    new_params = util.dict_remap(original_dict=new_params, remapping=_FILTERS_HOTSPOTS_REMAPPING)
+    filters_iterations = split_search_filters(new_params)
+    for inline_filters in filters_iterations:
+        p = 1
+        inline_filters["ps"] = 500
+        log.info("Searching hotspots with sanitized filters %s", str(inline_filters))
+        while True:
+            inline_filters["p"] = p
+            try:
+                resp = endpoint.get("hotspots/search", params=inline_filters, mute=(HTTPStatus.NOT_FOUND,))
+                data = json.loads(resp.text)
+                nbr_hotspots = data["paging"]["total"]
+            except HTTPError as e:
+                if e.response.status_code == HTTPStatus.NOT_FOUND:
+                    log.warning("No hotspots found with search params %s", str(inline_filters))
+                    nbr_hotspots = 0
+                    return {}
                 raise e
-        nbr_pages = (nbr_hotspots + 499) // 500
-        log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, new_params["p"], nbr_pages)
-        if page is None and nbr_hotspots > 10000:
-            raise TooManyHotspotsError(
-                nbr_hotspots,
-                f"{nbr_hotspots} hotpots returned by api/hotspots/search, " "this is more than the max 10000 possible",
-            )
+            nbr_pages = (nbr_hotspots + 499) // 500
+            log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)
+            if nbr_hotspots > 10000:
+                raise TooManyHotspotsError(
+                    nbr_hotspots,
+                    f"{nbr_hotspots} hotpots returned by api/hotspots/search, " "this is more than the max 10000 possible",
+                )
 
-        for i in data["hotspots"]:
-            if "branch" in filters:
-                i["branch"] = filters["branch"]
-            if "pullRequest" in filters:
-                i["pullRequest"] = filters["pullRequest"]
-            hotspots_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
-        if page is not None or p >= nbr_pages:
-            break
-        p += 1
-    return findings.post_search_filter(hotspots_list, filters)
+            for i in data["hotspots"]:
+                if "branch" in inline_filters:
+                    i["branch"] = inline_filters["branch"]
+                if "pullRequest" in inline_filters:
+                    i["pullRequest"] = inline_filters["pullRequest"]
+                hotspots_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
+            if p >= nbr_pages:
+                break
+            p += 1
+    return post_search_filter(hotspots_list, filters)
 
 
-def get_object(key, endpoint: object, data: dict[str] = None, from_export: bool = False) -> Hotspot:
-    uu = sqobject.uuid(key, endpoint.url)
+def get_object(endpoint: Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
+    """Returns a hotspot from its key"""
+    uu = uuid(key, endpoint.url)
     if uu not in _OBJECTS:
         _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return _OBJECTS[uu]
@@ -428,3 +426,48 @@ def get_search_filters(params: dict[str, str]) -> dict[str, str]:
         log.warning("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
         criterias["status"] = "REVIEWED"
     return util.dict_subset(criterias, SEARCH_CRITERIAS)
+
+
+def split_filter(params: dict[str, str], criteria: str) -> list[dict[str, str]]:
+    """Creates a list of filters from a single one that has values that requires multiple hotspot searches"""
+    crit_list = util.csv_to_list(params.get(criteria, None))
+    if not crit_list or len(crit_list) <= 1:
+        return [params]
+    new_params = params.copy()
+    new_params.pop(criteria)
+    search_filters_list = []
+    for crit in crit_list:
+        new_params[criteria] = crit
+        search_filters_list.append(new_params.copy())
+    return search_filters_list
+
+
+def split_search_filters(params: dict[str, str]) -> list[dict[str, str]]:
+    """Split search filters for which you can only pass 1 value at a time in api/hotspots/search"""
+    search_filters_list_1 = split_filter(params, "resolution")
+    search_filters_list_2 = []
+    for f in search_filters_list_1:
+        search_filters_list_2 = split_filter(f, "status")
+    log.debug("Returning hotspot search filter split %s", str(search_filters_list_2))
+    return search_filters_list_2
+
+
+def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: dict[str, str]) -> dict[str, Hotspot]:
+    """Filters a dict of hotspots with provided filters"""
+    filtered_findings = hotspots_dict.copy()
+    log.info("Post filtering findings with %s", str(filters))
+    if "createdAfter" in filters:
+        min_date = util.string_to_date(filters["createdAfter"])
+    if "createdBefore" in filters:
+        max_date = util.string_to_date(filters["createdBefore"])
+    for key, finding in hotspots_dict.items():
+        if "languages" in filters and len(filters["languages"]) > 0:
+            lang = rules.get_object(key=finding.rule, endpoint=finding.endpoint).language
+            if lang not in filters["languages"]:
+                filtered_findings.pop(key, None)
+        if "createdAfter" in filters and finding.creation_date < min_date:
+            filtered_findings.pop(key, None)
+        if "createdBefore" in filters and finding.creation_date > max_date:
+            filtered_findings.pop(key, None)
+
+    return filtered_findings

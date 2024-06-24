@@ -94,7 +94,7 @@ def format_date(somedate):
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
-def string_to_date(string):
+def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str]:
     try:
         return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
     except (ValueError, TypeError):
@@ -180,10 +180,12 @@ def str_none(v):
         return str(v)
 
 
-def csv_to_list(string, separator=","):
+def csv_to_list(string: str, separator: str = ",") -> list[str]:
     if isinstance(string, list):
         return string
-    if string is None or re.match(r"^\s*$", string):
+    if isinstance(string, tuple):
+        return list(string)
+    if not string or re.match(r"^\s*$", string):
         return []
     return [s.strip() for s in string.split(separator)]
 
