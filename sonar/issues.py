@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-import datetime
+from datetime import date, datetime, timedelta
 import json
 import re
 from typing import Union
@@ -27,13 +27,14 @@ from threading import Thread
 import requests.utils
 
 import sonar.logging as log
+from sonar.platform import Platform
 from sonar import users, syncer, sqobject, findings, changelog, projects
 import sonar.utilities as util
 
 API_SET_TAGS = "issues/set_tags"
 API_SET_TYPE = "issues/set_type"
 
-SEARCH_CRITERIAS = (
+_SEARCH_CRITERIAS = (
     "componentKeys",
     "types",
     "severities",
@@ -49,6 +50,7 @@ SEARCH_CRITERIAS = (
     "sinceLeakPeriod",
     "p",
     "page",
+    "ps",
     "facets",
     "onComponentOnly",
     "s",
@@ -69,17 +71,24 @@ SEARCH_CRITERIAS = (
     "resolved",
     "rules",
     "scopes",
+    # 10.2 new filter
+    "impactSeverities",
+    # 10.4 new filter
+    "issueStatuses",
 )
-
-TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
-SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
-STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE")
-RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
 
 _FILTERS_10_2_REMAPPING = {"severities": "impactSeverities"}
 _FILTERS_10_4_REMAPPING = {"statuses": "issueStatuses"}
 
+TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL")
+SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
+IMPACT_SEVERITIES = ("HIGH", "MEDIUM", "LOW")
+STATUSES = ("OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED", "ACCEPTED", "FALSE_POSITIVE")
+RESOLUTIONS = ("FALSE-POSITIVE", "WONTFIX", "FIXED", "REMOVED", "ACCEPTED")
+FILTERS_MAP = {"types": TYPES, "severities": SEVERITIES, "impactSeverities": IMPACT_SEVERITIES, "statuses": STATUSES, "resolutions": RESOLUTIONS}
+
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
+
 _OBJECTS = {}
 
 
@@ -100,38 +109,6 @@ class Issue(findings.Finding):
     SEARCH_API = "issues/search"
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
-    OPTIONS_SEARCH = [
-        "additionalFields",
-        "asc",
-        "assigned",
-        "assignees",
-        "authors",
-        "componentKeys",
-        "createdAfter",
-        "createdAt",
-        "createdBefore",
-        "createdInLast",
-        "directories",
-        "facetMode",
-        "facets",
-        "files",
-        "branch",
-        "fileUuids",
-        "issues",
-        "languages",
-        "onComponentOnly",
-        "p",
-        "ps",
-        "resolutions",
-        "resolved",
-        "rules",
-        "s",
-        "severities",
-        "sinceLeakPeriod",
-        "statuses",
-        "tags",
-        "types",
-    ]
 
     def __init__(self, key, endpoint, data=None, from_export=False):
         super().__init__(key, endpoint, data, from_export)
@@ -561,7 +538,7 @@ class Issue(findings.Finding):
 
 def __search_all_by_directories(params, endpoint=None):
     new_params = params.copy()
-    facets = _get_facets(new_params["componentKeys"], facets="directories", params=new_params, endpoint=endpoint)
+    facets = _get_facets(endpoint=endpoint, project_key=new_params["componentKeys"], facets="directories", params=new_params)
     issue_list = {}
     log.info("Splitting search by directories")
     for d in facets["directories"]:
@@ -601,15 +578,19 @@ def __search_all_by_severities(params, endpoint=None):
     return issue_list
 
 
-def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None):
+def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
     new_params = params.copy()
     if date_start is None:
         date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
+        if isinstance(date_start, datetime):
+            date_start = date_start.date()
     if date_stop is None:
         date_stop = get_newest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
+        if isinstance(date_stop, datetime):
+            date_stop = date_stop.date()
     log.info("Splitting search by date between [%s - %s]", util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
     issue_list = {}
-    new_params.update({"createdAfter": date_start, "createdBefore": date_stop})
+    new_params.update({"createdAfter": util.date_to_string(date_start), "createdBefore": util.date_to_string(date_stop)})
     try:
         issue_list = search(endpoint=endpoint, params=new_params)
     except TooManyIssuesError as e:
@@ -619,13 +600,13 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
             log.info(_TOO_MANY_ISSUES_MSG)
             issue_list = __search_all_by_severities(new_params, endpoint=endpoint)
         elif diff == 1:
-            issue_list.update(__search_all_by_date(new_params, date_start=date_start, date_stop=date_start, endpoint=endpoint))
-            issue_list.update(__search_all_by_date(new_params, date_start=date_stop, date_stop=date_stop, endpoint=endpoint))
+            issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_start))
+            issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_stop, date_stop=date_stop))
         else:
-            date_middle = date_start + datetime.timedelta(days=diff // 2)
-            issue_list.update(__search_all_by_date(new_params, date_start=date_start, date_stop=date_middle, endpoint=endpoint))
-            date_middle = date_middle + datetime.timedelta(days=1)
-            issue_list.update(__search_all_by_date(new_params, date_start=date_middle, date_stop=date_stop, endpoint=endpoint))
+            date_middle = date_start + timedelta(days=diff // 2)
+            issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_middle))
+            date_middle = date_middle + timedelta(days=1)
+            issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_middle, date_stop=date_stop))
     if date_start is not None and date_stop is not None:
         log.debug(
             "Project %s has %d issues between %s and %s",
@@ -637,33 +618,26 @@ def __search_all_by_date(params, date_start=None, date_stop=None, endpoint=None)
     return issue_list
 
 
-def __search_all_by_project(project_key, params, endpoint=None):
+def __search_all_by_project(endpoint: Platform, project_key: str, params: dict[str, str] = None) -> dict[str, Issue]:
+    """Search issues by project"""
     new_params = {} if params is None else params.copy()
-    if project_key is None:
-        key_list = projects.search(endpoint).keys()
-    else:
-        key_list = util.csv_to_list(project_key)
     issue_list = {}
-    for k in key_list:
-        new_params["componentKeys"] = k
-        log.debug("Searching for issues of project '%s'", k)
-        try:
-            issue_list.update(search(endpoint=endpoint, params=new_params))
-        except TooManyIssuesError:
-            log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(__search_all_by_date(params=new_params, endpoint=endpoint))
+    new_params["componentKeys"] = project_key
+    log.debug("Searching for issues of project '%s'", project_key)
+    try:
+        issue_list.update(search(endpoint=endpoint, params=new_params))
+    except TooManyIssuesError:
+        log.info(_TOO_MANY_ISSUES_MSG)
+        issue_list.update(__search_all_by_date(params=new_params, endpoint=endpoint))
     return issue_list
 
 
 def search_by_project(project_key, endpoint, params=None, search_findings=False):
     """Search all issues of a given project
 
-    :param project_key: The project key
-    :type project_key: str
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
-    :param params: List of search filters to narrow down the search, defaults to None
-    :type params: dict
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param str project_key: The project key
+    :param dict params: List of search filters to narrow down the search, defaults to None
     :param search_findings: Whether to use the api/project_search/findings API or not, defaults to False
     :type search_findings: bool, optional
     :return: list of Issues
@@ -682,30 +656,27 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
             log.info("Using new export findings to speed up issue export")
             issue_list.update(findings.export_findings(endpoint, k, params.get("branch", None), params.get("pullRequest", None)))
         else:
-            issue_list.update(__search_all_by_project(k, params=params, endpoint=endpoint))
+            issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=params))
         log.info("Project '%s' has %d issues", k, len(issue_list))
     return issue_list
 
 
-def search_all(endpoint, params=None):
-    """Returns all issues of the platforms
+def search_all(endpoint: Platform, params: dict[str, str] = None) -> dict[str, Issue]:
+    """Returns all issues of the platforms with chosen filtering parameters
 
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
+    :param Platform endpoint: Reference to the SonarQube platform
     :param params: List of search filters to narrow down the search, defaults to None
     :type params: dict
     :return: list of Issues
     :rtype: dict{<key>: <Issue>}
     """
-    new_params = {} if params is None else params.copy()
-    log.debug("Issue search all with %s", str(params))
     issue_list = {}
     try:
         issue_list = search(endpoint=endpoint, params=params)
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
         for k in projects.search(endpoint):
-            issue_list.update(__search_all_by_project(k, params=new_params, endpoint=endpoint))
+            issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=params))
     return issue_list
 
 
@@ -719,66 +690,66 @@ def __search_thread(queue):
         for i in data["issues"]:
             i["branch"] = page_params.get("branch", None)
             i["pullRequest"] = page_params.get("pullRequest", None)
-            issue_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
+            issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
         log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
         queue.task_done()
 
 
-def search_first(endpoint, **params):
+def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
     """
     :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
     :rtype: Issue or None if not issue found
     """
-    params["ps"] = 1
-    data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)
+    filters = pre_search_filters(params)
+    filters["ps"] = 1
+    data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
     if len(data) == 0:
         return None
     i = data["issues"][0]
-    return get_object(i["key"], endpoint=endpoint, data=i)
+    return get_object(endpoint=endpoint, key=i["key"], data=i)
 
 
-def search(endpoint, params=None, raise_error=True, threads=8):
+def search(endpoint: Platform, params: dict[str, str] = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
     """Multi-threaded search of issues
 
-    :param params: Search filter criteria to narrow down the search
-    :type params: dict
-    :param raise_error: Whether to raise exception if more than 10'000 issues returned, defaults to True
-    :type raise_error: bool
-    :param threads: Nbr of parallel threads for search, defaults to 8
-    :type threads: int
+    :param dict params: Search filter criteria to narrow down the search
+    :param bool raise_error: Whether to raise exception if more than 10'000 issues returned, defaults to True
+    :param int threads: Nbr of parallel threads for search, defaults to 8
     :return: List of issues found
     :rtype: dict{<key>: <Issue>}
     :raises: TooManyIssuesError if more than 10'000 issues found
     """
-    new_params = get_search_criteria(params)
+    filters = pre_search_filters(params)
     # if endpoint.version() >= (10, 2, 0):
     #     new_params = util.dict_remap_and_stringify(new_params, _FILTERS_10_2_REMAPPING)
     if endpoint.version() >= (10, 4, 0):
-        new_params = _change_filters_for_10_4(new_params)
+        filters = _change_filters_for_10_4(filters)
 
-    log.debug("Search params = %s", str(new_params))
-    if "ps" not in new_params:
-        new_params["ps"] = Issue.MAX_PAGE_SIZE
+    log.debug("Search filters = %s", str(filters))
+    if "ps" not in filters:
+        filters["ps"] = Issue.MAX_PAGE_SIZE
+
     issue_list = {}
-
-    data = json.loads(endpoint.get(Issue.SEARCH_API, params=new_params).text)
+    data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
     nbr_issues = data["paging"]["total"]
     nbr_pages = util.nbr_pages(data)
     log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
+
     if nbr_pages > 20 and raise_error:
         raise TooManyIssuesError(
             nbr_issues,
             f"{nbr_issues} issues returned by api/{Issue.SEARCH_API}, this is more than the max {Issue.MAX_SEARCH} possible",
         )
+
     for i in data["issues"]:
-        i["branch"] = new_params.get("branch", None)
-        i["pullRequest"] = new_params.get("pullRequest", None)
-        issue_list[i["key"]] = get_object(i["key"], endpoint=endpoint, data=i)
+        i["branch"] = filters.get("branch", None)
+        i["pullRequest"] = filters.get("pullRequest", None)
+        issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
     if nbr_pages == 1:
         return issue_list
     q = Queue(maxsize=0)
     for page in range(2, nbr_pages + 1):
-        q.put((endpoint, Issue.SEARCH_API, issue_list, new_params, page))
+        q.put((endpoint, Issue.SEARCH_API, issue_list, filters, page))
     for i in range(threads):
         log.debug("Starting issue search thread %d", i)
         worker = Thread(target=__search_thread, args=[q])
@@ -788,11 +759,12 @@ def search(endpoint, params=None, raise_error=True, threads=8):
     return issue_list
 
 
-def _get_facets(project_key, facets="directories", endpoint=None, params=None):
-    new_params = {} if params is None else params.copy()
-    new_params.update({"componentKeys": project_key, "facets": facets, "ps": 500})
-    new_params = __get_issues_search_params(new_params)
-    data = json.loads(endpoint.get(Issue.SEARCH_API, params=new_params).text)
+def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", params: dict[str, str] = None) -> dict[str, str]:
+    """Returns the facets of a search"""
+    filters = pre_search_filters(params)
+    filters.update({"componentKeys": project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
+
+    data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
     l = {}
     facets_list = util.csv_to_list(facets)
     for f in data["facets"]:
@@ -801,7 +773,7 @@ def _get_facets(project_key, facets="directories", endpoint=None, params=None):
     return l
 
 
-def __get_one_issue_date(endpoint=None, asc_sort="false", params=None):
+def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the date of one issue found"""
     issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
     if not issue:
@@ -809,60 +781,40 @@ def __get_one_issue_date(endpoint=None, asc_sort="false", params=None):
     return issue.creation_date
 
 
-def get_oldest_issue(endpoint=None, params=None):
+def get_oldest_issue(endpoint: Platform, params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the oldest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="true", params=params)
 
 
-def get_newest_issue(endpoint=None, params=None):
+def get_newest_issue(endpoint: Platform, params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the newest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="false", params=params)
 
 
-def count(endpoint=None, **kwargs):
+def count(endpoint: Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
     returned_data = search(endpoint=endpoint, params=kwargs.copy().update({"ps": 1}))
     log.debug("Issue search %s would return %d issues", str(kwargs), returned_data["total"])
     return returned_data["total"]
 
 
-def identical_attributes(o1, o2, key_list):
-    for key in key_list:
-        if o1[key] != o2[key]:
-            return False
-    return True
-
-
-def __get_issues_search_params(params):
-    outparams = {"additionalFields": "comments"}
-    for key in params:
-        if params[key] is not None and key in Issue.OPTIONS_SEARCH:
-            outparams[key] = params[key]
-    return outparams
-
-
-def get_object(key, data=None, endpoint=None, from_export=False):
+def get_object(endpoint: Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> Issue:
+    """Returns an issue from its key"""
     uu = sqobject.uuid(key, endpoint.url)
     if uu not in _OBJECTS:
         _ = Issue(key=key, data=data, endpoint=endpoint, from_export=from_export)
     return _OBJECTS[uu]
 
 
-def get_search_criteria(params):
+def pre_search_filters(params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/issue/search"""
-    criterias = params.copy()
-    if criterias.get("types", None) is not None:
-        criterias["types"] = util.allowed_values_string(criterias["types"], TYPES)
-    if criterias.get("severities", None) is not None:
-        criterias["severities"] = util.allowed_values_string(criterias["severities"], SEVERITIES)
-    if criterias.get("statuses", None) is not None:
-        criterias["statuses"] = util.allowed_values_string(criterias["statuses"], STATUSES)
-    if criterias.get("resolutions", None) is not None:
-        criterias["resolutions"] = util.allowed_values_string(criterias["resolutions"], RESOLUTIONS)
-    if criterias.get("languages", None) is not None:
-        criterias["languages"] = util.list_to_csv(criterias["languages"])
-    criterias = util.dict_subset(util.remove_nones(criterias), SEARCH_CRITERIAS)
-    return criterias
+    filters = util.dict_subset(util.remove_nones(params.copy()), _SEARCH_CRITERIAS)
+    for k, v in FILTERS_MAP.items():
+        if filters.get(k, None) is not None:
+            filters[k] = util.allowed_values_string(v, TYPES)
+    if filters.get("languages", None) is not None:
+        filters["languages"] = util.list_to_csv(filters["languages"])
+    return filters
 
 
 def _change_filters_for_10_4(filters: dict[str, str]) -> Union[dict[str, str], None]:
