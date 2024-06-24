@@ -180,10 +180,12 @@ def str_none(v):
         return str(v)
 
 
-def csv_to_list(string, separator=","):
+def csv_to_list(string: str, separator: str = ",") -> list[str]:
     if isinstance(string, list):
         return string
-    if string is None or re.match(r"^\s*$", string):
+    if isinstance(string, tuple):
+        return list(string)
+    if not string or re.match(r"^\s*$", string):
         return []
     return [s.strip() for s in string.split(separator)]
 
