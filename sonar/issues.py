@@ -810,8 +810,8 @@ def pre_search_filters(params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/issue/search"""
     filters = util.dict_subset(util.remove_nones(params.copy()), _SEARCH_CRITERIAS)
     for k, v in FILTERS_MAP.items():
-        if filters.get(k, None) is not None:
-            filters[k] = util.allowed_values_string(v, TYPES)
+        if k in filters:
+            filters[k] = util.allowed_values_string(filters[k], v)
     if filters.get("languages", None) is not None:
         filters["languages"] = util.list_to_csv(filters["languages"])
     return filters
