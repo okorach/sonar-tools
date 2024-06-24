@@ -111,7 +111,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
         if "tokenTarget" in sanitized_args:
             sanitized_args["tokenTarget"] = utilities.redacted_token(sanitized_args["tokenTarget"])
         log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
-    for argname in "projectKeys", "resolutions", "metricKeys":
+    for argname in "projectKeys", "metricKeys", "resolutions", "severities", "types", "statuses":
         if argname in kwargs:
             kwargs[argname] = utilities.csv_to_list(kwargs[argname])
     if kwargs.get(LANGUAGE_OPT, None) not in (None, ""):
