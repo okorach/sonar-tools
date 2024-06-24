@@ -361,7 +361,7 @@ def store_findings(
         except HTTPError as e:
             log.critical("Error %s while exporting findings of object key %s, skipped", str(e), str(project))
 
-    for i in range(threads):
+    for i in range(min(threads, len(project_list))):
         log.debug("Starting finding search thread 'findingSearch%d'", i)
         worker = Thread(target=__get_project_findings, args=[my_queue, write_queue])
         worker.setDaemon(True)
