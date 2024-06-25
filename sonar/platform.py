@@ -58,6 +58,8 @@ _HARDCODED_LATEST = (10, 5, 1)
 
 _SERVER_ID_KEY = "Server ID"
 
+# Keep the below seetings as list, do not comma separate as the values can contain commas
+_SETTINGS_TO_KEEP_AS_LIST = ("sonar.dbcleaner.branchesToKeepWhenInactive",)
 
 class Platform:
     """Abstraction of the SonarQube "platform" concept"""
@@ -353,7 +355,10 @@ class Platform:
             if "value" in s:
                 platform_settings[s["key"]] = s["value"]
             elif "values" in s:
-                platform_settings[s["key"]] = ",".join(s["values"])
+                if s["key"] in _SETTINGS_TO_KEEP_AS_LIST:
+                    platform_settings[s["key"]] = s["values"]
+                else:
+                    platform_settings[s["key"]] = ",".join(s["values"])
             elif "fieldValues" in s:
                 platform_settings[s["key"]] = s["fieldValues"]
         return platform_settings

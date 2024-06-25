@@ -144,7 +144,13 @@ class Portfolio(aggregations.Aggregation):
                 self._selection_mode["projects"] = {}
                 for projdata in self._json.get("selectedProjects", {}):
                     key = projdata["projectKey"]
-                    branch = util.DEFAULT if "selectedBranches" not in projdata else projdata["selectedBranches"][0]
+                    if "selectedBranches" not in projdata:
+                        branch = util.DEFAULT
+                    elif len(projdata["selectedBranches"]) == 1:
+                        branch = projdata["selectedBranches"][0]
+                    else:
+                        # Only use array style branches if more than 1 branch
+                        branch = projdata["selectedBranches"]
                     self._selection_mode["projects"].update({key: branch})
             elif mode == SELECTION_MODE_REGEXP:
                 self._selection_mode.update({"regexp": self._json["regexp"], "branch": self._json.get("branch", util.DEFAULT)})
