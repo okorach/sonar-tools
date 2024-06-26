@@ -82,7 +82,6 @@ class Permissions(ABC):
         perm_types = normalize(perm_type)
         for p in perm_types:
             dperms = self.permissions.get(p, None)
-            log.debug("DPERMS = %s", str(dperms))
             if dperms is not None and len(dperms) > 0:
                 perms[p] = simplify(dperms)
         return perms if len(perms) > 0 else None
@@ -92,7 +91,13 @@ class Permissions(ABC):
         :return: The permissions as dict
         :rtype: dict {"users": {<login>: [<perm>, <perm>, ...], ...}, "groups": {<name>: [<perm>, <perm>, ...], ...}}
         """
-        return self.to_json(csv=export_settings.get("INLINE_LISTS", True))
+        inlined = export_settings.get("INLINE_LISTS", True)
+        perms = self.to_json(csv=inlined)
+        if not inlined:
+            perms = {k: v for k, v in perms.items() if len(v) > 0}
+        if len(perms) == 0:
+            return None
+        return perms
 
     @abstractmethod
     def __str__(self):
