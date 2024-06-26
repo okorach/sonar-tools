@@ -66,10 +66,6 @@ __MAP = {
 }
 
 
-def __map(k):
-    return __MAP.get(k, k)
-
-
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
@@ -85,6 +81,23 @@ def __parse_args(desc):
         help="Also exports informative data that would be ignored as part of an import. Informative field are prefixed with _."
         "This option is ignored in case of import",
     )
+    parser.add_argument(
+        "--exportDefaults",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Also exports settings values that are the platform defaults. "
+        f"By default the export will show the value as '{utilities.DEFAULT}' "
+        "and the setting will not be imported at import time",
+    )
+    parser.add_argument(
+        "--dontInlineLists",
+        required=False,
+        default=False,
+        action="store_true",
+        help="By default, sonar-config exports multi-valued settings as comma separated strings instead of arrays (if there is not comma in values). "
+        "Set this flag if you want to force export multi valued settings as arrays",
+    )
     args = options.parse_and_check(parser=parser, logger_name="sonar-config")
     return args
 
@@ -97,6 +110,7 @@ def __check_projects_existence(endpoint: object, key_list: list[str]) -> None:
 
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
+    export_settings = {"INLINE_LISTS": not kwargs["dontInlineLists"], "EXPORT_DEFAULTS": kwargs["exportDefaults"]}
     if "projects" in what:
         __check_projects_existence(endpoint, kwargs["projectKeys"])
 
@@ -106,7 +120,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
     if options.WHAT_SETTINGS in what:
-        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(full=full)
+        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(full=full, export_settings=export_settings)
     if options.WHAT_RULES in what:
         sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=full)
     if options.WHAT_PROFILES in what:
