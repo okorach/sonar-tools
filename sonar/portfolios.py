@@ -285,7 +285,7 @@ class Portfolio(aggregations.Aggregation):
         log.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
-    def to_json(self) -> dict[str, str]:
+    def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
         """Returns the portfolio representation as JSON"""
         self.refresh()
         json_data = self._json
@@ -293,23 +293,23 @@ class Portfolio(aggregations.Aggregation):
         if subportfolios:
             json_data["subPortfolios"] = {}
             for s in subportfolios.values():
-                json_data["subPortfolios"][s.key] = s.to_json()
+                json_data["subPortfolios"][s.key] = s.to_json(export_settings)
         json_data.update(
             {
                 "key": self.key,
                 "name": self.name,
                 "description": None if self._description == "" else self._description,
-                _PROJECT_SELECTION_MODE: self.selection_mode(inline_tags=True),
+                _PROJECT_SELECTION_MODE: self.selection_mode(export_settings),
                 "visibility": self._visibility,
                 "permissions": self.permissions().export(),
             }
         )
         return json_data
 
-    def export(self, full: bool = False) -> dict[str, str]:
+    def export(self, export_settings: dict[str, str]) -> dict[str, str]:
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
-        return util.remove_nones(util.filter_export(self.to_json(), _IMPORTABLE_PROPERTIES, full))
+        return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings["FULL_EXPORT"]))
 
     def permissions(self) -> pperms.PortfolioPermissions:
         """Returns a portfolio permissions (if toplevel) or None if sub-portfolio"""
@@ -327,15 +327,23 @@ class Portfolio(aggregations.Aggregation):
     def set_component_tags(self, tags, api):
         log.warning("Can't set tags on portfolios, operation skipped...")
 
-    def selection_mode(self, inline_tags: bool = False) -> dict[str, str]:
+    def selection_mode(self, export_settings: dict[str, str]) -> dict[str, str]:
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
             self.reload(json.loads(self.get(_GET_API, params={"key": self.root_portfolio().key}).text))
-        if inline_tags and self._selection_mode["mode"] == SELECTION_MODE_TAGS:
-            log.debug("Inlining portfolio tags")
-            selection_mode = self._selection_mode.copy()
-            selection_mode["tags"] = ", ".join(selection_mode["tags"])
-            return selection_mode
+        if export_settings["INLINE_LISTS"]:
+            if self._selection_mode["mode"] == SELECTION_MODE_TAGS:
+                log.debug("Inlining portfolio tags")
+                selection_mode = self._selection_mode.copy()
+                selection_mode["tags"] = util.list_to_csv(selection_mode["tags"], separator=", ", check_for_separator=True)
+                return selection_mode
+            elif self._selection_mode["mode"] == SELECTION_MODE_MANUAL:
+                selection_mode = self._selection_mode.copy()
+                selection_mode["projects"] = {
+                    pkey: util.list_to_csv(branches, separator=", ", check_for_separator=True)
+                    for pkey, branches in selection_mode["projects"].items()
+                }
+                return selection_mode
         return self._selection_mode
 
     def add_projects(self, project_list: list[Union[str, object]]) -> Portfolio:
@@ -703,7 +711,7 @@ def export(endpoint: object, export_settings: dict[str, str], key_list: list[str
     exported_portfolios = {}
     for k, p in get_list(endpoint=endpoint, key_list=key_list).items():
         if not p.is_sub_portfolio:
-            exported_portfolios[k] = p.export(export_settings["FULL_EXPORT"])
+            exported_portfolios[k] = p.export(export_settings)
             exported_portfolios[k].pop("key")
         else:
             log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
