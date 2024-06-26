@@ -110,44 +110,48 @@ def __check_projects_existence(endpoint: object, key_list: list[str]) -> None:
 
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
-    export_settings = {"INLINE_LISTS": not kwargs["dontInlineLists"], "EXPORT_DEFAULTS": kwargs["exportDefaults"]}
+    export_settings = {
+        "INLINE_LISTS": not kwargs["dontInlineLists"],
+        "EXPORT_DEFAULTS": kwargs["exportDefaults"],
+        "FULL_EXPORT": kwargs["fullExport"],
+        "THREADS": kwargs["threads"],
+    }
     if "projects" in what:
         __check_projects_existence(endpoint, kwargs["projectKeys"])
 
     log.info("Exporting configuration from %s", kwargs["url"])
-    full = kwargs["fullExport"]
     key_list = kwargs["projectKeys"]
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
     if options.WHAT_SETTINGS in what:
-        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(full=full, export_settings=export_settings)
+        sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(export_settings=export_settings)
     if options.WHAT_RULES in what:
-        sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=full)
+        sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, export_settings=export_settings)
     if options.WHAT_PROFILES in what:
         if options.WHAT_RULES not in what:
-            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, full=full)
-        sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, full=full)
+            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, export_settings=export_settings)
+        sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, export_settings=export_settings)
     if options.WHAT_GATES in what:
         if not endpoint.is_sonarcloud():
-            sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, full=full)
+            sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, export_settings=export_settings)
         else:
             log.warning("Quality gates export not yet supported for SonarCloud")
     if options.WHAT_PROJECTS in what:
-        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=key_list, full=full, threads=kwargs["threads"])
+        sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=key_list, export_settings=export_settings)
     if options.WHAT_APPS in what:
         try:
-            sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=key_list, full=full)
+            sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=key_list, export_settings=export_settings)
         except exceptions.UnsupportedOperation as e:
             log.info("%s", e.message)
     if options.WHAT_PORTFOLIOS in what:
         try:
-            sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=key_list, full=full)
+            sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=key_list, export_settings=export_settings)
         except exceptions.UnsupportedOperation as e:
             log.info("%s", e.message)
     if options.WHAT_USERS in what:
-        sq_settings[__JSON_KEY_USERS] = users.export(endpoint, full=full)
+        sq_settings[__JSON_KEY_USERS] = users.export(endpoint, export_settings=export_settings)
     if options.WHAT_GROUPS in what:
-        sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint)
+        sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint, export_settings=export_settings)
 
     utilities.remove_nones(sq_settings)
     with utilities.open_file(kwargs["file"]) as fd:

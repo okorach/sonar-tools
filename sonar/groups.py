@@ -253,7 +253,7 @@ def get_list(endpoint, params=None):
     return search(params=params, endpoint=endpoint)
 
 
-def export(endpoint):
+def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     """Exports all groups configuration as dict
     Default groups (sonar-users) are not exported
 

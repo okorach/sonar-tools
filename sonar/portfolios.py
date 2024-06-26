@@ -678,7 +678,7 @@ def search_by_key(endpoint: object, key: str) -> dict[str, str]:
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
-def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> dict[str, str]:
+def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -703,7 +703,7 @@ def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> 
     exported_portfolios = {}
     for k, p in get_list(endpoint=endpoint, key_list=key_list).items():
         if not p.is_sub_portfolio:
-            exported_portfolios[k] = p.export(full)
+            exported_portfolios[k] = p.export(export_settings["FULL_EXPORT"])
             exported_portfolios[k].pop("key")
         else:
             log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))

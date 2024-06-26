@@ -427,7 +427,7 @@ def get_list(endpoint, key_list=None, use_cache=True):
     return object_list
 
 
-def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> dict[str, str]:
+def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -442,7 +442,7 @@ def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> 
         # log.info("Applications do not exist in SonarCloud, export skipped")
         raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
 
-    apps_settings = {k: app.export(full) for k, app in get_list(endpoint, key_list).items()}
+    apps_settings = {k: app.export(export_settings["FULL_EXPORT"]) for k, app in get_list(endpoint, key_list).items()}
     for k in apps_settings:
         # remove key from JSON value, it's already the dict key
         apps_settings[k].pop("key")

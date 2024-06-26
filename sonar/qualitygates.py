@@ -372,7 +372,7 @@ def get_list(endpoint):
     return qg_list
 
 
-def export(endpoint, full=False):
+def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     """
     :return: The list of quality gates in their JSON representation
     :rtype: dict
@@ -380,7 +380,7 @@ def export(endpoint, full=False):
     log.info("Exporting quality gates")
     qg_list = {}
     for k, qg in get_list(endpoint).items():
-        qg_list[k] = qg.to_json(full)
+        qg_list[k] = qg.to_json(export_settings["FULL_EXPORT"])
     return qg_list
 
 

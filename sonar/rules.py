@@ -248,10 +248,13 @@ def export_needed(endpoint, instantiated=True, extended=True, full=False):
     return utilities.remove_nones(rule_list)
 
 
-def export(endpoint: object, instantiated: bool = True, extended: bool = True, standard: bool = False, full: bool = False) -> dict[str:Rule]:
+def export(
+    endpoint: object, export_settings: dict[str, str], instantiated: bool = True, extended: bool = True, standard: bool = False
+) -> dict[str, Rule]:
     """Returns a dict of rules for export
     :return: a dict of rule onbjects indexed with rule key
     :param object endpoint: The SonarQube Platform object to connect to
+    :param dict[str, str] export_settings: parameters to export
     :param bool instantiated: Include instantiated rules in the list
     :param bool extended: Include extended rules in the list
     :param bool standard: Include standard rules in the list
@@ -260,9 +263,9 @@ def export(endpoint: object, instantiated: bool = True, extended: bool = True, s
     """
     log.info("Exporting rules")
     if standard:
-        return export_all(endpoint, full)
+        return export_all(endpoint, export_settings["FULL_EXPORT"])
     else:
-        return export_needed(endpoint, instantiated, extended, full)
+        return export_needed(endpoint, instantiated, extended, export_settings["FULL_EXPORT"])
 
 
 def import_config(endpoint, config_data):

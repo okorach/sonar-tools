@@ -383,7 +383,7 @@ def search(endpoint: object, params: dict[str, str] = None) -> dict[str, object]
     return sqobject.search_objects(api=api, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
 
 
-def export(endpoint, full=False):
+def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     """Exports all users as dict
 
     :param endpoint: reference to the SonarQube platform
@@ -396,7 +396,7 @@ def export(endpoint, full=False):
     log.info("Exporting users")
     u_list = {}
     for u_login, u_obj in search(endpoint=endpoint).items():
-        u_list[u_login] = u_obj.to_json(full)
+        u_list[u_login] = u_obj.to_json(export_settings["FULL_EXPORT"])
         u_list[u_login].pop("login", None)
     return u_list
 

@@ -1271,7 +1271,7 @@ def __export_thread(queue, results, full):
         queue.task_done()
 
 
-def export(endpoint, key_list=None, full=False, threads=8):
+def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None):
     """Exports all or a list of projects configuration as dict
 
     :param endpoint: reference to the SonarQube platform
@@ -1292,9 +1292,9 @@ def export(endpoint, key_list=None, full=False, threads=8):
     for p in get_list(endpoint=endpoint, key_list=key_list).values():
         q.put(p)
     project_settings = {}
-    for i in range(threads):
+    for i in range(export_settings.get("THREADS", 8)):
         log.debug("Starting project export thread %d", i)
-        worker = Thread(target=__export_thread, args=(q, project_settings, full))
+        worker = Thread(target=__export_thread, args=(q, project_settings, export_settings["FULL_EXPORT"]))
         worker.setDaemon(True)
         worker.setName(f"ProjectExport{i}")
         worker.start()

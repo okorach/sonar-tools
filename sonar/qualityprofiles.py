@@ -597,7 +597,7 @@ def hierarchize(qp_list):
     return qp_list
 
 
-def export(endpoint, in_hierarchy=True, full=False):
+def export(endpoint, export_settings: dict[str, str], in_hierarchy=True):
     """Exports all quality profiles configuration as dict
 
     :param endpoint: reference to the SonarQube platform
@@ -613,7 +613,7 @@ def export(endpoint, in_hierarchy=True, full=False):
     qp_list = {}
     for qp in get_list(endpoint=endpoint).values():
         log.info("Exporting %s", str(qp))
-        json_data = qp.to_json(full=full)
+        json_data = qp.to_json(full=export_settings["FULL_EXPORT"])
         lang = json_data.pop("language")
         name = json_data.pop("name")
         if lang not in qp_list:

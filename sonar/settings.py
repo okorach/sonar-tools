@@ -457,7 +457,7 @@ def set_setting(endpoint, key, value, component=None):
 
 
 def encode(setting_key: str, setting_value: any, list_as_csv: bool = False, defaults_as_value: bool = False) -> Union[str, list[str], dict[str, str]]:
-    """ Encodes a setting value according to desired encoding rules """
+    """Encodes a setting value according to desired encoding rules"""
     if setting_value is None:
         return ""
     if setting_key == NEW_CODE_PERIOD:
