@@ -130,7 +130,7 @@ class PermissionTemplate(sqobject.SqObject):
             return None
         return self.update(pattern=pattern)
 
-    def to_json(self, full=False):
+    def to_json(self, export_settings: dict[str, str] = None):
         json_data = self._json.copy()
         json_data.update(
             {
@@ -138,7 +138,7 @@ class PermissionTemplate(sqobject.SqObject):
                 "name": self.name,
                 "description": self.description if self.description != "" else None,
                 "pattern": self.project_key_pattern,
-                "permissions": self.permissions().export(),
+                "permissions": self.permissions().export(export_settings=export_settings),
             }
         )
 
@@ -154,7 +154,7 @@ class PermissionTemplate(sqobject.SqObject):
 
         json_data["creationDate"] = utilities.date_to_string(self.creation_date)
         json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
-        return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
+        return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def audit(self, audit_settings):
         log.debug("Auditing %s", str(self))
@@ -189,7 +189,7 @@ def create(name, endpoint=None, create_data=None):
     return o
 
 
-def search(endpoint, params=None):
+def search(endpoint: object, params: dict[str, str] = None) -> dict[str, PermissionTemplate]:
     log.debug("Searching all permission templates")
     objects_list = {}
     data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
@@ -204,8 +204,8 @@ def search_by_name(endpoint, name):
     return utilities.search_by_name(endpoint, name, _SEARCH_API, "permissionTemplates")
 
 
-def get_list(endpoint):
-    return search(endpoint, None)
+def get_list(endpoint: object) -> dict[str, PermissionTemplate]:
+    return search(endpoint)
 
 
 def _load_default_templates(data=None, endpoint=None):
@@ -215,13 +215,13 @@ def _load_default_templates(data=None, endpoint=None):
         _DEFAULT_TEMPLATES[d["qualifier"]] = d["templateId"]
 
 
-def export(endpoint, full=False):
+def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     log.info("Exporting permission templates")
     pt_list = get_list(endpoint)
     json_data = {}
     for pt in pt_list.values():
-        json_data[pt.name] = pt.to_json(full)
-        if not full:
+        json_data[pt.name] = pt.to_json(export_settings)
+        if not export_settings.get("FULL_EXPORT"):
             for k in ("name", "id", "key"):
                 json_data[pt.name].pop(k, None)
     return json_data

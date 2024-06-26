@@ -301,7 +301,7 @@ class Portfolio(aggregations.Aggregation):
                 "description": None if self._description == "" else self._description,
                 _PROJECT_SELECTION_MODE: self.selection_mode(export_settings),
                 "visibility": self._visibility,
-                "permissions": self.permissions().export(),
+                "permissions": self.permissions().export(export_settings=export_settings),
             }
         )
         return json_data
@@ -327,11 +327,11 @@ class Portfolio(aggregations.Aggregation):
     def set_component_tags(self, tags, api):
         log.warning("Can't set tags on portfolios, operation skipped...")
 
-    def selection_mode(self, export_settings: dict[str, str]) -> dict[str, str]:
+    def selection_mode(self, export_settings: dict[str, str] = None) -> dict[str, str]:
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
             self.reload(json.loads(self.get(_GET_API, params={"key": self.root_portfolio().key}).text))
-        if export_settings["INLINE_LISTS"]:
+        if export_settings and export_settings.get("INLINE_LISTS", True):
             if self._selection_mode["mode"] == SELECTION_MODE_TAGS:
                 log.debug("Inlining portfolio tags")
                 selection_mode = self._selection_mode.copy()

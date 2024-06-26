@@ -801,11 +801,11 @@ class Project(components.Component):
             return None
         return qp_json
 
-    def __get_branch_export(self):
+    def __get_branch_export(self, export_settings: dict[str, str]) -> Union[dict[str, str], None]:
         branch_data = {}
         my_branches = self.branches().values()
         for branch in my_branches:
-            exp = branch.export(full_export=False)
+            exp = branch.export(export_settings=export_settings)
             if len(my_branches) == 1 and branch.is_main() and len(exp) <= 1:
                 # Don't export main branch with no data
                 continue
@@ -815,7 +815,7 @@ class Project(components.Component):
             return None
         return util.remove_nones(branch_data)
 
-    def export(self, settings_list=None, include_inherited=False, full=False):
+    def export(self, export_settings: dict[str, str], settings_list: dict[str, str] = None) -> dict[str, str]:
         """Exports the entire project configuration as JSON
 
         :return: All project configuration settings
@@ -831,8 +831,8 @@ class Project(components.Component):
                 json_data[settings.NEW_CODE_PERIOD] = nc
             json_data["qualityProfiles"] = self.__export_get_qp()
             json_data["links"] = self.links()
-            json_data["permissions"] = self.permissions().to_json(csv=True)
-            json_data["branches"] = self.__get_branch_export()
+            json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
+            json_data["branches"] = self.__get_branch_export(export_settings)
             json_data["tags"] = util.list_to_csv(self.tags(), separator=", ")
             json_data["visibility"] = self.visibility()
             (json_data["qualityGate"], qg_is_default) = self.quality_gate()
@@ -842,11 +842,11 @@ class Project(components.Component):
             hooks = webhooks.export(self.endpoint, self.key)
             if hooks is not None:
                 json_data["webhooks"] = hooks
-            json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
+            json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             for s in settings_dict.values():
-                if not include_inherited and s.inherited:
+                if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
                     continue
                 json_data.update(s.to_json())
         except HTTPError as e:
@@ -1263,10 +1263,10 @@ def audit(endpoint, audit_settings, key_list=None):
     return problems
 
 
-def __export_thread(queue, results, full):
+def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: dict[str, str]):
     while not queue.empty():
         project = queue.get()
-        results[project.key] = project.export(full=full)
+        results[project.key] = project.export(export_settings=export_settings)
         results[project.key].pop("key", None)
         queue.task_done()
 
@@ -1274,14 +1274,9 @@ def __export_thread(queue, results, full):
 def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None):
     """Exports all or a list of projects configuration as dict
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
-    :param key_list: List of project keys to export, defaults to None (all projects)
-    :type key_list: str
-    :param full: Whether to export all settings including those useless for re-import, defaults to False
-    :type full: bool, optional
-    :param threads: Number of parallel threads for export, defaults to 8
-    :type threads: int, optional
+    :param Platform endpoint: reference to the SonarQube platform
+    :param dict export_settings: Export parameters
+     :param list key_list: List of project keys to export, defaults to None (all projects)
     :return: list of projects
     :rtype: dict{key: Project}
     """
@@ -1294,7 +1289,7 @@ def export(endpoint: object, export_settings: dict[str, str], key_list: list[str
     project_settings = {}
     for i in range(export_settings.get("THREADS", 8)):
         log.debug("Starting project export thread %d", i)
-        worker = Thread(target=__export_thread, args=(q, project_settings, export_settings["FULL_EXPORT"]))
+        worker = Thread(target=__export_thread, args=(q, project_settings, export_settings))
         worker.setDaemon(True)
         worker.setName(f"ProjectExport{i}")
         worker.start()

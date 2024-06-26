@@ -221,7 +221,7 @@ class Branch(components.Component):
                     Branch.get_object(self.concerned_object, b["branchKey"])._new_code = new_code
         return self._new_code
 
-    def export(self, full_export=True):
+    def export(self, export_settings: dict[str, str]) -> dict[str, str]:
         """Exports a branch configuration (is main, keep when inactive, optionally name, project)
 
         :param full_export: Also export branches attributes that are not needed for import, defaults to True
@@ -237,7 +237,7 @@ class Branch(components.Component):
             data["keepWhenInactive"] = True
         if self.new_code():
             data[settings.NEW_CODE_PERIOD] = self.new_code()
-        if full_export:
+        if export_settings.get("FULL_EXPORT", True):
             data.update({"name": self.name, "project": self.concerned_object.key})
         data = util.remove_nones(data)
         return None if len(data) == 0 else data

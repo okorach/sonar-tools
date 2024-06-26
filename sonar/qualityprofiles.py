@@ -309,7 +309,7 @@ class QualityProfile(sq.SqObject):
         _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}), queue=queue)
         return self
 
-    def to_json(self, full=False):
+    def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
         """
         :param full: If True, exports all properties, including those that can't be set
         :type full: bool
@@ -318,12 +318,13 @@ class QualityProfile(sq.SqObject):
         """
         json_data = self._json.copy()
         json_data.update({"name": self.name, "language": self.language, "parentName": self.parent_name})
+        full = export_settings.get("FULL_EXPORT", False)
         if not self.is_default:
             json_data.pop("isDefault", None)
         if not self.is_built_in:
             json_data.pop("isBuiltIn", None)
             json_data["rules"] = {k: v.export(full) for k, v in self.rules().items()}
-        json_data["permissions"] = self.permissions().export()
+        json_data["permissions"] = self.permissions().export(export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
     def compare(self, another_qp):
@@ -527,7 +528,7 @@ def search(endpoint: object, params: dict[str:str] = None) -> dict[str:QualityPr
     )
 
 
-def get_list(endpoint, use_cache=True):
+def get_list(endpoint: object, use_cache: bool = True) -> dict[str, QualityProfile]:
     """
     :param endpoint: Reference to the SonarQube platform
     :type endpoint: Platform
@@ -613,7 +614,7 @@ def export(endpoint, export_settings: dict[str, str], in_hierarchy=True):
     qp_list = {}
     for qp in get_list(endpoint=endpoint).values():
         log.info("Exporting %s", str(qp))
-        json_data = qp.to_json(full=export_settings["FULL_EXPORT"])
+        json_data = qp.to_json(export_settings=export_settings)
         lang = json_data.pop("language")
         name = json_data.pop("name")
         if lang not in qp_list:
