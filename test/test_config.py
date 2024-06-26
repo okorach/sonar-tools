@@ -23,6 +23,7 @@
 
 import os
 import sys
+import json
 from unittest.mock import patch
 import pytest
 
@@ -89,4 +90,28 @@ def test_config_non_existing_project() -> None:
             config.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(util.JSON_FILE)
+    util.clean(util.JSON_FILE)
+
+
+def test_config_inline_commas() -> None:
+    """test_config_inline_commas"""
+    util.clean(util.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", OPTS + ["-w", "settings"]):
+            config.main()
+    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+    assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], str)
+    util.clean(util.JSON_FILE)
+
+
+def test_config_no_inline_commas() -> None:
+    """test_config_no_inline_commas"""
+    util.clean(util.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", OPTS + ["-w", "settings", "--dontInlineLists"]):
+            config.main()
+    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+    assert isinstance(json_config["globalSettings"]["languages"]["javascript"]["sonar.javascript.file.suffixes"], list)
     util.clean(util.JSON_FILE)
