@@ -350,15 +350,12 @@ class Platform:
         json_s = json.loads(resp.text)
         platform_settings = {}
         for s in json_s["settings"]:
-            if "value" in s:
-                platform_settings[s["key"]] = s["value"]
-            elif "values" in s:
-                platform_settings[s["key"]] = ",".join(s["values"])
-            elif "fieldValues" in s:
-                platform_settings[s["key"]] = s["fieldValues"]
+            for setting_key in "value", "values", "fieldValues":
+                if setting_key in s:
+                    platform_settings[s["key"]] = s[setting_key]
         return platform_settings
 
-    def __settings(self, settings_list=None, include_not_set=False):
+    def __settings(self, settings_list: list[str] = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("getting global settings")
         return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
 
@@ -417,32 +414,32 @@ class Platform:
         """
         return webhooks.get_list(self)
 
-    def export(self, full=False):
+    def export(self, export_settings: dict[str, str], full: bool = False) -> dict[str, str]:
         """Exports the global platform properties as JSON
 
-        :param full: Whether to also export properties thatc annot be set, defaults to False
+        :param full: Whether to also export properties that cannot be set, defaults to False
         :type full: bool, optional
         :return: dict of all properties with their values
         :rtype: dict
         """
         log.info("Exporting platform global settings")
         json_data = {}
-        for s in self.__settings(include_not_set=True).values():
+        for s in self.__settings(include_not_set=export_settings["EXPORT_DEFAULTS"]).values():
             if s.is_internal():
                 continue
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarCloud internal settings
                 continue
-            util.update_json(json_data, categ, subcateg, s.to_json())
+            util.update_json(json_data, categ, subcateg, s.to_json(export_settings["INLINE_LISTS"]))
 
         hooks = webhooks.export(self, full=full)
         if hooks is not None:
             json_data[settings.GENERAL_SETTINGS].update({"webhooks": hooks})
-        json_data["permissions"] = self.global_permissions().export()
-        json_data["permissionTemplates"] = permission_templates.export(self, full=full)
+        json_data["permissions"] = self.global_permissions().export(export_settings=export_settings)
+        json_data["permissionTemplates"] = permission_templates.export(self, export_settings=export_settings)
         if not self.is_sonarcloud():
-            json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, full=full)
+            json_data[settings.DEVOPS_INTEGRATION] = devops.export(self, export_settings=export_settings)
         return json_data
 
     def set_webhooks(self, webhooks_data):

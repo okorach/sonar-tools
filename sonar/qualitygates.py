@@ -322,8 +322,9 @@ class QualityGate(sq.SqObject):
             problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 
-    def to_json(self, full=False):
+    def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
         json_data = self._json
+        full = export_settings.get("FULL_EXPORT", False)
         if not self.is_default and not full:
             json_data.pop("isDefault")
         if self.is_built_in:
@@ -333,7 +334,7 @@ class QualityGate(sq.SqObject):
             if not full:
                 json_data.pop("isBuiltIn")
             json_data["conditions"] = self.conditions(encoded=True)
-            json_data["permissions"] = self.permissions().export()
+            json_data["permissions"] = self.permissions().export(export_settings=export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
@@ -372,7 +373,7 @@ def get_list(endpoint):
     return qg_list
 
 
-def export(endpoint, full=False):
+def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     """
     :return: The list of quality gates in their JSON representation
     :rtype: dict
@@ -380,7 +381,7 @@ def export(endpoint, full=False):
     log.info("Exporting quality gates")
     qg_list = {}
     for k, qg in get_list(endpoint).items():
-        qg_list[k] = qg.to_json(full)
+        qg_list[k] = qg.to_json(export_settings)
     return qg_list
 
 

@@ -71,7 +71,7 @@ class Permissions(ABC):
         self.permissions = None
         self.read()
 
-    def to_json(self, perm_type=None, csv=False):
+    def to_json(self, perm_type: str = None, csv: bool = False) -> dict[str, str]:
         """
         :return: The permissions as dict
         :rtype: dict {"users": {<login>: [<perm>, <perm>, ...], ...}, "groups": {<name>: [<perm>, <perm>, ...], ...}}
@@ -79,19 +79,25 @@ class Permissions(ABC):
         if not csv:
             return self.permissions[perm_type] if is_valid(perm_type) else self.permissions
         perms = {}
-        for p in normalize(perm_type):
+        perm_types = normalize(perm_type)
+        for p in perm_types:
             dperms = self.permissions.get(p, None)
             if dperms is not None and len(dperms) > 0:
                 perms[p] = simplify(dperms)
         return perms if len(perms) > 0 else None
-        # return {p: simplify(self.permissions.get(p, None)) for p in _normalize(perm_type) if self.permissions.get(p, None) is not None}
 
-    def export(self):
+    def export(self, export_settings: dict[str, str]):
         """
         :return: The permissions as dict
         :rtype: dict {"users": {<login>: [<perm>, <perm>, ...], ...}, "groups": {<name>: [<perm>, <perm>, ...], ...}}
         """
-        return self.to_json(csv=True)
+        inlined = export_settings.get("INLINE_LISTS", True)
+        perms = self.to_json(csv=inlined)
+        if not inlined:
+            perms = {k: v for k, v in perms.items() if len(v) > 0}
+        if len(perms) == 0:
+            return None
+        return perms
 
     @abstractmethod
     def __str__(self):
@@ -274,7 +280,7 @@ def encode(perms_array):
     """
     :meta private:
     """
-    return utilities.list_to_csv(perms_array, ", ")
+    return utilities.list_to_csv(perms_array, ", ", check_for_separator=True)
 
 
 def decode(encoded_perms):

@@ -280,7 +280,7 @@ class Application(aggr.Aggregation):
         log.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
-    def export(self, full=False):
+    def export(self, export_settings: dict[str, str]) -> dict[str, str]:
         """Exports an application
 
         :param full: Whether to do a full export including settings that can't be set, defaults to False
@@ -297,11 +297,11 @@ class Application(aggr.Aggregation):
                 "visibility": self.visibility(),
                 # 'projects': self.projects(),
                 "branches": self.branches(),
-                "permissions": self.permissions().export(),
-                "tags": util.list_to_csv(self.tags(), separator=", "),
+                "permissions": self.permissions().export(export_settings=export_settings),
+                "tags": util.list_to_csv(self.tags(), separator=", ", check_for_separator=True),
             }
         )
-        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
+        return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def set_permissions(self, data):
         """Sets an application permissions
@@ -409,7 +409,7 @@ def search(endpoint, params=None):
     )
 
 
-def get_list(endpoint, key_list=None, use_cache=True):
+def get_list(endpoint: object, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Application]:
     """
     :return: List of Applications (all of them if key_list is None or empty)
     :param key_list: List of app keys to get, if None or empty all applications are returned
@@ -427,7 +427,7 @@ def get_list(endpoint, key_list=None, use_cache=True):
     return object_list
 
 
-def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> dict[str, str]:
+def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -442,7 +442,7 @@ def export(endpoint: object, key_list: list[str] = None, full: bool = False) -> 
         # log.info("Applications do not exist in SonarCloud, export skipped")
         raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
 
-    apps_settings = {k: app.export(full) for k, app in get_list(endpoint, key_list).items()}
+    apps_settings = {k: app.export(export_settings) for k, app in get_list(endpoint, key_list).items()}
     for k in apps_settings:
         # remove key from JSON value, it's already the dict key
         apps_settings[k].pop("key")

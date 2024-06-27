@@ -253,7 +253,7 @@ def get_list(endpoint, params=None):
     return search(params=params, endpoint=endpoint)
 
 
-def export(endpoint):
+def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     """Exports all groups configuration as dict
     Default groups (sonar-users) are not exported
 
@@ -265,7 +265,7 @@ def export(endpoint):
     log.info("Exporting groups")
     g_list = {}
     for g_name, g_obj in search(endpoint=endpoint).items():
-        if g_obj.is_default():
+        if not export_settings["FULL_EXPORT"] and g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
     return g_list

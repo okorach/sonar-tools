@@ -135,7 +135,7 @@ class DevopsPlatform(sqobject.SqObject):
                 return True
         return False
 
-    def to_json(self, full=False):
+    def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
         """Exports a DevOps platform configuration in JSON format
 
         :param full: Whether to export all properties, including those that can't be set, or not, defaults to False
@@ -145,7 +145,7 @@ class DevopsPlatform(sqobject.SqObject):
         """
         json_data = self._json.copy()
         json_data.update({"key": self.key, "type": self.type, "url": self.url})
-        return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full)
+        return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
     def set_pat(self, pat, user_name=None):
         if self.type == "github":
@@ -193,7 +193,7 @@ def count(platf_type=None):
     return sum(1 for o in _OBJECTS.values() if o.type[0:4] == platf_type[0:4])
 
 
-def get_list(endpoint):
+def get_list(endpoint: object) -> dict[str, DevopsPlatform]:
     """Reads all DevOps platforms from SonarQube
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -231,14 +231,14 @@ def exists(devops_platform_key, endpoint):
     return get_object(devops_platform_key, endpoint) is not None
 
 
-def export(endpoint, full=False):
+def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     """
     :meta private:
     """
     log.info("Exporting DevOps integration settings")
     json_data = {}
     for s in get_list(endpoint).values():
-        json_data[s.uuid()] = s.to_json(full)
+        json_data[s.uuid()] = s.to_json(export_settings)
         json_data[s.uuid()].pop("key")
     return json_data
 

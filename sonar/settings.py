@@ -21,8 +21,10 @@
     Abstraction of the SonarQube setting concept
 """
 
+from __future__ import annotations
 import re
 import json
+from typing import Union
 
 import sonar.logging as log
 from sonar import sqobject, exceptions
@@ -173,10 +175,13 @@ class Setting(sqobject.SqObject):
             self.value = new_code_to_string(data)
         elif self.key == COMPONENT_VISIBILITY:
             self.value = data.get("visibility", None)
-        elif self.key.startswith("sonar.issue."):
-            self.value = data.get("fieldValues", None)
         else:
-            self.value = util.convert_string(data.get("value", data.get("values", data.get("defaultValue", ""))))
+            self.value = None
+            for key in "value", "values", "fieldValues":
+                if key in data:
+                    self.value = util.convert_string(data[key])
+            if not self.value and "defaultValue" in data:
+                self.value = util.DEFAULT
 
         if "inherited" in data:
             self.inherited = data["inherited"]
@@ -229,8 +234,19 @@ class Setting(sqobject.SqObject):
             params["value"] = value
         return self.post(_API_SET, params=params).ok
 
-    def to_json(self) -> dict[str, str]:
-        return {self.key: encode(self.key, self.value)}
+    def to_json(self, list_as_csv: bool = True) -> dict[str, str]:
+        val = self.value
+        if self.key == NEW_CODE_PERIOD:
+            val = new_code_to_string(self.value)
+        elif list_as_csv and isinstance(self.value, list):
+            for reg in _INLINE_SETTINGS:
+                if re.match(reg, self.key):
+                    val = util.list_to_csv(val, separator=", ", check_for_separator=True)
+                    break
+        if val is None:
+            val = ""
+        log.debug("to_json(%s: %s) = %s", self.key, str(self.value), str(val))
+        return {self.key: val}
 
     def is_global(self) -> bool:
         """Returns whether a setting global or specific for one component (project, branch, application, portfolio)"""
@@ -438,25 +454,6 @@ def __is_cobol_setting(key):
 
 def set_setting(endpoint, key, value, component=None):
     return Setting.load(key, endpoint=endpoint, component=component, data=None).set(value)
-
-
-def encode(setting_key, setting_value):
-    if setting_value is None:
-        return ""
-    if setting_key == NEW_CODE_PERIOD:
-        return new_code_to_string(setting_value)
-    if isinstance(setting_value, str):
-        return setting_value
-    if not isinstance(setting_value, list):
-        return setting_value
-    val = setting_value.copy()
-    for reg in _INLINE_SETTINGS:
-        if re.match(reg, setting_key):
-            val = util.list_to_csv(val, ", ", True)
-            break
-    if val is None:
-        val = ""
-    return val
 
 
 def decode(setting_key, setting_value):

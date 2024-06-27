@@ -18,3 +18,4 @@ tmp/
 !test/config.json
 !test/sif*.json
 !.vscode/*.json
+.sonar/
