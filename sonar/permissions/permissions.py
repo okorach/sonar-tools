@@ -95,7 +95,7 @@ class Permissions(ABC):
         perms = self.to_json(csv=inlined)
         if not inlined:
             perms = {k: v for k, v in perms.items() if len(v) > 0}
-        if len(perms) == 0:
+        if not perms or len(perms) == 0:
             return None
         return perms
 
