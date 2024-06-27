@@ -58,7 +58,7 @@ class QualityProfile(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
-    def __init__(self, key: str, endpoint: Platform, data: dict[str, str] = None):
+    def __init__(self, key: str, endpoint: Platform, data: dict[str, str] = None) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(key, endpoint)
 
@@ -88,7 +88,7 @@ class QualityProfile(sq.SqObject):
         _OBJECTS[self.key] = self
 
     @classmethod
-    def read(cls, endpoint: Platform, name: str, language: str) -> QualityProfile:
+    def read(cls, endpoint: Platform, name: str, language: str) -> Union[QualityProfile, None]:
         """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -130,7 +130,7 @@ class QualityProfile(sq.SqObject):
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
-    def load(cls, endpoint: Platform, data: dict[str, str]):
+    def load(cls, endpoint: Platform, data: dict[str, str]) -> None:
         """Creates a QualityProfile object from the result of a SonarQube API quality profile search data
 
         :param endpoint: Reference to the SonarQube platform
@@ -538,7 +538,7 @@ def get_list(endpoint: Platform, use_cache: bool = True) -> dict[str, QualityPro
     return _OBJECTS
 
 
-def audit(endpoint: Platform, audit_settings: dict[str, str] = None):
+def audit(endpoint: Platform, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
     """Audits all quality profiles and return list of problems found
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -650,7 +650,7 @@ def __import_thread(queue):
         queue.task_done()
 
 
-def import_config(endpoint: Platform, config_data: dict[str, str], threads: int = 8):
+def import_config(endpoint: Platform, config_data: dict[str, str], threads: int = 8) -> None:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
