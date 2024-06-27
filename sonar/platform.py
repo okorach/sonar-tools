@@ -355,7 +355,7 @@ class Platform:
                     platform_settings[s["key"]] = s[setting_key]
         return platform_settings
 
-    def __settings(self, settings_list=None, include_not_set=False) -> dict[str, settings.Setting]:
+    def __settings(self, settings_list: list[str] = None, include_not_set: bool = False) -> dict[str, settings.Setting]:
         log.info("getting global settings")
         return settings.get_bulk(endpoint=self, settings_list=settings_list, include_not_set=include_not_set)
 

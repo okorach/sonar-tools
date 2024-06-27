@@ -456,29 +456,6 @@ def set_setting(endpoint, key, value, component=None):
     return Setting.load(key, endpoint=endpoint, component=component, data=None).set(value)
 
 
-def encode(setting_key: str, setting_value: any, list_as_csv: bool = False, defaults_as_value: bool = False) -> Union[str, list[str], dict[str, str]]:
-    """Encodes a setting value according to desired encoding rules"""
-    if setting_value is None:
-        return ""
-    if setting_key == NEW_CODE_PERIOD:
-        return new_code_to_string(setting_value)
-    if not list_as_csv:
-        return setting_value
-
-    if isinstance(setting_value, str):
-        return setting_value
-    if not isinstance(setting_value, list):
-        return setting_value
-    val = setting_value.copy()
-    for reg in _INLINE_SETTINGS:
-        if re.match(reg, setting_key):
-            val = util.list_to_csv(val, ", ", True)
-            break
-    if val is None:
-        val = ""
-    return val
-
-
 def decode(setting_key, setting_value):
     if setting_key == NEW_CODE_PERIOD:
         if isinstance(setting_value, int):
