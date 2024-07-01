@@ -630,6 +630,7 @@ def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start:
 def __search_all_by_project(endpoint: Platform, project_key: str, params: dict[str, str] = None) -> dict[str, Issue]:
     """Search issues by project"""
     new_params = {} if params is None else params.copy()
+    new_params["componentKeys"] = project_key
     issue_list = {}
     log.debug("Searching for issues of project '%s'", project_key)
     try:
