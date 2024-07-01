@@ -73,6 +73,8 @@ cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
   -Dsonar.externalIssuesReportPaths=$externalIssuesReport \
+  -Dsonar.login=$SONAR_TOKEN \
+  -Dsonar.token=$SONAR_TOKEN \
   $pr_branch" \
   "${scanOpts[@]}"
 
