@@ -128,7 +128,8 @@ class Hotspot(findings.Finding):
         :rtype: dict
         """
         data = super().to_json(without_time)
-        data["impacts"] = {"SECURITY": "UNDEFINED"}
+        if self.endpoint.version() >= (10, 2, 0):
+            data["impacts"] = {"SECURITY": "UNDEFINED"}
         data["url"] = self.url()
         log.debug("Returning hotspot JSON data = %s", util.json_dump(data))
         return data
