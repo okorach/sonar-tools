@@ -112,7 +112,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
             sanitized_args["tokenTarget"] = utilities.redacted_token(sanitized_args["tokenTarget"])
         log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
     for argname in "projectKeys", "metricKeys", "resolutions", "severities", "types", "statuses":
-        if argname in kwargs:
+        if argname in kwargs and kwargs[argname] is not None and len(kwargs[argname]) > 0:
             kwargs[argname] = utilities.csv_to_list(kwargs[argname])
     if kwargs.get(LANGUAGE_OPT, None) not in (None, ""):
         kwargs[LANGUAGE_OPT] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGE_OPT])]
