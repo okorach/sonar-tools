@@ -144,7 +144,7 @@ def main() -> int:
         syncer.SYNC_ADD_LINK: not params["nolink"],
         syncer.SYNC_ASSIGN: True,
         syncer.SYNC_IGNORE_COMPONENTS: False,
-        syncer.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(args.login),
+        syncer.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(params["login"]),
         syncer.SYNC_SINCE_DATE: since,
         syncer.SYNC_THREADS: params["threads"],
     }

@@ -65,6 +65,23 @@ _CSV_FIELDS = (
     "message",
 )
 
+_CSV_FIELDS_NEW = (
+    "key",
+    "rule",
+    "impacts",
+    "status",
+    "creationDate",
+    "updateDate",
+    "projectKey",
+    "projectName",
+    "branch",
+    "pullRequest",
+    "file",
+    "line",
+    "effort",
+    "message",
+)
+
 FILTERS = ("statuses", "resolutions", "severities", "languages", "pullRequest", "branch", "tags", "types", "createdBefore", "createdAfter")
 
 
@@ -183,7 +200,11 @@ class Finding(sq.SqObject):
         data["branch"] = util.quote(data["branch"], separator)
         data["message"] = util.quote(data["message"], separator)
         data["projectName"] = projects.Project.get_object(key=self.projectKey, endpoint=self.endpoint).name
-        return separator.join([str(data[field]) for field in _CSV_FIELDS])
+        if "impacts" in data:
+            data["impacts"] = util.quote(", ".join([f"{k}:{v}" for k, v in data["impacts"].items()]), separator)
+            return separator.join([str(data[field]) for field in _CSV_FIELDS_NEW])
+        else:
+            return separator.join([str(data[field]) for field in _CSV_FIELDS])
 
     def to_json(self, without_time: bool = False):
         """
@@ -433,7 +454,8 @@ def to_csv_header(separator=","):
     """
     :meta private:
     """
-    return "# " + separator.join(_CSV_FIELDS)
+    # return "# " + separator.join(_CSV_FIELDS)
+    return "# " + separator.join(_CSV_FIELDS_NEW)
 
 
 def __get_changelog(queue: Queue[Finding], added_after: datetime.datetime = None) -> None:

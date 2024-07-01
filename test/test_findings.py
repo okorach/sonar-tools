@@ -23,6 +23,7 @@
 
 import os
 import sys
+import csv
 from unittest.mock import patch
 import pytest
 
@@ -34,6 +35,18 @@ from sonar import errcodes
 CMD = "sonar-findings-export.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
+
+SEVERITY_COL = 2
+STATUS_COL = 3
+DATE_COL = 4
+TYPE_COL = 2
+PROJECT_COL = 6
+
+if util.SQ.version() < (10, 2, 0):
+    SEVERITY_COL += 1
+    STATUS_COL += 1
+    DATE_COL += 1
+    PROJECT_COL += 1
 
 __GOOD_OPTS = [
     ["--format", "json", "-l", "sonar-tools.log", "-v", "DEBUG"],
@@ -145,13 +158,15 @@ def test_findings_filter_on_type() -> None:
 
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in fh:
+        for line in csv.reader(fh):
             if first:
                 first = False
                 continue
-            issue_type = line.split(",")[2]
-            assert issue_type in ("VULNERABILITY", "BUG")
-    # util.clean(util.CSV_FILE)
+            if util.SQ.version() >= (10, 2, 0):
+                assert "SECURITY:" in line[TYPE_COL] or "RELIABILITY:" in line[TYPE_COL]
+            else:
+                assert line[TYPE_COL] in ("VULNERABILITY", "BUG")
+        # util.clean(util.CSV_FILE)
 
 
 def test_findings_filter_on_resolution() -> None:
@@ -162,12 +177,11 @@ def test_findings_filter_on_resolution() -> None:
             findings_export.main()
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in fh:
+        for line in csv.reader(fh):
             if first:
                 first = False
                 continue
-            status = line.split(",")[4]
-            assert status in ("FALSE-POSITIVE", "ACCEPTED", "SAFE")
+            assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED", "SAFE")
     util.clean(util.CSV_FILE)
 
 
@@ -179,12 +193,14 @@ def test_findings_filter_on_severity() -> None:
             findings_export.main()
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in fh:
+        for line in csv.reader(fh):
             if first:
                 first = False
                 continue
-            sev = line.split(",")[3]
-            assert sev in ("CRITICAL", "MAJOR")
+            if util.SQ.version() >= (10, 2, 0):
+                assert ":HIGH" in line[SEVERITY_COL] or ":MEDIUM" in line[SEVERITY_COL]
+            else:
+                assert line[SEVERITY_COL] in ("CRITICAL", "MAJOR")
     util.clean(util.CSV_FILE)
 
 
@@ -197,13 +213,15 @@ def test_findings_filter_on_multiple_criteria() -> None:
 
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in fh:
+        for line in csv.reader(fh):
             if first:
                 first = False
                 continue
-            (_, _, issue_type, _, status, _) = line.split(",", maxsplit=5)
-            assert status in ("FALSE-POSITIVE", "ACCEPTED")
-            assert issue_type in ("BUG", "CODE_SMELL")
+            assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED")
+            if util.SQ.version() >= (10, 2, 0):
+                assert "MAINTAINABILITY:" in line[TYPE_COL] or "RELIABILITY:" in line[TYPE_COL]
+            else:
+                assert line[TYPE_COL] in ("BUG", "CODE_SMELL")
     util.clean(util.CSV_FILE)
 
 
@@ -216,13 +234,15 @@ def test_findings_filter_on_multiple_criteria_2() -> None:
 
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in fh:
+        for line in csv.reader(fh):
             if first:
                 first = False
                 continue
-            (_, _, issue_type, _, _, dt) = line.split(",", maxsplit=5)
-            assert dt.split("-")[0] == "2020"
-            assert issue_type == "SECURITY_HOTSPOT"
+            if util.SQ.version() >= (10, 2, 0):
+                assert line[SEVERITY_COL] == "SECURITY:UNDEFINED"
+            else:
+                assert line[TYPE_COL] == "SECURITY_HOTSPOT"
+            assert line[DATE_COL].split("-")[0] == "2020"
     util.clean(util.CSV_FILE)
 
     # FIXME: findings-export ignores the branch option see https://github.com/okorach/sonar-tools/issues/1115
@@ -240,11 +260,11 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
 
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in fh:
+        for line in csv.reader(fh):
             if first:
                 first = False
                 continue
-            assert line.split(",")[4] in ("ACCEPTED", "FALSE_POSITIVE", "FALSE-POSITIVE")
+            assert line[STATUS_COL] in ("ACCEPTED", "FALSE_POSITIVE", "FALSE-POSITIVE")
     util.clean(util.CSV_FILE)
 
 
@@ -257,12 +277,12 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
 
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in fh:
+        for line in csv.reader(fh):
             if first:
                 first = False
                 continue
-            assert line.split(",")[4] in ("ACKNOWLEDGED", "SAFE")
-            assert line.split(",")[7] in ("okorach_sonar-tools", "pytorch")
+            assert line[STATUS_COL] in ("ACKNOWLEDGED", "SAFE")
+            assert line[PROJECT_COL] in ("okorach_sonar-tools", "pytorch")
     util.clean(util.CSV_FILE)
 
 

@@ -34,6 +34,9 @@ from sonar.sqobject import uuid
 from sonar import syncer, users
 from sonar import findings, rules, changelog
 
+PROJECT_FILTER = "project"
+PROJECT_FILTER_OLD = "projectKey"
+
 SEARCH_CRITERIAS = (
     "branch",
     "cwe",
@@ -48,8 +51,8 @@ SEARCH_CRITERIAS = (
     "p",
     "pciDss-3.2",
     "pciDss-4.0",
-    "project",
-    "projectKey",
+    PROJECT_FILTER,
+    PROJECT_FILTER_OLD,
     "ps",
     "pullRequest",
     "resolution",
@@ -65,7 +68,7 @@ STATUSES = ("TO_REVIEW", "REVIEWED")
 SEVERITIES = ()
 
 # Filters for search of hotspots are different than for issues :-(
-_FILTERS_HOTSPOTS_REMAPPING = {"resolutions": "resolution", "statuses": "status", "componentsKey": "projectKey"}
+_FILTERS_HOTSPOTS_REMAPPING = {"resolutions": "resolution", "statuses": "status", "componentsKey": PROJECT_FILTER_OLD, "components": PROJECT_FILTER}
 
 _OBJECTS = {}
 
@@ -125,7 +128,10 @@ class Hotspot(findings.Finding):
         :rtype: dict
         """
         data = super().to_json(without_time)
+        if self.endpoint.version() >= (10, 2, 0):
+            data["impacts"] = {"SECURITY": "UNDEFINED"}
         data["url"] = self.url()
+        log.debug("Returning hotspot JSON data = %s", util.json_dump(data))
         return data
 
     def refresh(self):
@@ -350,11 +356,19 @@ def search_by_project(endpoint: Platform, project_key: str, filters: dict[str, s
     key_list = util.csv_to_list(project_key)
     hotspots = {}
     for k in key_list:
-        filters["projectKey"] = k
+        filters[_get_project_filter(endpoint)] = k
         project_hotspots = search(endpoint=endpoint, filters=filters)
         log.info("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
         hotspots.update(project_hotspots)
     return post_search_filter(hotspots, filters=filters)
+
+
+def _get_project_filter(endpoint: Platform) -> str:
+    """Returns the string to filter by porject in api/hotspots/search"""
+    if endpoint.version() >= (10, 2, 0):
+        return PROJECT_FILTER
+    else:
+        return PROJECT_FILTER_OLD
 
 
 def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hotspot]:
@@ -366,7 +380,7 @@ def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hots
     :rtype: dict{<key>: <Hotspot>}
     """
     hotspots_list = {}
-    new_params = get_search_filters(params=filters)
+    new_params = get_search_filters(endpoint=endpoint, params=filters)
     new_params = util.dict_remap(original_dict=new_params, remapping=_FILTERS_HOTSPOTS_REMAPPING)
     filters_iterations = split_search_filters(new_params)
     for inline_filters in filters_iterations:
@@ -413,7 +427,7 @@ def get_object(endpoint: Platform, key: str, data: dict[str] = None, from_export
     return _OBJECTS[uu]
 
 
-def get_search_filters(params: dict[str, str]) -> dict[str, str]:
+def get_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     if params is None:
         return {}
@@ -425,6 +439,8 @@ def get_search_filters(params: dict[str, str]) -> dict[str, str]:
         criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
         log.warning("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
         criterias["status"] = "REVIEWED"
+    if endpoint.version() >= (10, 2, 0):
+        criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER_OLD: PROJECT_FILTER})
     return util.dict_subset(criterias, SEARCH_CRITERIAS)
 
 

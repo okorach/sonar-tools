@@ -539,7 +539,7 @@ def dict_remap(original_dict: dict[str, str], remapping: dict[str, str]) -> dict
         return {}
     remapped_filters = original_dict.copy()
     for old, new in remapping.items():
-        if old in original_dict:
+        if old in original_dict and new not in remapped_filters:
             remapped_filters[new] = remapped_filters.pop(old)
     return remapped_filters
 
