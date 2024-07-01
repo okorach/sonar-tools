@@ -191,6 +191,8 @@ class Issue(findings.Finding):
         :rtype: dict
         """
         data = super().to_json(without_time)
+        if self.endpoint.version() >= (10, 2, 0):
+            data["impacts"] = {elem["softwareQuality"]: elem["severity"] for elem in self._json["impacts"]}
         data["url"] = self.url()
         data["effort"] = self.debt()
         return data

@@ -221,8 +221,6 @@ class Finding(sq.SqObject):
         data["file"] = self.file()
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
-        if self.endpoint.version() >= (10, 2, 0):
-            data["impacts"] = {elem["softwareQuality"]: elem["severity"] for elem in self._json["impacts"]}
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
         status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "FIXED"}
