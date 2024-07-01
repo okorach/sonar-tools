@@ -366,7 +366,7 @@ def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hots
     :rtype: dict{<key>: <Hotspot>}
     """
     hotspots_list = {}
-    new_params = get_search_filters(params=filters)
+    new_params = get_search_filters(endpoint=endpoint, params=filters)
     new_params = util.dict_remap(original_dict=new_params, remapping=_FILTERS_HOTSPOTS_REMAPPING)
     filters_iterations = split_search_filters(new_params)
     for inline_filters in filters_iterations:
@@ -413,7 +413,7 @@ def get_object(endpoint: Platform, key: str, data: dict[str] = None, from_export
     return _OBJECTS[uu]
 
 
-def get_search_filters(params: dict[str, str]) -> dict[str, str]:
+def get_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     if params is None:
         return {}
@@ -425,6 +425,8 @@ def get_search_filters(params: dict[str, str]) -> dict[str, str]:
         criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
         log.warning("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
         criterias["status"] = "REVIEWED"
+    if endpoint.version() >= (10, 2, 0):
+        criterias = util.dict_remap(original_dict=criterias, remapping={"projectKey": "project"})
     return util.dict_subset(criterias, SEARCH_CRITERIAS)
 
 
