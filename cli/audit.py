@@ -67,21 +67,21 @@ def _audit_sif(sysinfo, audit_settings):
 
 def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
     problems = []
-    if options.WHAT_PROJECTS in what_to_audit:
+    if what_to_audit is None or options.WHAT_PROJECTS in what_to_audit:
         problems += projects.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-    if options.WHAT_PROFILES in what_to_audit:
+    if what_to_audit is None or options.WHAT_PROFILES in what_to_audit:
         problems += qualityprofiles.audit(endpoint=sq, audit_settings=settings)
-    if options.WHAT_GATES in what_to_audit:
+    if what_to_audit is None or options.WHAT_GATES in what_to_audit:
         problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
-    if options.WHAT_SETTINGS in what_to_audit:
+    if what_to_audit is None or options.WHAT_SETTINGS in what_to_audit:
         problems += sq.audit(audit_settings=settings)
-    if options.WHAT_USERS in what_to_audit:
+    if what_to_audit is None or options.WHAT_USERS in what_to_audit:
         problems += users.audit(endpoint=sq, audit_settings=settings)
-    if options.WHAT_GROUPS in what_to_audit:
+    if what_to_audit is None or options.WHAT_GROUPS in what_to_audit:
         problems += groups.audit(endpoint=sq, audit_settings=settings)
-    if options.WHAT_PORTFOLIOS in what_to_audit:
+    if what_to_audit is None or options.WHAT_PORTFOLIOS in what_to_audit:
         problems += portfolios.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-    if options.WHAT_APPS in what_to_audit:
+    if what_to_audit is None or options.WHAT_APPS in what_to_audit:
         problems += applications.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
     return problems
 
@@ -134,7 +134,7 @@ def main():
         server_id = sq.server_id()
         util.check_token(kwargs["token"])
         key_list = kwargs["projectKeys"]
-        if len(key_list) > 0 and "projects" in util.csv_to_list(kwargs["what"]):
+        if key_list is not None and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs["what"]):
             for key in key_list:
                 if not projects.exists(key, sq):
                     util.exit_fatal(f"Project key '{key}' does not exist", errcodes.NO_SUCH_KEY)

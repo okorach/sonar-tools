@@ -103,6 +103,8 @@ def __parse_args(desc):
 
 
 def __check_projects_existence(endpoint: object, key_list: list[str]) -> None:
+    if key_list is None:
+        return
     for key in key_list:
         if not projects.exists(key, endpoint):
             utilities.exit_fatal(f"Project key '{key}' does not exist", errcodes.NO_SUCH_KEY)
