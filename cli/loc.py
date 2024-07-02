@@ -30,12 +30,10 @@ import sonar.logging as log
 from sonar import platform, portfolios, projects
 import sonar.utilities as util
 
-OPT_PORTFOLIOS = "portfolios"
-
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    if kwargs[OPT_PORTFOLIOS]:
+    if kwargs[options.PORTFOLIOS]:
         arr = ["# portfolio key"]
     elif kwargs[options.WITH_BRANCHES]:
         arr = ["# project key", "branch"]
@@ -43,7 +41,7 @@ def __get_csv_header_list(**kwargs) -> list[str]:
         arr = ["# project key"]
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
-        if kwargs[OPT_PORTFOLIOS]:
+        if kwargs[options.PORTFOLIOS]:
             arr.append("portfolio name")
         else:
             arr.append("project name")
@@ -175,16 +173,16 @@ def __parse_args(desc):
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser)
     parser.add_argument(
-        "-n",
-        "--withName",
+        f"-{options.WITH_NAME_SHORT}",
+        f"--{options.WITH_NAME}",
         required=False,
         default=False,
         action="store_true",
         help="Also list the project name on top of the project key",
     )
     parser.add_argument(
-        "-a",
-        "--" + options.WITH_LAST_ANALYSIS,
+        f"-{options.WITH_LAST_ANALYSIS_SHORT}",
+        f"--{options.WITH_LAST_ANALYSIS}",
         required=False,
         default=False,
         action="store_true",
@@ -193,7 +191,7 @@ def __parse_args(desc):
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
     parser.add_argument(
-        f"--{OPT_PORTFOLIOS}",
+        f"--{options.PORTFOLIOS}",
         required=False,
         default=False,
         action="store_true",
@@ -217,7 +215,7 @@ def main():
     )
     endpoint = platform.Platform(**kwargs)
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
-    if kwargs[OPT_PORTFOLIOS]:
+    if kwargs[options.PORTFOLIOS]:
         if kwargs[options.WITH_BRANCHES]:
             log.warning("Portfolio LoC export selected, branch option is ignored")
         if kwargs[options.WITH_LAST_ANALYSIS]:

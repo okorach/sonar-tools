@@ -29,10 +29,11 @@ from unittest.mock import patch
 import pytest
 import utilities as util
 from cli import loc
+import cli.options as opt
 
 CMD = "sonar-loc.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.JSON_FILE]
 
 
 def test_loc() -> None:
@@ -61,7 +62,7 @@ def test_loc_json_fmt() -> None:
     """test_loc_json_fmt"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--format", "json", "-n", "-a", "--withURL"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "json", "-n", "-a", f"--{opt.WITH_URL}"]):
             loc.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.JSON_FILE)
@@ -72,7 +73,7 @@ def test_loc_project() -> None:
     """test_loc_project"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"]):
             loc.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -83,7 +84,11 @@ def test_loc_project_with_all_options() -> None:
     """test_loc_project_with_all_options"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-k", "okorach_sonar-tools", "--withURL", "-n", "-a"]):
+        with patch.object(
+            sys,
+            "argv",
+            CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.WITH_URL}", f"-{opt.WITH_NAME_SHORT}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}"],
+        ):
             loc.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -94,7 +99,7 @@ def test_loc_portfolios() -> None:
     """test_loc_portfolios"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--portfolios", "--topLevelOnly", "--withURL"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.PORTFOLIOS}", "--topLevelOnly", f"--{opt.WITH_URL}"]):
             loc.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -105,7 +110,7 @@ def test_loc_separator() -> None:
     """test_loc_separator"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--csvSeparator", "+"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.CSV_SEPARATOR}", "+"]):
             loc.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -116,7 +121,9 @@ def test_loc_branches() -> None:
     """test_loc"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-b", "--withURL", "-a", "-n"]):
+        with patch.object(
+            sys, "argv", CSV_OPTS + [f"-{opt.WITH_BRANCHES_SHORT}", f"--{opt.WITH_URL}", f"--{opt.WITH_NAME}", f"--{opt.WITH_LAST_ANALYSIS}"]
+        ):
             loc.main()
     assert int(str(e.value)) == 0
     util.clean(util.CSV_FILE)
@@ -126,7 +133,20 @@ def test_loc_branches_json() -> None:
     """test_loc"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + ["-b", "-f", util.JSON_FILE, "-a", "-n", "--withURL"]):
+        with patch.object(
+            sys,
+            "argv",
+            [CMD]
+            + util.STD_OPTS
+            + [
+                f"-{opt.WITH_BRANCHES_SHORT}",
+                f"--{opt.OUTPUTFILE}",
+                util.JSON_FILE,
+                f"--{opt.WITH_LAST_ANALYSIS}",
+                f"--{opt.WITH_NAME}",
+                f"--{opt.WITH_URL}",
+            ],
+        ):
             loc.main()
     assert int(str(e.value)) == 0
     util.clean(util.JSON_FILE)
@@ -136,7 +156,12 @@ def test_loc_portfolios_all_options() -> None:
     """test_loc"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-b", "--portfolios", "--withURL", "-a", "-n"]):
+        with patch.object(
+            sys,
+            "argv",
+            CSV_OPTS
+            + [f"--{opt.WITH_BRANCHES}", f"--{opt.PORTFOLIOS}", f"--{opt.WITH_URL}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}", f"-{opt.WITH_NAME_SHORT}"],
+        ):
             loc.main()
     assert int(str(e.value)) == 0
     util.clean(util.CSV_FILE)
