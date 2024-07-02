@@ -60,7 +60,7 @@ def __get_args(desc):
     )
     parser.add_argument(
         "-v",
-        "--" + options.OPT_VERBOSE,
+        "--" + options.VERBOSE,
         required=False,
         choices=["ERROR", "WARN", "INFO", "DEBUG"],
         default="ERROR",

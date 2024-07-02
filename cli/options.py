@@ -31,33 +31,75 @@ import argparse
 import sonar.logging as log
 from sonar import errcodes, version, utilities
 
-OPT_URL = "url"
-OPT_VERBOSE = "verbosity"
-OPT_SKIP_VERSION_CHECK = "skipVersionCheck"
+# Command line options
 
-OPT_ORGANIZATION = "organization"
+URL_SHORT = "u"
+URL = "url"
+TOKEN_SHORT = "t"
+TOKEN = "token"
+ORG_SHORT = "o"
+ORG = "organization"
+
+VERBOSE_SHORT = "v"
+VERBOSE = "verbosity"
+
+HTTP_TIMEOUT = "httpTimeout"
+SKIP_VERSION_CHECK = "skipVersionCheck"
+CERT_SHORT = "c"
+CERT = "clientCert"
+
+OUTPUTFILE_SHORT = "f"
+OUTPUTFILE = "file"
+
+KEYS_SHORT = "k"
+KEYS = "projectKeys"
+
+METRIC_KEYS_SHORT = "m"
+METRIC_KEYS = "metricKeys"
+
+RESOLUTIONS = "resolutions"
+SEVERITIES = "severities"
+STATUSES = "statuses"
+TYPES = "types"
+
+MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES)
+
+NBR_THREADS = "threads"
+
+BRANCH_SHORT = "b"
+BRANCH = "branch"
+
+WITH_BRANCHES_SHORT = "b"
+WITH_BRANCHES = "withBranches"
+
+LANGUAGES = "languages"
+
+PORTFOLIOS = "portfolios"
+
+FORMAT = "format"
+WITH_URL = "withURL"
+WITH_NAME_SHORT = "n"
+WITH_NAME = "withName"
+WITH_LAST_ANALYSIS_SHORT = "a"
+WITH_LAST_ANALYSIS = "withLastAnalysis"
+
+DATES_WITHOUT_TIME_SHORT = "d"
+DATES_WITHOUT_TIME = "datesWithoutTime"
+
+LOGFILE_SHORT = "l"
+LOGFILE = "logfile"
+
+CSV_SEPARATOR = "csvSeparator"
+
+__DEFAULT_CSV_SEPARATOR = ","
+
+
 OPT_MODE = "mode"
 DRY_RUN = "dryrun"
 CONFIRM = "confirm"
 BATCH = "batch"
 RUN_MODE = DRY_RUN
 
-# Command line options
-
-WITH_URL = "withURL"
-WITH_NAME = "withName"
-WITH_LAST_ANALYSIS = "withLastAnalysis"
-
-WITH_BRANCHES_SHORT = "b"
-WITH_BRANCHES = "withBranches"
-
-OUTPUTFILE_SHORT = "f"
-OUTPUTFILE = "file"
-
-LOGFILE_SHORT = "l"
-LOGFILE = "logfile"
-
-LANGUAGE_OPT = "languages"
 LANGUAGE_MAPPING = {
     "python": "py",
     "csharp": "cs",
@@ -71,10 +113,6 @@ LANGUAGE_MAPPING = {
 }
 
 WITH_HISTORY = "history"
-NBR_THREADS = "threads"
-
-DATES_WITHOUT_TIME_SHORT = "d"
-DATES_WITHOUT_TIME = "datesWithoutTime"
 
 WHAT_SETTINGS = "settings"
 WHAT_USERS = "users"
@@ -87,12 +125,6 @@ WHAT_APPS = "applications"
 WHAT_PORTFOLIOS = "portfolios"
 WHAT_AUDITABLE = [WHAT_SETTINGS, WHAT_USERS, WHAT_GROUPS, WHAT_GATES, WHAT_PROFILES, WHAT_PROJECTS, WHAT_APPS, WHAT_PORTFOLIOS]
 
-CSV_SEPARATOR = "csvSeparator"
-
-__DEFAULT_CSV_SEPARATOR = ","
-
-FORMAT = "format"
-
 
 def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> argparse.ArgumentParser:
     """Parses arguments, applies default settings and perform common environment checks"""
@@ -103,27 +135,27 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
 
     kwargs = vars(args)
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
-    log.set_debug_level(kwargs[OPT_VERBOSE])
+    log.set_debug_level(kwargs[VERBOSE])
     log.info("sonar-tools version %s", version.PACKAGE_VERSION)
     if log.level() == log.DEBUG:
         sanitized_args = kwargs.copy()
-        sanitized_args["token"] = utilities.redacted_token(sanitized_args["token"])
+        sanitized_args[TOKEN] = utilities.redacted_token(sanitized_args[TOKEN])
         if "tokenTarget" in sanitized_args:
             sanitized_args["tokenTarget"] = utilities.redacted_token(sanitized_args["tokenTarget"])
         log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
-    for argname in "projectKeys", "metricKeys", "resolutions", "severities", "types", "statuses":
+    for argname in MULTI_VALUED_OPTS:
         if argname in kwargs and kwargs[argname] is not None and len(kwargs[argname]) > 0:
             kwargs[argname] = utilities.csv_to_list(kwargs[argname])
-    if kwargs.get(LANGUAGE_OPT, None) not in (None, ""):
-        kwargs[LANGUAGE_OPT] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGE_OPT])]
-        kwargs[LANGUAGE_OPT] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in utilities.csv_to_list(kwargs[LANGUAGE_OPT])]
+    if kwargs.get(LANGUAGES, None) not in (None, ""):
+        kwargs[LANGUAGES] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
+        kwargs[LANGUAGES] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
 
     # Verify version randomly once every 10 runs
-    if not kwargs[OPT_SKIP_VERSION_CHECK] and random.randrange(10) == 0:
+    if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
         utilities.check_last_sonar_tools_version()
 
     if verify_token:
-        utilities.check_token(args.token, utilities.is_sonarcloud_url(kwargs[OPT_URL]))
+        utilities.check_token(args.token, utilities.is_sonarcloud_url(kwargs[URL]))
     return args
 
 
@@ -194,50 +226,50 @@ def set_common_args(desc: str) -> argparse.ArgumentParser:
     """Parses options common to all sonar-tools scripts"""
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument(
-        "-t",
-        "--token",
+        f"-{TOKEN_SHORT}",
+        f"--{TOKEN}",
         required=False,
         default=os.getenv("SONAR_TOKEN", None),
         help="""Token to authenticate to the source SonarQube, default is environment variable $SONAR_TOKEN
         - Unauthenticated usage is not possible""",
     )
     parser.add_argument(
-        "-u",
-        f"--{OPT_URL}",
+        f"-{URL_SHORT}",
+        f"--{URL}",
         required=False,
         default=os.getenv("SONAR_HOST_URL", "http://localhost:9000"),
         help="""Root URL of the source SonarQube or SonarCloud server,
         default is environment variable $SONAR_HOST_URL or http://localhost:9000 if not set""",
     )
     parser.add_argument(
-        "-o",
-        f"--{OPT_ORGANIZATION}",
+        f"-{ORG_SHORT}",
+        f"--{ORG}",
         required=False,
         help="SonarCloud organization when using sonar-tools with SonarCloud",
     )
     parser.add_argument(
-        "-v",
-        f"--{OPT_VERBOSE}",
+        f"-{VERBOSE_SHORT}",
+        f"--{VERBOSE}",
         required=False,
         choices=["WARN", "INFO", "DEBUG"],
         default="INFO",
         help="Logging verbosity level",
     )
     parser.add_argument(
-        "-c",
-        "--clientCert",
+        f"-{CERT_SHORT}",
+        f"--{CERT}",
         required=False,
         default=None,
         help="Optional client certificate file (as .pem file)",
     )
     parser.add_argument(
-        "--httpTimeout",
+        f"--{HTTP_TIMEOUT}",
         required=False,
         default=10,
         help="HTTP timeout for requests to SonarQube, 10s by default",
     )
     parser.add_argument(
-        f"--{OPT_SKIP_VERSION_CHECK}",
+        f"--{SKIP_VERSION_CHECK}",
         required=False,
         default=False,
         action="store_true",
@@ -256,8 +288,8 @@ def set_common_args(desc: str) -> argparse.ArgumentParser:
 def set_key_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Adds the cmd line parameter to select object keys"""
     parser.add_argument(
-        "-k",
-        "--projectKeys",
+        f"-{KEYS_SHORT}",
+        f"--{KEYS}",
         "--keys",
         "--projectKey",
         required=False,
@@ -268,7 +300,7 @@ def set_key_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
 
 def add_language_arg(parser: argparse.ArgumentParser, object_types: str) -> argparse.ArgumentParser:
     """Adds the language selection option"""
-    parser.add_argument(f"--{LANGUAGE_OPT}", required=False, help=f"Commas separated list of language to filter {object_types}")
+    parser.add_argument(f"--{LANGUAGES}", required=False, help=f"Commas separated list of language to filter {object_types}")
     return parser
 
 
@@ -294,8 +326,8 @@ def set_output_file_args(
 ) -> argparse.ArgumentParser:
     """Sets the output file CLI options"""
     parser.add_argument(
-        "-f",
-        "--file",
+        f"-{OUTPUTFILE_SHORT}",
+        f"--{OUTPUTFILE}",
         required=False,
         default=None,
         help="Output file for the report, stdout by default",

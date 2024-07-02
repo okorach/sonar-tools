@@ -29,9 +29,10 @@ import pytest
 import utilities as util
 from sonar import errcodes
 from cli import loc
+import cli.options as opt
 
 CMD = "sonar-loc.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.CSV_FILE]
 
 
 def test_no_log_file() -> None:
@@ -50,7 +51,7 @@ def test_custom_log_file() -> None:
     logfile = "sonar-loc-logging.log"
     util.clean(util.CSV_FILE, "sonar-tools.log", logfile)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-l", logfile]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.LOGFILE_SHORT}", logfile]):
             loc.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -65,6 +66,6 @@ def test_custom_log_file() -> None:
 def test_missing_log_filename() -> None:
     """Tests that correct error is raise when log file name is forgotten"""
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-l"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.LOGFILE_SHORT}"]):
             loc.main()
     assert int(str(e.value)) == errcodes.ARGS_ERROR

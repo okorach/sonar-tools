@@ -30,6 +30,7 @@ import pytest
 import utilities as util
 import sonar.logging as log
 from cli import findings_export
+import cli.options as opt
 from sonar import errcodes
 
 CMD = "sonar-findings-export.py"
@@ -49,30 +50,32 @@ if util.SQ.version() < (10, 2, 0):
     PROJECT_COL += 1
 
 __GOOD_OPTS = [
-    ["--format", "json", "-l", "sonar-tools.log", "-v", "DEBUG"],
-    ["--format", "json", "-f", util.JSON_FILE],
-    ["--withURL", "--threads", "4", "-f", util.CSV_FILE],
-    ["--csvSeparator", "';'", "-d", "--tags", "cwe,convention", "-f", util.CSV_FILE],
-    ["--statuses", "OPEN,CLOSED", "-f", util.CSV_FILE],
-    ["--createdBefore", "2024-05-01", "-f", util.JSON_FILE],
-    ["--createdAfter", "2023-05-01", "-f", util.CSV_FILE],
-    ["--resolutions", "FALSE-POSITIVE,REMOVED", "-f", util.CSV_FILE],
-    ["--types", "BUG,VULNERABILITY", "-f", util.CSV_FILE],
-    ["--statuses", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL", "-f", util.CSV_FILE],
-    ["-k", "okorach_sonar-tools", "-b", "*", "-f", util.CSV_FILE],
-    ["-k", "training:security", "-b", "main", "-f", util.CSV_FILE],
+    [f"--{opt.FORMAT}", "json", "-l", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
+    [f"--{opt.FORMAT}", "json", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE],
+    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "4", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
+    [f"--{opt.CSV_SEPARATOR}", ";", "-d", "--tags", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
+    ["--createdBefore", "2024-05-01", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE],
+    ["--createdAfter", "2023-05-01", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
+    [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,REMOVED", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.TYPES}", "BUG,VULNERABILITY", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
+    [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
     ["--useFindings", "-f", util.CSV_FILE],
+    [f"--{opt.CSV_SEPARATOR}", "';'", "-d", "--tags", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
 ]
 
 __WRONG_FILTER_OPTS = [
-    ["--statuses", "OPEN,NOT_OPEN"],
-    ["--resolutions", "ACCEPTED,SAFE,DO_FIX,WONTFIX"],
-    ["--types", "BUG,VULN"],
+    [f"--{opt.STATUSES}", "OPEN,NOT_OPEN"],
+    [f"--{opt.RESOLUTIONS}", "ACCEPTED,SAFE,DO_FIX,WONTFIX"],
+    [f"--{opt.TYPES}", "BUG,VULN"],
+    [f"--{opt.SEVERITIES}", "HIGH,SUPER_HIGH"],
 ]
 
 
 __WRONG_OPTS = [
-    ["-k", "non-existing-project-key"],
+    [f"-{opt.KEYS_SHORT}", "non-existing-project-key"],
 ]
 
 
@@ -80,7 +83,7 @@ def test_findings_export_sarif_explicit() -> None:
     """Test SARIF export"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--format", "sarif"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "sarif"]):
             findings_export.main()
     assert int(str(e.value)) == 0
     assert util.file_contains(util.JSON_FILE, "schemas/json/sarif-2.1.0-rtm.4")
@@ -91,7 +94,7 @@ def test_findings_export_sarif_implicit() -> None:
     """Test SARIF export for a single project and implicit format"""
     util.clean("issues.sarif")
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["-k", "okorach_sonar-tools", "-f", "issues.sarif"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.OUTPUTFILE_SHORT}", "issues.sarif"]):
             findings_export.main()
     assert int(str(e.value)) == 0
     assert util.file_contains("issues.sarif", "schemas/json/sarif-2.1.0-rtm.4")
@@ -126,7 +129,7 @@ def test_findings_export_non_existing_branch() -> None:
     """test_findings_export_non_existing_branch"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["-k", "training:security", "-b", "non-existing-branch"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "training:security", f"-{opt.BRANCH_SHORT}", "non-existing-branch"]):
             findings_export.main()
 
 
@@ -153,7 +156,7 @@ def test_findings_filter_on_type() -> None:
     """test_findings_filter_on_type"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--types", "VULNERABILITY,BUG"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.TYPES}", "VULNERABILITY,BUG"]):
             findings_export.main()
 
     first = True
@@ -173,7 +176,7 @@ def test_findings_filter_on_resolution() -> None:
     """test_findings_filter_on_resolution"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "FALSE-POSITIVE,ACCEPTED,SAFE"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,ACCEPTED,SAFE"]):
             findings_export.main()
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
@@ -189,7 +192,7 @@ def test_findings_filter_on_severity() -> None:
     """test_findings_filter_on_resolution"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--severities", "CRITICAL,MAJOR"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.SEVERITIES}", "CRITICAL,MAJOR"]):
             findings_export.main()
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
@@ -208,7 +211,7 @@ def test_findings_filter_on_multiple_criteria() -> None:
     """test_findings_filter_on_multiple_criteria"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "FALSE-POSITIVE,ACCEPTED", "--types", "BUG,CODE_SMELL"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,ACCEPTED", f"--{opt.TYPES}", "BUG,CODE_SMELL"]):
             findings_export.main()
 
     first = True
@@ -229,7 +232,9 @@ def test_findings_filter_on_multiple_criteria_2() -> None:
     """test_findings_filter_on_multiple_criteria_2"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--createdAfter", "2020-01-10", "--createdBefore", "2020-12-31", "--types", "SECURITY_HOTSPOT"]):
+        with patch.object(
+            sys, "argv", CSV_OPTS + ["--createdAfter", "2020-01-10", "--createdBefore", "2020-12-31", f"--{opt.TYPES}", "SECURITY_HOTSPOT"]
+        ):
             findings_export.main()
 
     first = True
@@ -255,7 +260,7 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
     """test_findings_filter_on_multiple_criteria_3"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--statuses", "ACCEPTED", "--resolutions", "FALSE-POSITIVE"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.STATUSES}", "ACCEPTED", f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE"]):
             findings_export.main()
 
     first = True
@@ -272,7 +277,9 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
     """test_findings_filter_on_hotspots_multi_1"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--resolutions", "ACKNOWLEDGED, SAFE", "-k", "okorach_sonar-tools,pytorch"]):
+        with patch.object(
+            sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "ACKNOWLEDGED, SAFE", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,pytorch"]
+        ):
             findings_export.main()
 
     first = True

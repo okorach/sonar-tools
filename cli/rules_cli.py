@@ -49,8 +49,8 @@ def main() -> int:
     fmt = util.deduct_format(kwargs["format"], file)
 
     params = {}
-    if options.LANGUAGE_OPT in kwargs:
-        params = {"languages": util.list_to_csv(kwargs[options.LANGUAGE_OPT])}
+    if options.LANGUAGES in kwargs:
+        params = {"languages": util.list_to_csv(kwargs[options.LANGUAGES])}
     rule_list = rules.get_list(endpoint=endpoint, **params)
 
     with util.open_file(file) as fd:

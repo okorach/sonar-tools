@@ -61,7 +61,7 @@ def parse_args(desc):
     parser = options.set_output_file_args(parser, sarif_fmt=True)
     parser = options.add_thread_arg(parser, "findings search")
     parser.add_argument(
-        "-b",
+        f"-{options.WITH_BRANCHES_SHORT}",
         "--branches",
         required=False,
         default=None,
@@ -251,19 +251,19 @@ def __get_list(project: object, list_str: str, list_type: str) -> list[str]:
 
 
 def __verify_inputs(params):
-    diff = util.difference(util.csv_to_list(params.get("resolutions", None)), issues.RESOLUTIONS + hotspots.RESOLUTIONS)
+    diff = util.difference(util.csv_to_list(params.get(options.RESOLUTIONS, None)), issues.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
         util.exit_fatal(f"Resolutions {str(diff)} are not legit resolutions", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get("statuses", None)), issues.STATUSES + hotspots.STATUSES)
+    diff = util.difference(util.csv_to_list(params.get(options.STATUSES, None)), issues.STATUSES + hotspots.STATUSES)
     if diff:
         util.exit_fatal(f"Statuses {str(diff)} are not legit statuses", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get("severities", None)), issues.SEVERITIES + hotspots.SEVERITIES)
+    diff = util.difference(util.csv_to_list(params.get(options.SEVERITIES, None)), issues.SEVERITIES + hotspots.SEVERITIES)
     if diff:
         util.exit_fatal(f"Severities {str(diff)} are not legit severities", errcodes.WRONG_SEARCH_CRITERIA)
 
-    diff = util.difference(util.csv_to_list(params.get("types", None)), issues.TYPES + hotspots.TYPES)
+    diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), issues.TYPES + hotspots.TYPES)
     if diff:
         util.exit_fatal(f"Types {str(diff)} are not legit types", errcodes.WRONG_SEARCH_CRITERIA)
 
@@ -274,20 +274,20 @@ def __get_project_findings(queue, write_queue):
     while not queue.empty():
         (key, endpoint, params) = queue.get()
         search_findings = params["useFindings"]
-        status_list = util.csv_to_list(params.get("statuses", None))
+        status_list = util.csv_to_list(params.get(options.STATUSES, None))
         i_statuses = util.intersection(status_list, issues.STATUSES)
         h_statuses = util.intersection(status_list, hotspots.STATUSES)
-        resol_list = util.csv_to_list(params.get("resolutions", None))
+        resol_list = util.csv_to_list(params.get(options.RESOLUTIONS, None))
         i_resols = util.intersection(resol_list, issues.RESOLUTIONS)
         h_resols = util.intersection(resol_list, hotspots.RESOLUTIONS)
-        type_list = util.csv_to_list(params.get("types", None))
+        type_list = util.csv_to_list(params.get(options.TYPES, None))
         i_types = util.intersection(type_list, issues.TYPES)
         h_types = util.intersection(type_list, hotspots.TYPES)
-        sev_list = util.csv_to_list(params.get("severities", None))
+        sev_list = util.csv_to_list(params.get(options.SEVERITIES, None))
         i_sevs = util.intersection(sev_list, issues.SEVERITIES)
         h_sevs = util.intersection(sev_list, hotspots.SEVERITIES)
 
-        if status_list or resol_list or type_list or sev_list or options.LANGUAGE_OPT in params:
+        if status_list or resol_list or type_list or sev_list or options.LANGUAGES in params:
             search_findings = False
 
         log.debug("WriteQueue %s task %s put", str(write_queue), key)
