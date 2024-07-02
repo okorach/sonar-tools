@@ -19,19 +19,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 """
-    This script exports findings as CSV or JSON
+    This script exports findings as CSV, JSON, or SARIF
 
     Usage: sonar-findings-export.py -t <SQ_TOKEN> -u <SQ_URL> [<filters>]
 
-    Filters can be:
-    [-k <projectKey>]
-    [-s <statuses>] (FIXED, CLOSED, REOPENED, REVIEWED)
-    [-r <resolutions>] (UNRESOLVED, FALSE-POSITIVE, WONTFIX)
-    [-a <createdAfter>] findings created on or after a given date (YYYY-MM-DD)
-    [-b <createdBefore>] findings created before or on a given date (YYYY-MM-DD)
-    [--severities <severities>] Comma separated desired severities: BLOCKER, CRITICAL, MAJOR, MINOR, INFO
-    [--types <types>] Comma separated findings types (VULNERABILITY,BUG,CODE_SMELL,SECURITY_HOTSPOT)
-    [--tags]
 """
 
 import sys
@@ -76,53 +67,55 @@ def parse_args(desc):
     parser = options.set_output_file_args(parser, sarif_fmt=True)
     parser = options.add_thread_arg(parser, "findings search")
     parser.add_argument(
-        f"-{options.WITH_BRANCHES_SHORT}",
-        "--branches",
+        f"-{options.BRANCHES_SHORT}",
+        f"--{options.BRANCHES}",
         required=False,
         default=None,
         help="Comma separated list of branches to export. Use * to export findings from all branches. "
         "If not specified, only findings of the main branch will be exported",
     )
     parser.add_argument(
-        "-p",
-        "--pullRequests",
+        f"-{options.PULL_REQUESTS_SHORT}",
+        f"--{options.PULL_REQUESTS}",
         required=False,
         default=None,
-        help="Comma separated list of pull request. Use * to export findings from all PRs. "
+        help="Comma separated list of pull requests to export. Use * to export findings from all PRs. "
         "If not specified, only findings of the main branch will be exported",
     )
     parser.add_argument(
-        "--statuses",
+        f"--{options.STATUSES}",
         required=False,
         help="comma separated status among " + util.list_to_csv(issues.STATUSES + hotspots.STATUSES),
     )
     parser.add_argument(
-        "--createdAfter",
+        f"--{options.DATE_AFTER}",
         required=False,
         help="findings created on or after a given date (YYYY-MM-DD)",
     )
     parser.add_argument(
-        "--createdBefore",
+        f"--{options.DATE_BEFORE}",
         required=False,
         help="findings created on or before a given date (YYYY-MM-DD)",
     )
     parser.add_argument(
-        "--resolutions",
+        f"--{options.RESOLUTIONS}",
         required=False,
         help="Comma separated resolution of the findings among " + util.list_to_csv(issues.RESOLUTIONS + hotspots.RESOLUTIONS),
     )
     parser.add_argument(
-        "--severities",
+        f"--{options.SEVERITIES}",
         required=False,
         help="Comma separated severities among" + util.list_to_csv(issues.SEVERITIES + hotspots.SEVERITIES),
     )
     parser.add_argument(
-        "--types",
+        f"--{options.TYPES}",
         required=False,
         help="Comma separated types among " + util.list_to_csv(issues.TYPES + hotspots.TYPES),
     )
-    parser.add_argument("--tags", help="Comma separated findings tags", required=False)
-    parser.add_argument("--useFindings", required=False, default=False, action="store_true", help="Use export_findings() whenever possible")
+    parser.add_argument(f"--{options.TAGS}", help="Comma separated findings tags", required=False)
+    parser.add_argument(
+        f"--{options.USE_FINDINGS}", required=False, default=False, action="store_true", help="Use export_findings() whenever possible"
+    )
     parser.add_argument(
         "--sarifNoCustomProperties",
         required=False,
@@ -153,6 +146,7 @@ def __write_header(file: str, format: str, **kwargs) -> None:
 
 
 def __write_footer(file: str, format: str) -> None:
+    """Writes the closing characters of export file depending on export format"""
     if format in ("json", "sarif"):
         closing_sequence = "\n]\n}\n]\n}" if format == "sarif" else "\n]"
         with util.open_file(file, mode="a") as f:
@@ -278,7 +272,7 @@ def __verify_inputs(params):
 def __get_project_findings(queue, write_queue):
     while not queue.empty():
         (key, endpoint, params) = queue.get()
-        search_findings = params["useFindings"]
+        search_findings = params[options.USE_FINDINGS]
         status_list = util.csv_to_list(params.get(options.STATUSES, None))
         i_statuses = util.intersection(status_list, issues.STATUSES)
         h_statuses = util.intersection(status_list, hotspots.STATUSES)
@@ -307,7 +301,12 @@ def __get_project_findings(queue, write_queue):
             write_queue.put([findings_list, False])
         else:
             new_params = params.copy()
-            new_params.update({"branch": params.get("branch", None), "pullRequest": params.get("pullRequest", None)})
+            new_params.update(
+                {
+                    "branch": util.list_to_csv(params.get(options.BRANCHES, None)),
+                    "pullRequest": util.csv_to_list(params.get(options.PULL_REQUESTS, None)),
+                }
+            )
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 try:
@@ -348,8 +347,8 @@ def store_findings(
     write_queue = Queue(maxsize=0)
     for key, project in project_list.items():
         try:
-            branches = __get_list(project, params.pop("branches", None), "branch")
-            prs = __get_list(project, params.pop("pullRequests", None), "pullrequest")
+            branches = __get_list(project, params.pop(options.BRANCHES, None), "branch")
+            prs = __get_list(project, params.pop(options.PULL_REQUESTS, None), "pullrequest")
             for b in branches:
                 params["branch"] = b
                 log.debug("Queue %s task %s put", str(my_queue), key)
@@ -398,15 +397,24 @@ def main():
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
 
-    if util.is_sonarcloud_url(params["url"]) and params["useFindings"]:
-        log.warning("--useFindings option is not available with SonarCloud, disabling the option to proceed")
-        params["useFindings"] = False
+    if util.is_sonarcloud_url(params[options.URL]) and params[options.USE_FINDINGS]:
+        log.warning("--%s option is not available with SonarCloud, disabling the option to proceed", options.USE_FINDINGS)
+        params[options.USE_FINDINGS] = False
 
-    for p in (options.STATUSES, "createdAfter", "createdBefore", options.RESOLUTIONS, options.SEVERITIES, options.TYPES, "tags", options.LANGUAGES):
+    for p in (
+        options.STATUSES,
+        options.DATE_AFTER,
+        options.DATE_BEFORE,
+        options.RESOLUTIONS,
+        options.SEVERITIES,
+        options.TYPES,
+        options.TAGS,
+        options.LANGUAGES,
+    ):
         if params.get(p, None) is not None:
-            if params["useFindings"]:
-                log.warning("Selected search criteria %s will disable --useFindings", params[p])
-            params["useFindings"] = False
+            if params[options.USE_FINDINGS]:
+                log.warning("Selected search criteria %s will disable --%s", params[p], options.USE_FINDINGS)
+            params[options.USE_FINDINGS] = False
             break
     try:
         project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
