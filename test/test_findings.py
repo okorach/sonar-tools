@@ -63,7 +63,6 @@ __GOOD_OPTS = [
     [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
     [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
     ["--useFindings", "-f", util.CSV_FILE],
-    [f"--{opt.CSV_SEPARATOR}", "';'", "-d", "--tags", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
 ]
 
 __WRONG_FILTER_OPTS = [
@@ -71,6 +70,7 @@ __WRONG_FILTER_OPTS = [
     [f"--{opt.RESOLUTIONS}", "ACCEPTED,SAFE,DO_FIX,WONTFIX"],
     [f"--{opt.TYPES}", "BUG,VULN"],
     [f"--{opt.SEVERITIES}", "HIGH,SUPER_HIGH"],
+    [f"--{opt.CSV_SEPARATOR}", "';'", "-d", "--tags", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
 ]
 
 

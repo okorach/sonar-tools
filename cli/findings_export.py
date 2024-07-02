@@ -37,6 +37,7 @@
 import sys
 import os
 import time
+import csv
 from queue import Queue
 import threading
 from threading import Thread
@@ -51,8 +52,22 @@ WRITE_END = object()
 TOTAL_FINDINGS = 0
 IS_FIRST = True
 TOTAL_SEM = threading.Semaphore()
-FIRST_SEM = threading.Semaphore()
+WRITE_SEM = threading.Semaphore()
 DATES_WITHOUT_TIME = False
+
+SARIF_HEADER = """{
+   "version": "2.1.0",
+   "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json",
+   "runs": [
+       {
+          "tool": {
+            "driver": {
+                "name": "SonarQube",
+                "informationUri": "https://www.sonarsource.com/products/sonarqube/"
+            }
+          },
+          "results": [
+"""
 
 
 def parse_args(desc):
@@ -122,43 +137,26 @@ def parse_args(desc):
     return args
 
 
-def __write_header(file, format):
-    log.info("Dumping report to %s", f"file '{file}'" if file else "stdout")
-    with util.open_file(file) as f:
-        if format == "json":
-            print("[", file=f)
-        elif format == "sarif":
-            print(
-                """{
-   "version": "2.1.0",
-   "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json",
-   "runs": [
-       {
-          "tool": {
-            "driver": {
-                "name": "SonarQube",
-                "informationUri": "https://www.sonarsource.com/products/sonarqube/"
-            }
-          },
-          "results": [
-""",
-                file=f,
-            )
+def __write_header(file: str, format: str, **kwargs) -> None:
+    """Writes the file header"""
+    with util.open_file(file, mode="a") as fd:
+        if format == "sarif":
+            print(SARIF_HEADER, file=fd)
+        elif format == "json":
+            print("[\n", file=fd)
         else:
-            print(findings.to_csv_header(), file=f)
+            csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+            row = findings.to_csv_header()
+            if kwargs[options.WITH_URL]:
+                row.append("URL")
+            csvwriter.writerow(row)
 
 
-def __write_footer(file, format):
-    if format == "csv":
-        return
-    closing_sequence = ""
-    if format == "sarif":
-        closing_sequence = "\n]\n}\n]\n}"
-    elif format == "json":
-        closing_sequence = "\n]"
-    # Add closing sequence
-    with util.open_file(file, mode="a") as f:
-        print(f"{closing_sequence}", file=f)
+def __write_footer(file: str, format: str) -> None:
+    if format in ("json", "sarif"):
+        closing_sequence = "\n]\n}\n]\n}" if format == "sarif" else "\n]"
+        with util.open_file(file, mode="a") as f:
+            print(f"{closing_sequence}", file=f)
 
 
 def __dump_findings(findings_list: list[findings.Finding], file: str, file_format: str, **kwargs) -> None:
@@ -172,29 +170,41 @@ def __dump_findings(findings_list: list[findings.Finding], file: str, file_forma
     :type file_format: str
     :return: Nothing
     """
+    log.info("Writing %d more findings to %s in format %s", len(findings_list), f"file '{file}'" if file else "stdout", file_format)
+    if file_format in ("json", "sarif"):
+        __write_json_findings(file=file, findings_list=findings_list, file_format=file_format, **kwargs)
+    else:
+        __write_csv_findings(file=file, findings_list=findings_list, **kwargs)
+    log.debug("File written")
+
+
+def __write_json_findings(file: str, findings_list: list[findings.Finding], file_format: str, **kwargs) -> None:
+    """Appends a list of findings in JSON or SARIF format in a file"""
     i = len(findings_list)
-    log.info("Writing %d more findings to %s in format %s", i, f"file '{file}'" if file else "stdout", file_format)
-    with util.open_file(file, mode="a") as f:
-        url = ""
-        sep = kwargs.get(options.CSV_SEPARATOR, ",")
-        comma = ","
+    comma = ","
+    with util.open_file(file, mode="a") as fd:
         for finding in findings_list.values():
             i -= 1
             if i == 0:
                 comma = ""
             if file_format == "json":
-                finding_json = finding.to_json(DATES_WITHOUT_TIME)
-                if not kwargs[options.WITH_URL]:
-                    finding_json.pop("url", None)
-                print(f"{util.json_dump(finding_json, indent=1)}{comma}\n", file=f, end="")
-            elif file_format == "sarif":
-                finding_sarif = finding.to_sarif(kwargs.get("full", True))
-                print(f"{util.json_dump(finding_sarif, indent=1)}{comma}\n", file=f, end="")
+                json_data = finding.to_sarif(kwargs.get("full", True))
             else:
-                if kwargs[options.WITH_URL]:
-                    url = f'{sep}"{finding.url()}"'
-                print(f"{finding.to_csv(sep, DATES_WITHOUT_TIME)}{url}", file=f)
-    log.debug("File written")
+                json_data = finding.to_json(DATES_WITHOUT_TIME)
+            if not kwargs[options.WITH_URL]:
+                json_data.pop("url", None)
+            print(f"{util.json_dump(json_data, indent=1)}{comma}\n", file=fd, end="")
+
+
+def __write_csv_findings(file: str, findings_list: list[findings.Finding], **kwargs) -> None:
+    """Appends a list of findings in a CSV file"""
+    with util.open_file(file, mode="a") as fd:
+        csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        for finding in findings_list.values():
+            row = finding.to_csv()
+            if kwargs[options.WITH_URL]:
+                row.append(finding.url())
+            csvwriter.writerow(row)
 
 
 def __write_findings(
@@ -217,24 +227,17 @@ def __write_findings(
             queue.task_done()
             continue
 
-        if file_format in (None, "csv"):
-            __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator, full=sarif_full_export)
-            queue.task_done()
-            with TOTAL_SEM:
-                TOTAL_FINDINGS += len(data)
-            continue
-
-        with FIRST_SEM:
-            if not IS_FIRST:
+        if file_format in ("sarif", "json") and not IS_FIRST:
+            with WRITE_SEM:
                 with util.open_file(file_to_write, mode="a") as f:
                     print(",", file=f)
-            IS_FIRST = False
-
+        IS_FIRST = False
+        with WRITE_SEM:
+            __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator, full=sarif_full_export)
         with TOTAL_SEM:
             TOTAL_FINDINGS += len(data)
-
-        __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator, full=sarif_full_export)
         queue.task_done()
+
     log.debug("End of write findings")
 
 
@@ -266,6 +269,8 @@ def __verify_inputs(params):
     diff = util.difference(util.csv_to_list(params.get(options.TYPES, None)), issues.TYPES + hotspots.TYPES)
     if diff:
         util.exit_fatal(f"Types {str(diff)} are not legit types", errcodes.WRONG_SEARCH_CRITERIA)
+    if len(params[options.CSV_SEPARATOR]) > 1:
+        util.exit_fatal(f"CSV separator must be a single character, {params[options.CSV_SEPARATOR]} is not legit", errcodes.WRONG_SEARCH_CRITERIA)
 
     return True
 
@@ -389,7 +394,7 @@ def main():
     kwargs = util.convert_args(parse_args("Sonar findings export"))
     sqenv = platform.Platform(**kwargs)
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
-    del kwargs["token"]
+    del kwargs[options.TOKEN]
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
 
@@ -397,24 +402,24 @@ def main():
         log.warning("--useFindings option is not available with SonarCloud, disabling the option to proceed")
         params["useFindings"] = False
 
-    for p in ("statuses", "createdAfter", "createdBefore", "resolutions", "severities", "types", "tags", "languages"):
+    for p in (options.STATUSES, "createdAfter", "createdBefore", options.RESOLUTIONS, options.SEVERITIES, options.TYPES, "tags", options.LANGUAGES):
         if params.get(p, None) is not None:
             if params["useFindings"]:
                 log.warning("Selected search criteria %s will disable --useFindings", params[p])
             params["useFindings"] = False
             break
     try:
-        project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get("projectKeys", None))
+        project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
-    fmt, fname = kwargs.pop("format", None), kwargs.pop("file", None)
+    fmt, fname = kwargs.pop(options.FORMAT, None), kwargs.pop(options.OUTPUTFILE, None)
     fmt = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
     log.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
-    __write_header(fname, fmt)
+    __write_header(fname, fmt, **kwargs)
     store_findings(
         project_list,
         params=params,
