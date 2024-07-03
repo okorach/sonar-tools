@@ -839,10 +839,13 @@ def pre_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, 
         if "types" in filters:
             __MAP = {"BUG": "RELIABILITY", "CODE_SMELL": "MAINTAINABILITY", "VULNERABILITY": "SECURITY", "SECURITY_HOTSPOT": "SECURITY"}
             filters["impactSoftwareQualities"] = [__MAP[t] for t in filters.pop("types")]
+            if len(filters["impactSoftwareQualities"]) == 0:
+                filters.pop("impactSoftwareQualities")
         if "severities" in filters:
             __MAP = {"BLOCKER": "HIGH", "CRITICAL": "HIGH", "MAJOR": "MEDIUM", "MINOR": "LOW", "INFO": "LOW"}
-            filters["impactSoftwareQualities"] = [__MAP[t] for t in filters.pop("severities")]
-
+            filters["impactSeverities"] = [__MAP[t] for t in filters.pop("severities")]
+            if len(filters["impactSeverities"]) == 0:
+                filters.pop("impactSeverities")
     for k, v in FILTERS_MAP.items():
         if k in filters:
             filters[k] = util.allowed_values_string(filters[k], v)
