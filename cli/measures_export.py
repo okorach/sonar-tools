@@ -274,14 +274,14 @@ def main():
     endpoint = platform.Platform(**kwargs)
 
     wanted_metrics = __get_wanted_metrics(kwargs, endpoint)
-    file = kwargs.pop("file")
-    fmt = util.deduct_format(kwargs["format"], file)
+    file = kwargs.pop(options.OUTPUTFILE)
+    fmt = util.deduct_format(kwargs[options.FORMAT], file)
     if endpoint.edition() == "community":
         kwargs[options.WITH_BRANCHES] = False
     kwargs[options.WITH_NAME] = True
 
     try:
-        project_list = projects.get_list(endpoint=endpoint, key_list=kwargs["projectKeys"])
+        project_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     obj_list = []

@@ -389,11 +389,11 @@ def main():
     kwargs = util.convert_args(parse_args("Sonar findings export"))
     sqenv = platform.Platform(**kwargs)
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
-    del kwargs["token"]
+    del kwargs[options.TOKEN]
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
 
-    if util.is_sonarcloud_url(params["url"]) and params["useFindings"]:
+    if util.is_sonarcloud_url(params[options.URL]) and params["useFindings"]:
         log.warning("--useFindings option is not available with SonarCloud, disabling the option to proceed")
         params["useFindings"] = False
 
@@ -404,11 +404,11 @@ def main():
             params["useFindings"] = False
             break
     try:
-        project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get("projectKeys", None))
+        project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
-    fmt, fname = kwargs.pop("format", None), kwargs.pop("file", None)
+    fmt, fname = kwargs.pop(options.FORMAT, None), kwargs.pop(options.OUTPUTFILE, None)
     fmt = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
     if fname is not None and os.path.exists(fname):
         os.remove(fname)

@@ -114,6 +114,7 @@ LANGUAGE_MAPPING = {
 
 WITH_HISTORY = "history"
 
+WHAT = "what"
 WHAT_SETTINGS = "settings"
 WHAT_USERS = "users"
 WHAT_GROUPS = "groups"
@@ -202,6 +203,17 @@ def add_url_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         default=False,
         action="store_true",
         help="Also list the URL of the objects",
+    )
+    return parser
+
+
+def add_what_arg(parser: argparse.ArgumentParser, allowed_list: tuple[str], default_value: str) -> argparse.ArgumentParser:
+    """Adds the option to export URL of objects"""
+    parser.add_argument(
+        f"--{WHAT}",
+        required=False,
+        default=default_value,
+        help=f"List of things to process among {','.join(allowed_list)}",
     )
     return parser
 

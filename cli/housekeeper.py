@@ -208,7 +208,7 @@ def main():
     mode, proj_age, branch_age, pr_age, token_age = kwargs["mode"], kwargs["projects"], kwargs["branches"], kwargs["pullrequests"], kwargs["tokens"]
     problems = []
     if proj_age > 0 or branch_age > 0 or pr_age > 0:
-        problems = get_project_problems(proj_age, branch_age, pr_age, kwargs["threads"], sq)
+        problems = get_project_problems(proj_age, branch_age, pr_age, kwargs[options.NBR_THREADS], sq)
 
     if token_age:
         problems += get_user_problems(token_age, sq)
