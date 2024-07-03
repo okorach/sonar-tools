@@ -45,8 +45,8 @@ def main() -> int:
     start_time = util.start_clock()
     kwargs = util.convert_args(__parse_args("Extract rules"))
     endpoint = platform.Platform(**kwargs)
-    file = kwargs["file"]
-    fmt = util.deduct_format(kwargs["format"], file)
+    file = kwargs[options.OUTPUTFILE]
+    fmt = util.deduct_format(kwargs[options.FORMAT], file)
 
     params = {}
     if options.LANGUAGES in kwargs:
@@ -57,7 +57,7 @@ def main() -> int:
         if fmt == "json":
             print("[", end="", file=fd)
         elif fmt == "csv":
-            csvwriter = csv.writer(fd, delimiter=kwargs["csvSeparator"], quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR], quotechar='"', quoting=csv.QUOTE_MINIMAL)
         is_first = True
         for rule in rule_list.values():
             if fmt == "csv":

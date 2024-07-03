@@ -52,11 +52,13 @@ def main():
         )
 
     try:
-        dump = projects.export_zip(endpoint=sq, key_list=kwargs["projectKeys"], export_timeout=kwargs["exportTimeout"], threads=kwargs["threads"])
+        dump = projects.export_zip(
+            endpoint=sq, key_list=kwargs[options.KEYS], export_timeout=kwargs["exportTimeout"], threads=kwargs[options.NBR_THREADS]
+        )
     except exceptions.ObjectNotFound:
         sys.exit(errcodes.NO_SUCH_KEY)
 
-    with utilities.open_file(kwargs["file"]) as fd:
+    with utilities.open_file(kwargs[options.OUTPUTFILE]) as fd:
         print(utilities.json_dump(dump), file=fd)
 
     utilities.stop_clock(start_time)

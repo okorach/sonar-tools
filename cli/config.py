@@ -116,13 +116,13 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         "INLINE_LISTS": not kwargs["dontInlineLists"],
         "EXPORT_DEFAULTS": kwargs["exportDefaults"],
         "FULL_EXPORT": kwargs["fullExport"],
-        "THREADS": kwargs["threads"],
+        "THREADS": kwargs[options.NBR_THREADS],
     }
     if "projects" in what:
-        __check_projects_existence(endpoint, kwargs["projectKeys"])
+        __check_projects_existence(endpoint, kwargs[options.KEYS])
 
-    log.info("Exporting configuration from %s", kwargs["url"])
-    key_list = kwargs["projectKeys"]
+    log.info("Exporting configuration from %s", kwargs[options.URL])
+    key_list = kwargs[options.KEYS]
     sq_settings = {}
     sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
     if options.WHAT_SETTINGS in what:
@@ -163,8 +163,8 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
 def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Imports a platform configuration from a JSON file"""
-    log.info("Importing configuration to %s", kwargs["url"])
-    key_list = kwargs["projectKeys"]
+    log.info("Importing configuration to %s", kwargs[options.URL])
+    key_list = kwargs[options.KEYS]
     data = utilities.load_json_file(kwargs["file"])
     if options.WHAT_GROUPS in what:
         groups.import_config(endpoint, data)
@@ -186,7 +186,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         applications.import_config(endpoint, data, key_list=key_list)
     if options.WHAT_PORTFOLIOS in what:
         portfolios.import_config(endpoint, data, key_list=key_list)
-    log.info("Importing configuration to %s completed", kwargs["url"])
+    log.info("Importing configuration to %s completed", kwargs[options.URL])
 
 
 def main():
@@ -196,7 +196,7 @@ def main():
         utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
     endpoint = platform.Platform(**kwargs)
-    what = utilities.check_what(kwargs.pop("what", None), _EVERYTHING, "exported or imported")
+    what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
     if kwargs["export"]:
         try:
             __export_config(endpoint, what, **kwargs)

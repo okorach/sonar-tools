@@ -392,6 +392,7 @@ def main():
     sqenv = platform.Platform(**kwargs)
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     del kwargs[options.TOKEN]
+    del kwargs[options.TOKEN]
     params = util.remove_nones(kwargs.copy())
     __verify_inputs(params)
 

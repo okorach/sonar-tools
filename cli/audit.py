@@ -113,7 +113,7 @@ def main():
     sq = platform.Platform(**kwargs)
 
     settings = config.load("sonar-audit")
-    settings["threads"] = kwargs["threads"]
+    settings["threads"] = kwargs[options.NBR_THREADS]
     if kwargs.get("config", False):
         config.configure()
         sys.exit(0)
@@ -132,19 +132,19 @@ def main():
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
     else:
         server_id = sq.server_id()
-        util.check_token(kwargs["token"])
-        key_list = kwargs["projectKeys"]
-        if key_list is not None and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs["what"]):
+        util.check_token(kwargs[options.TOKEN])
+        key_list = kwargs[options.KEYS]
+        if key_list is not None and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs[options.WHAT]):
             for key in key_list:
                 if not projects.exists(key, sq):
                     util.exit_fatal(f"Project key '{key}' does not exist", errcodes.NO_SUCH_KEY)
         try:
-            problems = _audit_sq(sq, settings, what_to_audit=util.check_what(kwargs["what"], _ALL_AUDITABLE, "audited"), key_list=key_list)
+            problems = _audit_sq(sq, settings, what_to_audit=util.check_what(kwargs[options.WHAT], _ALL_AUDITABLE, "audited"), key_list=key_list)
         except exceptions.ObjectNotFound as e:
             util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
-    ofile = kwargs.pop("file")
-    problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs["format"], ofile))
+    ofile = kwargs.pop(options.OUTPUTFILE)
+    problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs[options.FORMAT], ofile))
 
     log.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
     if problems:
