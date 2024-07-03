@@ -104,8 +104,8 @@ def __parse_args(desc):
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser)
     parser.add_argument(
-        "-m",
-        "--metricKeys",
+        f"-{options.METRIC_KEYS_SHORT}",
+        f"--{options.METRIC_KEYS}",
         required=False,
         default="_main",
         help="Comma separated list of metrics or _all or _main",
@@ -281,7 +281,7 @@ def main():
     kwargs[options.WITH_NAME] = True
 
     try:
-        project_list = projects.get_list(endpoint=endpoint, key_list=kwargs["projectKeys"])
+        project_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     obj_list = []
