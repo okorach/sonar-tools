@@ -123,7 +123,7 @@ def _parse_arguments():
     )
     parser.add_argument(
         "-P",
-        "--projects",
+        "--projectsMaxAge",
         required=False,
         type=int,
         default=_DEFAULT_PROJECT_OBSOLESCENCE,
@@ -131,7 +131,7 @@ def _parse_arguments():
     )
     parser.add_argument(
         "-B",
-        "--branches",
+        "--branchesMaxAge",
         required=False,
         type=int,
         default=_DEFAULT_BRANCH_OBSOLESCENCE,
@@ -139,7 +139,7 @@ def _parse_arguments():
     )
     parser.add_argument(
         "-R",
-        "--pullrequests",
+        "--pullrequestsMaxAge",
         required=False,
         type=int,
         default=_DEFAULT_BRANCH_OBSOLESCENCE,
@@ -147,7 +147,7 @@ def _parse_arguments():
     )
     parser.add_argument(
         "-T",
-        "--tokens",
+        "--tokensMaxAge",
         required=False,
         type=int,
         default=_DEFAULT_TOKEN_OBSOLESCENCE,
@@ -205,10 +205,16 @@ def main():
     start_time = util.start_clock()
     kwargs = util.convert_args(_parse_arguments())
     sq = platform.Platform(**kwargs)
-    mode, proj_age, branch_age, pr_age, token_age = kwargs["mode"], kwargs["projects"], kwargs["branches"], kwargs["pullrequests"], kwargs["tokens"]
+    mode, proj_age, branch_age, pr_age, token_age = (
+        kwargs["mode"],
+        kwargs["projectsMaxAge"],
+        kwargs["branchesMaxAge"],
+        kwargs["pullrequestsMaxAge"],
+        kwargs["tokensMaxAge"],
+    )
     problems = []
     if proj_age > 0 or branch_age > 0 or pr_age > 0:
-        problems = get_project_problems(proj_age, branch_age, pr_age, kwargs["threads"], sq)
+        problems = get_project_problems(proj_age, branch_age, pr_age, kwargs[options.NBR_THREADS], sq)
 
     if token_age:
         problems += get_user_problems(token_age, sq)
