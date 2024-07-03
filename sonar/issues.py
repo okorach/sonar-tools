@@ -613,7 +613,9 @@ def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start:
             date_stop = date_stop.date()
     log.info("Splitting search by date between [%s - %s]", util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
     issue_list = {}
-    new_params.update({"createdAfter": util.date_to_string(date_start), "createdBefore": util.date_to_string(date_stop)})
+    new_params.update(
+        {"createdAfter": util.date_to_string(date_start, with_time=False), "createdBefore": util.date_to_string(date_stop, with_time=False)}
+    )
     try:
         issue_list = search(endpoint=endpoint, params=new_params)
     except TooManyIssuesError as e:
