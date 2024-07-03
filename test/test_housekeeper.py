@@ -28,12 +28,12 @@ import sys
 from unittest.mock import patch
 import pytest
 import utilities as util
-from cli import housekeeper
+from cli import housekeeper, options
 
 CMD = "sonar-housekeeper.py"
 __GOOD_OPTS = [
     [],
-    ["--threads", "1"],
+    [f"--{options.NBR_THREADS}", "1"],
     ["-P", "30"],
 ]
 

@@ -29,10 +29,11 @@ import pytest
 
 import utilities as util
 from sonar import errcodes
+import cli.options as opt
 from cli import config
 
 CMD = "config.py"
-OPTS = [CMD] + util.STD_OPTS + ["-e", "-f", util.JSON_FILE]
+OPTS = [CMD] + util.STD_OPTS + ["-e", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
 
 def __test_config_cmd(arguments: list[str]) -> None:
@@ -68,7 +69,7 @@ def test_config_export_partial_2() -> None:
 
 def test_config_export_partial_3() -> None:
     """test_config_export_partial_3"""
-    __test_config_cmd(OPTS + ["-w", "projects", "-k", "okorach_sonar-tools"])
+    __test_config_cmd(OPTS + ["-w", "projects", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"])
 
 
 def test_config_export_wrong() -> None:
@@ -86,7 +87,7 @@ def test_config_non_existing_project() -> None:
     """test_config_non_existing_project"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
+        with patch.object(sys, "argv", OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_project"]):
             config.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(util.JSON_FILE)

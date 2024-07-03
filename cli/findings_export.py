@@ -301,12 +301,10 @@ def __get_project_findings(queue, write_queue):
             write_queue.put([findings_list, False])
         else:
             new_params = params.copy()
-            new_params.update(
-                {
-                    "branch": util.list_to_csv(params.get(options.BRANCHES, None)),
-                    "pullRequest": util.csv_to_list(params.get(options.PULL_REQUESTS, None)),
-                }
-            )
+            if options.PULL_REQUESTS in params:
+                new_params["pullRequest"] = util.list_to_csv(params[options.PULL_REQUESTS])
+            if options.BRANCHES in params:
+                new_params["branch"] = util.list_to_csv(params[options.PULL_REQUESTS])
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 try:

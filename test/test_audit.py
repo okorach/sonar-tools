@@ -27,11 +27,12 @@ import pytest
 
 import utilities as util
 from sonar import errcodes, utilities
+import cli.options as opt
 from cli import audit
 
 CMD = "sonar-audit.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
 
 def test_audit() -> None:
@@ -90,7 +91,7 @@ def test_audit_proj_key() -> None:
     """test_audit_proj_key"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"]):
             audit.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -101,7 +102,7 @@ def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", "-k", "okorach_sonar-tools,bad_key"]):
+        with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_key"]):
             audit.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
 
