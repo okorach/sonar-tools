@@ -29,11 +29,12 @@ from unittest.mock import patch
 import pytest
 import utilities as util
 from cli import rules_cli
+import cli.options as opt
 from sonar import rules, exceptions
 
 CMD = "rules_cli.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
 
 def test_rules() -> None:
@@ -51,7 +52,7 @@ def test_rules_json_format() -> None:
     """test_rules_json_format"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--format", "json"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "json"]):
             rules_cli.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.JSON_FILE)
@@ -62,7 +63,7 @@ def test_rules_filter_language() -> None:
     """Tests that you can export rules for a single or a few languages"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "py,jcl"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "py,jcl"]):
             rules_cli.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -77,7 +78,7 @@ def test_rules_misspelled_language_1() -> None:
     """Tests that you can export rules for a single or a few languages, misspelled"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "Python,TypeScript"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "Python,TypeScript"]):
             rules_cli.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)
@@ -92,7 +93,7 @@ def test_rules_misspelled_language_2() -> None:
     """Tests that you can export rules for a single or a few languages, misspelled and not fixed"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "Python,gosu , aPex"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "Python,gosu , aPex"]):
             rules_cli.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)

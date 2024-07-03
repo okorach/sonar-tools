@@ -31,17 +31,18 @@ import pytest
 import utilities as util
 import sonar.logging as log
 from cli import findings_sync
+import cli.options as opt
 
 
 CMD = "sonar-findings-sync.py"
-PLAT_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")] + [
+PLAT_OPTS = [f"--{opt.URL}", os.getenv("SONAR_HOST_URL"), f"--{opt.TOKEN}", os.getenv("SONAR_TOKEN_ADMIN_USER")] + [
     "-U",
     os.getenv("SONAR_HOST_URL_TEST"),
     "-T",
     os.getenv("SONAR_TOKEN_SYNC_USER"),
 ]
-SYNC_OPTS = ["--login", "syncer", "-k", "TESTSYNC", "-K", "TESTSYNC"]
-ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + ["-f", util.JSON_FILE]
+SYNC_OPTS = ["--login", "syncer", f"-{opt.KEYS_SHORT}", "TESTSYNC", "-K", "TESTSYNC"]
+ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
 
 def test_sync_help() -> None:

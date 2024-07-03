@@ -24,7 +24,6 @@
 """
 
 import sys
-import os
 from unittest.mock import patch
 import pytest
 import utilities as util
@@ -62,7 +61,9 @@ def test_loc_json_fmt() -> None:
     """test_loc_json_fmt"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "json", "-n", "-a", f"--{opt.WITH_URL}"]):
+        with patch.object(
+            sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "json", f"--{opt.WITH_NAME}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}", f"--{opt.WITH_URL}"]
+        ):
             loc.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.JSON_FILE)

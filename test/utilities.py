@@ -25,6 +25,7 @@
 
 import os
 from sonar import platform
+import cli.options as opt
 
 LATEST = "http://localhost:10000"
 LTA = "http://localhost:9000"
@@ -32,7 +33,7 @@ LTA = "http://localhost:9000"
 CSV_FILE = "temp.csv"
 JSON_FILE = "temp.json"
 
-STD_OPTS = ["-u", os.getenv("SONAR_HOST_URL"), "-t", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+STD_OPTS = [f"-{opt.URL_SHORT}", os.getenv("SONAR_HOST_URL"), f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 
 SQ = platform.Platform(url=os.getenv("SONAR_HOST_URL"), token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
 
