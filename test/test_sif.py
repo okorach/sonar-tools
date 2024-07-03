@@ -31,17 +31,18 @@ import pytest
 import utilities as util
 from sonar import sif
 from cli import audit
+import cli.options as opt
 
 CMD = "sonar-audit.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
 
 def test_audit_sif() -> None:
     """test_audit_sif"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD, "--sif", "test/sif1.json", "-f", util.CSV_FILE]):
+        with patch.object(sys, "argv", [CMD, "--sif", "test/sif1.json", f"--{opt.OUTPUTFILE}", util.CSV_FILE]):
             audit.main()
     assert int(str(e.value)) == 0
     assert util.file_not_empty(util.CSV_FILE)

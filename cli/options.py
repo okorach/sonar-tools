@@ -62,12 +62,16 @@ SEVERITIES = "severities"
 STATUSES = "statuses"
 TYPES = "types"
 
-MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES)
 
 NBR_THREADS = "threads"
 
-BRANCH_SHORT = "b"
-BRANCH = "branch"
+BRANCHES_SHORT = "b"
+BRANCHES = "branches"
+
+TAGS = "tags"
+
+PULL_REQUESTS_SHORT = "p"
+PULL_REQUESTS = "pullRequests"
 
 WITH_BRANCHES_SHORT = "b"
 WITH_BRANCHES = "withBranches"
@@ -83,6 +87,8 @@ WITH_NAME = "withName"
 WITH_LAST_ANALYSIS_SHORT = "a"
 WITH_LAST_ANALYSIS = "withLastAnalysis"
 
+DATE_AFTER = "createdAfter"
+DATE_BEFORE = "createdBefore"
 DATES_WITHOUT_TIME_SHORT = "d"
 DATES_WITHOUT_TIME = "datesWithoutTime"
 
@@ -90,6 +96,7 @@ LOGFILE_SHORT = "l"
 LOGFILE = "logfile"
 
 CSV_SEPARATOR = "csvSeparator"
+USE_FINDINGS = "useFindings"
 
 __DEFAULT_CSV_SEPARATOR = ","
 
@@ -124,6 +131,8 @@ WHAT_PROJECTS = "projects"
 WHAT_APPS = "applications"
 WHAT_PORTFOLIOS = "portfolios"
 WHAT_AUDITABLE = [WHAT_SETTINGS, WHAT_USERS, WHAT_GROUPS, WHAT_GATES, WHAT_PROFILES, WHAT_PROJECTS, WHAT_APPS, WHAT_PORTFOLIOS]
+
+MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS)
 
 
 def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> argparse.ArgumentParser:

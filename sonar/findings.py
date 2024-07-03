@@ -186,7 +186,7 @@ class Finding(sq.SqObject):
             log.warning("Can't find file name for %s", str(self))
             return None
 
-    def to_csv(self, separator: str = ",", without_time: bool = False):
+    def to_csv(self, separator: str = ",", without_time: bool = False) -> list[str]:
         """
         :param separator: CSV separator, defaults to ","
         :type separator: str, optional
@@ -194,17 +194,12 @@ class Finding(sq.SqObject):
         :rtype: str
         """
         data = self.to_json(without_time)
-        for field in _CSV_FIELDS:
-            if data.get(field, None) is None:
-                data[field] = ""
-        data["branch"] = util.quote(data["branch"], separator)
-        data["message"] = util.quote(data["message"], separator)
         data["projectName"] = projects.Project.get_object(key=self.projectKey, endpoint=self.endpoint).name
         if "impacts" in data:
             data["impacts"] = util.quote(", ".join([f"{k}:{v}" for k, v in data["impacts"].items()]), separator)
-            return separator.join([str(data[field]) for field in _CSV_FIELDS_NEW])
+            return [str(data.get(field, "")) for field in _CSV_FIELDS_NEW]
         else:
-            return separator.join([str(data[field]) for field in _CSV_FIELDS])
+            return [str(data.get(field, "")) for field in _CSV_FIELDS]
 
     def to_json(self, without_time: bool = False):
         """
@@ -450,12 +445,10 @@ def export_findings(endpoint, project_key, branch=None, pull_request=None):
     return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch, pull_request)
 
 
-def to_csv_header(separator=","):
-    """
-    :meta private:
-    """
+def to_csv_header() -> list[str]:
+    """Returns the list of CSV fields provided by an issue CSV export"""
     # return "# " + separator.join(_CSV_FIELDS)
-    return "# " + separator.join(_CSV_FIELDS_NEW)
+    return list(_CSV_FIELDS_NEW)
 
 
 def __get_changelog(queue: Queue[Finding], added_after: datetime.datetime = None) -> None:

@@ -30,9 +30,10 @@ import pytest
 import utilities as util
 from sonar import errcodes
 from cli import projects_export
+import cli.options as opt
 
 CMD = "projects_export.py"
-OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
+OPTS = [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.JSON_FILE]
 
 
 def __test_project_export(arguments: list[str], file: str) -> None:
@@ -53,19 +54,19 @@ def test_export_all_proj() -> None:
 
 def test_export_single_proj() -> None:
     """test_export_single_proj"""
-    __test_project_export(OPTS + ["-k", "okorach_sonar-tools"], util.JSON_FILE)
+    __test_project_export(OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"], util.JSON_FILE)
 
 
 def test_export_timeout() -> None:
     """test_export_timeout"""
-    __test_project_export(OPTS + ["-k", "okorach_sonar-tools", "--exportTimeout", "10"], util.JSON_FILE)
+    __test_project_export(OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", "--exportTimeout", "10"], util.JSON_FILE)
 
 
 def test_export_non_existing_project() -> None:
     """test_config_non_existing_project"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS + ["-k", "okorach_sonar-tools,bad_project"]):
+        with patch.object(sys, "argv", OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_project"]):
             projects_export.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(util.JSON_FILE)
@@ -74,4 +75,4 @@ def test_export_non_existing_project() -> None:
 
 def test_two_threads() -> None:
     """test_two_threads"""
-    __test_project_export(OPTS + ["--threads", "2"], util.JSON_FILE)
+    __test_project_export(OPTS + [f"--{opt.NBR_THREADS}", "2"], util.JSON_FILE)

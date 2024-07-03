@@ -34,8 +34,8 @@ import cli.options as opt
 from sonar import errcodes
 
 CMD = "sonar-findings-export.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + ["-f", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + ["-f", util.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
 SEVERITY_COL = 2
 STATUS_COL = 3
@@ -50,20 +50,19 @@ if util.SQ.version() < (10, 2, 0):
     PROJECT_COL += 1
 
 __GOOD_OPTS = [
-    [f"--{opt.FORMAT}", "json", "-l", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
+    [f"--{opt.FORMAT}", "json", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
     [f"--{opt.FORMAT}", "json", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE],
     [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "4", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
-    [f"--{opt.CSV_SEPARATOR}", ";", "-d", "--tags", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
     [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
-    ["--createdBefore", "2024-05-01", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE],
-    ["--createdAfter", "2023-05-01", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
+    [f"--{opt.DATE_BEFORE}", "2024-05-01", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE],
+    [f"--{opt.DATE_AFTER}", "2023-05-01", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
     [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,REMOVED", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
     [f"--{opt.TYPES}", "BUG,VULNERABILITY", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
-    [f"--{opt.STATUSES}", "OPEN,CLOSED", "--severities", "MINOR,MAJOR,CRITICAL", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "MINOR,MAJOR,CRITICAL", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
     [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
     [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
-    ["--useFindings", "-f", util.CSV_FILE],
-    [f"--{opt.CSV_SEPARATOR}", "';'", "-d", "--tags", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.USE_FINDINGS}", "-f", util.CSV_FILE],
 ]
 
 __WRONG_FILTER_OPTS = [
@@ -71,6 +70,7 @@ __WRONG_FILTER_OPTS = [
     [f"--{opt.RESOLUTIONS}", "ACCEPTED,SAFE,DO_FIX,WONTFIX"],
     [f"--{opt.TYPES}", "BUG,VULN"],
     [f"--{opt.SEVERITIES}", "HIGH,SUPER_HIGH"],
+    [f"--{opt.CSV_SEPARATOR}", "';'", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
 ]
 
 
@@ -129,7 +129,7 @@ def test_findings_export_non_existing_branch() -> None:
     """test_findings_export_non_existing_branch"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "training:security", f"-{opt.BRANCH_SHORT}", "non-existing-branch"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "training:security", f"-{opt.BRANCHES_SHORT}", "non-existing-branch"]):
             findings_export.main()
 
 
@@ -233,7 +233,7 @@ def test_findings_filter_on_multiple_criteria_2() -> None:
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
         with patch.object(
-            sys, "argv", CSV_OPTS + ["--createdAfter", "2020-01-10", "--createdBefore", "2020-12-31", f"--{opt.TYPES}", "SECURITY_HOTSPOT"]
+            sys, "argv", CSV_OPTS + [f"--{opt.DATE_AFTER}", "2020-01-10", f"--{opt.DATE_BEFORE}", "2020-12-31", f"--{opt.TYPES}", "SECURITY_HOTSPOT"]
         ):
             findings_export.main()
 
