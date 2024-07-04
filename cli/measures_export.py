@@ -31,7 +31,8 @@ from requests.exceptions import HTTPError
 
 from cli import options
 import sonar.logging as log
-from sonar import metrics, platform, exceptions, projects, errcodes
+from sonar import metrics, platform, exceptions, errcodes
+from sonar import projects, applications, portfolios, branches
 import sonar.utilities as util
 
 RATINGS = "letters"
@@ -40,8 +41,9 @@ DATEFMT = "datetime"
 CONVERT_OPTIONS = {"ratings": "letters", "percents": "float", "dates": "datetime"}
 
 
-def __last_analysis(project_or_branch):
-    last_analysis = project_or_branch.last_analysis()
+def __last_analysis(component: object) -> str:
+    """Returns the last analysis of a component as a string"""
+    last_analysis = component.last_analysis()
     with_time = True
     if CONVERT_OPTIONS["dates"] == "dateonly":
         with_time = False
@@ -62,24 +64,23 @@ def __get_json_measures_history(obj: object, wanted_metrics: list[str]) -> dict[
     return data
 
 
-def __get_object_measures(obj, wanted_metrics):
+def __get_object_measures(obj: object, wanted_metrics: list[str]):
     log.info("Getting measures for %s", str(obj))
     measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d["lastAnalysis"] = __last_analysis(obj)
     measures_d["url"] = obj.url()
     measures_d.pop("quality_gate_details", None)
     proj = obj
-    if not isinstance(obj, projects.Project):
+    if isinstance(obj, branches.Branch):
         proj = obj.concerned_object
         measures_d["branch"] = obj.name
-    measures_d["projectKey"] = proj.key
-    measures_d["projectName"] = proj.name
+    measures_d["key"] = proj.key
+    measures_d["name"] = proj.name
     return measures_d
 
 
-def __get_wanted_metrics(kwargs: dict[str, str], endpoint: platform.Platform) -> list[str]:
+def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: list[str]) -> list[str]:
     """Returns an ordered list of metrics based on CLI inputs"""
-    wanted_metrics = kwargs["metricKeys"]
     if wanted_metrics[0] == "_all":
         all_metrics = list(metrics.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
@@ -173,7 +174,7 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
     """Writes measures history of object list in CSV format"""
 
     w_br, w_url = kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
-    row = ["projectKey", "date", "projectName"]
+    row = ["key", "date", "name"]
     if w_br:
         row.append("branch")
     row += wanted_metrics
@@ -184,8 +185,8 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         csvwriter.writerow(row)
         for project_data in data:
-            key = project_data["projectKey"]
-            name = project_data["projectName"]
+            key = project_data["key"]
+            name = project_data["name"]
             branch = project_data.get("branch", "")
             url = project_data.get("url", "")
             hist_data = {}
@@ -194,11 +195,11 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
             for h in project_data["history"]:
                 ts = __get_ts(h[0], **kwargs)
                 if ts not in hist_data:
-                    hist_data[ts] = {"projectKey": key, "projectName": name, "branch": branch, "url": url}
+                    hist_data[ts] = {"key": key, "name": name, "branch": branch, "url": url}
                 hist_data[ts].update({h[1]: h[2]})
 
             for ts, row_data in hist_data.items():
-                row = [row_data["projectKey"], ts, row_data.get("projectName", "")]
+                row = [row_data["key"], ts, row_data.get("name", "")]
                 if w_br:
                     row.append(row_data.get("branch", ""))
                 row += [row_data.get(m, "") for m in wanted_metrics]
@@ -210,18 +211,18 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
 def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
-    header_list = ["timestamp", "projectKey"]
+    header_list = ["timestamp", "key"]
     if kwargs[options.WITH_BRANCHES]:
         header_list.append("branch")
     header_list += ["metric", "value"]
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         csvwriter.writerow(header_list)
-        for project_data in data:
-            key = project_data["projectKey"]
-            if "history" not in project_data:
+        for component_data in data:
+            key = component_data["name"]
+            if "history" not in component_data:
                 continue
-            for metric_data in project_data["history"]:
+            for metric_data in component_data["history"]:
                 csvwriter.writerow([__get_ts(metric_data[0], **kwargs), key, metric_data[1], metric_data[2]])
 
 
@@ -235,9 +236,9 @@ def __write_measures_history_csv(file: str, wanted_metrics: list[str], data: dic
 
 def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
-    header_list = ["projectKey"]
+    header_list = ["key"]
     if kwargs[options.WITH_NAME]:
-        header_list.append("projectName")
+        header_list.append("name")
     if kwargs[options.WITH_BRANCHES]:
         header_list.append("branch")
     header_list.append("lastAnalysis")
@@ -254,7 +255,7 @@ def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, s
             csvwriter.writerow(row)
 
 
-def __general_object_data(obj: object, **kwargs) -> dict[str, str]:
+def __get_general_object_data(obj: object, **kwargs) -> dict[str, str]:
     """Return general project/branch data"""
     data = {}
     proj = obj
@@ -269,33 +270,45 @@ def __general_object_data(obj: object, **kwargs) -> dict[str, str]:
     return data
 
 
+def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[projects.Project]:
+    """Returns the list of objects concerned by the measures export"""
+    try:
+        comp_type = kwargs.get("compType", "projects")
+        if comp_type == "projects":
+            object_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
+        elif comp_type == "apps":
+            object_list = applications.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
+        elif comp_type == "portfolios":
+            object_list = portfolios.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
+    except exceptions.ObjectNotFound as e:
+        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
+    obj_list = []
+    if kwargs[options.WITH_BRANCHES] and comp_type == "projects":
+        for project in object_list.values():
+            obj_list += project.branches().values()
+    else:
+        obj_list = object_list.values()
+    return obj_list
+
+
 def main():
     start_time = util.start_clock()
     kwargs = util.convert_args(__parse_args("Extract measures of projects"))
     endpoint = platform.Platform(**kwargs)
 
-    wanted_metrics = __get_wanted_metrics(kwargs, endpoint)
+    wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
     file = kwargs.pop(options.OUTPUTFILE)
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
     if endpoint.edition() == "community":
         kwargs[options.WITH_BRANCHES] = False
     kwargs[options.WITH_NAME] = True
 
-    try:
-        project_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
-    except exceptions.ObjectNotFound as e:
-        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
-    obj_list = []
-    if kwargs[options.WITH_BRANCHES]:
-        for project in project_list.values():
-            obj_list += project.branches().values()
-    else:
-        obj_list = project_list.values()
+    obj_list = __get_concerned_objects(endpoint=endpoint, **kwargs)
     nb_branches = len(obj_list)
 
     measure_list = []
     for obj in obj_list:
-        data = __general_object_data(obj=obj, **kwargs)
+        data = __get_general_object_data(obj=obj, **kwargs)
         try:
             if kwargs["history"]:
                 data.update(__get_json_measures_history(obj, wanted_metrics))
@@ -319,7 +332,7 @@ def main():
 
     if file:
         log.info("File '%s' created", file)
-    log.info("%d PROJECTS %d branches", len(project_list), nb_branches)
+    log.info("%d %s, %d branches", len(obj_list), kwargs[options.COMPONENT_TYPE], nb_branches)
     util.stop_clock(start_time)
     sys.exit(0)
 
