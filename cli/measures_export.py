@@ -236,7 +236,7 @@ def __write_measures_history_csv(file: str, wanted_metrics: list[str], data: dic
 
 def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
-    header_list = ["key"]
+    header_list = ["key", "type"]
     if kwargs[options.WITH_NAME]:
         header_list.append("name")
     if kwargs[options.WITH_BRANCHES]:
@@ -248,10 +248,8 @@ def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, s
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         csvwriter.writerow(header_list)
-        for project_data in data:
-            row = []
-            for m in header_list:
-                row.append(project_data.get(m, ""))
+        for comp_data in data:
+            row = [comp_data.get(m, "") for m in header_list]
             csvwriter.writerow(row)
 
 
@@ -259,7 +257,8 @@ def __get_general_object_data(obj: object, **kwargs) -> dict[str, str]:
     """Return general project/branch data"""
     data = {}
     proj = obj
-    if kwargs[options.WITH_BRANCHES] and not isinstance(obj, projects.Project):
+    data["type"] = type(obj).__name__.upper()
+    if kwargs[options.WITH_BRANCHES] and isinstance(obj, branches.Branch):
         proj = obj.concerned_object
         data["branch"] = obj.key
     data["key"] = proj.key
