@@ -184,15 +184,15 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], 
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         csvwriter.writerow(row)
-        for project_data in data:
-            key = project_data["key"]
-            name = project_data["name"]
-            branch = project_data.get("branch", "")
-            url = project_data.get("url", "")
+        for component_data in data:
+            key = component_data["key"]
+            name = component_data["name"]
+            branch = component_data.get("branch", "")
+            url = component_data.get("url", "")
             hist_data = {}
-            if "history" not in project_data:
+            if "history" not in component_data:
                 continue
-            for h in project_data["history"]:
+            for h in component_data["history"]:
                 ts = __get_ts(h[0], **kwargs)
                 if ts not in hist_data:
                     hist_data[ts] = {"key": key, "name": name, "branch": branch, "url": url}
@@ -262,11 +262,11 @@ def __get_general_object_data(obj: object, **kwargs) -> dict[str, str]:
     if kwargs[options.WITH_BRANCHES] and not isinstance(obj, projects.Project):
         proj = obj.concerned_object
         data["branch"] = obj.key
-    data["projectKey"] = proj.key
+    data["key"] = proj.key
     if kwargs[options.WITH_URL]:
         data["url"] = obj.url()
     if kwargs[options.WITH_NAME]:
-        data["projectName"] = proj.name
+        data["name"] = proj.name
     return data
 
 
@@ -274,12 +274,12 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
     """Returns the list of objects concerned by the measures export"""
     try:
         comp_type = kwargs.get("compType", "projects")
-        if comp_type == "projects":
-            object_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
-        elif comp_type == "apps":
+        if comp_type == "apps":
             object_list = applications.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
         elif comp_type == "portfolios":
             object_list = portfolios.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
+        else:
+            object_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     obj_list = []
