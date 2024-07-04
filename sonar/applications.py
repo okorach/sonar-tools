@@ -25,7 +25,7 @@ from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import components, exceptions, settings, projects, branches
+from sonar import platform, components, exceptions, settings, projects, branches
 from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -55,7 +55,7 @@ class Application(aggr.Aggregation):
     """
 
     @classmethod
-    def get_object(cls, endpoint, key):
+    def get_object(cls, endpoint: platform.Platform, key: str):
         """Gets an Application object from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -67,13 +67,14 @@ class Application(aggr.Aggregation):
         """
         if endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        if key in _OBJECTS:
-            return _OBJECTS[key]
+        uu = sq.uuid(key=key, url=endpoint.url)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         try:
-            data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)
+            data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)["application"]
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(key, f"Application '{key}' not found")
+                raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
         return cls.load(endpoint, data)
 
     @classmethod
@@ -123,7 +124,7 @@ class Application(aggr.Aggregation):
         self._description = None
         self.name = name
         log.debug("Created object %s", str(self))
-        _OBJECTS[self.key] = self
+        _OBJECTS[self.uuid()] = self
         _MAP[self.name] = self.key
 
     def refresh(self):
@@ -435,6 +436,15 @@ def get_list(endpoint: object, key_list: list[str] = None, use_cache: bool = Tru
         for key in util.csv_to_list(key_list):
             object_list[key] = Application.get_object(endpoint, key)
     return object_list
+
+
+def exists(endpoint: platform.Platform, key: str) -> bool:
+    """Tells whether a application with a given key exists"""
+    try:
+        Application.get_object(endpoint, key)
+        return True
+    except exceptions.ObjectNotFound:
+        return False
 
 
 def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
