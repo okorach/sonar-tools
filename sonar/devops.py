@@ -275,13 +275,3 @@ def devops_type(platform_key, endpoint):
     if o is None:
         return None
     return o.type
-
-
-def platform_exists(platform_key, endpoint):
-    """
-    :param Platform endpoint: Reference to the SonarQube platform
-    :param str platform_key: Key of the platform (its name)
-    :return: Whether the platform exists in SonarQube
-    :rtype: bool
-    """
-    return get_object(platform_key, endpoint) is not None
