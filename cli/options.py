@@ -135,6 +135,8 @@ WHAT_AUDITABLE = [WHAT_SETTINGS, WHAT_USERS, WHAT_GROUPS, WHAT_GATES, WHAT_PROFI
 
 MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS)
 
+COMPONENT_TYPES = ("projects", "apps", "portfolios")
+
 
 def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> argparse.ArgumentParser:
     """Parses arguments, applies default settings and perform common environment checks"""
@@ -322,6 +324,14 @@ def set_key_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
 def add_language_arg(parser: argparse.ArgumentParser, object_types: str) -> argparse.ArgumentParser:
     """Adds the language selection option"""
     parser.add_argument(f"--{LANGUAGES}", required=False, help=f"Commas separated list of language to filter {object_types}")
+    return parser
+
+
+def add_component_type_arg(parser: argparse.ArgumentParser, comp_types: tuple[str] = COMPONENT_TYPES) -> argparse.ArgumentParser:
+    """Adds the component type selection option"""
+    group = parser.add_mutually_exclusive_group()
+    for c in comp_types:
+        group.add_argument(f"--{c}", required=False, dest="compType", action="store_const", const=c, help=f"Process {c}")
     return parser
 
 
