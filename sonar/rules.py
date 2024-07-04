@@ -22,6 +22,7 @@
     Abstraction of the SonarQube "rule" concept
 
 """
+from __future__ import annotations
 import json
 from typing import Union
 from http import HTTPStatus
@@ -29,11 +30,12 @@ from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar import utilities, exceptions
+from sonar import platform, utilities, exceptions
 
 _OBJECTS = {}
 SEARCH_API = "rules/search"
 _DETAILS_API = "rules/show"
+_UPDATE_API = "rules/update"
 _CREATE_API = "rules/create"
 
 TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
@@ -41,7 +43,8 @@ TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
 
 class Rule(sq.SqObject):
     @classmethod
-    def get_object(cls, endpoint, key):
+    def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
+        """Returns a rule object from the cache or from the platform itself"""
         if key in _OBJECTS:
             return _OBJECTS[key]
         log.debug("Reading rule key '%s'", key)
@@ -53,25 +56,25 @@ class Rule(sq.SqObject):
         return Rule(key, endpoint, json.loads(r.text)["rule"])
 
     @classmethod
-    def create(cls, key, endpoint, **kwargs):
+    def create(cls, key: str, endpoint: platform.Platform, **kwargs) -> Union[None, Rule]:
+        """Creates a rule object"""
         params = kwargs.copy()
         (_, params["custom_key"]) = key.split(":")
         log.debug("Creating rule key '%s'", key)
-        r = endpoint.post(_CREATE_API, params=params)
-        if not r.ok:
+        if not endpoint.post(_CREATE_API, params=params).ok:
             return None
-        o = cls.get_object(key=key, endpoint=endpoint)
-        return o
+        return cls.get_object(key=key, endpoint=endpoint)
 
     @classmethod
-    def load(cls, key, endpoint, data):
+    def load(cls, key: str, endpoint: platform.Platform, data: dict[str, str]) -> Rule:
+        """Loads a rule object"""
         if key in _OBJECTS:
             _OBJECTS[key]._json.update(data)
             return _OBJECTS[key]
         return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
-    def instantiate(cls, key, template_key, endpoint, data):
+    def instantiate(cls, key: str, template_key: str, endpoint: platform.Platform, data: dict[str, str]) -> Rule:
         try:
             rule = Rule.get_object(endpoint, key)
             log.info("Rule key '%s' already exists, instantiation skipped...", key)
@@ -90,7 +93,7 @@ class Rule(sq.SqObject):
             markdown_description=data.get("description", "NO DESCRIPTION"),
         )
 
-    def __init__(self, key, endpoint, data):
+    def __init__(self, key: str, endpoint: platform.Platform, data: dict[str, str]):
         super().__init__(key, endpoint)
         log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
         self._json = data
@@ -112,10 +115,10 @@ class Rule(sq.SqObject):
         }
         _OBJECTS[self.key] = self
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"rule key '{self.key}'"
 
-    def to_json(self):
+    def to_json(self) -> dict[str, str]:
         return self._json
 
     def to_csv(self) -> list[str]:
@@ -129,23 +132,34 @@ class Rule(sq.SqObject):
             rule_type = "INSTANTIATED"
         return [self.key, self.language, self.repo, self.type, self.name, rule_type, ",".join(tags)]
 
-    def export(self, full=False):
+    def export(self, full: bool = False) -> dict[str, str]:
+        """Returns the JSON corresponding to a rule export"""
         return convert_for_export(self.to_json(), self.language, full=full)
 
-    def set_tags(self, tags: Union[str, list[str]]) -> None:
-        if tags is None:
-            return
-        if isinstance(tags, list):
-            tags = utilities.list_to_csv(tags)
-        log.debug("Settings custom tags '%s' to %s", tags, str(self))
-        self.post("rules/update", params={"key": self.key, "tags": tags})
-        self.tags = tags
+    def set_tags(self, tags: list[str]) -> bool:
+        """Sets rule custom tags"""
+        log.debug("Settings custom tags of %s to '%s' ", str(self), str(tags))
+        ok = self.post(_UPDATE_API, params={"key": self.key, "tags": utilities.list_to_csv(tags)}).ok
+        if ok:
+            self.tags = tags if len(tags) > 0 else None
+        return ok
 
-    def set_description(self, description):
-        if description is None:
-            return
-        log.debug("Settings custom description '%s' to %s", description, str(self))
-        self.post("rules/update", params={"key": self.key, "markdown_note": description})
+    def reset_tags(self) -> bool:
+        """Removes all custom tags from the rule"""
+        log.debug("Removing custom tags from %s", str(self))
+        return self.set_tags([])
+
+    def set_description(self, description: str) -> bool:
+        """Extends rule description"""
+        log.debug("Settings custom description of %s to '%s'", str(self), description)
+        ok = self.post(_UPDATE_API, params={"key": self.key, "markdown_note": description}).ok
+        if ok:
+            self.custom_desc = description if description != "" else None
+        return ok
+
+    def reset_description(self) -> bool:
+        """Resets rule custom description"""
+        return self.set_description("")
 
     def clean_code_attribute(self) -> dict:
         return self._clean_code_attribute
@@ -154,27 +168,28 @@ class Rule(sq.SqObject):
         return self._impacts
 
 
-def get_facet(facet, endpoint):
+def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
+    """Returns a facet as a count per item in the facet"""
     data = json.loads(endpoint.get(SEARCH_API, params={"ps": 1, "facets": facet}).text)
-    facet_dict = {}
-    for f in data["facets"][0]["values"]:
-        facet_dict[f["val"]] = f["count"]
-    return facet_dict
+    return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
-def search(endpoint, **params):
+def search(endpoint: platform.Platform, **params):
+    """Searches ruless with optional filters"""
     return sq.search_objects(SEARCH_API, endpoint, "key", "rules", Rule, params, threads=4)
 
 
-def count(endpoint, **params):
+def count(endpoint: platform.Platform, **params) -> int:
+    """Count number of rules that correspond to certain filters"""
     return json.loads(endpoint.get(SEARCH_API, params={**params, "ps": 1}).text)["total"]
 
 
-def get_list(endpoint, **params):
+def get_list(endpoint: platform.Platform, **params) -> dict[str, Rule]:
+    """Returns a list of rules corresponding to certain csearch filters"""
     return search(endpoint, include_external="false", **params)
 
 
-def get_object(key: str, endpoint: object) -> Union[Rule, None]:
+def get_object(key: str, endpoint: platform.Platform) -> Union[Rule, None]:
     """Returns a Rule object from its key
     :return: The Rule object corresponding to the input rule key, or None if not found
     :param str key: The rule key
@@ -188,7 +203,8 @@ def get_object(key: str, endpoint: object) -> Union[Rule, None]:
         return None
 
 
-def export_all(endpoint, full=False):
+def export_all(endpoint: platform.Platform, full: bool = False) -> dict[str, str]:
+    """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
     for rule_key, rule in get_list(endpoint=endpoint).items():
@@ -215,7 +231,8 @@ def export_all(endpoint, full=False):
     return rule_list
 
 
-def export_instantiated(endpoint, full=False):
+def export_instantiated(endpoint: platform.Platform, full: bool = False) -> Union[None, dict[str, str]]:
+    """Returns a JSON of all instantiated rules"""
     rule_list = {}
     for template_key in get_list(endpoint=endpoint, is_template="true"):
         for rule_key, rule in get_list(endpoint=endpoint, template_key=template_key).items():
@@ -223,7 +240,8 @@ def export_instantiated(endpoint, full=False):
     return rule_list if len(rule_list) > 0 else None
 
 
-def export_customized(endpoint, full=False):
+def export_customized(endpoint: platform.Platform, full: bool = False) -> Union[None, dict[str, str]]:
+    """Returns a JSON export of all customized rules (custom tags or description added)"""
     rule_list = {}
     for rule_key, rule in get_list(endpoint=endpoint, is_template="false").items():
         if rule.tags is None and rule.custom_desc is None:
@@ -239,7 +257,7 @@ def export_customized(endpoint, full=False):
     return rule_list if len(rule_list) > 0 else None
 
 
-def export_needed(endpoint, instantiated=True, extended=True, full=False):
+def export_needed(endpoint: platform.Platform, instantiated: bool = True, extended: bool = True, full: bool = False) -> dict[str, str]:
     rule_list = {}
     if instantiated:
         rule_list["instantiated"] = export_instantiated(endpoint, full)
@@ -249,7 +267,7 @@ def export_needed(endpoint, instantiated=True, extended=True, full=False):
 
 
 def export(
-    endpoint: object, export_settings: dict[str, str], instantiated: bool = True, extended: bool = True, standard: bool = False
+    endpoint: platform.Platform, export_settings: dict[str, str], instantiated: bool = True, extended: bool = True, standard: bool = False
 ) -> dict[str, Rule]:
     """Returns a dict of rules for export
     :return: a dict of rule onbjects indexed with rule key
@@ -268,10 +286,11 @@ def export(
         return export_needed(endpoint, instantiated, extended, export_settings["FULL_EXPORT"])
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint: platform.Platform, config_data: dict[str, str]) -> bool:
+    """Imports a sonar-config configuration"""
     if "rules" not in config_data:
         log.info("No customized rules (custom tags, extended description) to import")
-        return
+        return True
     log.info("Importing customized (custom tags, extended description) rules")
     get_list(endpoint=endpoint)
     for key, custom in config_data["rules"].get("extended", {}).items():
@@ -280,8 +299,8 @@ def import_config(endpoint, config_data):
         except exceptions.ObjectNotFound:
             log.warning("Rule key '%s' does not exist, can't import it", key)
             continue
-        rule.set_description(custom.get("description", None))
-        rule.set_tags(custom.get("tags", None))
+        rule.set_description(custom.get("description", ""))
+        rule.set_tags(utilities.csv_to_list(custom.get("tags", None)))
 
     log.debug("get_list from import")
     get_list(endpoint=endpoint, templates=True)
@@ -299,9 +318,11 @@ def import_config(endpoint, config_data):
             log.warning("Rule template key '%s' does not exist, can't instantiate it", key)
             continue
         Rule.instantiate(key, template_rule.key, endpoint, instantiation_data)
+    return True
 
 
-def convert_for_export(rule, qp_lang, with_template_key=True, full=False):
+def convert_for_export(rule: dict[str, str], qp_lang: str, with_template_key: bool = True, full: bool = False) -> dict[str, str]:
+    """Converts rule data for export"""
     d = {"severity": rule.get("severity", "")}
     if len(rule.get("params", {})) > 0:
         if not full:
