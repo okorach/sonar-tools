@@ -71,16 +71,6 @@ class Aggregation(comp.Component):
                     self.ncloc = int(m["value"])
         return self._nbr_projects
 
-    def get_measures(self, metrics_list: list[str]) -> dict[str, any]:
-        """Returns measures of an Aggregation (Application or Portfolio)
-        :return: dict of metric: value
-        :rtype: dict
-        """
-        m = measures.get(self, metrics_list)
-        if "ncloc" in m:
-            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
-        return m
-
     def _audit_aggregation_cardinality(self, sizes: tuple[int], broken_rule: object) -> list[problem.Problem]:
         problems = []
         n = self.nbr_projects()

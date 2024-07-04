@@ -247,18 +247,6 @@ class Project(components.Component):
             self._ncloc_with_branches = max([b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values())])
         return self._ncloc_with_branches
 
-    def get_measures(self, metrics_list):
-        """Retrieves a project list of measures
-
-        :param list metrics_list: List of metrics to return
-        :return: List of measures of a projects
-        :rtype: dict
-        """
-        m = measures.get(self, metrics_list)
-        if "ncloc" in m and m["ncloc"]:
-            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
-        return m
-
     def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
         """
         :return: Dict of branches of the project
