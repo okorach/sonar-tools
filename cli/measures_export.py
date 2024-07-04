@@ -117,6 +117,7 @@ def __parse_args(desc):
         action="store_true",
         help="Also extract project tags",
     )
+    parser = options.add_component_type_arg(parser)
     parser.set_defaults(withBranches=False, withTags=False)
     parser.add_argument(
         "-r",
