@@ -135,6 +135,7 @@ WHAT_AUDITABLE = [WHAT_SETTINGS, WHAT_USERS, WHAT_GROUPS, WHAT_GATES, WHAT_PROFI
 
 MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS)
 
+COMPONENT_TYPE = "compType"
 COMPONENT_TYPES = ("projects", "apps", "portfolios")
 
 
@@ -331,7 +332,7 @@ def add_component_type_arg(parser: argparse.ArgumentParser, comp_types: tuple[st
     """Adds the component type selection option"""
     group = parser.add_mutually_exclusive_group()
     for c in comp_types:
-        group.add_argument(f"--{c}", required=False, dest="compType", action="store_const", const=c, help=f"Process {c}")
+        group.add_argument(f"--{c}", required=False, dest=COMPONENT_TYPE, action="store_const", const=c, help=f"Process {c}")
     return parser
 
 
