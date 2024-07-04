@@ -29,9 +29,9 @@ import pytest
 
 import utilities as util
 import sonar.logging as log
+from sonar import issues, errcodes
 from cli import findings_export
 import cli.options as opt
-from sonar import errcodes
 
 CMD = "sonar-findings-export.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
@@ -293,6 +293,16 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
     util.clean(util.CSV_FILE)
 
 
+def test_findings_filter_hotspot_on_lang() -> None:
+    """test_findings_filter_hotspot_on_lang"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "java,js"]):
+            findings_export.main()
+    # TODO Add Language column on findings export
+    util.clean(util.CSV_FILE)
+
+
 def test_findings_export() -> None:
     """test_findings_export"""
     for opts in __GOOD_OPTS:
@@ -309,3 +319,41 @@ def test_findings_export() -> None:
             assert util.file_not_empty(util.JSON_FILE)
         log.info("SUCCESS running: %s", " ".join(fullcmd))
     util.clean(util.CSV_FILE, util.JSON_FILE)
+
+
+def test_issues_count_0() -> None:
+    """test_issues_count"""
+    assert issues.count(util.SQ) > 10000
+
+
+def test_issues_count_1() -> None:
+    """test_issues_count"""
+    log.set_debug_level("DEBUG")
+    log.set_logger(filename="test.log")
+    total = issues.count(util.SQ)
+    assert issues.count(util.SQ, severities=["BLOCKER"]) < int(total / 3)
+
+
+def test_issues_count_2() -> None:
+    """test_issues_count"""
+    total = issues.count(util.SQ)
+    assert issues.count(util.SQ, types=["VULNERABILITY"]) < int(total / 10)
+
+
+def test_issues_count_3() -> None:
+    """test_issues_count"""
+    assert issues.count(util.SQ, createdBefore="1970-01-08") == 0
+
+
+def test_search_issues_by_project() -> None:
+    """test_search_issues_by_project"""
+    nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key="okorach_sonar-tools", search_findings=True))
+    assert 1000 <= nb_issues <= 3000
+    nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=None))
+    assert nb_issues > 1000
+
+
+def test_search_too_many_issues() -> None:
+    """test_search_too_many_issues"""
+    issue_list = issues.search_all(endpoint=util.SQ)
+    assert len(issue_list) > 10000
