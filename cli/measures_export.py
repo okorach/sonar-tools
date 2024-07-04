@@ -64,7 +64,8 @@ def __get_json_measures_history(obj: object, wanted_metrics: list[str]) -> dict[
     return data
 
 
-def __get_object_measures(obj: object, wanted_metrics: list[str]):
+def __get_object_measures(obj: object, wanted_metrics: list[str]) -> dict[str, str]:
+    """ Returns the list of requested measures of an object """
     log.info("Getting measures for %s", str(obj))
     measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d["lastAnalysis"] = __last_analysis(obj)

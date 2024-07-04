@@ -27,7 +27,7 @@ import json
 import requests.utils
 
 import sonar.logging as log
-from sonar import measures, components, sqobject, exceptions
+from sonar import components, sqobject, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
 

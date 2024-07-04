@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
 import json
 from datetime import datetime
 from http import HTTPStatus
@@ -54,7 +55,7 @@ class Application(aggr.Aggregation):
     """
 
     @classmethod
-    def get_object(cls, endpoint: platform.Platform, key: str):
+    def get_object(cls, endpoint: platform.Platform, key: str) -> Application:
         """Gets an Application object from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -77,7 +78,7 @@ class Application(aggr.Aggregation):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint: platform.Platform, data: dict[str, str]):
+    def load(cls, endpoint: platform.Platform, data: dict[str, str]) -> Application:
         """Loads an Application object with data retrieved from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -96,7 +97,7 @@ class Application(aggr.Aggregation):
         return o
 
     @classmethod
-    def create(cls, endpoint, key, name):
+    def create(cls, endpoint: platform.Platform, key: str, name: str) -> Application:
         """Creates an Application object in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform

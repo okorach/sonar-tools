@@ -93,7 +93,7 @@ class Rule(sq.SqObject):
             markdown_description=data.get("description", "NO DESCRIPTION"),
         )
 
-    def __init__(self, key: str, endpoint: platform.Platform, data: dict[str, str]):
+    def __init__(self, key: str, endpoint: platform.Platform, data: dict[str, str]) -> None:
         super().__init__(key, endpoint)
         log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
         self._json = data
@@ -174,7 +174,7 @@ def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
-def search(endpoint: platform.Platform, **params):
+def search(endpoint: platform.Platform, **params) -> dict[str, Rule]:
     """Searches ruless with optional filters"""
     return sq.search_objects(SEARCH_API, endpoint, "key", "rules", Rule, params, threads=4)
 
@@ -258,6 +258,7 @@ def export_customized(endpoint: platform.Platform, full: bool = False) -> Union[
 
 
 def export_needed(endpoint: platform.Platform, instantiated: bool = True, extended: bool = True, full: bool = False) -> dict[str, str]:
+    """Returns a JSON export selected / needed rules"""
     rule_list = {}
     if instantiated:
         rule_list["instantiated"] = export_instantiated(endpoint, full)
