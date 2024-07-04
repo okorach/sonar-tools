@@ -19,6 +19,7 @@
 #
 
 import json
+from datetime import datetime
 from http import HTTPStatus
 from threading import Lock
 from requests.exceptions import HTTPError
@@ -133,7 +134,8 @@ class Application(aggr.Aggregation):
         :rtype: Appplication
         """
         try:
-            return self.reload(json.loads(self.get(APIS["get"], params={"application": self.key}).text)["application"])
+            self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
+            self.reload(json.loads(self.get(APIS["get"], params={"application": self.key}).text)["application"])
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 _OBJECTS.pop(self.key, None)
@@ -340,6 +342,14 @@ class Application(aggr.Aggregation):
                 else:
                     raise
         return ok
+
+    def last_analysis(self) -> datetime:
+        """Returns the last analysis date of an app"""
+        if self._last_analysis is None:
+            self.refresh()
+        if "analysisDate" in self._json:
+            self._last_analysis = util.string_to_date(self._json["analysisDate"])
+        return self._last_analysis
 
     def update(self, data):
         """Updates an Application with data coming from a JSON (export)
