@@ -27,7 +27,7 @@ import json
 import requests.utils
 
 import sonar.logging as log
-from sonar import measures, components, sqobject, exceptions
+from sonar import components, sqobject, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
@@ -61,13 +61,6 @@ class PullRequest(components.Component):
         if self._last_analysis is None and "analysisDate" in self.json:
             self._last_analysis = util.string_to_date(self.json["analysisDate"])
         return self._last_analysis
-
-    def get_measures(self, metrics_list):
-        log.debug("self.endpoint = %s", str(self.endpoint))
-        m = measures.get(self, metrics_list)
-        if "ncloc" in m:
-            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
-        return m
 
     def delete(self):
         return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS)

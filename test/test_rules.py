@@ -112,6 +112,48 @@ def test_get_rule() -> None:
     assert str(myrule) == "rule key 'java:S127'"
 
 
+def test_set_tags() -> None:
+    """test_set_tags"""
+    my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
+    assert my_rule.set_tags(["foo", "bar"])
+    assert "foo" in my_rule.tags and "bar" in my_rule.tags
+    assert my_rule.reset_tags()
+    assert my_rule.tags is None
+
+
+def test_set_desc() -> None:
+    """test_set_tags"""
+    my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
+    assert my_rule.set_description("Blah blah")
+    assert my_rule.custom_desc == "Blah blah"
+    assert my_rule.reset_description()
+    assert my_rule.custom_desc is None
+
+
+def test_facets() -> None:
+    """test_facets"""
+    facets = rules.get_facet(endpoint=util.SQ, facet="languages")
+    assert len(facets) > 20
+    for lang in "py", "java", "cobol", "cs":
+        assert lang in facets
+
+
+def test_get_rule_cache() -> None:
+    """test_get_rule_cache"""
+    my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
+    assert str(my_rule) == "rule key 'java:S127'"
+    new_rule = rules.Rule.get_object(endpoint=util.SQ, key="java:S127")
+    assert my_rule == new_rule
+
+
+def test_export_not_full() -> None:
+    """test_export_not_full"""
+    rule_list = rules.export_all(endpoint=util.SQ, full=False)
+    assert len(rule_list["extended"]) > 0
+    rule_list = rules.export_all(endpoint=util.SQ, full=True)
+    assert len(rule_list["extended"]) > 0
+
+
 def test_get_nonexisting_rule() -> None:
     """test_get_nonexisting_rule"""
     try:
@@ -121,7 +163,29 @@ def test_get_nonexisting_rule() -> None:
         assert e.key == "badlang:S127"
 
 
+def test_export_nonstandard() -> None:
+    """test_export_nonstandard"""
+    export = rules.export(endpoint=util.SQ, export_settings={"FULL_EXPORT": True}, standard=False)
+    assert len(export) > 0
+    assert "standard" not in export
+    export = rules.export(endpoint=util.SQ, export_settings={"FULL_EXPORT": False}, standard=True)
+    assert len(export) > 0
+    assert "standard" in export
+
+
 def test_export_all() -> None:
     """test_export_all"""
     rule_list = rules.export_all(endpoint=util.SQ, full=True)
     assert len(rule_list.get("standard", {})) > 3000
+
+
+def test_new_taxo() -> None:
+    """test_new_taxo"""
+    my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
+    if util.SQ.version() >= (10, 2, 0):
+        for i in my_rule.impacts():
+            assert "softwareQuality" in i
+            assert "severity" in i
+        attr = my_rule.clean_code_attribute()
+        assert "attribute" in attr
+        assert "attribute_category" in attr

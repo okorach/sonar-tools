@@ -104,19 +104,12 @@ class Measure(sq.SqObject):
         return measures
 
 
-def get(concerned_object, metrics_list, **kwargs):
+def get(concerned_object: object, metrics_list: list[str], **kwargs):
     """Reads a list of measures of a component (project, branch, pull request, application or portfolio)
 
-    :param concerned_object: Concerned object (project, branch, pull request, application or portfolio)
-    :type concerned_object: Project, Branch, PullRequest, Application or Portfolio
-    :param metrics_list: List of metrics to read
-    :type metrics_list: list
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
-    :param branch: Branch of the component, defaults to None
-    :type branch: str, optional
-    :param pr_key: Pull request key of the component, defaults to None
-    :type pr_key: str, optional
+    :param Component concerned_object: Concerned object (project, branch, pull request, application or portfolio)
+    :param list[str] metrics_list: List of metrics to read
+    :param Platform endpoint: Reference to the SonarQube platform
     :param kwargs: List of filters to search for the measures, defaults to None
     :type kwargs: dict, optional
     :return: Dict of found measures

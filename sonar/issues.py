@@ -107,7 +107,7 @@ _OBJECTS = {}
 class TooManyIssuesError(Exception):
     """When a call to api/issues/search returns too many issues."""
 
-    def __init__(self, nbr_issues, message):
+    def __init__(self, nbr_issues: int, message: str):
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
@@ -751,7 +751,9 @@ def search(endpoint: Platform, params: dict[str, str] = None, raise_error: bool 
         filters = _change_filters_for_10_4(filters)
 
     log.debug("Search filters = %s", str(filters))
-    if "ps" not in filters:
+    if not filters:
+        filters = {"ps": Issue.MAX_PAGE_SIZE}
+    elif "ps" not in filters:
         filters["ps"] = Issue.MAX_PAGE_SIZE
 
     issue_list = {}
@@ -817,9 +819,15 @@ def get_newest_issue(endpoint: Platform, params: dict[str, str] = None) -> Union
 
 def count(endpoint: Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
-    returned_data = search(endpoint=endpoint, params=kwargs.copy().update({"ps": 1}))
-    log.debug("Issue search %s would return %d issues", str(kwargs), returned_data["total"])
-    return returned_data["total"]
+    params = {} if not kwargs else kwargs.copy()
+    params["ps"] = 1
+    try:
+        log.info("Count params = %s", str(params))
+        nbr_issues = len(search(endpoint=endpoint, params=params))
+    except TooManyIssuesError as e:
+        nbr_issues = e.nbr_issues
+    log.debug("Issue search %s would return %d issues", str(kwargs), nbr_issues)
+    return nbr_issues
 
 
 def get_object(endpoint: Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> Issue:
@@ -832,6 +840,8 @@ def get_object(endpoint: Platform, key: str, data: dict[str, str] = None, from_e
 
 def pre_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/issue/search"""
+    if not params:
+        return {}
     filters = util.dict_subset(util.remove_nones(params.copy()), _SEARCH_CRITERIAS)
     if endpoint.version() >= (10, 2, 0):
         if PROJECT_FILTER_OLD in filters:

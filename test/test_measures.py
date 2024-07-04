@@ -23,6 +23,7 @@
 
 import sys
 import os
+import csv
 from unittest.mock import patch
 import pytest
 
@@ -34,6 +35,9 @@ import cli.options as opt
 CMD = "sonar-measures-export.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
+
+TYPE_COL = 1
+KEY_COL = 0
 
 
 def test_measures_export() -> None:
@@ -196,4 +200,48 @@ def test_non_existing_project() -> None:
             measures_export.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
+
+
+def test_apps_measures() -> None:
+    """test_apps_measures"""
+    EXISTING_KEY = "APP_TEST"
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + ["--apps", "-m", "ncloc"]):
+            measures_export.main()
+    assert util.file_not_empty(util.CSV_FILE)
+    first = True
+    found = False
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        for line in csv.reader(fh):
+            if first:
+                first = False
+                continue
+            found = found or line[KEY_COL] == EXISTING_KEY
+            assert line[TYPE_COL] == "APPLICATION"
+            assert len(line) == 5
+    assert found
+    util.clean(util.CSV_FILE)
+
+
+def test_portfolios_measures() -> None:
+    """test_portfolios_measures"""
+    EXISTING_KEY = "PORTFOLIO_ALL"
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + ["--portfolios", "-m", "ncloc"]):
+            measures_export.main()
+    assert util.file_not_empty(util.CSV_FILE)
+    first = True
+    found = False
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        for line in csv.reader(fh):
+            if first:
+                first = False
+                continue
+            found = found or line[KEY_COL] == EXISTING_KEY
+            assert len(line) == 5
+            assert line[TYPE_COL] == "PORTFOLIO"
+    assert found
     util.clean(util.CSV_FILE)

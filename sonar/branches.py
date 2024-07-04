@@ -27,7 +27,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar import measures, components, syncer, settings, exceptions, projects
+from sonar import components, syncer, settings, exceptions, projects
 import sonar.utilities as util
 
 from sonar.audit import rules, problem
@@ -153,17 +153,6 @@ class Branch(components.Component):
         """
         return uuid(self.concerned_object.key, self.name, self.endpoint.url)
 
-    def last_analysis(self):
-        """
-        :param include_branches: Unused, present for inheritance reasons
-        :type include_branches: bool, optional
-        :return: Datetime of last analysis
-        :rtype: datetime
-        """
-        if self._last_analysis is None:
-            self.refresh()
-        return self._last_analysis
-
     def is_kept_when_inactive(self):
         """
         :return: Whether the branch is kept when inactive
@@ -288,16 +277,6 @@ class Branch(components.Component):
             rule = rules.get_rule(rules.RuleId.BRANCH_NEVER_ANALYZED)
             return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
         return []
-
-    def get_measures(self, metrics_list):
-        """Retrieves a branch list of measures
-
-        :param metrics_list: List of metrics to return
-        :type metrics_list: str (comma separated)
-        :return: List of measures of a projects
-        :rtype: dict
-        """
-        return measures.get(self, metrics_list)
 
     def get_issues(self):
         """Returns a branch dict of issues

@@ -33,7 +33,7 @@ from requests.exceptions import HTTPError
 
 import sonar.logging as log
 from sonar import exceptions, errcodes
-from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, measures, syncer
+from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, syncer
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
 import sonar.utilities as util
@@ -246,18 +246,6 @@ class Project(components.Component):
         else:
             self._ncloc_with_branches = max([b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values())])
         return self._ncloc_with_branches
-
-    def get_measures(self, metrics_list):
-        """Retrieves a project list of measures
-
-        :param list metrics_list: List of metrics to return
-        :return: List of measures of a projects
-        :rtype: dict
-        """
-        m = measures.get(self, metrics_list)
-        if "ncloc" in m and m["ncloc"]:
-            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
-        return m
 
     def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
         """
@@ -1012,7 +1000,7 @@ class Project(components.Component):
         """
         log.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
         alm_key = data["key"]
-        if not devops.platform_exists(alm_key, self.endpoint):
+        if not devops.exists(alm_key, self.endpoint):
             log.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
             return False
         alm_type = devops.devops_type(platform_key=alm_key, endpoint=self.endpoint)

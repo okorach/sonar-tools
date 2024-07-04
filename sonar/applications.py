@@ -18,13 +18,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
 import json
+from datetime import datetime
 from http import HTTPStatus
 from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import components, exceptions, settings, projects, branches
+from sonar import platform, components, exceptions, settings, projects, branches
 from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -32,7 +34,6 @@ import sonar.utilities as util
 from sonar.audit import rules
 
 _OBJECTS = {}
-_MAP = {}
 _CLASS_LOCK = Lock()
 
 APIS = {
@@ -54,7 +55,7 @@ class Application(aggr.Aggregation):
     """
 
     @classmethod
-    def get_object(cls, endpoint, key):
+    def get_object(cls, endpoint: platform.Platform, key: str) -> Application:
         """Gets an Application object from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -66,17 +67,18 @@ class Application(aggr.Aggregation):
         """
         if endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        if key in _OBJECTS:
-            return _OBJECTS[key]
+        uu = sq.uuid(key=key, url=endpoint.url)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         try:
-            data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)
+            data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)["application"]
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(key, f"Application '{key}' not found")
+                raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint, data):
+    def load(cls, endpoint: platform.Platform, data: dict[str, str]) -> Application:
         """Loads an Application object with data retrieved from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -89,12 +91,13 @@ class Application(aggr.Aggregation):
         """
         if endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = _OBJECTS.get(data["key"], cls(endpoint, data["key"], data["name"]))
+        uu = sq.uuid(key=data["key"], url=endpoint.url)
+        o = _OBJECTS.get(uu, cls(endpoint, data["key"], data["name"]))
         o.reload(data)
         return o
 
     @classmethod
-    def create(cls, endpoint, key, name):
+    def create(cls, endpoint: platform.Platform, key: str, name: str) -> Application:
         """Creates an Application object in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -121,9 +124,8 @@ class Application(aggr.Aggregation):
         self._projects = None
         self._description = None
         self.name = name
-        log.debug("Created object %s", str(self))
-        _OBJECTS[self.key] = self
-        _MAP[self.name] = self.key
+        log.debug("Created object %s with uuid %s id %x", str(self), self.uuid(), id(self))
+        _OBJECTS[self.uuid()] = self
 
     def refresh(self):
         """Refreshes the by re-reading SonarQube
@@ -133,7 +135,8 @@ class Application(aggr.Aggregation):
         :rtype: Appplication
         """
         try:
-            return self.reload(json.loads(self.get(APIS["get"], params={"application": self.key}).text)["application"])
+            self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
+            self.reload(json.loads(self.get(APIS["get"], params={"application": self.key}).text)["application"])
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 _OBJECTS.pop(self.key, None)
@@ -341,6 +344,14 @@ class Application(aggr.Aggregation):
                     raise
         return ok
 
+    def last_analysis(self) -> datetime:
+        """Returns the last analysis date of an app"""
+        if self._last_analysis is None:
+            self.refresh()
+        if "analysisDate" in self._json:
+            self._last_analysis = util.string_to_date(self._json["analysisDate"])
+        return self._last_analysis
+
     def update(self, data):
         """Updates an Application with data coming from a JSON (export)
 
@@ -379,14 +390,14 @@ def _project_list(data):
     return plist.keys()
 
 
-def count(endpoint):
+def count(endpoint: platform.Platform) -> int:
     """returns count of applications
 
     :param Platform endpoint: Reference to the SonarQube platform
     :return: Count of applications
     :rtype: int
     """
-    data = json.loads(endpoint.get(components.SEARCH_API, params={"ps": 1, "filter": "qualifier = APP"}).text)
+    data = json.loads(endpoint.get(APIS["search"], params={"ps": 1, "filter": "qualifier = APP"}).text)
     return data["paging"]["total"]
 
 
@@ -425,6 +436,15 @@ def get_list(endpoint: object, key_list: list[str] = None, use_cache: bool = Tru
         for key in util.csv_to_list(key_list):
             object_list[key] = Application.get_object(endpoint, key)
     return object_list
+
+
+def exists(endpoint: platform.Platform, key: str) -> bool:
+    """Tells whether a application with a given key exists"""
+    try:
+        Application.get_object(endpoint, key)
+        return True
+    except exceptions.ObjectNotFound:
+        return False
 
 
 def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
@@ -502,5 +522,13 @@ def import_config(endpoint, config_data, key_list=None):
     return True
 
 
-def search_by_name(endpoint, name):
-    return util.search_by_name(endpoint, name, components.SEARCH_API, "components", extra_params={"qualifiers": "APP"})
+def search_by_name(endpoint: platform.Platform, name: str) -> dict[str, Application]:
+    """Searches applications by name. Several apps may match as name does not have to be unique"""
+    get_list(endpoint=endpoint, use_cache=False)
+    data = {}
+    for app in _OBJECTS.values():
+        if app.name == name:
+            log.debug("Found APP %s id %x", app.key, id(app))
+            data[app.key] = app
+    # return {app.key: app for app in _OBJECTS.values() if app.name == name}
+    return data

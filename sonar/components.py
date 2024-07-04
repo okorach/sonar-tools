@@ -112,9 +112,17 @@ class Component(sq.SqObject):
         self.nbr_issues = len(issue_list)
         return issue_list
 
-    def get_measures(self, metrics_list):
-        # Must be implemented in sub classes
-        return {}
+    def get_measures(self, metrics_list: list[str]):
+        """Retrieves a project list of measures
+
+        :param list metrics_list: List of metrics to return
+        :return: List of measures of a projects
+        :rtype: dict
+        """
+        m = measures.get(self, metrics_list)
+        if "ncloc" in m and m["ncloc"]:
+            self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
+        return m
 
     def get_measure(self, metric, fallback=None):
         meas = self.get_measures(metric)

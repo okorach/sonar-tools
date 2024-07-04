@@ -3,6 +3,7 @@
 - Added option to not export all Sonar findings custom properties in SARIF export for more compact output
 - Refactoring on portfolios for hardening
 - `sonar-findings-export` and `sonar-rules` now have a `--languages` option to filter findings/rules in a restrained list of languages
+- `sonar-measures-export` can export measures for Applications and Portfolios. For this reason, a new column (col 2) has been added to the CSV output format which can be PROJECT, BRANCH, APPLICATION or PORTFOLIO
 
 # Version 3.1
   - Several bug fixes, in particular Sonar Tools would hang if providing a token with insufficient permissions for projects (Browse is minimally needed)
