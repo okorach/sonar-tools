@@ -33,7 +33,6 @@ import sonar.utilities as util
 from sonar.audit import rules
 
 _OBJECTS = {}
-_MAP = {}
 _CLASS_LOCK = Lock()
 
 APIS = {
@@ -78,7 +77,7 @@ class Application(aggr.Aggregation):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint, data):
+    def load(cls, endpoint: platform.Platform, data: dict[str, str]):
         """Loads an Application object with data retrieved from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -91,7 +90,8 @@ class Application(aggr.Aggregation):
         """
         if endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = _OBJECTS.get(data["key"], cls(endpoint, data["key"], data["name"]))
+        uu = sq.uuid(key=data["key"], url=endpoint.url)
+        o = _OBJECTS.get(uu, cls(endpoint, data["key"], data["name"]))
         o.reload(data)
         return o
 
@@ -123,9 +123,8 @@ class Application(aggr.Aggregation):
         self._projects = None
         self._description = None
         self.name = name
-        log.debug("Created object %s", str(self))
+        log.debug("Created object %s with uuid %s id %x", str(self), self.uuid(), id(self))
         _OBJECTS[self.uuid()] = self
-        _MAP[self.name] = self.key
 
     def refresh(self):
         """Refreshes the by re-reading SonarQube
@@ -390,14 +389,14 @@ def _project_list(data):
     return plist.keys()
 
 
-def count(endpoint):
+def count(endpoint: platform.Platform) -> int:
     """returns count of applications
 
     :param Platform endpoint: Reference to the SonarQube platform
     :return: Count of applications
     :rtype: int
     """
-    data = json.loads(endpoint.get(components.SEARCH_API, params={"ps": 1, "filter": "qualifier = APP"}).text)
+    data = json.loads(endpoint.get(APIS["search"], params={"ps": 1, "filter": "qualifier = APP"}).text)
     return data["paging"]["total"]
 
 
@@ -522,5 +521,13 @@ def import_config(endpoint, config_data, key_list=None):
     return True
 
 
-def search_by_name(endpoint, name):
-    return util.search_by_name(endpoint, name, components.SEARCH_API, "components", extra_params={"qualifiers": "APP"})
+def search_by_name(endpoint: platform.Platform, name: str) -> dict[str, Application]:
+    """Searches applications by name. Several apps may match as name does not have to be unique"""
+    get_list(endpoint=endpoint, use_cache=False)
+    data = {}
+    for app in _OBJECTS.values():
+        if app.name == name:
+            log.debug("Found APP %s id %x", app.key, id(app))
+            data[app.key] = app
+    # return {app.key: app for app in _OBJECTS.values() if app.name == name}
+    return data
