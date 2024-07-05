@@ -32,7 +32,7 @@ from requests.exceptions import HTTPError
 from cli import options
 import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes
-from sonar import projects, applications, portfolios, branches, app_branches
+from sonar import projects, applications, portfolios
 import sonar.utilities as util
 
 RATINGS = "letters"
@@ -44,13 +44,10 @@ CONVERT_OPTIONS = {"ratings": "letters", "percents": "float", "dates": "datetime
 def __last_analysis(component: object) -> str:
     """Returns the last analysis of a component as a string"""
     last_analysis = component.last_analysis()
-    with_time = True
-    if CONVERT_OPTIONS["dates"] == "dateonly":
-        with_time = False
     if last_analysis is None:
         last_analysis = "Never"
     else:
-        last_analysis = util.date_to_string(last_analysis, with_time)
+        last_analysis = util.date_to_string(last_analysis, CONVERT_OPTIONS["dates"] != "dateonly")
     return last_analysis
 
 
@@ -69,14 +66,7 @@ def __get_object_measures(obj: object, wanted_metrics: list[str]) -> dict[str, s
     log.info("Getting measures for %s", str(obj))
     measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d["lastAnalysis"] = __last_analysis(obj)
-    measures_d["url"] = obj.url()
     measures_d.pop("quality_gate_details", None)
-    proj = obj
-    if isinstance(obj, branches.Branch) or isinstance(obj, app_branches.ApplicationBranch):
-        proj = obj.concerned_object
-        measures_d["branch"] = obj.name
-    measures_d["key"] = proj.key
-    measures_d["name"] = proj.name
     return measures_d
 
 
@@ -254,22 +244,6 @@ def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, s
             csvwriter.writerow(row)
 
 
-def __get_general_object_data(obj: object, **kwargs) -> dict[str, str]:
-    """Return general project/branch data"""
-    data = {}
-    proj = obj
-    data["type"] = type(obj).__name__.upper()
-    if kwargs[options.WITH_BRANCHES] and isinstance(obj, branches.Branch):
-        proj = obj.concerned_object
-        data["branch"] = obj.key
-    data["key"] = proj.key
-    if kwargs[options.WITH_URL]:
-        data["url"] = obj.url()
-    if kwargs[options.WITH_NAME]:
-        data["name"] = proj.name
-    return data
-
-
 def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[projects.Project]:
     """Returns the list of objects concerned by the measures export"""
     try:
@@ -283,6 +257,7 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     obj_list = []
+    log.info("Collecting %s branches", comp_type)
     if kwargs[options.WITH_BRANCHES] and comp_type in ("projects", "apps"):
         for project in object_list.values():
             obj_list += project.branches().values()
@@ -299,8 +274,13 @@ def main():
     wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
     file = kwargs.pop(options.OUTPUTFILE)
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
-    if endpoint.edition() == "community":
+    edition = endpoint.edition()
+    if edition == "community" and kwargs[options.WITH_BRANCHES]:
+        log.warning("SonarQube instance is a community edition, branch option ignored")
         kwargs[options.WITH_BRANCHES] = False
+    if edition in ("community", "developer") and kwargs[options.COMPONENT_TYPE] == "portfolio":
+        log.warning("SonarQube instance is a %s edition, there are no portfolios", edition)
+        util.exit_fatal("SonarQube instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
     kwargs[options.WITH_NAME] = True
 
     obj_list = __get_concerned_objects(endpoint=endpoint, **kwargs)
@@ -308,7 +288,7 @@ def main():
 
     measure_list = []
     for obj in obj_list:
-        data = __get_general_object_data(obj=obj, **kwargs)
+        data = obj.component_data()
         try:
             if kwargs["history"]:
                 data.update(__get_json_measures_history(obj, wanted_metrics))
