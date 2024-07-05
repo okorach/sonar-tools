@@ -32,7 +32,7 @@ from requests.exceptions import HTTPError
 from cli import options
 import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes
-from sonar import projects, applications, portfolios, branches
+from sonar import projects, applications, portfolios, branches, app_branches
 import sonar.utilities as util
 
 RATINGS = "letters"
@@ -45,6 +45,7 @@ def __last_analysis(component: object) -> str:
     """Returns the last analysis of a component as a string"""
     last_analysis = component.last_analysis()
     with_time = True
+    log.info("LAST ANA OF %s = %s", str(component), str(last_analysis))
     if CONVERT_OPTIONS["dates"] == "dateonly":
         with_time = False
     if last_analysis is None:
@@ -65,14 +66,14 @@ def __get_json_measures_history(obj: object, wanted_metrics: list[str]) -> dict[
 
 
 def __get_object_measures(obj: object, wanted_metrics: list[str]) -> dict[str, str]:
-    """ Returns the list of requested measures of an object """
+    """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
     measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d["lastAnalysis"] = __last_analysis(obj)
     measures_d["url"] = obj.url()
     measures_d.pop("quality_gate_details", None)
     proj = obj
-    if isinstance(obj, branches.Branch):
+    if isinstance(obj, branches.Branch) or isinstance(obj, app_branches.ApplicationBranch):
         proj = obj.concerned_object
         measures_d["branch"] = obj.name
     measures_d["key"] = proj.key
@@ -283,7 +284,7 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     obj_list = []
-    if kwargs[options.WITH_BRANCHES] and comp_type == "projects":
+    if kwargs[options.WITH_BRANCHES] and comp_type in ("projects", "apps"):
         for project in object_list.values():
             obj_list += project.branches().values()
     else:
