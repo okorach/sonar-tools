@@ -209,6 +209,16 @@ class ApplicationBranch(Component):
         """Returns the object UUID"""
         return uuid(self.concerned_object.key, self.name, self.endpoint.url)
 
+    def component_data(self) -> dict[str, str]:
+        """Returns key data"""
+        return {
+            "key": self.concerned_object.key,
+            "name": self.concerned_object.name,
+            "type": type(self.concerned_object).__name__.upper(),
+            "branch": self.name,
+            "url": self.url(),
+        }
+
 
 def uuid(app_key: str, branch_name: str, url: str) -> str:
     """Returns the UUID of an object of that class"""
@@ -218,7 +228,6 @@ def uuid(app_key: str, branch_name: str, url: str) -> str:
 def list_from(app: App, data: dict[str, str]) -> dict[str, ApplicationBranch]:
     """Returns a dict of application branches"""
     branch_list = {}
-    log.info("Building APP Br from %s", data["branches"])
     for br in data["branches"]:
         branch_data = json.loads(app.endpoint.get(APIS["get"], params={"application": app.key, "branch": br["name"]}).text)["application"]
         branch_list[branch_data["branch"]] = ApplicationBranch.load(app, branch_data)

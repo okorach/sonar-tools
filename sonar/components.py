@@ -180,6 +180,10 @@ class Component(sq.SqObject):
         """Returns the parameters to be used for a search of that object"""
         return {"component": self.key}
 
+    def component_data(self) -> dict[str, str]:
+        """Returns key data"""
+        return {"key": self.key, "name": self.name, "type": type(self).__name__.upper(), "branch": "", "url": self.url()}
+
 
 def get_components(component_types, endpoint):
     data = json.loads(endpoint.get("projects/search", params={"ps": 500, "qualifiers": component_types}).text)
