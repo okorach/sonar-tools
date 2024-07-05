@@ -45,7 +45,6 @@ def __last_analysis(component: object) -> str:
     """Returns the last analysis of a component as a string"""
     last_analysis = component.last_analysis()
     with_time = True
-    log.info("LAST ANA OF %s = %s", str(component), str(last_analysis))
     if CONVERT_OPTIONS["dates"] == "dateonly":
         with_time = False
     if last_analysis is None:
