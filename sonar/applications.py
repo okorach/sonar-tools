@@ -26,7 +26,7 @@ from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import platform, components, exceptions, settings, projects, branches
+from sonar import platform, exceptions, settings, projects, branches
 from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -136,7 +136,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            self.reload(json.loads(self.get(APIS["get"], params={"application": self.key}).text)["application"])
+            self.reload(json.loads(self.get(APIS["get"], params=self.search_params()).text)["application"])
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 _OBJECTS.pop(self.key, None)
@@ -171,12 +171,12 @@ class Application(aggr.Aggregation):
             self._projects[p["key"]] = p["branch"]
         return self._projects
 
-    def branch_exists(self, branch):
+    def branch_exists(self, branch_name: str):
         """
         :return: Whether the Application branch exists
         :rtype: bool
         """
-        return branch in self.branches()
+        return branch_name in [b.name for b in self.branches()]
 
     def branch_is_main(self, branch):
         """
@@ -225,39 +225,27 @@ class Application(aggr.Aggregation):
         :return: the list of branches of the application and their definition
         :rtype: dict {<appBranch: {"projects": {<projectKey>: <projectBranch>, ...}}}
         """
+        from sonar.app_branches import list_from
+
         if self._branches is not None:
             return self._branches
         if "branches" not in self._json:
             self.refresh()
-        params = {"application": self.key}
-        self._branches = {}
-
-        for br in self._json["branches"]:
-            if not br["isMain"]:
-                br.pop("isMain")
-            b_name = br.pop("name")
-            params["branch"] = b_name
-            data = json.loads(self.get(APIS["get"], params=params).text)
-            br["projects"] = {}
-            for proj in data["application"]["projects"]:
-                br["projects"][proj["key"]] = proj["branch"]
-            self._branches[b_name] = br
+        self._branches = list_from(app=self, data=self._json)
         return self._branches
 
     def delete(self):
-        """Deletes an Application
+        """Deletes an Application and all its branches
 
         :param params: Params for delete, typically None
         :type params: dict, optional
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
-        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
-                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
-        :type mute: tuple, optional
         :return: Whether the delete succeeded
         :rtype: bool
         """
-        return sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS)
+        ok = True
+        for branch in self.branches().values():
+            ok = ok and branch.delete()
+        return ok and sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS)
 
     def _audit_empty(self, audit_settings):
         """Audits if an application contains 0 projects"""
@@ -299,7 +287,7 @@ class Application(aggr.Aggregation):
                 "description": None if self._description == "" else self._description,
                 "visibility": self.visibility(),
                 # 'projects': self.projects(),
-                "branches": self.branches(),
+                "branches": [br.export() for br in self.branches().values()],
                 "permissions": self.permissions().export(export_settings=export_settings),
                 "tags": util.list_to_csv(self.tags(), separator=", ", check_for_separator=True),
             }

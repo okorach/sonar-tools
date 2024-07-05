@@ -27,7 +27,7 @@ import json
 
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar import settings, tasks, measures
+from sonar import settings, tasks, measures, utilities
 
 SEARCH_API = "components/search"
 _DETAILS_API = "components/show"
@@ -56,7 +56,7 @@ class Component(sq.SqObject):
         if "visibility" in data:
             self._visibility = data["visibility"]
         if "analysisDate" in data:
-            self._last_analysis = data["analysisDate"]
+            self._last_analysis = utilities.string_to_date(data["analysisDate"])
         return self
 
     def __str__(self):
@@ -134,7 +134,8 @@ class Component(sq.SqObject):
         return self.ncloc
 
     def refresh(self):
-        return self.reload(json.loads(self.endpoint.get("navigation/component", params={"component": self.key}).text))
+        params = utilities.replace_keys(("project", "application", "portfolio"), "component", self.search_params())
+        return self.reload(json.loads(self.endpoint.get("navigation/component", params=params).text))
 
     def last_analysis(self):
         if not self._last_analysis:
@@ -174,6 +175,14 @@ class Component(sq.SqObject):
     def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
+
+    def search_params(self) -> dict[str, str]:
+        """Returns the parameters to be used for a search of that object"""
+        return {"component": self.key}
+
+    def component_data(self) -> dict[str, str]:
+        """Returns key data"""
+        return {"key": self.key, "name": self.name, "type": type(self).__name__.upper(), "branch": "", "url": self.url()}
 
 
 def get_components(component_types, endpoint):

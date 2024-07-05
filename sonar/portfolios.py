@@ -27,6 +27,7 @@ from __future__ import annotations
 from typing import Union
 import time
 import json
+import datetime
 from http import HTTPStatus
 from threading import Lock
 from requests.exceptions import HTTPError
@@ -168,6 +169,11 @@ class Portfolio(aggregations.Aggregation):
             self.reload(data)
         self.root_portfolio().create_sub_portfolios()
         self.projects()
+
+    def last_analysis(self) -> datetime.datetime:
+        if self._last_analysis is None:
+            super().refresh()
+        return self._last_analysis
 
     def set_parent(self, parent_portfolio):
         self.parent = parent_portfolio

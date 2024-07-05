@@ -320,6 +320,16 @@ class Branch(components.Component):
         """
         return self.get_issues() + self.get_hotspots()
 
+    def component_data(self) -> dict[str, str]:
+        """Returns key data"""
+        return {
+            "key": self.concerned_object.key,
+            "name": self.concerned_object.name,
+            "type": type(self.concerned_object).__name__.upper(),
+            "branch": self.name,
+            "url": self.url(),
+        }
+
     def sync(self, another_branch: Branch, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs branch findings with another branch
 
