@@ -333,6 +333,7 @@ def add_component_type_arg(parser: argparse.ArgumentParser, comp_types: tuple[st
     group = parser.add_mutually_exclusive_group()
     for c in comp_types:
         group.add_argument(f"--{c}", required=False, dest=COMPONENT_TYPE, action="store_const", const=c, help=f"Process {c}")
+    parser.set_defaults(compType=COMPONENT_TYPES[0])
     return parser
 
 
