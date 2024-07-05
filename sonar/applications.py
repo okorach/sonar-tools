@@ -287,7 +287,7 @@ class Application(aggr.Aggregation):
                 "description": None if self._description == "" else self._description,
                 "visibility": self.visibility(),
                 # 'projects': self.projects(),
-                "branches": self.branches(),
+                "branches": [br.export() for br in self.branches().values()],
                 "permissions": self.permissions().export(export_settings=export_settings),
                 "tags": util.list_to_csv(self.tags(), separator=", ", check_for_separator=True),
             }
