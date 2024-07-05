@@ -18,15 +18,15 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+""" Abstraction of Sonar Application Branch """
+
 from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar.platform import Platform as SonarCnx
 from sonar.components import Component
 
 from sonar.applications import Application as App
@@ -36,7 +36,6 @@ from sonar import exceptions, projects
 import sonar.sqobject as sq
 
 _OBJECTS = {}
-_CLASS_LOCK = Lock()
 
 APIS = {
     "search": "api/components/search_projects",
@@ -66,7 +65,7 @@ class ApplicationBranch(Component):
         _OBJECTS[self.uuid()] = self
 
     @classmethod
-    def get_object(cls, endpoint: SonarCnx, app: App, branch_name: str, project_branches: list[Branch]) -> ApplicationBranch:
+    def get_object(cls, app: App, branch_name: str) -> ApplicationBranch:
         """Gets an Application object from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -76,19 +75,19 @@ class ApplicationBranch(Component):
         :return: The found Application object
         :rtype: Application
         """
-        if endpoint.edition() == "community":
+        if app.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        uu = uuid(app.key, branch_name, endpoint.url)
+        uu = uuid(app.key, branch_name, app.endpoint.url)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
         app.refresh()
-        uu = uuid(app.key, branch_name, endpoint.url)
+        uu = uuid(app.key, branch_name, app.endpoint.url)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
-        raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' not found")
+        raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch {branch_name} not found")
 
     @classmethod
-    def create(cls, endpoint: SonarCnx, app: App, name: str, project_branches: list[Branch]) -> ApplicationBranch:
+    def create(cls, app: App, name: str, project_branches: list[Branch]) -> ApplicationBranch:
         """Creates an ApplicationBranch object in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -99,7 +98,7 @@ class ApplicationBranch(Component):
         :return: The created Application object
         :rtype: Application
         """
-        if endpoint.edition() == "community":
+        if app.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         params = {"application": app.key, "branch": name, "project": [], "projectBranch": []}
         for branch in project_branches:
@@ -107,7 +106,7 @@ class ApplicationBranch(Component):
             br_name = "" if branch.is_main() else branch.name
             params["projectBranch"].append(br_name)
         try:
-            endpoint.post(APIS["create"], params=params)
+            app.endpoint.post(APIS["create"], params=params)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(f"App {app.key} branch '{name}", e.response.text)
@@ -127,20 +126,13 @@ class ApplicationBranch(Component):
     def projects_branches(self) -> list[Branch]:
         """
         :return: The list of project branches included in the application branch
-        :rtype: list[branches.Branch]
+        :rtype: list[Branch]
         """
         return self._project_branches
 
     def delete(self) -> None:
         """Deletes an ApplicationBranch
 
-        :param params: Params for delete, typically None
-        :type params: dict, optional
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
-        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
-                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
-        :type mute: tuple, optional
         :return: Whether the delete succeeded
         :rtype: bool
         """
