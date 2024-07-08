@@ -89,6 +89,15 @@ def test_create_delete() -> None:
     app.delete()
     assert not applications.exists(endpoint=util.SQ, key=TEST_KEY)
 
+    # Test delete with 1 project in the app
+    app = applications.Application.create(endpoint=util.SQ, name="My App", key=TEST_KEY)
+    assert app is not None
+    assert app.key == TEST_KEY
+    assert app.name == "My App"
+    app.add_projects(["okorach_sonar-tools"])
+    app.delete()
+    assert not applications.exists(endpoint=util.SQ, key=TEST_KEY)
+
 
 def test_permissions_1() -> None:
     """Test permissions"""
