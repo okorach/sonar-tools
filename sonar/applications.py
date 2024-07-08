@@ -92,7 +92,10 @@ class Application(aggr.Aggregation):
         if endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         uu = sq.uuid(key=data["key"], url=endpoint.url)
-        o = _OBJECTS.get(uu, cls(endpoint, data["key"], data["name"]))
+        if uu in _OBJECTS:
+            o = _OBJECTS[uu]
+        else:
+            o = cls(endpoint, data["key"], data["name"])
         o.reload(data)
         return o
 
@@ -117,7 +120,7 @@ class Application(aggr.Aggregation):
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
         return Application(endpoint, key, name)
 
-    def __init__(self, endpoint, key, name):
+    def __init__(self, endpoint: platform.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(key, endpoint)
         self._branches = None
