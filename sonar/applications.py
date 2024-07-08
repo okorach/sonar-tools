@@ -229,7 +229,7 @@ class Application(aggr.Aggregation):
 
         if self._branches is not None:
             return self._branches
-        if "branches" not in self._json:
+        if not self._json or "branches" not in self._json:
             self.refresh()
         self._branches = list_from(app=self, data=self._json)
         return self._branches
@@ -243,8 +243,10 @@ class Application(aggr.Aggregation):
         :rtype: bool
         """
         ok = True
-        for branch in self.branches().values():
-            ok = ok and branch.delete()
+        if self.branches() is not None:
+            for branch in self.branches().values():
+                if not branch.is_main:
+                    ok = ok and branch.delete()
         return ok and sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS)
 
     def _audit_empty(self, audit_settings):
