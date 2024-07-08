@@ -171,7 +171,7 @@ def test_findings_filter_on_type() -> None:
                 assert "SECURITY:" in line[TYPE_COL] or "RELIABILITY:" in line[TYPE_COL]
             else:
                 assert line[TYPE_COL] in ("VULNERABILITY", "BUG")
-        # util.clean(util.CSV_FILE)
+        util.clean(util.CSV_FILE)
 
 
 def test_findings_filter_on_resolution() -> None:
@@ -377,7 +377,7 @@ def test_output_format_sarif() -> None:
     for k in "message", "locations", "ruleId":
         assert k in issue
     assert issue["level"] in ("warning", "error")
-    # util.clean(SARIF_FILE)
+    util.clean(SARIF_FILE)
 
 
 def test_output_format_json() -> None:
