@@ -24,6 +24,7 @@
 import os
 import sys
 import csv
+import json
 from unittest.mock import patch
 import pytest
 
@@ -34,6 +35,7 @@ from cli import findings_export
 import cli.options as opt
 
 CMD = "sonar-findings-export.py"
+SARIF_FILE = "issues.sarif"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
@@ -92,13 +94,13 @@ def test_findings_export_sarif_explicit() -> None:
 
 def test_findings_export_sarif_implicit() -> None:
     """Test SARIF export for a single project and implicit format"""
-    util.clean("issues.sarif")
+    util.clean(SARIF_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.OUTPUTFILE_SHORT}", "issues.sarif"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.OUTPUTFILE_SHORT}", SARIF_FILE]):
             findings_export.main()
     assert int(str(e.value)) == 0
-    assert util.file_contains("issues.sarif", "schemas/json/sarif-2.1.0-rtm.4")
-    util.clean("issues.sarif")
+    assert util.file_contains(SARIF_FILE, "schemas/json/sarif-2.1.0-rtm.4")
+    util.clean(SARIF_FILE)
 
 
 def test_wrong_filters() -> None:
@@ -357,3 +359,52 @@ def test_search_too_many_issues() -> None:
     """test_search_too_many_issues"""
     issue_list = issues.search_all(endpoint=util.SQ)
     assert len(issue_list) > 10000
+
+
+def test_output_format_sarif() -> None:
+    """test_output_format_sarif"""
+    util.clean(SARIF_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", SARIF_FILE, f"--{opt.KEYS}", "okorach_sonar-tools"]):
+            findings_export.main()
+    assert int(str(e.value)) == 0
+    with open(SARIF_FILE, encoding="utf-8") as fh:
+        sarif_json = json.loads(fh.read())
+    assert sarif_json["$schema"] == "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json"
+    run = sarif_json["runs"][0]
+    assert run["tool"]["driver"]["name"] == "SonarQube"
+    issue = run["results"][0]
+    for k in "message", "locations", "ruleId":
+        assert k in issue
+    assert issue["level"] in ("warning", "error")
+    # util.clean(SARIF_FILE)
+
+
+def test_output_format_json() -> None:
+    """test_output_format_json"""
+    util.clean(util.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
+            findings_export.main()
+    assert int(str(e.value)) == 0
+    with open(util.JSON_FILE, encoding="utf-8") as fh:
+        json_data = json.loads(fh.read())
+    issue = json_data[0]
+    for k in "author", "creationDate", "effort", "file", "key", "line", "message", "projectKey", "rule", "updateDate":
+        assert k in issue
+    # util.clean(util.JSON_FILE)
+
+
+def test_output_format_csv() -> None:
+    """test_output_format_csv"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
+            findings_export.main()
+    assert int(str(e.value)) == 0
+    with open(util.CSV_FILE, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        row = next(reader)
+        for k in "creationDate", "effort", "file", "key", "line", "message", "projectKey", "rule", "updateDate":
+            assert k in row
+    util.clean(util.CSV_FILE)
