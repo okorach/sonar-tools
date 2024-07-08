@@ -203,7 +203,7 @@ class Application(aggr.Aggregation):
             (pkey, bname) = (p["projectKey"], p["branch"]) if isinstance(p, dict) else (p, branch_data["projects"][p])
             try:
                 o_proj = projects.Project.get_object(self.endpoint, pkey)
-                if bname == settings.DEFAULT_SETTING:
+                if bname == settings.DEFAULT_BRANCH:
                     bname = o_proj.main_branch().name
                 if not branches.exists(self.endpoint, bname, pkey):
                     ok = False
