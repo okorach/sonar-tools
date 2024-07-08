@@ -229,7 +229,7 @@ class Application(aggr.Aggregation):
 
         if self._branches is not None:
             return self._branches
-        if "branches" not in self._json:
+        if not self._json or "branches" not in self._json:
             self.refresh()
         self._branches = list_from(app=self, data=self._json)
         return self._branches
@@ -243,8 +243,10 @@ class Application(aggr.Aggregation):
         :rtype: bool
         """
         ok = True
-        for branch in self.branches().values():
-            ok = ok and branch.delete()
+        if self.branches() is not None:
+            for branch in self.branches().values():
+                if not branch.is_main:
+                    ok = ok and branch.delete()
         return ok and sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS)
 
     def _audit_empty(self, audit_settings):
@@ -313,7 +315,8 @@ class Application(aggr.Aggregation):
         self.post("applications/set_tags", params={"application": self.key, "tags": my_tags})
         self._tags = util.csv_to_list(my_tags)
 
-    def add_projects(self, project_list):
+    def add_projects(self, project_list: list[str]) -> bool:
+        """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
         for proj in project_list:

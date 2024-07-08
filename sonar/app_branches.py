@@ -130,12 +130,15 @@ class ApplicationBranch(Component):
         """
         return self._project_branches
 
-    def delete(self) -> None:
+    def delete(self) -> bool:
         """Deletes an ApplicationBranch
 
         :return: Whether the delete succeeded
         :rtype: bool
         """
+        if self.is_main:
+            log.warning("Can't delete main %s, simply delete the application for that", str(self))
+            return False
         return sq.delete_object(self, APIS["delete"], self.search_params(), _OBJECTS)
 
     def export(self) -> dict[str, str]:
@@ -218,7 +221,9 @@ def uuid(app_key: str, branch_name: str, url: str) -> str:
 
 
 def list_from(app: App, data: dict[str, str]) -> dict[str, ApplicationBranch]:
-    """Returns a dict of application branches"""
+    """Returns a dict of application branches form the pure App JSON"""
+    if not data or "branches" not in data:
+        return {}
     branch_list = {}
     for br in data["branches"]:
         branch_data = json.loads(app.endpoint.get(APIS["get"], params={"application": app.key, "branch": br["name"]}).text)["application"]
