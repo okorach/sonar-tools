@@ -56,7 +56,7 @@ NEW_CODE_PERIOD = "newCodePeriod"
 COMPONENT_VISIBILITY = "visibility"
 PROJECT_DEFAULT_VISIBILITY = "projects.default.visibility"
 
-DEFAULT_SETTING = "__default__"
+DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
 
 _OBJECTS = {}
 
@@ -108,6 +108,7 @@ _INLINE_SETTINGS = (
     r"^sonar\.cobol\.copy\.(directories|exclusions)$",
     r"^sonar\.cobol\.sql\.catalog\.defaultSchema$",
     r"^sonar\.docker\.file\.patterns$",
+    r"^sonar\.auth\..*\.organizations$",
 )
 
 _API_SET = "settings/set"

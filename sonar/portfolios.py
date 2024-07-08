@@ -33,7 +33,7 @@ from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import aggregations, exceptions
+from sonar import aggregations, exceptions, settings
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
@@ -141,17 +141,18 @@ class Portfolio(aggregations.Aggregation):
         if "selectionMode" in self._json:
             mode = self._json["selectionMode"]
             self._selection_mode = {"mode": mode}
+            branch = self._json.get("branch", settings.DEFAULT_BRANCH)
             if mode == SELECTION_MODE_MANUAL:
                 self._selection_mode["projects"] = {}
                 for projdata in self._json.get("selectedProjects", {}):
-                    branch_list = projdata.get("selectedBranches", [util.DEFAULT])
+                    branch_list = projdata.get("selectedBranches", [settings.DEFAULT_BRANCH])
                     self._selection_mode["projects"].update({projdata["projectKey"]: branch_list})
             elif mode == SELECTION_MODE_REGEXP:
-                self._selection_mode.update({"regexp": self._json["regexp"], "branch": self._json.get("branch", util.DEFAULT)})
+                self._selection_mode.update({"regexp": self._json["regexp"], "branch": branch})
             elif mode == SELECTION_MODE_TAGS:
-                self._selection_mode.update({"tags": self._json["tags"], "branch": self._json.get("branch", util.DEFAULT)})
+                self._selection_mode.update({"tags": self._json["tags"], "branch": branch})
             elif mode == SELECTION_MODE_OTHERS:
-                self._selection_mode.update({"branch": self._json.get("branch", util.DEFAULT)})
+                self._selection_mode.update({"branch": branch})
         self.is_sub_portfolio = self._json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
         if "visibility" in self._json:
             self._visibility = self._json["visibility"]
@@ -203,13 +204,13 @@ class Portfolio(aggregations.Aggregation):
         if self._json is None or "selectedProjects" not in self._json:
             self.refresh()
         if self.endpoint.version() < (9, 3, 0):
-            self._selection_mode["projects"] = {p: util.DEFAULT for p in self._json.get("projects", {})}
+            self._selection_mode["projects"] = {p: settings.DEFAULT_BRANCH for p in self._json.get("projects", {})}
             return self._selection_mode["projects"]
         for p in self._json.get("selectedProjects", {}):
             if "selectedBranches" in p:
                 self._selection_mode["projects"][p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
-                self._selection_mode["projects"][p["projectKey"]] = util.DEFAULT
+                self._selection_mode["projects"][p["projectKey"]] = settings.DEFAULT_BRANCH
         log.debug("%s projects = %s", str(self), util.json_dump(self._selection_mode["projects"]))
         return self._selection_mode["projects"]
 
@@ -372,7 +373,7 @@ class Portfolio(aggregations.Aggregation):
         for proj, branch in branch_dict.items():
             key = proj if isinstance(proj, str) else proj.key
             try:
-                if branch and branch != util.DEFAULT:
+                if branch and branch != settings.DEFAULT_BRANCH:
                     self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch})
                 else:
                     self.post("views/add_project", params={"key": self.key, "project": key})
