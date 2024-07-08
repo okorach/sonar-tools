@@ -315,7 +315,8 @@ class Application(aggr.Aggregation):
         self.post("applications/set_tags", params={"application": self.key, "tags": my_tags})
         self._tags = util.csv_to_list(my_tags)
 
-    def add_projects(self, project_list):
+    def add_projects(self, project_list: list[str]) -> bool:
+        """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
         for proj in project_list:
