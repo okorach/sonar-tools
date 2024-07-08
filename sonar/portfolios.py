@@ -114,7 +114,10 @@ class Portfolio(aggregations.Aggregation):
         o = cls(endpoint=endpoint, name=data["name"], key=data["key"])
         o.reload(data)
         if not o.is_sub_portfolio:
-            o.refresh()
+            try:
+                o.refresh()
+            except HTTPError as e:
+                log.warning("HTTP Error %s when refreshing %s", str(e), str(o))
         return o
 
     def __init__(self, endpoint, name, key=None):
