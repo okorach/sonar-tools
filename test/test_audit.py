@@ -21,7 +21,7 @@
 
 """ sonar-audit tests """
 
-import sys
+import sys, os, stat
 from unittest.mock import patch
 import pytest
 
@@ -138,7 +138,11 @@ def test_sif_non_existing() -> None:
 def test_sif_not_readable() -> None:
     """test_sif_not_readable"""
     util.clean(util.JSON_FILE)
+    NO_PERMS = ~stat.S_IRUSR & ~stat.S_IWUSR
+    current_permissions = stat.S_IMODE(os.lstat("test/sif_not_readable.json").st_mode)
+    os.chmod("test/sif_not_readable.json", current_permissions & NO_PERMS)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_not_readable.json"]):
             audit.main()
     assert int(str(e.value)) == errcodes.SIF_AUDIT_ERROR
+    os.chmod("test/sif_not_readable.json", current_permissions)
