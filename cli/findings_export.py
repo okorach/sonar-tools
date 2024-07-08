@@ -182,9 +182,9 @@ def __write_json_findings(file: str, findings_list: list[findings.Finding], file
             if i == 0:
                 comma = ""
             if file_format == "json":
-                json_data = finding.to_sarif(kwargs.get("full", True))
-            else:
                 json_data = finding.to_json(DATES_WITHOUT_TIME)
+            else:
+                json_data = finding.to_sarif(kwargs.get("full", True))
             if not kwargs[options.WITH_URL]:
                 json_data.pop("url", None)
             print(f"{util.json_dump(json_data, indent=1)}{comma}\n", file=fd, end="")
@@ -386,7 +386,8 @@ def store_findings(
 
 def main():
     global DATES_WITHOUT_TIME
-
+    global IS_FIRST
+    IS_FIRST = True
     start_time = util.start_clock()
     kwargs = util.convert_args(parse_args("Sonar findings export"))
     sqenv = platform.Platform(**kwargs)
