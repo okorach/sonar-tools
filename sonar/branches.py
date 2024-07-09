@@ -278,23 +278,6 @@ class Branch(components.Component):
             return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
         return []
 
-    def get_hotspots(self):
-        """Returns a branch dict of hotspots
-
-        :return: dict of Hotspots, with hotspot key as key
-        :rtype: dict{key: Hotspot}
-        """
-        from sonar import hotspots
-
-        return hotspots.search(
-            endpoint=self.endpoint,
-            filters={
-                "projectKey": self.concerned_object.key,
-                "branch": self.name,
-                "additionalFields": "comments",
-            },
-        )
-
     def get_findings(self):
         """Returns a branch list of findings
 
