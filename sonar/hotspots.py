@@ -356,14 +356,14 @@ def search_by_project(endpoint: Platform, project_key: str, filters: dict[str, s
     key_list = util.csv_to_list(project_key)
     hotspots = {}
     for k in key_list:
-        filters[_get_project_filter(endpoint)] = k
+        filters[component_filter(endpoint)] = k
         project_hotspots = search(endpoint=endpoint, filters=filters)
         log.info("Project '%s' has %d hotspots corresponding to filters", k, len(project_hotspots))
         hotspots.update(project_hotspots)
     return post_search_filter(hotspots, filters=filters)
 
 
-def _get_project_filter(endpoint: Platform) -> str:
+def component_filter(endpoint: Platform) -> str:
     """Returns the string to filter by porject in api/hotspots/search"""
     if endpoint.version() >= (10, 2, 0):
         return PROJECT_FILTER
