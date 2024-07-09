@@ -108,8 +108,9 @@ class Component(sq.SqObject):
 
     def get_issues(self, search_filters: dict[str, str] = None) -> dict[str, object]:
         from sonar.issues import component_filter, search_all
-        comp_filter = component_filter(self.endpoint)
-        params = utilities.replace_keys(_ALT_COMPONENTS, comp_filter, self.search_params())
+        params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
+        if search_filters is not None:
+            params.update(search_filters)
         params["additionalFields"] = "comments"
         issue_list = search_all(endpoint=self.endpoint, params=params)
         self.nbr_issues = len(issue_list)
