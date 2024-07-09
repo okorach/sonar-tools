@@ -150,7 +150,9 @@ class Finding(sq.SqObject):
         self.modification_date = util.string_to_date(jsondata["updateDate"])
         self.hash = jsondata.get("hash", None)
         self.branch = jsondata.get("branch", None)
-        if self.branch is not None:
+        if self.branch is None:
+            self.branch = projects.Project.get_object(self.endpoint, self.projectKey).main_branch().name
+        else:
             self.branch = re.sub("^BRANCH:", "", self.branch)
         self.pull_request = jsondata.get("pullRequest", None)
 
