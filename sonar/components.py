@@ -22,7 +22,7 @@
     Abstraction of the SonarQube "component" concept
 
 """
-
+from __future__ import annotations
 import json
 
 import sonar.logging as log
@@ -150,11 +150,9 @@ class Component(sq.SqObject):
             self.ncloc = int(self.get_measure("ncloc", fallback=0))
         return self.ncloc
 
-    def refresh(self):
-        from sonar import issues
-
-        comp_filter = issues.component_filter(self.endpoint)
-        params = utilities.replace_keys(_ALT_COMPONENTS, comp_filter, self.search_params())
+    def refresh(self) -> Component:
+        """Refreshes a component data"""
+        params = utilities.replace_keys(_ALT_COMPONENTS, "component", self.search_params())
         return self.reload(json.loads(self.endpoint.get("navigation/component", params=params).text))
 
     def last_analysis(self):
