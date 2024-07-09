@@ -29,6 +29,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import settings, tasks, measures, utilities
 
+_ALT_COMPONENTS = ("project", "application", "portfolio")
 SEARCH_API = "components/search"
 _DETAILS_API = "components/show"
 
@@ -105,10 +106,10 @@ class Component(sq.SqObject):
                 log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list
 
-    def get_issues(self):
+    def get_issues(self, search_filters: dict[str, str] = None) -> dict[str, object]:
         from sonar.issues import component_filter, search_all
         comp_filter = component_filter(self.endpoint)
-        params = utilities.replace_keys(("project", "application", "portfolio"), comp_filter, self.search_params())
+        params = utilities.replace_keys(_ALT_COMPONENTS, comp_filter, self.search_params())
         params["additionalFields"] = "comments"
         issue_list = search_all(endpoint=self.endpoint, params=params)
         self.nbr_issues = len(issue_list)
@@ -138,7 +139,7 @@ class Component(sq.SqObject):
     def refresh(self):
         from sonar import issues
         comp_filter = issues.component_filter(self.endpoint)
-        params = utilities.replace_keys(("project", "application", "portfolio"), comp_filter, self.search_params())
+        params = utilities.replace_keys(_ALT_COMPONENTS, comp_filter, self.search_params())
         return self.reload(json.loads(self.endpoint.get("navigation/component", params=params).text))
 
     def last_analysis(self):

@@ -28,6 +28,8 @@ import sonar.logging as log
 import sonar.utilities as util
 import sonar.sqobject as sq
 
+_ALT_COMPONENTS = ("project", "application", "portfolio")
+
 DATETIME_METRICS = ("last_analysis", "createdAt", "updatedAt", "creation_date", "modification_date")
 
 
@@ -66,7 +68,7 @@ class Measure(sq.SqObject):
         :return: The new measure value
         :rtype: int or float or str
         """
-        params = util.replace_keys(("project", "application", "portfolio"), "component", self.concerned_object.search_params())
+        params = util.replace_keys(_ALT_COMPONENTS, "component", self.concerned_object.search_params())
         data = json.loads(self.get(Measure.API_READ, params=params).text)["component"]["measures"]
         self.value = _search_value(data)
         return self.value
@@ -115,7 +117,7 @@ def get(concerned_object: object, metrics_list: list[str], **kwargs):
     :return: Dict of found measures
     :rtype: dict{<metric>: <value>}
     """
-    params = util.replace_keys(("project", "application", "portfolio"), "component", concerned_object.search_params())
+    params = util.replace_keys(_ALT_COMPONENTS, "component", concerned_object.search_params())
     params["metricKeys"] = util.list_to_csv(metrics_list)
     log.debug("Getting measures with %s", str(params))
 
@@ -146,7 +148,7 @@ def get_history(concerned_object: object, metrics_list: list[str], **kwargs) -> 
     """
     # http://localhost:9999/api/measures/search_history?component=okorach_sonar-tools&metrics=ncloc&p=1&ps=1000
 
-    params = util.replace_keys(("project", "application", "portfolio"), "component", concerned_object.search_params())
+    params = util.replace_keys(_ALT_COMPONENTS, "component", concerned_object.search_params())
     params["metrics"] = util.list_to_csv(metrics_list)
     log.debug("Getting measures history with %s", str(params))
 
