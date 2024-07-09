@@ -141,6 +141,7 @@ class Component(sq.SqObject):
 
     def refresh(self):
         from sonar import issues
+
         comp_filter = issues.component_filter(self.endpoint)
         params = utilities.replace_keys(_ALT_COMPONENTS, comp_filter, self.search_params())
         return self.reload(json.loads(self.endpoint.get("navigation/component", params=params).text))
@@ -187,6 +188,7 @@ class Component(sq.SqObject):
     def search_params(self) -> dict[str, str]:
         """Return params used to search/create/delete for that object"""
         from sonar.issues import component_filter
+
         return {component_filter(self.endpoint): self.key}
 
     def component_data(self) -> dict[str, str]:
