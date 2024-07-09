@@ -651,6 +651,29 @@ class Project(components.Component):
 
         return hotspots.search(endpoint=self.endpoint, filters={"projectKey": self.key, "additionalFields": "comments"})
 
+    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+        br = filters.pop("branch", None)
+        pr = filters.pop("pullRequest", None)
+        if br is None and pr is None:
+            return super().get_issues(filters)
+        issue_list = {}
+        if br is not None:
+            if "*" in br:
+                br = self.branches()
+            else:
+                br = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
+            for b_obj in br.values():
+                if b_obj:
+                    issue_list = {**issue_list, **b_obj.get_issues()}
+        if pr is not None:
+            if "*" in pr:
+                pr = self.pull_requests()
+            else:
+                pr = {p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr}
+            for p_obj in pr.values():
+                issue_list = {**issue_list, **p_obj.get_issues()}
+        return issue_list
+
     def __sync_community(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""
         report, counters = [], {}

@@ -130,12 +130,12 @@ def parse_args(desc):
     return args
 
 
-def __write_header(file: str, format: str, **kwargs) -> None:
+def __write_header(**kwargs) -> None:
     """Writes the file header"""
-    with util.open_file(file, mode="a") as fd:
-        if format == "sarif":
+    with util.open_file(kwargs[options.OUTPUTFILE], mode="a") as fd:
+        if kwargs[options.FORMAT] == "sarif":
             print(SARIF_HEADER, file=fd)
-        elif format == "json":
+        elif kwargs[options.FORMAT] == "json":
             print("[\n", file=fd)
         else:
             csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
@@ -302,13 +302,14 @@ def __get_project_findings(queue, write_queue):
         else:
             new_params = params.copy()
             if options.PULL_REQUESTS in params:
-                new_params["pullRequest"] = util.list_to_csv(params[options.PULL_REQUESTS])
+                new_params["pullRequest"] = params[options.PULL_REQUESTS]
             if options.BRANCHES in params:
-                new_params["branch"] = util.list_to_csv(params[options.PULL_REQUESTS])
+                new_params["branch"] = params[options.BRANCHES]
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 try:
-                    findings_list = issues.search_by_project(key, params=new_params, endpoint=endpoint)
+                    proj = projects.Project.get_object(endpoint=endpoint, key=key)
+                    findings_list = proj.get_issues(filters=new_params)
                 except HTTPError as e:
                     log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
                     findings_list = {}
@@ -334,35 +335,19 @@ def store_findings(
     params: dict[str, str],
     endpoint: platform.Platform,
     file: str,
-    format: str,
-    threads: int = 4,
-    with_url: bool = False,
-    csv_separator: str = ",",
     sarif_full_export: bool = False,
 ) -> None:
     """Export all findings of a given project list"""
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
-    for key, project in project_list.items():
+    for key in project_list.keys():
         try:
-            branches = __get_list(project, params.pop(options.BRANCHES, None), "branch")
-            prs = __get_list(project, params.pop(options.PULL_REQUESTS, None), "pullrequest")
-            for b in branches:
-                params["branch"] = b
-                log.debug("Queue %s task %s put", str(my_queue), key)
-                my_queue.put((key, endpoint, params.copy()))
-            params.pop("branch", None)
-            for p in prs:
-                params["pullRequest"] = p
-                log.debug("Queue %s task %s put", str(my_queue), key)
-                my_queue.put((key, endpoint, params.copy()))
-            params.pop("pullRequest", None)
-            if not (branches or prs):
-                log.debug("Queue %s task %s put", str(my_queue), key)
-                my_queue.put((key, endpoint, params.copy()))
+            log.debug("Queue %s task %s put", str(my_queue), key)
+            my_queue.put((key, endpoint, params.copy()))
         except HTTPError as e:
-            log.critical("Error %s while exporting findings of object key %s, skipped", str(e), str(project))
+            log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
 
+    threads = params.get(options.NBR_THREADS, 4)
     for i in range(min(threads, len(project_list))):
         log.debug("Starting finding search thread 'findingSearch%d'", i)
         worker = Thread(target=__get_project_findings, args=[my_queue, write_queue])
@@ -371,7 +356,10 @@ def store_findings(
         worker.start()
 
     log.info("Starting finding writer thread 'findingWriter'")
-    write_worker = Thread(target=__write_findings, args=[write_queue, file, format, with_url, csv_separator, sarif_full_export])
+    fmt = params.get(options.FORMAT, "csv")
+    with_url = params.get(options.WITH_URL, False)
+    csv_separator = params.get(options.CSV_SEPARATOR, ",")
+    write_worker = Thread(target=__write_findings, args=[write_queue, file, fmt, with_url, csv_separator, sarif_full_export])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
@@ -420,22 +408,18 @@ def main():
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
-    fmt, fname = kwargs.pop(options.FORMAT, None), kwargs.pop(options.OUTPUTFILE, None)
-    fmt = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
+    fmt, fname = kwargs.get(options.FORMAT, None), kwargs.get(options.OUTPUTFILE, None)
+    kwargs[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
     log.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
-    __write_header(fname, fmt, **kwargs)
+    __write_header(**kwargs)
     store_findings(
         project_list,
         params=params,
         endpoint=sqenv,
         file=fname,
-        format=fmt,
-        threads=kwargs[options.NBR_THREADS],
-        with_url=kwargs[options.WITH_URL],
-        csv_separator=kwargs[options.CSV_SEPARATOR],
         sarif_full_export=not kwargs["sarifNoCustomProperties"],
     )
     __write_footer(fname, fmt)
