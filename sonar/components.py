@@ -106,11 +106,13 @@ class Component(sq.SqObject):
                 log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list
 
-    def get_issues(self, search_filters: dict[str, str] = None) -> dict[str, object]:
+    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
         from sonar.issues import component_filter, search_all
+
+        log.info("Searching issues for %s with filters %s", str(self), str(filters))
         params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
-        if search_filters is not None:
-            params.update(search_filters)
+        if filters is not None:
+            params.update(filters)
         params["additionalFields"] = "comments"
         issue_list = search_all(endpoint=self.endpoint, params=params)
         self.nbr_issues = len(issue_list)
