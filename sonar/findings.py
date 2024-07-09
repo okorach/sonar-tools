@@ -149,12 +149,14 @@ class Finding(sq.SqObject):
         self.creation_date = util.string_to_date(jsondata["creationDate"])
         self.modification_date = util.string_to_date(jsondata["updateDate"])
         self.hash = jsondata.get("hash", None)
-        self.branch = jsondata.get("branch", None)
-        if self.branch is None:
-            self.branch = projects.Project.get_object(self.endpoint, self.projectKey).main_branch().name
-        else:
-            self.branch = re.sub("^BRANCH:", "", self.branch)
+        self.component = jsondata.get("component", None)
         self.pull_request = jsondata.get("pullRequest", None)
+        if self.pull_request is None:
+            self.branch = jsondata.get("branch", None)
+            if self.branch is None:
+                self.branch = projects.Project.get_object(self.endpoint, self.projectKey).main_branch().name
+            else:
+                self.branch = re.sub("^BRANCH:", "", self.branch)
 
     def _load_from_export(self, jsondata):
         self._load_common(jsondata)
