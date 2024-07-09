@@ -383,6 +383,7 @@ def main():
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     del kwargs[options.TOKEN]
     params = util.remove_nones(kwargs.copy())
+    params[options.OUTPUTFILE] = kwargs[options.OUTPUTFILE]
     __verify_inputs(params)
 
     if util.is_sonarcloud_url(params[options.URL]) and params[options.USE_FINDINGS]:
