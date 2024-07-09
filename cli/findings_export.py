@@ -409,20 +409,21 @@ def main():
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
-    fmt, fname = kwargs.get(options.FORMAT, None), kwargs.get(options.OUTPUTFILE, None)
-    kwargs[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
+    fmt, fname = params.get(options.FORMAT, None), params.get(options.OUTPUTFILE, None)
+    params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
+
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
     log.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
-    __write_header(**kwargs)
+    __write_header(**params)
     store_findings(
         project_list,
         params=params,
         endpoint=sqenv,
         sarif_full_export=not kwargs["sarifNoCustomProperties"],
     )
-    __write_footer(fname, fmt)
+    __write_footer(fname, params[options.FORMAT])
     log.info("Returned findings: %d", TOTAL_FINDINGS)
     util.stop_clock(start_time)
     sys.exit(0)
