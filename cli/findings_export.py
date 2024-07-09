@@ -334,7 +334,6 @@ def store_findings(
     project_list: dict[str, projects.Project],
     params: dict[str, str],
     endpoint: platform.Platform,
-    file: str,
     sarif_full_export: bool = False,
 ) -> None:
     """Export all findings of a given project list"""
@@ -356,6 +355,7 @@ def store_findings(
         worker.start()
 
     log.info("Starting finding writer thread 'findingWriter'")
+    file = params.get(options.OUTPUTFILE, None)
     fmt = params.get(options.FORMAT, "csv")
     with_url = params.get(options.WITH_URL, False)
     csv_separator = params.get(options.CSV_SEPARATOR, ",")
@@ -419,7 +419,6 @@ def main():
         project_list,
         params=params,
         endpoint=sqenv,
-        file=fname,
         sarif_full_export=not kwargs["sarifNoCustomProperties"],
     )
     __write_footer(fname, fmt)
