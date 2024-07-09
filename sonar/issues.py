@@ -700,11 +700,13 @@ def search_all(endpoint: Platform, params: dict[str, str] = None) -> dict[str, I
         issue_list = search(endpoint=endpoint, params=params)
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
-        if component_filter(endpoint) in params:
-            issue_list = __search_all_by_date(endpoint=endpoint, params=params)
+        comp_filter = component_filter(endpoint)
+        if comp_filter in params:
+            key_list = util.csv_to_list(params[comp_filter])
         else:
-            for k in projects.search(endpoint):
-                issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=params))
+            key_list = projects.search(endpoint).keys()
+        for k in key_list:
+            issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=params))
     return issue_list
 
 
