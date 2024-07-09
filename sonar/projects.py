@@ -590,6 +590,28 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         return self.post("project_dump/import", params={"key": self.key}).ok
 
+    def get_branches_and_prs(self, filters: dict[str, str]) -> Union[None, dict[str, object]]:
+        if not filters:
+            return None
+        f = filters.copy()
+        br = f.pop("branch", None)
+        pr = f.pop("pullRequest", None)
+        if not br and not pr:
+            return None
+        objects = {}
+        if br is not None:
+            if "*" in br:
+                objects = self.branches()
+            else:
+                objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
+        if pr is not None:
+            if "*" in pr:
+                pr = self.pull_requests()
+            else:
+                pr = {p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr}
+            objects = {**objects, **pr}
+        return objects
+
     def get_findings(self, branch=None, pr=None):
         """Returns a project list of findings (issues and hotspots)
 
@@ -641,38 +663,25 @@ class Project(components.Component):
 
         return findings_list
 
-    def get_hotspots(self):
-        """Returns a project main branch list of hotspots
-
-        :return: dict of Hotspots, with hotspot key as key
-        :rtype: dict{key: Hotspot}
-        """
-        from sonar import hotspots
-
-        return hotspots.search(endpoint=self.endpoint, filters={"projectKey": self.key, "additionalFields": "comments"})
+    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+        branches_or_prs = self.get_branches_and_prs(filters)
+        if branches_or_prs is None:
+            return super().get_hotspots(filters)
+        findings_list = {}
+        for comp in branches_or_prs.values():
+            if comp:
+                findings_list = {**findings_list, **comp.get_hotspots()}
+        return findings_list
 
     def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
-        br = filters.pop("branch", None)
-        pr = filters.pop("pullRequest", None)
-        if br is None and pr is None:
+        branches_or_prs = self.get_branches_and_prs(filters)
+        if branches_or_prs is None:
             return super().get_issues(filters)
-        issue_list = {}
-        if br is not None:
-            if "*" in br:
-                br = self.branches()
-            else:
-                br = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
-            for b_obj in br.values():
-                if b_obj:
-                    issue_list = {**issue_list, **b_obj.get_issues()}
-        if pr is not None:
-            if "*" in pr:
-                pr = self.pull_requests()
-            else:
-                pr = {p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr}
-            for p_obj in pr.values():
-                issue_list = {**issue_list, **p_obj.get_issues()}
-        return issue_list
+        findings_list = {}
+        for comp in branches_or_prs.values():
+            if comp:
+                findings_list = {**findings_list, **comp.get_issues()}
+        return findings_list
 
     def __sync_community(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""
