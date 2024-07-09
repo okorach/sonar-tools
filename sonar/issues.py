@@ -126,9 +126,6 @@ class Issue(findings.Finding):
         super().__init__(key, endpoint, data, from_export)
         self._debt = None
         self.tags = []  #: Issue tags
-        if data is not None:
-            self.component = data.get("component", None)
-        # log.debug("Loaded issue: %s", util.json_dump(data))
         _OBJECTS[self.uuid()] = self
 
     def __str__(self):
@@ -701,7 +698,7 @@ def search_all(endpoint: Platform, params: dict[str, str] = None) -> dict[str, I
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
         comp_filter = component_filter(endpoint)
-        if comp_filter in params:
+        if params and comp_filter in params:
             key_list = util.csv_to_list(params[comp_filter])
         else:
             key_list = projects.search(endpoint).keys()
