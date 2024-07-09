@@ -319,7 +319,8 @@ def __get_project_findings(queue, write_queue):
 
             if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
                 try:
-                    findings_list.update(hotspots.search_by_project(endpoint=endpoint, project_key=key, filters=new_params))
+                    proj = projects.Project.get_object(endpoint=endpoint, key=key)
+                    findings_list.update(proj.get_hotspots(filters=new_params))
                 except HTTPError as e:
                     log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
             else:
