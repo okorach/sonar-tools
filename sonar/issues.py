@@ -34,12 +34,12 @@ import sonar.utilities as util
 API_SET_TAGS = "issues/set_tags"
 API_SET_TYPE = "issues/set_type"
 
-PROJECT_FILTER_OLD = "componentKeys"
-PROJECT_FILTER = "components"
+COMPONENT_FILTER_OLD = "componentKeys"
+COMPONENT_FILTER = "components"
 
 _SEARCH_CRITERIAS = (
-    PROJECT_FILTER_OLD,
-    PROJECT_FILTER,
+    COMPONENT_FILTER_OLD,
+    COMPONENT_FILTER,
     "types",
     "severities",
     "createdAfter",
@@ -126,9 +126,6 @@ class Issue(findings.Finding):
         super().__init__(key, endpoint, data, from_export)
         self._debt = None
         self.tags = []  #: Issue tags
-        if data is not None:
-            self.component = data.get("component", None)
-        # log.debug("Loaded issue: %s", util.json_dump(data))
         _OBJECTS[self.uuid()] = self
 
     def __str__(self):
@@ -550,17 +547,17 @@ class Issue(findings.Finding):
 # ------------------------------- Static methods --------------------------------------
 
 
-def _get_proj_filter(endpoint: Platform) -> str:
+def component_filter(endpoint: Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
     if endpoint.version() >= (10, 2, 0):
-        return PROJECT_FILTER
+        return COMPONENT_FILTER
     else:
-        return PROJECT_FILTER_OLD
+        return COMPONENT_FILTER_OLD
 
 
 def __search_all_by_directories(params, endpoint=None):
     new_params = params.copy()
-    facets = _get_facets(endpoint=endpoint, project_key=new_params[_get_proj_filter(endpoint)], facets="directories", params=new_params)
+    facets = _get_facets(endpoint=endpoint, project_key=new_params[component_filter(endpoint)], facets="directories", params=new_params)
     issue_list = {}
     log.info("Splitting search by directories")
     for d in facets["directories"]:
@@ -635,7 +632,7 @@ def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start:
     if date_start is not None and date_stop is not None:
         log.debug(
             "Project %s has %d issues between %s and %s",
-            new_params[_get_proj_filter(endpoint)],
+            new_params[component_filter(endpoint)],
             len(issue_list),
             util.date_to_string(date_start, False),
             util.date_to_string(date_stop, False),
@@ -646,7 +643,7 @@ def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start:
 def __search_all_by_project(endpoint: Platform, project_key: str, params: dict[str, str] = None) -> dict[str, Issue]:
     """Search issues by project"""
     new_params = {} if params is None else params.copy()
-    new_params[_get_proj_filter(endpoint)] = project_key
+    new_params[component_filter(endpoint)] = project_key
     issue_list = {}
     log.debug("Searching for issues of project '%s'", project_key)
     try:
@@ -700,7 +697,12 @@ def search_all(endpoint: Platform, params: dict[str, str] = None) -> dict[str, I
         issue_list = search(endpoint=endpoint, params=params)
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
-        for k in projects.search(endpoint):
+        comp_filter = component_filter(endpoint)
+        if params and comp_filter in params:
+            key_list = util.csv_to_list(params[comp_filter])
+        else:
+            key_list = projects.search(endpoint).keys()
+        for k in key_list:
             issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=params))
     return issue_list
 
@@ -788,7 +790,7 @@ def search(endpoint: Platform, params: dict[str, str] = None, raise_error: bool 
 
 def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", params: dict[str, str] = None) -> dict[str, str]:
     """Returns the facets of a search"""
-    params.update({_get_proj_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
+    params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
     data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
     l = {}
@@ -844,8 +846,8 @@ def pre_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, 
         return {}
     filters = util.dict_subset(util.remove_nones(params.copy()), _SEARCH_CRITERIAS)
     if endpoint.version() >= (10, 2, 0):
-        if PROJECT_FILTER_OLD in filters:
-            filters[PROJECT_FILTER] = filters.pop(PROJECT_FILTER_OLD)
+        if COMPONENT_FILTER_OLD in filters:
+            filters[COMPONENT_FILTER] = filters.pop(COMPONENT_FILTER_OLD)
         if "types" in filters:
             __MAP = {"BUG": "RELIABILITY", "CODE_SMELL": "MAINTAINABILITY", "VULNERABILITY": "SECURITY", "SECURITY_HOTSPOT": "SECURITY"}
             filters["impactSoftwareQualities"] = [__MAP[t] for t in filters.pop("types")]

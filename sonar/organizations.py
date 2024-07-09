@@ -116,10 +116,7 @@ class Organization(sqobject.SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, True))
 
     def search_params(self) -> dict[str, str]:
-        """Return params used to search for that object
-
-        :meta private:
-        """
+        """Return params used to search/create/delete for that object"""
         return {"organizations": self.key}
 
     def new_code_period(self) -> tuple[str, str]:

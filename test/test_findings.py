@@ -30,6 +30,7 @@ import pytest
 
 import utilities as util
 import sonar.logging as log
+from sonar import utilities
 from sonar import issues, errcodes
 from cli import findings_export
 import cli.options as opt
@@ -330,8 +331,6 @@ def test_issues_count_0() -> None:
 
 def test_issues_count_1() -> None:
     """test_issues_count"""
-    log.set_debug_level("DEBUG")
-    log.set_logger(filename="test.log")
     total = issues.count(util.SQ)
     assert issues.count(util.SQ, severities=["BLOCKER"]) < int(total / 3)
 
@@ -407,4 +406,40 @@ def test_output_format_csv() -> None:
         row = next(reader)
         for k in "creationDate", "effort", "file", "key", "line", "message", "projectKey", "rule", "updateDate":
             assert k in row
+    util.clean(util.CSV_FILE)
+
+
+def test_output_format_branch() -> None:
+    """test_output_format_branch"""
+    for br in "develop", "master,develop":
+        util.clean(util.CSV_FILE)
+        with pytest.raises(SystemExit) as e:
+            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.BRANCHES}", br]):
+                findings_export.main()
+        assert int(str(e.value)) == 0
+        br_list = utilities.csv_to_list(br)
+        with open(util.CSV_FILE, encoding="utf-8") as fd:
+            reader = csv.reader(fd)
+            next(reader)
+            for line in reader:
+                assert line[8] in br_list
+                assert line[9] == ""
+                assert line[6] == "okorach_sonar-tools"
+        util.clean(util.CSV_FILE)
+
+
+def test_output_format_prs() -> None:
+    """test_output_format_prs"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.PULL_REQUESTS}", "*"]):
+            findings_export.main()
+    assert int(str(e.value)) == 0
+    with open(util.CSV_FILE, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        next(reader)
+        for line in reader:
+            assert line[8] == ""
+            assert line[9] != ""
+            assert line[6] == "okorach_sonar-tools"
     util.clean(util.CSV_FILE)

@@ -22,13 +22,14 @@
     Abstraction of the SonarQube "component" concept
 
 """
-
+from __future__ import annotations
 import json
 
 import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import settings, tasks, measures, utilities
 
+_ALT_COMPONENTS = ("project", "application", "portfolio")
 SEARCH_API = "components/search"
 _DETAILS_API = "components/show"
 
@@ -105,12 +106,28 @@ class Component(sq.SqObject):
                 log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list
 
-    def get_issues(self):
-        from sonar import issues
+    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+        """Returns list of issues for a component, optionally on branches or/and PRs"""
+        from sonar.issues import component_filter, search_all
 
-        issue_list = issues.search(endpoint=self.endpoint, params={"componentKeys": self.key})
+        log.info("Searching issues for %s with filters %s", str(self), str(filters))
+        params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
+        if filters is not None:
+            params.update(filters)
+        params["additionalFields"] = "comments"
+        issue_list = search_all(endpoint=self.endpoint, params=params)
         self.nbr_issues = len(issue_list)
         return issue_list
+
+    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+        """Returns list of hotspots for a component, optionally on branches or/and PRs"""
+        from sonar.hotspots import component_filter, search
+
+        log.info("Searching hotspots for %s with filters %s", str(self), str(filters))
+        params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
+        if filters is not None:
+            params.update(filters)
+        return search(endpoint=self.endpoint, filters=params)
 
     def get_measures(self, metrics_list: list[str]):
         """Retrieves a project list of measures
@@ -133,8 +150,9 @@ class Component(sq.SqObject):
             self.ncloc = int(self.get_measure("ncloc", fallback=0))
         return self.ncloc
 
-    def refresh(self):
-        params = utilities.replace_keys(("project", "application", "portfolio"), "component", self.search_params())
+    def refresh(self) -> Component:
+        """Refreshes a component data"""
+        params = utilities.replace_keys(_ALT_COMPONENTS, "component", self.search_params())
         return self.reload(json.loads(self.endpoint.get("navigation/component", params=params).text))
 
     def last_analysis(self):
@@ -177,8 +195,10 @@ class Component(sq.SqObject):
         return measures.get_history(self, metrics_list)
 
     def search_params(self) -> dict[str, str]:
-        """Returns the parameters to be used for a search of that object"""
-        return {"component": self.key}
+        """Return params used to search/create/delete for that object"""
+        from sonar.issues import component_filter
+
+        return {component_filter(self.endpoint): self.key}
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

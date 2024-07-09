@@ -590,6 +590,37 @@ class Project(components.Component):
             raise exceptions.UnsupportedOperation("Project import is only available with Enterprise and Datacenter Edition")
         return self.post("project_dump/import", params={"key": self.key}).ok
 
+    def get_branches_and_prs(self, filters: dict[str, str]) -> Union[None, dict[str, object]]:
+        """Get lists of branches and PR objects"""
+        if not filters:
+            return None
+        f = filters.copy()
+        br = f.pop("branch", None)
+        pr = f.pop("pullRequest", None)
+        if not br and not pr:
+            return None
+        objects = {}
+        if br:
+            if "*" in br:
+                objects = self.branches()
+            else:
+                try:
+                    for b in br:
+                        objects[b] = branches.Branch.get_object(concerned_object=self, branch_name=b)
+                except exceptions.ObjectNotFound as e:
+                    log.error(e.message)
+        if pr:
+            if "*" in pr:
+                pr = self.pull_requests()
+            else:
+                for p in pr:
+                    try:
+                        objects[p] = pull_requests.get_object(project=self, pull_request_key=p)
+                    except exceptions.ObjectNotFound as e:
+                        log.error(e.message)
+            objects = {**objects, **pr}
+        return objects
+
     def get_findings(self, branch=None, pr=None):
         """Returns a project list of findings (issues and hotspots)
 
@@ -641,15 +672,25 @@ class Project(components.Component):
 
         return findings_list
 
-    def get_hotspots(self):
-        """Returns a project main branch list of hotspots
+    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+        branches_or_prs = self.get_branches_and_prs(filters)
+        if branches_or_prs is None:
+            return super().get_hotspots(filters)
+        findings_list = {}
+        for comp in branches_or_prs.values():
+            if comp:
+                findings_list = {**findings_list, **comp.get_hotspots()}
+        return findings_list
 
-        :return: dict of Hotspots, with hotspot key as key
-        :rtype: dict{key: Hotspot}
-        """
-        from sonar import hotspots
-
-        return hotspots.search(endpoint=self.endpoint, filters={"projectKey": self.key, "additionalFields": "comments"})
+    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+        branches_or_prs = self.get_branches_and_prs(filters)
+        if branches_or_prs is None:
+            return super().get_issues(filters)
+        findings_list = {}
+        for comp in branches_or_prs.values():
+            if comp:
+                findings_list = {**findings_list, **comp.get_issues()}
+        return findings_list
 
     def __sync_community(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""
@@ -1125,11 +1166,8 @@ class Project(components.Component):
         # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 
-    def search_params(self):
-        """Return params used to search for that object
-
-        :meta private:
-        """
+    def search_params(self) -> dict[str, str]:
+        """Return params used to search/create/delete for that object"""
         return {"project": self.key}
 
 

@@ -278,40 +278,6 @@ class Branch(components.Component):
             return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
         return []
 
-    def get_issues(self):
-        """Returns a branch dict of issues
-
-        :return: dict of Issues, with issue key as key
-        :rtype: dict{key: Issue}
-        """
-        from sonar import issues
-
-        return issues.search_all(
-            endpoint=self.endpoint,
-            params={
-                "componentKeys": self.concerned_object.key,
-                "branch": self.name,
-                "additionalFields": "comments",
-            },
-        )
-
-    def get_hotspots(self):
-        """Returns a branch dict of hotspots
-
-        :return: dict of Hotspots, with hotspot key as key
-        :rtype: dict{key: Hotspot}
-        """
-        from sonar import hotspots
-
-        return hotspots.search(
-            endpoint=self.endpoint,
-            filters={
-                "projectKey": self.concerned_object.key,
-                "branch": self.name,
-                "additionalFields": "comments",
-            },
-        )
-
     def get_findings(self):
         """Returns a branch list of findings
 
@@ -402,11 +368,8 @@ class Branch(components.Component):
             log.debug("Branch audit disabled, skipping audit of %s", str(self))
         return []
 
-    def search_params(self):
-        """Return params used to search for that object
-
-        :meta private:
-        """
+    def search_params(self) -> dict[str, str]:
+        """Return params used to search/create/delete for that object"""
         return {"project": self.concerned_object.key, "branch": self.name}
 
 
