@@ -194,10 +194,7 @@ class ApplicationBranch(Component):
         return self.update(name=self.name, project_branches=new_project_branches)
 
     def search_params(self) -> dict[str, str]:
-        """Return params used to search/create/delete for that object
-
-        :meta private:
-        """
+        """Return params used to search/create/delete for that object"""
         return {"application": self.concerned_object.key, "branch": self.name}
 
     def uuid(self) -> str:

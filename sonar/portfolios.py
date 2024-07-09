@@ -529,11 +529,8 @@ class Portfolio(aggregations.Aggregation):
                 o.set_parent(self)
                 o.update(subp)
 
-    def search_params(self):
-        """Return params used to search for that object
-
-        :meta private:
-        """
+    def search_params(self) -> dict[str, str]:
+        """Return params used to search/create/delete for that object"""
         return {"portfolio": self.key}
 
 

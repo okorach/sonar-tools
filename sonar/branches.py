@@ -289,7 +289,7 @@ class Branch(components.Component):
         return issues.search_all(
             endpoint=self.endpoint,
             params={
-                "componentKeys": self.concerned_object.key,
+                issues.component_filter(self.endpoint): self.concerned_object.key,
                 "branch": self.name,
                 "additionalFields": "comments",
             },
@@ -402,11 +402,8 @@ class Branch(components.Component):
             log.debug("Branch audit disabled, skipping audit of %s", str(self))
         return []
 
-    def search_params(self):
-        """Return params used to search for that object
-
-        :meta private:
-        """
+    def search_params(self) -> dict[str, str]:
+        """Return params used to search/create/delete for that object"""
         return {"project": self.concerned_object.key, "branch": self.name}
 
 

@@ -106,9 +106,11 @@ class Component(sq.SqObject):
         return comp_list
 
     def get_issues(self):
-        from sonar import issues
-
-        issue_list = issues.search(endpoint=self.endpoint, params={"componentKeys": self.key})
+        from sonar.issues import component_filter, search_all
+        comp_filter = component_filter(self.endpoint)
+        params = utilities.replace_keys(("project", "application", "portfolio"), comp_filter, self.search_params())
+        params["additionalFields"] = "comments"
+        issue_list = search_all(endpoint=self.endpoint, params=params)
         self.nbr_issues = len(issue_list)
         return issue_list
 
@@ -134,7 +136,9 @@ class Component(sq.SqObject):
         return self.ncloc
 
     def refresh(self):
-        params = utilities.replace_keys(("project", "application", "portfolio"), "component", self.search_params())
+        from sonar import issues
+        comp_filter = issues.component_filter(self.endpoint)
+        params = utilities.replace_keys(("project", "application", "portfolio"), comp_filter, self.search_params())
         return self.reload(json.loads(self.endpoint.get("navigation/component", params=params).text))
 
     def last_analysis(self):
@@ -177,8 +181,9 @@ class Component(sq.SqObject):
         return measures.get_history(self, metrics_list)
 
     def search_params(self) -> dict[str, str]:
-        """Returns the parameters to be used for a search of that object"""
-        return {"component": self.key}
+        """Return params used to search/create/delete for that object"""
+        from sonar.issues import component_filter
+        return {component_filter(self.endpoint): self.key}
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

@@ -366,10 +366,7 @@ class Application(aggr.Aggregation):
             self.set_branch(name, branch_data)
 
     def search_params(self):
-        """Return params used to search for that object
-
-        :meta private:
-        """
+        """Return params used to search/create/delete for that object"""
         return {"application": self.key}
 
 

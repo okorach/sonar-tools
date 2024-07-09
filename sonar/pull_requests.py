@@ -78,11 +78,8 @@ class PullRequest(components.Component):
             log.debug("%s age is %d days", str(self), age)
         return problems
 
-    def search_params(self):
-        """Return params used to search for that object
-
-        :meta private:
-        """
+    def search_params(self) -> dict[str, str]:
+        """Return params used to search/create/delete for that object"""
         return {"project": self.project.key, "pullRequest": self.key}
 
 

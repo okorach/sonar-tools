@@ -1125,11 +1125,8 @@ class Project(components.Component):
         # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 
-    def search_params(self):
-        """Return params used to search for that object
-
-        :meta private:
-        """
+    def search_params(self) -> dict[str, str]:
+        """Return params used to search/create/delete for that object"""
         return {"project": self.key}
 
 
