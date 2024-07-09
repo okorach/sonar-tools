@@ -107,6 +107,7 @@ class Component(sq.SqObject):
         return comp_list
 
     def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+        """Returns list of issues for a component, optionally on branches or/and PRs"""
         from sonar.issues import component_filter, search_all
 
         log.info("Searching issues for %s with filters %s", str(self), str(filters))
@@ -117,6 +118,16 @@ class Component(sq.SqObject):
         issue_list = search_all(endpoint=self.endpoint, params=params)
         self.nbr_issues = len(issue_list)
         return issue_list
+
+    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+        """Returns list of hotspots for a component, optionally on branches or/and PRs"""
+        from sonar.hotspots import component_filter, search
+
+        log.info("Searching hotspots for %s with filters %s", str(self), str(filters))
+        params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
+        if filters is not None:
+            params.update(filters)
+        return search(endpoint=self.endpoint, filters=params)
 
     def get_measures(self, metrics_list: list[str]):
         """Retrieves a project list of measures
