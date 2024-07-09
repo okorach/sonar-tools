@@ -591,6 +591,7 @@ class Project(components.Component):
         return self.post("project_dump/import", params={"key": self.key}).ok
 
     def get_branches_and_prs(self, filters: dict[str, str]) -> Union[None, dict[str, object]]:
+        """Get lists of branches and PR objects"""
         if not filters:
             return None
         f = filters.copy()
@@ -599,16 +600,24 @@ class Project(components.Component):
         if not br and not pr:
             return None
         objects = {}
-        if br is not None:
+        if br:
             if "*" in br:
                 objects = self.branches()
             else:
-                objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
-        if pr is not None:
+                try:
+                    for b in br:
+                        objects[b] = branches.Branch.get_object(concerned_object=self, branch_name=b)
+                except exceptions.ObjectNotFound as e:
+                    log.error(e.message)
+        if pr:
             if "*" in pr:
                 pr = self.pull_requests()
             else:
-                pr = {p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr}
+                for p in pr:
+                    try:
+                        objects[p] = pull_requests.get_object(project=self, pull_request_key=p)
+                    except exceptions.ObjectNotFound as e:
+                        log.error(e.message)
             objects = {**objects, **pr}
         return objects
 
