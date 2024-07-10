@@ -274,7 +274,7 @@ def __get_component_findings(queue: Queue[tuple[object, dict[str, str]]], write_
     """Gets the findings of a component and puts them in a writing queue"""
     while not queue.empty():
         (component, params) = queue.get()
-        search_findings = params[options.USE_FINDINGS]
+        search_findings = params.pop(options.USE_FINDINGS)
         status_list = util.csv_to_list(params.get(options.STATUSES, None))
         i_statuses = util.intersection(status_list, issues.STATUSES)
         h_statuses = util.intersection(status_list, hotspots.STATUSES)
@@ -303,10 +303,18 @@ def __get_component_findings(queue: Queue[tuple[object, dict[str, str]]], write_
             write_queue.put([findings_list, False])
         else:
             new_params = params.copy()
-            if options.PULL_REQUESTS in params:
-                new_params["pullRequest"] = params[options.PULL_REQUESTS]
-            if options.BRANCHES in params:
-                new_params["branch"] = params[options.BRANCHES]
+            new_params.pop("sarifNoCustomProperties", None)
+            new_params.pop(options.NBR_THREADS, None)
+            new_params.pop(options.CSV_SEPARATOR, None)
+            new_params.pop(options.COMPONENT_TYPE, None)
+            new_params.pop(options.DATES_WITHOUT_TIME, None)
+            new_params.pop(options.OUTPUTFILE, None)
+            new_params.pop(options.WITH_LAST_ANALYSIS, None)
+            new_params.pop(options.WITH_URL, None)
+            if options.PULL_REQUESTS in new_params:
+                new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
+            if options.BRANCHES in new_params:
+                new_params["branch"] = new_params.pop(options.BRANCHES)
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 try:
@@ -351,7 +359,7 @@ def store_findings(components_list: dict[str, object], params: dict[str, str]) -
         worker.start()
 
     log.info("Starting finding writer thread 'findingWriter'")
-    write_worker = Thread(target=__write_findings, args=[write_queue, params])
+    write_worker = Thread(target=__write_findings, args=[write_queue, params.copy()])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
@@ -371,13 +379,15 @@ def main():
     start_time = util.start_clock()
     kwargs = util.convert_args(parse_args("Sonar findings export"))
     sqenv = platform.Platform(**kwargs)
-    DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     del kwargs[options.TOKEN]
+    kwargs.pop(options.HTTP_TIMEOUT, None)
+    del kwargs[options.URL]
+    DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     params = util.remove_nones(kwargs.copy())
     params[options.OUTPUTFILE] = kwargs[options.OUTPUTFILE]
     __verify_inputs(params)
 
-    if util.is_sonarcloud_url(params[options.URL]) and params[options.USE_FINDINGS]:
+    if util.is_sonarcloud_url(sqenv.url) and params[options.USE_FINDINGS]:
         log.warning("--%s option is not available with SonarCloud, disabling the option to proceed", options.USE_FINDINGS)
         params[options.USE_FINDINGS] = False
 
@@ -387,13 +397,14 @@ def main():
                 log.warning("Selected search criteria %s will disable --%s", params[p], options.USE_FINDINGS)
             params[options.USE_FINDINGS] = False
             break
+
     try:
         if params[options.COMPONENT_TYPE] == "portfolios":
-            components_list = portfolios.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
+            components_list = portfolios.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
         elif params[options.COMPONENT_TYPE] == "apps":
-            components_list = applications.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
+            components_list = applications.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
         else:
-            components_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
+            components_list = projects.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
