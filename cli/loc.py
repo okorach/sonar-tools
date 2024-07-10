@@ -27,7 +27,7 @@ from requests.exceptions import HTTPError
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, portfolios, projects
+from sonar import platform, portfolios, applications, projects, errcodes
 import sonar.utilities as util
 
 
@@ -55,11 +55,11 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
         loc = ""
     arr = [o.key, loc]
     obj_type = type(o).__name__.lower()
-    if obj_type == "branch":
-        arr = [o.concerned_object.key, o.key, loc]
+    if obj_type in ("branch", "applicationbranch"):
+        arr = [o.concerned_object.key, o.name, loc]
     if kwargs[options.WITH_NAME]:
         proj_name = o.name
-        if obj_type == "branch":
+        if obj_type in ("branch", "applicationbranch"):
             proj_name = o.concerned_object.name
         arr.append(proj_name)
     if kwargs[options.WITH_LAST_ANALYSIS]:
@@ -203,27 +203,32 @@ def main():
     )
     endpoint = platform.Platform(**kwargs)
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
-    if kwargs[options.COMPONENT_TYPE] == "portfolios":
-        if kwargs[options.WITH_BRANCHES]:
-            log.warning("Portfolio LoC export selected, branch option is ignored")
-        if kwargs[options.WITH_LAST_ANALYSIS]:
-            log.warning("Portfolio LoC export selected, last analysis option is ignored")
-        kwargs[options.WITH_LAST_ANALYSIS] = False
+
+    edition = endpoint.edition()
+    if kwargs[options.WITH_BRANCHES] and edition == "community":
+        log.warning("No branches in community edition, option to export by branch is ignored")
         kwargs[options.WITH_BRANCHES] = False
+    if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in ("community", "developer"):
+        util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
+    if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_BRANCHES]:
+        log.warning("Portfolio LoC export selected, branch option is ignored")
+        kwargs[options.WITH_BRANCHES] = False
+
+    if kwargs[options.COMPONENT_TYPE] == "portfolios":
         params = {}
         if kwargs["topLevelOnly"]:
             params["qualifiers"] = "VW"
         objects_list = list(portfolios.search(endpoint, params=params).values())
+    elif kwargs[options.COMPONENT_TYPE] == "apps":
+        objects_list = list(applications.search(endpoint).values())
     else:
         objects_list = list(projects.search(endpoint).values())
-        if kwargs[options.WITH_BRANCHES]:
-            if endpoint.edition() == "community":
-                log.warning("No branches in community edition, option to export by branch is ignored")
-            else:
-                branch_list = []
-                for proj in objects_list:
-                    branch_list += proj.branches().values()
-                objects_list = branch_list
+
+    if kwargs[options.WITH_BRANCHES]:
+        branch_list = []
+        for proj in objects_list:
+            branch_list += proj.branches().values()
+        objects_list = branch_list
 
     __dump_loc(objects_list, **kwargs)
     util.stop_clock(start_time)
