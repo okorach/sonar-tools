@@ -33,18 +33,12 @@ import sonar.utilities as util
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    if kwargs[options.COMPONENT_TYPE] == "portfolios":
-        arr = ["# portfolio key"]
-    elif kwargs[options.WITH_BRANCHES]:
-        arr = ["# project key", "branch"]
-    else:
-        arr = ["# project key"]
+    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key"]
+    if kwargs[options.WITH_BRANCHES]:
+        arr.append("branch")
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
-        if kwargs[options.COMPONENT_TYPE] == "portfolios":
-            arr.append("portfolio name")
-        else:
-            arr.append("project name")
+        arr.append(f"{kwargs[options.COMPONENT_TYPE][0:-1]} name")
     if kwargs[options.WITH_LAST_ANALYSIS]:
         arr.append("last analysis")
     if kwargs[options.WITH_URL]:
