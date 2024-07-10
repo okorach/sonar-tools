@@ -66,6 +66,7 @@ def parse_args(desc):
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, sarif_fmt=True)
     parser = options.add_thread_arg(parser, "findings search")
+    parser = options.add_component_type_arg(parser)
     parser.add_argument(
         f"-{options.BRANCHES_SHORT}",
         f"--{options.BRANCHES}",
@@ -79,8 +80,7 @@ def parse_args(desc):
         f"--{options.PULL_REQUESTS}",
         required=False,
         default=None,
-        help="Comma separated list of pull requests to export. Use * to export findings from all PRs. "
-        "If not specified, only findings of the main branch will be exported",
+        help="Comma separated list of pull requests to export. Use * to export findings from all PRs.",
     )
     parser.add_argument(
         f"--{options.STATUSES}",
@@ -406,7 +406,7 @@ def main():
             params[options.USE_FINDINGS] = False
             break
     try:
-        project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
+        components_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
@@ -416,10 +416,10 @@ def main():
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
-    log.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
+    log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     __write_header(**params)
     store_findings(
-        project_list,
+        components_list,
         params=params,
         endpoint=sqenv,
         sarif_full_export=not kwargs["sarifNoCustomProperties"],
