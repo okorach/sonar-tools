@@ -330,18 +330,14 @@ def __get_component_findings(queue, write_queue):
         queue.task_done()
 
 
-def store_findings(
-    components_list: dict[str, projects.Project],
-    params: dict[str, str],
-    endpoint: platform.Platform,
-) -> None:
+def store_findings(components_list: dict[str, object], params: dict[str, str]) -> None:
     """Export all findings of a given project list"""
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
     for comp in components_list.values():
         try:
             log.debug("Queue %s task %s put", str(my_queue), str(comp))
-            my_queue.put((comp, endpoint, params.copy()))
+            my_queue.put((comp, comp.endpoint, params.copy()))
         except HTTPError as e:
             log.critical("Error %s while exporting findings of %s, skipped", str(e), str(comp))
 
@@ -412,7 +408,7 @@ def main():
 
     log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     __write_header(**params)
-    store_findings(components_list, params=params, endpoint=sqenv)
+    store_findings(components_list, params=params)
     __write_footer(fname, params[options.FORMAT])
     log.info("Returned findings: %d", TOTAL_FINDINGS)
     util.stop_clock(start_time)
