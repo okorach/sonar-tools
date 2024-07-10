@@ -334,7 +334,6 @@ def store_findings(
     components_list: dict[str, projects.Project],
     params: dict[str, str],
     endpoint: platform.Platform,
-    sarif_full_export: bool = False,
 ) -> None:
     """Export all findings of a given project list"""
     my_queue = Queue(maxsize=0)
@@ -359,6 +358,7 @@ def store_findings(
     fmt = params.get(options.FORMAT, "csv")
     with_url = params.get(options.WITH_URL, False)
     csv_separator = params.get(options.CSV_SEPARATOR, ",")
+    sarif_full_export = not params.get("sarifNoCustomProperties", False)
     write_worker = Thread(target=__write_findings, args=[write_queue, file, fmt, with_url, csv_separator, sarif_full_export])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
@@ -407,13 +407,12 @@ def main():
 
     fmt, fname = params.get(options.FORMAT, None), params.get(options.OUTPUTFILE, None)
     params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
-
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
     log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     __write_header(**params)
-    store_findings(components_list, params=params, endpoint=sqenv, sarif_full_export=not kwargs["sarifNoCustomProperties"])
+    store_findings(components_list, params=params, endpoint=sqenv)
     __write_footer(fname, params[options.FORMAT])
     log.info("Returned findings: %d", TOTAL_FINDINGS)
     util.stop_clock(start_time)
