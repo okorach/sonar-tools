@@ -36,7 +36,9 @@ from requests.exceptions import HTTPError
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, exceptions, projects, issues, hotspots, findings, errcodes
+from sonar import platform, exceptions, errcodes
+from sonar import issues, hotspots, findings
+from sonar import projects, applications, portfolios
 import sonar.utilities as util
 
 WRITE_END = object()
@@ -59,6 +61,17 @@ SARIF_HEADER = """{
           },
           "results": [
 """
+
+_OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS = (
+    options.STATUSES,
+    options.DATE_AFTER,
+    options.DATE_BEFORE,
+    options.RESOLUTIONS,
+    options.SEVERITIES,
+    options.TYPES,
+    options.TAGS,
+    options.LANGUAGES,
+)
 
 
 def parse_args(desc):
@@ -235,18 +248,6 @@ def __write_findings(
     log.debug("End of write findings")
 
 
-def __get_list(project: object, list_str: str, list_type: str) -> list[str]:
-    if list_str == "*":
-        if list_type == "branch":
-            list_array = project.branches().keys()
-        else:
-            list_array = project.pull_requests().keys()
-    else:
-        list_array = util.csv_to_list(list_str)
-
-    return list_array
-
-
 def __verify_inputs(params):
     diff = util.difference(util.csv_to_list(params.get(options.RESOLUTIONS, None)), issues.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
@@ -269,9 +270,9 @@ def __verify_inputs(params):
     return True
 
 
-def __get_project_findings(queue, write_queue):
+def __get_component_findings(queue, write_queue):
     while not queue.empty():
-        (key, endpoint, params) = queue.get()
+        (component, endpoint, params) = queue.get()
         search_findings = params[options.USE_FINDINGS]
         status_list = util.csv_to_list(params.get(options.STATUSES, None))
         i_statuses = util.intersection(status_list, issues.STATUSES)
@@ -289,14 +290,14 @@ def __get_project_findings(queue, write_queue):
         if status_list or resol_list or type_list or sev_list or options.LANGUAGES in params:
             search_findings = False
 
-        log.debug("WriteQueue %s task %s put", str(write_queue), key)
+        log.debug("WriteQueue %s task %s put", str(write_queue), component.key)
         if search_findings:
             try:
                 findings_list = findings.export_findings(
-                    endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
+                    endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
                 )
             except HTTPError as e:
-                log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                log.critical("Error %s while exporting findings of %s, skipped", str(e), str(component))
                 findings_list = {}
             write_queue.put([findings_list, False])
         else:
@@ -308,10 +309,9 @@ def __get_project_findings(queue, write_queue):
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 try:
-                    proj = projects.Project.get_object(endpoint=endpoint, key=key)
-                    findings_list = proj.get_issues(filters=new_params)
+                    findings_list = component.get_issues(filters=new_params)
                 except HTTPError as e:
-                    log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                    log.critical("Error %s while exporting issues of %s, skipped", str(e), str(component))
                     findings_list = {}
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
@@ -319,20 +319,19 @@ def __get_project_findings(queue, write_queue):
 
             if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
                 try:
-                    proj = projects.Project.get_object(endpoint=endpoint, key=key)
-                    findings_list.update(proj.get_hotspots(filters=new_params))
+                    findings_list.update(component.get_hotspots(filters=new_params))
                 except HTTPError as e:
-                    log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                    log.critical("Error %s while exporting hotspots of object key %s, skipped", str(e), str(component))
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 log.info("Selected types, severities, resolutions or statuses disables issue search")
             write_queue.put([findings_list, False])
-        log.debug("Queue %s task %s done", str(queue), key)
+        log.debug("Queue %s task for %s done", str(queue), str(component))
         queue.task_done()
 
 
 def store_findings(
-    project_list: dict[str, projects.Project],
+    components_list: dict[str, projects.Project],
     params: dict[str, str],
     endpoint: platform.Platform,
     sarif_full_export: bool = False,
@@ -340,17 +339,17 @@ def store_findings(
     """Export all findings of a given project list"""
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
-    for key in project_list.keys():
+    for comp in components_list.values():
         try:
-            log.debug("Queue %s task %s put", str(my_queue), key)
-            my_queue.put((key, endpoint, params.copy()))
+            log.debug("Queue %s task %s put", str(my_queue), str(comp))
+            my_queue.put((comp, endpoint, params.copy()))
         except HTTPError as e:
-            log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+            log.critical("Error %s while exporting findings of %s, skipped", str(e), str(comp))
 
     threads = params.get(options.NBR_THREADS, 4)
-    for i in range(min(threads, len(project_list))):
+    for i in range(min(threads, len(components_list))):
         log.debug("Starting finding search thread 'findingSearch%d'", i)
-        worker = Thread(target=__get_project_findings, args=[my_queue, write_queue])
+        worker = Thread(target=__get_component_findings, args=[my_queue, write_queue])
         worker.setDaemon(True)
         worker.setName(f"findingSearch{i}")
         worker.start()
@@ -390,23 +389,19 @@ def main():
         log.warning("--%s option is not available with SonarCloud, disabling the option to proceed", options.USE_FINDINGS)
         params[options.USE_FINDINGS] = False
 
-    for p in (
-        options.STATUSES,
-        options.DATE_AFTER,
-        options.DATE_BEFORE,
-        options.RESOLUTIONS,
-        options.SEVERITIES,
-        options.TYPES,
-        options.TAGS,
-        options.LANGUAGES,
-    ):
+    for p in _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS:
         if params.get(p, None) is not None:
             if params[options.USE_FINDINGS]:
                 log.warning("Selected search criteria %s will disable --%s", params[p], options.USE_FINDINGS)
             params[options.USE_FINDINGS] = False
             break
     try:
-        components_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
+        if params[options.COMPONENT_TYPE] == "portfolios":
+            components_list = portfolios.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
+        elif params[options.COMPONENT_TYPE] == "apps":
+            components_list = applications.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
+        else:
+            components_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
@@ -418,12 +413,7 @@ def main():
 
     log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     __write_header(**params)
-    store_findings(
-        components_list,
-        params=params,
-        endpoint=sqenv,
-        sarif_full_export=not kwargs["sarifNoCustomProperties"],
-    )
+    store_findings(components_list, params=params, endpoint=sqenv, sarif_full_export=not kwargs["sarifNoCustomProperties"])
     __write_footer(fname, params[options.FORMAT])
     log.info("Returned findings: %d", TOTAL_FINDINGS)
     util.stop_clock(start_time)
