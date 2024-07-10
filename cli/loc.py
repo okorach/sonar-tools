@@ -33,7 +33,7 @@ import sonar.utilities as util
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    if kwargs[options.PORTFOLIOS]:
+    if kwargs[options.COMPONENT_TYPE] == "portfolios":
         arr = ["# portfolio key"]
     elif kwargs[options.WITH_BRANCHES]:
         arr = ["# project key", "branch"]
@@ -41,7 +41,7 @@ def __get_csv_header_list(**kwargs) -> list[str]:
         arr = ["# project key"]
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
-        if kwargs[options.PORTFOLIOS]:
+        if kwargs[options.COMPONENT_TYPE] == "portfolios":
             arr.append("portfolio name")
         else:
             arr.append("project name")
@@ -190,13 +190,7 @@ def __parse_args(desc):
     )
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
-    parser.add_argument(
-        f"--{options.PORTFOLIOS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Export portfolios LoCs instead of projects",
-    )
+    options.add_component_type_arg(parser)
     parser.add_argument(
         "--topLevelOnly",
         required=False,
@@ -211,11 +205,11 @@ def __parse_args(desc):
 def main():
     start_time = util.start_clock()
     kwargs = util.convert_args(
-        __parse_args("Extract projects, branches or portfolios lines of code - for Projects LoC it is as computed for the license")
+        __parse_args("Extract projects, applications or portfolios lines of code - for projects LoC it is as computed for the license")
     )
     endpoint = platform.Platform(**kwargs)
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
-    if kwargs[options.PORTFOLIOS]:
+    if kwargs[options.COMPONENT_TYPE] == "portfolios":
         if kwargs[options.WITH_BRANCHES]:
             log.warning("Portfolio LoC export selected, branch option is ignored")
         if kwargs[options.WITH_LAST_ANALYSIS]:
