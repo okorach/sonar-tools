@@ -106,17 +106,18 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
 def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     """Returns the object data as JSON"""
     obj_type = type(o).__name__.lower()
-    d = {"key": o.key, "ncloc": ""}
-    if obj_type == "branch":
-        d = {"projectKey": o.concerned_object.key, "branch": o.key, "ncloc": ""}
+    parent_type = kwargs[options.COMPONENT_TYPE][0:-1]
+    d = {parent_type: o.key, "ncloc": ""}
+    if obj_type in ("branch", "applicationbranch"):
+        d = {parent_type: o.concerned_object.key, "branch": o.name, "ncloc": ""}
     try:
         d["ncloc"] = o.loc()
     except HTTPError as e:
         log.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
     if kwargs[options.WITH_NAME]:
-        d["projectName"] = o.name
-        if obj_type == "branch":
-            d["projectName"] = o.concerned_object.name
+        d[f"{parent_type}Name"] = o.name
+        if obj_type in ("branch", "applicationbranch"):
+            d[f"{parent_type}Name"] = o.concerned_object.name
     if kwargs[options.WITH_LAST_ANALYSIS]:
         d["lastAnalysis"] = ""
         if d["ncloc"] != "":
