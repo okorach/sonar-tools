@@ -246,7 +246,7 @@ def test_loc_portfolios_all_options_json() -> None:
     file = util.JSON_FILE
     util.clean(file)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--apps"]):
+        with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--portfolios"]):
             loc.main()
     assert int(str(e.value)) == 0
     # Check file contents
@@ -259,4 +259,3 @@ def test_loc_portfolios_all_options_json() -> None:
         assert util.is_url(component["url"])
         assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
     util.clean(file)
-
