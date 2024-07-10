@@ -142,6 +142,11 @@ class ApplicationBranch(Component):
             return False
         return sq.delete_object(self, APIS["delete"], self.search_params(), _OBJECTS)
 
+    def reload(self, data: dict[str, str]) -> None:
+        """Reloads an App Branch from JSON data coming from Sonar"""
+        super().reload(data)
+        self.name = data.get("branch", "")
+
     def export(self) -> dict[str, str]:
         """Exports an application branch
 
