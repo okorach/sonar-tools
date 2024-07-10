@@ -19,6 +19,8 @@
 #
 
 from __future__ import annotations
+from typing import Union
+
 import json
 from datetime import datetime
 from http import HTTPStatus
@@ -226,7 +228,7 @@ class Application(aggr.Aggregation):
     def branches(self):
         """
         :return: the list of branches of the application and their definition
-        :rtype: dict {<appBranch: {"projects": {<projectKey>: <projectBranch>, ...}}}
+        :rtype: dict {<branchName>: <ApplicationBranch>}
         """
         from sonar.app_branches import list_from
 
@@ -251,6 +253,48 @@ class Application(aggr.Aggregation):
                 if not branch.is_main:
                     ok = ok and branch.delete()
         return ok and sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS)
+
+    def get_filtered_branches(self, filters: dict[str, str]) -> Union[None, dict[str, object]]:
+        """Get lists of branches according to the filter"""
+        from sonar.app_branches import ApplicationBranch
+
+        if not filters:
+            return None
+        f = filters.copy()
+        br = f.pop("branch", None)
+        if not br:
+            return None
+        objects = {}
+        if br:
+            if "*" in br:
+                objects = self.branches()
+            else:
+                try:
+                    for b in br:
+                        objects[b] = ApplicationBranch.get_object(app=self, branch_name=b)
+                except exceptions.ObjectNotFound as e:
+                    log.error(e.message)
+        return objects
+
+    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+        my_branches = self.get_filtered_branches(filters)
+        if my_branches is None:
+            return super().get_hotspots(filters)
+        findings_list = {}
+        for comp in my_branches.values():
+            if comp:
+                findings_list = {**findings_list, **comp.get_hotspots()}
+        return findings_list
+
+    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+        my_branches = self.get_filtered_branches(filters)
+        if my_branches is None:
+            return super().get_issues(filters)
+        findings_list = {}
+        for comp in my_branches.values():
+            if comp:
+                findings_list = {**findings_list, **comp.get_issues()}
+        return findings_list
 
     def _audit_empty(self, audit_settings):
         """Audits if an application contains 0 projects"""
