@@ -24,6 +24,8 @@
 """
 
 import os
+import datetime
+
 from sonar import platform
 import cli.options as opt
 
@@ -61,3 +63,22 @@ def clean(*files: str) -> None:
             os.remove(file)
         except FileNotFoundError:
             pass
+
+
+def is_datetime(value: str) -> bool:
+    """Checks if a string is a date + time"""
+    try:
+        _ = datetime.datetime.fromisoformat(value)
+    except (ValueError, TypeError):
+        return False
+    return True
+
+
+def is_integer(value: str) -> bool:
+    """Returns whether a string contains an integer"""
+    return isinstance(int(value), int)
+
+
+def is_url(value: str) -> bool:
+    """Returns whether a string contains an URL"""
+    return value.startswith("http")
