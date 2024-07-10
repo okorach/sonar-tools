@@ -23,6 +23,7 @@
 """
 import sys
 import csv
+import datetime
 from requests.exceptions import HTTPError
 
 from cli import options
@@ -120,8 +121,8 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
             d[f"{parent_type}Name"] = o.concerned_object.name
     if kwargs[options.WITH_LAST_ANALYSIS]:
         d["lastAnalysis"] = ""
-        if d["ncloc"] != "":
-            d["lastAnalysis"] = util.date_to_string(o.last_analysis())
+        if o.last_analysis() is not None:
+            d["lastAnalysis"] = datetime.datetime.isoformat(o.last_analysis())
     if kwargs[options.WITH_URL]:
         d["url"] = o.url()
     return d
