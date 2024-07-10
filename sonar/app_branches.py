@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 from http import HTTPStatus
 from requests.exceptions import HTTPError
+from requests.utils import quote
 
 import sonar.logging as log
 from sonar.components import Component
@@ -141,6 +142,11 @@ class ApplicationBranch(Component):
             return False
         return sq.delete_object(self, APIS["delete"], self.search_params(), _OBJECTS)
 
+    def reload(self, data: dict[str, str]) -> None:
+        """Reloads an App Branch from JSON data coming from Sonar"""
+        super().reload(data)
+        self.name = data.get("branch", "")
+
     def export(self) -> dict[str, str]:
         """Exports an application branch
 
@@ -210,6 +216,10 @@ class ApplicationBranch(Component):
             "branch": self.name,
             "url": self.url(),
         }
+
+    def url(self) -> str:
+        """Returns the URL of the Application Branch"""
+        return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
 
 
 def uuid(app_key: str, branch_name: str, url: str) -> str:

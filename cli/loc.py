@@ -23,28 +23,23 @@
 """
 import sys
 import csv
+import datetime
 from requests.exceptions import HTTPError
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, portfolios, projects
+from sonar import platform, portfolios, applications, projects, errcodes
 import sonar.utilities as util
 
 
 def __get_csv_header_list(**kwargs) -> list[str]:
     """Returns CSV header"""
-    if kwargs[options.PORTFOLIOS]:
-        arr = ["# portfolio key"]
-    elif kwargs[options.WITH_BRANCHES]:
-        arr = ["# project key", "branch"]
-    else:
-        arr = ["# project key"]
+    arr = [f"# {kwargs[options.COMPONENT_TYPE][0:-1]} key"]
+    if kwargs[options.WITH_BRANCHES]:
+        arr.append("branch")
     arr.append("ncloc")
     if kwargs[options.WITH_NAME]:
-        if kwargs[options.PORTFOLIOS]:
-            arr.append("portfolio name")
-        else:
-            arr.append("project name")
+        arr.append(f"{kwargs[options.COMPONENT_TYPE][0:-1]} name")
     if kwargs[options.WITH_LAST_ANALYSIS]:
         arr.append("last analysis")
     if kwargs[options.WITH_URL]:
@@ -61,11 +56,11 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
         loc = ""
     arr = [o.key, loc]
     obj_type = type(o).__name__.lower()
-    if obj_type == "branch":
-        arr = [o.concerned_object.key, o.key, loc]
+    if obj_type in ("branch", "applicationbranch"):
+        arr = [o.concerned_object.key, o.name, loc]
     if kwargs[options.WITH_NAME]:
         proj_name = o.name
-        if obj_type == "branch":
+        if obj_type in ("branch", "applicationbranch"):
             proj_name = o.concerned_object.name
         arr.append(proj_name)
     if kwargs[options.WITH_LAST_ANALYSIS]:
@@ -112,21 +107,22 @@ def __dump_csv(object_list: list[object], file: str, **kwargs) -> None:
 def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     """Returns the object data as JSON"""
     obj_type = type(o).__name__.lower()
-    d = {"key": o.key, "ncloc": ""}
-    if obj_type == "branch":
-        d = {"projectKey": o.concerned_object.key, "branch": o.key, "ncloc": ""}
+    parent_type = kwargs[options.COMPONENT_TYPE][0:-1]
+    d = {parent_type: o.key, "ncloc": ""}
+    if obj_type in ("branch", "applicationbranch"):
+        d = {parent_type: o.concerned_object.key, "branch": o.name, "ncloc": ""}
     try:
         d["ncloc"] = o.loc()
     except HTTPError as e:
         log.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
     if kwargs[options.WITH_NAME]:
-        d["projectName"] = o.name
-        if obj_type == "branch":
-            d["projectName"] = o.concerned_object.name
+        d[f"{parent_type}Name"] = o.name
+        if obj_type in ("branch", "applicationbranch"):
+            d[f"{parent_type}Name"] = o.concerned_object.name
     if kwargs[options.WITH_LAST_ANALYSIS]:
         d["lastAnalysis"] = ""
-        if d["ncloc"] != "":
-            d["lastAnalysis"] = util.date_to_string(o.last_analysis())
+        if o.last_analysis() is not None:
+            d["lastAnalysis"] = datetime.datetime.isoformat(o.last_analysis())
     if kwargs[options.WITH_URL]:
         d["url"] = o.url()
     return d
@@ -190,13 +186,7 @@ def __parse_args(desc):
     )
     options.add_url_arg(parser)
     options.add_branch_arg(parser)
-    parser.add_argument(
-        f"--{options.PORTFOLIOS}",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Export portfolios LoCs instead of projects",
-    )
+    options.add_component_type_arg(parser)
     parser.add_argument(
         "--topLevelOnly",
         required=False,
@@ -211,31 +201,36 @@ def __parse_args(desc):
 def main():
     start_time = util.start_clock()
     kwargs = util.convert_args(
-        __parse_args("Extract projects, branches or portfolios lines of code - for Projects LoC it is as computed for the license")
+        __parse_args("Extract projects, applications or portfolios lines of code - for projects LoC it is as computed for the license")
     )
     endpoint = platform.Platform(**kwargs)
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
-    if kwargs[options.PORTFOLIOS]:
-        if kwargs[options.WITH_BRANCHES]:
-            log.warning("Portfolio LoC export selected, branch option is ignored")
-        if kwargs[options.WITH_LAST_ANALYSIS]:
-            log.warning("Portfolio LoC export selected, last analysis option is ignored")
-        kwargs[options.WITH_LAST_ANALYSIS] = False
+
+    edition = endpoint.edition()
+    if kwargs[options.WITH_BRANCHES] and edition == "community":
+        log.warning("No branches in community edition, option to export by branch is ignored")
         kwargs[options.WITH_BRANCHES] = False
+    if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in ("community", "developer"):
+        util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
+    if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_BRANCHES]:
+        log.warning("Portfolio LoC export selected, branch option is ignored")
+        kwargs[options.WITH_BRANCHES] = False
+
+    if kwargs[options.COMPONENT_TYPE] == "portfolios":
         params = {}
         if kwargs["topLevelOnly"]:
             params["qualifiers"] = "VW"
         objects_list = list(portfolios.search(endpoint, params=params).values())
+    elif kwargs[options.COMPONENT_TYPE] == "apps":
+        objects_list = list(applications.search(endpoint).values())
     else:
         objects_list = list(projects.search(endpoint).values())
-        if kwargs[options.WITH_BRANCHES]:
-            if endpoint.edition() == "community":
-                log.warning("No branches in community edition, option to export by branch is ignored")
-            else:
-                branch_list = []
-                for proj in objects_list:
-                    branch_list += proj.branches().values()
-                objects_list = branch_list
+
+    if kwargs[options.WITH_BRANCHES]:
+        branch_list = []
+        for proj in objects_list:
+            branch_list += proj.branches().values()
+        objects_list = branch_list
 
     __dump_loc(objects_list, **kwargs)
     util.stop_clock(start_time)
