@@ -66,7 +66,7 @@ __GOOD_OPTS = [
     [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
     [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
     [f"--{opt.USE_FINDINGS}", "-f", util.CSV_FILE],
-    ["--apps", f"--{opt.WITH_BRANCHES}", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    ["--apps", f"--{opt.BRANCHES}", "*", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
     ["--portfolios", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
 ]
 
