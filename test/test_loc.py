@@ -199,3 +199,64 @@ def test_loc_portfolios_all_options() -> None:
             assert line[3] == "" or util.is_datetime(line[3])
             assert util.is_integer(line[1])
     util.clean(util.CSV_FILE)
+
+
+def test_loc_proj_all_options_json() -> None:
+    """test_loc_proj_all_options_json"""
+    file = util.JSON_FILE
+    util.clean(file)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS):
+            loc.main()
+    assert int(str(e.value)) == 0
+    # Check file contents
+    with open(file=file, mode="r", encoding="utf-8") as fh:
+        jsondata = json.loads(fh.read())
+    for component in jsondata:
+        for key in "branch", "lastAnalysis", "ncloc", "project", "projectName", "url":
+            assert key in component
+        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+        assert util.is_url(component["url"])
+        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    util.clean(file)
+
+
+def test_loc_apps_all_options_json() -> None:
+    """test_loc_apps_all_options_json"""
+    file = util.JSON_FILE
+    util.clean(file)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--apps"]):
+            loc.main()
+    assert int(str(e.value)) == 0
+    # Check file contents
+    with open(file=file, mode="r", encoding="utf-8") as fh:
+        jsondata = json.loads(fh.read())
+    for component in jsondata:
+        for key in "branch", "lastAnalysis", "ncloc", "app", "appName", "url":
+            assert key in component
+        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+        assert util.is_url(component["url"])
+        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    util.clean(file)
+
+
+def test_loc_portfolios_all_options_json() -> None:
+    """test_loc_portfolios_all_options_json"""
+    file = util.JSON_FILE
+    util.clean(file)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--apps"]):
+            loc.main()
+    assert int(str(e.value)) == 0
+    # Check file contents
+    with open(file=file, mode="r", encoding="utf-8") as fh:
+        jsondata = json.loads(fh.read())
+    for component in jsondata:
+        for key in "lastAnalysis", "ncloc", "portfolio", "portfolioName", "url":
+            assert key in component
+        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+        assert util.is_url(component["url"])
+        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    util.clean(file)
+
