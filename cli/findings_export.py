@@ -270,9 +270,10 @@ def __verify_inputs(params):
     return True
 
 
-def __get_component_findings(queue, write_queue):
+def __get_component_findings(queue: Queue[tuple[object, dict[str, str]]], write_queue: Queue[dict[str, findings.Finding], bool]) -> None:
+    """Gets the findings of a component and puts them in a writing queue"""
     while not queue.empty():
-        (component, endpoint, params) = queue.get()
+        (component, params) = queue.get()
         search_findings = params[options.USE_FINDINGS]
         status_list = util.csv_to_list(params.get(options.STATUSES, None))
         i_statuses = util.intersection(status_list, issues.STATUSES)
@@ -294,7 +295,7 @@ def __get_component_findings(queue, write_queue):
         if search_findings:
             try:
                 findings_list = findings.export_findings(
-                    endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
+                    component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
                 )
             except HTTPError as e:
                 log.critical("Error %s while exporting findings of %s, skipped", str(e), str(component))
@@ -337,7 +338,7 @@ def store_findings(components_list: dict[str, object], params: dict[str, str]) -
     for comp in components_list.values():
         try:
             log.debug("Queue %s task %s put", str(my_queue), str(comp))
-            my_queue.put((comp, comp.endpoint, params.copy()))
+            my_queue.put((comp, params.copy()))
         except HTTPError as e:
             log.critical("Error %s while exporting findings of %s, skipped", str(e), str(comp))
 
