@@ -166,7 +166,7 @@ def __write_footer(file: str, format: str) -> None:
             print(f"{closing_sequence}", file=f)
 
 
-def __dump_findings(findings_list: list[findings.Finding], file: str, file_format: str, **kwargs) -> None:
+def __dump_findings(findings_list: list[findings.Finding], **kwargs) -> None:
     """Dumps a list of findings in a file. The findings are appended at the end of the file
 
     :param findings_list: List of findings
@@ -177,24 +177,26 @@ def __dump_findings(findings_list: list[findings.Finding], file: str, file_forma
     :type file_format: str
     :return: Nothing
     """
+    file = kwargs[options.OUTPUTFILE]
+    file_format = kwargs[options.FORMAT]
     log.info("Writing %d more findings to %s in format %s", len(findings_list), f"file '{file}'" if file else "stdout", file_format)
     if file_format in ("json", "sarif"):
-        __write_json_findings(file=file, findings_list=findings_list, file_format=file_format, **kwargs)
+        __write_json_findings(findings_list=findings_list, **kwargs)
     else:
-        __write_csv_findings(file=file, findings_list=findings_list, **kwargs)
+        __write_csv_findings(findings_list=findings_list, **kwargs)
     log.debug("File written")
 
 
-def __write_json_findings(file: str, findings_list: list[findings.Finding], file_format: str, **kwargs) -> None:
+def __write_json_findings(findings_list: list[findings.Finding], **kwargs) -> None:
     """Appends a list of findings in JSON or SARIF format in a file"""
     i = len(findings_list)
     comma = ","
-    with util.open_file(file, mode="a") as fd:
+    with util.open_file(kwargs[options.OUTPUTFILE], mode="a") as fd:
         for finding in findings_list.values():
             i -= 1
             if i == 0:
                 comma = ""
-            if file_format == "json":
+            if kwargs[options.FORMAT] == "json":
                 json_data = finding.to_json(DATES_WITHOUT_TIME)
             else:
                 json_data = finding.to_sarif(kwargs.get("full", True))
@@ -214,9 +216,7 @@ def __write_csv_findings(file: str, findings_list: list[findings.Finding], **kwa
             csvwriter.writerow(row)
 
 
-def __write_findings(
-    queue: Queue[list[findings.Finding]], file_to_write: str, file_format: str, with_url: bool, separator: str, sarif_full_export: bool
-) -> None:
+def __write_findings(queue: Queue[list[findings.Finding]], params: dict[str, str]) -> None:
     """Writes a list of findings in an output file or stdout"""
     global IS_FIRST
     global TOTAL_FINDINGS
@@ -234,13 +234,13 @@ def __write_findings(
             queue.task_done()
             continue
 
-        if file_format in ("sarif", "json") and not IS_FIRST:
+        if params[options.FORMAT] in ("sarif", "json") and not IS_FIRST:
             with WRITE_SEM:
-                with util.open_file(file_to_write, mode="a") as f:
+                with util.open_file(params[options.OUTPUTFILE], mode="a") as f:
                     print(",", file=f)
         IS_FIRST = False
         with WRITE_SEM:
-            __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator, full=sarif_full_export)
+            __dump_findings(data, **params)
         with TOTAL_SEM:
             TOTAL_FINDINGS += len(data)
         queue.task_done()
@@ -351,12 +351,7 @@ def store_findings(components_list: dict[str, object], params: dict[str, str]) -
         worker.start()
 
     log.info("Starting finding writer thread 'findingWriter'")
-    file = params.get(options.OUTPUTFILE, None)
-    fmt = params.get(options.FORMAT, "csv")
-    with_url = params.get(options.WITH_URL, False)
-    csv_separator = params.get(options.CSV_SEPARATOR, ",")
-    sarif_full_export = not params.get("sarifNoCustomProperties", False)
-    write_worker = Thread(target=__write_findings, args=[write_queue, file, fmt, with_url, csv_separator, sarif_full_export])
+    write_worker = Thread(target=__write_findings, args=[write_queue, params])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
