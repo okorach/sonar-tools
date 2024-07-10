@@ -149,6 +149,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     kwargs = vars(args)
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
     log.set_debug_level(kwargs[VERBOSE])
+    del kwargs[VERBOSE]
     log.info("sonar-tools version %s", version.PACKAGE_VERSION)
     if log.level() == log.DEBUG:
         sanitized_args = kwargs.copy()
@@ -166,7 +167,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
         utilities.check_last_sonar_tools_version()
-
+    kwargs.pop(SKIP_VERSION_CHECK, None)
     if verify_token:
         utilities.check_token(args.token, utilities.is_sonarcloud_url(kwargs[URL]))
     return args

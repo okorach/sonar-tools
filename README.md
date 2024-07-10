@@ -62,6 +62,7 @@ The user corresponding to the token must have enough permissions to achieve the 
 - `-c` or `--clientCert` : Allows to specify an optional client certificate file (as .pem file)
 - `--httpTimeout` : Sets the timeout for HTTP(S) requests to the SonarQube platform
 - `--skipVersionCheck` : Starting with **sonar-tools** 2.11, by default all sonar tools occasionnally check on pypi.org if there is a new version of **sonar-tools** available, and output a warning log if that is the case. You can skip this check with this option.
+- `-l <logFile>` : Send logs to **<logFile>**, stdout by default
 
 See common [error exit codes](#exit-codes) at the bottom of this page
 
@@ -122,11 +123,14 @@ See `sonar-loc -h` for details
 Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [--withURL] [--portfolios] [--topLevelOnly]`
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `--format`: Choose export format between csv (default) and json
-- `--portfolios`: Output the LOC of portfolios instead of projects (Enterprise Edition only)
+- `--projects`: Output the LOC of projects (this is the default if nothing specified)
+- `--apps`: Output the LOC of applications (Developer and higher editions)
+- `--portfolios`: Output the LOC of portfolios (Enterprise and higher editions)
 - `--topLevelOnly`: For portfolios, only output LoCs for top level portfolios (Enterprise Edition only)
 - `-n | --withName`: Outputs the project or portfolio name in addition to the key
 - `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
 - `--withURL`: Outputs the URL of the project or portfolio for each record
+- `-b`: Export LoCs for each branches of targeted objects (projects or applications)
 
 ## Required Permissions
 
@@ -180,14 +184,21 @@ Exports a list of issues as CSV, JSON or SARIF format. The export is sent to sta
 Plenty of issue filters can be specified from the command line, type `sonar-findings-export -h` for details.
 :warning: On large SonarQube instances with a lot of issues, it can be stressful for the instance (many API calls) and very long to export all issues. It's recommended to define filters that will only export a subset of all issues (see examples below).
 
-Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomProperties] [-k <projectKeysList>]`
-- `--sarifNoCustomProperties`: For SARIF export. By default all Sonar custom properties are exported which makes the SARIF export quite verbose. Use this option to not export the Sonar custom properties (only the SARIF standard ones)
+Basic Usage: `sonar-findings-export [--format csv|json|sarif] [--sarifNoCustomProperties] [-k <keyList>] ...`
+- `--format csv|json|sarif`: Choose export format. Default is based on output file extension, and csv in last - `--sarifNoCustomProperties`: For SARIF export. By default all Sonar custom properties are exported which makes the SARIF export quite verbose. Use this option to not export the Sonar custom properties (only the SARIF standard ones)
 - `--statuses <statusList>`: Only export findings with given statuses, comma separated among OPEN,CONFIRMED,REOPENED,RESOLVED,CLOSED,TO_REVIEW,REVIEWED
 - `--resolutions <resolutionList>`: Only export findings with given resolution, comma separated among FALSE-POSITIVE,WONTFIX,FIXED,REMOVED,ACCEPTED,SAFE,ACKNOWLEDGED,FIXED
 - `--severities <severityList>`: Only export findings with given resolution, comma separated among BLOCKER,CRITICAL,MAJOR,MINOR,INFO
 - `--types <typeList>`: Only export findings with given type, comma separated among BUG,VULNERABILITY,CODE_SMELL,SECURITY_HOTSPOT
 - `--createdAfter <YYYY-MM-DD>`: Only export findings created after a given date
 - `--createdBefore <YYYY-MM-DD>`: Only export findings created before a given date
+- `--tags <tagList>`: Comma separated list of tags corresponding to issues
+- `--languages <languageList>`: Comma separated list of languages from whom findings should be exported
+- `--useFindings`: Use SonarQube api/projects/export_findings whenever possible
+- `-k <keyList>`: Comma separated list of keys of objects to export (all objects if not specified)
+- `-b <branchList>`: For projects and apps, comma separated list of branches to export (Use * for all branches)
+- `--datesWithoutTime`: Reports timestamps only with date, not time
+resort
 
 ## Required Permissions
 

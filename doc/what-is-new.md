@@ -1,9 +1,16 @@
 # Next version yet unreleased
-- Several fixes for SARIF export
-- Added option to not export all Sonar findings custom properties in SARIF export for more compact output
 - Refactoring on portfolios for hardening
 - `sonar-findings-export` and `sonar-rules` now have a `--languages` option to filter findings/rules in a restrained list of languages
-- `sonar-measures-export` can export measures for Applications and Portfolios. For this reason, a new column (col 2) has been added to the CSV output format which can be PROJECT, BRANCH, APPLICATION or PORTFOLIO
+- `sonar-measures-export` can export measures for Applications and Portfolios. For this reason, a new column (col 2) has been added to the CSV output format which can be PROJECT, BRANCH, APPLICATION, APPLICATIONBRANCH or PORTFOLIO
+- `sonar-findings-export`:
+  - Ability export findings for Applications and Portfolios, Application and Project branches
+  - Fixes in SARIF export format
+  - Adjustments to new issues taxonomy
+  - Added option to not export all Sonar findings custom properties in SARIF export for more compact output
+- `sonar-config`:
+  - Smart handling of properties that can be lists. If the list contains a comma, the property
+  is exported as list, if no comma, as a more compact comma separated string
+  - Changed the key for default branch from __default__ to -DEFAULT_BRANCH- to make sure that this cannot conflict with a real branch name (because git forbids branches starting by -)
 
 # Version 3.1
   - Several bug fixes, in particular Sonar Tools would hang if providing a token with insufficient permissions for projects (Browse is minimally needed)

@@ -36,7 +36,9 @@ from requests.exceptions import HTTPError
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, exceptions, projects, issues, hotspots, findings, errcodes
+from sonar import platform, exceptions, errcodes
+from sonar import issues, hotspots, findings
+from sonar import projects, applications, portfolios
 import sonar.utilities as util
 
 WRITE_END = object()
@@ -60,12 +62,24 @@ SARIF_HEADER = """{
           "results": [
 """
 
+_OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS = (
+    options.STATUSES,
+    options.DATE_AFTER,
+    options.DATE_BEFORE,
+    options.RESOLUTIONS,
+    options.SEVERITIES,
+    options.TYPES,
+    options.TAGS,
+    options.LANGUAGES,
+)
+
 
 def parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, sarif_fmt=True)
     parser = options.add_thread_arg(parser, "findings search")
+    parser = options.add_component_type_arg(parser)
     parser.add_argument(
         f"-{options.BRANCHES_SHORT}",
         f"--{options.BRANCHES}",
@@ -79,8 +93,7 @@ def parse_args(desc):
         f"--{options.PULL_REQUESTS}",
         required=False,
         default=None,
-        help="Comma separated list of pull requests to export. Use * to export findings from all PRs. "
-        "If not specified, only findings of the main branch will be exported",
+        help="Comma separated list of pull requests to export. Use * to export findings from all PRs.",
     )
     parser.add_argument(
         f"--{options.STATUSES}",
@@ -153,7 +166,7 @@ def __write_footer(file: str, format: str) -> None:
             print(f"{closing_sequence}", file=f)
 
 
-def __dump_findings(findings_list: list[findings.Finding], file: str, file_format: str, **kwargs) -> None:
+def __dump_findings(findings_list: list[findings.Finding], **kwargs) -> None:
     """Dumps a list of findings in a file. The findings are appended at the end of the file
 
     :param findings_list: List of findings
@@ -164,24 +177,26 @@ def __dump_findings(findings_list: list[findings.Finding], file: str, file_forma
     :type file_format: str
     :return: Nothing
     """
+    file = kwargs[options.OUTPUTFILE]
+    file_format = kwargs[options.FORMAT]
     log.info("Writing %d more findings to %s in format %s", len(findings_list), f"file '{file}'" if file else "stdout", file_format)
     if file_format in ("json", "sarif"):
-        __write_json_findings(file=file, findings_list=findings_list, file_format=file_format, **kwargs)
+        __write_json_findings(findings_list=findings_list, **kwargs)
     else:
-        __write_csv_findings(file=file, findings_list=findings_list, **kwargs)
+        __write_csv_findings(findings_list=findings_list, **kwargs)
     log.debug("File written")
 
 
-def __write_json_findings(file: str, findings_list: list[findings.Finding], file_format: str, **kwargs) -> None:
+def __write_json_findings(findings_list: list[findings.Finding], **kwargs) -> None:
     """Appends a list of findings in JSON or SARIF format in a file"""
     i = len(findings_list)
     comma = ","
-    with util.open_file(file, mode="a") as fd:
+    with util.open_file(kwargs[options.OUTPUTFILE], mode="a") as fd:
         for finding in findings_list.values():
             i -= 1
             if i == 0:
                 comma = ""
-            if file_format == "json":
+            if kwargs[options.FORMAT] == "json":
                 json_data = finding.to_json(DATES_WITHOUT_TIME)
             else:
                 json_data = finding.to_sarif(kwargs.get("full", True))
@@ -201,9 +216,7 @@ def __write_csv_findings(file: str, findings_list: list[findings.Finding], **kwa
             csvwriter.writerow(row)
 
 
-def __write_findings(
-    queue: Queue[list[findings.Finding]], file_to_write: str, file_format: str, with_url: bool, separator: str, sarif_full_export: bool
-) -> None:
+def __write_findings(queue: Queue[list[findings.Finding]], params: dict[str, str]) -> None:
     """Writes a list of findings in an output file or stdout"""
     global IS_FIRST
     global TOTAL_FINDINGS
@@ -221,30 +234,18 @@ def __write_findings(
             queue.task_done()
             continue
 
-        if file_format in ("sarif", "json") and not IS_FIRST:
+        if params[options.FORMAT] in ("sarif", "json") and not IS_FIRST:
             with WRITE_SEM:
-                with util.open_file(file_to_write, mode="a") as f:
+                with util.open_file(params[options.OUTPUTFILE], mode="a") as f:
                     print(",", file=f)
         IS_FIRST = False
         with WRITE_SEM:
-            __dump_findings(data, file_to_write, file_format, withURL=with_url, csvSeparator=separator, full=sarif_full_export)
+            __dump_findings(data, **params)
         with TOTAL_SEM:
             TOTAL_FINDINGS += len(data)
         queue.task_done()
 
     log.debug("End of write findings")
-
-
-def __get_list(project: object, list_str: str, list_type: str) -> list[str]:
-    if list_str == "*":
-        if list_type == "branch":
-            list_array = project.branches().keys()
-        else:
-            list_array = project.pull_requests().keys()
-    else:
-        list_array = util.csv_to_list(list_str)
-
-    return list_array
 
 
 def __verify_inputs(params):
@@ -269,10 +270,11 @@ def __verify_inputs(params):
     return True
 
 
-def __get_project_findings(queue, write_queue):
+def __get_component_findings(queue: Queue[tuple[object, dict[str, str]]], write_queue: Queue[dict[str, findings.Finding], bool]) -> None:
+    """Gets the findings of a component and puts them in a writing queue"""
     while not queue.empty():
-        (key, endpoint, params) = queue.get()
-        search_findings = params[options.USE_FINDINGS]
+        (component, params) = queue.get()
+        search_findings = params.pop(options.USE_FINDINGS)
         status_list = util.csv_to_list(params.get(options.STATUSES, None))
         i_statuses = util.intersection(status_list, issues.STATUSES)
         h_statuses = util.intersection(status_list, hotspots.STATUSES)
@@ -289,29 +291,36 @@ def __get_project_findings(queue, write_queue):
         if status_list or resol_list or type_list or sev_list or options.LANGUAGES in params:
             search_findings = False
 
-        log.debug("WriteQueue %s task %s put", str(write_queue), key)
+        log.debug("WriteQueue %s task %s put", str(write_queue), component.key)
         if search_findings:
             try:
                 findings_list = findings.export_findings(
-                    endpoint, key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
+                    component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
                 )
             except HTTPError as e:
-                log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                log.critical("Error %s while exporting findings of %s, skipped", str(e), str(component))
                 findings_list = {}
             write_queue.put([findings_list, False])
         else:
             new_params = params.copy()
-            if options.PULL_REQUESTS in params:
-                new_params["pullRequest"] = params[options.PULL_REQUESTS]
-            if options.BRANCHES in params:
-                new_params["branch"] = params[options.BRANCHES]
+            new_params.pop("sarifNoCustomProperties", None)
+            new_params.pop(options.NBR_THREADS, None)
+            new_params.pop(options.CSV_SEPARATOR, None)
+            new_params.pop(options.COMPONENT_TYPE, None)
+            new_params.pop(options.DATES_WITHOUT_TIME, None)
+            new_params.pop(options.OUTPUTFILE, None)
+            new_params.pop(options.WITH_LAST_ANALYSIS, None)
+            new_params.pop(options.WITH_URL, None)
+            if options.PULL_REQUESTS in new_params:
+                new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
+            if options.BRANCHES in new_params:
+                new_params["branch"] = new_params.pop(options.BRANCHES)
             findings_list = {}
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 try:
-                    proj = projects.Project.get_object(endpoint=endpoint, key=key)
-                    findings_list = proj.get_issues(filters=new_params)
+                    findings_list = component.get_issues(filters=new_params)
                 except HTTPError as e:
-                    log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                    log.critical("Error %s while exporting issues of %s, skipped", str(e), str(component))
                     findings_list = {}
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
@@ -319,48 +328,38 @@ def __get_project_findings(queue, write_queue):
 
             if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
                 try:
-                    proj = projects.Project.get_object(endpoint=endpoint, key=key)
-                    findings_list.update(proj.get_hotspots(filters=new_params))
+                    findings_list.update(component.get_hotspots(filters=new_params))
                 except HTTPError as e:
-                    log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+                    log.critical("Error %s while exporting hotspots of object key %s, skipped", str(e), str(component))
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 log.info("Selected types, severities, resolutions or statuses disables issue search")
             write_queue.put([findings_list, False])
-        log.debug("Queue %s task %s done", str(queue), key)
+        log.debug("Queue %s task for %s done", str(queue), str(component))
         queue.task_done()
 
 
-def store_findings(
-    project_list: dict[str, projects.Project],
-    params: dict[str, str],
-    endpoint: platform.Platform,
-    sarif_full_export: bool = False,
-) -> None:
+def store_findings(components_list: dict[str, object], params: dict[str, str]) -> None:
     """Export all findings of a given project list"""
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)
-    for key in project_list.keys():
+    for comp in components_list.values():
         try:
-            log.debug("Queue %s task %s put", str(my_queue), key)
-            my_queue.put((key, endpoint, params.copy()))
+            log.debug("Queue %s task %s put", str(my_queue), str(comp))
+            my_queue.put((comp, params.copy()))
         except HTTPError as e:
-            log.critical("Error %s while exporting findings of object key %s, skipped", str(e), key)
+            log.critical("Error %s while exporting findings of %s, skipped", str(e), str(comp))
 
     threads = params.get(options.NBR_THREADS, 4)
-    for i in range(min(threads, len(project_list))):
+    for i in range(min(threads, len(components_list))):
         log.debug("Starting finding search thread 'findingSearch%d'", i)
-        worker = Thread(target=__get_project_findings, args=[my_queue, write_queue])
+        worker = Thread(target=__get_component_findings, args=[my_queue, write_queue])
         worker.setDaemon(True)
         worker.setName(f"findingSearch{i}")
         worker.start()
 
     log.info("Starting finding writer thread 'findingWriter'")
-    file = params.get(options.OUTPUTFILE, None)
-    fmt = params.get(options.FORMAT, "csv")
-    with_url = params.get(options.WITH_URL, False)
-    csv_separator = params.get(options.CSV_SEPARATOR, ",")
-    write_worker = Thread(target=__write_findings, args=[write_queue, file, fmt, with_url, csv_separator, sarif_full_export])
+    write_worker = Thread(target=__write_findings, args=[write_queue, params.copy()])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
@@ -380,50 +379,43 @@ def main():
     start_time = util.start_clock()
     kwargs = util.convert_args(parse_args("Sonar findings export"))
     sqenv = platform.Platform(**kwargs)
-    DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     del kwargs[options.TOKEN]
+    kwargs.pop(options.HTTP_TIMEOUT, None)
+    del kwargs[options.URL]
+    DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     params = util.remove_nones(kwargs.copy())
     params[options.OUTPUTFILE] = kwargs[options.OUTPUTFILE]
     __verify_inputs(params)
 
-    if util.is_sonarcloud_url(params[options.URL]) and params[options.USE_FINDINGS]:
+    if util.is_sonarcloud_url(sqenv.url) and params[options.USE_FINDINGS]:
         log.warning("--%s option is not available with SonarCloud, disabling the option to proceed", options.USE_FINDINGS)
         params[options.USE_FINDINGS] = False
 
-    for p in (
-        options.STATUSES,
-        options.DATE_AFTER,
-        options.DATE_BEFORE,
-        options.RESOLUTIONS,
-        options.SEVERITIES,
-        options.TYPES,
-        options.TAGS,
-        options.LANGUAGES,
-    ):
+    for p in _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS:
         if params.get(p, None) is not None:
             if params[options.USE_FINDINGS]:
                 log.warning("Selected search criteria %s will disable --%s", params[p], options.USE_FINDINGS)
             params[options.USE_FINDINGS] = False
             break
+
     try:
-        project_list = projects.get_list(endpoint=sqenv, key_list=kwargs.get(options.KEYS, None))
+        if params[options.COMPONENT_TYPE] == "portfolios":
+            components_list = portfolios.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
+        elif params[options.COMPONENT_TYPE] == "apps":
+            components_list = applications.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
+        else:
+            components_list = projects.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
     fmt, fname = params.get(options.FORMAT, None), params.get(options.OUTPUTFILE, None)
     params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
-
     if fname is not None and os.path.exists(fname):
         os.remove(fname)
 
-    log.info("Exporting findings for %d projects with params %s", len(project_list), str(params))
+    log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     __write_header(**params)
-    store_findings(
-        project_list,
-        params=params,
-        endpoint=sqenv,
-        sarif_full_export=not kwargs["sarifNoCustomProperties"],
-    )
+    store_findings(components_list, params=params)
     __write_footer(fname, params[options.FORMAT])
     log.info("Returned findings: %d", TOTAL_FINDINGS)
     util.stop_clock(start_time)
