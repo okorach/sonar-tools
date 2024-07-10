@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 from http import HTTPStatus
 from requests.exceptions import HTTPError
+from requests.utils import quote
 
 import sonar.logging as log
 from sonar.components import Component
@@ -210,6 +211,10 @@ class ApplicationBranch(Component):
             "branch": self.name,
             "url": self.url(),
         }
+
+    def url(self) -> str:
+        """Returns the URL of the Application Branch"""
+        return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
 
 
 def uuid(app_key: str, branch_name: str, url: str) -> str:
