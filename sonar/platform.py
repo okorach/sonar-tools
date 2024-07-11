@@ -37,7 +37,7 @@ from requests.exceptions import HTTPError
 import sonar.logging as log
 import sonar.utilities as util
 
-from sonar import errcodes, settings, devops, webhooks, version, sif
+from sonar import errcodes, settings, devops, version, sif
 from sonar.permissions import permissions, global_permissions, permission_templates
 from sonar.audit import rules, config
 import sonar.audit.severities as sev
@@ -413,6 +413,8 @@ class Platform:
         :return: the list of global webhooks
         :rtype: dict{<webhook_name>: <webhook_data>, ...}
         """
+        from sonar import webhooks
+
         return webhooks.get_list(self)
 
     def export(self, export_settings: dict[str, str], full: bool = False) -> dict[str, str]:
@@ -434,8 +436,12 @@ class Platform:
                 continue
             util.update_json(json_data, categ, subcateg, s.to_json(export_settings["INLINE_LISTS"]))
 
-        hooks = webhooks.export(self, full=full)
-        if hooks is not None:
+        hooks = {}
+        for wb in self.webhooks().values():
+            j = util.remove_nones(wb.to_json(full))
+            j.pop("name", None)
+            hooks[wb.name] = j
+        if len(hooks) > 0:
             json_data[settings.GENERAL_SETTINGS].update({"webhooks": hooks})
         json_data["permissions"] = self.global_permissions().export(export_settings=export_settings)
         json_data["permissionTemplates"] = permission_templates.export(self, export_settings=export_settings)
@@ -461,8 +467,8 @@ class Platform:
             log.debug("Updating wh with name %s", wh_name)
             if wh_name in current_wh_names:
                 current_wh[wh_map[wh_name]].update(name=wh_name, **wh)
-            else:
-                webhooks.update(name=wh_name, endpoint=self, project=None, **wh)
+            # else:
+            #     webhooks.update(name=wh_name, endpoint=self, project=None, **wh)
 
     def import_config(self, config_data):
         """Imports a whole SonarQube platform global configuration represented as JSON
@@ -522,9 +528,11 @@ class Platform:
             self._audit_project_default_visibility()
             + self._audit_global_permissions()
             + self._audit_logs(audit_settings)
-            + webhooks.audit(self)
             + permission_templates.audit(self, audit_settings)
         )
+        for wh in self.webhooks().values():
+            problems += wh.audit()
+
         if self.is_sonarcloud():
             return problems
 
