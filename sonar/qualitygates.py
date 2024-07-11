@@ -30,7 +30,8 @@ from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar import platform
+import sonar.platform as pf
+
 from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
 import sonar.utilities as util
@@ -78,7 +79,7 @@ class QualityGate(sq.SqObject):
     """
 
     @classmethod
-    def get_object(cls, endpoint: platform.Platform, name: str) -> QualityGate:
+    def get_object(cls, endpoint: pf.Platform, name: str) -> QualityGate:
         """Reads a quality gate from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -95,7 +96,7 @@ class QualityGate(sq.SqObject):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint, data):
+    def load(cls, endpoint: pf.Platform, data):
         """Creates a quality gate from search data
         :return: the QualityGate object
         :rtype: QualityGate or None
@@ -108,13 +109,13 @@ class QualityGate(sq.SqObject):
         return o
 
     @classmethod
-    def create(cls, endpoint, name):
+    def create(cls, endpoint: pf.Platform, name):
         r = endpoint.post(APIS["create"], params={"name": name})
         if not r.ok:
             return None
         return cls.get_object(endpoint, name)
 
-    def __init__(self, name, endpoint, data):
+    def __init__(self, name, endpoint: pf.Platform, data):
         super().__init__(name, endpoint)
         self.name = name  #: Object name
         self.is_built_in = False  #: Whether the quality gate is built in
@@ -343,7 +344,7 @@ class QualityGate(sq.SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
-def audit(endpoint=None, audit_settings=None):
+def audit(endpoint: pf.Platform = None, audit_settings=None):
     """
     :meta private:
     """
@@ -361,7 +362,7 @@ def audit(endpoint=None, audit_settings=None):
     return problems
 
 
-def get_list(endpoint):
+def get_list(endpoint: pf.Platform):
     """
     :return: The whole list of quality gates
     :rtype: dict {<name>: <QualityGate>}
@@ -378,7 +379,7 @@ def get_list(endpoint):
     return qg_list
 
 
-def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, str]:
     """
     :return: The list of quality gates in their JSON representation
     :rtype: dict
@@ -390,7 +391,7 @@ def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     return qg_list
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint: pf.Platform, config_data):
     """Imports quality gates in a SonarQube platform
     Quality gates already existing  are updates with the provided configuration
 
@@ -413,7 +414,7 @@ def import_config(endpoint, config_data):
     return ok
 
 
-def count(endpoint):
+def count(endpoint: pf.Platform):
     """
     :param Platform endpoint: Reference to the SonarQube platform
     :return: Number of quality gates
@@ -422,7 +423,7 @@ def count(endpoint):
     return len(get_list(endpoint))
 
 
-def exists(endpoint, gate_name):
+def exists(endpoint: pf.Platform, gate_name):
     """Returns whether a quality gate exists
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -466,5 +467,5 @@ def _decode_condition(c):
     return (metric, op, val)
 
 
-def search_by_name(endpoint, name):
+def search_by_name(endpoint: pf.Platform, name):
     return util.search_by_name(endpoint, name, APIS["list"], "qualitygates")
