@@ -22,6 +22,7 @@ import json
 
 import sonar.logging as log
 import sonar.sqobject as sq
+import sonar.platform as pf
 import sonar.utilities as util
 
 
@@ -35,7 +36,7 @@ class UserToken(sq.SqObject):
     API_SEARCH = API_ROOT + "/search"
     API_GENERATE = API_ROOT + "/generate"
 
-    def __init__(self, login, name=None, json_data=None, created_at=None, token=None, endpoint=None):
+    def __init__(self, login, name=None, json_data=None, created_at=None, token=None, endpoint: pf.Platform = None):
         super().__init__(login, endpoint)
         self.login = login  #: User login
         self.name = name  #: Token name
@@ -72,7 +73,7 @@ class UserToken(sq.SqObject):
         return self.post(UserToken.API_REVOKE, {"name": self.name, "login": self.login}).ok
 
 
-def search(endpoint, login):
+def search(endpoint: pf.Platform, login):
     """Searches tokens of a given user
 
     :param login: login of the user
@@ -87,7 +88,7 @@ def search(endpoint, login):
     return token_list
 
 
-def generate(name, endpoint, login=None):
+def generate(name, endpoint: pf.Platform, login=None):
     """Generates a new token for a given user
     :return: the generated Token object
     :rtype: Token
