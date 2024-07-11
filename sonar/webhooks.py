@@ -21,6 +21,8 @@
 import json
 
 import sonar.logging as log
+from sonar import platform as pf
+
 import sonar.utilities as util
 import sonar.sqobject as sq
 
@@ -36,7 +38,7 @@ class WebHook(sq.SqObject):
     Abstraction of the SonarQube "webhook" concept
     """
 
-    def __init__(self, name, endpoint, url=None, secret=None, project=None, data=None):
+    def __init__(self, name, endpoint: pf.Platform, url=None, secret=None, project=None, data=None):
         super().__init__(name, endpoint)
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
@@ -93,7 +95,7 @@ class WebHook(sq.SqObject):
         return util.filter_export(self._json, _IMPORTABLE_PROPERTIES, full)
 
 
-def search(endpoint, params=None):
+def search(endpoint: pf.Platform, params=None):
     """Searches webhooks
 
     :param params: Filters to narrow down the search, can only be "project"
@@ -103,7 +105,7 @@ def search(endpoint, params=None):
     return sq.search_objects(api="webhooks/list", params=params, returned_field="webhooks", key_field="key", object_class=WebHook, endpoint=endpoint)
 
 
-def get_list(endpoint, project_key=None):
+def get_list(endpoint: pf.Platform, project_key=None):
     log.debug("Getting webhooks for project key %s", str(project_key))
     params = None
     if project_key is not None:
@@ -111,7 +113,7 @@ def get_list(endpoint, project_key=None):
     return search(endpoint, params)
 
 
-def export(endpoint, project_key=None, full=False):
+def export(endpoint: pf.Platform, project_key=None, full=False):
     json_data = {}
     for wb in get_list(endpoint, project_key).values():
         j = wb.to_json(full)
@@ -120,20 +122,20 @@ def export(endpoint, project_key=None, full=False):
     return json_data if len(json_data) > 0 else None
 
 
-def create(endpoint, name, url, secret=None, project=None):
+def create(endpoint: pf.Platform, name, url, secret=None, project=None):
     return WebHook(name, endpoint, url=url, secret=secret, project=project)
 
 
-def update(endpoint, name, **kwargs):
+def update(endpoint: pf.Platform, name, **kwargs):
     project_key = kwargs.pop("project", None)
     get_list(endpoint, project_key)
     if uuid(name, project_key, endpoint.url) not in _OBJECTS:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
-        get_object(name, endpoint, project_key=project_key, data=kwargs).update(**kwargs)
+        get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
 
 
-def get_object(name, endpoint, project_key=None, data=None):
+def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: dict[str, str] = None):
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
     uid = uuid(name, project_key, endpoint.url)
     if uid not in _OBJECTS:
@@ -150,7 +152,7 @@ def uuid(name: str, project_key: str, url: str) -> str:
         return f"{name}#{project_key}@{url}"
 
 
-def audit(endpoint):
+def audit(endpoint: pf.Platform):
     """
     :meta private:
     """
