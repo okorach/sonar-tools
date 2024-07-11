@@ -25,6 +25,8 @@ import re
 
 import sonar.logging as log
 import sonar.sqobject as sq
+import sonar.platform as pf
+
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
@@ -169,7 +171,7 @@ class Task(sq.SqObject):
     Abstraction of the SonarQube "background task" concept
     """
 
-    def __init__(self, task_id, endpoint, concerned_object=None, data=None):
+    def __init__(self, task_id, endpoint: pf.Platform, concerned_object=None, data=None):
         super().__init__(task_id, endpoint)
         self._json = data
         self.concerned_object = concerned_object
@@ -497,7 +499,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(endpoint, only_current=False, component_key=None):
+def search(endpoint: pf.Platform, only_current=False, component_key=None):
     """Searches background tasks
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -519,11 +521,11 @@ def search(endpoint, only_current=False, component_key=None):
     return task_list
 
 
-def search_all_last(component_key=None, endpoint=None):
+def search_all_last(component_key=None, endpoint: pf.Platform = None):
     return search(only_current=True, component_key=component_key, endpoint=endpoint)
 
 
-def search_last(component_key, endpoint=None):
+def search_last(component_key, endpoint: pf.Platform = None):
     bg_tasks = search(only_current=True, component_key=component_key, endpoint=endpoint)
     if bg_tasks is None or not bg_tasks:
         # No bgtask was found
@@ -531,7 +533,7 @@ def search_last(component_key, endpoint=None):
     return bg_tasks[0]
 
 
-def search_all(component_key, endpoint=None):
+def search_all(component_key, endpoint: pf.Platform = None):
     return search(component_key=component_key, endpoint=endpoint)
 
 
