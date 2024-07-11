@@ -31,6 +31,8 @@ from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
+import sonar.platform as pf
+
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
@@ -51,7 +53,7 @@ class Organization(sqobject.SqObject):
     """
 
     @classmethod
-    def get_object(cls, endpoint: object, key: str) -> Organization:
+    def get_object(cls, endpoint: pf.Platform, key: str) -> Organization:
         """Gets an Organization object from SonarCloud
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -74,7 +76,7 @@ class Organization(sqobject.SqObject):
         return cls.load(endpoint, data["organizations"][0])
 
     @classmethod
-    def load(cls, endpoint: object, data: dict[str, str]) -> Organization:
+    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Organization:
         """Loads an Organization object with data retrieved from SonarCloud
 
         :param Platform endpoint: Reference to the SonarCloud platform
@@ -93,7 +95,7 @@ class Organization(sqobject.SqObject):
         o.description = data["description"]
         return o
 
-    def __init__(self, endpoint: object, key: str, name: str) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(key, endpoint)
         self.json_data = None
@@ -133,7 +135,7 @@ class Organization(sqobject.SqObject):
         return self.json_data.get("alm", None)
 
 
-def get_list(endpoint: object, key_list: str = None, use_cache: bool = True) -> dict[str, object]:
+def get_list(endpoint: pf.Platform, key_list: str = None, use_cache: bool = True) -> dict[str, object]:
     """
     :return: List of Organizations (all of them if key_list is None or empty)
     :param str key_list: List of org keys to get, if None or empty all orgs are returned
@@ -150,7 +152,7 @@ def get_list(endpoint: object, key_list: str = None, use_cache: bool = True) -> 
     return object_list
 
 
-def search(endpoint: object, params: dict[str, str] = None) -> dict[str:Organization]:
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str:Organization]:
     """Searches organizations
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -169,7 +171,7 @@ def search(endpoint: object, params: dict[str, str] = None) -> dict[str:Organiza
     )
 
 
-def export(endpoint: object, key_list: str = None) -> dict[str, str]:
+def export(endpoint: pf.Platform, key_list: str = None) -> dict[str, str]:
     """Exports organizations as JSON
 
     :param Platform endpoint: Reference to the SonarCloud platform
