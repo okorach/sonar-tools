@@ -27,6 +27,8 @@ from threading import Thread
 
 import sonar.logging as log
 import sonar.sqobject as sq
+import sonar.platform as pf
+
 import sonar.utilities as util
 from sonar import projects
 
@@ -91,7 +93,7 @@ class Finding(sq.SqObject):
     A finding is a general concept that can be either an issue or a security hotspot
     """
 
-    def __init__(self, key, endpoint, data=None, from_export=False):
+    def __init__(self, key, endpoint: pf.Platform, data=None, from_export=False):
         super().__init__(key, endpoint)
         self.severity = None  #: Severity (str)
         self.type = None  #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
@@ -431,11 +433,10 @@ class Finding(sq.SqObject):
         return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
 
 
-def export_findings(endpoint, project_key, branch=None, pull_request=None):
+def export_findings(endpoint: pf.Platform, project_key, branch=None, pull_request=None):
     """Export all findings of a given project
 
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
+    :param Platform endpoint: Reference to the SonarQube platform
     :param project_key: The project key
     :type project_key: str
     :param branch: Branch to select for export (exclusive of pull_request), defaults to None

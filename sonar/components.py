@@ -27,6 +27,8 @@ import json
 
 import sonar.logging as log
 import sonar.sqobject as sq
+import sonar.platform as pf
+
 from sonar import settings, tasks, measures, utilities
 
 # Character forbidden in keys that can be used to separate a key from a post fix
@@ -38,7 +40,7 @@ _DETAILS_API = "components/show"
 
 
 class Component(sq.SqObject):
-    def __init__(self, key, endpoint=None, data=None):
+    def __init__(self, key, endpoint: pf.Platform = None, data=None):
         super().__init__(key, endpoint)
         self.name = None
         self.nbr_issues = None
@@ -208,10 +210,10 @@ class Component(sq.SqObject):
         return {"key": self.key, "name": self.name, "type": type(self).__name__.upper(), "branch": "", "url": self.url()}
 
 
-def get_components(component_types, endpoint):
+def get_components(component_types, endpoint: pf.Platform):
     data = json.loads(endpoint.get("projects/search", params={"ps": 500, "qualifiers": component_types}).text)
     return data["components"]
 
 
-def get_subcomponents(component_key, strategy="children", with_issues=False, endpoint=None):
+def get_subcomponents(component_key, strategy="children", with_issues=False, endpoint: pf.Platform = None):
     return Component(component_key, endpoint).get_subcomponents(strategy=strategy, with_issues=with_issues)

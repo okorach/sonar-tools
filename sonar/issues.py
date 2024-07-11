@@ -27,7 +27,8 @@ from threading import Thread
 import requests.utils
 
 import sonar.logging as log
-from sonar.platform import Platform
+import sonar.platform as pf
+
 from sonar import users, syncer, sqobject, findings, changelog, projects
 import sonar.utilities as util
 
@@ -122,7 +123,7 @@ class Issue(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, key, endpoint, data=None, from_export=False):
+    def __init__(self, key, endpoint: pf.Platform, data=None, from_export=False):
         super().__init__(key, endpoint, data, from_export)
         self._debt = None
         self.tags = []  #: Issue tags
@@ -547,7 +548,7 @@ class Issue(findings.Finding):
 # ------------------------------- Static methods --------------------------------------
 
 
-def component_filter(endpoint: Platform) -> str:
+def component_filter(endpoint: pf.Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
     if endpoint.version() >= (10, 2, 0):
         return COMPONENT_FILTER
@@ -555,7 +556,7 @@ def component_filter(endpoint: Platform) -> str:
         return COMPONENT_FILTER_OLD
 
 
-def __search_all_by_directories(params, endpoint=None):
+def __search_all_by_directories(params, endpoint: pf.Platform = None):
     new_params = params.copy()
     facets = _get_facets(endpoint=endpoint, project_key=new_params[component_filter(endpoint)], facets="directories", params=new_params)
     issue_list = {}
@@ -567,7 +568,7 @@ def __search_all_by_directories(params, endpoint=None):
     return issue_list
 
 
-def __search_all_by_types(params, endpoint=None):
+def __search_all_by_types(params, endpoint: pf.Platform = None):
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by issue types")
@@ -582,7 +583,7 @@ def __search_all_by_types(params, endpoint=None):
     return issue_list
 
 
-def __search_all_by_severities(params, endpoint=None):
+def __search_all_by_severities(params, endpoint: pf.Platform = None):
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by severities")
@@ -597,7 +598,7 @@ def __search_all_by_severities(params, endpoint=None):
     return issue_list
 
 
-def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
+def __search_all_by_date(endpoint: pf.Platform, params: dict[str, str], date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
     """Search all issues in an interval of dates and given filter params"""
     new_params = params.copy()
     if date_start is None:
@@ -640,7 +641,7 @@ def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start:
     return issue_list
 
 
-def __search_all_by_project(endpoint: Platform, project_key: str, params: dict[str, str] = None) -> dict[str, Issue]:
+def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: dict[str, str] = None) -> dict[str, Issue]:
     """Search issues by project"""
     new_params = {} if params is None else params.copy()
     new_params[component_filter(endpoint)] = project_key
@@ -654,10 +655,10 @@ def __search_all_by_project(endpoint: Platform, project_key: str, params: dict[s
     return issue_list
 
 
-def search_by_project(project_key, endpoint, params=None, search_findings=False):
+def search_by_project(project_key, endpoint: pf.Platform, params=None, search_findings=False):
     """Search all issues of a given project
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param Platform endpoint: Reference to the Sonar platform
     :param str project_key: The project key
     :param dict params: List of search filters to narrow down the search, defaults to None
     :param search_findings: Whether to use the api/project_search/findings API or not, defaults to False
@@ -683,10 +684,10 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
     return issue_list
 
 
-def search_all(endpoint: Platform, params: dict[str, str] = None) -> dict[str, Issue]:
+def search_all(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Issue]:
     """Returns all issues of the platforms with chosen filtering parameters
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param Platform endpoint: Reference to the Sonar platform
     :param params: List of search filters to narrow down the search, defaults to None
     :type params: dict
     :return: list of Issues
@@ -722,7 +723,7 @@ def __search_thread(queue):
         queue.task_done()
 
 
-def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
+def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
     """
     :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
     :rtype: Issue or None if not issue found
@@ -736,7 +737,7 @@ def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
     return get_object(endpoint=endpoint, key=i["key"], data=i)
 
 
-def search(endpoint: Platform, params: dict[str, str] = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
+def search(endpoint: pf.Platform, params: dict[str, str] = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
     """Multi-threaded search of issues
 
     :param dict params: Search filter criteria to narrow down the search
@@ -788,7 +789,7 @@ def search(endpoint: Platform, params: dict[str, str] = None, raise_error: bool 
     return issue_list
 
 
-def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", params: dict[str, str] = None) -> dict[str, str]:
+def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "directories", params: dict[str, str] = None) -> dict[str, str]:
     """Returns the facets of a search"""
     params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
@@ -801,7 +802,7 @@ def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories
     return l
 
 
-def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", params: dict[str, str] = None) -> Union[datetime, None]:
+def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the date of one issue found"""
     issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
     if not issue:
@@ -809,17 +810,17 @@ def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", params: di
     return issue.creation_date
 
 
-def get_oldest_issue(endpoint: Platform, params: dict[str, str] = None) -> Union[datetime, None]:
+def get_oldest_issue(endpoint: pf.Platform, params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the oldest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="true", params=params)
 
 
-def get_newest_issue(endpoint: Platform, params: dict[str, str] = None) -> Union[datetime, None]:
+def get_newest_issue(endpoint: pf.Platform, params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the newest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="false", params=params)
 
 
-def count(endpoint: Platform, **kwargs) -> int:
+def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1
@@ -832,7 +833,7 @@ def count(endpoint: Platform, **kwargs) -> int:
     return nbr_issues
 
 
-def get_object(endpoint: Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> Issue:
+def get_object(endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> Issue:
     """Returns an issue from its key"""
     uu = sqobject.uuid(key, endpoint.url)
     if uu not in _OBJECTS:
@@ -840,7 +841,7 @@ def get_object(endpoint: Platform, key: str, data: dict[str, str] = None, from_e
     return _OBJECTS[uu]
 
 
-def pre_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, str]:
+def pre_search_filters(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/issue/search"""
     if not params:
         return {}

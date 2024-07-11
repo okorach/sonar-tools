@@ -28,8 +28,10 @@ from requests.exceptions import HTTPError
 import requests.utils
 
 import sonar.logging as log
+import sonar.platform as pf
+
 import sonar.utilities as util
-from sonar.platform import Platform
+
 from sonar.sqobject import uuid
 from sonar import syncer, users
 from sonar import findings, rules, changelog
@@ -81,7 +83,7 @@ class TooManyHotspotsError(Exception):
 
 
 class Hotspot(findings.Finding):
-    def __init__(self, key, endpoint, data=None, from_export=False):
+    def __init__(self, key, endpoint: pf.Platform, data=None, from_export=False):
         super().__init__(key, endpoint, data, from_export)
         self.vulnerabilityProbability = None  #:
         self.category = data["securityCategory"]  #:
@@ -173,7 +175,7 @@ class Hotspot(findings.Finding):
         :rtype: bool
         """
         if self.endpoint.version() < (9, 4, 0):
-            log.warning("Platform version is < 9.4, can't acknowledge %s", str(self))
+            log.warning("pf.Platform version is < 9.4, can't acknowledge %s", str(self))
             return False
         return self.__mark_as("ACKNOWLEDGED")
 
@@ -344,10 +346,10 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(endpoint: Platform, project_key: str, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search_by_project(endpoint: pf.Platform, project_key: str, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param pf.Platform endpoint: Reference to the SonarQube platform
     :param str project_key: Project key
     :param dict params: Search filters to narrow down the search, defaults to None
     :return: List of found hotspots
@@ -363,7 +365,7 @@ def search_by_project(endpoint: Platform, project_key: str, filters: dict[str, s
     return post_search_filter(hotspots, filters=filters)
 
 
-def component_filter(endpoint: Platform) -> str:
+def component_filter(endpoint: pf.Platform) -> str:
     """Returns the string to filter by porject in api/hotspots/search"""
     if endpoint.version() >= (10, 2, 0):
         return PROJECT_FILTER
@@ -371,10 +373,10 @@ def component_filter(endpoint: Platform) -> str:
         return PROJECT_FILTER_OLD
 
 
-def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search(endpoint: pf.Platform, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param pf.Platform endpoint: Reference to the SonarQube platform
     :param dict[str, str] filters: Search filters to narrow down the search, defaults to None
     :return: List of found hotspots
     :rtype: dict{<key>: <Hotspot>}
@@ -419,7 +421,7 @@ def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hots
     return post_search_filter(hotspots_list, filters)
 
 
-def get_object(endpoint: Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
+def get_object(endpoint: pf.Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
     uu = uuid(key, endpoint.url)
     if uu not in _OBJECTS:
@@ -427,7 +429,7 @@ def get_object(endpoint: Platform, key: str, data: dict[str] = None, from_export
     return _OBJECTS[uu]
 
 
-def get_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, str]:
+def get_search_filters(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     if params is None:
         return {}
