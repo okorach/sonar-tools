@@ -22,6 +22,8 @@ import json
 from threading import Lock
 
 import sonar.logging as log
+import sonar.platform as pf
+
 from sonar import sqobject, utilities
 
 #: List of what can be considered the main metrics
@@ -74,7 +76,7 @@ class Metric(sqobject.SqObject):
     Abstraction of the SonarQube "metric" concept
     """
 
-    def __init__(self, key=None, endpoint=None, data=None):
+    def __init__(self, key=None, endpoint: pf.Platform = None, data=None):
         super().__init__(key, endpoint)
         self.type = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
         self.name = None  #: Name
@@ -144,10 +146,9 @@ def is_a_rating(metric_key):
     return is_of_type(metric_key, "RATING")
 
 
-def search(endpoint, show_hidden_metrics=False, use_cache=True):
+def search(endpoint: pf.Platform, show_hidden_metrics=False, use_cache=True):
     """
-    :param endpoint: Reference to the SonarQube platform object
-    :type endpoint: Platform
+    :param Platform endpoint: Reference to the SonarQube platform object
     :param show_hidden_metrics: Whether to also include hidden (private) metrics
     :type show_hidden_metrics: bool
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
@@ -200,10 +201,9 @@ def is_of_type(metric_key, metric_type):
     return metric_type in METRICS_BY_TYPE and metric_key in METRICS_BY_TYPE[metric_type]
 
 
-def count(endpoint, use_cache=True):
+def count(endpoint: pf.Platform, use_cache=True):
     """
-    :param endpoint: Reference to the SonarQube platform object
-    :type endpoint: Platform
+    :param Platform endpoint: Reference to the SonarQube platform object
     :returns: Count of public metrics
     :rtype: int
     """

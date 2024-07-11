@@ -27,6 +27,7 @@ import json
 import requests.utils
 
 import sonar.logging as log
+
 from sonar import components, sqobject, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
@@ -37,11 +38,8 @@ _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
 
 class PullRequest(components.Component):
-    def __init__(self, project, key, endpoint=None, data=None):
-        if endpoint is not None:
-            super().__init__(key, endpoint)
-        else:
-            super().__init__(key, project.endpoint)
+    def __init__(self, project, key, data=None):
+        super().__init__(key, project.endpoint)
         self.project = project
         self.json = data
         self._last_analysis = None
@@ -93,7 +91,7 @@ def get_object(pull_request_key, project, data=None):
         return None
     uid = uuid(project.key, pull_request_key, project.endpoint.url)
     if uid not in _OBJECTS:
-        _ = PullRequest(project, pull_request_key, endpoint=project.endpoint, data=data)
+        _ = PullRequest(project, pull_request_key, data=data)
     return _OBJECTS[uid]
 
 

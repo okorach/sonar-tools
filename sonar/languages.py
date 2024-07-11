@@ -22,6 +22,7 @@
 import json
 from threading import Lock
 from sonar import sqobject, rules
+import sonar.platform as pf
 
 #: List of language APIs
 APIS = {"list": "languages/list"}
@@ -31,19 +32,19 @@ _CLASS_LOCK = Lock()
 
 
 class Language(sqobject.SqObject):
-    def __init__(self, endpoint, key, name):
+    def __init__(self, endpoint: pf.Platform, key, name):
         super().__init__(key, endpoint)
         self.name = name  #: Language name
         self._nb_rules = {"ALL": None, "BUG": None, "VULNERABILITY": None, "COD_SMELL": None, "SECURITY_HOTSPOT": None}
         _OBJECTS[self.uuid()] = self
 
     @classmethod
-    def load(cls, endpoint, data):
+    def load(cls, endpoint: pf.Platform, data):
         uu = sqobject.uuid(data["key"], endpoint.url)
         return _OBJECTS.get(uu, cls(endpoint=endpoint, key=data["key"], name=data["name"]))
 
     @classmethod
-    def read(cls, endpoint, key):
+    def read(cls, endpoint: pf.Platform, key):
         """Reads a language and return the corresponding object
         :return: Language object
         :rtype: Language or None if not found
@@ -66,10 +67,9 @@ class Language(sqobject.SqObject):
         return self._nb_rules[r_ndx]
 
 
-def read_list(endpoint):
+def read_list(endpoint: pf.Platform):
     """Reads the list of languages existing on the SonarQube platform
-    :param endpoint: Reference of the SonarQube platform
-    :type endpoint: Platform
+    :param Platform endpoint: Reference of the SonarQube platform
     :return: List of languages
     :rtype: dict{<language_key>: <language_name>}
     """
@@ -80,11 +80,10 @@ def read_list(endpoint):
     return _OBJECTS
 
 
-def get_list(endpoint, use_cache=True):
+def get_list(endpoint: pf.Platform, use_cache=True):
     """Gets the list of languages existing on the SonarQube platform
     Unlike read_list, get_list() is using a local cache if available (so no API call)
-    :param endpoint: Reference of the SonarQube platform
-    :type endpoint: Platform
+    :param Platform endpoint: Reference of the SonarQube platform
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :type use_cache: bool
     :return: List of languages
@@ -96,10 +95,9 @@ def get_list(endpoint, use_cache=True):
     return _OBJECTS
 
 
-def exists(endpoint, language):
+def exists(endpoint: pf.Platform, language):
     """Returns whether a language exists
-    :param endpoint: Reference of the SonarQube platform
-    :type endpoint: Platform
+    :param Platform endpoint: Reference of the SonarQube platform
     :param language: The language key
     :type language: str
     :return: Whether the language exists

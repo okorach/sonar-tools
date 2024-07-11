@@ -20,8 +20,8 @@
 
 from __future__ import annotations
 
-from sonar import platform
 import sonar.logging as log
+import sonar.platform as pf
 import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar import exceptions
@@ -45,7 +45,7 @@ class Group(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
-    def __init__(self, endpoint: platform.Platform, name: str, data: dict[str, str]) -> None:
+    def __init__(self, endpoint: pf.Platform, name: str, data: dict[str, str]) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(data.get("id", name), endpoint)
         self.name = name  #: Group name
@@ -57,7 +57,7 @@ class Group(sq.SqObject):
         log.debug("Created %s object", str(self))
 
     @classmethod
-    def read(cls, endpoint: platform.Platform, name: str) -> Group:
+    def read(cls, endpoint: pf.Platform, name: str) -> Group:
         """Creates a Group object corresponding to the group with same name in SonarQube
         :param Platform endpoint: Reference to the SonarQube platform
         :param str name: Group name
@@ -79,7 +79,7 @@ class Group(sq.SqObject):
         return cls(endpoint, name, data=data)
 
     @classmethod
-    def create(cls, endpoint: platform.Platform, name, description: str = None) -> Group:
+    def create(cls, endpoint: pf.Platform, name, description: str = None) -> Group:
         """Creates a new group in SonarQube and returns the corresponding Group object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -94,7 +94,7 @@ class Group(sq.SqObject):
         return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
-    def load(cls, endpoint: platform.Platform, data: dict[str, str]) -> Group:
+    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Group:
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -219,7 +219,7 @@ class Group(sq.SqObject):
         return r.ok
 
 
-def search(endpoint: platform.Platform, params: dict[str, str] = None) -> dict[str, Group]:
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Group]:
     """Search groups
 
     :params Platform endpoint: Reference to the SonarQube platform
@@ -229,7 +229,7 @@ def search(endpoint: platform.Platform, params: dict[str, str] = None) -> dict[s
     return sq.search_objects(api=_SEARCH_API, params=params, key_field="name", returned_field="groups", endpoint=endpoint, object_class=Group)
 
 
-def get_list(endpoint: platform.Platform) -> dict[str, Group]:
+def get_list(endpoint: pf.Platform) -> dict[str, Group]:
     """Returns the list of groups
 
     :params Platform endpoint: Reference to the SonarQube platform
@@ -240,12 +240,12 @@ def get_list(endpoint: platform.Platform) -> dict[str, Group]:
     return search(endpoint)
 
 
-def export(endpoint: platform.Platform, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, str]:
     """Exports all groups configuration as dict
     Default groups (sonar-users) are not exported
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: platform.Platform
+    :type endpoint: pf.Platform
     :return: list of groups
     :rtype: dict{name: description}
     """
@@ -258,7 +258,7 @@ def export(endpoint: platform.Platform, export_settings: dict[str, str]) -> dict
     return g_list
 
 
-def audit(audit_settings: dict[str, str], endpoint: platform.Platform) -> list[problem.Problem]:
+def audit(audit_settings: dict[str, str], endpoint: pf.Platform) -> list[problem.Problem]:
     """Audits all groups
 
     :param dict audit_settings: Configuration of audit
@@ -276,7 +276,7 @@ def audit(audit_settings: dict[str, str], endpoint: platform.Platform) -> list[p
     return problems
 
 
-def get_object(endpoint: platform.Platform, name: str) -> Group:
+def get_object(endpoint: pf.Platform, name: str) -> Group:
     """Returns a group object
 
     :param str name: group name
@@ -292,11 +292,11 @@ def get_object(endpoint: platform.Platform, name: str) -> Group:
     return _OBJECTS[uu]
 
 
-def create_or_update(endpoint, name, description):
+def create_or_update(endpoint: pf.Platform, name, description):
     """Creates or updates a group
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: platform.Platform
+    :type endpoint: pf.Platform
     :param name: group name
     :type name: str
     :param description: group description
@@ -312,11 +312,11 @@ def create_or_update(endpoint, name, description):
         return o.set_description(description)
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint: pf.Platform, config_data):
     """Imports a group configuration in SonarQube
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: platform.Platform
+    :param Platform endpoint: reference to the SonarQube platform
+    :type endpoint: pf.Platform
     :param config_data: the configuration to import
     :type config_data: dict
     :return: Nothing
@@ -333,12 +333,11 @@ def import_config(endpoint, config_data):
         create_or_update(endpoint, name, desc)
 
 
-def exists(group_name, endpoint):
+def exists(group_name, endpoint: pf.Platform):
     """
     :param group_name: group name to check
     :type group_name: str
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: platform.Platform
+    :param Platform endpoint: reference to the SonarQube platform
     :return: whether the project exists
     :rtype: bool
     """

@@ -25,15 +25,17 @@
 import json
 
 import sonar.logging as log
+import sonar.platform as pf
+
 import sonar.components as comp
-from sonar import measures
+
 from sonar.audit import rules, problem
 
 
 class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
-    def __init__(self, key: str, endpoint: object, data: dict[str, any] = None) -> None:
+    def __init__(self, key: str, endpoint: pf.Platform, data: dict[str, any] = None) -> None:
         self._nbr_projects = None
         self._permissions = None
         super().__init__(key, endpoint)
@@ -88,7 +90,7 @@ class Aggregation(comp.Component):
         return self._audit_aggregation_cardinality((1, 1), broken_rule)
 
 
-def count(api: str, endpoint: object, params: dict[str, str] = None) -> int:
+def count(api: str, endpoint: pf.Platform, params: dict[str, str] = None) -> int:
     """Returns number of aggregations of a given type (Application OR Portfolio)
     :return: number of Apps or Portfolios
     :rtype: int
