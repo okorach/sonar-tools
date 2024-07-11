@@ -28,7 +28,7 @@ from requests import HTTPError
 import requests.utils
 
 import sonar.logging as log
-from sonar import platform
+import sonar.platform as pf
 from sonar import exceptions
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
@@ -58,7 +58,7 @@ class QualityProfile(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
-    def __init__(self, key: str, endpoint: platform.Platform, data: dict[str, str] = None) -> None:
+    def __init__(self, key: str, endpoint: pf.Platform, data: dict[str, str] = None) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(key, endpoint)
 
@@ -87,7 +87,7 @@ class QualityProfile(sq.SqObject):
         _OBJECTS[self.uuid()] = self
 
     @classmethod
-    def read(cls, endpoint: platform.Platform, name: str, language: str) -> Union[QualityProfile, None]:
+    def read(cls, endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:
         """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -107,15 +107,12 @@ class QualityProfile(sq.SqObject):
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint, name, language):
+    def create(cls, endpoint: pf.Platform, name, language):
         """Creates a new quality profile in SonarQube and returns the corresponding QualityProfile object
 
-        :param endpoint: Reference to the SonarQube platform
-        :type endpoint: platform.Platform
-        :param name: Quality profile name
-        :type name: str
-        :param description: Quality profile language
-        :type description: str
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str name: Quality profile name
+        :param str description: Quality profile language
         :return: The quality profile object
         :rtype: QualityProfile or None if creation failed
         """
@@ -129,12 +126,11 @@ class QualityProfile(sq.SqObject):
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
-    def load(cls, endpoint: platform.Platform, data: dict[str, str]) -> None:
+    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> None:
         """Creates a QualityProfile object from the result of a SonarQube API quality profile search data
 
-        :param endpoint: Reference to the SonarQube platform
-        :type endpoint: platform.Platform
-        :param data: The JSON data corresponding to the quality profile
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param dict data: The JSON data corresponding to the quality profile
         :type data: dict
         :return: The quality profile object
         :rtype: QualityProfile
@@ -512,12 +508,11 @@ class QualityProfile(sq.SqObject):
         return problems
 
 
-def search(endpoint: platform.Platform, params: dict[str, str] = None) -> dict[str, QualityProfile]:
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, QualityProfile]:
     """Searches projects in SonarQube
 
     param Platform endpoint: Reference to the SonarQube platform
-    :param params: list of parameters to filter quality profiles to search
-    :type params: dict
+    :param dict params: list of parameters to filter quality profiles to search
     :return: list of quality profiles
     :rtype: dict{key: QualityProfile}
     """
@@ -526,7 +521,7 @@ def search(endpoint: platform.Platform, params: dict[str, str] = None) -> dict[s
     )
 
 
-def get_list(endpoint: platform.Platform, use_cache: bool = True) -> dict[str, QualityProfile]:
+def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, QualityProfile]:
     """
     :param Platform endpoint: Reference to the SonarQube platform
     :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
@@ -540,7 +535,7 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True) -> dict[str, Q
     return _OBJECTS
 
 
-def audit(endpoint: platform.Platform, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
     """Audits all quality profiles and return list of problems found
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -564,7 +559,7 @@ def audit(endpoint: platform.Platform, audit_settings: dict[str, str] = None) ->
     return problems
 
 
-def hierarchize(qp_list, endpoint):
+def hierarchize(qp_list, endpoint: pf.Platform):
     """Organize a flat list of QP in hierarchical (inheritance) fashion
 
     :param qp_list: List of quality profiles
@@ -592,7 +587,7 @@ def hierarchize(qp_list, endpoint):
     return qp_list
 
 
-def export(endpoint: platform.Platform, export_settings: dict[str, str], in_hierarchy: bool = True) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: dict[str, str], in_hierarchy: bool = True) -> dict[str, str]:
     """Exports all quality profiles configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -616,7 +611,7 @@ def export(endpoint: platform.Platform, export_settings: dict[str, str], in_hier
     return qp_list
 
 
-def get_object(endpoint: platform.Platform, name: str, language: str) -> Union[QualityProfile, None]:
+def get_object(endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:
     """Returns a quality profile Object from its name and language
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -633,7 +628,7 @@ def get_object(endpoint: platform.Platform, name: str, language: str) -> Union[Q
     return _OBJECTS[uid]
 
 
-def _create_or_update_children(name, language, endpoint, children, queue):
+def _create_or_update_children(name, language, endpoint: pf.Platform, children, queue):
     for qp_name, qp_data in children.items():
         qp_data[_KEY_PARENT] = name
         log.debug("Adding child profile '%s' to update queue", qp_name)
@@ -652,7 +647,7 @@ def __import_thread(queue):
         queue.task_done()
 
 
-def import_config(endpoint: platform.Platform, config_data: dict[str, str], threads: int = 8) -> None:
+def import_config(endpoint: pf.Platform, config_data: dict[str, str], threads: int = 8) -> None:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -692,7 +687,7 @@ def uuid(name: str, lang: str, url: str) -> str:
     return f"{lang}:{name}@{url}"
 
 
-def exists(endpoint: platform.Platform, name: str, language: str) -> bool:
+def exists(endpoint: pf.Platform, name: str, language: str) -> bool:
     """
     :param Platform endpoint: reference to the SonarQube platform
     :param str name: Quality profile name
