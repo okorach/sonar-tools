@@ -27,6 +27,8 @@ import json
 from typing import Union
 
 import sonar.logging as log
+import sonar.platform as pf
+
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
@@ -123,7 +125,7 @@ VALID_SETTINGS = set()
 
 class Setting(sqobject.SqObject):
     @classmethod
-    def read(cls, key, endpoint, component=None):
+    def read(cls, key, endpoint: pf.Platform, component=None):
         log.debug("Reading setting '%s' for %s", key, str(component))
         uid = uuid(key, component, endpoint.url)
         if uid in _OBJECTS:
@@ -144,7 +146,7 @@ class Setting(sqobject.SqObject):
         return Setting.load(key=key, endpoint=endpoint, data=data, component=component)
 
     @classmethod
-    def create(cls, key, endpoint, value=None, component=None):
+    def create(cls, key, endpoint: pf.Platform, value=None, component=None):
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
         r = endpoint.post(_CREATE_API, params={"key": key, "component": component})
         if not r.ok:
@@ -153,14 +155,14 @@ class Setting(sqobject.SqObject):
         return o
 
     @classmethod
-    def load(cls, key, endpoint, data, component=None):
+    def load(cls, key, endpoint: pf.Platform, data, component=None):
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
         uid = uuid(key, component, endpoint.url)
         o = _OBJECTS[uid] if uid in _OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
         return o
 
-    def __init__(self, key, endpoint, component=None, data=None):
+    def __init__(self, key, endpoint: pf.Platform, component=None, data=None):
         super().__init__(key, endpoint)
         self.component = component
         self.value = None
@@ -322,11 +324,11 @@ class Setting(sqobject.SqObject):
         return (GENERAL_SETTINGS, None)
 
 
-def get_object(endpoint: object, key: str, component: object = None):
+def get_object(endpoint: pf.Platform, key: str, component: object = None):
     return _OBJECTS.get(uuid(key, component, endpoint.url), None)
 
 
-def __get_settings(endpoint: object, data: dict[str, str], component: object = None) -> dict[str, Setting]:
+def __get_settings(endpoint: pf.Platform, data: dict[str, str], component: object = None) -> dict[str, Setting]:
     """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
     settings = {}
     settings_type_list = ["settings"]
@@ -347,7 +349,7 @@ def __get_settings(endpoint: object, data: dict[str, str], component: object = N
     return settings
 
 
-def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False):
+def get_bulk(endpoint: pf.Platform, settings_list=None, component=None, include_not_set=False):
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
     params = get_component_params(component)
@@ -380,7 +382,7 @@ def get_bulk(endpoint, settings_list=None, component=None, include_not_set=False
     return settings_dict
 
 
-def get_all(endpoint, project=None):
+def get_all(endpoint: pf.Platform, project=None):
     return get_bulk(endpoint, component=project, include_not_set=True)
 
 
@@ -405,7 +407,7 @@ def new_code_to_string(data):
         return f"{data['type']} = {data['value']}"
 
 
-def get_new_code_period(endpoint: object, project_or_branch: object) -> Setting:
+def get_new_code_period(endpoint: pf.Platform, project_or_branch: object) -> Setting:
     """returns the new code period, either the default global setting, or specific to a project/branch"""
     return Setting.read(key=NEW_CODE_PERIOD, endpoint=endpoint, component=project_or_branch)
 
@@ -414,12 +416,12 @@ def string_to_new_code(value):
     return re.split(r"\s*=\s*", value)
 
 
-def set_new_code_period(endpoint, nc_type, nc_value, project_key=None, branch=None):
+def set_new_code_period(endpoint: pf.Platform, nc_type, nc_value, project_key=None, branch=None):
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch})
 
 
-def get_visibility(endpoint, component):
+def get_visibility(endpoint: pf.Platform, component):
     key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
     uid = uuid(key, component, endpoint.url)
     if uid in _OBJECTS:
@@ -434,7 +436,7 @@ def get_visibility(endpoint, component):
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
-def set_visibility(endpoint, visibility, component=None):
+def set_visibility(endpoint: pf.Platform, visibility, component=None):
     if component:
         log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
         return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility})
@@ -448,7 +450,7 @@ def __is_cobol_setting(key):
     return re.match(r"^sonar\.cobol\..*$", key)
 
 
-def set_setting(endpoint, key, value, component=None):
+def set_setting(endpoint: pf.Platform, key, value, component=None):
     return Setting.load(key, endpoint=endpoint, component=component, data=None).set(value)
 
 
@@ -469,7 +471,7 @@ def decode(setting_key, setting_value):
     return setting_value
 
 
-def reset_setting(endpoint, setting_key, project_key=None):
+def reset_setting(endpoint: pf.Platform, setting_key, project_key=None):
     log.info("Resetting setting '%s", setting_key)
     return endpoint.post("settings/reset", params={"key": setting_key, "component": project_key})
 
