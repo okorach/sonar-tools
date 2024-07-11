@@ -22,6 +22,8 @@ import datetime as dt
 import json
 
 import sonar.logging as log
+from sonar import platform as pf
+
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
@@ -46,7 +48,7 @@ class User(sqobject.SqObject):
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
 
-    def __init__(self, login, endpoint, data):
+    def __init__(self, login, endpoint: pf.Platform, data):
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(login, endpoint)
         self.login = login  #: User login (str)
@@ -63,7 +65,7 @@ class User(sqobject.SqObject):
         _OBJECTS[self.uuid()] = self
 
     @classmethod
-    def load(cls, endpoint, data):
+    def load(cls, endpoint: pf.Platform, data):
         """Creates a user object from the result of a SonarQube API user search data
 
         :param endpoint: Reference to the SonarQube platform
@@ -77,7 +79,7 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint, login, name=None, is_local=True, password=None):
+    def create(cls, endpoint: pf.Platform, login, name=None, is_local=True, password=None):
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -99,7 +101,7 @@ class User(sqobject.SqObject):
         return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
-    def get_object(cls, endpoint, login):
+    def get_object(cls, endpoint: pf.Platform, login):
         """Creates a User object corresponding to the user with same login in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -362,7 +364,7 @@ class User(sqobject.SqObject):
         return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, full))
 
 
-def search(endpoint: object, params: dict[str, str] = None) -> dict[str, object]:
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, object]:
     """Searches users in SonarQube or SonarCloud
 
     :param endpoint: Reference to the SonarQube platform
@@ -384,7 +386,7 @@ def search(endpoint: object, params: dict[str, str] = None) -> dict[str, object]
     return sqobject.search_objects(api=api, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
 
 
-def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, str]:
     """Exports all users as dict
 
     :param endpoint: reference to the SonarQube platform
@@ -402,7 +404,7 @@ def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     return u_list
 
 
-def audit(endpoint, audit_settings):
+def audit(endpoint: pf.Platform, audit_settings):
     """Audits all users for last login date and too old tokens
 
     :param endpoint: reference to the SonarQube platform
@@ -422,7 +424,7 @@ def audit(endpoint, audit_settings):
     return problems
 
 
-def get_login_from_name(name, endpoint):
+def get_login_from_name(name, endpoint: pf.Platform):
     """Returns the login corresponding to name
     If more than one login matches the name, the first occurence is returned
 
@@ -441,7 +443,7 @@ def get_login_from_name(name, endpoint):
     return list(u_list.keys()).pop(0)
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint: pf.Platform, config_data):
     """Imports in SonarQube a complete users configuration described from a JSON
 
     :param endpoint: reference to the SonarQube platform
