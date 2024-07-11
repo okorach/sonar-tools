@@ -32,8 +32,9 @@ from queue import Queue
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
+import sonar.platform as pf
 
-from sonar import exceptions, errcodes, platform
+from sonar import exceptions, errcodes
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, syncer
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
@@ -78,7 +79,7 @@ class Project(components.Component):
     """
 
     @classmethod
-    def get_object(cls, endpoint: platform.Platform, key: str):
+    def get_object(cls, endpoint: pf.Platform, key: str):
         """Creates a project from a search in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -105,7 +106,7 @@ class Project(components.Component):
             return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint, data):
+    def load(cls, endpoint: pf.Platform, data):
         """Creates a project loaded with JSON data coming from api/components/search request
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -124,7 +125,7 @@ class Project(components.Component):
         return o
 
     @classmethod
-    def create(cls, endpoint, key, name):
+    def create(cls, endpoint: pf.Platform, key, name):
         """Creates a Project object after creating it in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -142,7 +143,7 @@ class Project(components.Component):
         o.name = name
         return o
 
-    def __init__(self, endpoint, key):
+    def __init__(self, endpoint: pf.Platform, key):
         super().__init__(key, endpoint)
         self._last_analysis = "undefined"
         self._branches_last_analysis = "undefined"
@@ -1171,7 +1172,7 @@ class Project(components.Component):
         return {"project": self.key}
 
 
-def count(endpoint, params=None):
+def count(endpoint: pf.Platform, params=None):
     """Counts projects
 
     :param params: list of parameters to filter projects to search
@@ -1185,11 +1186,11 @@ def count(endpoint, params=None):
     return data["paging"]["total"]
 
 
-def search(endpoint, params=None):
+def search(endpoint: pf.Platform, params=None):
     """Searches projects in SonarQube
 
     :param endpoint: Reference to the SonarQube platform
-    :type endpoint: platform.Platform
+    :type endpoint: pf.Platform
     :param params: list of parameters to narrow down the search
     :type params: dict
     :return: list of projects
@@ -1207,7 +1208,7 @@ def search(endpoint, params=None):
     )
 
 
-def get_list(endpoint: platform.Platform, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Project]:
+def get_list(endpoint: pf.Platform, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Project]:
     """
     :param Platform endpoint: Reference to the SonarQube platform
     :param list[str] key_list: List of portfolios keys to get, if None or empty all portfolios are returned
@@ -1249,7 +1250,7 @@ def __audit_thread(queue, results, audit_settings, bindings):
     log.debug("Queue empty, exiting thread")
 
 
-def audit(endpoint: platform.Platform, audit_settings: dict[str, str], key_list: list[str] = None):
+def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str] = None):
     """Audits all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1293,7 +1294,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         queue.task_done()
 
 
-def export(endpoint: platform.Platform, export_settings: dict[str, str], key_list: list[str] = None):
+def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: list[str] = None):
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1319,7 +1320,7 @@ def export(endpoint: platform.Platform, export_settings: dict[str, str], key_lis
     return project_settings
 
 
-def exists(key: str, endpoint: platform.Platform) -> bool:
+def exists(key: str, endpoint: pf.Platform) -> bool:
     """
     :param str key: project key to check
     :param Platform endpoint: reference to the SonarQube platform
@@ -1333,11 +1334,11 @@ def exists(key: str, endpoint: platform.Platform) -> bool:
         return False
 
 
-def import_config(endpoint: platform.Platform, config_data: dict[str, str], key_list: list[str] = None) -> None:
+def import_config(endpoint: pf.Platform, config_data: dict[str, str], key_list: list[str] = None) -> None:
     """Imports a configuration in SonarQube
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: platform.Platform
+    :type endpoint: pf.Platform
     :param config_data: the configuration to import
     :type config_data: dict
     :param key_list: List of project keys to be considered for the import, defaults to None (all projects)
@@ -1385,7 +1386,7 @@ def __export_zip_thread(queue, results, statuses, export_timeout):
         queue.task_done()
 
 
-def export_zip(endpoint: platform.Platform, key_list: list[str] = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
+def export_zip(endpoint: pf.Platform, key_list: list[str] = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
     """Export as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
