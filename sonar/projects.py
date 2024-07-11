@@ -32,7 +32,8 @@ from queue import Queue
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import exceptions, errcodes
+
+from sonar import exceptions, errcodes, platform
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, syncer
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
@@ -77,7 +78,7 @@ class Project(components.Component):
     """
 
     @classmethod
-    def get_object(cls, endpoint: object, key: str):
+    def get_object(cls, endpoint: platform.Platform, key: str):
         """Creates a project from a search in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -86,8 +87,9 @@ class Project(components.Component):
         :return: The Project
         :rtype: Project
         """
-        if endpoint.url in _OBJECTS and key in _OBJECTS[endpoint.url]:
-            return _OBJECTS[endpoint.url][key]
+        uu = sqobject.uuid(key, endpoint.url)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         try:
             data = json.loads(endpoint.get(_SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             if len(data["components"]) == 0:
@@ -113,8 +115,9 @@ class Project(components.Component):
         :rtype: Project
         """
         key = data["key"]
-        if endpoint.url in _OBJECTS and key in _OBJECTS[endpoint.url]:
-            o = _OBJECTS[endpoint.url][key]
+        uu = sqobject.uuid(key, endpoint.url)
+        if uu in _OBJECTS:
+            o = _OBJECTS[uu]
         else:
             o = cls(endpoint, key)
         o.reload(data)
@@ -149,10 +152,7 @@ class Project(components.Component):
         self._ncloc_with_branches = None
         self._binding = {"has_binding": True, "binding": None}
         self._new_code = None
-        super().__init__(key, endpoint)
-        if endpoint.url not in _OBJECTS:
-            _OBJECTS[endpoint.url] = {}
-        _OBJECTS[endpoint.url][key] = self
+        _OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
     def __str__(self):
@@ -171,7 +171,7 @@ class Project(components.Component):
         """
         data = json.loads(self.get(_SEARCH_API, params={"projects": self.key}).text)
         if len(data["components"]) == 0:
-            _OBJECTS[self.endpoint.url].pop(self.uuid(), None)
+            _OBJECTS.pop(self.uuid(), None)
             raise exceptions.ObjectNotFound(self.key, f"Project key {self.key} not found")
         return self.reload(data["components"][0])
 
@@ -296,7 +296,7 @@ class Project(components.Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS[self.endpoint.url])
+        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS)
         log.info("Successfully deleted %s - %d LoCs", str(self), loc)
         return ok
 
@@ -1189,7 +1189,7 @@ def search(endpoint, params=None):
     """Searches projects in SonarQube
 
     :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
+    :type endpoint: platform.Platform
     :param params: list of parameters to narrow down the search
     :type params: dict
     :return: list of projects
@@ -1207,15 +1207,13 @@ def search(endpoint, params=None):
     )
 
 
-def get_list(endpoint, key_list=None, use_cache=True):
+def get_list(endpoint: platform.Platform, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Project]:
     """
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
-    :param key_list: List of portfolios keys to get, if None or empty all portfolios are returned
-    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :type use_cache: bool
-    :return: the list of all quality profiles
-    :rtype: dict{key: QualityProfile}
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param list[str] key_list: List of portfolios keys to get, if None or empty all portfolios are returned
+    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
+    :return: the list of all projects
+    :rtype: dict{key: Project}
     """
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
@@ -1251,15 +1249,13 @@ def __audit_thread(queue, results, audit_settings, bindings):
     log.debug("Queue empty, exiting thread")
 
 
-def audit(endpoint, audit_settings, key_list=None):
+def audit(endpoint: platform.Platform, audit_settings: dict[str, str], key_list: list[str] = None):
     """Audits all or a list of projects
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
-    :param audit_settings: Configuration of audit
-    :type audit_settings: dict
+    :param Platform endpoint: reference to the SonarQube platform
+    :param dict audit_settings: Configuration of audit
     :param key_list: List of project keys to audit, defaults to None (all projects)
-    :type key_list: str, optional
+    :type key_list: list, optional
     :return: list of problems found
     :rtype: list[Problem]
     """
@@ -1297,7 +1293,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         queue.task_done()
 
 
-def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None):
+def export(endpoint: platform.Platform, export_settings: dict[str, str], key_list: list[str] = None):
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1323,12 +1319,10 @@ def export(endpoint: object, export_settings: dict[str, str], key_list: list[str
     return project_settings
 
 
-def exists(key, endpoint):
+def exists(key: str, endpoint: platform.Platform) -> bool:
     """
-    :param key: project key to check
-    :type key: str
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
+    :param str key: project key to check
+    :param Platform endpoint: reference to the SonarQube platform
     :return: whether the project exists
     :rtype: bool
     """
@@ -1339,11 +1333,11 @@ def exists(key, endpoint):
         return False
 
 
-def import_config(endpoint, config_data, key_list=None):
+def import_config(endpoint: platform.Platform, config_data: dict[str, str], key_list: list[str] = None) -> None:
     """Imports a configuration in SonarQube
 
     :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
+    :type endpoint: platform.Platform
     :param config_data: the configuration to import
     :type config_data: dict
     :param key_list: List of project keys to be considered for the import, defaults to None (all projects)
@@ -1391,11 +1385,10 @@ def __export_zip_thread(queue, results, statuses, export_timeout):
         queue.task_done()
 
 
-def export_zip(endpoint, key_list=None, threads=8, export_timeout=30):
+def export_zip(endpoint: platform.Platform, key_list: list[str] = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
     """Export as zip all or a list of projects
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
+    :param Platform endpoint: reference to the SonarQube platform
     :param key_list: List of project keys to export, defaults to None (all projects)
     :type key_list: str, optional
     :param threads: Number of parallel threads for export, defaults to 8

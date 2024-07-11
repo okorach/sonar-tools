@@ -28,7 +28,7 @@ from requests.exceptions import HTTPError
 from requests.utils import quote
 
 import sonar.logging as log
-from sonar.components import Component
+from sonar.components import Component, KEY_SEPARATOR
 
 from sonar.applications import Application as App
 from sonar.branches import Branch
@@ -85,7 +85,7 @@ class ApplicationBranch(Component):
         uu = uuid(app.key, branch_name, app.endpoint.url)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
-        raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch {branch_name} not found")
+        raise exceptions.ObjectNotFound(app.key, f"app.Application key '{app.key}' branch {branch_name} not found")
 
     @classmethod
     def create(cls, app: App, name: str, project_branches: list[Branch]) -> ApplicationBranch:
@@ -110,7 +110,7 @@ class ApplicationBranch(Component):
             app.endpoint.post(APIS["create"], params=params)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                raise exceptions.ObjectAlreadyExists(f"App {app.key} branch '{name}", e.response.text)
+                raise exceptions.ObjectAlreadyExists(f"app.App {app.key} branch '{name}", e.response.text)
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
     @classmethod
@@ -224,7 +224,7 @@ class ApplicationBranch(Component):
 
 def uuid(app_key: str, branch_name: str, url: str) -> str:
     """Returns the UUID of an object of that class"""
-    return f"{app_key} BRANCH {branch_name}@{url}"
+    return f"{app_key}{KEY_SEPARATOR}{branch_name}@{url}"
 
 
 def list_from(app: App, data: dict[str, str]) -> dict[str, ApplicationBranch]:

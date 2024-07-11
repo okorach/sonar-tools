@@ -29,6 +29,9 @@ import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import settings, tasks, measures, utilities
 
+# Character forbidden in keys that can be used to separate a key from a post fix
+KEY_SEPARATOR = " "
+
 _ALT_COMPONENTS = ("project", "application", "portfolio")
 SEARCH_API = "components/search"
 _DETAILS_API = "components/show"

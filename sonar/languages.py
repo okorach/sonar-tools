@@ -35,11 +35,12 @@ class Language(sqobject.SqObject):
         super().__init__(key, endpoint)
         self.name = name  #: Language name
         self._nb_rules = {"ALL": None, "BUG": None, "VULNERABILITY": None, "COD_SMELL": None, "SECURITY_HOTSPOT": None}
-        _OBJECTS[key] = self
+        _OBJECTS[self.uuid()] = self
 
     @classmethod
     def load(cls, endpoint, data):
-        return _OBJECTS.get(data["key"], cls(endpoint=endpoint, key=data["key"], name=data["name"]))
+        uu = sqobject.uuid(data["key"], endpoint.url)
+        return _OBJECTS.get(uu, cls(endpoint=endpoint, key=data["key"], name=data["name"]))
 
     @classmethod
     def read(cls, endpoint, key):
@@ -48,7 +49,7 @@ class Language(sqobject.SqObject):
         :rtype: Language or None if not found
         """
         get_list(endpoint)
-        return _OBJECTS.get(key, None)
+        return _OBJECTS.get(sqobject.uuid(key, endpoint.url), None)
 
     def number_of_rules(self, rule_type=None):
         """Count rules in the language, optionally filtering on rule type
@@ -74,7 +75,8 @@ def read_list(endpoint):
     """
     data = json.loads(endpoint.get(APIS["list"]).text)
     for lang in data["languages"]:
-        _OBJECTS[lang["key"]] = lang["name"]
+        uu = sqobject.uuid(lang["key"], endpoint.url)
+        _OBJECTS[uu] = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
     return _OBJECTS
 
 
@@ -103,4 +105,4 @@ def exists(endpoint, language):
     :return: Whether the language exists
     :rtype: dict{<language_key>: <language_name>}
     """
-    return language in get_list(endpoint)
+    return language in [l.name for l in get_list(endpoint).values()]

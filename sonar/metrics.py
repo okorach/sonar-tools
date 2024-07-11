@@ -85,7 +85,7 @@ class Metric(sqobject.SqObject):
         self.hidden = None  #: Hidden
         self.custom = None  #: Custom
         self.__load(data)
-        _OBJECTS[self.key] = self
+        _OBJECTS[self.uuid()] = self
 
     def __load(self, data):
         log.debug("Loading metric %s", str(data))
@@ -97,7 +97,7 @@ class Metric(sqobject.SqObject):
         self.hidden = data["hidden"]
         self.custom = data.get("custom", None)
         if not self.hidden:
-            _VISIBLE_OBJECTS[self.key] = self
+            _VISIBLE_OBJECTS[self.uuid()] = self
         if self.type not in METRICS_BY_TYPE:
             METRICS_BY_TYPE[self.type] = set()
         METRICS_BY_TYPE[self.type].add(self.key)
@@ -157,16 +157,15 @@ def search(endpoint, show_hidden_metrics=False, use_cache=True):
     """
     with _CLASS_LOCK:
         if len(_OBJECTS) == 0 or not use_cache:
-            m_list = {}
             page, nb_pages = 1, 1
             while page <= nb_pages:
                 data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
                 for m in data["metrics"]:
-                    m_list[m["key"]] = Metric(key=m["key"], endpoint=endpoint, data=m)
+                    _ = Metric(key=m["key"], endpoint=endpoint, data=m)
                 nb_pages = utilities.nbr_pages(data)
                 page += 1
-
-    return _OBJECTS if show_hidden_metrics else _VISIBLE_OBJECTS
+    m_list = _OBJECTS if show_hidden_metrics else _VISIBLE_OBJECTS
+    return {m.key: m for m in m_list.values()}
 
 
 def is_a_percent(metric_key):

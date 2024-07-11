@@ -45,7 +45,7 @@ class PullRequest(components.Component):
         self.project = project
         self.json = data
         self._last_analysis = None
-        _OBJECTS[self._uuid()] = self
+        _OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
     def __str__(self):
@@ -54,8 +54,8 @@ class PullRequest(components.Component):
     def url(self):
         return f"{self.endpoint.url}/dashboard?id={self.project.key}&pullRequest={requests.utils.quote(self.key)}"
 
-    def _uuid(self):
-        return _uuid(self.project.key, self.key)
+    def uuid(self):
+        return uuid(self.project.key, self.key, self.endpoint.url)
 
     def last_analysis(self):
         if self._last_analysis is None and "analysisDate" in self.json:
@@ -83,18 +83,18 @@ class PullRequest(components.Component):
         return {"project": self.project.key, "pullRequest": self.key}
 
 
-def _uuid(project_key, pull_request_key):
-    return f"{project_key} {pull_request_key}"
+def uuid(project_key: str, pull_request_key: str, url: str):
+    return f"{project_key}{components.KEY_SEPARATOR}{pull_request_key}@{url}"
 
 
 def get_object(pull_request_key, project, data=None):
     if project.endpoint.edition() == "community":
         log.debug("Pull requests not available in Community Edition")
         return None
-    p_id = _uuid(project.key, pull_request_key)
-    if p_id not in _OBJECTS:
+    uid = uuid(project.key, pull_request_key, project.endpoint.url)
+    if uid not in _OBJECTS:
         _ = PullRequest(project, pull_request_key, endpoint=project.endpoint, data=data)
-    return _OBJECTS[p_id]
+    return _OBJECTS[uid]
 
 
 def get_list(project):

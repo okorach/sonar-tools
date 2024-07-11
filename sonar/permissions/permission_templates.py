@@ -63,19 +63,17 @@ class PermissionTemplate(sqobject.SqObject):
         data.pop("name")
         self.key = data.pop("id", None)
         self.description = data.get("description", None)
+        self.last_update = data.get("lastUpdate", None)
         self.project_key_pattern = data.pop("projectKeyPattern", "")
         self.creation_date = utilities.string_to_date(data.pop("createdAt", None))
-        self.last_update = utilities.string_to_date(data.pop("updatedAt", None))
-        self.__set_hash()
-        _OBJECTS[self.key] = self
-        _MAP[self.name.lower()] = self.key
+        _OBJECTS[self.uuid()] = self
 
     def __str__(self):
         return f"permission template '{self.name}'"
 
-    def __set_hash(self):
-        _OBJECTS[self.key] = self
-        _MAP[self.name] = self.key
+    def uuid(self) -> str:
+        """Returns object unique id"""
+        sqobject.uuid(self.name.lower(), self.endpoint.url)
 
     def is_default_for(self, qualifier):
         return qualifier in _DEFAULT_TEMPLATES and _DEFAULT_TEMPLATES[qualifier] == self.key
@@ -161,13 +159,10 @@ class PermissionTemplate(sqobject.SqObject):
         return self.permissions().audit(audit_settings)
 
 
-def get_object(name, endpoint=None):
+def get_object(name, endpoint):
     if len(_OBJECTS) == 0:
         get_list(endpoint)
-    lowername = name.lower()
-    if lowername not in _MAP:
-        return None
-    return _OBJECTS.get(_MAP[lowername], None)
+    return _OBJECTS.get(sqobject.uuid(name.lower(), endpoint.url), None)
 
 
 def create_or_update(name, endpoint, kwargs):
@@ -180,7 +175,7 @@ def create_or_update(name, endpoint, kwargs):
         return o.update(name=name, **kwargs)
 
 
-def create(name, endpoint=None, create_data=None):
+def create(name, endpoint, create_data=None):
     o = get_object(name=name, endpoint=endpoint)
     if o is None:
         o = PermissionTemplate(name=name, endpoint=endpoint, create_data=create_data)

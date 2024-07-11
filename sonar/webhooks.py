@@ -50,17 +50,18 @@ class WebHook(sq.SqObject):
         self.last_delivery = data.get("latestDelivery", None)
         _OBJECTS[self.uuid()] = self
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"webhook '{self.name}'"
 
-    def url(self):
+    def url(self) -> str:
+        """Returns the object permalink"""
         return f"{self.endpoint.url}/admin/webhooks"
 
-    def uuid(self):
+    def uuid(self) -> str:
         """
         :meta private:
         """
-        return _uuid(self.name, self.project)
+        return uuid(self.name, self.project, self.endpoint.url)
 
     def update(self, **kwargs):
         """Updates a webhook with new properties (name, url, secret)
@@ -126,7 +127,7 @@ def create(endpoint, name, url, secret=None, project=None):
 def update(endpoint, name, **kwargs):
     project_key = kwargs.pop("project", None)
     get_list(endpoint, project_key)
-    if _uuid(name, project_key) not in _OBJECTS:
+    if uuid(name, project_key, endpoint.url) not in _OBJECTS:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
         get_object(name, endpoint, project_key=project_key, data=kwargs).update(**kwargs)
@@ -134,16 +135,19 @@ def update(endpoint, name, **kwargs):
 
 def get_object(name, endpoint, project_key=None, data=None):
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
-    u = _uuid(name, project_key)
-    if u not in _OBJECTS:
+    uid = uuid(name, project_key, endpoint.url)
+    if uid not in _OBJECTS:
         _ = WebHook(name=name, endpoint=endpoint, data=data)
-    return _OBJECTS[u]
+    return _OBJECTS[uid]
 
 
-def _uuid(name, project_key):
-    # FIXME: Make UUID really unique
-    p = "" if project_key is None else f":PROJECT:{project_key}"
-    return f"{name}{p}"
+def uuid(name: str, project_key: str, url: str) -> str:
+    """Returns object unique id"""
+    # FIXME: Make uuid really unique between global and project
+    if not project_key:
+        return f"{name}@{url}"
+    else:
+        return f"{name}#{project_key}@{url}"
 
 
 def audit(endpoint):

@@ -18,14 +18,17 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-
+from __future__ import annotations
+from typing import Union
 from http import HTTPStatus
 import json
 
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import sqobject, exceptions
+from sonar import platform
+import sonar.sqobject as sq
+from sonar import exceptions
 import sonar.utilities as util
 
 #: DevOps platform types in SonarQube
@@ -45,15 +48,17 @@ _TO_BE_SET = "TO_BE_SET"
 _IMPORTABLE_PROPERTIES = ("key", "type", "url", "workspace", "clientId", "appId")
 
 
-class DevopsPlatform(sqobject.SqObject):
+class DevopsPlatform(sq.SqObject):
     """
     Abstraction of the SonarQube ALM/DevOps Platform concept
     """
 
     @classmethod
-    def read(cls, endpoint, key):
-        if key in _OBJECTS:
-            return _OBJECTS[key]
+    def read(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
+        """Reads a devops platform object in Sonar instance"""
+        uu = sq.uuid(key, endpoint.url)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         data = json.loads(endpoint.get(APIS["list"]).text)
         for plt_type, platforms in data.items():
             for p in platforms:
@@ -62,15 +67,18 @@ class DevopsPlatform(sqobject.SqObject):
         raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
 
     @classmethod
-    def load(cls, endpoint, plt_type, data):
+    def load(cls, endpoint: platform.Platform, plt_type: str, data: dict[str, str]) -> DevopsPlatform:
+        """Finds a devops platform object and loads it with data"""
         key = data["key"]
-        if key in _OBJECTS:
-            return _OBJECTS[key]
+        uu = sq.uuid(key, endpoint.url)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         o = DevopsPlatform(key, endpoint, plt_type)
         return o._load(data)
 
     @classmethod
-    def create(cls, endpoint, key, plt_type, url_or_workspace):
+    def create(cls, endpoint: platform.Platform, key: str, plt_type: str, url_or_workspace: str) -> DevopsPlatform:
+        """Creates a devops platform"""
         params = {"key": key}
         try:
             if plt_type == "github":
@@ -100,15 +108,17 @@ class DevopsPlatform(sqobject.SqObject):
         o.refresh()
         return o
 
-    def __init__(self, key, endpoint, platform_type):
+    def __init__(self, key: str, endpoint: platform.Platform, platform_type: str) -> None:
+        """Constructor"""
         super().__init__(key, endpoint)
         self.type = platform_type  #: DevOps platform type
         self.url = None  #: DevOps platform URL
         self._specific = None  #: DevOps platform specific settings
-        _OBJECTS[key] = self
+        _OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
-    def _load(self, data):
+    def _load(self, data: dict[str, str]) -> DevopsPlatform:
+        """Loads a devops platform object with data"""
         self._json = data
         self.url = "https://bitbucket.org" if self.type == "bitbucketcloud" else data["url"]
         self._specific = data.copy()
@@ -122,7 +132,7 @@ class DevopsPlatform(sqobject.SqObject):
             string += f" workspace '{self._specific['workspace']}'"
         return string
 
-    def refresh(self):
+    def refresh(self) -> bool:
         """Reads / Refresh a DevOps platform information
 
         :return: Whether the operation succeeded
@@ -180,10 +190,9 @@ class DevopsPlatform(sqobject.SqObject):
         return self
 
 
-def count(platf_type=None):
+def count(platf_type: str = None) -> int:
     """
-    :param platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
-    :type platf_type: str or None
+    :param str platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
     :return: Count of DevOps platforms
     :rtype: int
     """
@@ -193,10 +202,10 @@ def count(platf_type=None):
     return sum(1 for o in _OBJECTS.values() if o.type[0:4] == platf_type[0:4])
 
 
-def get_list(endpoint: object) -> dict[str, DevopsPlatform]:
+def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     """Reads all DevOps platforms from SonarQube
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param platform.Platform endpoint: Reference to the SonarQube platform
     :return: List of DevOps platforms
     :rtype: dict{<platformKey>: <DevopsPlatform>}
     """
@@ -209,9 +218,9 @@ def get_list(endpoint: object) -> dict[str, DevopsPlatform]:
     return _OBJECTS
 
 
-def get_object(devops_platform_key, endpoint):
+def get_object(devops_platform_key: str, endpoint: platform.Platform) -> DevopsPlatform:
     """
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param platform.Platform endpoint: Reference to the SonarQube platform
     :param str devops_platform_key: Key of the platform (its name)
     :return: The DevOps platforms corresponding to key, or None if not found
     :rtype: DevopsPlatform
@@ -221,9 +230,9 @@ def get_object(devops_platform_key, endpoint):
     return DevopsPlatform.read(endpoint, devops_platform_key)
 
 
-def exists(devops_platform_key, endpoint):
+def exists(devops_platform_key: str, endpoint: platform.Platform) -> bool:
     """
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param platform.Platform endpoint: Reference to the SonarQube platform
     :param str devops_platform_key: Key of the platform (its name)
     :return: Whether the platform exists
     :rtype: bool
@@ -231,7 +240,7 @@ def exists(devops_platform_key, endpoint):
     return get_object(devops_platform_key, endpoint) is not None
 
 
-def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: platform.Platform, export_settings: dict[str, str]) -> dict[str, str]:
     """
     :meta private:
     """
@@ -243,7 +252,7 @@ def export(endpoint: object, export_settings: dict[str, str]) -> dict[str, str]:
     return json_data
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint: platform.Platform, config_data: dict[str, str]) -> None:
     """
     :meta private:
     """
@@ -266,7 +275,7 @@ def import_config(endpoint, config_data):
         o.update(**data)
 
 
-def devops_type(platform_key, endpoint):
+def devops_type(platform_key: str, endpoint: platform.Platform) -> Union[str, None]:
     """
     :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES), or None if not found
     :rtype: str or None

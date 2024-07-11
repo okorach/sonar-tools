@@ -63,8 +63,9 @@ class Organization(sqobject.SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        if key in _OBJECTS:
-            return _OBJECTS[key]
+        uu = sqobject.uuid(key, endpoint.url)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         try:
             data = json.loads(endpoint.get(_APIS["search"], params={"organizations": key}).text)
         except HTTPError as e:
@@ -85,7 +86,8 @@ class Organization(sqobject.SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        o = _OBJECTS.get(data["key"], cls(endpoint, data["key"], data["name"]))
+        uu = sqobject.uuid(data["key"], endpoint.url)
+        o = _OBJECTS.get(uu, cls(endpoint, data["key"], data["name"]))
         o.json_data = data
         o.name = data["name"]
         o.description = data["description"]
@@ -98,7 +100,7 @@ class Organization(sqobject.SqObject):
         self.description = None
         self.name = name
         log.debug("Created object %s", str(self))
-        _OBJECTS[self.key] = self
+        _OBJECTS[self.uuid()] = self
 
     def __str__(self) -> str:
         return f"organization key '{self.key}'"

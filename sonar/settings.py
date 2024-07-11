@@ -125,9 +125,9 @@ class Setting(sqobject.SqObject):
     @classmethod
     def read(cls, key, endpoint, component=None):
         log.debug("Reading setting '%s' for %s", key, str(component))
-        uu = _uuid_p(key, component)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        uid = uuid(key, component, endpoint.url)
+        if uid in _OBJECTS:
+            return _OBJECTS[uid]
         if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
             params = get_component_params(component, name="project")
             data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)
@@ -155,8 +155,8 @@ class Setting(sqobject.SqObject):
     @classmethod
     def load(cls, key, endpoint, data, component=None):
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
-        uu = _uuid_p(key, component)
-        o = _OBJECTS[uu] if uu in _OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
+        uid = uuid(key, component, endpoint.url)
+        o = _OBJECTS[uid] if uid in _OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
         return o
 
@@ -200,7 +200,7 @@ class Setting(sqobject.SqObject):
             self.inherited = True
 
     def uuid(self):
-        return _uuid_p(self.key, self.component)
+        return uuid(self.key, self.component, self.endpoint.url)
 
     def __str__(self):
         if self.component is None:
@@ -322,8 +322,8 @@ class Setting(sqobject.SqObject):
         return (GENERAL_SETTINGS, None)
 
 
-def get_object(key, component=None):
-    return _OBJECTS.get(_uuid_p(key, component), None)
+def get_object(endpoint: object, key: str, component: object = None):
+    return _OBJECTS.get(uuid(key, component, endpoint.url), None)
 
 
 def __get_settings(endpoint: object, data: dict[str, str], component: object = None) -> dict[str, Setting]:
@@ -384,18 +384,12 @@ def get_all(endpoint, project=None):
     return get_bulk(endpoint, component=project, include_not_set=True)
 
 
-def uuid(key, project_key=None):
+def uuid(key: str, component: object, url: str) -> str:
     """Computes uuid for a setting"""
-    if project_key is None:
-        return key
+    if not component:
+        return f"{key}@{url}"
     else:
-        return f"{key}#{project_key}"
-
-
-def _uuid_p(key, component):
-    """Computes uuid for a setting"""
-    pk = None if component is None else component.key
-    return uuid(key, pk)
+        return f"{key}#{component.key}@{url}"
 
 
 def new_code_to_string(data):
@@ -426,9 +420,10 @@ def set_new_code_period(endpoint, nc_type, nc_value, project_key=None, branch=No
 
 
 def get_visibility(endpoint, component):
-    uu = uuid(COMPONENT_VISIBILITY, component.key) if component else uuid(PROJECT_DEFAULT_VISIBILITY)
-    if uu in _OBJECTS:
-        return _OBJECTS[uu]
+    key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
+    uid = uuid(key, component, endpoint.url)
+    if uid in _OBJECTS:
+        return _OBJECTS[uid]
     if component:
         data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
         return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])

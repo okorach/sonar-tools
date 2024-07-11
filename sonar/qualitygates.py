@@ -23,12 +23,14 @@
 
 """
 
+from __future__ import annotations
 from http import HTTPStatus
 import json
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.sqobject as sq
+from sonar import platform
 from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
 import sonar.utilities as util
@@ -38,7 +40,6 @@ import sonar.audit.problem as pb
 
 
 _OBJECTS = {}
-_MAP = {}
 
 #: Quality gates APIs
 APIS = {
@@ -77,7 +78,7 @@ class QualityGate(sq.SqObject):
     """
 
     @classmethod
-    def get_object(cls, endpoint, name):
+    def get_object(cls, endpoint: platform.Platform, name: str) -> QualityGate:
         """Reads a quality gate from SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -85,8 +86,9 @@ class QualityGate(sq.SqObject):
         :return: the QualityGate object or None if not found
         :rtype: QualityGate or None
         """
-        if name in _MAP and _MAP[name] in _OBJECTS:
-            return _OBJECTS[_MAP[name]]
+        uid = sq.uuid(name, endpoint.url)
+        if uid in _OBJECTS:
+            return _OBJECTS[uid]
         data = search_by_name(endpoint, name)
         if not data:
             raise exceptions.ObjectNotFound(name, f"Quality gate '{name}' not found")
@@ -99,7 +101,7 @@ class QualityGate(sq.SqObject):
         :rtype: QualityGate or None
         """
         # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
-        o = _OBJECTS.get(data.get("id", data["name"]))
+        o = _OBJECTS.get(sq.uuid(data["name"], endpoint.url), None)
         if not o:
             o = cls(data["name"], endpoint, data=data)
         o._json = data
@@ -127,8 +129,7 @@ class QualityGate(sq.SqObject):
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
         self.permissions()
-        _OBJECTS[self.key] = self
-        _MAP[self.name] = self.key
+        _OBJECTS[self.uuid()] = self
 
     def __str__(self):
         """
@@ -136,6 +137,10 @@ class QualityGate(sq.SqObject):
         :rtype: str
         """
         return f"quality gate '{self.name}'"
+
+    def uuid(self) -> str:
+        """Returns the UUID of a quality gate"""
+        return sq.uuid(self.name, self.endpoint.url)
 
     def url(self):
         """
@@ -267,9 +272,9 @@ class QualityGate(sq.SqObject):
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", str(self), data["name"])
             self.post(APIS["rename"], params={"id": self.key, "name": data["name"]})
-            _MAP.pop(self.name, None)
+            _OBJECTS.pop(self.uuid(), None)
             self.name = data["name"]
-            _MAP[self.name] = self
+            _OBJECTS[self.uuid()] = self
         ok = self.set_conditions(data.get("conditions", []))
         ok = ok and self.set_permissions(data.get("permissions", []))
         if data.get("isDefault", False):

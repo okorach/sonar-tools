@@ -36,6 +36,7 @@ from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.utilities as util
+
 from sonar import errcodes, settings, devops, webhooks, version, sif
 from sonar.permissions import permissions, global_permissions, permission_templates
 from sonar.audit import rules, config

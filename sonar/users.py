@@ -60,7 +60,7 @@ class User(sqobject.SqObject):
         self.__tokens = None
         self.__load(data)
         log.debug("Created %s", str(self))
-        _OBJECTS[self.login] = self
+        _OBJECTS[self.uuid()] = self
 
     @classmethod
     def load(cls, endpoint, data):
@@ -108,8 +108,9 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User
         """
-        if login in _OBJECTS:
-            return _OBJECTS[login]
+        uid = sqobject.uuid(login, endpoint.url)
+        if uid in _OBJECTS:
+            return _OBJECTS[uid]
         log.debug("Getting user '%s'", login)
         for k, o in search(endpoint, params={"q": login}).items():
             if k == login:
@@ -214,9 +215,9 @@ class User(sqobject.SqObject):
                 new_login = kwargs["login"]
                 if new_login not in _OBJECTS:
                     self.post(UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
-                    _OBJECTS.pop(self.login, None)
+                    _OBJECTS.pop(self.uuid(), None)
                     self.login = new_login
-                    _OBJECTS[self.login] = self
+                    _OBJECTS[self.uuid()] = self
         self.set_groups(kwargs.get("groups", ""))
         return self
 

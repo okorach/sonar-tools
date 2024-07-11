@@ -28,7 +28,8 @@ from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
-from sonar import platform, exceptions, settings, projects, branches
+from sonar import platform
+from sonar import exceptions, settings, projects, branches
 from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
@@ -60,7 +61,7 @@ class Application(aggr.Aggregation):
     def get_object(cls, endpoint: platform.Platform, key: str) -> Application:
         """Gets an Application object from SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
+        :param platform.Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
         :raises UnsupportedOperation: If on a Community Edition
         :raises ObjectNotFound: If Application key not found in SonarQube
@@ -83,7 +84,7 @@ class Application(aggr.Aggregation):
     def load(cls, endpoint: platform.Platform, data: dict[str, str]) -> Application:
         """Loads an Application object with data retrieved from SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
+        :param platform.Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
         :param dict data: Data coming from api/components/search_projects or api/applications/show
         :raises UnsupportedOperation: If on a Community Edition
@@ -105,7 +106,7 @@ class Application(aggr.Aggregation):
     def create(cls, endpoint: platform.Platform, key: str, name: str) -> Application:
         """Creates an Application object in SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
+        :param platform.Platform endpoint: Reference to the SonarQube platform
         :param str key: Application key, must not already exist on SonarQube
         :param str name: Application name
         :raises UnsupportedOperation: If on a Community Edition
@@ -144,7 +145,7 @@ class Application(aggr.Aggregation):
             self.reload(json.loads(self.get(APIS["get"], params=self.search_params()).text)["application"])
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
-                _OBJECTS.pop(self.key, None)
+                _OBJECTS.pop(self.uuid(), None)
                 raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
             raise
 
@@ -428,7 +429,7 @@ def _project_list(data):
 def count(endpoint: platform.Platform) -> int:
     """returns count of applications
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param platform.Platform endpoint: Reference to the SonarQube platform
     :return: Count of applications
     :rtype: int
     """
@@ -439,7 +440,7 @@ def count(endpoint: platform.Platform) -> int:
 def search(endpoint, params=None):
     """Searches applications
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param platform.Platform endpoint: Reference to the SonarQube platform
     :param params: Search filters (see api/components/search parameters)
     :raises UnsupportedOperation: If on a community edition
     :return: dict of applications
@@ -485,7 +486,7 @@ def exists(endpoint: platform.Platform, key: str) -> bool:
 def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
     """Exports applications as JSON
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param platform.Platform endpoint: Reference to the SonarQube platform
     :param key_list: list of Application keys to export, defaults to all if None
     :type key_list: list, optional
     :param full: Whether to export all attributes, including those that can't be set, defaults to False
@@ -507,7 +508,7 @@ def export(endpoint: object, export_settings: dict[str, str], key_list: list[str
 def audit(audit_settings, endpoint=None, key_list=None):
     """Audits applications and return list of problems found
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param platform.Platform endpoint: Reference to the SonarQube platform
     :param dict audit_settings: dict of audit config settings
     :param key_list: list of Application keys to audit, defaults to all if None
     :type key_list: list, optional
@@ -529,7 +530,7 @@ def audit(audit_settings, endpoint=None, key_list=None):
 def import_config(endpoint, config_data, key_list=None):
     """Imports a list of application configuration in a SonarQube platform
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param platform.Platform endpoint: Reference to the SonarQube platform
     :param dict config_data: JSON representation of applications configuration
     :param key_list: list of Application keys to import, defaults to all if None
     :type key_list: list, optional

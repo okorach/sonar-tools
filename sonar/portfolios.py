@@ -87,9 +87,9 @@ class Portfolio(aggregations.Aggregation):
         # if data is None:
         #    return None
         # key = data["key"]
-        uuid = sq.uuid(key, endpoint.url)
-        if uuid in _OBJECTS:
-            return _OBJECTS[uuid]
+        uu = sq.uuid(key, endpoint.url)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         data = search_by_key(endpoint, key)
         if data is None:
             raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' not found")
