@@ -93,8 +93,9 @@ class Finding(sq.SqObject):
     A finding is a general concept that can be either an issue or a security hotspot
     """
 
-    def __init__(self, key, endpoint: pf.Platform, data=None, from_export=False):
-        super().__init__(key, endpoint)
+    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> None:
+        """Constructor"""
+        super().__init__(endpoint=endpoint, key=key)
         self.severity = None  #: Severity (str)
         self.type = None  #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
         self.author = None  #: Author (str)
@@ -116,14 +117,14 @@ class Finding(sq.SqObject):
         self.pull_request = None  #: Pull request (str)
         self._load(data, from_export)
 
-    def _load(self, data, from_export=False):
+    def _load(self, data: dict[str, str], from_export: bool = False) -> None:
         if data is not None:
             if from_export:
                 self._load_from_export(data)
             else:
                 self._load_from_search(data)
 
-    def _load_common(self, jsondata):
+    def _load_common(self, jsondata: dict[str, str]) -> None:
         if self._json is None:
             self._json = jsondata
         else:
@@ -145,7 +146,7 @@ class Finding(sq.SqObject):
             except ValueError:
                 pass
 
-    def _load_from_search(self, jsondata):
+    def _load_from_search(self, jsondata: dict[str, str]) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata["project"]
         self.creation_date = util.string_to_date(jsondata["creationDate"])
@@ -160,17 +161,17 @@ class Finding(sq.SqObject):
             else:
                 self.branch = re.sub("^BRANCH:", "", self.branch)
 
-    def _load_from_export(self, jsondata):
+    def _load_from_export(self, jsondata: dict[str, str]) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata["projectKey"]
         self.creation_date = util.string_to_date(jsondata["createdAt"])
         self.modification_date = util.string_to_date(jsondata["updatedAt"])
 
-    def url(self):
+    def url(self) -> str:
         # Must be implemented in sub classes
         raise NotImplementedError()
 
-    def file(self):
+    def file(self) -> str:
         """
         :return: The finding full file path, relative to the rpoject root directory
         :rtype: str or None if not found
@@ -207,7 +208,7 @@ class Finding(sq.SqObject):
         else:
             return [str(data.get(field, "")) for field in _CSV_FIELDS]
 
-    def to_json(self, without_time: bool = False):
+    def to_json(self, without_time: bool = False) -> dict[str, str]:
         """
         :return: The finding as dict
         :rtype: dict
@@ -270,29 +271,29 @@ class Finding(sq.SqObject):
         ]
         return data
 
-    def is_vulnerability(self):
+    def is_vulnerability(self) -> bool:
         return self.type == "VULNERABILITY"
 
-    def is_hotspot(self):
+    def is_hotspot(self) -> bool:
         return self.type == "SECURITY_HOTSPOT"
 
-    def is_bug(self):
+    def is_bug(self) -> bool:
         return self.type == "BUG"
 
-    def is_code_smell(self):
+    def is_code_smell(self) -> bool:
         return self.type == "CODE_SMELL"
 
-    def is_security_issue(self):
+    def is_security_issue(self) -> bool:
         return self.is_vulnerability() or self.is_hotspot()
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.status == "CLOSED"
 
-    def changelog(self):
+    def changelog(self) -> bool:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
-    def comments(self):
+    def comments(self) -> dict[str, str]:
         # Implemented in subclasses, should not reach this
         raise NotImplementedError()
 
@@ -306,28 +307,28 @@ class Finding(sq.SqObject):
             return False
         return len(self.changelog()) > 0
 
-    def has_comments(self):
+    def has_comments(self) -> bool:
         """
         :return: Whether the finding has comments
         :rtype: bool
         """
         return len(self.comments()) > 0
 
-    def modifiers(self):
+    def modifiers(self) -> list[str]:
         """
         :return: the set of users that modified the finding
         :rtype: set(str)
         """
         return set([c.author() for c in self.changelog().values()])
 
-    def commenters(self):
+    def commenters(self) -> set[str]:
         """
         :return: the set of users that commented the finding
         :rtype: set(str)
         """
         return set([v["user"] for v in self.comments() if "user" in v])
 
-    def can_be_synced(self, user_list):
+    def can_be_synced(self, user_list: list[str]) -> bool:
         """
         :meta private:
         """
@@ -347,7 +348,7 @@ class Finding(sq.SqObject):
                 return False
         return True
 
-    def strictly_identical_to(self, another_finding, ignore_component=False):
+    def strictly_identical_to(self, another_finding: Finding, ignore_component: bool = False) -> bool:
         """
         :meta private:
         """
@@ -370,7 +371,7 @@ class Finding(sq.SqObject):
             and prelim_check
         )
 
-    def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
+    def almost_identical_to(self, another_finding: Finding, ignore_component: bool = False, **kwargs) -> bool:
         """
         :meta private:
         """
@@ -433,16 +434,14 @@ class Finding(sq.SqObject):
         return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
 
 
-def export_findings(endpoint: pf.Platform, project_key, branch=None, pull_request=None):
+def export_findings(endpoint: pf.Platform, project_key, branch: str = None, pull_request: str = None) -> dict[str, Finding]:
     """Export all findings of a given project
 
     :param Platform endpoint: Reference to the SonarQube platform
     :param project_key: The project key
     :type project_key: str
-    :param branch: Branch to select for export (exclusive of pull_request), defaults to None
-    :type branch: str, optional
-    :param pull_request: Pull request to select for export (exclusive of branch), default to None
-    :type pull_request: str, optional
+    :param str branch: Branch to select for export (exclusive of pull_request), defaults to None
+    :param str pull_request: Pull request to select for export (exclusive of branch), default to None
     :return: list of Findings (Issues or Hotspots)
     :rtype: dict{<key>: <Finding>}
     """
