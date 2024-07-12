@@ -173,7 +173,7 @@ class Task(sq.SqObject):
     Abstraction of the SonarQube "background task" concept
     """
 
-    def __init__(self, task_id: str, endpoint: pf.Platform, concerned_object: object = None, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: object = None, data: dict[str, str] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
         self._json = data
@@ -522,7 +522,7 @@ def search(endpoint: pf.Platform, only_current: bool = False, component_key: str
     if component_key is not None:
         params["component"] = component_key
     data = json.loads(endpoint.get("ce/activity", params=params).text)
-    return [Task(t["id"], endpoint, data=t) for t in data["tasks"]]
+    return [Task(endpoint=endpoint, task_id=t["id"], data=t) for t in data["tasks"]]
 
 
 def search_all_last(endpoint: pf.Platform) -> list[Task]:

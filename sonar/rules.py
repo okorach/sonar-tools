@@ -46,7 +46,7 @@ class Rule(sq.SqObject):
     Abstraction of the Sonar Rule concept
     """
 
-    def __init__(self, key: str, endpoint: platform.Platform, data: dict[str, str]) -> None:
+    def __init__(self, endpoint: platform.Platform, key: str, data: dict[str, str]) -> None:
         super().__init__(endpoint=endpoint, key=key)
         log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
         self._json = data
@@ -80,20 +80,20 @@ class Rule(sq.SqObject):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
-        return Rule(key, endpoint, json.loads(r.text)["rule"])
+        return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod
-    def create(cls, key: str, endpoint: platform.Platform, **kwargs) -> Union[None, Rule]:
+    def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Union[None, Rule]:
         """Creates a rule object"""
         params = kwargs.copy()
         (_, params["custom_key"]) = key.split(":")
         log.debug("Creating rule key '%s'", key)
         if not endpoint.post(_CREATE_API, params=params).ok:
             return None
-        return cls.get_object(key=key, endpoint=endpoint)
+        return cls.get_object(endpoint=endpoint, key=key)
 
     @classmethod
-    def load(cls, key: str, endpoint: platform.Platform, data: dict[str, str]) -> Rule:
+    def load(cls, endpoint: platform.Platform, key: str, data: dict[str, str]) -> Rule:
         """Loads a rule object"""
         uid = sq.uuid(key, endpoint.url)
         if uid in _OBJECTS:
@@ -102,7 +102,7 @@ class Rule(sq.SqObject):
         return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
-    def instantiate(cls, key: str, template_key: str, endpoint: platform.Platform, data: dict[str, str]) -> Rule:
+    def instantiate(cls, endpoint: platform.Platform, key: str, template_key: str, data: dict[str, str]) -> Rule:
         try:
             rule = Rule.get_object(endpoint, key)
             log.info("Rule key '%s' already exists, instantiation skipped...", key)
@@ -327,7 +327,7 @@ def import_config(endpoint: platform.Platform, config_data: dict[str, str]) -> b
         except exceptions.ObjectNotFound:
             log.warning("Rule template key '%s' does not exist, can't instantiate it", key)
             continue
-        Rule.instantiate(key, template_rule.key, endpoint, instantiation_data)
+        Rule.instantiate(endpoint=endpoint, key=key, template_key=template_rule.key, data=instantiation_data)
     return True
 
 

@@ -41,7 +41,7 @@ class Measure(sq.SqObject):
     API_READ = "measures/component"
     API_HISTORY = "measures/search_history"
 
-    def __init__(self, key, value, concerned_object):
+    def __init__(self, concerned_object, key, value):
         super().__init__(endpoint=concerned_object.endpoint, key=key)
         self.value = None  #: Measure value
         self.metric = key  #: Measure metric
@@ -60,7 +60,7 @@ class Measure(sq.SqObject):
         :rtype: Measure
         """
         metrics.search(concerned_object.endpoint)
-        return cls(key=data["metric"], value=_search_value(data), concerned_object=concerned_object)
+        return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
     def refresh(self):
         """Refreshes a measure by re-reading it in SonarQube

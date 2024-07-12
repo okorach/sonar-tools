@@ -81,7 +81,7 @@ class QualityGate(sq.SqObject):
     Abstraction of the Sonar Quality Gate concept
     """
 
-    def __init__(self, name: str, endpoint: pf.Platform, data: dict[str, str]) -> None:
+    def __init__(self, endpoint: pf.Platform, name: str, data: dict[str, str]) -> None:
         """Constructor, don't use directly, use class methods instead"""
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Object name
@@ -374,7 +374,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     qg_list = {}
     for qg in data["qualitygates"]:
         log.debug("Getting QG %s", str(qg))
-        qg_obj = QualityGate(name=qg["name"], endpoint=endpoint, data=qg)
+        qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg)
         if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
             qg_obj.is_default = True
         qg_list[qg_obj.name] = qg_obj

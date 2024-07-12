@@ -60,7 +60,7 @@ class QualityProfile(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
-    def __init__(self, key: str, endpoint: pf.Platform, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(endpoint=endpoint, key=key)
 

@@ -35,7 +35,7 @@ from sonar.audit import rules, problem
 class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
-    def __init__(self, key: str, endpoint: pf.Platform, data: dict[str, any] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, any] = None) -> None:
         self._nbr_projects = None
         self._permissions = None
         super().__init__(endpoint=endpoint, key=key)

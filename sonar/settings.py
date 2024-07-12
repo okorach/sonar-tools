@@ -128,7 +128,7 @@ class Setting(sqobject.SqObject):
     Abstraction of the Sonar setting concept
     """
 
-    def __init__(self, key: str, endpoint: pf.Platform, component: object = None, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: dict[str, str] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.component = component
@@ -353,7 +353,7 @@ def __get_settings(endpoint: pf.Platform, data: dict[str, str], component: objec
         log.debug("Looking at %s", setting_type)
         for s in data.get(setting_type, {}):
             (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-            o = Setting(key=key, endpoint=endpoint, component=component, data=None)
+            o = Setting(endpoint=endpoint, key=key, component=component, data=None)
             if o.is_internal():
                 log.debug("Skipping internal setting %s", s["key"])
                 continue

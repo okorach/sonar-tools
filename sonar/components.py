@@ -47,7 +47,7 @@ class Component(sq.SqObject):
     Abstraction of the Sonar component concept
     """
 
-    def __init__(self, key: str, endpoint: pf.Platform = None, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.name = None
@@ -117,7 +117,7 @@ class Component(sq.SqObject):
                 if with_issues and nbr_issues == 0:
                     log.debug("Subcomponent %s has 0 issues, skipping", d["key"])
                     continue
-                comp_list[d["key"]] = Component(d["key"], self.endpoint, data=d)
+                comp_list[d["key"]] = Component(self.endpoint, d["key"], data=d)
                 comp_list[d["key"]].nbr_issues = nbr_issues
                 log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list

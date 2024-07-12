@@ -53,7 +53,7 @@ class DevopsPlatform(sq.SqObject):
     Abstraction of the SonarQube ALM/DevOps Platform concept
     """
 
-    def __init__(self, key: str, endpoint: platform.Platform, platform_type: str) -> None:
+    def __init__(self, endpoint: platform.Platform, key: str, platform_type: str) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.type = platform_type  #: DevOps platform type
@@ -82,7 +82,7 @@ class DevopsPlatform(sq.SqObject):
         uu = sq.uuid(key, endpoint.url)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
-        o = DevopsPlatform(key, endpoint, plt_type)
+        o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         return o._load(data)
 
     @classmethod
@@ -113,7 +113,7 @@ class DevopsPlatform(sq.SqObject):
                 log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
                 raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
             raise
-        o = DevopsPlatform(key, endpoint, plt_type)
+        o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         o.refresh()
         return o
 
