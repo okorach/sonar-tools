@@ -564,7 +564,7 @@ class Project(components.Component):
         except HTTPError as e:
             return {"status": f"HTTP_ERROR {e.response.status_code}"}
         data = json.loads(resp.text)
-        status = tasks.Task(data["taskId"], endpoint=self.endpoint, concerned_object=self, data=data).wait_for_completion(timeout=timeout)
+        status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
             log.error("%s export %s", str(self), status)
             return {"status": status}
