@@ -18,6 +18,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
+
+from typing import Union
+
 import json
 import re
 from http import HTTPStatus
@@ -41,7 +45,8 @@ class Measure(sq.SqObject):
     API_READ = "measures/component"
     API_HISTORY = "measures/search_history"
 
-    def __init__(self, concerned_object, key, value):
+    def __init__(self, concerned_object: object, key: str, value: any) -> None:
+        """Constructor"""
         super().__init__(endpoint=concerned_object.endpoint, key=key)
         self.value = None  #: Measure value
         self.metric = key  #: Measure metric
@@ -49,7 +54,7 @@ class Measure(sq.SqObject):
         self.value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
 
     @classmethod
-    def load(cls, concerned_object, data):
+    def load(cls, concerned_object: object, data: dict[str, str]) -> Measure:
         """Loads a measure from data
 
         :param endpoint: Reference to SonarQube platform
@@ -62,7 +67,7 @@ class Measure(sq.SqObject):
         metrics.search(concerned_object.endpoint)
         return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
-    def refresh(self):
+    def refresh(self) -> any:
         """Refreshes a measure by re-reading it in SonarQube
 
         :return: The new measure value
@@ -73,27 +78,24 @@ class Measure(sq.SqObject):
         self.value = _search_value(data)
         return self.value
 
-    def count_history(self, project_key, params=None):
+    def count_history(self, params: dict[str, str] = None) -> int:
         if params is None:
             params = {}
-        params.update({"component": project_key, "metrics": self.metric, "ps": 1})
+        params.update({"component": self.concerned_object.key, "metrics": self.metric, "ps": 1})
         data = json.loads(self.get(Measure.API_HISTORY, params=params).text)
         return data["paging"]["total"]
 
-    def search_history(self, project_key, params=None):
-        """Searches the history of the metric, for a given project
+    def search_history(self, params: dict[str, str] = None) -> dict[str, any]:
+        """Searches the history of the measure
 
-        :param project_key: Project key
-        :type project_key: str
-        :param params: List of search parameters to narrow down the search, defaults to None
-        :type params: dict
-        :return: The history of the metric, for a given project
+        :param dict params: List of search parameters to narrow down the search, defaults to None
+        :return: The history of the metric, attached to the givene component
         :rtype dict: {<date_str>: <value>}
         """
         __MAX_PAGE_SIZE = 1000
         measures = {}
         new_params = {} if params is None else params.copy()
-        new_params.update({"metrics": self.key, "component": project_key})
+        new_params.update({"metrics": self.key, "component": self.concerned_object.key})
         if "ps" not in new_params:
             new_params["ps"] = __MAX_PAGE_SIZE
         page, nbr_pages = 1, 1
@@ -106,7 +108,7 @@ class Measure(sq.SqObject):
         return measures
 
 
-def get(concerned_object: object, metrics_list: list[str], **kwargs):
+def get(concerned_object: object, metrics_list: list[str], **kwargs) -> dict[str, Measure]:
     """Reads a list of measures of a component (project, branch, pull request, application or portfolio)
 
     :param Component concerned_object: Concerned object (project, branch, pull request, application or portfolio)
@@ -172,10 +174,9 @@ def get_history(concerned_object: object, metrics_list: list[str], **kwargs) -> 
     return res_list
 
 
-def get_rating_letter(rating):
+def get_rating_letter(rating: any) -> str:
     """
-    :params rating:
-    :type rating: int
+    :param any rating: The rating as repturned by the API (a str or float)
     :return: The rating converted from number to letter, if number between 1 and 5, else the unchanged rating
     :rtype: str
     """
@@ -186,7 +187,7 @@ def get_rating_letter(rating):
     return chr(n_int + 64) if 1 <= n_int <= 5 else rating
 
 
-def get_rating_number(rating_letter):
+def get_rating_number(rating_letter: str) -> int:
     """
     :return: The measure converted from letter to number, if letter in [a-eA-E]
     :rtype: int
@@ -199,10 +200,9 @@ def get_rating_number(rating_letter):
     return rating_letter
 
 
-def as_rating_letter(metric, value):
+def as_rating_letter(metric: str, value: Union[float, int]) -> str:
     """
-    :param metric: Metric key
-    :type metric: str
+    :param str metric: Metric key
     :param value: Measure value to convert
     :type value: float or int
     :return: The measure converted from number to letter, if metric is a rating
@@ -213,12 +213,10 @@ def as_rating_letter(metric, value):
     return value
 
 
-def as_rating_number(metric, value):
+def as_rating_number(metric: str, value: str) -> int:
     """
-    :param metric: Metric key
-    :type metric: str
-    :param value: Measure value to convert
-    :type value: str (A to E)
+    :param str metric: Metric key
+    :param str value: Measure value to convert (A to E)
     :return: The measure converted from letter to number, if metric is a rating
     :rtype: int
     """
@@ -227,10 +225,9 @@ def as_rating_number(metric, value):
     return value
 
 
-def as_ratio(metric, value):
+def as_ratio(metric: str, value: Union[int, float]) -> float:
     """Converts a density or ratio metric to float percentage
-    :param metric: Metric key
-    :type metric: str
+    :param str metric: Metric key
     :param value: Measure value to convert
     :type value: int or float
     :return: The converted ratio or density
@@ -245,10 +242,9 @@ def as_ratio(metric, value):
     return value
 
 
-def as_percent(metric, value):
+def as_percent(metric: str, value: Union[int, float]) -> str:
     """Converts a density or ratio metric to string percentage
-    :param metric: Metric key
-    :type metric: str
+    :param str metric: Metric key
     :param value: Measure value to convert
     :type value: int or float
     :return: The converted ratio or density in "x.y%" format
@@ -263,19 +259,15 @@ def as_percent(metric, value):
     return value
 
 
-def format(metric, value, ratings="letters", percents="float", dates="datetime"):
+def format(metric: str, value: any, ratings: str = "letters", percents: str = "float", dates: str = "datetime") -> str:
     """Formats any metric in the the preferred format for display
 
-    :param metric: Metric key
-    :type metric: str
+    :param str metric: Metric key
     :param value: Measure value to convert
     :type value: str, int or float
-    :param ratings: How to convert ratings
-    :type ratings: str, "letters" or "numbers"
-    :param percents: How to convert percentages
-    :type percents: str, "float" or "percents"
-    :param dates: How to convert dates
-    :type dates: str, "datetime" or "dateonly"
+    :param str ratings: How to convert ratings, "letters" or "numbers"
+    :param str percents: How to convert percentages, "float" or "percents"
+    :param str dates: How to convert dates, "datetime" or "dateonly"
     :return: The formatted measure
     :rtype: str
     """
@@ -288,7 +280,8 @@ def format(metric, value, ratings="letters", percents="float", dates="datetime")
     return value
 
 
-def _search_value(data):
+def _search_value(data: dict[str, str]) -> any:
+    """Searches a measure value in all possible field of a JSON returned by the Sonar API"""
     value = data.get("value", None)
     if not value and "periods" in data:
         value = data["periods"][0]["value"]
