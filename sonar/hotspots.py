@@ -222,7 +222,8 @@ class Hotspot(findings.Finding):
             params["comment"] = comment
         return self.post("hotspots/assign", params=params)
 
-    def __apply_event(self, event, settings: dict[str, str]) -> bool:
+    def __apply_event(self, event: object, settings: dict[str, str]) -> bool:
+        """Applies a changelog event (transition, comment, assign) to the hotspot"""
         log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
