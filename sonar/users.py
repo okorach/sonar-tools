@@ -18,6 +18,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
+
+from typing import Union
 import datetime as dt
 import json
 
@@ -48,9 +51,9 @@ class User(sqobject.SqObject):
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
 
-    def __init__(self, login, endpoint: pf.Platform, data):
+    def __init__(self, login: str, endpoint: pf.Platform, data: dict[str, str]) -> None:
         """Do not use to create users, use on of the constructor class methods"""
-        super().__init__(login, endpoint)
+        super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login (str)
         self.name = None  #: User name (str)
         self._groups = None  #: User groups (list)
@@ -65,7 +68,7 @@ class User(sqobject.SqObject):
         _OBJECTS[self.uuid()] = self
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data):
+    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> User:
         """Creates a user object from the result of a SonarQube API user search data
 
         :param endpoint: Reference to the SonarQube platform
@@ -79,12 +82,12 @@ class User(sqobject.SqObject):
         return cls(login=data["login"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, login, name=None, is_local=True, password=None):
+    def create(cls, endpoint: pf.Platform, login: str, name: str = None, is_local: bool = True, password: str = None) -> User:
         """Creates a new user in SonarQube and returns the corresponding User object
 
         :param Platform endpoint: Reference to the SonarQube platform
         :param str login: User login
-        :param name: User name, default to login
+        :param name: User name, defaults to login
         :type name: str, optional
         :param is_local: Whether the user is local, defaults to True
         :type is_local: bool, optional
@@ -101,7 +104,7 @@ class User(sqobject.SqObject):
         return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, login):
+    def get_object(cls, endpoint: pf.Platform, login: str) -> User:
         """Creates a User object corresponding to the user with same login in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -119,14 +122,14 @@ class User(sqobject.SqObject):
                 return o
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String formatting of the object
         :rtype: str
         """
         return f"user '{self.login}'"
 
-    def __load(self, data):
+    def __load(self, data: dict[str, str]) -> None:
         self.name = data["name"]  #: User name
         self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
         self.email = data.get("email", None)  #: User email
@@ -148,7 +151,7 @@ class User(sqobject.SqObject):
             self._groups = data.get("groups", [])  #: User groups
         return self._groups
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refreshes a User object from SonarQube data
 
         :return:  Nothing
@@ -162,7 +165,7 @@ class User(sqobject.SqObject):
                 self.__load(d)
                 break
 
-    def url(self):
+    def url(self) -> str:
         """
         :return: the SonarQube permalink to the user, actually the global users page only
                  since this is as close as we can get to the precise user definition
@@ -170,7 +173,7 @@ class User(sqobject.SqObject):
         """
         return f"{self.endpoint.url}/admin/users"
 
-    def deactivate(self):
+    def deactivate(self) -> bool:
         """Deactivates the user
 
         :return: Whether the deactivation succeeded
@@ -178,7 +181,7 @@ class User(sqobject.SqObject):
         """
         return self.post(DEACTIVATE_API, {"name": self.name, "login": self.login}).ok
 
-    def tokens(self):
+    def tokens(self) -> list[tokens.UserToken]:
         """
         :return: The list of tokens of the user
         :rtype: list[Token]
@@ -187,7 +190,7 @@ class User(sqobject.SqObject):
             self.__tokens = tokens.search(self.endpoint, self.login)
         return self.__tokens
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> User:
         """Updates a user with name, email, login, SCM accounts, group memberships
 
         :param name: New name of the user
@@ -223,11 +226,10 @@ class User(sqobject.SqObject):
         self.set_groups(kwargs.get("groups", ""))
         return self
 
-    def add_to_group(self, group_name):
+    def add_to_group(self, group_name: str) -> bool:
         """Adds group membership to the user
 
-        :param group_name: Group to add membership
-        :type group_name: str
+        :param str group_name: Group to add membership
         :return: Whether operation succeeded
         :rtype: bool
         """
@@ -237,7 +239,7 @@ class User(sqobject.SqObject):
             return False
         return group.add_user(self.login)
 
-    def remove_from_group(self, group_name):
+    def remove_from_group(self, group_name: str) -> bool:
         """Removes group membership to the user
 
         :param str group_name: Group to remove membership
@@ -251,11 +253,10 @@ class User(sqobject.SqObject):
             raise exceptions.UnsupportedOperation(f"Group '{group_name}' is built-in, can't remove membership for {str(self)}")
         return group.remove_user(self.login)
 
-    def set_groups(self, group_list):
+    def set_groups(self, group_list: list[str]) -> bool:
         """Set the user group membership (replaces current groups)
 
-        :param group_list: List of groups to set membership
-        :type group_list: list[str]
+        :param list[str] group_list: List of groups to set membership
         :return: Whether all group membership were OK
         :rtype: bool
         """
@@ -272,38 +273,34 @@ class User(sqobject.SqObject):
             self.refresh()
         return ok
 
-    def add_scm_accounts(self, accounts_list):
+    def add_scm_accounts(self, accounts_list: list[str]) -> bool:
         """Adds SCM accounts to the user (on top of existing ones)
 
-        :param accounts_list: List of SCM accounts to add
-        :type accounts_list: list[str]
+        :param list[str] accounts_list: List of SCM accounts to add
         :return: Whether SCM accounts were successfully set
         :rtype: bool
         """
-        accounts_list = util.csv_to_list(accounts_list)
         if len(accounts_list) == 0:
             return False
         log.info("Adding SCM accounts '%s' to %s", str(accounts_list), str(self))
         return self.set_scm_accounts(list(set(self.scm_accounts) | set(accounts_list)))
 
-    def set_scm_accounts(self, accounts_list):
+    def set_scm_accounts(self, accounts_list: list[str]) -> bool:
         """Sets SCM accounts to the user (on top of existing ones)
 
-        :param accounts_list: List of SCM accounts to set
-        :type accounts_list: list[str]
+        :param list[str] accounts_list: List of SCM accounts to set
         :return: Whether SCM accounts were successfully set
         :rtype: bool
         """
-        accounts_list = util.csv_to_list(accounts_list)
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
-        r = self.post(UPDATE_API, params={"login": self.login, "scmAccount": accounts_list})
+        r = self.post(UPDATE_API, params={"login": self.login, "scmAccount": ",".join(accounts_list)})
         if not r.ok:
             self.scm_accounts = []
             return False
         self.scm_accounts = accounts_list
         return True
 
-    def audit(self, settings=None):
+    def audit(self, settings: dict[str, str] = None) -> list[problem.Problem]:
         """Audits a user (user last connection date and tokens) and
         returns the list of problems found (too old)
 
@@ -346,7 +343,7 @@ class User(sqobject.SqObject):
                 problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 
-    def to_json(self, full=False):
+    def to_json(self, full: bool = False) -> dict[str, str]:
         """Exports the user data (login, email, groups, SCM accounts local or not) as dict
 
         :return: User data
@@ -404,7 +401,7 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, 
     return u_list
 
 
-def audit(endpoint: pf.Platform, audit_settings):
+def audit(endpoint: pf.Platform, audit_settings: dict[str, str]) -> list[problem.Problem]:
     """Audits all users for last login date and too old tokens
 
     :param endpoint: reference to the SonarQube platform
@@ -424,14 +421,12 @@ def audit(endpoint: pf.Platform, audit_settings):
     return problems
 
 
-def get_login_from_name(name, endpoint: pf.Platform):
+def get_login_from_name(endpoint: pf.Platform, name: str) -> Union[str, None]:
     """Returns the login corresponding to name
     If more than one login matches the name, the first occurence is returned
 
-    :param name: User name
-    :type name: str
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
+    :param Platform endpoint: reference to the SonarQube platform
+    :param str name: User name
     :return: User login or None if name not found
     :rtype: str or None
     """
@@ -443,13 +438,11 @@ def get_login_from_name(name, endpoint: pf.Platform):
     return list(u_list.keys()).pop(0)
 
 
-def import_config(endpoint: pf.Platform, config_data):
-    """Imports in SonarQube a complete users configuration described from a JSON
+def import_config(endpoint: pf.Platform, config_data: dict[str, str]) -> None:
+    """Imports in SonarQube a complete users configuration described from a sonar-config JSON
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
-    :param config_data: the configuration to import
-    :type config_data: dict
+    :param Platformendpoint: reference to the SonarQube platform
+    :param dict config_data: the configuration to import
     :return: Nothing
     """
     if "users" not in config_data:
@@ -457,16 +450,11 @@ def import_config(endpoint: pf.Platform, config_data):
         return
     log.info("Importing users")
     for login, data in config_data["users"].items():
-        data = _decode(data)
+        data["scm_accounts"] = util.csv_to_list(data.pop("scmAccounts", ""))
+        data["groups"] = util.csv_to_list(data.pop("groups", ""))
         data.pop("login", None)
         try:
             o = User.get_object(endpoint, login)
         except exceptions.ObjectNotFound:
             o = User.create(endpoint, login, data.get("name", login), data.get("local", False))
         o.update(**data)
-
-
-def _decode(data):
-    data["scm_accounts"] = util.csv_to_list(data.pop("scmAccounts", ""))
-    data["groups"] = util.csv_to_list(data.pop("groups", ""))
-    return data
