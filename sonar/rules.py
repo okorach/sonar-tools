@@ -42,6 +42,8 @@ TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
 
 
 class Rule(sq.SqObject):
+    """Abstraction of the Sonar Rule concept"""
+
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
         """Returns a rule object from the cache or from the platform itself"""
@@ -163,10 +165,12 @@ class Rule(sq.SqObject):
         """Resets rule custom description"""
         return self.set_description("")
 
-    def clean_code_attribute(self) -> dict:
+    def clean_code_attribute(self) -> dict[str, str]:
+        """Returns the rule clean code attributes"""
         return self._clean_code_attribute
 
-    def impacts(self) -> dict:
+    def impacts(self) -> dict[str, str]:
+        """Returns the rule clean code attributes"""
         return self._impacts
 
 
