@@ -83,6 +83,19 @@ class Project(components.Component):
     Abstraction of the SonarQube project concept
     """
 
+    def __init__(self, endpoint: pf.Platform, key: str) -> None:
+        super().__init__(endpoint=endpoint, key=key)
+        self._last_analysis = "undefined"
+        self._branches_last_analysis = "undefined"
+        self._permissions = None
+        self._branches = None
+        self._pull_requests = None
+        self._ncloc_with_branches = None
+        self._binding = {"has_binding": True, "binding": None}
+        self._new_code = None
+        _OBJECTS[self.uuid()] = self
+        log.debug("Created object %s", str(self))
+
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Project:
         """Creates a project from a search in SonarQube
@@ -147,19 +160,6 @@ class Project(components.Component):
         o = cls(endpoint, key)
         o.name = name
         return o
-
-    def __init__(self, endpoint: pf.Platform, key: str) -> None:
-        super().__init__(key, endpoint)
-        self._last_analysis = "undefined"
-        self._branches_last_analysis = "undefined"
-        self._permissions = None
-        self._branches = None
-        self._pull_requests = None
-        self._ncloc_with_branches = None
-        self._binding = {"has_binding": True, "binding": None}
-        self._new_code = None
-        _OBJECTS[self.uuid()] = self
-        log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:
         """
@@ -564,7 +564,7 @@ class Project(components.Component):
         except HTTPError as e:
             return {"status": f"HTTP_ERROR {e.response.status_code}"}
         data = json.loads(resp.text)
-        status = tasks.Task(data["taskId"], endpoint=self.endpoint, concerned_object=self, data=data).wait_for_completion(timeout=timeout)
+        status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
             log.error("%s export %s", str(self), status)
             return {"status": status}

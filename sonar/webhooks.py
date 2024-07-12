@@ -43,7 +43,7 @@ class WebHook(sq.SqObject):
         self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project: str = None, data: dict[str, str] = None
     ) -> None:
         """Constructor"""
-        super().__init__(name, endpoint)
+        super().__init__(endpoint=endpoint, key=name)
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
             data = json.loads(self.post("webhooks/create", params=params).text)["webhook"]

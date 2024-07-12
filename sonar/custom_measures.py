@@ -39,7 +39,7 @@ class CustomMeasure(sq.SqObject):
         value=None,
         description=None,
     ):
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
         self.uuid = uuid
         self.projectKey = project_key
         self.value = value

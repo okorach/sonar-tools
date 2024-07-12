@@ -34,7 +34,7 @@ from sonar import utilities, exceptions
 
 
 class SqObject:
-    def __init__(self, key, endpoint):
+    def __init__(self, endpoint: object, key: str):
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
         self._json = None
@@ -90,7 +90,7 @@ def __search_thread(queue):
             if object_class.__name__ in ("QualityProfile", "QualityGate", "Groups", "Portfolio", "Project"):
                 objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
             else:
-                objects[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
+                objects[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
         queue.task_done()
 
 
@@ -109,7 +109,7 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
         if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project"):
             objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
         else:
-            objects_list[obj[key_field]] = object_class(obj[key_field], endpoint, data=obj)
+            objects_list[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
     nb_pages = utilities.nbr_pages(data)
     if nb_pages == 1:
         # If everything is returned on the 1st page, no multi-threading needed

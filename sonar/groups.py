@@ -47,7 +47,7 @@ class Group(sq.SqObject):
 
     def __init__(self, endpoint: pf.Platform, name: str, data: dict[str, str]) -> None:
         """Do not use, use class methods to create objects"""
-        super().__init__(data.get("id", name), endpoint)
+        super().__init__(endpoint=endpoint, key=data.get("id", name))
         self.name = name  #: Group name
         self.description = data.get("description", "")  #: Group description
         self.__members_count = data.get("membersCount", None)

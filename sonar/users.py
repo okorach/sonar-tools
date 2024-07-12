@@ -51,7 +51,7 @@ class User(sqobject.SqObject):
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
 
-    def __init__(self, login: str, endpoint: pf.Platform, data: dict[str, str]) -> None:
+    def __init__(self, endpoint: pf.Platform, login: str, data: dict[str, str]) -> None:
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login (str)

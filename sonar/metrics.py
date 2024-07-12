@@ -76,8 +76,9 @@ class Metric(sqobject.SqObject):
     Abstraction of the SonarQube "metric" concept
     """
 
-    def __init__(self, key: str = None, endpoint: pf.Platform = None, data: dict[str, str] = None) -> None:
-        super().__init__(key, endpoint)
+    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None) -> None:
+        """Constructor"""
+        super().__init__(endpoint=endpoint, key=key)
         self.type = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
         self.name = None  #: Name
         self.description = None  #: Description
@@ -159,7 +160,7 @@ def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: 
             while page <= nb_pages:
                 data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
                 for m in data["metrics"]:
-                    _ = Metric(key=m["key"], endpoint=endpoint, data=m)
+                    _ = Metric(endpoint=endpoint, key=m["key"], data=m)
                 nb_pages = utilities.nbr_pages(data)
                 page += 1
     m_list = _OBJECTS if show_hidden_metrics else _VISIBLE_OBJECTS
