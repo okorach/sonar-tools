@@ -41,6 +41,13 @@ class Measure(sq.SqObject):
     API_READ = "measures/component"
     API_HISTORY = "measures/search_history"
 
+    def __init__(self, key, value, concerned_object):
+        super().__init__(key, concerned_object.endpoint)
+        self.value = None  #: Measure value
+        self.metric = key  #: Measure metric
+        self.concerned_object = concerned_object  #: Object concerned by the measure
+        self.value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
+
     @classmethod
     def load(cls, concerned_object, data):
         """Loads a measure from data
@@ -54,13 +61,6 @@ class Measure(sq.SqObject):
         """
         metrics.search(concerned_object.endpoint)
         return cls(key=data["metric"], value=_search_value(data), concerned_object=concerned_object)
-
-    def __init__(self, key, value, concerned_object):
-        super().__init__(key, concerned_object.endpoint)
-        self.value = None  #: Measure value
-        self.metric = key  #: Measure metric
-        self.concerned_object = concerned_object  #: Object concerned by the measure
-        self.value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
 
     def refresh(self):
         """Refreshes a measure by re-reading it in SonarQube

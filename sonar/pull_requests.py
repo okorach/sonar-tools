@@ -41,6 +41,9 @@ _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
 
 class PullRequest(components.Component):
+    """
+    Abstraction of the Sonar pull request concept
+    """
     def __init__(self, project: object, key: str, data: dict[str, str] = None) -> None:
         """Constructor"""
         super().__init__(key, project.endpoint)

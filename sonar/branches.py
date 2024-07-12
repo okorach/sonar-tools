@@ -52,6 +52,24 @@ class Branch(components.Component):
     Abstraction of the SonarQube "project branch" concept
     """
 
+    def __init__(self, project: projects.Project, name: str) -> None:
+        """Don't use this, use class methods to create Branch objects
+
+        :raises UnsupportedOperation: When attempting to branches on Community Edition
+        """
+        if project.endpoint.edition() == "community":
+            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
+        name = unquote(name)
+        super().__init__(name, project.endpoint)
+        self.name = name
+        self.concerned_object = project
+        self._is_main = None
+        self._new_code = None
+        self._last_analysis = None
+        self._keep_when_inactive = None
+        _OBJECTS[self.uuid()] = self
+        log.debug("Created object %s", str(self))
+
     @classmethod
     def get_object(cls, concerned_object: projects.Project, branch_name: str) -> Branch:
         """Gets a SonarQube Branch object
@@ -94,24 +112,6 @@ class Branch(components.Component):
         o = _OBJECTS[uu] if uu in _OBJECTS else cls(concerned_object, branch_name)
         o._load(data)
         return o
-
-    def __init__(self, project: projects.Project, name: str) -> None:
-        """Don't use this, use class methods to create Branch objects
-
-        :raises UnsupportedOperation: When attempting to branches on Community Edition
-        """
-        if project.endpoint.edition() == "community":
-            raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
-        name = unquote(name)
-        super().__init__(name, project.endpoint)
-        self.name = name
-        self.concerned_object = project
-        self._is_main = None
-        self._new_code = None
-        self._last_analysis = None
-        self._keep_when_inactive = None
-        _OBJECTS[self.uuid()] = self
-        log.debug("Created object %s", str(self))
 
     def __str__(self):
         return f"branch '{self.name}' of {str(self.concerned_object)}"

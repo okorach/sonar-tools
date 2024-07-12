@@ -58,6 +58,16 @@ class Application(aggr.Aggregation):
     Abstraction of the SonarQube "application" concept
     """
 
+    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
+        """Don't use this directly, go through the class methods to create Objects"""
+        super().__init__(key, endpoint)
+        self._branches = None
+        self._projects = None
+        self._description = None
+        self.name = name
+        log.debug("Created object %s with uuid %s id %x", str(self), self.uuid(), id(self))
+        _OBJECTS[self.uuid()] = self
+
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Application:
         """Gets an Application object from SonarQube
@@ -123,16 +133,6 @@ class Application(aggr.Aggregation):
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
         return Application(endpoint, key, name)
-
-    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
-        """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(key, endpoint)
-        self._branches = None
-        self._projects = None
-        self._description = None
-        self.name = name
-        log.debug("Created object %s with uuid %s id %x", str(self), self.uuid(), id(self))
-        _OBJECTS[self.uuid()] = self
 
     def refresh(self) -> None:
         """Refreshes the by re-reading SonarQube

@@ -51,6 +51,13 @@ class Organization(sqobject.SqObject):
     """
     Abstraction of the SonarCloud "organization" concept
     """
+    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
+        """Don't use this directly, go through the class methods to create Objects"""
+        super().__init__(endpoint=endpoint, key=key)
+        self.description = None
+        self.name = name
+        log.debug("Created object %s", str(self))
+        _OBJECTS[self.uuid()] = self
 
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Organization:
@@ -94,14 +101,6 @@ class Organization(sqobject.SqObject):
         o.name = data["name"]
         o.description = data["description"]
         return o
-
-    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
-        """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(endpoint=endpoint, key=key)
-        self.description = None
-        self.name = name
-        log.debug("Created object %s", str(self))
-        _OBJECTS[self.uuid()] = self
 
     def __str__(self) -> str:
         return f"organization key '{self.key}'"

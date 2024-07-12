@@ -79,6 +79,28 @@ _IMPORTABLE_PROPERTIES = (
 
 
 class Portfolio(aggregations.Aggregation):
+    """
+    Abstraction of the Sonar portfolio concept
+    """
+    def __init__(self, endpoint: pf.Platform, name: str, key: str = None) -> None:
+        """Constructor, don't use - use class methods instead"""
+        if not key:
+            key = name.replace(" ", "_")
+        super().__init__(endpoint=endpoint, key=key)
+        self.name = name
+        self._selection_mode = {"mode": SELECTION_MODE_NONE}  #: Portfolio project selection mode
+        self._tags = []  #: Portfolio tags when selection mode is TAGS
+        self._description = None  #: Portfolio description
+        self.is_sub_portfolio = False  #: Whether the portfolio is a subportfolio
+        self._visibility = None  #: Portfolio visibility
+        self._sub_portfolios = None  #: Subportfolios
+        self._permissions = None  #: Permissions
+        self.parent = None  #: Ref to parent portfolio object, if any
+        self._root_portfolio = None  #: Ref to root portfolio, if any
+        _OBJECTS[self.uuid()] = self
+        log.debug("Created portfolio object name '%s'", name)
+        log.debug("PORTFOLIOS = %s", str([p.key for p in _OBJECTS.values()]))
+
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Portfolio:
         """Gets a portfolio object from its key"""
@@ -124,25 +146,6 @@ class Portfolio(aggregations.Aggregation):
             except HTTPError as e:
                 log.warning("HTTP Error %s when refreshing %s", str(e), str(o))
         return o
-
-    def __init__(self, endpoint: pf.Platform, name: str, key: str = None) -> None:
-        """Constructor"""
-        if not key:
-            key = name.replace(" ", "_")
-        super().__init__(endpoint=endpoint, key=key)
-        self.name = name
-        self._selection_mode = {"mode": SELECTION_MODE_NONE}  #: Portfolio project selection mode
-        self._tags = []  #: Portfolio tags when selection mode is TAGS
-        self._description = None  #: Portfolio description
-        self.is_sub_portfolio = False  #: Whether the portfolio is a subportfolio
-        self._visibility = None  #: Portfolio visibility
-        self._sub_portfolios = None  #: Subportfolios
-        self._permissions = None  #: Permissions
-        self.parent = None  #: Ref to parent portfolio object, if any
-        self._root_portfolio = None  #: Ref to root portfolio, if any
-        _OBJECTS[self.uuid()] = self
-        log.debug("Created portfolio object name '%s'", name)
-        log.debug("PORTFOLIOS = %s", str([p.key for p in _OBJECTS.values()]))
 
     def reload(self, data: dict[str, str]) -> None:
         """Reloads a portfolio with returned API data"""

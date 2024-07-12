@@ -53,6 +53,15 @@ class DevopsPlatform(sq.SqObject):
     Abstraction of the SonarQube ALM/DevOps Platform concept
     """
 
+    def __init__(self, key: str, endpoint: platform.Platform, platform_type: str) -> None:
+        """Constructor"""
+        super().__init__(key, endpoint)
+        self.type = platform_type  #: DevOps platform type
+        self.url = None  #: DevOps platform URL
+        self._specific = None  #: DevOps platform specific settings
+        _OBJECTS[self.uuid()] = self
+        log.debug("Created object %s", str(self))
+
     @classmethod
     def read(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
         """Reads a devops platform object in Sonar instance"""
@@ -107,15 +116,6 @@ class DevopsPlatform(sq.SqObject):
         o = DevopsPlatform(key, endpoint, plt_type)
         o.refresh()
         return o
-
-    def __init__(self, key: str, endpoint: platform.Platform, platform_type: str) -> None:
-        """Constructor"""
-        super().__init__(key, endpoint)
-        self.type = platform_type  #: DevOps platform type
-        self.url = None  #: DevOps platform URL
-        self._specific = None  #: DevOps platform specific settings
-        _OBJECTS[self.uuid()] = self
-        log.debug("Created object %s", str(self))
 
     def _load(self, data: dict[str, str]) -> DevopsPlatform:
         """Loads a devops platform object with data"""
