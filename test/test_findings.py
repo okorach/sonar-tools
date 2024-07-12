@@ -394,9 +394,10 @@ def test_output_format_json() -> None:
     assert int(str(e.value)) == 0
     with open(util.JSON_FILE, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
-    issue = json_data[0]
-    for k in "author", "creationDate", "effort", "file", "key", "line", "message", "projectKey", "rule", "updateDate":
-        assert k in issue
+    for issue in json_data:
+        for k in "creationDate", "effort", "file", "key", "message", "projectKey", "rule", "updateDate":
+            assert k in issue
+        assert "author" in issue or issue["status"] in ("FIXED", "CLOSED")
     # util.clean(util.JSON_FILE)
 
 
