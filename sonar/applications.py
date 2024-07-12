@@ -506,7 +506,7 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: lis
     return apps_settings
 
 
-def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str] = None) -> list[p]:
+def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str] = None) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -528,7 +528,7 @@ def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[
     return problems
 
 
-def import_config(endpoint: pf.Platform, config_data, key_list=None):
+def import_config(endpoint: pf.Platform, config_data: dict[str, str], key_list: list[str] = None) -> bool:
     """Imports a list of application configuration in a SonarQube platform
 
     :param Platform endpoint: Reference to the SonarQube platform
