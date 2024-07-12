@@ -22,6 +22,7 @@
     Utilities for sonar-tools
 
 """
+from typing import TextIO
 from http import HTTPStatus
 import sys
 import contextlib
@@ -82,7 +83,7 @@ def check_token(token: str, is_sonarcloud: bool = False) -> None:
         )
 
 
-def json_dump_debug(json_data: dict[str, str], pre_string: str = "") -> None:
+def json_dump_debug(json_data: Union[list[str], dict[str, str]], pre_string: str = "") -> None:
     log.debug("%s%s", pre_string, json_dump(json_data))
 
 
@@ -123,12 +124,14 @@ def age(some_date: datetime.datetime, rounded: bool = True) -> Union[int, dateti
 
 
 def get_setting(settings: dict[str, str], key: str, default: any) -> any:
+    """Gets a setting or the default value"""
     if settings is None:
         return default
     return settings.get(key, default)
 
 
 def redacted_token(token: str) -> str:
+    """Redacts a token for security (before printing)"""
     if token is None:
         return "-"
     if token[0:4] in ("squ_", "sqa_", "sqp_"):
@@ -137,7 +140,8 @@ def redacted_token(token: str) -> str:
         return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
-def convert_to_type(value):
+def convert_to_type(value: any) -> any:
+    """Converts a potentially string value to the corresponding int or float"""
     try:
         newval = int(value)
         return newval
@@ -152,6 +156,7 @@ def convert_to_type(value):
 
 
 def remove_nones(d: dict[str, str]) -> dict[str, str]:
+    """Removes elements of the dict that are None values"""
     if isinstance(d, dict):
         return {k: v for k, v in d.items() if v is not None}
     else:
@@ -164,21 +169,17 @@ def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
 
 
 def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:
+    """Returns CSV values from an allowed list"""
     return list_to_csv([v for v in csv_to_list(original_str) if v in allowed_values])
 
 
-def json_dump(jsondata: dict[str, str], indent: int = 3) -> str:
+def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3) -> str:
+    """JSON dump helper"""
     return json.dumps(remove_nones(jsondata), indent=indent, sort_keys=True, separators=(",", ": "))
 
 
-def str_none(v: any) -> str:
-    if v is None:
-        return ""
-    else:
-        return str(v)
-
-
 def csv_to_list(string: str, separator: str = ",") -> list[str]:
+    """Converts a csv string to a list"""
     if isinstance(string, list):
         return string
     if isinstance(string, tuple):
@@ -189,6 +190,7 @@ def csv_to_list(string: str, separator: str = ",") -> list[str]:
 
 
 def list_to_csv(array: Union[None, str, list[str]], separator: str = ",", check_for_separator: bool = False) -> Union[str, None]:
+    """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
     if array is None:
@@ -203,22 +205,30 @@ def list_to_csv(array: Union[None, str, list[str]], separator: str = ",", check_
 
 
 def csv_normalize(string: str, separator: str = ",") -> str:
+    """Normalizes a CSV string (no spaces next to separators)"""
     return list_to_csv(csv_to_list(string, separator))
 
 
 def intersection(list1: list[any], list2: list[any]) -> list[any]:
+    """Computes intersection of 2 lists"""
+    # FIXME - This should be sets
     return [value for value in list1 if value in list2]
 
 
 def union(list1: list[any], list2: list[any]) -> list[any]:
+    """Computes union of 2 lists"""
+    # FIXME - This should be sets
     return list1 + [value for value in list2 if value not in list1]
 
 
 def difference(list1: list[any], list2: list[any]) -> list[any]:
+    """Computes difference of 2 lists"""
+    # FIXME - This should be sets
     return [value for value in list1 if value not in list2]
 
 
 def quote(string: str, sep: str) -> str:
+    """Quotes a string if needed"""
     if sep in string:
         string = '"' + string.replace('"', '""') + '"'
     if "\n" in string:
@@ -227,6 +237,7 @@ def quote(string: str, sep: str) -> str:
 
 
 def jvm_heap(cmdline: str) -> Union[int, None]:
+    """Computes JVM heap in MB from a Java cmd line string"""
     for s in cmdline.split(" "):
         if not re.match("-Xmx", s):
             continue
@@ -247,6 +258,7 @@ def jvm_heap(cmdline: str) -> Union[int, None]:
 
 
 def int_memory(string: str) -> Union[int, None]:
+    """Converts memory from string to int in MB"""
     (val, unit) = string.split(" ")
     # For decimal separator in some countries
     val = float(val.replace(",", "."))
@@ -269,6 +281,7 @@ def int_memory(string: str) -> Union[int, None]:
 
 
 def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
+    """Adds values of 2 dicts"""
     for k in dict2:
         if k not in dict1:
             dict1[k] = 0
@@ -277,12 +290,14 @@ def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
 
 
 def exit_fatal(err_msg: str, exit_code: int) -> None:
+    """Fatal exit with error msg"""
     log.fatal(err_msg)
     print(f"FATAL: {err_msg}", file=sys.stderr)
     sys.exit(exit_code)
 
 
-def convert_string(value) -> Union[str, int, float, bool]:
+def convert_string(value: str) -> Union[str, int, float, bool]:
+    """Converst strings to corresponding types"""
     if not isinstance(value, str):
         return value
     if value.lower() in ("yes", "true", "on"):
@@ -301,6 +316,7 @@ def convert_string(value) -> Union[str, int, float, bool]:
 
 
 def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: any) -> dict[str, str]:
+    """Updates a 2 levels JSON"""
     if categ not in json_data:
         if subcateg is None:
             json_data[categ] = value
@@ -316,11 +332,13 @@ def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: any
     return json_data
 
 
-def int_div_ceil(number, divider) -> int:
+def int_div_ceil(number: int, divider: int) -> int:
+    """Computes rounded up int division"""
     return (number + divider - 1) // divider
 
 
 def nbr_pages(sonar_api_json: dict[str, str]) -> int:
+    """Returns nbr of pages of a paginated Sonar API call"""
     if "total" in sonar_api_json:
         return int_div_ceil(sonar_api_json["total"], sonar_api_json["ps"])
     elif "paging" in sonar_api_json:
@@ -330,7 +348,8 @@ def nbr_pages(sonar_api_json: dict[str, str]) -> int:
 
 
 @contextlib.contextmanager
-def open_file(file=None, mode="w"):
+def open_file(file: str = None, mode: str = "w") -> TextIO:
+    """Opens a file if not None or -, otherwise stdout"""
     if file and file != "-":
         log.debug("Opening file '%s'", file)
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
@@ -344,12 +363,8 @@ def open_file(file=None, mode="w"):
             fd.close()
 
 
-def load_json_file(file: str) -> dict[str, str]:
-    with open(file, "r", encoding="utf-8") as fd:
-        return json.loads(fd.read())
-
-
 def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> Union[dict[str, str], None]:
+    """Searches a object by name"""
     params = {"q": name}
     if extra_params is not None:
         params.update(extra_params)
