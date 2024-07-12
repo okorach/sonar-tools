@@ -211,7 +211,7 @@ class Portfolio(aggregations.Aggregation):
             self._root_portfolio = self.parent.root_portfolio()
         return self._root_portfolio
 
-    def projects(self) -> dict[str, str]:
+    def projects(self) -> Union[dict[str, str], None]:
         """Returns list of projects and their branches if selection mode is manual, None otherwise"""
         if self._selection_mode["mode"] != SELECTION_MODE_MANUAL:
             log.debug("%s: Not manual mode, no projects", str(self))
@@ -751,18 +751,20 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: lis
     return exported_portfolios
 
 
-def recompute(endpoint: pf.Platform):
+def recompute(endpoint: pf.Platform) -> None:
+    """Triggers recomputation of all portfolios"""
     endpoint.post("views/refresh")
 
 
-def _find_sub_portfolio(key, data):
+def _find_sub_portfolio(key: str, data: dict[str, str]) -> dict[str, str]:
+    """Finds a subportfolio in a JSON hierarchy"""
     for subp in data.get("subViews", []):
         if subp["key"] == key:
             return subp
         child = _find_sub_portfolio(key, subp)
         if child is not None:
             return child
-    return []
+    return {}
 
 
 def __create_portfolio_hierarchy(endpoint: pf.Platform, data: dict[str, str], parent_key: str) -> int:
