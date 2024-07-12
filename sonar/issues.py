@@ -350,13 +350,13 @@ class Issue(findings.Finding):
         """
         return self.resolution == "FALSE-POSITIVE"
 
-    def strictly_identical_to(self, another_finding: Issue, ignore_component: bool = False):
+    def strictly_identical_to(self, another_finding: Issue, ignore_component: bool = False) -> bool:
         """
         :meta private:
         """
         return super().strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
-    def almost_identical_to(self, another_finding: Issue, ignore_component: bool = False, **kwargs):
+    def almost_identical_to(self, another_finding: Issue, ignore_component: bool = False, **kwargs) -> bool:
         """
         :meta private:
         """
@@ -552,6 +552,7 @@ def component_filter(endpoint: pf.Platform) -> str:
 
 
 def __search_all_by_directories(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+    """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
     facets = _get_facets(endpoint=endpoint, project_key=new_params[component_filter(endpoint)], facets="directories", params=new_params)
     issue_list = {}
@@ -564,6 +565,7 @@ def __search_all_by_directories(endpoint: pf.Platform, params: dict[str, str]) -
 
 
 def __search_all_by_types(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+    """Searches issues splitting by type to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by issue types")
@@ -579,6 +581,7 @@ def __search_all_by_types(endpoint: pf.Platform, params: dict[str, str]) -> dict
 
 
 def __search_all_by_severities(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+    """Searches issues splitting by severity to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by severities")
@@ -594,7 +597,7 @@ def __search_all_by_severities(endpoint: pf.Platform, params: dict[str, str]) ->
 
 
 def __search_all_by_date(endpoint: pf.Platform, params: dict[str, str], date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
-    """Search all issues in an interval of dates and given filter params"""
+    """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if date_start is None:
         date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -704,6 +707,7 @@ def search_all(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str
 
 
 def __search_thread(queue: Queue) -> None:
+    """Callback function for multithreaded issue search"""
     while not queue.empty():
         (endpoint, api, issue_list, params, page) = queue.get()
         page_params = params.copy()
