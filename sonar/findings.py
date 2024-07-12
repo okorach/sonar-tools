@@ -22,6 +22,8 @@
 from __future__ import annotations
 import re
 import datetime
+from typing import Union
+
 from queue import Queue
 from threading import Thread
 
@@ -171,7 +173,7 @@ class Finding(sq.SqObject):
         # Must be implemented in sub classes
         raise NotImplementedError()
 
-    def file(self) -> str:
+    def file(self) -> Union[str, None]:
         """
         :return: The finding full file path, relative to the rpoject root directory
         :rtype: str or None if not found
@@ -314,7 +316,7 @@ class Finding(sq.SqObject):
         """
         return len(self.comments()) > 0
 
-    def modifiers(self) -> list[str]:
+    def modifiers(self) -> set[str]:
         """
         :return: the set of users that modified the finding
         :rtype: set(str)
@@ -434,7 +436,7 @@ class Finding(sq.SqObject):
         return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
 
 
-def export_findings(endpoint: pf.Platform, project_key, branch: str = None, pull_request: str = None) -> dict[str, Finding]:
+def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None, pull_request: str = None) -> dict[str, Finding]:
     """Export all findings of a given project
 
     :param Platform endpoint: Reference to the SonarQube platform
