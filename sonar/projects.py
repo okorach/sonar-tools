@@ -22,9 +22,14 @@
     Abstraction of the SonarQube "project" concept
 
 """
+
+from __future__ import annotations
+
 import os
 import re
 import json
+from datetime import datetime
+
 from typing import Union
 from http import HTTPStatus
 from threading import Thread, Lock
@@ -79,7 +84,7 @@ class Project(components.Component):
     """
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, key: str):
+    def get_object(cls, endpoint: pf.Platform, key: str) -> Project:
         """Creates a project from a search in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -106,7 +111,7 @@ class Project(components.Component):
             return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data):
+    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Project:
         """Creates a project loaded with JSON data coming from api/components/search request
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -125,7 +130,7 @@ class Project(components.Component):
         return o
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, key, name):
+    def create(cls, endpoint: pf.Platform, key: str, name: str) -> Project:
         """Creates a Project object after creating it in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -143,7 +148,7 @@ class Project(components.Component):
         o.name = name
         return o
 
-    def __init__(self, endpoint: pf.Platform, key):
+    def __init__(self, endpoint: pf.Platform, key: str) -> None:
         super().__init__(key, endpoint)
         self._last_analysis = "undefined"
         self._branches_last_analysis = "undefined"
@@ -156,14 +161,14 @@ class Project(components.Component):
         _OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String formatting of the object
         :rtype: str
         """
         return f"project '{self.key}'"
 
-    def refresh(self):
+    def refresh(self) -> Project:
         """Refresh a project from SonarQube
 
         :raises ObjectNotFound: if project key not found
@@ -176,7 +181,7 @@ class Project(components.Component):
             raise exceptions.ObjectNotFound(self.key, f"Project key {self.key} not found")
         return self.reload(data["components"][0])
 
-    def reload(self, data):
+    def reload(self, data: dict[str, str]) -> Project:
         """Reloads a project with JSON data coming from api/components/search request
 
         :param dict data: Data to load
@@ -199,14 +204,14 @@ class Project(components.Component):
         self.revision = data.get("revision", None)
         return self
 
-    def url(self):
+    def url(self) -> str:
         """
         :return: the SonarQube permalink to the project
         :rtype: str
         """
         return f"{self.endpoint.url}/dashboard?id={self.key}"
 
-    def last_analysis(self, include_branches=False):
+    def last_analysis(self, include_branches: bool = False) -> datetime:
         """
         :param include_branches: Take into account branch to determine last analysis, defaults to False
         :type include_branches: bool, optional
@@ -350,7 +355,7 @@ class Project(components.Component):
             key += _BIND_SEP + p_bind["slug"]
         return key
 
-    def __audit_last_analysis(self, audit_settings):
+    def __audit_last_analysis(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits whether the last analysis of the project is too old or not
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -383,7 +388,7 @@ class Project(components.Component):
         log.debug("%s last analysis is %d days old", str(self), age)
         return problems
 
-    def __audit_branches(self, audit_settings):
+    def __audit_branches(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits project branches
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -406,7 +411,7 @@ class Project(components.Component):
                     problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self))
         return problems
 
-    def __audit_pull_requests(self, audit_settings):
+    def __audit_pull_requests(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits project pul requests
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -423,7 +428,7 @@ class Project(components.Component):
             problems += pr.audit(audit_settings)
         return problems
 
-    def __audit_visibility(self, audit_settings):
+    def __audit_visibility(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits project visibility and return problems if project is public
 
         :param audit_settings: Options and Settings (thresholds) to raise problems
@@ -442,7 +447,7 @@ class Project(components.Component):
         log.debug("%s visibility is 'private'", str(self))
         return []
 
-    def __audit_languages(self, audit_settings):
+    def __audit_languages(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits project utility languages and returns problems if too many LoCs of these
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -471,7 +476,7 @@ class Project(components.Component):
         log.debug("%s utility LoCs count (%d) seems reasonable", str(self), utility_locs)
         return []
 
-    def __audit_zero_loc(self, audit_settings):
+    def __audit_zero_loc(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits project utility projects with 0 LoCs
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -488,7 +493,7 @@ class Project(components.Component):
             return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
         return []
 
-    def __audit_binding_valid(self, audit_settings):
+    def __audit_binding_valid(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         if self.endpoint.edition() == "community":
             log.info("Community edition, skipping binding validation...")
             return []
@@ -506,7 +511,6 @@ class Project(components.Component):
         try:
             _ = self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", str(self))
-            return []
         except HTTPError as e:
             # Hack: 8.9 returns 404, 9.x returns 400
             if e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
@@ -514,8 +518,9 @@ class Project(components.Component):
                 return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
             else:
                 util.exit_fatal(f"alm_settings/validate_binding returning status code {e.response.status_code}, exiting", errcodes.SONAR_API)
+        return []
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits a project and returns the list of problems found
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -541,7 +546,7 @@ class Project(components.Component):
                 log.error("HTTP error %s while auditing %s", str(e), str(self))
         return problems
 
-    def export_zip(self, timeout=180):
+    def export_zip(self, timeout: int = 180) -> dict[str, str]:
         """Exports project as zip file, synchronously
 
         :param timeout: timeout in seconds to complete the export operation
@@ -567,7 +572,7 @@ class Project(components.Component):
         log.debug("%s export %s, dump file %s", str(self), status, dump_file)
         return {"status": status, "file": dump_file}
 
-    def export_async(self):
+    def export_async(self) -> Union[str, None]:
         """Export project as zip file, synchronously
 
         :return: export taskId or None if starting the export failed
@@ -579,7 +584,7 @@ class Project(components.Component):
         except HTTPError:
             return None
 
-    def import_zip(self):
+    def import_zip(self) -> bool:
         """Imports a project zip file in SonarQube
 
         :raises http.HTTPError:
@@ -622,7 +627,7 @@ class Project(components.Component):
             objects = {**objects, **pr}
         return objects
 
-    def get_findings(self, branch=None, pr=None):
+    def get_findings(self, branch: str = None, pr: str = None) -> dict[str, object]:
         """Returns a project list of findings (issues and hotspots)
 
         :param branch: branch name to consider, if any
@@ -716,7 +721,7 @@ class Project(components.Component):
         counters = util.dict_add(counters, tmp_counts)
         return report, counters
 
-    def sync(self, another_project: object, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(self, another_project: Project, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs project findings with another project
 
         :param Project another_project: other project to sync findings into
@@ -756,7 +761,7 @@ class Project(components.Component):
             counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
-    def sync_branches(self, sync_settings):
+    def sync_branches(self, sync_settings: dict[str, str]) -> tuple[list[str], dict[str, int]]:
         """Syncs project issues across all its branches
 
         :param dict sync_settings: Parameters to configure the sync
@@ -775,7 +780,7 @@ class Project(components.Component):
                 counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
-    def quality_profiles(self):
+    def quality_profiles(self) -> dict[str, qualityprofiles.QualityProfile]:
         """Returns the project quality profiles
 
         :return: dict of quality profiles indexed by language
@@ -785,7 +790,7 @@ class Project(components.Component):
         qp_list = qualityprofiles.get_list(self.endpoint)
         return {qp.language: qp for qp in qp_list.values() if qp.used_by_project(self)}
 
-    def quality_gate(self):
+    def quality_gate(self) -> tuple[str, bool]:
         """Returns the project quality gate
 
         :return: name of quality gate and whether it's the default
@@ -794,7 +799,7 @@ class Project(components.Component):
         data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
         return (data["qualityGate"]["name"], data["qualityGate"]["default"])
 
-    def webhooks(self):
+    def webhooks(self) -> dict[webhooks.WebHook]:
         """
         :return: Project webhooks indexed by their key
         :rtype: dict{key: WebHook}
@@ -802,7 +807,7 @@ class Project(components.Component):
         log.debug("Getting %s webhooks", str(self))
         return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
 
-    def links(self):
+    def links(self) -> list[dict[str, str]]:
         """
         :return: list of project links
         :rtype: list[{type, name, url}]
@@ -815,7 +820,8 @@ class Project(components.Component):
             link_list.append({"type": link["type"], "name": link.get("name", link["type"]), "url": link["url"]})
         return link_list
 
-    def __export_get_binding(self):
+    def __export_get_binding(self) -> dict[str, str]:
+        """Exports a binding as JSON"""
         binding = self.binding()
         if binding:
             # Remove redundant fields
@@ -825,13 +831,15 @@ class Project(components.Component):
                 binding.pop("monorepo", None)
         return binding
 
-    def __export_get_qp(self):
+    def __export_get_qp(self) -> Union[None, dict[str, str]]:
+        """Exports a QP as JSON"""
         qp_json = {qp.language: f"{qp.name}" for qp in self.quality_profiles().values()}
         if len(qp_json) == 0:
             return None
         return qp_json
 
     def __get_branch_export(self, export_settings: dict[str, str]) -> Union[dict[str, str], None]:
+        """Export project branches as JSON"""
         branch_data = {}
         my_branches = self.branches().values()
         for branch in my_branches:
@@ -887,7 +895,7 @@ class Project(components.Component):
             json_data = {}
         return util.remove_nones(json_data)
 
-    def new_code(self):
+    def new_code(self) -> str:
         """
         :return: The project new code definition
         :rtype: str
@@ -897,7 +905,7 @@ class Project(components.Component):
             self._new_code = new_code.value if new_code else ""
         return self._new_code
 
-    def permissions(self):
+    def permissions(self) -> pperms.ProjectPermissions:
         """
         :return: The project permissions
         :rtype: ProjectPermissions
@@ -906,7 +914,7 @@ class Project(components.Component):
             self._permissions = pperms.ProjectPermissions(self)
         return self._permissions
 
-    def set_permissions(self, desired_permissions):
+    def set_permissions(self, desired_permissions: dict[str, str]) -> Project:
         """Sets project permissions
 
         :param desired_permissions: dict describing permissions
@@ -915,7 +923,7 @@ class Project(components.Component):
         """
         self.permissions().set(desired_permissions)
 
-    def set_links(self, desired_links):
+    def set_links(self, desired_links: dict[str, str]) -> bool:
         """Sets project links
 
         :param desired_links: dict describing links
@@ -929,21 +937,22 @@ class Project(components.Component):
                 continue
             params.update(link)
             ok = ok and self.post("project_links/create", params=params).ok
+        return ok
 
-    def set_tags(self, tags):
+    def set_tags(self, tags: list[str]) -> bool:
         """Sets project tags
 
         :param list tags: list of tags
         :return: Whether the operation was successful
         """
         if tags is None:
-            return
+            return False
         my_tags = util.list_to_csv(tags) if isinstance(tags, list) else util.csv_normalize(tags)
         r = self.post("project_tags/set", params={"project": self.key, "tags": my_tags})
         self._tags = util.csv_to_list(my_tags)
         return r.ok
 
-    def set_quality_gate(self, quality_gate):
+    def set_quality_gate(self, quality_gate: str) -> bool:
         """Sets project quality gate
 
         :param quality_gate: quality gate name
@@ -962,13 +971,11 @@ class Project(components.Component):
         r = self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
         return r.ok
 
-    def set_quality_profile(self, language, quality_profile):
+    def set_quality_profile(self, language: str, quality_profile: str) -> bool:
         """Sets project quality profile for a given language
 
-        :param language: Language mnemonic, following SonarQube convention
-        :type language: str
-        :param quality_profile: Name of the quality profile in the language
-        :type quality_profile: str
+        :param str language: Language mnemonic, following SonarQube convention
+        :param str quality_profile: Name of the quality profile in the language
         :return: Whether the operation was successful
         :rtype: bool
         """
@@ -979,7 +986,7 @@ class Project(components.Component):
         r = self.post("qualityprofiles/add_project", params={"project": self.key, "qualityProfile": quality_profile, "language": language})
         return r.ok
 
-    def rename_main_branch(self, main_branch_name):
+    def rename_main_branch(self, main_branch_name: str) -> bool:
         """Renames the project main branch
 
         :param main_branch_name: New main branch name
@@ -993,7 +1000,7 @@ class Project(components.Component):
         log.warning("No main branch to rename found for %s", str(self))
         return False
 
-    def set_webhooks(self, webhook_data):
+    def set_webhooks(self, webhook_data: dict[str, str]) -> None:
         """Sets project webhooks
 
         :param dict webhook_data: JSON describing the webhooks
@@ -1009,7 +1016,7 @@ class Project(components.Component):
             else:
                 webhooks.update(name=wh_name, endpoint=self.endpoint, project=self.key, **wh)
 
-    def set_settings(self, data):
+    def set_settings(self, data: dict[str, str]) -> None:
         """Sets project settings (webhooks, settings, new code period)
 
         :param dict data: JSON describing the settings
@@ -1034,7 +1041,7 @@ class Project(components.Component):
         #    if branches.exists(branch_name=branch, project_key=self.key, endpoint=self.endpoint):
         #        branches.get_object(branch, self, endpoint=self.endpoint).update(branch_data)()
 
-    def set_devops_binding(self, data):
+    def set_devops_binding(self, data: dict[str, str]) -> bool:
         """Sets project devops binding settings
 
         :param dict data: JSON describing the devops binding
@@ -1063,10 +1070,10 @@ class Project(components.Component):
             return False
         return True
 
-    def __std_binding_params(self, alm_key, repo, monorepo):
+    def __std_binding_params(self, alm_key: str, repo: str, monorepo: bool) -> dict[str, str]:
         return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
 
-    def set_binding_github(self, devops_platform_key, repository, monorepo=False, summary_comment=True):
+    def set_binding_github(self, devops_platform_key: str, repository: str, monorepo: bool = False, summary_comment: bool = True) -> bool:
         """Sets project devops binding for github
 
         :param str devops_platform_key: key of the platform in the global admin devops configuration
@@ -1079,9 +1086,9 @@ class Project(components.Component):
         """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["summaryCommentEnabled"] = str(summary_comment).lower()
-        self.post("alm_settings/set_github_binding", params=params)
+        return self.post("alm_settings/set_github_binding", params=params).ok
 
-    def set_binding_gitlab(self, devops_platform_key, repository, monorepo=False):
+    def set_binding_gitlab(self, devops_platform_key: str, repository: str, monorepo: bool = False) -> bool:
         """Sets project devops binding for gitlab
 
         :param str devops_platform_key: key of the platform in the global admin devops configuration
@@ -1091,9 +1098,9 @@ class Project(components.Component):
         :return: Nothing
         """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
-        self.post("alm_settings/set_gitlab_binding", params=params)
+        return self.post("alm_settings/set_gitlab_binding", params=params).ok
 
-    def set_binding_bitbucket_server(self, devops_platform_key, repository, slug, monorepo=False):
+    def set_binding_bitbucket_server(self, devops_platform_key: str, repository: str, slug: str, monorepo: bool = False) -> bool:
         """Sets project devops binding for bitbucket server
 
         :param str devops_platform_key: key of the platform in the global admin devops configuration
@@ -1105,9 +1112,9 @@ class Project(components.Component):
         """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["slug"] = slug
-        self.post("alm_settings/set_bitbucket_binding", params=params)
+        return self.post("alm_settings/set_bitbucket_binding", params=params).ok
 
-    def set_binding_bitbucket_cloud(self, devops_platform_key, repository, monorepo=False):
+    def set_binding_bitbucket_cloud(self, devops_platform_key: str, repository: str, monorepo: bool = False) -> bool:
         """Sets project devops binding for bitbucket cloud
 
         :param str devops_platform_key: key of the platform in the global admin devops configuration
@@ -1118,9 +1125,9 @@ class Project(components.Component):
         :return: Nothing
         """
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
-        self.post("alm_settings/set_bitbucketcloud_binding", params=params)
+        return self.post("alm_settings/set_bitbucketcloud_binding", params=params).ok
 
-    def set_binding_azure_devops(self, devops_platform_key, slug, repository, monorepo=False):
+    def set_binding_azure_devops(self, devops_platform_key: str, slug: str, repository: str, monorepo: bool = False) -> bool:
         """Sets project devops binding for azure devops
 
         :param str devops_platform_key: key of the platform in the global admin devops configuration
@@ -1133,9 +1140,9 @@ class Project(components.Component):
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["projectName"] = slug
         params["repositoryName"] = params.pop("repository")
-        self.post("alm_settings/set_azure_binding", params=params)
+        return self.post("alm_settings/set_azure_binding", params=params).ok
 
-    def update(self, data):
+    def update(self, data: dict[str, str]) -> None:
         """Updates a project with a whole configuration set
 
         :param dict data: JSON of configuration settings
@@ -1172,7 +1179,7 @@ class Project(components.Component):
         return {"project": self.key}
 
 
-def count(endpoint: pf.Platform, params=None):
+def count(endpoint: pf.Platform, params: dict[str, str] = None) -> int:
     """Counts projects
 
     :param params: list of parameters to filter projects to search
@@ -1186,7 +1193,7 @@ def count(endpoint: pf.Platform, params=None):
     return data["paging"]["total"]
 
 
-def search(endpoint: pf.Platform, params=None):
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Project]:
     """Searches projects in SonarQube
 
     :param endpoint: Reference to the SonarQube platform
@@ -1223,7 +1230,8 @@ def get_list(endpoint: pf.Platform, key_list: list[str] = None, use_cache: bool 
     return {key: Project.get_object(endpoint, key) for key in util.csv_to_list(key_list)}
 
 
-def __audit_thread(queue, results, audit_settings, bindings):
+def __audit_thread(queue: Queue[Project], results: list[pb.Problem], audit_settings: dict[str, str], bindings: dict[str, str]) -> None:
+    """Audit callback function for multitheaded audit"""
     audit_bindings = audit_settings.get("audit.projects.bindings", True)
     while not queue.empty():
         log.debug("Picking from the queue")
@@ -1250,7 +1258,7 @@ def __audit_thread(queue, results, audit_settings, bindings):
     log.debug("Queue empty, exiting thread")
 
 
-def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str] = None):
+def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str] = None) -> list[pb.Problem]:
     """Audits all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1286,7 +1294,8 @@ def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[
     return problems
 
 
-def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: dict[str, str]):
+def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: dict[str, str]) -> None:
+    """Project export callback function for multitheaded export"""
     while not queue.empty():
         project = queue.get()
         results[project.key] = project.export(export_settings=export_settings)
@@ -1294,7 +1303,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         queue.task_done()
 
 
-def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: list[str] = None):
+def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1367,7 +1376,7 @@ def import_config(endpoint: pf.Platform, config_data: dict[str, str], key_list: 
             log.info("Imported %d/%d projects (%d%%)", i, nb_projects, (i * 100 // nb_projects))
 
 
-def __export_zip_thread(queue, results, statuses, export_timeout):
+def __export_zip_thread(queue: Queue[Project], results: list[dict[str, str]], statuses: dict[str, int], export_timeout: int) -> None:
     while not queue.empty():
         project = queue.get()
         try:
