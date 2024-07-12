@@ -279,20 +279,20 @@ def audit(audit_settings: dict[str, str], endpoint: pf.Platform) -> list[problem
 def get_object(endpoint: pf.Platform, name: str) -> Group:
     """Returns a group object
 
-    :param str name: group name
     :param Platform endpoint: reference to the SonarQube platform
+    :param str name: group name
     :return: The group
     :rtype: Group
     """
-    uu = sq.uuid(name, endpoint.url)
-    if len(_OBJECTS) == 0 or uu not in _OBJECTS:
+    uid = sq.uuid(name, endpoint.url)
+    if len(_OBJECTS) == 0 or uid not in _OBJECTS:
         get_list(endpoint)
-    if uu not in _OBJECTS:
+    if uid not in _OBJECTS:
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
-    return _OBJECTS[uu]
+    return _OBJECTS[uid]
 
 
-def create_or_update(endpoint: pf.Platform, name, description):
+def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Group:
     """Creates or updates a group
 
     :param endpoint: reference to the SonarQube platform
@@ -309,10 +309,11 @@ def create_or_update(endpoint: pf.Platform, name, description):
         log.debug("Group '%s' does not exist, creating...", name)
         return Group.create(endpoint, name, description)
     else:
-        return o.set_description(description)
+        o.set_description(description)
+        return o
 
 
-def import_config(endpoint: pf.Platform, config_data):
+def import_config(endpoint: pf.Platform, config_data: dict[str, str]) -> None:
     """Imports a group configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -333,7 +334,7 @@ def import_config(endpoint: pf.Platform, config_data):
         create_or_update(endpoint, name, desc)
 
 
-def exists(group_name, endpoint: pf.Platform):
+def exists(group_name: str, endpoint: pf.Platform) -> bool:
     """
     :param group_name: group name to check
     :type group_name: str
