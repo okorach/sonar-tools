@@ -21,6 +21,8 @@
 from __future__ import annotations
 from typing import Union
 import json
+from datetime import datetime
+
 from http import HTTPStatus
 from queue import Queue
 from threading import Thread, Lock
@@ -107,7 +109,7 @@ class QualityProfile(sq.SqObject):
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name, language):
+    def create(cls, endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:
         """Creates a new quality profile in SonarQube and returns the corresponding QualityProfile object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -138,7 +140,7 @@ class QualityProfile(sq.SqObject):
         log.debug("Loading quality profile '%s' of language '%s'", data["name"], data["language"])
         return cls(endpoint=endpoint, key=data["key"], data=data)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """String formatting of the object
 
         :rtype: str
@@ -148,21 +150,21 @@ class QualityProfile(sq.SqObject):
     def uuid(self) -> str:
         return uuid(self.name, self.language, self.endpoint.url)
 
-    def url(self):
+    def url(self) -> str:
         """
         :return: the SonarQube permalink URL to the quality profile
         :rtype: str
         """
         return f"{self.endpoint.url}/profiles/show?language={self.language}&name={requests.utils.quote(self.name)}"
 
-    def last_use(self):
+    def last_use(self) -> datetime:
         """
         :return: When the quality profile was last used
         :rtype: datetime or None if never
         """
         return self.__last_use
 
-    def last_update(self):
+    def last_update(self) -> datetime:
         """
         :return: When the quality profile was last updated
         :rtype: datetime or None
@@ -241,7 +243,7 @@ class QualityProfile(sq.SqObject):
         self._rules = rules.search(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
         return self._rules
 
-    def activate_rule(self, rule_key, severity=None, **params):
+    def activate_rule(self, rule_key: str, severity: str = None, **params) -> bool:
         """Activates a rule in the quality profile
 
         :param str rule_key: Rule key to activate
@@ -262,7 +264,7 @@ class QualityProfile(sq.SqObject):
             log.error("HTTP error %d while trying to activate rule %s in %s", r.status_code, rule_key, str(self))
         return r.ok
 
-    def activate_rules(self, ruleset):
+    def activate_rules(self, ruleset: dict[str, str]) -> bool:
         """Activates a list of rules in the quality profile
         :return: Whether the activation of all rules was successful
         :rtype: bool
@@ -283,7 +285,8 @@ class QualityProfile(sq.SqObject):
                 log.warning("Activation of rule '%s' in %s failed: HTTP Error %d", r_key, str(self), e.response.status_code)
         return ok
 
-    def update(self, data, queue):
+    def update(self, data: dict[str, str], queue: Queue) -> QualityProfile:
+        """Updates a QP with data coming from sonar-config"""
         if self.is_built_in:
             log.debug("Not updating built-in %s", str(self))
         else:
@@ -322,7 +325,7 @@ class QualityProfile(sq.SqObject):
         json_data["permissions"] = self.permissions().export(export_settings)
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
-    def compare(self, another_qp):
+    def compare(self, another_qp: QualityProfile) -> dict[str, str]:
         """Compares 2 quality profiles rulesets
         :param another_qp: The second quality profile to compare with self
         :type another_qp: QualityProfile
@@ -408,7 +411,7 @@ class QualityProfile(sq.SqObject):
 
         return (diff_rules, qp_json_data)
 
-    def projects(self):
+    def projects(self) -> list[str]:
         """Returns the list of projects keys using this quality profile
         :return: dict result of the diff ("inLeft", "modified")
         :rtype: List[project_key]
@@ -443,7 +446,7 @@ class QualityProfile(sq.SqObject):
         """
         return project.key in self.projects()
 
-    def permissions(self):
+    def permissions(self) -> permissions.QualityProfilePermissions:
         """
         :return: The list of users and groups that can edit the quality profile
         :rtype: dict{"users": <users comma separated>, "groups": <groups comma separated>}
@@ -452,7 +455,7 @@ class QualityProfile(sq.SqObject):
             self._permissions = permissions.QualityProfilePermissions(self)
         return self._permissions
 
-    def set_permissions(self, perms):
+    def set_permissions(self, perms: dict[str, str]) -> None:
         """Sets the list of users and groups that can can edit the quality profile
         :params perms:
         :type perms: dict{"users": <users comma separated>, "groups": <groups comma separated>}
@@ -559,7 +562,7 @@ def audit(endpoint: pf.Platform, audit_settings: dict[str, str] = None) -> list[
     return problems
 
 
-def hierarchize(qp_list, endpoint: pf.Platform):
+def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> dict[str, str]:
     """Organize a flat list of QP in hierarchical (inheritance) fashion
 
     :param qp_list: List of quality profiles
@@ -628,14 +631,16 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Union[Quality
     return _OBJECTS[uid]
 
 
-def _create_or_update_children(name, language, endpoint: pf.Platform, children, queue):
+def _create_or_update_children(name: str, language: str, endpoint: pf.Platform, children: dict[str, StopAsyncIteration], queue: Queue) -> None:
+    """Updates or creates all children of a QP"""
     for qp_name, qp_data in children.items():
         qp_data[_KEY_PARENT] = name
         log.debug("Adding child profile '%s' to update queue", qp_name)
         queue.put((qp_name, language, endpoint, qp_data))
 
 
-def __import_thread(queue):
+def __import_thread(queue: Queue) -> None:
+    """Callback function for multithreaded QP import"""
     while not queue.empty():
         (name, lang, endpoint, qp_data) = queue.get()
         o = get_object(endpoint=endpoint, name=name, language=lang)
