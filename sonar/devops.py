@@ -55,7 +55,7 @@ class DevopsPlatform(sq.SqObject):
 
     def __init__(self, key: str, endpoint: platform.Platform, platform_type: str) -> None:
         """Constructor"""
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
         self.type = platform_type  #: DevOps platform type
         self.url = None  #: DevOps platform URL
         self._specific = None  #: DevOps platform specific settings

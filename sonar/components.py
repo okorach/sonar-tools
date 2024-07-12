@@ -46,9 +46,10 @@ class Component(sq.SqObject):
     """
     Abstraction of the Sonar component concept
     """
+
     def __init__(self, key: str, endpoint: pf.Platform = None, data: dict[str, str] = None) -> None:
         """Constructor"""
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
         self.name = None
         self.nbr_issues = None
         self.ncloc = None

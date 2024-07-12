@@ -77,7 +77,7 @@ class Metric(sqobject.SqObject):
     """
 
     def __init__(self, key: str = None, endpoint: pf.Platform = None, data: dict[str, str] = None) -> None:
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
         self.type = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
         self.name = None  #: Name
         self.description = None  #: Description

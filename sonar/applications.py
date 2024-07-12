@@ -60,7 +60,7 @@ class Application(aggr.Aggregation):
 
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
         self._branches = None
         self._projects = None
         self._description = None

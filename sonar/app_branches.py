@@ -56,7 +56,7 @@ class ApplicationBranch(Component):
 
     def __init__(self, app: App, name: str, project_branches: list[Branch], is_main: bool = False) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(key=f"{app.key} BRANCH {name}", endpoint=app.endpoint)
+        super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
         self.concerned_object = app
         self.name = name
         self.is_main = is_main

@@ -84,7 +84,7 @@ class Project(components.Component):
     """
 
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
         self._last_analysis = "undefined"
         self._branches_last_analysis = "undefined"
         self._permissions = None

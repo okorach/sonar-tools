@@ -82,6 +82,7 @@ class Portfolio(aggregations.Aggregation):
     """
     Abstraction of the Sonar portfolio concept
     """
+
     def __init__(self, endpoint: pf.Platform, name: str, key: str = None) -> None:
         """Constructor, don't use - use class methods instead"""
         if not key:

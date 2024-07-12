@@ -38,7 +38,7 @@ class Aggregation(comp.Component):
     def __init__(self, key: str, endpoint: pf.Platform, data: dict[str, any] = None) -> None:
         self._nbr_projects = None
         self._permissions = None
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
 
     def reload(self, data: dict[str, any]) -> None:
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get

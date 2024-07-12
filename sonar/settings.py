@@ -127,9 +127,10 @@ class Setting(sqobject.SqObject):
     """
     Abstraction of the Sonar setting concept
     """
+
     def __init__(self, key: str, endpoint: pf.Platform, component: object = None, data: dict[str, str] = None) -> None:
         """Constructor"""
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
         self.component = component
         self.value = None
         self.inherited = None

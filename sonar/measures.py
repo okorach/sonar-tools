@@ -42,7 +42,7 @@ class Measure(sq.SqObject):
     API_HISTORY = "measures/search_history"
 
     def __init__(self, key, value, concerned_object):
-        super().__init__(key, concerned_object.endpoint)
+        super().__init__(endpoint=concerned_object.endpoint, key=key)
         self.value = None  #: Measure value
         self.metric = key  #: Measure metric
         self.concerned_object = concerned_object  #: Object concerned by the measure

@@ -45,8 +45,9 @@ class Rule(sq.SqObject):
     """
     Abstraction of the Sonar Rule concept
     """
+
     def __init__(self, key: str, endpoint: platform.Platform, data: dict[str, str]) -> None:
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
         log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
         self._json = data
         self.severity = data.get("severity", None)

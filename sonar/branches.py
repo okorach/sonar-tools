@@ -60,7 +60,7 @@ class Branch(components.Component):
         if project.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_UNSUPPORTED_IN_CE)
         name = unquote(name)
-        super().__init__(name, project.endpoint)
+        super().__init__(endpoint=project.endpoint, key=name)
         self.name = name
         self.concerned_object = project
         self._is_main = None

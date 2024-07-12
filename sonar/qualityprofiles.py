@@ -62,7 +62,7 @@ class QualityProfile(sq.SqObject):
 
     def __init__(self, key: str, endpoint: pf.Platform, data: dict[str, str] = None) -> None:
         """Do not use, use class methods to create objects"""
-        super().__init__(key, endpoint)
+        super().__init__(endpoint=endpoint, key=key)
 
         self.name = data["name"]  #: Quality profile name
         self.language = data["language"]  #: Quality profile language
