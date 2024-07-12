@@ -97,8 +97,7 @@ class Organization(sqobject.SqObject):
 
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
-        super().__init__(key, endpoint)
-        self.json_data = None
+        super().__init__(endpoint=endpoint, key=key)
         self.description = None
         self.name = name
         log.debug("Created object %s", str(self))
@@ -110,7 +109,7 @@ class Organization(sqobject.SqObject):
     def export(self) -> dict[str, str]:
         """Exports an organization"""
         log.info("Exporting %s", str(self))
-        json_data = self.json_data.copy()
+        json_data = self._json.copy()
         json_data.pop("defaultLeakPeriod", None)
         json_data.pop("defaultLeakPeriodType", None)
         (nctype, ncval) = self.new_code_period()
@@ -124,15 +123,15 @@ class Organization(sqobject.SqObject):
         return {"organizations": self.key}
 
     def new_code_period(self) -> tuple[str, str]:
-        if "defaultLeakPeriodType" in self.json_data and self.json_data["defaultLeakPeriodType"] == "days":
-            return "DAYS", self.json_data["defaultLeakPeriod"]
+        if "defaultLeakPeriodType" in self._json and self._json["defaultLeakPeriodType"] == "days":
+            return "DAYS", self._json["defaultLeakPeriod"]
         return "PREVIOUS_VERSION", None
 
     def subscription(self) -> str:
-        return self.json_data.get("subscription", "UNKNOWN")
+        return self._json.get("subscription", "UNKNOWN")
 
     def alm(self) -> Union[dict[str, str], None]:
-        return self.json_data.get("alm", None)
+        return self._json.get("alm", None)
 
 
 def get_list(endpoint: pf.Platform, key_list: str = None, use_cache: bool = True) -> dict[str, object]:
