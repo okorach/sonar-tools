@@ -25,9 +25,17 @@
 from __future__ import annotations
 import json
 
+from datetime import datetime
 import sonar.logging as log
 import sonar.sqobject as sq
+import sonar.platform as pf
+
 from sonar import settings, tasks, measures, utilities
+
+import sonar.audit.problem as pb
+
+# Character forbidden in keys that can be used to separate a key from a post fix
+KEY_SEPARATOR = " "
 
 _ALT_COMPONENTS = ("project", "application", "portfolio")
 SEARCH_API = "components/search"
@@ -35,7 +43,8 @@ _DETAILS_API = "components/show"
 
 
 class Component(sq.SqObject):
-    def __init__(self, key, endpoint=None, data=None):
+    def __init__(self, key: str, endpoint: pf.Platform = None, data: dict[str, str] = None) -> None:
+        """Constructor"""
         super().__init__(key, endpoint)
         self.name = None
         self.nbr_issues = None
@@ -47,7 +56,7 @@ class Component(sq.SqObject):
         if data is not None:
             self.reload(data)
 
-    def reload(self, data):
+    def reload(self, data: dict[str, str]) -> Component:
         if self._json:
             self._json.update(data)
         else:
@@ -60,10 +69,12 @@ class Component(sq.SqObject):
             self._last_analysis = utilities.string_to_date(data["analysisDate"])
         return self
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """String representation of object"""
         return self.key
 
-    def tags(self):
+    def tags(self) -> list[str]:
+        """Returns object tags"""
         if self._tags is not None:
             pass
         elif self._json is not None and "tags" in self._json:
@@ -78,7 +89,8 @@ class Component(sq.SqObject):
             settings.Setting.load(key=settings.COMPONENT_VISIBILITY, endpoint=self.endpoint, component=self, data=data["component"])
         return self._tags if len(self._tags) > 0 else None
 
-    def get_subcomponents(self, strategy="children", with_issues=False):
+    def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
+        """Returns component subcomponents"""
         parms = {
             "component": self.key,
             "strategy": strategy,
@@ -129,7 +141,7 @@ class Component(sq.SqObject):
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
 
-    def get_measures(self, metrics_list: list[str]):
+    def get_measures(self, metrics_list: list[str]) -> dict[str, any]:
         """Retrieves a project list of measures
 
         :param list metrics_list: List of metrics to return
@@ -141,11 +153,13 @@ class Component(sq.SqObject):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def get_measure(self, metric, fallback=None):
+    def get_measure(self, metric: str, fallback: int = None) -> any:
+        """Returns a component measure"""
         meas = self.get_measures(metric)
         return meas[metric].value if metric in meas and meas[metric].value is not None else fallback
 
-    def loc(self):
+    def loc(self) -> int:
+        """Returns a component nbr of LOC"""
         if self.ncloc is None:
             self.ncloc = int(self.get_measure("ncloc", fallback=0))
         return self.ncloc
@@ -155,25 +169,29 @@ class Component(sq.SqObject):
         params = utilities.replace_keys(_ALT_COMPONENTS, "component", self.search_params())
         return self.reload(json.loads(self.endpoint.get("navigation/component", params=params).text))
 
-    def last_analysis(self):
+    def last_analysis(self) -> datetime:
+        """Returns a component last analysis"""
         if not self._last_analysis:
             self.refresh()
         return self._last_analysis
 
-    def url(self):
+    def url(self) -> str:
+        """Returns a component permalink"""
         # Must be implemented in sub classes
         pass
 
-    def visibility(self):
+    def visibility(self) -> str:
+        """Returns a component visibility (public or private)"""
         if not self._visibility:
             self._visibility = settings.get_visibility(self.endpoint, component=self).value
         return self._visibility
 
-    def set_visibility(self, visibility):
+    def set_visibility(self, visibility: str) -> None:
+        """Sets a component visibility (public or private)"""
         settings.set_visibility(self.endpoint, visibility=visibility, component=self)
         self._visibility = visibility
 
-    def _audit_bg_task(self, audit_settings: dict[str, str]):
+    def _audit_bg_task(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits project background tasks"""
         if (
             not audit_settings.get("audit.projects.exclusions", True)
@@ -203,12 +221,3 @@ class Component(sq.SqObject):
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
         return {"key": self.key, "name": self.name, "type": type(self).__name__.upper(), "branch": "", "url": self.url()}
-
-
-def get_components(component_types, endpoint):
-    data = json.loads(endpoint.get("projects/search", params={"ps": 500, "qualifiers": component_types}).text)
-    return data["components"]
-
-
-def get_subcomponents(component_key, strategy="children", with_issues=False, endpoint=None):
-    return Component(component_key, endpoint).get_subcomponents(strategy=strategy, with_issues=with_issues)

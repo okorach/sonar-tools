@@ -22,6 +22,7 @@
     Utilities for sonar-tools
 
 """
+from typing import TextIO
 from http import HTTPStatus
 import sys
 import contextlib
@@ -59,7 +60,7 @@ def check_last_sonar_tools_version() -> None:
         log.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
 
 
-def token_type(token):
+def token_type(token: str) -> str:
     if token[0:4] == "sqa_":
         return "global-analysis"
     elif token[0:4] == "sqp_":
@@ -82,15 +83,15 @@ def check_token(token: str, is_sonarcloud: bool = False) -> None:
         )
 
 
-def json_dump_debug(json_data, pre_string=""):
+def json_dump_debug(json_data: Union[list[str], dict[str, str]], pre_string: str = "") -> None:
     log.debug("%s%s", pre_string, json_dump(json_data))
 
 
-def format_date_ymd(year, month, day):
+def format_date_ymd(year: int, month: int, day: int):
     return ISO_DATE_FORMAT % (year, month, day)
 
 
-def format_date(somedate):
+def format_date(somedate: datetime.datetime) -> str:
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 
@@ -104,17 +105,15 @@ def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str]:
             return string
 
 
-def date_to_string(date, with_time=True):
+def date_to_string(date: datetime.datetime, with_time=True) -> str:
     return "" if date is None else date.strftime(SQ_DATETIME_FORMAT if with_time else SQ_DATE_FORMAT)
 
 
-def age(some_date, rounded=True):
+def age(some_date: datetime.datetime, rounded: bool = True) -> Union[int, datetime.timedelta]:
     """returns the age (in days) of a date
 
-    :param some_date: date
-    :type date: datetime
-    :param rounded: Whether to rounddown to nearest day
-    :type rounded: bool
+    :param datetime some_date: date
+    :param bool rounded: Whether to rounddown to nearest day
     :return: The age in days, or by the second if not rounded
     :rtype: timedelta or int if rounded
     """
@@ -124,13 +123,15 @@ def age(some_date, rounded=True):
     return delta.days if rounded else delta
 
 
-def get_setting(settings, key, default):
+def get_setting(settings: dict[str, str], key: str, default: any) -> any:
+    """Gets a setting or the default value"""
     if settings is None:
         return default
     return settings.get(key, default)
 
 
-def redacted_token(token):
+def redacted_token(token: str) -> str:
+    """Redacts a token for security (before printing)"""
     if token is None:
         return "-"
     if token[0:4] in ("squ_", "sqa_", "sqp_"):
@@ -139,7 +140,8 @@ def redacted_token(token):
         return re.sub(r"(..).*(..)", r"\1***\2", token)
 
 
-def convert_to_type(value):
+def convert_to_type(value: any) -> any:
+    """Converts a potentially string value to the corresponding int or float"""
     try:
         newval = int(value)
         return newval
@@ -153,34 +155,31 @@ def convert_to_type(value):
     return value
 
 
-def remove_nones(d):
+def remove_nones(d: dict[str, str]) -> dict[str, str]:
+    """Removes elements of the dict that are None values"""
     if isinstance(d, dict):
         return {k: v for k, v in d.items() if v is not None}
     else:
         return d
 
 
-def dict_subset(d, subset_list):
+def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
     return {key: d[key] for key in subset_list if key in d}
 
 
-def allowed_values_string(original_str, allowed_values):
+def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:
+    """Returns CSV values from an allowed list"""
     return list_to_csv([v for v in csv_to_list(original_str) if v in allowed_values])
 
 
-def json_dump(jsondata, indent=3):
+def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3) -> str:
+    """JSON dump helper"""
     return json.dumps(remove_nones(jsondata), indent=indent, sort_keys=True, separators=(",", ": "))
 
 
-def str_none(v):
-    if v is None:
-        return ""
-    else:
-        return str(v)
-
-
 def csv_to_list(string: str, separator: str = ",") -> list[str]:
+    """Converts a csv string to a list"""
     if isinstance(string, list):
         return string
     if isinstance(string, tuple):
@@ -190,7 +189,8 @@ def csv_to_list(string: str, separator: str = ",") -> list[str]:
     return [s.strip() for s in string.split(separator)]
 
 
-def list_to_csv(array, separator=",", check_for_separator=False):
+def list_to_csv(array: Union[None, str, list[str]], separator: str = ",", check_for_separator: bool = False) -> Union[str, None]:
+    """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
     if array is None:
@@ -204,23 +204,31 @@ def list_to_csv(array, separator=",", check_for_separator=False):
     return separator.join([v.strip() for v in array])
 
 
-def csv_normalize(string, separator=","):
+def csv_normalize(string: str, separator: str = ",") -> str:
+    """Normalizes a CSV string (no spaces next to separators)"""
     return list_to_csv(csv_to_list(string, separator))
 
 
-def intersection(list1, list2):
+def intersection(list1: list[any], list2: list[any]) -> list[any]:
+    """Computes intersection of 2 lists"""
+    # FIXME - This should be sets
     return [value for value in list1 if value in list2]
 
 
-def union(list1, list2):
+def union(list1: list[any], list2: list[any]) -> list[any]:
+    """Computes union of 2 lists"""
+    # FIXME - This should be sets
     return list1 + [value for value in list2 if value not in list1]
 
 
-def difference(list1, list2):
+def difference(list1: list[any], list2: list[any]) -> list[any]:
+    """Computes difference of 2 lists"""
+    # FIXME - This should be sets
     return [value for value in list1 if value not in list2]
 
 
-def quote(string, sep):
+def quote(string: str, sep: str) -> str:
+    """Quotes a string if needed"""
     if sep in string:
         string = '"' + string.replace('"', '""') + '"'
     if "\n" in string:
@@ -228,7 +236,8 @@ def quote(string, sep):
     return string
 
 
-def jvm_heap(cmdline):
+def jvm_heap(cmdline: str) -> Union[int, None]:
+    """Computes JVM heap in MB from a Java cmd line string"""
     for s in cmdline.split(" "):
         if not re.match("-Xmx", s):
             continue
@@ -248,7 +257,8 @@ def jvm_heap(cmdline):
     return None
 
 
-def int_memory(string) -> Union[int, None]:
+def int_memory(string: str) -> Union[int, None]:
+    """Converts memory from string to int in MB"""
     (val, unit) = string.split(" ")
     # For decimal separator in some countries
     val = float(val.replace(",", "."))
@@ -270,7 +280,8 @@ def int_memory(string) -> Union[int, None]:
     return int_val
 
 
-def dict_add(dict1, dict2):
+def dict_add(dict1: dict[str, int], dict2: dict[str, int]) -> dict[str, int]:
+    """Adds values of 2 dicts"""
     for k in dict2:
         if k not in dict1:
             dict1[k] = 0
@@ -278,13 +289,15 @@ def dict_add(dict1, dict2):
     return dict1
 
 
-def exit_fatal(err_msg, exit_code):
+def exit_fatal(err_msg: str, exit_code: int) -> None:
+    """Fatal exit with error msg"""
     log.fatal(err_msg)
     print(f"FATAL: {err_msg}", file=sys.stderr)
     sys.exit(exit_code)
 
 
-def convert_string(value):
+def convert_string(value: str) -> Union[str, int, float, bool]:
+    """Converst strings to corresponding types"""
     if not isinstance(value, str):
         return value
     if value.lower() in ("yes", "true", "on"):
@@ -302,7 +315,8 @@ def convert_string(value):
     return value
 
 
-def update_json(json_data, categ, subcateg, value):
+def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: any) -> dict[str, str]:
+    """Updates a 2 levels JSON"""
     if categ not in json_data:
         if subcateg is None:
             json_data[categ] = value
@@ -318,11 +332,13 @@ def update_json(json_data, categ, subcateg, value):
     return json_data
 
 
-def int_div_ceil(number, divider):
+def int_div_ceil(number: int, divider: int) -> int:
+    """Computes rounded up int division"""
     return (number + divider - 1) // divider
 
 
-def nbr_pages(sonar_api_json):
+def nbr_pages(sonar_api_json: dict[str, str]) -> int:
+    """Returns nbr of pages of a paginated Sonar API call"""
     if "total" in sonar_api_json:
         return int_div_ceil(sonar_api_json["total"], sonar_api_json["ps"])
     elif "paging" in sonar_api_json:
@@ -332,7 +348,8 @@ def nbr_pages(sonar_api_json):
 
 
 @contextlib.contextmanager
-def open_file(file=None, mode="w"):
+def open_file(file: str = None, mode: str = "w") -> TextIO:
+    """Opens a file if not None or -, otherwise stdout"""
     if file and file != "-":
         log.debug("Opening file '%s'", file)
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
@@ -346,12 +363,8 @@ def open_file(file=None, mode="w"):
             fd.close()
 
 
-def load_json_file(file):
-    with open(file, "r", encoding="utf-8") as fd:
-        return json.loads(fd.read())
-
-
-def search_by_name(endpoint, name, api, returned_field, extra_params=None):
+def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> Union[dict[str, str], None]:
+    """Searches a object by name"""
     params = {"q": name}
     if extra_params is not None:
         params.update(extra_params)

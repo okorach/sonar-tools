@@ -22,6 +22,7 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
+import json
 
 from cli import options
 from sonar import exceptions, errcodes, utilities
@@ -165,7 +166,9 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     """Imports a platform configuration from a JSON file"""
     log.info("Importing configuration to %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    data = utilities.load_json_file(kwargs["file"])
+    with open(kwargs[options.OUTPUTFILE], "r", encoding="utf-8") as fd:
+        data = json.loads(fd.read())
+
     if options.WHAT_GROUPS in what:
         groups.import_config(endpoint, data)
     if options.WHAT_USERS in what:

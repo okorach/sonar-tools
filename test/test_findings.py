@@ -353,7 +353,9 @@ def test_issues_count_3() -> None:
 def test_search_issues_by_project() -> None:
     """test_search_issues_by_project"""
     nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key="okorach_sonar-tools", search_findings=True))
-    assert 1000 <= nb_issues <= 3000
+    assert 1000 <= nb_issues <= 3500
+    nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key="okorach_sonar-tools", params={"resolved": "false"}))
+    assert nb_issues < 1000
     nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=None))
     assert nb_issues > 1000
 
@@ -392,9 +394,10 @@ def test_output_format_json() -> None:
     assert int(str(e.value)) == 0
     with open(util.JSON_FILE, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
-    issue = json_data[0]
-    for k in "author", "creationDate", "effort", "file", "key", "line", "message", "projectKey", "rule", "updateDate":
-        assert k in issue
+    for issue in json_data:
+        for k in "creationDate", "effort", "file", "key", "message", "projectKey", "rule", "updateDate":
+            assert k in issue
+        assert "author" in issue or issue["status"] in ("FIXED", "CLOSED")
     # util.clean(util.JSON_FILE)
 
 

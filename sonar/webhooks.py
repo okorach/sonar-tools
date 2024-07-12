@@ -19,8 +19,11 @@
 #
 
 import json
+from typing import Union
 
 import sonar.logging as log
+from sonar import platform as pf
+
 import sonar.utilities as util
 import sonar.sqobject as sq
 
@@ -36,7 +39,10 @@ class WebHook(sq.SqObject):
     Abstraction of the SonarQube "webhook" concept
     """
 
-    def __init__(self, name, endpoint, url=None, secret=None, project=None, data=None):
+    def __init__(
+        self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project: str = None, data: dict[str, str] = None
+    ) -> None:
+        """Constructor"""
         super().__init__(name, endpoint)
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
@@ -50,17 +56,18 @@ class WebHook(sq.SqObject):
         self.last_delivery = data.get("latestDelivery", None)
         _OBJECTS[self.uuid()] = self
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"webhook '{self.name}'"
 
-    def url(self):
+    def url(self) -> str:
+        """Returns the object permalink"""
         return f"{self.endpoint.url}/admin/webhooks"
 
-    def uuid(self):
+    def uuid(self) -> str:
         """
         :meta private:
         """
-        return _uuid(self.name, self.project)
+        return uuid(self.name, self.project, self.endpoint.url)
 
     def update(self, **kwargs):
         """Updates a webhook with new properties (name, url, secret)
@@ -92,7 +99,7 @@ class WebHook(sq.SqObject):
         return util.filter_export(self._json, _IMPORTABLE_PROPERTIES, full)
 
 
-def search(endpoint, params=None):
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, WebHook]:
     """Searches webhooks
 
     :param params: Filters to narrow down the search, can only be "project"
@@ -102,7 +109,8 @@ def search(endpoint, params=None):
     return sq.search_objects(api="webhooks/list", params=params, returned_field="webhooks", key_field="key", object_class=WebHook, endpoint=endpoint)
 
 
-def get_list(endpoint, project_key=None):
+def get_list(endpoint: pf.Platform, project_key: str = None) -> dict[str, WebHook]:
+    """Returns the list of web hooks, global ones or for a project if project key is given"""
     log.debug("Getting webhooks for project key %s", str(project_key))
     params = None
     if project_key is not None:
@@ -110,7 +118,8 @@ def get_list(endpoint, project_key=None):
     return search(endpoint, params)
 
 
-def export(endpoint, project_key=None, full=False):
+def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -> Union[dict[str, str], None]:
+    """Export webhooks of a project as JSON"""
     json_data = {}
     for wb in get_list(endpoint, project_key).values():
         j = wb.to_json(full)
@@ -119,37 +128,41 @@ def export(endpoint, project_key=None, full=False):
     return json_data if len(json_data) > 0 else None
 
 
-def create(endpoint, name, url, secret=None, project=None):
-    return WebHook(name, endpoint, url=url, secret=secret, project=project)
+def create(endpoint: pf.Platform, name: str, url: str, secret: str = None, project: str = None) -> WebHook:
+    """Creates a webhook, global if project key is None, othewise project specific"""
+    return WebHook(endpoint=endpoint, name=name, url=url, secret=secret, project=project)
 
 
-def update(endpoint, name, **kwargs):
+def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
+    """Updates a webhook with data in kwargs"""
     project_key = kwargs.pop("project", None)
     get_list(endpoint, project_key)
-    if _uuid(name, project_key) not in _OBJECTS:
+    if uuid(name, project_key, endpoint.url) not in _OBJECTS:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
-        get_object(name, endpoint, project_key=project_key, data=kwargs).update(**kwargs)
+        get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
 
 
-def get_object(name, endpoint, project_key=None, data=None):
+def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: dict[str, str] = None) -> WebHook:
+    """Gets a WebHook object from name a project key"""
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
-    u = _uuid(name, project_key)
-    if u not in _OBJECTS:
-        _ = WebHook(name=name, endpoint=endpoint, data=data)
-    return _OBJECTS[u]
+    uid = uuid(name, project_key, endpoint.url)
+    if uid not in _OBJECTS:
+        _ = WebHook(endpoint=endpoint, name=name, project=project_key, data=data)
+    return _OBJECTS[uid]
 
 
-def _uuid(name, project_key):
-    # FIXME: Make UUID really unique
-    p = "" if project_key is None else f":PROJECT:{project_key}"
-    return f"{name}{p}"
+def uuid(name: str, project_key: str, url: str) -> str:
+    """Returns object unique id"""
+    # FIXME: Make uuid really unique between global and project
+    if not project_key:
+        return f"{name}@{url}"
+    else:
+        return f"{name}#{project_key}@{url}"
 
 
-def audit(endpoint):
-    """
-    :meta private:
-    """
+def audit(endpoint: pf.Platform) -> list[problem.Problem]:
+    """Audits web hooks and returns list of found problems"""
     log.info("Auditing webhooks")
     problems = []
     for wh in search(endpoint=endpoint).values():

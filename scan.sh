@@ -67,7 +67,7 @@ cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.externalIssuesReportPaths=$externalIssuesReport \
   -Dsonar.login=$SONAR_TOKEN \
   -Dsonar.token=$SONAR_TOKEN \
-  "${scanOpts[@]}""
+  "${scanOpts[*]}""
 
 if [ -f "$coverageReport" ]; then
    cmd="$cmd -Dsonar.python.coverage.reportPaths=$coverageReport"

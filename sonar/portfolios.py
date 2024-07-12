@@ -33,12 +33,14 @@ from threading import Lock
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
+import sonar.platform as pf
+
 from sonar import aggregations, exceptions, settings
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
 import sonar.utilities as util
-from sonar.audit import rules
+from sonar.audit import rules, problem
 
 _OBJECTS = {}
 _CLASS_LOCK = Lock()
@@ -78,7 +80,8 @@ _IMPORTABLE_PROPERTIES = (
 
 class Portfolio(aggregations.Aggregation):
     @classmethod
-    def get_object(cls, endpoint, key):
+    def get_object(cls, endpoint: pf.Platform, key: str) -> Portfolio:
+        """Gets a portfolio object from its key"""
         log.info("Getting portfolio object key '%s'", key)
         # if root_key is None:
         # data = search_by_name(endpoint=endpoint, name=name)
@@ -87,16 +90,17 @@ class Portfolio(aggregations.Aggregation):
         # if data is None:
         #    return None
         # key = data["key"]
-        uuid = sq.uuid(key, endpoint.url)
-        if uuid in _OBJECTS:
-            return _OBJECTS[uuid]
+        uu = sq.uuid(key, endpoint.url)
+        if uu in _OBJECTS:
+            return _OBJECTS[uu]
         data = search_by_key(endpoint, key)
         if data is None:
             raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' not found")
         return Portfolio.load(endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint, name, **kwargs):
+    def create(cls, endpoint: pf.Platform, name: str, **kwargs) -> Portfolio:
+        """Creates a portfolio object"""
         log.debug("Creating portfolio name '%s', key '%s', parent = %s", name, str(kwargs.get("key", None)), str(kwargs.get("parent", None)))
         params = {"name": name}
         for p in ("description", "parent", "key", "visibility"):
@@ -109,7 +113,8 @@ class Portfolio(aggregations.Aggregation):
         return o
 
     @classmethod
-    def load(cls, endpoint, data):
+    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Portfolio:
+        """Creates and load a Portfolio object with returned API data"""
         log.debug("Loading portfolio '%s' with data %s", data["name"], util.json_dump(data))
         o = cls(endpoint=endpoint, name=data["name"], key=data["key"])
         o.reload(data)
@@ -120,8 +125,11 @@ class Portfolio(aggregations.Aggregation):
                 log.warning("HTTP Error %s when refreshing %s", str(e), str(o))
         return o
 
-    def __init__(self, endpoint, name, key=None):
-        super().__init__(key if key else name, endpoint)
+    def __init__(self, endpoint: pf.Platform, name: str, key: str = None) -> None:
+        """Constructor"""
+        if not key:
+            key = name.replace(" ", "_")
+        super().__init__(endpoint=endpoint, key=key)
         self.name = name
         self._selection_mode = {"mode": SELECTION_MODE_NONE}  #: Portfolio project selection mode
         self._tags = []  #: Portfolio tags when selection mode is TAGS
@@ -136,7 +144,8 @@ class Portfolio(aggregations.Aggregation):
         log.debug("Created portfolio object name '%s'", name)
         log.debug("PORTFOLIOS = %s", str([p.key for p in _OBJECTS.values()]))
 
-    def reload(self, data):
+    def reload(self, data: dict[str, str]) -> None:
+        """Reloads a portfolio with returned API data"""
         log.debug("Reloading %s with %s", str(self), util.json_dump(data))
         super().reload(data)
         if "name" in data:
@@ -163,10 +172,12 @@ class Portfolio(aggregations.Aggregation):
         if parent:
             self.set_parent(Portfolio.get_object(self.endpoint, parent))
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Returns string representation of object"""
         return f"subportfolio '{self.key}'" if self.is_sub_portfolio else f"portfolio '{self.key}'"
 
-    def refresh(self):
+    def refresh(self) -> None:
+        """Refreshes a portfolio data from the Sonar instance"""
         log.debug("Updating details for %s root key %s", str(self), self._root_portfolio)
         data = json.loads(self.get(_GET_API, params={"key": self.root_portfolio().key}).text)
         if not self.is_sub_portfolio:
@@ -175,19 +186,23 @@ class Portfolio(aggregations.Aggregation):
         self.projects()
 
     def last_analysis(self) -> datetime.datetime:
+        """Returns the portfolio last computation date"""
         if self._last_analysis is None:
             super().refresh()
         return self._last_analysis
 
-    def set_parent(self, parent_portfolio):
+    def set_parent(self, parent_portfolio: Portfolio) -> None:
+        """Sets the parent portfolio of a subportfolio"""
         self.parent = parent_portfolio
         self._root_portfolio = self.root_portfolio()
         log.debug("%s: Parent = %s, Root = %s", str(self), str(self.parent), str(self._root_portfolio))
 
-    def url(self):
+    def url(self) -> str:
+        """Returns the object permalink"""
         return f"{self.endpoint.url}/portfolio?id={self.key}"
 
-    def root_portfolio(self):
+    def root_portfolio(self) -> Portfolio:
+        """Returns the root portfolio of a portfolio in a hierarchy"""
         if self.parent is None or self.parent.key == self.key:
             log.debug("Found root for %s, parent = %s", self.key, str(self.parent))
             self._root_portfolio = self
@@ -196,8 +211,8 @@ class Portfolio(aggregations.Aggregation):
             self._root_portfolio = self.parent.root_portfolio()
         return self._root_portfolio
 
-    def projects(self):
-        """Returns list of projects if selection mode is manual, None otherwise"""
+    def projects(self) -> Union[dict[str, str], None]:
+        """Returns list of projects and their branches if selection mode is manual, None otherwise"""
         if self._selection_mode["mode"] != SELECTION_MODE_MANUAL:
             log.debug("%s: Not manual mode, no projects", str(self))
             return None
@@ -224,7 +239,8 @@ class Portfolio(aggregations.Aggregation):
         self.create_sub_portfolios()
         return self._sub_portfolios
 
-    def create_sub_portfolios(self):
+    def create_sub_portfolios(self) -> None:
+        """Creates Portfolio objects for subportfolios of a (parent) Portfolio"""
         log.debug("Creating subportfolios for %s with JSON %s", str(self), str(self._json))
         if "subViews" not in self._json or len(self._json["subViews"]) == 0:
             return
@@ -249,17 +265,20 @@ class Portfolio(aggregations.Aggregation):
             subp.create_sub_portfolios()
             subp.projects()
 
-    def regexp(self):
+    def regexp(self) -> Union[str, None]:
+        """Returns the regexp if selection mode is regexp, None otherwise"""
         if self.selection_mode()["mode"] != SELECTION_MODE_REGEXP:
             return None
         return self.selection_mode()["regexp"]
 
-    def tags(self):
+    def tags(self) -> Union[list[str], None]:
+        """Returns the list of tags if selection mode is tags, None otherwise"""
         if self.selection_mode()["mode"] != SELECTION_MODE_TAGS:
             self._tags = None
         return self.selection_mode()["tags"]
 
-    def get_components(self):
+    def get_components(self) -> dict[str, dict[str, str]]:
+        """Returns subcomponents of a Portfolio"""
         data = json.loads(
             self.get(
                 "measures/component_tree",
@@ -276,22 +295,26 @@ class Portfolio(aggregations.Aggregation):
             comp_list[c["key"]] = c
         return comp_list
 
-    def delete(self):
+    def delete(self) -> bool:
+        """Deletes a portfolio, returns whether the operation succeeded"""
         return sq.delete_object(self, "views/delete", {"key": self.key}, _OBJECTS)
 
-    def _audit_empty(self, audit_settings):
+    def _audit_empty(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
+        """Audits if a portfolio is empty (no projects)"""
         if not audit_settings.get("audit.portfolios.empty", True):
             log.debug("Auditing empty portfolios is disabled, skipping...")
             return []
         return self._audit_empty_aggregation(broken_rule=rules.RuleId.PORTFOLIO_EMPTY)
 
-    def _audit_singleton(self, audit_settings):
+    def _audit_singleton(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
+        """Audits if a portfolio contains a single project"""
         if not audit_settings.get("audit.portfolios.singleton", True):
             log.debug("Auditing singleton portfolios is disabled, skipping...")
             return []
         return self._audit_singleton_aggregation(broken_rule=rules.RuleId.PORTFOLIO_SINGLETON)
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
+        """Audits a portfolio"""
         log.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
@@ -333,9 +356,6 @@ class Portfolio(aggregations.Aggregation):
         if not self.is_sub_portfolio:
             # No permissions for SVW
             self.permissions().set(portfolio_perms)
-
-    def set_component_tags(self, tags, api):
-        log.warning("Can't set tags on portfolios, operation skipped...")
 
     def selection_mode(self, export_settings: dict[str, str] = None) -> dict[str, str]:
         """Returns a portfolio selection mode"""
@@ -451,7 +471,8 @@ class Portfolio(aggregations.Aggregation):
 
         return self
 
-    def add_subportfolio(self, key, name=None, by_ref=False):
+    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> bool:
+        """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
         # if not exists(key, self.endpoint):
         #    log.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
         #    return False
@@ -473,12 +494,14 @@ class Portfolio(aggregations.Aggregation):
             time.sleep(0.5)
         return r.ok
 
-    def recompute(self):
+    def recompute(self) -> bool:
+        """Triggers portfolio recomputation, return whether operation REQUEST succeeded"""
         log.debug("Recomputing %s", str(self))
         key = self._root_portfolio.key if self._root_portfolio else self.key
-        self.post("views/refresh", params={"key": key})
+        return self.post("views/refresh", params={"key": key}).ok
 
-    def update(self, data):
+    def update(self, data: dict[str, str]) -> None:
+        """Updates a portfolio with sonar-config JSON data"""
         log.debug("Updating %s with %s", str(self), util.json_dump(data))
         if "byReference" not in data or not data["byReference"]:
             if "permissions" in data:
@@ -534,12 +557,12 @@ class Portfolio(aggregations.Aggregation):
         return {"portfolio": self.key}
 
 
-def count(endpoint: object) -> int:
+def count(endpoint: pf.Platform) -> int:
     """Counts number of portfolios"""
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
 
-def get_list(endpoint: object, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Portfolio]:
+def get_list(endpoint: pf.Platform, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Portfolio]:
     """
     :return: List of Portfolios (all of them if key_list is None or empty)
     :param key_list: List of portfolios keys to get, if None or empty all portfolios are returned
@@ -557,7 +580,7 @@ def get_list(endpoint: object, key_list: list[str] = None, use_cache: bool = Tru
     return object_list
 
 
-def search(endpoint: object, params: dict[str, str] = None) -> dict[str, Portfolio]:
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Portfolio]:
     """Search all portfolios of a platform and returns as dict"""
     portfolio_list = {}
     if endpoint.edition() not in ("enterprise", "datacenter"):
@@ -574,7 +597,7 @@ def search(endpoint: object, params: dict[str, str] = None) -> dict[str, Portfol
     return portfolio_list
 
 
-def audit(endpoint: object, audit_settings: dict[str, str], key_list: list[str, str] = None) -> list[object]:
+def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str, str] = None) -> list[object]:
     """Audits all portfolios"""
     if not audit_settings.get("audit.portfolios", True):
         log.debug("Auditing portfolios is disabled, skipping...")
@@ -630,7 +653,7 @@ def _projects(json_data, version):
 """
 
 
-def exists(key: str, endpoint: object) -> bool:
+def exists(key: str, endpoint: pf.Platform) -> bool:
     """Tells whether a portfolio with a given key exists"""
     try:
         Portfolio.get_object(endpoint, key)
@@ -639,7 +662,7 @@ def exists(key: str, endpoint: object) -> bool:
         return False
 
 
-def import_config(endpoint: object, config_data: dict[str, str], key_list: list[str] = None) -> None:
+def import_config(endpoint: pf.Platform, config_data: dict[str, str], key_list: list[str] = None) -> None:
     """Imports portfolio configuration described in a JSON"""
     if "portfolios" not in config_data:
         log.info("No portfolios to import")
@@ -683,17 +706,17 @@ def import_config(endpoint: object, config_data: dict[str, str], key_list: list[
             log.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
 
 
-def search_by_name(endpoint: object, name: str) -> dict[str, str]:
+def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, str]:
     """Searches portfolio by nmame and and, if found, returns data as JSON"""
     return util.search_by_name(endpoint, name, _SEARCH_API, "components")
 
 
-def search_by_key(endpoint: object, key: str) -> dict[str, str]:
+def search_by_key(endpoint: pf.Platform, key: str) -> dict[str, str]:
     """Searches portfolio by key and and, if found, returns data as JSON"""
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
-def export(endpoint: object, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -728,21 +751,24 @@ def export(endpoint: object, export_settings: dict[str, str], key_list: list[str
     return exported_portfolios
 
 
-def recompute(endpoint):
+def recompute(endpoint: pf.Platform) -> None:
+    """Triggers recomputation of all portfolios"""
     endpoint.post("views/refresh")
 
 
-def _find_sub_portfolio(key, data):
+def _find_sub_portfolio(key: str, data: dict[str, str]) -> dict[str, str]:
+    """Finds a subportfolio in a JSON hierarchy"""
     for subp in data.get("subViews", []):
         if subp["key"] == key:
             return subp
         child = _find_sub_portfolio(key, subp)
         if child is not None:
             return child
-    return []
+    return {}
 
 
-def __create_portfolio_hierarchy(endpoint, data, parent_key):
+def __create_portfolio_hierarchy(endpoint: pf.Platform, data: dict[str, str], parent_key: str) -> int:
+    """Creates the hierarchy of portfolios that are new defined by reference"""
     nbr_creations = 0
     o_parent = Portfolio.get_object(endpoint, parent_key)
     for key, subp in data.get("subPortfolios", {}).items():

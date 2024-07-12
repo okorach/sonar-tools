@@ -22,6 +22,8 @@ import json
 from threading import Lock
 
 import sonar.logging as log
+import sonar.platform as pf
+
 from sonar import sqobject, utilities
 
 #: List of what can be considered the main metrics
@@ -74,7 +76,7 @@ class Metric(sqobject.SqObject):
     Abstraction of the SonarQube "metric" concept
     """
 
-    def __init__(self, key=None, endpoint=None, data=None):
+    def __init__(self, key: str = None, endpoint: pf.Platform = None, data: dict[str, str] = None) -> None:
         super().__init__(key, endpoint)
         self.type = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
         self.name = None  #: Name
@@ -85,9 +87,9 @@ class Metric(sqobject.SqObject):
         self.hidden = None  #: Hidden
         self.custom = None  #: Custom
         self.__load(data)
-        _OBJECTS[self.key] = self
+        _OBJECTS[self.uuid()] = self
 
-    def __load(self, data):
+    def __load(self, data: dict[str, str]) -> bool:
         log.debug("Loading metric %s", str(data))
         self.type = data["type"]
         self.name = data["name"]
@@ -97,44 +99,43 @@ class Metric(sqobject.SqObject):
         self.hidden = data["hidden"]
         self.custom = data.get("custom", None)
         if not self.hidden:
-            _VISIBLE_OBJECTS[self.key] = self
+            _VISIBLE_OBJECTS[self.uuid()] = self
         if self.type not in METRICS_BY_TYPE:
             METRICS_BY_TYPE[self.type] = set()
         METRICS_BY_TYPE[self.type].add(self.key)
         return True
 
-    def is_a_rating(self):
+    def is_a_rating(self) -> bool:
         """
         :returns: Whether a metric is a rating
         :rtype: bool
         """
         return self.type == "RATING"
 
-    def is_a_percent(self):
+    def is_a_percent(self) -> bool:
         """
         :returns: Whether a metric is a percentage (or ratio or density)
         :rtype: bool
         """
         return self.type == "PERCENT"
 
-    def is_an_effort(self):
+    def is_an_effort(self) -> bool:
         """
         :returns: Whether a metric is an effort
         :rtype: bool
         """
         return self.type == "WORK_DUR"
 
-    def is_of_type(self, metric_type):
+    def is_of_type(self, metric_type: str) -> bool:
         """
-        :param metric_type:
-        :type metric_type: str
+        :param str metric_type:
         :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
         :rtype: bool
         """
         return metric_type in METRICS_BY_TYPE and self.type in METRICS_BY_TYPE[metric_type]
 
 
-def is_a_rating(metric_key):
+def is_a_rating(metric_key: str) -> bool:
     """
     :param metric_key: The concerned metric key
     :type metric_key: str
@@ -144,32 +145,28 @@ def is_a_rating(metric_key):
     return is_of_type(metric_key, "RATING")
 
 
-def search(endpoint, show_hidden_metrics=False, use_cache=True):
+def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: bool = True) -> dict[str, Metric]:
     """
-    :param endpoint: Reference to the SonarQube platform object
-    :type endpoint: Platform
-    :param show_hidden_metrics: Whether to also include hidden (private) metrics
-    :type show_hidden_metrics: bool
-    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :type use_cache: bool
+    :param Platform endpoint: Reference to the SonarQube platform object
+    :param bool show_hidden_metrics: Whether to also include hidden (private) metrics
+    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :return: List of metrics
     :rtype: dict of Metric
     """
     with _CLASS_LOCK:
         if len(_OBJECTS) == 0 or not use_cache:
-            m_list = {}
             page, nb_pages = 1, 1
             while page <= nb_pages:
                 data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
                 for m in data["metrics"]:
-                    m_list[m["key"]] = Metric(key=m["key"], endpoint=endpoint, data=m)
+                    _ = Metric(key=m["key"], endpoint=endpoint, data=m)
                 nb_pages = utilities.nbr_pages(data)
                 page += 1
+    m_list = _OBJECTS if show_hidden_metrics else _VISIBLE_OBJECTS
+    return {m.key: m for m in m_list.values()}
 
-    return _OBJECTS if show_hidden_metrics else _VISIBLE_OBJECTS
 
-
-def is_a_percent(metric_key):
+def is_a_percent(metric_key: str) -> bool:
     """
     :param metric_key: The concerned metric key
     :type metric_key: str
@@ -179,7 +176,7 @@ def is_a_percent(metric_key):
     return is_of_type(metric_key, "PERCENT")
 
 
-def is_an_effort(metric_key):
+def is_an_effort(metric_key: str) -> bool:
     """
     :param metric_key: The concerned metric key
     :type metric_key: str
@@ -189,22 +186,19 @@ def is_an_effort(metric_key):
     return is_of_type(metric_key, "WORK_DUR")
 
 
-def is_of_type(metric_key, metric_type):
+def is_of_type(metric_key: str, metric_type: str) -> bool:
     """
-    :param metric_key: The concerned metric key
-    :type metric_key: str
-    :param metric_type:
-    :type metric_type: str
+    :param str metric_key: The concerned metric key
+    :param str metric_type:
     :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
     :rtype: bool
     """
     return metric_type in METRICS_BY_TYPE and metric_key in METRICS_BY_TYPE[metric_type]
 
 
-def count(endpoint, use_cache=True):
+def count(endpoint: pf.Platform, use_cache: bool = True) -> int:
     """
-    :param endpoint: Reference to the SonarQube platform object
-    :type endpoint: Platform
+    :param Platform endpoint: Reference to the SonarQube platform object
     :returns: Count of public metrics
     :rtype: int
     """

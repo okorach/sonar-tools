@@ -151,7 +151,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     log.set_debug_level(kwargs[VERBOSE])
     del kwargs[VERBOSE]
     log.info("sonar-tools version %s", version.PACKAGE_VERSION)
-    if log.level() == log.DEBUG:
+    if log.get_level() == log.DEBUG:
         sanitized_args = kwargs.copy()
         sanitized_args[TOKEN] = utilities.redacted_token(sanitized_args[TOKEN])
         if "tokenTarget" in sanitized_args:

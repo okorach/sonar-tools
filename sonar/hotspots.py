@@ -28,8 +28,10 @@ from requests.exceptions import HTTPError
 import requests.utils
 
 import sonar.logging as log
+import sonar.platform as pf
+
 import sonar.utilities as util
-from sonar.platform import Platform
+
 from sonar.sqobject import uuid
 from sonar import syncer, users
 from sonar import findings, rules, changelog
@@ -81,8 +83,9 @@ class TooManyHotspotsError(Exception):
 
 
 class Hotspot(findings.Finding):
-    def __init__(self, key, endpoint, data=None, from_export=False):
-        super().__init__(key, endpoint, data, from_export)
+    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> None:
+        """Constructor"""
+        super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.vulnerabilityProbability = None  #:
         self.category = data["securityCategory"]  #:
         self.vulnerabilityProbability = data["vulnerabilityProbability"]  #:
@@ -103,14 +106,14 @@ class Hotspot(findings.Finding):
         if self.rule is None and self.refresh():
             self.rule = self.__details["rule"]["key"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String representation of the hotspot
         :rtype: str
         """
         return f"Hotspot key '{self.key}'"
 
-    def url(self):
+    def url(self) -> str:
         """
         :return: Permalink URL to the hotspot in the SonarQube platform
         :rtype: str
@@ -122,7 +125,7 @@ class Hotspot(findings.Finding):
             branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
         return f"{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
 
-    def to_json(self, without_time: bool = False):
+    def to_json(self, without_time: bool = False) -> dict[str, str]:
         """
         :return: JSON representation of the hotspot
         :rtype: dict
@@ -134,7 +137,7 @@ class Hotspot(findings.Finding):
         log.debug("Returning hotspot JSON data = %s", util.json_dump(data))
         return data
 
-    def refresh(self):
+    def refresh(self) -> bool:
         """Refreshes and reads hotspots details in SonarQube
         :return: The hotspot details
         :rtype: Whether ther operation succeeded
@@ -144,7 +147,7 @@ class Hotspot(findings.Finding):
             self.__details = json.loads(resp.text)
         return resp.ok
 
-    def __mark_as(self, resolution, comment=None):
+    def __mark_as(self, resolution: str, comment: str = None) -> bool:
         params = {"hotspot": self.key, "status": "REVIEWED", "resolution": resolution}
         if comment is not None:
             params["comment"] = comment
@@ -158,7 +161,7 @@ class Hotspot(findings.Finding):
         """
         return self.__mark_as("SAFE")
 
-    def mark_as_fixed(self):
+    def mark_as_fixed(self) -> bool:
         """Marks a hotspot as fixed
 
         :return: Whether the operation succeeded
@@ -166,18 +169,18 @@ class Hotspot(findings.Finding):
         """
         return self.__mark_as("FIXED")
 
-    def mark_as_acknowledged(self):
+    def mark_as_acknowledged(self) -> bool:
         """Marks a hotspot as acknowledged
 
         :return: Whether the operation succeeded
         :rtype: bool
         """
         if self.endpoint.version() < (9, 4, 0):
-            log.warning("Platform version is < 9.4, can't acknowledge %s", str(self))
+            log.warning("pf.Platform version is < 9.4, can't acknowledge %s", str(self))
             return False
         return self.__mark_as("ACKNOWLEDGED")
 
-    def mark_as_to_review(self):
+    def mark_as_to_review(self) -> bool:
         """Marks a hotspot as to review
 
         :return: Whether the operation succeeded
@@ -185,7 +188,7 @@ class Hotspot(findings.Finding):
         """
         return self.post("hotspots/change_status", params={"hotspot": self.key, "status": "TO_REVIEW"}).ok
 
-    def reopen(self):
+    def reopen(self) -> bool:
         """Reopens a hotspot as to review
 
         :return: Whether the operation succeeded
@@ -193,7 +196,7 @@ class Hotspot(findings.Finding):
         """
         return self.mark_as_to_review()
 
-    def add_comment(self, comment):
+    def add_comment(self, comment: str) -> bool:
         """Adds a comment to a hotspot
 
         :param comment: Comment to add, in markdown format
@@ -204,7 +207,7 @@ class Hotspot(findings.Finding):
         params = {"hotspot": self.key, "comment": comment}
         return self.post("hotspots/add_comment", params=params).ok
 
-    def assign(self, assignee, comment=None):
+    def assign(self, assignee: str, comment: str = None) -> bool:
         """Assigns a hotspot (and optionally comment)
 
         :param assignee: User login to assign the hotspot
@@ -219,7 +222,8 @@ class Hotspot(findings.Finding):
             params["comment"] = comment
         return self.post("hotspots/assign", params=params)
 
-    def __apply_event(self, event, settings):
+    def __apply_event(self, event: object, settings: dict[str, str]) -> bool:
+        """Applies a changelog event (transition, comment, assign) to the hotspot"""
         log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
@@ -251,7 +255,7 @@ class Hotspot(findings.Finding):
             return False
         return True
 
-    def apply_changelog(self, source_hotspot, settings):
+    def apply_changelog(self, source_hotspot: Hotspot, settings: dict[str, str]) -> bool:
         """
         :meta private:
         """
@@ -297,7 +301,7 @@ class Hotspot(findings.Finding):
             self.add_comment(comments[key]["value"])
         return True
 
-    def changelog(self):
+    def changelog(self) -> dict[str, changelog.Changelog]:
         """
         :return: The hotspot changelog
         :rtype: dict
@@ -320,7 +324,7 @@ class Hotspot(findings.Finding):
             self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
 
-    def comments(self):
+    def comments(self) -> dict[str, str]:
         """
         :return: The hotspot comments
         :rtype: dict
@@ -344,7 +348,7 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(endpoint: Platform, project_key: str, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search_by_project(endpoint: pf.Platform, project_key: str, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -363,7 +367,7 @@ def search_by_project(endpoint: Platform, project_key: str, filters: dict[str, s
     return post_search_filter(hotspots, filters=filters)
 
 
-def component_filter(endpoint: Platform) -> str:
+def component_filter(endpoint: pf.Platform) -> str:
     """Returns the string to filter by porject in api/hotspots/search"""
     if endpoint.version() >= (10, 2, 0):
         return PROJECT_FILTER
@@ -371,10 +375,10 @@ def component_filter(endpoint: Platform) -> str:
         return PROJECT_FILTER_OLD
 
 
-def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search(endpoint: pf.Platform, filters: dict[str, str] = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param pf.Platform endpoint: Reference to the SonarQube platform
     :param dict[str, str] filters: Search filters to narrow down the search, defaults to None
     :return: List of found hotspots
     :rtype: dict{<key>: <Hotspot>}
@@ -419,15 +423,15 @@ def search(endpoint: Platform, filters: dict[str, str] = None) -> dict[str, Hots
     return post_search_filter(hotspots_list, filters)
 
 
-def get_object(endpoint: Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
+def get_object(endpoint: pf.Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
-    uu = uuid(key, endpoint.url)
-    if uu not in _OBJECTS:
+    uid = uuid(key, endpoint.url)
+    if uid not in _OBJECTS:
         _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
-    return _OBJECTS[uu]
+    return _OBJECTS[uid]
 
 
-def get_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, str]:
+def get_search_filters(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     if params is None:
         return {}

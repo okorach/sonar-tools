@@ -22,6 +22,7 @@ import json
 
 import sonar.logging as log
 import sonar.sqobject as sq
+import sonar.platform as pf
 import sonar.utilities as util
 
 
@@ -35,33 +36,30 @@ class UserToken(sq.SqObject):
     API_SEARCH = API_ROOT + "/search"
     API_GENERATE = API_ROOT + "/generate"
 
-    def __init__(self, login, name=None, json_data=None, created_at=None, token=None, endpoint=None):
-        super().__init__(login, endpoint)
+    def __init__(self, endpoint: pf.Platform, login: str, json_data: dict[str, str], name: str = None) -> None:
+        """Constructor"""
+        super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login
         self.name = name  #: Token name
         self.created_at = None  #: Token creation date
         self.last_connection_date = None  #: Token last connection date
-        if isinstance(created_at, str):
-            self.created_at = util.string_to_date(created_at)
-        else:
-            self.created_at = created_at
-        if self.name is None and "name" in json_data:
-            self.name = json_data["name"]
-        if self.created_at is None and "createdAt" in json_data:
+        if self.name is None:
+            self.name = json_data.get("name", None)
+        if "createdAt" in json_data:
             self.created_at = util.string_to_date(json_data["createdAt"])
         if "lastConnectionDate" in json_data:
             self.last_connection_date = util.string_to_date(json_data["lastConnectionDate"])
-        self.token = token
+        self.token = json_data.get("token", None)
         log.debug("Created '%s'", str(self))
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: Token string representation
         :rtype: str
         """
         return f"token '{self.name}' of user '{self.login}'"
 
-    def revoke(self):
+    def revoke(self) -> bool:
         """Revokes the token
         :return: Whether the revocation succeeded
         :rtype: bool
@@ -72,25 +70,21 @@ class UserToken(sq.SqObject):
         return self.post(UserToken.API_REVOKE, {"name": self.name, "login": self.login}).ok
 
 
-def search(endpoint, login):
+def search(endpoint: pf.Platform, login: str) -> list[UserToken]:
     """Searches tokens of a given user
 
-    :param login: login of the user
-    :type login: str
+    :param str login: login of the user
     :return: list of tokens
     :rtype: list[UserToken]
     """
     data = json.loads(endpoint.get(UserToken.API_SEARCH, {"login": login}).text)
-    token_list = []
-    for tk in data["userTokens"]:
-        token_list.append(UserToken(login=data["login"], json_data=tk, endpoint=endpoint))
-    return token_list
+    return [UserToken(endpoint=endpoint, login=data["login"], json_data=tk) for tk in data["userTokens"]]
 
 
-def generate(name, endpoint, login=None):
+def generate(name: str, endpoint: pf.Platform, login: str = None) -> UserToken:
     """Generates a new token for a given user
     :return: the generated Token object
     :rtype: Token
     """
     data = json.loads(endpoint.post(UserToken.API_GENERATE, {"name": name, "login": login}).text)
-    return UserToken(endpoint=endpoint, login=data["login"], name=data["name"], created_at=data["createdAt"], token=data["token"])
+    return UserToken(endpoint=endpoint, login=data["login"], json_data=data)

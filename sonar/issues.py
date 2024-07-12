@@ -18,6 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
+
 from datetime import date, datetime, timedelta
 import json
 import re
@@ -27,7 +29,8 @@ from threading import Thread
 import requests.utils
 
 import sonar.logging as log
-from sonar.platform import Platform
+import sonar.platform as pf
+
 from sonar import users, syncer, sqobject, findings, changelog, projects
 import sonar.utilities as util
 
@@ -122,26 +125,27 @@ class Issue(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, key, endpoint, data=None, from_export=False):
-        super().__init__(key, endpoint, data, from_export)
+    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> None:
+        """Constructor"""
+        super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self._debt = None
         self.tags = []  #: Issue tags
         _OBJECTS[self.uuid()] = self
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String representation of the issue
         :rtype: str
         """
         return f"Issue key '{self.key}'"
 
-    def __format__(self, format_spec=""):
+    def __format__(self, format_spec: str = "") -> str:
         return (
             f"Key: {self.key} - Type: {self.type} - Severity: {self.severity}"
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
 
-    def url(self):
+    def url(self) -> str:
         """
         :return: A permalink URL to the issue in the SonarQube platform
         :rtype: str
@@ -153,10 +157,9 @@ class Issue(findings.Finding):
             branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
         return f"{self.endpoint.url}/project/issues?id={self.projectKey}{branch}&issues={self.key}"
 
-    def debt(self):
+    def debt(self) -> int:
         """
         :return: The remediation effort of the issue, in minutes
-        :rtype: int
         """
         if self._debt is not None:
             return self._debt
@@ -182,7 +185,7 @@ class Issue(findings.Finding):
                 self._debt = int(self._json["effort"])
         return self._debt
 
-    def to_json(self, without_time: bool = False):
+    def to_json(self, without_time: bool = False) -> dict[str, str]:
         """
         :return: The issue attributes as JSON
         :rtype: dict
@@ -194,7 +197,7 @@ class Issue(findings.Finding):
         data["effort"] = self.debt()
         return data
 
-    def refresh(self):
+    def refresh(self) -> bool:
         """Refreshes an issue from the SonarQube platform live data
         :return: whether the refresh was successful
         :rtype: bool
@@ -204,7 +207,7 @@ class Issue(findings.Finding):
             self._load(resp.issues[0])
         return resp.ok
 
-    def changelog(self):
+    def changelog(self) -> dict[str, str]:
         """
         :return: The issue changelog
         :rtype: dict{"<date>_<sequence_nbr>": <event>}
@@ -225,7 +228,7 @@ class Issue(findings.Finding):
                 self._changelog[f"{d.date()}_{seq:03d}"] = d
         return self._changelog
 
-    def comments(self):
+    def comments(self) -> dict[str, str]:
         """
         :return: The issue comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
@@ -246,11 +249,10 @@ class Issue(findings.Finding):
                 }
         return self._comments
 
-    def add_comment(self, comment):
+    def add_comment(self, comment: str) -> bool:
         """Adds a comment to an issue
 
-        :param comment: The comment to add
-        :type comment: str
+        :param str comment: The comment to add
         :return: Whether the operation succeeded
         :rtype: bool
         """
@@ -258,11 +260,10 @@ class Issue(findings.Finding):
         r = self.post("issues/add_comment", {"issue": self.key, "text": comment})
         return r.ok
 
-    def set_severity(self, severity):
+    def set_severity(self, severity: str) -> bool:
         """Changes the severity of an issue
 
-        :param severity: The comment to add
-        :type severity: str
+        :param str severity: The comment to add
         :return: Whether the operation succeeded
         :rtype: bool
         """
@@ -271,11 +272,10 @@ class Issue(findings.Finding):
             return self.post("issues/set_severity", {"issue": self.key, "severity": severity}).ok
         return False
 
-    def assign(self, assignee):
+    def assign(self, assignee: str) -> bool:
         """Assigns an issue to a user
 
-        :param assignee: The user login
-        :type assignee: str
+        :param str assignee: The user login
         :return: Whether the operation succeeded
         :rtype: bool
         """
@@ -284,10 +284,9 @@ class Issue(findings.Finding):
             return self.post("issues/assign", {"issue": self.key, "assignee": assignee}).ok
         return False
 
-    def set_tags(self, tags):
+    def set_tags(self, tags: list[str]) -> bool:
         """Sets tags to an issue (Replacing all previous tags)
-        :param tags: Tags to set
-        :type tags: list
+        :param list tags: Tags to set
         :return: Whether the operation succeeded
         :rtype: bool
         """
@@ -297,10 +296,9 @@ class Issue(findings.Finding):
         self.tags = tags
         return True
 
-    def add_tag(self, tag):
+    def add_tag(self, tag: str) -> bool:
         """Adds a tag to an issue
-        :param tag: Tags to add
-        :type tag: str
+        :param str tag: Tags to add
         :return: Whether the operation succeeded
         :rtype: bool
         """
@@ -310,10 +308,9 @@ class Issue(findings.Finding):
             tags.append(tag)
         return self.set_tags(tags)
 
-    def remove_tag(self, tag):
+    def remove_tag(self, tag: str) -> bool:
         """Removes a tag from an issue
-        :param tag: Tags to remove
-        :type tag: str
+        :param str tag: Tag to remove
         :return: Whether the operation succeeded
         :rtype: bool
         """
@@ -323,10 +320,9 @@ class Issue(findings.Finding):
             tags.remove(tag)
         return self.set_tags(tags)
 
-    def set_type(self, new_type):
+    def set_type(self, new_type: str) -> bool:
         """Sets an issue type
-        :param new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
-        :type tag: str
+        :param str new_type: New type of the issue (Can be BUG, VULNERABILITY or CODE_SMELL)
         :return: Whether the operation succeeded
         :rtype: bool
         """
@@ -354,13 +350,13 @@ class Issue(findings.Finding):
         """
         return self.resolution == "FALSE-POSITIVE"
 
-    def strictly_identical_to(self, another_finding, ignore_component=False):
+    def strictly_identical_to(self, another_finding: Issue, ignore_component: bool = False) -> bool:
         """
         :meta private:
         """
         return super().strictly_identical_to(another_finding, ignore_component) and (self.debt() == another_finding.debt())
 
-    def almost_identical_to(self, another_finding, ignore_component=False, **kwargs):
+    def almost_identical_to(self, another_finding: Issue, ignore_component: bool = False, **kwargs) -> bool:
         """
         :meta private:
         """
@@ -431,7 +427,7 @@ class Issue(findings.Finding):
         log.debug("Marking %s as accepted", str(self))
         return self.do_transition("accept")
 
-    def __apply_event(self, event, settings):
+    def __apply_event(self, event: str, settings: dict[str, str]) -> bool:
         log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
@@ -489,7 +485,7 @@ class Issue(findings.Finding):
             return False
         return True
 
-    def apply_changelog(self, source_issue, settings):
+    def apply_changelog(self, source_issue: Issue, settings: dict[str, str]) -> bool:
         """
         :meta private:
         """
@@ -547,7 +543,7 @@ class Issue(findings.Finding):
 # ------------------------------- Static methods --------------------------------------
 
 
-def component_filter(endpoint: Platform) -> str:
+def component_filter(endpoint: pf.Platform) -> str:
     """Returns the fields used for issues/search filter by porject key"""
     if endpoint.version() >= (10, 2, 0):
         return COMPONENT_FILTER
@@ -555,7 +551,8 @@ def component_filter(endpoint: Platform) -> str:
         return COMPONENT_FILTER_OLD
 
 
-def __search_all_by_directories(params, endpoint=None):
+def __search_all_by_directories(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+    """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
     facets = _get_facets(endpoint=endpoint, project_key=new_params[component_filter(endpoint)], facets="directories", params=new_params)
     issue_list = {}
@@ -567,7 +564,8 @@ def __search_all_by_directories(params, endpoint=None):
     return issue_list
 
 
-def __search_all_by_types(params, endpoint=None):
+def __search_all_by_types(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+    """Searches issues splitting by type to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by issue types")
@@ -577,12 +575,13 @@ def __search_all_by_types(params, endpoint=None):
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(__search_all_by_directories(params=new_params, endpoint=endpoint))
+            issue_list.update(__search_all_by_directories(endpoint=endpoint, params=new_params))
     log.debug("Search by type ALL: %d issues found", len(issue_list))
     return issue_list
 
 
-def __search_all_by_severities(params, endpoint=None):
+def __search_all_by_severities(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+    """Searches issues splitting by severity to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = params.copy()
     log.info("Splitting search by severities")
@@ -592,13 +591,13 @@ def __search_all_by_severities(params, endpoint=None):
             issue_list.update(search(endpoint=endpoint, params=new_params))
         except TooManyIssuesError:
             log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list.update(__search_all_by_types(params=new_params, endpoint=endpoint))
+            issue_list.update(__search_all_by_types(endpoint=endpoint, params=new_params))
     log.debug("Search by severity ALL: %d issues found", len(issue_list))
     return issue_list
 
 
-def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
-    """Search all issues in an interval of dates and given filter params"""
+def __search_all_by_date(endpoint: pf.Platform, params: dict[str, str], date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
+    """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if date_start is None:
         date_start = get_oldest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -620,7 +619,7 @@ def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start:
         diff = (date_stop - date_start).days
         if diff == 0:
             log.info(_TOO_MANY_ISSUES_MSG)
-            issue_list = __search_all_by_severities(new_params, endpoint=endpoint)
+            issue_list = __search_all_by_severities(endpoint, new_params)
         elif diff == 1:
             issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_start, date_stop=date_start))
             issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_stop, date_stop=date_stop))
@@ -640,7 +639,7 @@ def __search_all_by_date(endpoint: Platform, params: dict[str, str], date_start:
     return issue_list
 
 
-def __search_all_by_project(endpoint: Platform, project_key: str, params: dict[str, str] = None) -> dict[str, Issue]:
+def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: dict[str, str] = None) -> dict[str, Issue]:
     """Search issues by project"""
     new_params = {} if params is None else params.copy()
     new_params[component_filter(endpoint)] = project_key
@@ -650,14 +649,14 @@ def __search_all_by_project(endpoint: Platform, project_key: str, params: dict[s
         issue_list.update(search(endpoint=endpoint, params=new_params))
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
-        issue_list.update(__search_all_by_date(params=new_params, endpoint=endpoint))
+        issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params))
     return issue_list
 
 
-def search_by_project(project_key, endpoint, params=None, search_findings=False):
+def search_by_project(endpoint: pf.Platform, project_key: str, params: dict[str, str] = None, search_findings: bool = False) -> dict[str, Issue]:
     """Search all issues of a given project
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param Platform endpoint: Reference to the Sonar platform
     :param str project_key: The project key
     :param dict params: List of search filters to narrow down the search, defaults to None
     :param search_findings: Whether to use the api/project_search/findings API or not, defaults to False
@@ -683,10 +682,10 @@ def search_by_project(project_key, endpoint, params=None, search_findings=False)
     return issue_list
 
 
-def search_all(endpoint: Platform, params: dict[str, str] = None) -> dict[str, Issue]:
+def search_all(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Issue]:
     """Returns all issues of the platforms with chosen filtering parameters
 
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param Platform endpoint: Reference to the Sonar platform
     :param params: List of search filters to narrow down the search, defaults to None
     :type params: dict
     :return: list of Issues
@@ -707,7 +706,8 @@ def search_all(endpoint: Platform, params: dict[str, str] = None) -> dict[str, I
     return issue_list
 
 
-def __search_thread(queue):
+def __search_thread(queue: Queue) -> None:
+    """Callback function for multithreaded issue search"""
     while not queue.empty():
         (endpoint, api, issue_list, params, page) = queue.get()
         page_params = params.copy()
@@ -722,7 +722,7 @@ def __search_thread(queue):
         queue.task_done()
 
 
-def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
+def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
     """
     :return: The first issue of a search, for instance the oldest, if params = s="CREATION_DATE", asc=asc_sort
     :rtype: Issue or None if not issue found
@@ -736,7 +736,7 @@ def search_first(endpoint: Platform, **params) -> Union[Issue, None]:
     return get_object(endpoint=endpoint, key=i["key"], data=i)
 
 
-def search(endpoint: Platform, params: dict[str, str] = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
+def search(endpoint: pf.Platform, params: dict[str, str] = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
     """Multi-threaded search of issues
 
     :param dict params: Search filter criteria to narrow down the search
@@ -788,7 +788,7 @@ def search(endpoint: Platform, params: dict[str, str] = None, raise_error: bool 
     return issue_list
 
 
-def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories", params: dict[str, str] = None) -> dict[str, str]:
+def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "directories", params: dict[str, str] = None) -> dict[str, str]:
     """Returns the facets of a search"""
     params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
@@ -801,7 +801,7 @@ def _get_facets(endpoint: Platform, project_key: str, facets: str = "directories
     return l
 
 
-def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", params: dict[str, str] = None) -> Union[datetime, None]:
+def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the date of one issue found"""
     issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
     if not issue:
@@ -809,17 +809,17 @@ def __get_one_issue_date(endpoint: Platform, asc_sort: str = "false", params: di
     return issue.creation_date
 
 
-def get_oldest_issue(endpoint: Platform, params: dict[str, str] = None) -> Union[datetime, None]:
+def get_oldest_issue(endpoint: pf.Platform, params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the oldest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="true", params=params)
 
 
-def get_newest_issue(endpoint: Platform, params: dict[str, str] = None) -> Union[datetime, None]:
+def get_newest_issue(endpoint: pf.Platform, params: dict[str, str] = None) -> Union[datetime, None]:
     """Returns the newest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="false", params=params)
 
 
-def count(endpoint: Platform, **kwargs) -> int:
+def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1
@@ -832,15 +832,15 @@ def count(endpoint: Platform, **kwargs) -> int:
     return nbr_issues
 
 
-def get_object(endpoint: Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> Issue:
+def get_object(endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> Issue:
     """Returns an issue from its key"""
     uu = sqobject.uuid(key, endpoint.url)
     if uu not in _OBJECTS:
-        _ = Issue(key=key, data=data, endpoint=endpoint, from_export=from_export)
+        _ = Issue(endpoint=endpoint, key=key, data=data, from_export=from_export)
     return _OBJECTS[uu]
 
 
-def pre_search_filters(endpoint: Platform, params: dict[str, str]) -> dict[str, str]:
+def pre_search_filters(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, str]:
     """Returns the filtered list of params that are allowed for api/issue/search"""
     if not params:
         return {}

@@ -42,11 +42,14 @@ TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
 
 
 class Rule(sq.SqObject):
+    """Abstraction of the Sonar Rule concept"""
+
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
         """Returns a rule object from the cache or from the platform itself"""
-        if key in _OBJECTS:
-            return _OBJECTS[key]
+        uid = sq.uuid(key, endpoint.url)
+        if uid in _OBJECTS:
+            return _OBJECTS[uid]
         log.debug("Reading rule key '%s'", key)
         try:
             r = endpoint.get(_DETAILS_API, params={"key": key})
@@ -68,9 +71,10 @@ class Rule(sq.SqObject):
     @classmethod
     def load(cls, key: str, endpoint: platform.Platform, data: dict[str, str]) -> Rule:
         """Loads a rule object"""
-        if key in _OBJECTS:
-            _OBJECTS[key]._json.update(data)
-            return _OBJECTS[key]
+        uid = sq.uuid(key, endpoint.url)
+        if uid in _OBJECTS:
+            _OBJECTS[uid]._json.update(data)
+            return _OBJECTS[uid]
         return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
@@ -113,7 +117,7 @@ class Rule(sq.SqObject):
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
         }
-        _OBJECTS[self.key] = self
+        _OBJECTS[self.uuid()] = self
 
     def __str__(self) -> str:
         return f"rule key '{self.key}'"
@@ -161,10 +165,12 @@ class Rule(sq.SqObject):
         """Resets rule custom description"""
         return self.set_description("")
 
-    def clean_code_attribute(self) -> dict:
+    def clean_code_attribute(self) -> dict[str, str]:
+        """Returns the rule clean code attributes"""
         return self._clean_code_attribute
 
-    def impacts(self) -> dict:
+    def impacts(self) -> dict[str, str]:
+        """Returns the rule clean code attributes"""
         return self._impacts
 
 
@@ -195,8 +201,9 @@ def get_object(key: str, endpoint: platform.Platform) -> Union[Rule, None]:
     :param str key: The rule key
     :rtype: Rule or None
     """
-    if key in _OBJECTS:
-        return _OBJECTS[key]
+    uid = sq.uuid(key, endpoint)
+    if uid in _OBJECTS:
+        return _OBJECTS[uid]
     try:
         return Rule.get_object(key=key, endpoint=endpoint)
     except exceptions.ObjectNotFound:

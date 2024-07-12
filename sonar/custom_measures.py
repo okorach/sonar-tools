@@ -24,6 +24,7 @@
 """
 import json
 import sonar.sqobject as sq
+import sonar.platform as pf
 
 
 class CustomMeasure(sq.SqObject):
@@ -32,7 +33,7 @@ class CustomMeasure(sq.SqObject):
     def __init__(
         self,
         key=None,
-        endpoint=None,
+        endpoint: pf.Platform = None,
         uuid=None,
         project_key=None,
         value=None,
@@ -65,7 +66,7 @@ class CustomMeasure(sq.SqObject):
         return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid})
 
 
-def search(endpoint, project_key):
+def search(endpoint: pf.Platform, project_key):
     data = json.loads(endpoint.get(CustomMeasure.API_ROOT + "search", params={"projectKey": project_key, "ps": 500}).text)
     # nbr_measures = data['total'] if > 500, we're screwed...
     measures = []
@@ -83,12 +84,12 @@ def search(endpoint, project_key):
     return measures
 
 
-def update(project_key, metric_key, value, description=None, endpoint=None):
+def update(project_key, metric_key, value, description=None, endpoint: pf.Platform = None):
     for m in search(endpoint, project_key):
         if m.key == metric_key:
             m.update(value, description)
             break
 
 
-def delete(id, endpoint):
+def delete(id, endpoint: pf.Platform):
     return endpoint.post(CustomMeasure.API_ROOT + "delete", {"id": id})
