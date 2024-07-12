@@ -79,7 +79,7 @@ class Group(sq.SqObject):
         return cls(endpoint, name, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name, description: str = None) -> Group:
+    def create(cls, endpoint: pf.Platform, name: str, description: str = None) -> Group:
         """Creates a new group in SonarQube and returns the corresponding Group object
 
         :param Platform endpoint: Reference to the SonarQube platform
