@@ -153,7 +153,7 @@ class Component(sq.SqObject):
             self.ncloc = 0 if not m["ncloc"].value else int(m["ncloc"].value)
         return m
 
-    def get_measure(self, metric, fallback: int = None) -> any:
+    def get_measure(self, metric: str, fallback: int = None) -> any:
         """Returns a component measure"""
         meas = self.get_measures(metric)
         return meas[metric].value if metric in meas and meas[metric].value is not None else fallback
@@ -221,14 +221,3 @@ class Component(sq.SqObject):
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
         return {"key": self.key, "name": self.name, "type": type(self).__name__.upper(), "branch": "", "url": self.url()}
-
-
-def get_components(component_types: str, endpoint: pf.Platform) -> dict[str, str]:
-    data = json.loads(endpoint.get("projects/search", params={"ps": 500, "qualifiers": component_types}).text)
-    return data["components"]
-
-
-def get_subcomponents(
-    component_key: str, strategy: str = "children", with_issues: bool = False, endpoint: pf.Platform = None
-) -> dict[str, Component]:
-    return Component(endpoint=endpoint, key=component_key).get_subcomponents(strategy=strategy, with_issues=with_issues)
