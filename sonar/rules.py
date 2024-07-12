@@ -42,7 +42,30 @@ TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
 
 
 class Rule(sq.SqObject):
-    """Abstraction of the Sonar Rule concept"""
+    """
+    Abstraction of the Sonar Rule concept
+    """
+    def __init__(self, key: str, endpoint: platform.Platform, data: dict[str, str]) -> None:
+        super().__init__(key, endpoint)
+        log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
+        self._json = data
+        self.severity = data.get("severity", None)
+        self.repo = data.get("repo", None)
+        self.type = data.get("type", None)
+        self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
+        self.systags = data.get("sysTags", [])
+        self.name = data.get("name", None)
+        self.language = data.get("lang", None)
+        self.custom_desc = data.get("mdNote", None)
+        self.created_at = data["createdAt"]
+        self.is_template = data.get("isTemplate", False)
+        self.template_key = data.get("templateKey", None)
+        self._impacts = data.get("impacts", None)
+        self._clean_code_attribute = {
+            "attribute": data.get("cleanCodeAttribute", None),
+            "attribute_category": data.get("cleanCodeAttributeCategory", None),
+        }
+        _OBJECTS[self.uuid()] = self
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
@@ -96,28 +119,6 @@ class Rule(sq.SqObject):
             params=rule_params,
             markdown_description=data.get("description", "NO DESCRIPTION"),
         )
-
-    def __init__(self, key: str, endpoint: platform.Platform, data: dict[str, str]) -> None:
-        super().__init__(key, endpoint)
-        log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
-        self._json = data
-        self.severity = data.get("severity", None)
-        self.repo = data.get("repo", None)
-        self.type = data.get("type", None)
-        self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
-        self.systags = data.get("sysTags", [])
-        self.name = data.get("name", None)
-        self.language = data.get("lang", None)
-        self.custom_desc = data.get("mdNote", None)
-        self.created_at = data["createdAt"]
-        self.is_template = data.get("isTemplate", False)
-        self.template_key = data.get("templateKey", None)
-        self._impacts = data.get("impacts", None)
-        self._clean_code_attribute = {
-            "attribute": data.get("cleanCodeAttribute", None),
-            "attribute_category": data.get("cleanCodeAttributeCategory", None),
-        }
-        _OBJECTS[self.uuid()] = self
 
     def __str__(self) -> str:
         return f"rule key '{self.key}'"
