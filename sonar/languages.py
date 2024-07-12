@@ -19,6 +19,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
+
 import json
 from threading import Lock
 from sonar import sqobject, rules
@@ -32,19 +34,20 @@ _CLASS_LOCK = Lock()
 
 
 class Language(sqobject.SqObject):
-    def __init__(self, endpoint: pf.Platform, key, name):
-        super().__init__(key, endpoint)
+    def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
+        """Constructor"""
+        super().__init__(endpoint=endpoint, key=key)
         self.name = name  #: Language name
         self._nb_rules = {"ALL": None, "BUG": None, "VULNERABILITY": None, "COD_SMELL": None, "SECURITY_HOTSPOT": None}
         _OBJECTS[self.uuid()] = self
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data):
+    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Language:
         uu = sqobject.uuid(data["key"], endpoint.url)
         return _OBJECTS.get(uu, cls(endpoint=endpoint, key=data["key"], name=data["name"]))
 
     @classmethod
-    def read(cls, endpoint: pf.Platform, key):
+    def read(cls, endpoint: pf.Platform, key: str) -> Language:
         """Reads a language and return the corresponding object
         :return: Language object
         :rtype: Language or None if not found
@@ -52,7 +55,7 @@ class Language(sqobject.SqObject):
         get_list(endpoint)
         return _OBJECTS.get(sqobject.uuid(key, endpoint.url), None)
 
-    def number_of_rules(self, rule_type=None):
+    def number_of_rules(self, rule_type: str = None) -> int:
         """Count rules in the language, optionally filtering on rule type
 
         :param rule_type: Rule type to filter on, defaults to None
@@ -67,7 +70,7 @@ class Language(sqobject.SqObject):
         return self._nb_rules[r_ndx]
 
 
-def read_list(endpoint: pf.Platform):
+def read_list(endpoint: pf.Platform) -> dict[str, Language]:
     """Reads the list of languages existing on the SonarQube platform
     :param Platform endpoint: Reference of the SonarQube platform
     :return: List of languages
@@ -75,12 +78,11 @@ def read_list(endpoint: pf.Platform):
     """
     data = json.loads(endpoint.get(APIS["list"]).text)
     for lang in data["languages"]:
-        uu = sqobject.uuid(lang["key"], endpoint.url)
-        _OBJECTS[uu] = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
+        _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
     return _OBJECTS
 
 
-def get_list(endpoint: pf.Platform, use_cache=True):
+def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Language]:
     """Gets the list of languages existing on the SonarQube platform
     Unlike read_list, get_list() is using a local cache if available (so no API call)
     :param Platform endpoint: Reference of the SonarQube platform
@@ -95,12 +97,10 @@ def get_list(endpoint: pf.Platform, use_cache=True):
     return _OBJECTS
 
 
-def exists(endpoint: pf.Platform, language):
+def exists(endpoint: pf.Platform, language: str) -> bool:
     """Returns whether a language exists
     :param Platform endpoint: Reference of the SonarQube platform
-    :param language: The language key
-    :type language: str
+    :param str language: The language key
     :return: Whether the language exists
-    :rtype: dict{<language_key>: <language_name>}
     """
     return language in [l.name for l in get_list(endpoint).values()]
