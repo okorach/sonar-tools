@@ -81,7 +81,8 @@ class PullRequest(components.Component):
         return {"project": self.project.key, "pullRequest": self.key}
 
 
-def uuid(project_key: str, pull_request_key: str, url: str):
+def uuid(project_key: str, pull_request_key: str, url: str) -> str:
+    """UUID for pull request objects"""
     return f"{project_key}{components.KEY_SEPARATOR}{pull_request_key}@{url}"
 
 

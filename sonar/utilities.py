@@ -349,7 +349,7 @@ def load_json_file(file: str) -> dict[str, str]:
         return json.loads(fd.read())
 
 
-def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> dict[str, str]:
+def search_by_name(endpoint: object, name: str, api: str, returned_field: str, extra_params: dict[str, str] = None) -> Union[dict[str, str], None]:
     params = {"q": name}
     if extra_params is not None:
         params.update(extra_params)

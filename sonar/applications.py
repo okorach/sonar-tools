@@ -35,7 +35,7 @@ from sonar.permissions import permissions, application_permissions
 import sonar.sqobject as sq
 import sonar.aggregations as aggr
 import sonar.utilities as util
-from sonar.audit import rules
+from sonar.audit import rules, problem
 
 _OBJECTS = {}
 _CLASS_LOCK = Lock()
@@ -134,7 +134,7 @@ class Application(aggr.Aggregation):
         log.debug("Created object %s with uuid %s id %x", str(self), self.uuid(), id(self))
         _OBJECTS[self.uuid()] = self
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refreshes the by re-reading SonarQube
 
         :raises ObjectNotFound: If the Application does not exists anymore
@@ -150,10 +150,11 @@ class Application(aggr.Aggregation):
                 raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
             raise
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """String name of object"""
         return f"application key '{self.key}'"
 
-    def permissions(self):
+    def permissions(self) -> application_permissions.ApplicationPermissions:
         """
         :return: The application permissions
         :rtype: ApplicationPermissions
@@ -162,7 +163,7 @@ class Application(aggr.Aggregation):
             self._permissions = application_permissions.ApplicationPermissions(self)
         return self._permissions
 
-    def projects(self):
+    def projects(self) -> dict[str, str]:
         """
         :return: The project branches included in the application
         :rtype: dict{<projectKey>: <branch>}
@@ -178,21 +179,21 @@ class Application(aggr.Aggregation):
             self._projects[p["key"]] = p["branch"]
         return self._projects
 
-    def branch_exists(self, branch_name: str):
+    def branch_exists(self, branch_name: str) -> bool:
         """
         :return: Whether the Application branch exists
         :rtype: bool
         """
         return branch_name in [b.name for b in self.branches()]
 
-    def branch_is_main(self, branch):
+    def branch_is_main(self, branch: str) -> bool:
         """
         :return: Whether the Application branch is the main branch
         :rtype: bool
         """
         return branch in self.branches() and self._branches[branch]["isMain"]
 
-    def set_branch(self, branch_name, branch_data):
+    def set_branch(self, branch_name: str, branch_data: dict[str, str]) -> Application:
         """Creates or updates an Application branch with a set of project branches
 
         :param str branch_name: The Application branch to set
@@ -227,7 +228,7 @@ class Application(aggr.Aggregation):
             ok = ok and self.post(api, params=params).ok
         return self
 
-    def branches(self):
+    def branches(self) -> dict[str, object]:
         """
         :return: the list of branches of the application and their definition
         :rtype: dict {<branchName>: <ApplicationBranch>}
@@ -241,11 +242,9 @@ class Application(aggr.Aggregation):
         self._branches = list_from(app=self, data=self._json)
         return self._branches
 
-    def delete(self):
+    def delete(self) -> bool:
         """Deletes an Application and all its branches
 
-        :param params: Params for delete, typically None
-        :type params: dict, optional
         :return: Whether the delete succeeded
         :rtype: bool
         """
@@ -298,21 +297,21 @@ class Application(aggr.Aggregation):
                 findings_list = {**findings_list, **comp.get_issues()}
         return findings_list
 
-    def _audit_empty(self, audit_settings):
+    def _audit_empty(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
         """Audits if an application contains 0 projects"""
         if not audit_settings.get("audit.applications.empty", True):
             log.debug("Auditing empty applications is disabled, skipping...")
             return []
         return super()._audit_empty_aggregation(broken_rule=rules.RuleId.APPLICATION_EMPTY)
 
-    def _audit_singleton(self, audit_settings):
+    def _audit_singleton(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
         """Audits if an application contains a single project (makes littel sense)"""
         if not audit_settings.get("audit.applications.singleton", True):
             log.debug("Auditing singleton applications is disabled, skipping...")
             return []
         return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
         """Audits an application and returns list of problems found
 
         :param dict audit_settings: Audit configuration settings from sonar-audit properties config file
@@ -438,7 +437,7 @@ def count(endpoint: pf.Platform) -> int:
     return data["paging"]["total"]
 
 
-def search(endpoint: pf.Platform, params=None):
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Application]:
     """Searches applications
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -507,7 +506,7 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: lis
     return apps_settings
 
 
-def audit(audit_settings, endpoint: pf.Platform = None, key_list=None):
+def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str] = None) -> list[p]:
     """Audits applications and return list of problems found
 
     :param Platform endpoint: Reference to the Sonar platform

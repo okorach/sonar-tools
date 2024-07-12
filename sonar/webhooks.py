@@ -38,7 +38,8 @@ class WebHook(sq.SqObject):
     Abstraction of the SonarQube "webhook" concept
     """
 
-    def __init__(self, name, endpoint: pf.Platform, url=None, secret=None, project=None, data=None):
+    def __init__(self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project=None, data: dict[str, str] = None) -> None:
+        """Constructor"""
         super().__init__(name, endpoint)
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
@@ -123,7 +124,7 @@ def export(endpoint: pf.Platform, project_key=None, full=False):
 
 
 def create(endpoint: pf.Platform, name, url, secret=None, project=None):
-    return WebHook(name, endpoint, url=url, secret=secret, project=project)
+    return WebHook(endpoint=endpoint, name=name, url=url, secret=secret, project=project)
 
 
 def update(endpoint: pf.Platform, name, **kwargs):
@@ -139,7 +140,7 @@ def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: 
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
     uid = uuid(name, project_key, endpoint.url)
     if uid not in _OBJECTS:
-        _ = WebHook(name=name, endpoint=endpoint, data=data)
+        _ = WebHook(endpoint=endpoint, name=name, data=data)
     return _OBJECTS[uid]
 
 
