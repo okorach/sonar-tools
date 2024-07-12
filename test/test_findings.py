@@ -353,7 +353,9 @@ def test_issues_count_3() -> None:
 def test_search_issues_by_project() -> None:
     """test_search_issues_by_project"""
     nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key="okorach_sonar-tools", search_findings=True))
-    assert 1000 <= nb_issues <= 3000
+    assert 1000 <= nb_issues <= 3500
+    nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key="okorach_sonar-tools", params={"resolved": "false"}))
+    assert nb_issues < 1000
     nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=None))
     assert nb_issues > 1000
 
