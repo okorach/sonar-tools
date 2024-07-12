@@ -34,6 +34,9 @@ _CLASS_LOCK = Lock()
 
 
 class Language(sqobject.SqObject):
+    """
+    Abstraction of the Sonar language concept
+    """
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)

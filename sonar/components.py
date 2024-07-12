@@ -43,6 +43,9 @@ _DETAILS_API = "components/show"
 
 
 class Component(sq.SqObject):
+    """
+    Abstraction of the Sonar component concept
+    """
     def __init__(self, key: str, endpoint: pf.Platform = None, data: dict[str, str] = None) -> None:
         """Constructor"""
         super().__init__(key, endpoint)
