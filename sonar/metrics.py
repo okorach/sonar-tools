@@ -126,17 +126,16 @@ class Metric(sqobject.SqObject):
         """
         return self.type == "WORK_DUR"
 
-    def is_of_type(self, metric_type) -> bool:
+    def is_of_type(self, metric_type: str) -> bool:
         """
-        :param metric_type:
-        :type metric_type: str
+        :param str metric_type:
         :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
         :rtype: bool
         """
         return metric_type in METRICS_BY_TYPE and self.type in METRICS_BY_TYPE[metric_type]
 
 
-def is_a_rating(metric_key) -> bool:
+def is_a_rating(metric_key: str) -> bool:
     """
     :param metric_key: The concerned metric key
     :type metric_key: str
@@ -187,12 +186,10 @@ def is_an_effort(metric_key: str) -> bool:
     return is_of_type(metric_key, "WORK_DUR")
 
 
-def is_of_type(metric_key, metric_type: str) -> bool:
+def is_of_type(metric_key: str, metric_type: str) -> bool:
     """
-    :param metric_key: The concerned metric key
-    :type metric_key: str
-    :param metric_type:
-    :type metric_type: str
+    :param str metric_key: The concerned metric key
+    :param str metric_type:
     :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
     :rtype: bool
     """
