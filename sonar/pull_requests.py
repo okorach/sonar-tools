@@ -24,6 +24,9 @@
 """
 
 import json
+from datetime import datetime
+from typing import Union
+
 import requests.utils
 
 import sonar.logging as log
@@ -38,7 +41,8 @@ _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
 
 class PullRequest(components.Component):
-    def __init__(self, project, key, data=None):
+    def __init__(self, project: object, key: str, data: dict[str, str] = None) -> None:
+        """Constructor"""
         super().__init__(key, project.endpoint)
         self.project = project
         self.json = data
@@ -46,24 +50,28 @@ class PullRequest(components.Component):
         _OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Returns string representation of the PR"""
         return f"pull request key '{self.key}' of {str(self.project)}"
 
-    def url(self):
+    def url(self) -> str:
+        """Returns the PR permalink (until PR is purged)"""
         return f"{self.endpoint.url}/dashboard?id={self.project.key}&pullRequest={requests.utils.quote(self.key)}"
 
-    def uuid(self):
+    def uuid(self) -> str:
+        """Returns a PR unique ID"""
         return uuid(self.project.key, self.key, self.endpoint.url)
 
-    def last_analysis(self):
+    def last_analysis(self) -> datetime:
         if self._last_analysis is None and "analysisDate" in self.json:
             self._last_analysis = util.string_to_date(self.json["analysisDate"])
         return self._last_analysis
 
-    def delete(self):
+    def delete(self) -> bool:
+        """Deletes a PR and returns whether the operation succeeded"""
         return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS)
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
         age = util.age(self.last_analysis())
         if age is None:  # Main branch not analyzed yet
             return []
@@ -86,7 +94,8 @@ def uuid(project_key: str, pull_request_key: str, url: str) -> str:
     return f"{project_key}{components.KEY_SEPARATOR}{pull_request_key}@{url}"
 
 
-def get_object(pull_request_key, project, data=None):
+def get_object(pull_request_key: str, project: object, data: dict[str, str] = None) -> Union[PullRequest, None]:
+    """Returns a PR object from a PR key and a project"""
     if project.endpoint.edition() == "community":
         log.debug("Pull requests not available in Community Edition")
         return None
@@ -96,7 +105,7 @@ def get_object(pull_request_key, project, data=None):
     return _OBJECTS[uid]
 
 
-def get_list(project):
+def get_list(project: object) -> dict[str, PullRequest]:
     """Retrieves the list of pull requests of a project
 
     :param Project project: Project to get PRs from
