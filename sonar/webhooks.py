@@ -19,6 +19,7 @@
 #
 
 import json
+from typing import Union
 
 import sonar.logging as log
 from sonar import platform as pf
@@ -38,7 +39,9 @@ class WebHook(sq.SqObject):
     Abstraction of the SonarQube "webhook" concept
     """
 
-    def __init__(self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project=None, data: dict[str, str] = None) -> None:
+    def __init__(
+        self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project: str = None, data: dict[str, str] = None
+    ) -> None:
         """Constructor"""
         super().__init__(name, endpoint)
         if data is None:
@@ -96,7 +99,7 @@ class WebHook(sq.SqObject):
         return util.filter_export(self._json, _IMPORTABLE_PROPERTIES, full)
 
 
-def search(endpoint: pf.Platform, params=None):
+def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, WebHook]:
     """Searches webhooks
 
     :param params: Filters to narrow down the search, can only be "project"
@@ -106,7 +109,8 @@ def search(endpoint: pf.Platform, params=None):
     return sq.search_objects(api="webhooks/list", params=params, returned_field="webhooks", key_field="key", object_class=WebHook, endpoint=endpoint)
 
 
-def get_list(endpoint: pf.Platform, project_key=None):
+def get_list(endpoint: pf.Platform, project_key: str = None) -> dict[str, WebHook]:
+    """Returns the list of web hooks, global ones or for a project if project key is given"""
     log.debug("Getting webhooks for project key %s", str(project_key))
     params = None
     if project_key is not None:
@@ -114,7 +118,8 @@ def get_list(endpoint: pf.Platform, project_key=None):
     return search(endpoint, params)
 
 
-def export(endpoint: pf.Platform, project_key=None, full=False):
+def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -> Union[dict[str, str], None]:
+    """Export webhooks of a project as JSON"""
     json_data = {}
     for wb in get_list(endpoint, project_key).values():
         j = wb.to_json(full)
@@ -123,11 +128,13 @@ def export(endpoint: pf.Platform, project_key=None, full=False):
     return json_data if len(json_data) > 0 else None
 
 
-def create(endpoint: pf.Platform, name, url, secret=None, project=None):
+def create(endpoint: pf.Platform, name: str, url: str, secret: str = None, project: str = None) -> WebHook:
+    """Creates a webhook, global if project key is None, othewise project specific"""
     return WebHook(endpoint=endpoint, name=name, url=url, secret=secret, project=project)
 
 
-def update(endpoint: pf.Platform, name, **kwargs):
+def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
+    """Updates a webhook with data in kwargs"""
     project_key = kwargs.pop("project", None)
     get_list(endpoint, project_key)
     if uuid(name, project_key, endpoint.url) not in _OBJECTS:
@@ -136,11 +143,12 @@ def update(endpoint: pf.Platform, name, **kwargs):
         get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
 
 
-def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: dict[str, str] = None):
+def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: dict[str, str] = None) -> WebHook:
+    """Gets a WebHook object from name a project key"""
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
     uid = uuid(name, project_key, endpoint.url)
     if uid not in _OBJECTS:
-        _ = WebHook(endpoint=endpoint, name=name, data=data)
+        _ = WebHook(endpoint=endpoint, name=name, project=project_key, data=data)
     return _OBJECTS[uid]
 
 
@@ -153,10 +161,8 @@ def uuid(name: str, project_key: str, url: str) -> str:
         return f"{name}#{project_key}@{url}"
 
 
-def audit(endpoint: pf.Platform):
-    """
-    :meta private:
-    """
+def audit(endpoint: pf.Platform) -> list[problem.Problem]:
+    """Audits web hooks and returns list of found problems"""
     log.info("Auditing webhooks")
     problems = []
     for wh in search(endpoint=endpoint).values():
