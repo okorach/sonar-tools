@@ -460,7 +460,7 @@ class Issue(findings.Finding):
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "ASSIGN":
             if settings[syncer.SYNC_ASSIGN]:
-                u = users.get_login_from_name(data, endpoint=self.endpoint)
+                u = users.get_login_from_name(endpoint=self.endpoint, name=data)
                 if u is None:
                     u = settings[syncer.SYNC_SERVICE_ACCOUNTS][0]
                 self.assign(u)
