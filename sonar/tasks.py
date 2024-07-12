@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from typing import Union
 import time
 import datetime
 import json
@@ -28,7 +29,8 @@ import sonar.sqobject as sq
 import sonar.platform as pf
 
 import sonar.utilities as util
-from sonar.audit import rules, problem
+from sonar.audit import rules
+import sonar.audit.problem as pb
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -171,8 +173,9 @@ class Task(sq.SqObject):
     Abstraction of the SonarQube "background task" concept
     """
 
-    def __init__(self, task_id, endpoint: pf.Platform, concerned_object=None, data=None):
-        super().__init__(task_id, endpoint)
+    def __init__(self, task_id: str, endpoint: pf.Platform, concerned_object: object = None, data: dict[str, str] = None) -> None:
+        """Constructor"""
+        super().__init__(endpoint=endpoint, key=task_id)
         self._json = data
         self.concerned_object = concerned_object
         self._context = None
@@ -181,74 +184,77 @@ class Task(sq.SqObject):
         self._started_at = None
         self._ended_at = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String formatting of the object
         :rtype: str
         """
         return f"background task '{self.key}'"
 
-    def url(self):
+    def url(self) -> str:
         """
         :return: the SonarQube permalink URL to the background task
         :rtype: str
         """
         return f"{self.endpoint.url}/project/background_tasks?id={self.concerned_object.key}"
 
-    def __load(self):
+    def __load(self) -> None:
+        """Loads a task context"""
         if self._json is not None:
             return
         self.__load_context()
 
-    def __load_context(self, force=False):
+    def __load_context(self, force: bool = False) -> None:
+        """Loads a task context"""
         if not force and self._json is not None and ("scannerContext" in self._json or not self.has_scanner_context()):
             # Context already retrieved or not available
             return
         params = {"id": self.key, "additionalFields": "scannerContext,stacktrace"}
         self._json.update(json.loads(self.get("ce/task", params=params).text)["task"])
 
-    def id(self):
+    def id(self) -> str:
         """
         :return: the background task id
         :rtype: str
         """
         return self.key
 
-    def __json_field(self, field):
+    def __json_field(self, field: str) -> str:
+        """Returns a background task scanner context field"""
         self.__load()
         if field not in self._json:
             self.__load_context(force=True)
         return self._json[field]
 
-    def type(self):
+    def type(self) -> str:
         """
         :return: the background task type
         :rtype: str
         """
         return self.__json_field("type")
 
-    def status(self):
+    def status(self) -> str:
         """
         :return: the background task status
         :rtype: str
         """
         return self.__json_field("status")
 
-    def component(self):
+    def component(self) -> Union[str, None]:
         """
         :return: the background task component key or None
         :rtype: str or None
         """
         return self.__json_field("componentKey")
 
-    def execution_time(self):
+    def execution_time(self) -> int:
         """
         :return: the background task execution time in millisec
         :rtype: int
         """
         return int(self.__json_field("executionTimeMs"))
 
-    def submitter(self):
+    def submitter(self) -> str:
         """
         :return: the background task submitter
         :rtype: str
@@ -256,7 +262,7 @@ class Task(sq.SqObject):
         self.__load()
         return self._json.get("submitterLogin", "anonymous")
 
-    def has_scanner_context(self):
+    def has_scanner_context(self) -> bool:
         """
         :return: Whether the background task has a scanner context
         :rtype: bool
@@ -264,7 +270,7 @@ class Task(sq.SqObject):
         self.__load()
         return self._json.get("hasScannerContext", False)
 
-    def warnings(self):
+    def warnings(self) -> list[str]:
         """
         :return: the background task warnings, if any
         :rtype: list
@@ -275,14 +281,14 @@ class Task(sq.SqObject):
             self._json.update(data["task"])
         return self._json["warnings"]
 
-    def warning_count(self):
+    def warning_count(self) -> int:
         """
         :return: the number of warnings in the background
         :rtype: int
         """
         return self.__json_field("warningCount")
 
-    def wait_for_completion(self, timeout=180):
+    def wait_for_completion(self, timeout: int = 180) -> str:
         """Waits for a background task to complete
 
         :param timeout: Timeout to wait in seconds, defaults to 180
@@ -312,7 +318,7 @@ class Task(sq.SqObject):
             log.debug("%s is '%s'", str(self), status)
         return status
 
-    def scanner_context(self):
+    def scanner_context(self) -> Union[dict[str, str], None]:
         """
         :return: the background task scanner context
         :rtype: dict
@@ -331,7 +337,7 @@ class Task(sq.SqObject):
             context[prop] = val
         return context
 
-    def error_details(self):
+    def error_details(self) -> tuple[str, str]:
         """
         :return: The background task error details
         :rtype: tuple (errorMsg (str), stackTrace (str)
@@ -339,7 +345,7 @@ class Task(sq.SqObject):
         self.__load_context()
         return (self._json.get("errorMessage", None), self._json.get("errorStacktrace", None))
 
-    def error_message(self):
+    def error_message(self) -> Union[str, None]:
         """
         :return: The background task error message
         :rtype: str
@@ -347,7 +353,8 @@ class Task(sq.SqObject):
         self.__load_context()
         return self._json.get("errorMessage", None)
 
-    def __audit_exclusions(self, exclusion_pattern, susp_exclusions, susp_exceptions):
+    def __audit_exclusions(self, exclusion_pattern: str, susp_exclusions: str, susp_exceptions: str) -> list[pb.Problem]:
+        """Audits a task exclusion patterns are returns found problems"""
         problems = []
         for susp in susp_exclusions:
             if not re.search(rf"{susp}", exclusion_pattern):
@@ -361,11 +368,12 @@ class Task(sq.SqObject):
             if not is_exception:
                 rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
                 msg = rule.msg.format(str(self.concerned_object), exclusion_pattern)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object))
+                problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object))
                 break  # Report only on the 1st suspicious match
         return problems
 
-    def __audit_disabled_scm(self, audit_settings, scan_context):
+    def __audit_disabled_scm(self, audit_settings: dict[str, str], scan_context: dict[str, str]) -> list[pb.Problem]:
+        """Audits a bg task for eventual SCM disabled and reports the problem if found"""
         if not audit_settings.get("audit.project.scm.disabled", True):
             log.info("Auditing disabled SCM integration is turned off, skipping...")
             return []
@@ -373,9 +381,10 @@ class Task(sq.SqObject):
         if scan_context.get("sonar.scm.disabled", "false") == "false":
             return []
         rule = rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED)
-        return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self.concerned_object)), concerned_object=self)]
+        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self.concerned_object)), concerned_object=self)]
 
-    def __audit_warnings(self, audit_settings):
+    def __audit_warnings(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+        """Audits for warning in background tasks and reports found problems"""
         if not audit_settings.get("audit.projects.analysisWarnings", True):
             log.info("Project analysis warnings auditing disabled, skipping...")
             return []
@@ -385,16 +394,16 @@ class Task(sq.SqObject):
         for w in warnings:
             if w.find("SCM provider autodetection failed") >= 0:
                 rule = rules.get_rule(rules.RuleId.PROJ_SCM_UNDETECTED)
-                pbs.append(problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self.concerned_object)), concerned_object=self.concerned_object))
+                pbs.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self.concerned_object)), concerned_object=self.concerned_object))
             else:
                 warnings_left.append(w)
         if len(warnings_left) > 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ANALYSIS_WARNING)
             msg = rule.msg.format(str(self.concerned_object), " --- ".join(warnings_left))
-            pbs.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
+            pbs.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return pbs
 
-    def __audit_failed_task(self, audit_settings):
+    def __audit_failed_task(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         if not audit_settings.get("audit.projects.failedTasks", True):
             log.debug("Project failed background tasks auditing disabled, skipping...")
             return []
@@ -403,9 +412,9 @@ class Task(sq.SqObject):
             return []
         rule = rules.get_rule(rules.RuleId.BG_TASK_FAILED)
         msg = rule.msg.format(str(self.concerned_object))
-        return [problem.Problem(broken_rule=rule, msg=msg, concerned_object=self)]
+        return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self)]
 
-    def __audit_scanner_version(self, audit_settings):
+    def __audit_scanner_version(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         if not self.has_scanner_context():
             return []
         context = self.scanner_context()
@@ -430,7 +439,7 @@ class Task(sq.SqObject):
         if scanner_type == "Ant":
             rule = rules.get_rule(rules.RuleId.ANT_SCANNER_DEPRECATED)
             msg = rule.msg.format(str(self.concerned_object))
-            return [problem.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object)]
+            return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object)]
 
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
             (scanner_version, build_tool_version) = scanner_version.split("/")
@@ -465,13 +474,11 @@ class Task(sq.SqObject):
         if delta_days > audit_settings.get("audit.projects.scannerMaxAge", 730):
             rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER) if index >= 3 else rules.get_rule(rules.RuleId.NOT_LATEST_SCANNER)
             msg = rule.msg.format(str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False))
-            return [problem.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object)]
+            return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object)]
         return []
 
-    def audit(self, audit_settings):
-        """
-        :meta private:
-        """
+    def audit(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+        """Audits a background task and returns the list of found problems"""
         if not audit_settings.get("audit.projects.exclusions", True):
             log.debug("Project exclusions auditing disabled, skipping...")
             return []
@@ -499,7 +506,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, only_current=False, component_key=None):
+def search(endpoint: pf.Platform, only_current: bool = False, component_key: str = None) -> list[Task]:
     """Searches background tasks
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -515,29 +522,30 @@ def search(endpoint: pf.Platform, only_current=False, component_key=None):
     if component_key is not None:
         params["component"] = component_key
     data = json.loads(endpoint.get("ce/activity", params=params).text)
-    task_list = []
-    for t in data["tasks"]:
-        task_list.append(Task(t["id"], endpoint, data=t))
-    return task_list
+    return [Task(t["id"], endpoint, data=t) for t in data["tasks"]]
 
 
-def search_all_last(component_key=None, endpoint: pf.Platform = None):
-    return search(only_current=True, component_key=component_key, endpoint=endpoint)
+def search_all_last(endpoint: pf.Platform) -> list[Task]:
+    """Searches for last background task of all found components"""
+    return search(endpoint=endpoint, only_current=True)
 
 
-def search_last(component_key, endpoint: pf.Platform = None):
-    bg_tasks = search(only_current=True, component_key=component_key, endpoint=endpoint)
-    if bg_tasks is None or not bg_tasks:
+def search_last(endpoint: pf.Platform, component_key: str) -> Union[Task, None]:
+    """Searches for last background task of a component"""
+    bg_tasks = search(endpoint=endpoint, only_current=True, component_key=component_key)
+    if len(bg_tasks) == 0:
         # No bgtask was found
         return None
     return bg_tasks[0]
 
 
-def search_all(component_key, endpoint: pf.Platform = None):
-    return search(component_key=component_key, endpoint=endpoint)
+def search_all(endpoint: pf.Platform, component_key: str) -> list[Task]:
+    """Search all background tasks of a given component"""
+    return search(endpoint=endpoint, component_key=component_key)
 
 
-def _get_suspicious_exclusions(patterns):
+def _get_suspicious_exclusions(patterns: str) -> list[str]:
+    """Builds suspicious exclusions pattern list"""
     global __SUSPICIOUS_EXCLUSIONS
     if __SUSPICIOUS_EXCLUSIONS is not None:
         return __SUSPICIOUS_EXCLUSIONS
@@ -546,7 +554,8 @@ def _get_suspicious_exclusions(patterns):
     return __SUSPICIOUS_EXCLUSIONS
 
 
-def _get_suspicious_exceptions(patterns):
+def _get_suspicious_exceptions(patterns: str) -> list[str]:
+    """Builds suspicious exceptions patterns list"""
     global __SUSPICIOUS_EXCEPTIONS
     if __SUSPICIOUS_EXCEPTIONS is not None:
         return __SUSPICIOUS_EXCEPTIONS
