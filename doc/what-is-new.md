@@ -9,11 +9,14 @@
   - Added option to not export all Sonar findings custom properties in SARIF export for more compact output
   - Added finding author and language column in CSV export, in JSON and SARIF too
   - Updated SARIF format export to not export custom properties when already standard SARIF fields
-
+  - Have a new field language for the issue language
 - `sonar-config`:
   - Smart handling of properties that can be lists. If the list contains a comma, the property
   is exported as list, if no comma, as a more compact comma separated string
-  - Changed the key for default branch from __default__ to -DEFAULT_BRANCH- to make sure that this cannot conflict with a real branch name (because git forbids branches starting by -)
+  - Settings that are the default are no longer exported unless `--exportDefaults` option is provided
+  - Changed the key for default branch from `__default__` to `-DEFAULT_BRANCH-` to make sure that this cannot conflict with a real branch name (because git forbids branches starting by -)
+  - Portfolio export format has been slightly changed for consistency
+
 
 # Version 3.1
   - Several bug fixes, in particular Sonar Tools would hang if providing a token with insufficient permissions for projects (Browse is minimally needed)
