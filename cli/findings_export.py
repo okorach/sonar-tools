@@ -166,15 +166,11 @@ def __write_footer(file: str, format: str) -> None:
             print(f"{closing_sequence}", file=f)
 
 
-def __dump_findings(findings_list: list[findings.Finding], **kwargs) -> None:
+def __dump_findings(findings_list: dict[str, findings.Finding], **kwargs) -> None:
     """Dumps a list of findings in a file. The findings are appended at the end of the file
 
-    :param findings_list: List of findings
-    :type findings_list: Array
-    :param file: Filename to dump the findings
-    :type file: str
-    :param file_format: Format to dump (can be "csv", "json" or "sarif")
-    :type file_format: str
+    :param list[Finding] findings_list: List of findings
+    :param str file: Filename to dump the findings
     :return: Nothing
     """
     file = kwargs[options.OUTPUTFILE]
@@ -187,7 +183,7 @@ def __dump_findings(findings_list: list[findings.Finding], **kwargs) -> None:
     log.debug("File written")
 
 
-def __write_json_findings(findings_list: list[findings.Finding], **kwargs) -> None:
+def __write_json_findings(findings_list: dict[str, findings.Finding], **kwargs) -> None:
     """Appends a list of findings in JSON or SARIF format in a file"""
     i = len(findings_list)
     comma = ","
@@ -205,7 +201,7 @@ def __write_json_findings(findings_list: list[findings.Finding], **kwargs) -> No
             print(f"{util.json_dump(json_data, indent=1)}{comma}\n", file=fd, end="")
 
 
-def __write_csv_findings(file: str, findings_list: list[findings.Finding], **kwargs) -> None:
+def __write_csv_findings(file: str, findings_list: dict[str, findings.Finding], **kwargs) -> None:
     """Appends a list of findings in a CSV file"""
     with util.open_file(file, mode="a") as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
