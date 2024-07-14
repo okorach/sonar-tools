@@ -29,13 +29,22 @@ function logmsg {
 function run_test {
     file=$1; shift
     logmsg "$@"
-    "$@"
+    if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
+        "$@" -o okorach
+    else
+        "$@"
+    fi
     check "$file"
 }
+
 function run_test_stdout {
     file=$1; shift
     logmsg "$@" ">$file"
-    "$@" >"$file"
+    if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
+        "$@" -o okorach >"$file"
+    else
+        "$@" >"$file"
+    fi
     check "$file"
 }
 

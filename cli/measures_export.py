@@ -76,7 +76,7 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: list[str])
         all_metrics = list(metrics.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
-        if endpoint.version() < (8, 0, 0):
+        if not endpoint.is_sonarcloud() and endpoint.version() < (8, 0, 0):
             all_metrics.remove("new_development_cost")
         wanted_metrics = list(metrics.MAIN_METRICS + tuple(set(all_metrics) - set(metrics.MAIN_METRICS)))
     elif wanted_metrics[0] == "_main":
