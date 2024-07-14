@@ -48,7 +48,6 @@ _JSON_FIELDS_PRIVATE = (
     "modification_date",
     "_debt",
     "component",
-    "language",
 )
 
 _CSV_FIELDS = (
@@ -223,13 +222,12 @@ class Finding(sq.SqObject):
         data = vars(self).copy()
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
-        data["effort"] = ""
         data["file"] = self.file()
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
-        status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "FIXED"}
+        status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
         for old, new in status_conversion.items():
             if data["status"] == old:
                 data["status"] = new
@@ -247,15 +245,10 @@ class Finding(sq.SqObject):
         :return: The finding in SARIF format
         :rtype: dict
         """
-        data = {}
-        data["level"] = "warning"
+        data = {"level": "warning", "ruleId": self.rule, "message": {"text": self.message}}
         if self.is_bug() or self.is_vulnerability() or self.severity in ("CRITICAL", "BLOCKER"):
             data["level"] = "error"
-        data["ruleId"] = self.rule
-        data["message"] = {"text": self.message}
         data["properties"] = {"url": self.url()}
-        if full:
-            data["properties"].update(self.to_json())
         try:
             rg = self._json["textRange"]
         except KeyError:
@@ -273,6 +266,11 @@ class Finding(sq.SqObject):
                 }
             }
         ]
+        if full:
+            data["properties"].update(self.to_json())
+            # Remove props that are already in the std SARIF fields
+            for prop in "rule", "file", "line", "message":
+                data["properties"].pop(prop, None)
         return data
 
     def is_vulnerability(self) -> bool:

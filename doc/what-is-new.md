@@ -7,6 +7,9 @@
   - Fixes in SARIF export format
   - Adjustments to new issues taxonomy
   - Added option to not export all Sonar findings custom properties in SARIF export for more compact output
+  - Added finding author and language column in CSV export, in JSON and SARIF too
+  - Updated SARIF format export to not export custom properties when already standard SARIF fields
+
 - `sonar-config`:
   - Smart handling of properties that can be lists. If the list contains a comma, the property
   is exported as list, if no comma, as a more compact comma separated string
