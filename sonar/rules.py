@@ -197,7 +197,7 @@ def get_list(endpoint: platform.Platform, **params) -> dict[str, Rule]:
     return search(endpoint, include_external="false", **params)
 
 
-def get_object(key: str, endpoint: platform.Platform) -> Union[Rule, None]:
+def get_object(endpoint: platform.Platform, key: str) -> Union[Rule, None]:
     """Returns a Rule object from its key
     :return: The Rule object corresponding to the input rule key, or None if not found
     :param str key: The rule key

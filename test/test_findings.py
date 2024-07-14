@@ -40,11 +40,14 @@ SARIF_FILE = "issues.sarif"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
-SEVERITY_COL = 2
-STATUS_COL = 3
-DATE_COL = 4
-TYPE_COL = 2
-PROJECT_COL = 6
+SEVERITY_COL = 3
+STATUS_COL = 4
+DATE_COL = 5
+TYPE_COL = 3
+PROJECT_COL = 7
+PROJECT_NAME_COL = 8
+BRANCH_COL = 9
+PR_COL = 10
 
 if util.SQ.version() < (10, 2, 0):
     SEVERITY_COL += 1
@@ -378,10 +381,19 @@ def test_output_format_sarif() -> None:
     assert sarif_json["$schema"] == "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json"
     run = sarif_json["runs"][0]
     assert run["tool"]["driver"]["name"] == "SonarQube"
-    issue = run["results"][0]
-    for k in "message", "locations", "ruleId":
-        assert k in issue
-    assert issue["level"] in ("warning", "error")
+    for issue in run["results"]:
+        for k in "message", "locations", "ruleId", "level":
+            assert k in issue
+        loc = issue["locations"][0]["physicalLocation"]
+        assert "region" in loc
+        assert "uri" in loc["artifactLocation"]
+        for k in "startLine", "endLine", "startColumn", "endColumn":
+            assert k in loc["region"]
+        for k in "creationDate", "key", "projectKey", "updateDate":
+            assert k in issue["properties"]
+        assert "effort" in issue["properties"] or issue["properties"]["type"] == "SECURITY_HOTSPOT"
+        assert "language" in issue["properties"] or issue["ruleId"].startswith("external")
+        assert issue["level"] in ("warning", "error")
     util.clean(SARIF_FILE)
 
 
@@ -395,8 +407,10 @@ def test_output_format_json() -> None:
     with open(util.JSON_FILE, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
     for issue in json_data:
-        for k in "creationDate", "effort", "file", "key", "message", "projectKey", "rule", "updateDate":
+        for k in "creationDate", "type", "file", "key", "message", "projectKey", "rule", "updateDate":
             assert k in issue
+        assert "effort" in issue or issue["type"] == "SECURITY_HOTSPOT"
+        assert "language" in issue or issue["rule"].startswith("external")
         assert "author" in issue or issue["status"] in ("FIXED", "CLOSED")
     # util.clean(util.JSON_FILE)
 
@@ -411,7 +425,7 @@ def test_output_format_csv() -> None:
     with open(util.CSV_FILE, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         row = next(reader)
-        for k in "creationDate", "effort", "file", "key", "line", "message", "projectKey", "rule", "updateDate":
+        for k in "creationDate", "effort", "file", "key", "line", "language", "author", "message", "projectKey", "rule", "updateDate":
             assert k in row
     util.clean(util.CSV_FILE)
 
@@ -429,9 +443,9 @@ def test_output_format_branch() -> None:
             reader = csv.reader(fd)
             next(reader)
             for line in reader:
-                assert line[8] in br_list
-                assert line[9] == ""
-                assert line[6] == "okorach_sonar-tools"
+                assert line[BRANCH_COL] in br_list
+                assert line[PR_COL] == ""
+                assert line[PROJECT_COL] == "okorach_sonar-tools"
         util.clean(util.CSV_FILE)
 
 
@@ -446,7 +460,7 @@ def test_output_format_prs() -> None:
         reader = csv.reader(fd)
         next(reader)
         for line in reader:
-            assert line[8] == ""
-            assert line[9] != ""
-            assert line[6] == "okorach_sonar-tools"
+            assert line[BRANCH_COL] == ""
+            assert line[PR_COL] != ""
+            assert line[PROJECT_COL] == "okorach_sonar-tools"
     util.clean(util.CSV_FILE)

@@ -345,7 +345,7 @@ class QualityProfile(sq.SqObject):
             r_key = r.pop("key")
             diff_rules[r_key] = r
             if (added_flag and r_key in my_rules) or (not added_flag and r_key not in my_rules):
-                rule_obj = rules.get_object(r_key, self.endpoint)
+                rule_obj = rules.get_object(endpoint=self.endpoint, key=r_key)
                 diff_rules[r_key] = rules.convert_for_export(rule_obj.to_json(), rule_obj.language)
             if "severity" in r:
                 if isinstance(diff_rules[r_key], str):

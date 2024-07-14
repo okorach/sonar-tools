@@ -32,7 +32,7 @@ import sonar.sqobject as sq
 import sonar.platform as pf
 
 import sonar.utilities as util
-from sonar import projects
+from sonar import projects, rules
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
@@ -48,12 +48,13 @@ _JSON_FIELDS_PRIVATE = (
     "modification_date",
     "_debt",
     "component",
-    "language",
+    "_Hotspot__details",
 )
 
 _CSV_FIELDS = (
     "key",
     "rule",
+    "language",
     "type",
     "severity",
     "status",
@@ -67,11 +68,13 @@ _CSV_FIELDS = (
     "line",
     "effort",
     "message",
+    "author",
 )
 
 _CSV_FIELDS_NEW = (
     "key",
     "rule",
+    "language",
     "impacts",
     "status",
     "creationDate",
@@ -84,6 +87,7 @@ _CSV_FIELDS_NEW = (
     "line",
     "effort",
     "message",
+    "author",
 )
 
 FILTERS = ("statuses", "resolutions", "severities", "languages", "pullRequest", "branch", "tags", "types", "createdBefore", "createdAfter")
@@ -106,7 +110,6 @@ class Finding(sq.SqObject):
         self.resolution = None  #: Resolution (str)
         self.rule = None  #: Rule Id (str)
         self.projectKey = None  #: Project key (str)
-        self.language = None  #: Language (str)
         self._changelog = None
         self._comments = None
         self.line = None  #: Line (int)
@@ -195,6 +198,10 @@ class Finding(sq.SqObject):
             log.warning("Can't find file name for %s", str(self))
             return None
 
+    def language(self) -> str:
+        """Returns the finding languae"""
+        return rules.get_object(endpoint=self.endpoint, key=self.rule).language
+
     def to_csv(self, separator: str = ",", without_time: bool = False) -> list[str]:
         """
         :param separator: CSV separator, defaults to ","
@@ -203,7 +210,7 @@ class Finding(sq.SqObject):
         :rtype: str
         """
         data = self.to_json(without_time)
-        data["projectName"] = projects.Project.get_object(key=self.projectKey, endpoint=self.endpoint).name
+        data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
         if "impacts" in data:
             data["impacts"] = util.quote(", ".join([f"{k}:{v}" for k, v in data["impacts"].items()]), separator)
             return [str(data.get(field, "")) for field in _CSV_FIELDS_NEW]
@@ -221,13 +228,14 @@ class Finding(sq.SqObject):
         data = vars(self).copy()
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
-        data["effort"] = ""
         data["file"] = self.file()
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
+        data["language"] = self.language()
+        data["url"] = self.url()
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
-        status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "FIXED"}
+        status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
         for old, new in status_conversion.items():
             if data["status"] == old:
                 data["status"] = new
@@ -245,15 +253,10 @@ class Finding(sq.SqObject):
         :return: The finding in SARIF format
         :rtype: dict
         """
-        data = {}
-        data["level"] = "warning"
+        data = {"level": "warning", "ruleId": self.rule, "message": {"text": self.message}}
         if self.is_bug() or self.is_vulnerability() or self.severity in ("CRITICAL", "BLOCKER"):
             data["level"] = "error"
-        data["ruleId"] = self.rule
-        data["message"] = {"text": self.message}
         data["properties"] = {"url": self.url()}
-        if full:
-            data["properties"].update(self.to_json())
         try:
             rg = self._json["textRange"]
         except KeyError:
@@ -271,6 +274,11 @@ class Finding(sq.SqObject):
                 }
             }
         ]
+        if full:
+            data["properties"].update(self.to_json())
+            # Remove props that are already in the std SARIF fields
+            for prop in "rule", "file", "line", "message":
+                data["properties"].pop(prop, None)
         return data
 
     def is_vulnerability(self) -> bool:
