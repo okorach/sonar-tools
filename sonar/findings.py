@@ -48,6 +48,7 @@ _JSON_FIELDS_PRIVATE = (
     "modification_date",
     "_debt",
     "component",
+    "_Hotspot__details",
 )
 
 _CSV_FIELDS = (
@@ -231,6 +232,7 @@ class Finding(sq.SqObject):
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
         data["language"] = self.language()
+        data["url"] = self.url()
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
         status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
