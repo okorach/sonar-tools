@@ -154,7 +154,10 @@ class ApplicationBranch(Component):
         :type full: bool, optional
         """
         log.info("Exporting %s", str(self))
-        return {self.name: {b.concerned_object.key: b.name for b in self._project_branches}}
+        jsondata = {"projects": {b.concerned_object.key: b.name for b in self._project_branches}}
+        if self.is_main:
+            jsondata["isMain"] = True
+        return jsondata
 
     def update(self, name: str, project_branches: list[Branch]) -> bool:
         """Updates an ApplicationBranch name and project branches
