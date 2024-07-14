@@ -32,7 +32,7 @@ import sonar.sqobject as sq
 import sonar.platform as pf
 
 import sonar.utilities as util
-from sonar import projects
+from sonar import projects, rules
 
 _JSON_FIELDS_REMAPPED = (("pull_request", "pullRequest"), ("_comments", "comments"))
 
@@ -53,6 +53,7 @@ _JSON_FIELDS_PRIVATE = (
 _CSV_FIELDS = (
     "key",
     "rule",
+    "language",
     "type",
     "severity",
     "status",
@@ -72,6 +73,7 @@ _CSV_FIELDS = (
 _CSV_FIELDS_NEW = (
     "key",
     "rule",
+    "language",
     "impacts",
     "status",
     "creationDate",
@@ -107,7 +109,6 @@ class Finding(sq.SqObject):
         self.resolution = None  #: Resolution (str)
         self.rule = None  #: Rule Id (str)
         self.projectKey = None  #: Project key (str)
-        self.language = None  #: Language (str)
         self._changelog = None
         self._comments = None
         self.line = None  #: Line (int)
@@ -196,6 +197,10 @@ class Finding(sq.SqObject):
             log.warning("Can't find file name for %s", str(self))
             return None
 
+    def language(self) -> str:
+        """Returns the finding languae"""
+        return rules.get_object(endpoint=self.endpoint, key=self.rule).language
+
     def to_csv(self, separator: str = ",", without_time: bool = False) -> list[str]:
         """
         :param separator: CSV separator, defaults to ","
@@ -204,7 +209,7 @@ class Finding(sq.SqObject):
         :rtype: str
         """
         data = self.to_json(without_time)
-        data["projectName"] = projects.Project.get_object(key=self.projectKey, endpoint=self.endpoint).name
+        data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
         if "impacts" in data:
             data["impacts"] = util.quote(", ".join([f"{k}:{v}" for k, v in data["impacts"].items()]), separator)
             return [str(data.get(field, "")) for field in _CSV_FIELDS_NEW]
@@ -225,6 +230,7 @@ class Finding(sq.SqObject):
         data["file"] = self.file()
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
+        data["language"] = self.language()
         if data.get("resolution", None):
             data["status"] = data.pop("resolution")
         status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
