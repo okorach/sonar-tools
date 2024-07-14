@@ -482,7 +482,7 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: dict[str, str
         max_date = util.string_to_date(filters["createdBefore"])
     for key, finding in hotspots_dict.items():
         if "languages" in filters and len(filters["languages"]) > 0:
-            lang = rules.get_object(key=finding.rule, endpoint=finding.endpoint).language
+            lang = rules.get_object(endpoint=finding.endpoint, key=finding.rule).language
             if lang not in filters["languages"]:
                 filtered_findings.pop(key, None)
         if "createdAfter" in filters and finding.creation_date < min_date:
