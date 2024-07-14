@@ -67,6 +67,7 @@ _CSV_FIELDS = (
     "line",
     "effort",
     "message",
+    "author",
 )
 
 _CSV_FIELDS_NEW = (
@@ -84,6 +85,7 @@ _CSV_FIELDS_NEW = (
     "line",
     "effort",
     "message",
+    "author",
 )
 
 FILTERS = ("statuses", "resolutions", "severities", "languages", "pullRequest", "branch", "tags", "types", "createdBefore", "createdAfter")
