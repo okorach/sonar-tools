@@ -331,7 +331,7 @@ class Project(components.Component):
                 else:
                     log.error("alm_settings/get_binding returning status code %d", e.response.status_code)
                     raise e
-        log.info("Binding = %s", util.json_dump(self._binding["binding"]))
+        log.debug("Binding = %s", util.json_dump(self._binding["binding"]))
         return self._binding["binding"]
 
     def is_part_of_monorepo(self) -> bool:
