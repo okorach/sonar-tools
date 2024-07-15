@@ -844,12 +844,12 @@ class Project(components.Component):
         my_branches = self.branches().values()
         for branch in my_branches:
             exp = branch.export(export_settings=export_settings)
-            if len(my_branches) == 1 and branch.is_main() and len(exp) <= 1:
+            if False and len(my_branches) == 1 and "main" == branch.name and branch.is_main() and len(exp) <= 1:
                 # Don't export main branch with no data
                 continue
             branch_data[branch.name] = exp
         # If there is only 1 branch with no specific config except being main, don't return anything
-        if len(branch_data) == 0 or (len(branch_data) == 1 and len(exp) <= 1):
+        if len(branch_data) == 0 or (len(branch_data) == 1 and len(exp) <= 1 and "main" in branch_data):
             return None
         return util.remove_nones(branch_data)
 
