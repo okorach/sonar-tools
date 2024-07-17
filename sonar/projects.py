@@ -618,13 +618,13 @@ class Project(components.Component):
         if pr:
             if "*" in pr:
                 pr = self.pull_requests()
+                objects = {**objects, **pr}
             else:
                 for p in pr:
                     try:
                         objects[p] = pull_requests.get_object(project=self, pull_request_key=p)
                     except exceptions.ObjectNotFound as e:
                         log.error(e.message)
-            objects = {**objects, **pr}
         return objects
 
     def get_findings(self, branch: str = None, pr: str = None) -> dict[str, object]:
