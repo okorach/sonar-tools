@@ -486,3 +486,21 @@ def test_one_pr() -> None:
                 assert line[PR_COL] == pr
                 assert line[PROJECT_COL] == "okorach_sonar-tools"
         util.clean(util.CSV_FILE)
+
+
+def test_against_community_edition() -> None:
+    """Tests that findings export against community edition works"""
+    util.clean(util.CSV_FILE)
+    OPTS = [f"-{opt.URL_SHORT}", util.LATEST_CE, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER"), f"--{opt.OUTPUTFILE}", util.CSV_FILE]
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", [CMD] + OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
+            findings_export.main()
+    assert int(str(e.value)) == 0
+    with open(util.CSV_FILE, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        next(reader)
+        for line in reader:
+            assert line[BRANCH_COL] == ""
+            assert line[PR_COL] == ""
+            assert line[PROJECT_COL] == "okorach_sonar-tools"
+    util.clean(util.CSV_FILE)

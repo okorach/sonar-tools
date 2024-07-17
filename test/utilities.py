@@ -31,6 +31,7 @@ import cli.options as opt
 
 LATEST = "http://localhost:10000"
 LTA = "http://localhost:9000"
+LATEST_CE = "http://localhost:8000"
 
 CSV_FILE = "temp.csv"
 JSON_FILE = "temp.json"
