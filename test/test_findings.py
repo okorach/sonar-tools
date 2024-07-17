@@ -468,6 +468,7 @@ def test_all_prs() -> None:
             assert line[PROJECT_COL] == "okorach_sonar-tools"
     util.clean(util.CSV_FILE)
 
+
 def test_one_pr() -> None:
     """Tests that findings extport for a single name PR of a project works"""
     proj = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
