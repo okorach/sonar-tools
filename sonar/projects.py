@@ -840,14 +840,7 @@ class Project(components.Component):
 
     def __get_branch_export(self, export_settings: dict[str, str]) -> Union[dict[str, str], None]:
         """Export project branches as JSON"""
-        branch_data = {}
-        my_branches = self.branches().values()
-        for branch in my_branches:
-            exp = branch.export(export_settings=export_settings)
-            if False and len(my_branches) == 1 and "main" == branch.name and branch.is_main() and len(exp) <= 1:
-                # Don't export main branch with no data
-                continue
-            branch_data[branch.name] = exp
+        branch_data = {name: branch.export(export_settings=export_settings) for name, branch in self.branches().items()}
         # If there is only 1 branch with no specific config except being main, don't return anything
         if len(branch_data) == 0 or (len(branch_data) == 1 and len(exp) <= 1 and "main" in branch_data):
             return None
