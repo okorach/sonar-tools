@@ -28,6 +28,7 @@ import csv, json
 from unittest.mock import patch
 import pytest
 import utilities as util
+from sonar import errcodes
 from cli import loc
 import cli.options as opt
 
@@ -44,7 +45,7 @@ def test_loc() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
@@ -55,7 +56,7 @@ def test_loc_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
     util.clean(util.JSON_FILE)
 
@@ -68,7 +69,7 @@ def test_loc_json_fmt() -> None:
             sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "json", f"--{opt.WITH_NAME}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}", f"--{opt.WITH_URL}"]
         ):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
     util.clean(util.JSON_FILE)
 
@@ -79,7 +80,7 @@ def test_loc_project() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"]):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
@@ -94,7 +95,7 @@ def test_loc_project_with_all_options() -> None:
             CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.WITH_URL}", f"-{opt.WITH_NAME_SHORT}", f"-{opt.WITH_LAST_ANALYSIS_SHORT}"],
         ):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
@@ -105,7 +106,7 @@ def test_loc_portfolios() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.PORTFOLIOS}", "--topLevelOnly", f"--{opt.WITH_URL}"]):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
@@ -116,7 +117,7 @@ def test_loc_separator() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.CSV_SEPARATOR}", "+"]):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
@@ -127,7 +128,7 @@ def test_loc_branches() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     util.clean(util.CSV_FILE)
 
 
@@ -137,7 +138,7 @@ def test_loc_branches_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.JSON_FILE] + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     util.clean(util.JSON_FILE)
 
 
@@ -147,7 +148,7 @@ def test_loc_proj_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     # Check file contents
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
@@ -167,7 +168,7 @@ def test_loc_apps_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--apps"] + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     # Check file contents
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
@@ -187,7 +188,7 @@ def test_loc_portfolios_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--portfolios"] + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     # Check file contents
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         reader = csv.reader(fh)
@@ -208,7 +209,7 @@ def test_loc_proj_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     # Check file contents
     with open(file=file, mode="r", encoding="utf-8") as fh:
         jsondata = json.loads(fh.read())
@@ -228,7 +229,7 @@ def test_loc_apps_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--apps"]):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     # Check file contents
     with open(file=file, mode="r", encoding="utf-8") as fh:
         jsondata = json.loads(fh.read())
@@ -248,7 +249,7 @@ def test_loc_portfolios_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--portfolios"]):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     # Check file contents
     with open(file=file, mode="r", encoding="utf-8") as fh:
         jsondata = json.loads(fh.read())

@@ -1,4 +1,7 @@
 # Next version yet unreleased
+
+# Version 3.2
+
 - Refactoring on portfolios for hardening
 - `sonar-findings-export` and `sonar-rules` now have a `--languages` option to filter findings/rules in a restrained list of languages
 - `sonar-measures-export` can export measures for Applications and Portfolios. For this reason, a new column (col 2) has been added to the CSV output format which can be PROJECT, BRANCH, APPLICATION, APPLICATIONBRANCH or PORTFOLIO

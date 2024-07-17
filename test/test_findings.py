@@ -30,7 +30,7 @@ import pytest
 
 import utilities as util
 import sonar.logging as log
-from sonar import utilities
+from sonar import utilities, projects
 from sonar import issues, errcodes
 from cli import findings_export
 import cli.options as opt
@@ -95,7 +95,7 @@ def test_findings_export_sarif_explicit() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "sarif"]):
             findings_export.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_contains(util.JSON_FILE, "schemas/json/sarif-2.1.0-rtm.4")
     util.clean(util.JSON_FILE)
 
@@ -106,7 +106,7 @@ def test_findings_export_sarif_implicit() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.OUTPUTFILE_SHORT}", SARIF_FILE]):
             findings_export.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_contains(SARIF_FILE, "schemas/json/sarif-2.1.0-rtm.4")
     util.clean(SARIF_FILE)
 
@@ -322,7 +322,7 @@ def test_findings_export() -> None:
             log.info("Running %s", " ".join(fullcmd))
             with patch.object(sys, "argv", fullcmd):
                 findings_export.main()
-        assert int(str(e.value)) == 0
+        assert int(str(e.value)) == errcodes.OK
         if util.CSV_FILE in opts:
             assert util.file_not_empty(util.CSV_FILE)
         elif util.JSON_FILE in opts:
@@ -378,7 +378,7 @@ def test_output_format_sarif() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", SARIF_FILE, f"--{opt.KEYS}", "okorach_sonar-tools"]):
             findings_export.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     with open(SARIF_FILE, encoding="utf-8") as fh:
         sarif_json = json.loads(fh.read())
     assert sarif_json["$schema"] == "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json"
@@ -406,7 +406,7 @@ def test_output_format_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
             findings_export.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     with open(util.JSON_FILE, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
     for issue in json_data:
@@ -424,7 +424,7 @@ def test_output_format_csv() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
             findings_export.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     with open(util.CSV_FILE, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         row = next(reader)
@@ -440,7 +440,7 @@ def test_output_format_branch() -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.BRANCHES}", br]):
                 findings_export.main()
-        assert int(str(e.value)) == 0
+        assert int(str(e.value)) == errcodes.OK
         br_list = utilities.csv_to_list(br)
         with open(util.CSV_FILE, encoding="utf-8") as fd:
             reader = csv.reader(fd)
@@ -452,18 +452,54 @@ def test_output_format_branch() -> None:
         util.clean(util.CSV_FILE)
 
 
-def test_output_format_prs() -> None:
-    """test_output_format_prs"""
+def test_all_prs() -> None:
+    """Tests that findings extport for all PRs of a project works"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.PULL_REQUESTS}", "*"]):
             findings_export.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     with open(util.CSV_FILE, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         next(reader)
         for line in reader:
             assert line[BRANCH_COL] == ""
             assert line[PR_COL] != ""
+            assert line[PROJECT_COL] == "okorach_sonar-tools"
+    util.clean(util.CSV_FILE)
+
+
+def test_one_pr() -> None:
+    """Tests that findings extport for a single name PR of a project works"""
+    proj = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
+    for pr in proj.pull_requests().keys():
+        util.clean(util.CSV_FILE)
+        with pytest.raises(SystemExit) as e:
+            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.PULL_REQUESTS}", pr]):
+                findings_export.main()
+        assert int(str(e.value)) == errcodes.OK
+        with open(util.CSV_FILE, encoding="utf-8") as fd:
+            reader = csv.reader(fd)
+            next(reader)
+            for line in reader:
+                assert line[BRANCH_COL] == ""
+                assert line[PR_COL] == pr
+                assert line[PROJECT_COL] == "okorach_sonar-tools"
+        util.clean(util.CSV_FILE)
+
+
+def test_against_community_edition() -> None:
+    """Tests that findings export against community edition works"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", [CMD] + util.CE_OPTS + [f"--{opt.OUTPUTFILE}", util.CSV_FILE, f"--{opt.KEYS}", "okorach_sonar-tools"]):
+            findings_export.main()
+    assert int(str(e.value)) == errcodes.OK
+    with open(util.CSV_FILE, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        next(reader)
+        for line in reader:
+            assert line[BRANCH_COL] == ""
+            assert line[PR_COL] == ""
             assert line[PROJECT_COL] == "okorach_sonar-tools"
     util.clean(util.CSV_FILE)

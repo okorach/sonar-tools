@@ -44,6 +44,7 @@ from sonar.audit import rules, problem
 
 _OBJECTS = {}
 _CLASS_LOCK = Lock()
+_NOT_SUPPORTED = "Portfolios not supported in Community and Developer Edition"
 
 _LIST_API = "views/list"
 _SEARCH_API = "views/search"
@@ -105,6 +106,7 @@ class Portfolio(aggregations.Aggregation):
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Portfolio:
         """Gets a portfolio object from its key"""
+        check_supported(endpoint)
         log.info("Getting portfolio object key '%s'", key)
         # if root_key is None:
         # data = search_by_name(endpoint=endpoint, name=name)
@@ -124,6 +126,7 @@ class Portfolio(aggregations.Aggregation):
     @classmethod
     def create(cls, endpoint: pf.Platform, name: str, **kwargs) -> Portfolio:
         """Creates a portfolio object"""
+        check_supported(endpoint)
         log.debug("Creating portfolio name '%s', key '%s', parent = %s", name, str(kwargs.get("key", None)), str(kwargs.get("parent", None)))
         params = {"name": name}
         for p in ("description", "parent", "key", "visibility"):
@@ -587,18 +590,24 @@ def get_list(endpoint: pf.Platform, key_list: list[str] = None, use_cache: bool 
 def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Portfolio]:
     """Search all portfolios of a platform and returns as dict"""
     portfolio_list = {}
-    if endpoint.edition() not in ("enterprise", "datacenter"):
-        log.warning("No portfolios in %s edition", endpoint.edition())
-    else:
-        portfolio_list = sq.search_objects(
-            api=_SEARCH_API,
-            params=params,
-            returned_field="components",
-            key_field="key",
-            object_class=Portfolio,
-            endpoint=endpoint,
-        )
+    check_supported(endpoint)
+    portfolio_list = sq.search_objects(
+        api=_SEARCH_API,
+        params=params,
+        returned_field="components",
+        key_field="key",
+        object_class=Portfolio,
+        endpoint=endpoint,
+    )
     return portfolio_list
+
+
+def check_supported(endpoint: pf.Platform) -> None:
+    """Verifies the edition and raise exception if not supported"""
+    if endpoint.edition() not in ("enterprise", "datacenter"):
+        errmsg = f"No portfolios in {endpoint.edition()} edition"
+        log.warning(errmsg)
+        raise exceptions.UnsupportedOperation(errmsg)
 
 
 def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str, str] = None) -> list[object]:
@@ -731,8 +740,7 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: lis
     :return: Dict of applications settings
     :rtype: dict
     """
-    if endpoint.edition() in ("community", "developer"):
-        raise exceptions.UnsupportedOperation("Portfolios do not exist in community and developer edition, export skipped")
+    check_supported(endpoint)
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Portfolios do not exist in SonarCloud, export skipped")
 

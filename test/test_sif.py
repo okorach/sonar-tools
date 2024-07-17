@@ -29,7 +29,7 @@ import datetime
 from unittest.mock import patch
 import pytest
 import utilities as util
-from sonar import sif
+from sonar import sif, errcodes
 from cli import audit
 import cli.options as opt
 
@@ -44,7 +44,7 @@ def test_audit_sif() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", [CMD, "--sif", "test/sif1.json", f"--{opt.OUTPUTFILE}", util.CSV_FILE]):
             audit.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
