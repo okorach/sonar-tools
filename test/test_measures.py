@@ -245,3 +245,27 @@ def test_portfolios_measures() -> None:
             assert line[TYPE_COL] == "PORTFOLIO"
     assert found
     util.clean(util.CSV_FILE)
+
+
+def test_against_ce() -> None:
+    """Tests that basic invocation against a CE works"""
+
+    ALL_OPTS = [CMD] + util.CE_OPTS + [f"--{opt.OUTPUTFILE}", util.CSV_FILE]
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", ALL_OPTS):
+            measures_export.main()
+    assert int(str(e.value)) == 0
+    with open(util.CSV_FILE, encoding="utf-8") as fd:
+        reader = csv.reader(fd)
+        next(reader)
+        for line in reader:
+            assert line[TYPE_COL] == "PROJECT"
+
+    util.clean(util.CSV_FILE)
+    for obj_type in "--apps", "--portfolios":
+        with pytest.raises(SystemExit) as e:
+            with patch.object(sys, "argv", ALL_OPTS + [obj_type]):
+                measures_export.main()
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+        assert not os.path.isfile(util.CSV_FILE)
