@@ -30,7 +30,7 @@ import pytest
 
 import utilities as util
 import sonar.logging as log
-from sonar import utilities
+from sonar import utilities, projects
 from sonar import issues, errcodes
 from cli import findings_export
 import cli.options as opt
@@ -452,8 +452,8 @@ def test_output_format_branch() -> None:
         util.clean(util.CSV_FILE)
 
 
-def test_output_format_prs() -> None:
-    """test_output_format_prs"""
+def test_all_prs() -> None:
+    """Tests that findings extport for all PRs of a project works"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.PULL_REQUESTS}", "*"]):
@@ -467,3 +467,21 @@ def test_output_format_prs() -> None:
             assert line[PR_COL] != ""
             assert line[PROJECT_COL] == "okorach_sonar-tools"
     util.clean(util.CSV_FILE)
+
+def test_one_pr() -> None:
+    """Tests that findings extport for a single name PR of a project works"""
+    proj = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
+    for pr in proj.pull_requests().keys():
+        util.clean(util.CSV_FILE)
+        with pytest.raises(SystemExit) as e:
+            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.PULL_REQUESTS}", pr]):
+                findings_export.main()
+        assert int(str(e.value)) == 0
+        with open(util.CSV_FILE, encoding="utf-8") as fd:
+            reader = csv.reader(fd)
+            next(reader)
+            for line in reader:
+                assert line[BRANCH_COL] == ""
+                assert line[PR_COL] == pr
+                assert line[PROJECT_COL] == "okorach_sonar-tools"
+        util.clean(util.CSV_FILE)
