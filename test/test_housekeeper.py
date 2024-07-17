@@ -28,6 +28,7 @@ import sys
 from unittest.mock import patch
 import pytest
 import utilities as util
+from sonar import errcodes
 from cli import housekeeper, options
 
 CMD = "sonar-housekeeper.py"
@@ -44,4 +45,4 @@ def test_housekeeper() -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", [CMD] + util.STD_OPTS + opts):
                 housekeeper.main()
-        assert int(str(e.value)) == 0
+        assert int(str(e.value)) == errcodes.OK

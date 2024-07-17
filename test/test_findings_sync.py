@@ -30,6 +30,7 @@ import pytest
 
 import utilities as util
 import sonar.logging as log
+from sonar import errcodes
 from cli import findings_sync
 import cli.options as opt
 
@@ -61,6 +62,6 @@ def test_sync() -> None:
         with patch.object(sys, "argv", ALL_OPTS):
             log.info("Running %s", " ".join(ALL_OPTS))
             findings_sync.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
     util.clean(util.JSON_FILE)

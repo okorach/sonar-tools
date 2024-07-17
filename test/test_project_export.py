@@ -42,7 +42,7 @@ def __test_project_export(arguments: list[str], file: str) -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", arguments):
             projects_export.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(file)
     util.clean(file)
 
