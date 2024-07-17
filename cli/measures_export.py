@@ -283,38 +283,42 @@ def main():
         util.exit_fatal("SonarQube instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
     kwargs[options.WITH_NAME] = True
 
-    obj_list = __get_concerned_objects(endpoint=endpoint, **kwargs)
-    nb_branches = len(obj_list)
+    try:
+        obj_list = __get_concerned_objects(endpoint=endpoint, **kwargs)
+        nb_branches = len(obj_list)
 
-    measure_list = []
-    for obj in obj_list:
-        data = obj.component_data()
-        try:
-            if kwargs["history"]:
-                data.update(__get_json_measures_history(obj, wanted_metrics))
-            else:
-                data.update(__get_object_measures(obj, wanted_metrics))
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.FORBIDDEN:
-                log.error("Insufficient permission to retrieve measures of %s, export skipped for this object", str(obj))
-            else:
-                log.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
-            continue
-        measure_list += [data]
+        measure_list = []
+        for obj in obj_list:
+            data = obj.component_data()
+            try:
+                if kwargs["history"]:
+                    data.update(__get_json_measures_history(obj, wanted_metrics))
+                else:
+                    data.update(__get_object_measures(obj, wanted_metrics))
+            except HTTPError as e:
+                if e.response.status_code == HTTPStatus.FORBIDDEN:
+                    log.error("Insufficient permission to retrieve measures of %s, export skipped for this object", str(obj))
+                else:
+                    log.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
+                continue
+            measure_list += [data]
 
-    if fmt == "json":
-        with util.open_file(file) as fd:
-            print(util.json_dump(measure_list), file=fd)
-    elif kwargs["history"]:
-        __write_measures_history_csv(file, wanted_metrics, measure_list, **kwargs)
-    else:
-        __write_measures_csv(file=file, wanted_metrics=wanted_metrics, data=measure_list, **kwargs)
+        if fmt == "json":
+            with util.open_file(file) as fd:
+                print(util.json_dump(measure_list), file=fd)
+        elif kwargs["history"]:
+            __write_measures_history_csv(file, wanted_metrics, measure_list, **kwargs)
+        else:
+            __write_measures_csv(file=file, wanted_metrics=wanted_metrics, data=measure_list, **kwargs)
 
-    if file:
-        log.info("File '%s' created", file)
-    log.info("%d %s, %d branches", len(obj_list), kwargs[options.COMPONENT_TYPE], nb_branches)
-    util.stop_clock(start_time)
-    sys.exit(0)
+        if file:
+            log.info("File '%s' created", file)
+        log.info("%d %s, %d branches", len(obj_list), kwargs[options.COMPONENT_TYPE], nb_branches)
+        util.stop_clock(start_time)
+        sys.exit(0)
+    except exceptions.UnsupportedOperation as e:
+        util.stop_clock(start_time)
+        util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
 
 
 if __name__ == "__main__":
