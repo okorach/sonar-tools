@@ -41,7 +41,7 @@ def test_audit() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS):
             audit.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
@@ -51,7 +51,7 @@ def test_audit_stdout() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", [CMD] + util.STD_OPTS):
             audit.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
 
 
 def test_audit_json() -> None:
@@ -60,7 +60,7 @@ def test_audit_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS):
             audit.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
     util.clean(util.JSON_FILE)
 
@@ -71,7 +71,7 @@ def test_sif_1() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--sif", "test/sif1.json"]):
             audit.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
@@ -82,7 +82,7 @@ def test_sif_2() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif2.json"]):
             audit.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
     util.clean(util.JSON_FILE)
 
@@ -93,7 +93,7 @@ def test_audit_proj_key() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"]):
             audit.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 

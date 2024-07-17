@@ -30,7 +30,7 @@ import pytest
 import utilities as util
 from cli import rules_cli
 import cli.options as opt
-from sonar import rules, exceptions
+from sonar import rules, exceptions, errcodes
 
 CMD = "rules_cli.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
@@ -43,7 +43,7 @@ def test_rules() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS):
             rules_cli.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
@@ -54,7 +54,7 @@ def test_rules_json_format() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "json"]):
             rules_cli.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
     util.clean(util.JSON_FILE)
 
@@ -65,7 +65,7 @@ def test_rules_filter_language() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "py,jcl"]):
             rules_cli.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         for line in fh:
@@ -80,7 +80,7 @@ def test_rules_misspelled_language_1() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "Python,TypeScript"]):
             rules_cli.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         for line in fh:
@@ -95,7 +95,7 @@ def test_rules_misspelled_language_2() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "Python,gosu , aPex"]):
             rules_cli.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         for line in fh:

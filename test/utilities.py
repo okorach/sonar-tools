@@ -31,11 +31,13 @@ import cli.options as opt
 
 LATEST = "http://localhost:10000"
 LTA = "http://localhost:9000"
+LATEST_CE = "http://localhost:8000"
 
 CSV_FILE = "temp.csv"
 JSON_FILE = "temp.json"
 
 STD_OPTS = [f"-{opt.URL_SHORT}", os.getenv("SONAR_HOST_URL"), f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+CE_OPTS = [f"-{opt.URL_SHORT}", LATEST_CE, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 
 SQ = platform.Platform(url=os.getenv("SONAR_HOST_URL"), token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
 

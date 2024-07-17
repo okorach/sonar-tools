@@ -42,7 +42,7 @@ def __test_config_cmd(arguments: list[str]) -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", arguments):
             config.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.JSON_FILE)
     util.clean(util.JSON_FILE)
 

@@ -618,13 +618,13 @@ class Project(components.Component):
         if pr:
             if "*" in pr:
                 pr = self.pull_requests()
+                objects = {**objects, **pr}
             else:
                 for p in pr:
                     try:
                         objects[p] = pull_requests.get_object(project=self, pull_request_key=p)
                     except exceptions.ObjectNotFound as e:
                         log.error(e.message)
-            objects = {**objects, **pr}
         return objects
 
     def get_findings(self, branch: str = None, pr: str = None) -> dict[str, object]:
@@ -840,16 +840,9 @@ class Project(components.Component):
 
     def __get_branch_export(self, export_settings: dict[str, str]) -> Union[dict[str, str], None]:
         """Export project branches as JSON"""
-        branch_data = {}
-        my_branches = self.branches().values()
-        for branch in my_branches:
-            exp = branch.export(export_settings=export_settings)
-            if False and len(my_branches) == 1 and "main" == branch.name and branch.is_main() and len(exp) <= 1:
-                # Don't export main branch with no data
-                continue
-            branch_data[branch.name] = exp
+        branch_data = {name: branch.export(export_settings=export_settings) for name, branch in self.branches().items()}
         # If there is only 1 branch with no specific config except being main, don't return anything
-        if len(branch_data) == 0 or (len(branch_data) == 1 and len(exp) <= 1 and "main" in branch_data):
+        if len(branch_data) == 0 or (len(branch_data) == 1 and "main" in branch_data and len(branch_data["main"]) <= 1):
             return None
         return util.remove_nones(branch_data)
 

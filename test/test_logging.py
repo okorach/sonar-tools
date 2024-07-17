@@ -41,7 +41,7 @@ def test_no_log_file() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert not os.path.isfile("sonar-tools.log")
     util.clean(util.CSV_FILE)
 
@@ -53,7 +53,7 @@ def test_custom_log_file() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.LOGFILE_SHORT}", logfile]):
             loc.main()
-    assert int(str(e.value)) == 0
+    assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     assert not os.path.isfile("sonar-tools.log")
     assert util.file_not_empty(logfile)
