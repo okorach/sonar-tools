@@ -50,7 +50,6 @@ APIS = {
 }
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
-_NOT_SUPPORTED = "Applications not supported in community edition"
 
 
 class Application(aggr.Aggregation):
@@ -79,8 +78,7 @@ class Application(aggr.Aggregation):
         :return: The found Application object
         :rtype: Application
         """
-        if endpoint.edition() == "community":
-            raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
+        check_supported(endpoint)
         uu = sq.uuid(key=key, url=endpoint.url)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
@@ -103,8 +101,7 @@ class Application(aggr.Aggregation):
         :return: The found Application object
         :rtype: Application
         """
-        if endpoint.edition() == "community":
-            raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
+        check_supported(endpoint)
         uu = sq.uuid(key=data["key"], url=endpoint.url)
         if uu in _OBJECTS:
             o = _OBJECTS[uu]
@@ -125,8 +122,7 @@ class Application(aggr.Aggregation):
         :return: The created Application object
         :rtype: Application
         """
-        if endpoint.edition() == "community":
-            raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
+        check_supported(endpoint)
         try:
             endpoint.post(APIS["create"], params={"key": key, "name": name})
         except HTTPError as e:
@@ -437,6 +433,14 @@ def count(endpoint: pf.Platform) -> int:
     return data["paging"]["total"]
 
 
+def check_supported(endpoint: pf.Platform) -> None:
+    """Verifies the edition and raise exception if not supported"""
+    if endpoint.edition() not in ("developer", "enterprise", "datacenter"):
+        errmsg = f"No applications in {endpoint.edition()} edition"
+        log.warning(errmsg)
+        raise exceptions.UnsupportedOperation(errmsg)
+
+
 def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Application]:
     """Searches applications
 
@@ -446,8 +450,7 @@ def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Ap
     :return: dict of applications
     :rtype: dict {<appKey>: Application, ...}
     """
-    if endpoint.edition() == "community":
-        raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
+    check_supported(endpoint)
     new_params = {"filter": "qualifier = APP"}
     if params is not None:
         new_params.update(params)
