@@ -491,9 +491,8 @@ def test_one_pr() -> None:
 def test_against_community_edition() -> None:
     """Tests that findings export against community edition works"""
     util.clean(util.CSV_FILE)
-    OPTS = [f"-{opt.URL_SHORT}", util.LATEST_CE, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER"), f"--{opt.OUTPUTFILE}", util.CSV_FILE]
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD] + OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
+        with patch.object(sys, "argv", [CMD] + util.CE_OPTS + [f"--{opt.OUTPUTFILE}", util.CSV_FILE, f"--{opt.KEYS}", "okorach_sonar-tools"]):
             findings_export.main()
     assert int(str(e.value)) == 0
     with open(util.CSV_FILE, encoding="utf-8") as fd:
