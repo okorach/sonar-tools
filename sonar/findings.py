@@ -162,7 +162,9 @@ class Finding(sq.SqObject):
         if self.pull_request is None:
             self.branch = jsondata.get("branch", None)
             if self.branch is None:
-                self.branch = projects.Project.get_object(self.endpoint, self.projectKey).main_branch().name
+                main_branch = projects.Project.get_object(self.endpoint, self.projectKey).main_branch()
+                if main_branch:
+                    self.branch = main_branch.name
             else:
                 self.branch = re.sub("^BRANCH:", "", self.branch)
 
