@@ -842,7 +842,7 @@ class Project(components.Component):
         """Export project branches as JSON"""
         branch_data = {name: branch.export(export_settings=export_settings) for name, branch in self.branches().items()}
         # If there is only 1 branch with no specific config except being main, don't return anything
-        if len(branch_data) == 0 or (len(branch_data) == 1 and len(exp) <= 1 and "main" in branch_data):
+        if len(branch_data) == 0 or (len(branch_data) == 1 and "main" in branch_data and len(branch_data["main"]) <= 1):
             return None
         return util.remove_nones(branch_data)
 
