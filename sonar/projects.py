@@ -613,7 +613,7 @@ class Project(components.Component):
                 try:
                     for b in br:
                         objects[b] = branches.Branch.get_object(concerned_object=self, branch_name=b)
-                except exceptions.ObjectNotFound as e:
+                except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
                     log.error(e.message)
         if pr:
             if "*" in pr:
