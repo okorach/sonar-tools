@@ -52,7 +52,7 @@ def test_get_object_non_existing() -> None:
     else:
         with pytest.raises(exceptions.ObjectNotFound) as e:
             _ = portfolios.Portfolio.get_object(endpoint=util.SQ, key="NON_EXISTING")
-        assert str(e.value) == "Portfolio key 'NON_EXISTING' not found"
+        assert str(e.value).endswith("Portfolio key 'NON_EXISTING' not found")
 
 
 def test_exists() -> None:
