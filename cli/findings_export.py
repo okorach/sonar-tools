@@ -403,6 +403,8 @@ def main():
             components_list = projects.get_list(endpoint=sqenv, key_list=params.get(options.KEYS, None))
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
+    except exceptions.UnsupportedOperation as e:
+        util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
 
     fmt, fname = params.get(options.FORMAT, None), params.get(options.OUTPUTFILE, None)
     params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
