@@ -23,15 +23,21 @@
 Exceptions raised but the sonar python APIs
 
 """
+from sonar import errcodes
 
 
 class SonarException(Exception):
-    def __init__(self, message):
+    """
+    sonar-tools exceptions
+    """
+
+    def __init__(self, message: str) -> None:
         super().__init__()
         self.message = message
+        self.errcode = None
 
     def __str__(self) -> str:
-        return self.message
+        return f"ERROR {self.errcode}: {self.message}"
 
 
 class ObjectNotFound(SonarException):
@@ -39,9 +45,10 @@ class ObjectNotFound(SonarException):
     Object not found during a SonarQube search
     """
 
-    def __init__(self, key, message):
+    def __init__(self, key: str, message: str) -> None:
         super().__init__(message)
         self.key = key
+        self.errcode = errcodes.NO_SUCH_KEY
 
 
 class ObjectAlreadyExists(SonarException):
@@ -49,12 +56,17 @@ class ObjectAlreadyExists(SonarException):
     Object already exists when trying to create it
     """
 
-    def __init__(self, key, message):
+    def __init__(self, key: str, message: str) -> None:
         super().__init__(message)
         self.key = key
+        self.errcode = errcodes.OBJECT_ALREADY_EXISTS
 
 
 class UnsupportedOperation(SonarException):
     """
     Unsupported operation (most often due to edition not allowing it)
     """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.errcode = errcodes.UNSUPPORTED_OPERATION
