@@ -65,24 +65,38 @@ def _audit_sif(sysinfo, audit_settings):
     return (server_id, sif_obj.audit(audit_settings))
 
 
-def _audit_sq(sq, settings, what_to_audit=None, key_list=None):
+def _audit_sq(sq, settings: dict[str, str], what_to_audit: list[str] = None, key_list: list[str] = None) -> list[problem.Problem]:
+    """Audits a SonarQube/Cloud platform"""
     problems = []
-    if what_to_audit is None or options.WHAT_PROJECTS in what_to_audit:
+    was_none = False
+    if not what_to_audit:
+        was_none = True
+        what_to_audit = options.WHAT_AUDITABLE
+    if options.WHAT_PROJECTS in what_to_audit:
         problems += projects.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-    if what_to_audit is None or options.WHAT_PROFILES in what_to_audit:
+    if options.WHAT_PROFILES in what_to_audit:
         problems += qualityprofiles.audit(endpoint=sq, audit_settings=settings)
-    if what_to_audit is None or options.WHAT_GATES in what_to_audit:
+    if options.WHAT_GATES in what_to_audit:
         problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
-    if what_to_audit is None or options.WHAT_SETTINGS in what_to_audit:
+    if options.WHAT_SETTINGS in what_to_audit:
         problems += sq.audit(audit_settings=settings)
-    if what_to_audit is None or options.WHAT_USERS in what_to_audit:
+    if options.WHAT_USERS in what_to_audit:
         problems += users.audit(endpoint=sq, audit_settings=settings)
-    if what_to_audit is None or options.WHAT_GROUPS in what_to_audit:
+    if options.WHAT_GROUPS in what_to_audit:
         problems += groups.audit(endpoint=sq, audit_settings=settings)
-    if what_to_audit is None or options.WHAT_PORTFOLIOS in what_to_audit:
-        problems += portfolios.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-    if what_to_audit is None or options.WHAT_APPS in what_to_audit:
-        problems += applications.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+    if options.WHAT_PORTFOLIOS in what_to_audit:
+        try:
+            problems += portfolios.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+        except exceptions.UnsupportedOperation:
+            if not was_none:
+                log.warning("No portfolios in %s edition, audit of portfolios ignored", sq.edition())
+    if options.WHAT_APPS in what_to_audit:
+        try:
+            problems += applications.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+        except exceptions.UnsupportedOperation:
+            if not was_none:
+                log.warning("No applications in %s edition, audit of portfolios ignored", sq.edition())
+
     return problems
 
 
