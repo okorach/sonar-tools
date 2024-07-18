@@ -429,6 +429,7 @@ def count(endpoint: pf.Platform) -> int:
     :return: Count of applications
     :rtype: int
     """
+    check_supported(endpoint)
     data = json.loads(endpoint.get(APIS["search"], params={"ps": 1, "filter": "qualifier = APP"}).text)
     return data["paging"]["total"]
 
