@@ -133,8 +133,13 @@ def test_set_desc() -> None:
 def test_facets() -> None:
     """test_facets"""
     facets = rules.get_facet(endpoint=util.SQ, facet="languages")
-    assert len(facets) > 20
-    for lang in "py", "java", "cobol", "cs":
+    langs = ["py", "java", "cs", "js", "web", "php", "ruby", "go", "scala", "vbnet"]
+    if util.SQ.edition() in ("developer", "enterprise", "datacenter"):
+        langs += ["c", "cpp", "objc", "swift", "abap"]
+    if util.SQ.edition() in ("enterprise", "datacenter"):
+        langs += ["plsql", "rpg", "cobol", "vb", "pli"]
+    assert len(facets) >= len(langs)
+    for lang in langs:
         assert lang in facets
 
 

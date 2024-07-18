@@ -81,7 +81,6 @@ __WRONG_FILTER_OPTS = [
     [f"--{opt.CSV_SEPARATOR}", "';'", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
 ]
 
-
 __WRONG_OPTS = [
     [f"-{opt.KEYS_SHORT}", "non-existing-project-key"],
     ["--apps", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"],
@@ -130,7 +129,9 @@ def test_wrong_opts() -> None:
         with pytest.raises(SystemExit) as e:
             with patch.object(sys, "argv", CSV_OPTS + bad_opts):
                 findings_export.main()
-        assert int(str(e.value)) == errcodes.NO_SUCH_KEY
+        assert int(str(e.value)) == errcodes.NO_SUCH_KEY or (
+            int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION and util.SQ.edition() in ("community", "developer")
+        )
         assert not os.path.isfile(util.CSV_FILE)
         assert not os.path.isfile(util.JSON_FILE)
 
@@ -316,18 +317,27 @@ def test_findings_filter_hotspot_on_lang() -> None:
 def test_findings_export() -> None:
     """test_findings_export"""
     for opts in __GOOD_OPTS:
-        util.clean(util.CSV_FILE, util.JSON_FILE)
-        with pytest.raises(SystemExit) as e:
-            fullcmd = [CMD] + util.STD_OPTS + opts
-            log.info("Running %s", " ".join(fullcmd))
-            with patch.object(sys, "argv", fullcmd):
-                findings_export.main()
-        assert int(str(e.value)) == errcodes.OK
-        if util.CSV_FILE in opts:
-            assert util.file_not_empty(util.CSV_FILE)
-        elif util.JSON_FILE in opts:
-            assert util.file_not_empty(util.JSON_FILE)
-        log.info("SUCCESS running: %s", " ".join(fullcmd))
+        if (util.SQ.edition() == "community" and ("--apps" in opts or "--portfolios" in opts)) or (
+            util.SQ.edition() == "developer" and "--portfolios" in opts
+        ):
+            with pytest.raises(SystemExit) as e:
+                fullcmd = [CMD] + util.STD_OPTS + opts
+                with patch.object(sys, "argv", fullcmd):
+                    findings_export.main()
+            assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+        else:
+            util.clean(util.CSV_FILE, util.JSON_FILE)
+            with pytest.raises(SystemExit) as e:
+                fullcmd = [CMD] + util.STD_OPTS + opts
+                log.info("Running %s", " ".join(fullcmd))
+                with patch.object(sys, "argv", fullcmd):
+                    findings_export.main()
+            assert int(str(e.value)) == errcodes.OK
+            if util.CSV_FILE in opts:
+                assert util.file_not_empty(util.CSV_FILE)
+            elif util.JSON_FILE in opts:
+                assert util.file_not_empty(util.JSON_FILE)
+            log.info("SUCCESS running: %s", " ".join(fullcmd))
     util.clean(util.CSV_FILE, util.JSON_FILE)
 
 
@@ -403,6 +413,7 @@ def test_output_format_sarif() -> None:
 def test_output_format_json() -> None:
     """test_output_format_json"""
     util.clean(util.JSON_FILE)
+    log.set_debug_level("INFO")
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
             findings_export.main()
@@ -410,11 +421,12 @@ def test_output_format_json() -> None:
     with open(util.JSON_FILE, encoding="utf-8") as fh:
         json_data = json.loads(fh.read())
     for issue in json_data:
+        log.info("ISSUE = %s", json.dumps(issue))
         for k in "creationDate", "type", "file", "key", "message", "projectKey", "rule", "updateDate":
             assert k in issue
         assert "effort" in issue or issue["type"] == "SECURITY_HOTSPOT"
         assert "language" in issue or issue["rule"].startswith("external")
-        assert "author" in issue or issue["status"] in ("FIXED", "CLOSED")
+        assert issue["status"] in ("FIXED", "CLOSED") or "author" in issue
     # util.clean(util.JSON_FILE)
 
 
