@@ -55,3 +55,6 @@ TOKEN_NOT_SUITED = 11
 
 # HTTP request timeout
 HTTP_TIMEOUT = 12
+
+# Request to create an object that already exists
+OBJECT_ALREADY_EXISTS = 13

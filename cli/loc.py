@@ -28,7 +28,7 @@ from requests.exceptions import HTTPError
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, portfolios, applications, projects, errcodes
+from sonar import platform, portfolios, applications, projects, errcodes, exceptions
 import sonar.utilities as util
 
 
@@ -208,31 +208,32 @@ def main():
 
     edition = endpoint.edition()
     if kwargs[options.WITH_BRANCHES] and edition == "community":
-        log.warning("No branches in community edition, option to export by branch is ignored")
-        kwargs[options.WITH_BRANCHES] = False
+        util.exit_fatal(f"No branches in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in ("community", "developer"):
         util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
     if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_BRANCHES]:
         log.warning("Portfolio LoC export selected, branch option is ignored")
         kwargs[options.WITH_BRANCHES] = False
 
-    if kwargs[options.COMPONENT_TYPE] == "portfolios":
-        params = {}
-        if kwargs["topLevelOnly"]:
-            params["qualifiers"] = "VW"
-        objects_list = list(portfolios.search(endpoint, params=params).values())
-    elif kwargs[options.COMPONENT_TYPE] == "apps":
-        objects_list = list(applications.search(endpoint).values())
-    else:
-        objects_list = list(projects.search(endpoint).values())
+    try:
+        if kwargs[options.COMPONENT_TYPE] == "portfolios":
+            params = {}
+            if kwargs["topLevelOnly"]:
+                params["qualifiers"] = "VW"
+            objects_list = list(portfolios.search(endpoint, params=params).values())
+        elif kwargs[options.COMPONENT_TYPE] == "apps":
+            objects_list = list(applications.search(endpoint).values())
+        else:
+            objects_list = list(projects.search(endpoint).values())
 
-    if kwargs[options.WITH_BRANCHES]:
-        branch_list = []
-        for proj in objects_list:
-            branch_list += proj.branches().values()
-        objects_list = branch_list
-
-    __dump_loc(objects_list, **kwargs)
+        if kwargs[options.WITH_BRANCHES]:
+            branch_list = []
+            for proj in objects_list:
+                branch_list += proj.branches().values()
+            objects_list = branch_list
+        __dump_loc(objects_list, **kwargs)
+    except exceptions.UnsupportedOperation as e:
+        util.exit_fatal(err_msg=e.message, exit_code=errcodes.UNSUPPORTED_OPERATION)
     util.stop_clock(start_time)
     sys.exit(0)
 

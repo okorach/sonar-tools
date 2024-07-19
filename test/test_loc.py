@@ -106,8 +106,11 @@ def test_loc_portfolios() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.PORTFOLIOS}", "--topLevelOnly", f"--{opt.WITH_URL}"]):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
+    if util.SQ.edition() in ("community", "developer"):
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        assert util.file_not_empty(util.CSV_FILE)
     util.clean(util.CSV_FILE)
 
 
@@ -128,7 +131,10 @@ def test_loc_branches() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
+    if util.SQ.edition() == "community":
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
     util.clean(util.CSV_FILE)
 
 
@@ -138,7 +144,10 @@ def test_loc_branches_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.JSON_FILE] + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
+    if util.SQ.edition() == "community":
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
     util.clean(util.JSON_FILE)
 
 
@@ -148,17 +157,25 @@ def test_loc_proj_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    # Check file contents
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        row = next(reader)
-        for k in "# project key", "branch", "ncloc", "project name", "last analysis", "URL":
-            assert k in row
-        for line in reader:
-            assert util.is_url(line[5])
-            assert line[4] == "" or util.is_datetime(line[4])
-            assert util.is_integer(line[2])
+    if util.SQ.edition() == "community":
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        # Check file contents
+        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+            reader = csv.reader(fh)
+            row = next(reader)
+            for k in "# project key", "ncloc", "project name", "last analysis", "URL":
+                assert k in row
+            if util.SQ.edition() != "community":
+                assert "branch" in row
+                offset = 0
+            else:
+                offset = -1
+            for line in reader:
+                assert util.is_url(line[5 + offset])
+                assert line[4 + offset] == "" or util.is_datetime(line[4 + offset])
+                assert util.is_integer(line[2])
     util.clean(util.CSV_FILE)
 
 
@@ -168,17 +185,20 @@ def test_loc_apps_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--apps"] + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    # Check file contents
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        row = next(reader)
-        for k in "# app key", "branch", "ncloc", "app name", "last analysis", "URL":
-            assert k in row
-        for line in reader:
-            assert util.is_url(line[5])
-            assert line[4] == "" or util.is_datetime(line[4])
-            assert util.is_integer(line[2])
+    if util.SQ.edition() == "community":
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        # Check file contents
+        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+            reader = csv.reader(fh)
+            row = next(reader)
+            for k in "# app key", "branch", "ncloc", "app name", "last analysis", "URL":
+                assert k in row
+            for line in reader:
+                assert util.is_url(line[5])
+                assert line[4] == "" or util.is_datetime(line[4])
+                assert util.is_integer(line[2])
     util.clean(util.CSV_FILE)
 
 
@@ -188,17 +208,20 @@ def test_loc_portfolios_all_options() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--portfolios"] + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    # Check file contents
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        reader = csv.reader(fh)
-        row = next(reader)
-        for k in "# portfolio key", "ncloc", "portfolio name", "last analysis", "URL":
-            assert k in row
-        for line in reader:
-            assert util.is_url(line[4])
-            assert line[3] == "" or util.is_datetime(line[3])
-            assert util.is_integer(line[1])
+    if util.SQ.edition() in ("community", "developer"):
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        # Check file contents
+        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+            reader = csv.reader(fh)
+            row = next(reader)
+            for k in "# portfolio key", "ncloc", "portfolio name", "last analysis", "URL":
+                assert k in row
+            for line in reader:
+                assert util.is_url(line[4])
+                assert line[3] == "" or util.is_datetime(line[3])
+                assert util.is_integer(line[1])
     util.clean(util.CSV_FILE)
 
 
@@ -209,16 +232,19 @@ def test_loc_proj_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    # Check file contents
-    with open(file=file, mode="r", encoding="utf-8") as fh:
-        jsondata = json.loads(fh.read())
-    for component in jsondata:
-        for key in "branch", "lastAnalysis", "ncloc", "project", "projectName", "url":
-            assert key in component
-        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-        assert util.is_url(component["url"])
-        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    if util.SQ.edition() == "community":
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        # Check file contents
+        with open(file=file, mode="r", encoding="utf-8") as fh:
+            jsondata = json.loads(fh.read())
+        for component in jsondata:
+            for key in "branch", "lastAnalysis", "ncloc", "project", "projectName", "url":
+                assert key in component
+            assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+            assert util.is_url(component["url"])
+            assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
     util.clean(file)
 
 
@@ -229,16 +255,19 @@ def test_loc_apps_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--apps"]):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    # Check file contents
-    with open(file=file, mode="r", encoding="utf-8") as fh:
-        jsondata = json.loads(fh.read())
-    for component in jsondata:
-        for key in "branch", "lastAnalysis", "ncloc", "app", "appName", "url":
-            assert key in component
-        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-        assert util.is_url(component["url"])
-        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    if util.SQ.edition() == "community":
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        # Check file contents
+        with open(file=file, mode="r", encoding="utf-8") as fh:
+            jsondata = json.loads(fh.read())
+        for component in jsondata:
+            for key in "branch", "lastAnalysis", "ncloc", "app", "appName", "url":
+                assert key in component
+            assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+            assert util.is_url(component["url"])
+            assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
     util.clean(file)
 
 
@@ -249,14 +278,17 @@ def test_loc_portfolios_all_options_json() -> None:
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", JSON_OPTS + ALL_OPTIONS + ["--portfolios"]):
             loc.main()
-    assert int(str(e.value)) == errcodes.OK
-    # Check file contents
-    with open(file=file, mode="r", encoding="utf-8") as fh:
-        jsondata = json.loads(fh.read())
-    for component in jsondata:
-        for key in "lastAnalysis", "ncloc", "portfolio", "portfolioName", "url":
-            assert key in component
-        assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
-        assert util.is_url(component["url"])
-        assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
+    if util.SQ.edition() in ("community", "developer"):
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        # Check file contents
+        with open(file=file, mode="r", encoding="utf-8") as fh:
+            jsondata = json.loads(fh.read())
+        for component in jsondata:
+            for key in "lastAnalysis", "ncloc", "portfolio", "portfolioName", "url":
+                assert key in component
+            assert component["ncloc"] == "" or util.is_integer(component["ncloc"])
+            assert util.is_url(component["url"])
+            assert component["lastAnalysis"] == "" or util.is_datetime(component["lastAnalysis"])
     util.clean(file)
