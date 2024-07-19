@@ -587,7 +587,8 @@ class Project(components.Component):
             problems = self.__audit_last_analysis(audit_settings)
             problems += self.__audit_visibility(audit_settings)
             problems += self.__audit_zero_loc(audit_settings)
-            problems += self.__audit_languages(audit_settings)
+            # Skip language audit, as this can be problematic
+            # problems += self.__audit_languages(audit_settings)
             problems += self.permissions().audit(audit_settings)
             problems += self.__audit_branches(audit_settings)
             problems += self.__audit_pull_requests(audit_settings)
