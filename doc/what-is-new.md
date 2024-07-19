@@ -1,5 +1,11 @@
 # Next version yet unreleased
 
+# Version 3.2.1
+
+- Patch release to fix all compatibility problems with
+  - Lower editions: All editions (Community, Developer, Enterprise) have been tested
+  - 9.9 LTS/LTA version: All editions (Community, Developer, Enterprise) in version 9.9 have been tested
+
 # Version 3.2
 
 - Refactoring on portfolios for hardening
