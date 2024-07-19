@@ -1,5 +1,7 @@
 # Next version yet unreleased
 
+- `sonar-audit` checks for projects that are apparently not scanned with the right scanner (the check is approximate, it is not always possible to determine the type of a project, and the scanner that should be used)
+
 # Version 3.2.1
 
 - Patch release to fix all compatibility problems with
