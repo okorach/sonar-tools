@@ -207,21 +207,25 @@ def test_apps_measures() -> None:
     """test_apps_measures"""
     EXISTING_KEY = "APP_TEST"
     util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--apps", "-m", "ncloc"]):
             measures_export.main()
-    assert util.file_not_empty(util.CSV_FILE)
-    first = True
-    found = False
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
-            found = found or line[KEY_COL] == EXISTING_KEY
-            assert line[TYPE_COL] == "APPLICATION"
-            assert len(line) == 5
-    assert found
+    if util.SQ.edition() == "community":
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        assert util.file_not_empty(util.CSV_FILE)
+        first = True
+        found = False
+        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+            for line in csv.reader(fh):
+                if first:
+                    first = False
+                    continue
+                found = found or line[KEY_COL] == EXISTING_KEY
+                assert line[TYPE_COL] == "APPLICATION"
+                assert len(line) == 5
+        assert found
     util.clean(util.CSV_FILE)
 
 
@@ -229,31 +233,32 @@ def test_portfolios_measures() -> None:
     """test_portfolios_measures"""
     EXISTING_KEY = "PORTFOLIO_ALL"
     util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", CSV_OPTS + ["--portfolios", "-m", "ncloc"]):
             measures_export.main()
-    assert util.file_not_empty(util.CSV_FILE)
-    first = True
-    found = False
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
-            found = found or line[KEY_COL] == EXISTING_KEY
-            assert len(line) == 5
-            assert line[TYPE_COL] == "PORTFOLIO"
-    assert found
+    if util.SQ.edition() in ("community", "developer"):
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+    else:
+        assert util.file_not_empty(util.CSV_FILE)
+        first = True
+        found = False
+        with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+            for line in csv.reader(fh):
+                if first:
+                    first = False
+                    continue
+                found = found or line[KEY_COL] == EXISTING_KEY
+                assert len(line) == 5
+                assert line[TYPE_COL] == "PORTFOLIO"
+        assert found
     util.clean(util.CSV_FILE)
 
 
-def test_against_ce() -> None:
-    """Tests that basic invocation against a CE works"""
-
-    ALL_OPTS = [CMD] + util.CE_OPTS + [f"--{opt.OUTPUTFILE}", util.CSV_FILE]
+def test_basic() -> None:
+    """Tests that basic invocation against a CE and DE works"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", ALL_OPTS):
+        with patch.object(sys, "argv", CSV_OPTS):
             measures_export.main()
     assert int(str(e.value)) == errcodes.OK
     with open(util.CSV_FILE, encoding="utf-8") as fd:
@@ -262,10 +267,40 @@ def test_against_ce() -> None:
         for line in reader:
             assert line[TYPE_COL] == "PROJECT"
 
+
+def test_option_apps() -> None:
+    """Tests that using the --apps option works in the correct editions (DE and higher)"""
     util.clean(util.CSV_FILE)
-    for obj_type in "--apps", "--portfolios":
-        with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", ALL_OPTS + [obj_type]):
-                measures_export.main()
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--apps"]):
+            measures_export.main()
+    if util.SQ.edition() == "community":
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
         assert not os.path.isfile(util.CSV_FILE)
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        with open(util.CSV_FILE, encoding="utf-8") as fd:
+            reader = csv.reader(fd)
+            next(reader)
+            for line in reader:
+                assert line[TYPE_COL] == "APPLICATION"
+    util.clean(util.CSV_FILE)
+
+
+def test_option_portfolios() -> None:
+    """Tests that using the --portfolios option works in the correct editions (EE and higher)"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--portfolios"]):
+            measures_export.main()
+    if util.SQ.edition() in ("developer", "community"):
+        assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION
+        assert not os.path.isfile(util.CSV_FILE)
+    else:
+        assert int(str(e.value)) == errcodes.OK
+        with open(util.CSV_FILE, encoding="utf-8") as fd:
+            reader = csv.reader(fd)
+            next(reader)
+            for line in reader:
+                assert line[TYPE_COL] == "PORTFOLIO"
+    util.clean(util.CSV_FILE)

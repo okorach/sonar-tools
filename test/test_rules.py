@@ -133,8 +133,13 @@ def test_set_desc() -> None:
 def test_facets() -> None:
     """test_facets"""
     facets = rules.get_facet(endpoint=util.SQ, facet="languages")
-    assert len(facets) > 20
-    for lang in "py", "java", "cobol", "cs":
+    langs = ["py", "java", "cs", "js", "web", "php", "ruby", "go", "scala", "vbnet"]
+    if util.SQ.edition() in ("developer", "enterprise", "datacenter"):
+        langs += ["c", "cpp", "objc", "swift", "abap"]
+    if util.SQ.edition() in ("enterprise", "datacenter"):
+        langs += ["plsql", "rpg", "cobol", "vb", "pli"]
+    assert len(facets) >= len(langs)
+    for lang in langs:
         assert lang in facets
 
 
@@ -176,7 +181,10 @@ def test_export_nonstandard() -> None:
 def test_export_all() -> None:
     """test_export_all"""
     rule_list = rules.export_all(endpoint=util.SQ, full=True)
-    assert len(rule_list.get("standard", {})) > 3000
+    if util.SQ.version() < (10, 0, 0) and util.SQ.edition() == "community":
+        assert len(rule_list.get("standard", {})) > 2800
+    else:
+        assert len(rule_list.get("standard", {})) > 3000
 
 
 def test_new_taxo() -> None:
