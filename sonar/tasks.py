@@ -337,6 +337,13 @@ class Task(sq.SqObject):
             context[prop] = val
         return context
 
+    def scanner(self) -> str:
+        """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
+        if not self.has_scanner_context():
+            return "UNKNOWN"
+        ctxt = self.scanner_context()
+        return ctxt.get("sonar.scanner.app", "UNKNOWN").upper().replace("SCANNER", "").replace("MSBUILD", "DOTNET").replace("NPM", "CLI")
+
     def error_details(self) -> tuple[str, str]:
         """
         :return: The background task error details

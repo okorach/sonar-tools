@@ -1,5 +1,13 @@
 # Next version yet unreleased
 
+- `sonar-audit` checks for projects that are apparently not scanned with the right scanner (the check is approximate, it is not always possible to determine the type of a project, and the scanner that should be used)
+
+# Version 3.2.1
+
+- Patch release to fix all compatibility problems with
+  - Lower editions: All editions (Community, Developer, Enterprise) have been tested
+  - 9.9 LTS/LTA version: All editions (Community, Developer, Enterprise) in version 9.9 have been tested
+
 # Version 3.2
 
 - Refactoring on portfolios for hardening

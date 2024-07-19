@@ -56,6 +56,7 @@ MAX_PAGE_SIZE = 500
 _SEARCH_API = "projects/search"
 _CREATE_API = "projects/create"
 _NAV_API = "navigation/component"
+_TREE_API = "components/tree"
 PRJ_QUALIFIER = "TRK"
 APP_QUALIFIER = "APP"
 
@@ -520,6 +521,59 @@ class Project(components.Component):
                 util.exit_fatal(f"alm_settings/validate_binding returning status code {e.response.status_code}, exiting", errcodes.SONAR_API)
         return []
 
+    def get_type(self) -> str:
+        """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
+        data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500, "q": "pom.xml"}).text)
+        for comp in data["components"]:
+            log.info("Maven Looking at %s", comp["name"])
+            if comp["name"] == "pom.xml":
+                log.info("%s is a MAVEN project", str(self))
+                return "MAVEN"
+        data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500, "q": "gradle"}).text)
+        for comp in data["components"]:
+            if "gradle" in comp["name"]:
+                return "GRADLE"
+        data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
+        for comp in data["components"]:
+            log.info(".Net Looking at %s", comp["name"])
+            if re.match(r".*\.(cs|csx|vb)$", comp["name"]):
+                log.info("%s is a DOTNET project", str(self))
+                return "DOTNET"
+        data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
+        for comp in data["components"]:
+            log.info(".Net Looking at %s", comp["name"])
+            if re.match(r".*\.(java)$", comp["name"]):
+                log.info("%s is a JAVA project", str(self))
+                return "JAVA"
+        data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
+        for comp in data["components"]:
+            if re.match(r".*\.(py|rb|cbl|vbs|go|js|ts)$", comp["name"]):
+                log.info("%s is a DOTNET project", str(self))
+                return "CLI"
+        return "UNKNOWN"
+
+    def scanner(self) -> str:
+        """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
+        last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
+        if not last_task:
+            return "UNKNOWN"
+        last_task.concerned_object = self
+        return last_task.scanner()
+
+    def __audit_scanner(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+        proj_type, scanner = self.get_type(), self.scanner()
+        log.debug("%s is of type %s and uses scanner %s", proj_type, scanner)
+        if proj_type == "UNKNOWN":
+            log.info("%s project type can't be identified, skipping check", str(self))
+            return []
+        if scanner == "UNKNOWN":
+            log.info("%s project type or scanner used can't be identified, skipping check", str(self))
+            return []
+        if proj_type == scanner:
+            return []
+        rule = rules.get_rule(rules.RuleId.PROJ_WRONG_SCANNER)
+        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), proj_type, scanner), concerned_object=self)]
+
     def audit(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
         """Audits a project and returns the list of problems found
 
@@ -533,12 +587,14 @@ class Project(components.Component):
             problems = self.__audit_last_analysis(audit_settings)
             problems += self.__audit_visibility(audit_settings)
             problems += self.__audit_zero_loc(audit_settings)
-            problems += self.__audit_languages(audit_settings)
+            # Skip language audit, as this can be problematic
+            # problems += self.__audit_languages(audit_settings)
             problems += self.permissions().audit(audit_settings)
             problems += self.__audit_branches(audit_settings)
             problems += self.__audit_pull_requests(audit_settings)
             problems += self._audit_bg_task(audit_settings)
             problems += self.__audit_binding_valid(audit_settings)
+            problems += self.__audit_scanner(audit_settings)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.FORBIDDEN:
                 log.error("Not enough permission to fully audit %s", str(self))

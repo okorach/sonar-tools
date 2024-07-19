@@ -427,6 +427,12 @@
         "object": "Project",
         "message": "{} last analysis had the following warnings: {}"
     },
+    "PROJ_WRONG_SCANNER": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "object": "Project",
+        "message": "{} seems to be a {} project by is analyzed with the Scanner {}"
+    },
     "BG_TASK_FAILED": {
         "severity": "MEDIUM",
         "type": "OPERATIONS",
