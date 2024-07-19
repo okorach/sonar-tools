@@ -181,7 +181,10 @@ def test_export_nonstandard() -> None:
 def test_export_all() -> None:
     """test_export_all"""
     rule_list = rules.export_all(endpoint=util.SQ, full=True)
-    assert len(rule_list.get("standard", {})) > 3000
+    if util.SQ.version() < (10, 0, 0) and util.SQ.edition() == "community":
+        assert len(rule_list.get("standard", {})) > 2800
+    else:
+        assert len(rule_list.get("standard", {})) > 3000
 
 
 def test_new_taxo() -> None:
