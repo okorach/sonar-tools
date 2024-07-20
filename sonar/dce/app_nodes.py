@@ -28,6 +28,7 @@ from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
 import sonar.utilities as util
+from sonar.util import types
 from sonar.audit import rules
 import sonar.sif_node as sifn
 import sonar.audit.problem as pb
@@ -68,7 +69,7 @@ class AppNode(dce_nodes.DceNode):
     def name(self):
         return self.json["Name"]
 
-    def audit(self, audit_settings: dict[str, str] = None):
+    def audit(self, audit_settings: types.ConfigSettings = None):
         log.info("Auditing %s", str(self))
         return (
             self.__audit_official()
@@ -101,14 +102,14 @@ class AppNode(dce_nodes.DceNode):
             return []
 
 
-def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
+def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
     """Audits application nodes of a DCE instance
 
     :param dict sub_sif: The JSON subsection of the SIF pertaining to the App Nodes
-    :param Sif sif: The Sif object
-    :param dict audit_settings: Config settings for audit
+    :param Sif sif_object: The Sif object
+    :param ConfigSettings audit_settings: Config settings for audit
     :return: List of Problems
-    :rtype: list
+    :rtype: list[Problem]
     """
     if audit_settings is None:
         audit_settings = {}

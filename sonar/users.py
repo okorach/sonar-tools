@@ -26,7 +26,7 @@ import json
 
 import sonar.logging as log
 from sonar import platform as pf
-
+from sonar.util import types
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
 from sonar.audit import rules, problem
@@ -51,7 +51,7 @@ class User(sqobject.SqObject):
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
 
-    def __init__(self, endpoint: pf.Platform, login: str, data: dict[str, str]) -> None:
+    def __init__(self, endpoint: pf.Platform, login: str, data: types.ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login (str)
@@ -68,7 +68,7 @@ class User(sqobject.SqObject):
         _OBJECTS[self.uuid()] = self
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> User:
+    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> User:
         """Creates a user object from the result of a SonarQube API user search data
 
         :param endpoint: Reference to the SonarQube platform
@@ -129,7 +129,7 @@ class User(sqobject.SqObject):
         """
         return f"user '{self.login}'"
 
-    def __load(self, data: dict[str, str]) -> None:
+    def __load(self, data: types.ApiPayload) -> None:
         self.name = data["name"]  #: User name
         self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
         self.email = data.get("email", None)  #: User email
@@ -140,7 +140,7 @@ class User(sqobject.SqObject):
         self._groups = self.groups(data)  #: User groups
         self._json = data
 
-    def groups(self, data: dict[str, str] = None) -> list[str]:
+    def groups(self, data: types.ApiPayload = None) -> list[str]:
         """Returns the list of groups of a user"""
         if self._groups is not None:
             return self._groups
@@ -300,7 +300,7 @@ class User(sqobject.SqObject):
         self.scm_accounts = accounts_list
         return True
 
-    def audit(self, settings: dict[str, str] = None) -> list[problem.Problem]:
+    def audit(self, settings: types.ConfigSettings = None) -> list[problem.Problem]:
         """Audits a user (user last connection date and tokens) and
         returns the list of problems found (too old)
 
@@ -343,7 +343,7 @@ class User(sqobject.SqObject):
                 problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 
-    def to_json(self, full: bool = False) -> dict[str, str]:
+    def to_json(self, full: bool = False) -> types.ObjectJsonRepr:
         """Exports the user data (login, email, groups, SCM accounts local or not) as dict
 
         :return: User data
@@ -361,7 +361,7 @@ class User(sqobject.SqObject):
         return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, full))
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, object]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, object]:
     """Searches users in SonarQube or SonarCloud
 
     :param endpoint: Reference to the SonarQube platform
@@ -383,11 +383,10 @@ def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, ob
     return sqobject.search_objects(api=api, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
 
 
-def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Exports all users as dict
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
+    :param Platform endpoint: reference to the SonarQube platform
     :param full: Whether to export all settings including those useless for re-import, defaults to False
     :type full: bool, optional
     :return: list of projects
@@ -401,13 +400,11 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, 
     return u_list
 
 
-def audit(endpoint: pf.Platform, audit_settings: dict[str, str]) -> list[problem.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
     """Audits all users for last login date and too old tokens
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: Platform
-    :param audit_settings: Configuration of audit
-    :type audit_settings: dict
+    :param Platform endpoint: reference to the SonarQube platform
+    :param ConfigSettings audit_settings: Configuration of audit
     :return: list of problems found
     :rtype: list[Problem]
     """
@@ -438,11 +435,11 @@ def get_login_from_name(endpoint: pf.Platform, name: str) -> Union[str, None]:
     return list(u_list.keys()).pop(0)
 
 
-def import_config(endpoint: pf.Platform, config_data: dict[str, str]) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> None:
     """Imports in SonarQube a complete users configuration described from a sonar-config JSON
 
-    :param Platformendpoint: reference to the SonarQube platform
-    :param dict config_data: the configuration to import
+    :param Platform endpoint: reference to the SonarQube platform
+    :param ObjectJsonRepr config_data: the configuration to import
     :return: Nothing
     """
     if "users" not in config_data:

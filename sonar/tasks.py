@@ -18,7 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-from typing import Union
+from typing import Optional
 import time
 import datetime
 import json
@@ -31,6 +31,7 @@ import sonar.platform as pf
 import sonar.utilities as util
 from sonar.audit import rules
 import sonar.audit.problem as pb
+from sonar.util import types
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -173,7 +174,7 @@ class Task(sq.SqObject):
     Abstraction of the SonarQube "background task" concept
     """
 
-    def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: object = None, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: object = None, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
         self._json = data
@@ -240,7 +241,7 @@ class Task(sq.SqObject):
         """
         return self.__json_field("status")
 
-    def component(self) -> Union[str, None]:
+    def component(self) -> Optional[str]:
         """
         :return: the background task component key or None
         :rtype: str or None
@@ -318,7 +319,7 @@ class Task(sq.SqObject):
             log.debug("%s is '%s'", str(self), status)
         return status
 
-    def scanner_context(self) -> Union[dict[str, str], None]:
+    def scanner_context(self) -> Optional[dict[str, str]]:
         """
         :return: the background task scanner context
         :rtype: dict
@@ -352,7 +353,7 @@ class Task(sq.SqObject):
         self.__load_context()
         return (self._json.get("errorMessage", None), self._json.get("errorStacktrace", None))
 
-    def error_message(self) -> Union[str, None]:
+    def error_message(self) -> Optional[str]:
         """
         :return: The background task error message
         :rtype: str
@@ -379,7 +380,7 @@ class Task(sq.SqObject):
                 break  # Report only on the 1st suspicious match
         return problems
 
-    def __audit_disabled_scm(self, audit_settings: dict[str, str], scan_context: dict[str, str]) -> list[pb.Problem]:
+    def __audit_disabled_scm(self, audit_settings: types.ConfigSettings, scan_context: dict[str, str]) -> list[pb.Problem]:
         """Audits a bg task for eventual SCM disabled and reports the problem if found"""
         if not audit_settings.get("audit.project.scm.disabled", True):
             log.info("Auditing disabled SCM integration is turned off, skipping...")
@@ -390,7 +391,7 @@ class Task(sq.SqObject):
         rule = rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED)
         return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self.concerned_object)), concerned_object=self)]
 
-    def __audit_warnings(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+    def __audit_warnings(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         """Audits for warning in background tasks and reports found problems"""
         if not audit_settings.get("audit.projects.analysisWarnings", True):
             log.info("Project analysis warnings auditing disabled, skipping...")
@@ -410,7 +411,7 @@ class Task(sq.SqObject):
             pbs.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return pbs
 
-    def __audit_failed_task(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+    def __audit_failed_task(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         if not audit_settings.get("audit.projects.failedTasks", True):
             log.debug("Project failed background tasks auditing disabled, skipping...")
             return []
@@ -421,7 +422,7 @@ class Task(sq.SqObject):
         msg = rule.msg.format(str(self.concerned_object))
         return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self)]
 
-    def __audit_scanner_version(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+    def __audit_scanner_version(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         if not self.has_scanner_context():
             return []
         context = self.scanner_context()
@@ -484,7 +485,7 @@ class Task(sq.SqObject):
             return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object)]
         return []
 
-    def audit(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         """Audits a background task and returns the list of found problems"""
         if not audit_settings.get("audit.projects.exclusions", True):
             log.debug("Project exclusions auditing disabled, skipping...")
@@ -537,7 +538,7 @@ def search_all_last(endpoint: pf.Platform) -> list[Task]:
     return search(endpoint=endpoint, only_current=True)
 
 
-def search_last(endpoint: pf.Platform, component_key: str) -> Union[Task, None]:
+def search_last(endpoint: pf.Platform, component_key: str) -> Optional[Task]:
     """Searches for last background task of a component"""
     bg_tasks = search(endpoint=endpoint, only_current=True, component_key=component_key)
     if len(bg_tasks) == 0:

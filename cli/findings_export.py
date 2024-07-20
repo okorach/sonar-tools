@@ -35,6 +35,7 @@ from threading import Thread
 from requests.exceptions import HTTPError
 
 from cli import options
+from sonar.util.types import ConfigSettings
 import sonar.logging as log
 from sonar import platform, exceptions, errcodes
 from sonar import issues, hotspots, findings
@@ -212,7 +213,7 @@ def __write_csv_findings(file: str, findings_list: dict[str, findings.Finding], 
             csvwriter.writerow(row)
 
 
-def __write_findings(queue: Queue[list[findings.Finding]], params: dict[str, str]) -> None:
+def __write_findings(queue: Queue[list[findings.Finding]], params: ConfigSettings) -> None:
     """Writes a list of findings in an output file or stdout"""
     global IS_FIRST
     global TOTAL_FINDINGS
@@ -266,7 +267,7 @@ def __verify_inputs(params):
     return True
 
 
-def __get_component_findings(queue: Queue[tuple[object, dict[str, str]]], write_queue: Queue[dict[str, findings.Finding], bool]) -> None:
+def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_queue: Queue[dict[str, findings.Finding], bool]) -> None:
     """Gets the findings of a component and puts them in a writing queue"""
     while not queue.empty():
         (component, params) = queue.get()
@@ -335,7 +336,7 @@ def __get_component_findings(queue: Queue[tuple[object, dict[str, str]]], write_
         queue.task_done()
 
 
-def store_findings(components_list: dict[str, object], params: dict[str, str]) -> None:
+def store_findings(components_list: dict[str, object], params: ConfigSettings) -> None:
     """Export all findings of a given project list"""
     my_queue = Queue(maxsize=0)
     write_queue = Queue(maxsize=0)

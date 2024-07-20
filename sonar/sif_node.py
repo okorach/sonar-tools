@@ -44,10 +44,8 @@ def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, str]
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
-    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
-    :type obj_name: str
-    :param ce_data: CE section of the SIF (global or for a given DCE app node)
-    :type obj_name: dict
+    :param str obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :param dict ce_data: CE section of the SIF (global or for a given DCE app node)
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
@@ -91,10 +89,8 @@ def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limi
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
-    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
-    :type obj_name: str
-    :param jvm_props: Web or CE JVM State section of the SIF (global SIF or App Node level)
-    :type obj_name: dict
+    :param str obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :param dict jvm_props: Web or CE JVM State section of the SIF (global SIF or App Node level)
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
@@ -130,10 +126,8 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
-    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
-    :type obj_name: str
-    :param jvm_props: Web or CE JVM Properties section of the SIF (global SIF or App Node level)
-    :type obj_name: dict
+    :param str obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :param dict jvm_props: Web or CE JVM Properties section of the SIF (global SIF or App Node level)
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
@@ -166,10 +160,8 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
-    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
-    :type obj_name: str
-    :param ce_data: CE sections of the SIF (global SIF or App Node level)
-    :type obj_name: dict
+    :param str obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :param dict ce_data: CE sections of the SIF (global SIF or App Node level)
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
@@ -204,10 +196,8 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]) 
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
-    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
-    :type obj_name: str
-    :param logging_data: Web or CE Logging section of the SIF (global SIF or App Node level)
-    :type obj_name: dict
+    :param str obj_name: String name of the object as it will appear in the audit warning, if any audit warning
+    :param dict logging_data: Web or CE Logging section of the SIF (global SIF or App Node level)
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """

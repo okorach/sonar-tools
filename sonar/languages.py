@@ -25,6 +25,7 @@ import json
 from threading import Lock
 from sonar import sqobject, rules
 import sonar.platform as pf
+from sonar.util.types import ApiPayload
 
 #: List of language APIs
 APIS = {"list": "languages/list"}
@@ -46,7 +47,7 @@ class Language(sqobject.SqObject):
         _OBJECTS[self.uuid()] = self
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Language:
+    def load(cls, endpoint: pf.Platform, data: ApiPayload) -> Language:
         uu = sqobject.uuid(data["key"], endpoint.url)
         return _OBJECTS.get(uu, cls(endpoint=endpoint, key=data["key"], name=data["name"]))
 

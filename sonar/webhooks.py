@@ -23,7 +23,7 @@ from typing import Union
 
 import sonar.logging as log
 from sonar import platform as pf
-
+from sonar.util import types
 import sonar.utilities as util
 import sonar.sqobject as sq
 
@@ -40,7 +40,7 @@ class WebHook(sq.SqObject):
     """
 
     def __init__(
-        self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project: str = None, data: dict[str, str] = None
+        self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project: str = None, data: types.ApiPayload = None
     ) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
@@ -99,10 +99,10 @@ class WebHook(sq.SqObject):
         return util.filter_export(self._json, _IMPORTABLE_PROPERTIES, full)
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, WebHook]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, WebHook]:
     """Searches webhooks
 
-    :param params: Filters to narrow down the search, can only be "project"
+    :param ApiParams params: Filters to narrow down the search, can only be "project"
     :return: List of webhooks
     :rtype: dict{<key>: <WebHook>}
     """
@@ -118,7 +118,7 @@ def get_list(endpoint: pf.Platform, project_key: str = None) -> dict[str, WebHoo
     return search(endpoint, params)
 
 
-def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -> Union[dict[str, str], None]:
+def export(endpoint: pf.Platform, project_key: str = None, full: bool = False) -> types.ObjectJsonRepr:
     """Export webhooks of a project as JSON"""
     json_data = {}
     for wb in get_list(endpoint, project_key).values():
@@ -143,7 +143,7 @@ def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
         get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
 
 
-def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: dict[str, str] = None) -> WebHook:
+def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: types.ApiPayload = None) -> WebHook:
     """Gets a WebHook object from name a project key"""
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
     uid = uuid(name, project_key, endpoint.url)

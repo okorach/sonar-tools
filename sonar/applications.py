@@ -29,6 +29,7 @@ from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.platform as pf
+from sonar.util import types
 
 from sonar import exceptions, settings, projects, branches
 from sonar.permissions import permissions, application_permissions
@@ -90,7 +91,7 @@ class Application(aggr.Aggregation):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Application:
+    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Application:
         """Loads an Application object with data retrieved from SonarQube
 
         :param pf.Platform endpoint: Reference to the SonarQube platform
@@ -189,7 +190,7 @@ class Application(aggr.Aggregation):
         """
         return branch in self.branches() and self._branches[branch]["isMain"]
 
-    def set_branch(self, branch_name: str, branch_data: dict[str, str]) -> Application:
+    def set_branch(self, branch_name: str, branch_data: types.ObjectJsonRepr) -> Application:
         """Creates or updates an Application branch with a set of project branches
 
         :param str branch_name: The Application branch to set
@@ -293,21 +294,21 @@ class Application(aggr.Aggregation):
                 findings_list = {**findings_list, **comp.get_issues()}
         return findings_list
 
-    def _audit_empty(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
+    def _audit_empty(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits if an application contains 0 projects"""
         if not audit_settings.get("audit.applications.empty", True):
             log.debug("Auditing empty applications is disabled, skipping...")
             return []
         return super()._audit_empty_aggregation(broken_rule=rules.RuleId.APPLICATION_EMPTY)
 
-    def _audit_singleton(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
+    def _audit_singleton(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits if an application contains a single project (makes littel sense)"""
         if not audit_settings.get("audit.applications.singleton", True):
             log.debug("Auditing singleton applications is disabled, skipping...")
             return []
         return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
 
-    def audit(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits an application and returns list of problems found
 
         :param dict audit_settings: Audit configuration settings from sonar-audit properties config file
@@ -317,7 +318,7 @@ class Application(aggr.Aggregation):
         log.info("Auditing %s", str(self))
         return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
 
-    def export(self, export_settings: dict[str, str]) -> dict[str, str]:
+    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports an application
 
         :param full: Whether to do a full export including settings that can't be set, defaults to False
@@ -387,7 +388,7 @@ class Application(aggr.Aggregation):
             self._last_analysis = util.string_to_date(self._json["analysisDate"])
         return self._last_analysis
 
-    def update(self, data):
+    def update(self, data: types.ObjectJsonRepr) -> None:
         """Updates an Application with data coming from a JSON (export)
 
         :param dict data:
@@ -442,7 +443,7 @@ def check_supported(endpoint: pf.Platform) -> None:
         raise exceptions.UnsupportedOperation(errmsg)
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Application]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Application]:
     """Searches applications
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -488,7 +489,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: list[str] = None) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: list[str] = None) -> types.ObjectJsonRepr:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -510,7 +511,7 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str], key_list: lis
     return apps_settings
 
 
-def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[str] = None) -> list[problem.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: list[str] = None) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -532,7 +533,7 @@ def audit(endpoint: pf.Platform, audit_settings: dict[str, str], key_list: list[
     return problems
 
 
-def import_config(endpoint: pf.Platform, config_data: dict[str, str], key_list: list[str] = None) -> bool:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: list[str] = None) -> bool:
     """Imports a list of application configuration in a SonarQube platform
 
     :param Platform endpoint: Reference to the SonarQube platform

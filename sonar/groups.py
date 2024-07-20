@@ -27,6 +27,7 @@ import sonar.utilities as util
 from sonar import exceptions
 
 from sonar.audit import rules, problem
+from sonar.util import types
 
 SONAR_USERS = "sonar-users"
 
@@ -45,7 +46,7 @@ class Group(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
-    def __init__(self, endpoint: pf.Platform, name: str, data: dict[str, str]) -> None:
+    def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(endpoint=endpoint, key=data.get("id", name))
         self.name = name  #: Group name
@@ -94,7 +95,7 @@ class Group(sq.SqObject):
         return cls.read(endpoint=endpoint, name=name)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Group:
+    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Group:
         """Creates a Group object from the result of a SonarQube API group search data
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -151,7 +152,7 @@ class Group(sq.SqObject):
         """
         return self.post(REMOVE_USER_API, params={"login": user_login, "name": self.name}).ok
 
-    def audit(self, audit_settings: dict[str, str] = None) -> list[problem.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings = None) -> list[problem.Problem]:
         """Audits a group and return list of problems found
         Current audit is limited to verifying that the group is not empty
 
@@ -167,7 +168,7 @@ class Group(sq.SqObject):
             problems = [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
         return problems
 
-    def to_json(self, full_specs: bool = False) -> dict[str, str]:
+    def to_json(self, full_specs: bool = False) -> types.ObjectJsonRepr:
         """Returns the group properties (name, description, default) as dict
 
         :param full_specs: Also include properties that are not modifiable, default to False
@@ -219,7 +220,7 @@ class Group(sq.SqObject):
         return r.ok
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Group]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Group]:
     """Search groups
 
     :params Platform endpoint: Reference to the SonarQube platform
@@ -240,7 +241,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, Group]:
     return search(endpoint)
 
 
-def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Exports all groups configuration as dict
     Default groups (sonar-users) are not exported
 
@@ -258,7 +259,7 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, 
     return g_list
 
 
-def audit(audit_settings: dict[str, str], endpoint: pf.Platform) -> list[problem.Problem]:
+def audit(audit_settings: types.ConfigSettings, endpoint: pf.Platform) -> list[problem.Problem]:
     """Audits all groups
 
     :param dict audit_settings: Configuration of audit
@@ -295,12 +296,9 @@ def get_object(endpoint: pf.Platform, name: str) -> Group:
 def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Group:
     """Creates or updates a group
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: pf.Platform
-    :param name: group name
-    :type name: str
-    :param description: group description
-    :type description: str
+    :param Platform endpoint: reference to the SonarQube platform
+    :param str name: group name
+    :param str description: group description
     :return: The group
     :rtype: Group
     """
@@ -313,13 +311,11 @@ def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Grou
         return o
 
 
-def import_config(endpoint: pf.Platform, config_data: dict[str, str]) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> None:
     """Imports a group configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
-    :type endpoint: pf.Platform
-    :param config_data: the configuration to import
-    :type config_data: dict
+    :param dict config_data: the configuration to import
     :return: Nothing
     """
     if "groups" not in config_data:
