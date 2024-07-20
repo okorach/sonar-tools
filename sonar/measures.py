@@ -27,6 +27,7 @@ import re
 from http import HTTPStatus
 from requests.exceptions import HTTPError
 from sonar import metrics, exceptions
+from sonar.util.types import ApiPayload, ApiParams
 
 import sonar.logging as log
 import sonar.utilities as util
@@ -54,7 +55,7 @@ class Measure(sq.SqObject):
         self.value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
 
     @classmethod
-    def load(cls, concerned_object: object, data: dict[str, str]) -> Measure:
+    def load(cls, concerned_object: object, data: ApiPayload) -> Measure:
         """Loads a measure from data
 
         :param endpoint: Reference to SonarQube platform
@@ -78,14 +79,14 @@ class Measure(sq.SqObject):
         self.value = _search_value(data)
         return self.value
 
-    def count_history(self, params: dict[str, str] = None) -> int:
+    def count_history(self, params: ApiParams = None) -> int:
         if params is None:
             params = {}
         params.update({"component": self.concerned_object.key, "metrics": self.metric, "ps": 1})
         data = json.loads(self.get(Measure.API_HISTORY, params=params).text)
         return data["paging"]["total"]
 
-    def search_history(self, params: dict[str, str] = None) -> dict[str, any]:
+    def search_history(self, params: ApiParams = None) -> dict[str, any]:
         """Searches the history of the measure
 
         :param dict params: List of search parameters to narrow down the search, defaults to None

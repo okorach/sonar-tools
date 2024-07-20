@@ -24,7 +24,7 @@
 """
 
 from __future__ import annotations
-from typing import Union
+from typing import Optional
 import json
 from http import HTTPStatus
 from threading import Lock
@@ -32,6 +32,7 @@ from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.platform as pf
+from sonar.util import types
 
 from sonar import sqobject, exceptions
 import sonar.utilities as util
@@ -84,7 +85,7 @@ class Organization(sqobject.SqObject):
         return cls.load(endpoint, data["organizations"][0])
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Organization:
+    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Organization:
         """Loads an Organization object with data retrieved from SonarCloud
 
         :param Platform endpoint: Reference to the SonarCloud platform
@@ -106,7 +107,7 @@ class Organization(sqobject.SqObject):
     def __str__(self) -> str:
         return f"organization key '{self.key}'"
 
-    def export(self) -> dict[str, str]:
+    def export(self) -> types.ObjectJsonRepr:
         """Exports an organization"""
         log.info("Exporting %s", str(self))
         json_data = self._json.copy()
@@ -118,7 +119,7 @@ class Organization(sqobject.SqObject):
             json_data["newCodePeriod"] = f"{nctype} = {ncval}"
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, True))
 
-    def search_params(self) -> dict[str, str]:
+    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"organizations": self.key}
 
@@ -130,11 +131,11 @@ class Organization(sqobject.SqObject):
     def subscription(self) -> str:
         return self._json.get("subscription", "UNKNOWN")
 
-    def alm(self) -> Union[dict[str, str], None]:
+    def alm(self) -> types.ApiPayload:
         return self._json.get("alm", None)
 
 
-def get_list(endpoint: pf.Platform, key_list: str = None, use_cache: bool = True) -> dict[str, object]:
+def get_list(endpoint: pf.Platform, key_list: Optional[list[str]] = None, use_cache: bool = True) -> dict[str, object]:
     """
     :return: List of Organizations (all of them if key_list is None or empty)
     :param str key_list: List of org keys to get, if None or empty all orgs are returned
@@ -151,7 +152,7 @@ def get_list(endpoint: pf.Platform, key_list: str = None, use_cache: bool = True
     return object_list
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str:Organization]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str:Organization]:
     """Searches organizations
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -170,7 +171,7 @@ def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str:Org
     )
 
 
-def export(endpoint: pf.Platform, key_list: str = None) -> dict[str, str]:
+def export(endpoint: pf.Platform, key_list: Optional[list[str]] = None) -> types.ObjectJsonRepr:
     """Exports organizations as JSON
 
     :param Platform endpoint: Reference to the SonarCloud platform

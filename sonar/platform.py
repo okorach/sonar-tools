@@ -36,6 +36,7 @@ from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.utilities as util
+from sonar.util import types
 
 from sonar import errcodes, settings, devops, version, sif
 from sonar.permissions import permissions, global_permissions, permission_templates
@@ -136,7 +137,7 @@ class Platform:
         """Returns the user corresponding to the provided token"""
         return self.user_data()["login"]
 
-    def user_data(self) -> dict[str, str]:
+    def user_data(self) -> types.ApiPayload:
         """Returns the user data corresponding to the provided token"""
         if self.__user_data is None:
             self.__user_data = json.loads(self.get("api/users/current").text)
@@ -176,7 +177,7 @@ class Platform:
             "serverId": self.server_id(),
         }
 
-    def get(self, api: str, params: dict[str, str] = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()) -> requests.Response:
+    def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -228,7 +229,7 @@ class Platform:
         return self.__run_request(requests.delete, api, params, exit_on_error, mute)
 
     def __run_request(
-        self, request: callable, api: str, params: dict[str, str] = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()
+        self, request: callable, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()
     ) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         api = _normalize_api(api)
@@ -417,7 +418,7 @@ class Platform:
 
         return webhooks.get_list(self)
 
-    def export(self, export_settings: dict[str, str], full: bool = False) -> dict[str, str]:
+    def export(self, export_settings: types.ConfigSettings, full: bool = False) -> types.ObjectJsonRepr:
         """Exports the global platform properties as JSON
 
         :param full: Whether to also export properties that cannot be set, defaults to False
@@ -549,7 +550,7 @@ class Platform:
         )
         return problems
 
-    def _audit_logs(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+    def _audit_logs(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         if not audit_settings.get("audit.logs", True):
             log.info("Logs audit is disabled, skipping logs audit...")
             return []

@@ -26,6 +26,7 @@ from requests.exceptions import HTTPError
 import requests.utils
 
 from sonar import platform
+from sonar.util import types
 import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import components, syncer, settings, exceptions
@@ -96,7 +97,7 @@ class Branch(components.Component):
         raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of project '{concerned_object.key}' not found")
 
     @classmethod
-    def load(cls, concerned_object: projects.Project, branch_name: str, data: dict[str, str]) -> Branch:
+    def load(cls, concerned_object: projects.Project, branch_name: str, data: types.ApiPayload) -> Branch:
         """Gets a Branch object from JSON data gotten from a list API call
 
         :param projects.Project concerned_object: the projects.Project the branch belonsg to
@@ -210,7 +211,7 @@ class Branch(components.Component):
                     Branch.get_object(self.concerned_object, b["branchKey"])._new_code = new_code
         return self._new_code
 
-    def export(self, export_settings: dict[str, str]) -> dict[str, str]:
+    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a branch configuration (is main, keep when inactive, optionally name, project)
 
         :param full_export: Also export branches attributes that are not needed for import, defaults to True
@@ -296,13 +297,11 @@ class Branch(components.Component):
             "url": self.url(),
         }
 
-    def sync(self, another_branch: Branch, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(self, another_branch: Branch, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs branch findings with another branch
 
-        :param another_branch: other branch to sync issues into (not necesssarily of same project)
-        :type another_branch: Branch
-        :param sync_settings: Parameters to configure the sync
-        :type sync_settings: dict
+        :param Branch another_branch: other branch to sync issues into (not necesssarily of same project)
+        :param dict sync_settings: Parameters to configure the sync
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
@@ -368,7 +367,7 @@ class Branch(components.Component):
             log.debug("Branch audit disabled, skipping audit of %s", str(self))
         return []
 
-    def search_params(self) -> dict[str, str]:
+    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"project": self.concerned_object.key, "branch": self.name}
 

@@ -28,6 +28,8 @@ import datetime
 import json
 
 from cli import options
+
+from sonar.util.types import ConfigSettings
 from sonar import errcodes, exceptions
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
@@ -65,7 +67,7 @@ def _audit_sif(sysinfo, audit_settings):
     return (server_id, sif_obj.audit(audit_settings))
 
 
-def _audit_sq(sq, settings: dict[str, str], what_to_audit: list[str] = None, key_list: list[str] = None) -> list[problem.Problem]:
+def _audit_sq(sq: platform.Platform, settings: ConfigSettings, what_to_audit: list[str] = None, key_list: list[str] = None) -> list[problem.Problem]:
     """Audits a SonarQube/Cloud platform"""
     problems = []
     everything = False

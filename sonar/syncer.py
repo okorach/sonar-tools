@@ -22,6 +22,7 @@
 
 import sonar.logging as log
 import sonar.utilities as util
+from sonar.util import types
 from sonar import findings
 
 
@@ -131,7 +132,7 @@ def __process_modified_siblings(finding, siblings):
 
 
 def __sync_curated_list(
-    src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: dict[str, str]
+    src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: types.ConfigSettings
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findingss"""
     counters = {k: 0 for k in ("nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches")}
@@ -171,7 +172,7 @@ def sync_lists(
     tgt_findings: list[findings.Finding],
     src_object: object,
     tgt_object: object,
-    sync_settings: dict[str, str] = None,
+    sync_settings: types.ConfigSettings = None,
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     """Syncs 2 list of findings and returns report and count of syncs"""
     # Mass collect changelogs with multithreading, that will be needed later

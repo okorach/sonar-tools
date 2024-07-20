@@ -34,7 +34,7 @@ from requests.exceptions import HTTPError
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
-
+from sonar.util import types
 from sonar import measures, exceptions, projects
 import sonar.permissions.qualitygate_permissions as permissions
 import sonar.utilities as util
@@ -81,7 +81,7 @@ class QualityGate(sq.SqObject):
     Abstraction of the Sonar Quality Gate concept
     """
 
-    def __init__(self, endpoint: pf.Platform, name: str, data: dict[str, str]) -> None:
+    def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
         """Constructor, don't use directly, use class methods instead"""
         super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Object name
@@ -117,7 +117,7 @@ class QualityGate(sq.SqObject):
         return cls.load(endpoint, data)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> QualityGate:
+    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> QualityGate:
         """Creates a quality gate from returned API data
         :return: the QualityGate object
         :rtype: QualityGate or None
@@ -248,7 +248,7 @@ class QualityGate(sq.SqObject):
             self._permissions = permissions.QualityGatePermissions(self)
         return self._permissions
 
-    def set_permissions(self, permissions_list: dict[str, str]) -> QualityGate:
+    def set_permissions(self, permissions_list: types.ObjectJsonRepr) -> QualityGate:
         """Sets quality gate permissions
         :param permissions_list:
         :type permissions_list: dict {"users": [<userlist>], "groups": [<grouplist>]}
@@ -305,7 +305,7 @@ class QualityGate(sq.SqObject):
                 problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 
-    def audit(self, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
         """Audits a quality gate, returns found problems"""
         my_name = str(self)
         log.debug("Auditing %s", my_name)
@@ -331,7 +331,7 @@ class QualityGate(sq.SqObject):
             problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
         return problems
 
-    def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
+    def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns JSON representation of object"""
         json_data = self._json
         full = export_settings.get("FULL_EXPORT", False)
@@ -348,7 +348,7 @@ class QualityGate(sq.SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
-def audit(endpoint: pf.Platform = None, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
+def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
     """Audits Sonar platform quality gates, returns found problems"""
     log.info("--- Auditing quality gates ---")
     problems = []
@@ -381,7 +381,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     return qg_list
 
 
-def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """
     :return: The list of quality gates in their JSON representation
     :rtype: dict
@@ -390,7 +390,7 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, 
     return {k: qg.to_json(export_settings) for k, qg in get_list(endpoint).items()}
 
 
-def import_config(endpoint: pf.Platform, config_data: dict[str, str]) -> bool:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> bool:
     """Imports quality gates in a SonarQube platform, fom sonar-config data
     Quality gates already existing are updates with the provided configuration
 

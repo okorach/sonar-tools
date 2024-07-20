@@ -31,6 +31,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
+from sonar.util import types
 from sonar import exceptions
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
@@ -60,7 +61,7 @@ class QualityProfile(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Do not use, use class methods to create objects"""
         super().__init__(endpoint=endpoint, key=key)
 
@@ -128,7 +129,7 @@ class QualityProfile(sq.SqObject):
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> None:
+    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> None:
         """Creates a QualityProfile object from the result of a SonarQube API quality profile search data
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -285,7 +286,7 @@ class QualityProfile(sq.SqObject):
                 log.warning("Activation of rule '%s' in %s failed: HTTP Error %d", r_key, str(self), e.response.status_code)
         return ok
 
-    def update(self, data: dict[str, str], queue: Queue) -> QualityProfile:
+    def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:
         """Updates a QP with data coming from sonar-config"""
         if self.is_built_in:
             log.debug("Not updating built-in %s", str(self))
@@ -307,7 +308,7 @@ class QualityProfile(sq.SqObject):
         _create_or_update_children(name=self.name, language=self.language, endpoint=self.endpoint, children=data.get(_CHILDREN_KEY, {}), queue=queue)
         return self
 
-    def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
+    def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """
         :param full: If True, exports all properties, including those that can't be set
         :type full: bool
@@ -455,7 +456,7 @@ class QualityProfile(sq.SqObject):
             self._permissions = permissions.QualityProfilePermissions(self)
         return self._permissions
 
-    def set_permissions(self, perms: dict[str, str]) -> None:
+    def set_permissions(self, perms: types.ObjectJsonRepr) -> None:
         """Sets the list of users and groups that can can edit the quality profile
         :params perms:
         :type perms: dict{"users": <users comma separated>, "groups": <groups comma separated>}
@@ -463,7 +464,7 @@ class QualityProfile(sq.SqObject):
         """
         self.permissions().set(perms)
 
-    def audit(self, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
         """Audits a quality profile and return list of problems found
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -511,7 +512,7 @@ class QualityProfile(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, QualityProfile]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, QualityProfile]:
     """Searches projects in SonarQube
 
     param Platform endpoint: Reference to the SonarQube platform
@@ -538,7 +539,7 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
     return _OBJECTS
 
 
-def audit(endpoint: pf.Platform, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
     """Audits all quality profiles and return list of problems found
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -562,7 +563,7 @@ def audit(endpoint: pf.Platform, audit_settings: dict[str, str] = None) -> list[
     return problems
 
 
-def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> dict[str, str]:
+def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> types.ObjectJsonRepr:
     """Organize a flat list of QP in hierarchical (inheritance) fashion
 
     :param qp_list: List of quality profiles
@@ -590,7 +591,7 @@ def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> dict[str, str
     return qp_list
 
 
-def export(endpoint: pf.Platform, export_settings: dict[str, str], in_hierarchy: bool = True) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, in_hierarchy: bool = True) -> types.ObjectJsonRepr:
     """Exports all quality profiles configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -652,7 +653,7 @@ def __import_thread(queue: Queue) -> None:
         queue.task_done()
 
 
-def import_config(endpoint: pf.Platform, config_data: dict[str, str], threads: int = 8) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, threads: int = 8) -> None:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
