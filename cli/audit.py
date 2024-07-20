@@ -67,7 +67,7 @@ def _audit_sif(sysinfo, audit_settings):
     return (server_id, sif_obj.audit(audit_settings))
 
 
-def _audit_sq(sq, settings: ConfigSettings, what_to_audit: list[str] = None, key_list: list[str] = None) -> list[problem.Problem]:
+def _audit_sq(sq: platform.Platform, settings: ConfigSettings, what_to_audit: list[str] = None, key_list: list[str] = None) -> list[problem.Problem]:
     """Audits a SonarQube/Cloud platform"""
     problems = []
     everything = False

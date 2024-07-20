@@ -80,6 +80,7 @@ _IMPORTABLE_PROPERTIES = (
     "webhooks",
 )
 
+
 class Project(components.Component):
     """
     Abstraction of the SonarQube project concept

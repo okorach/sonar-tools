@@ -69,7 +69,7 @@ class AppNode(dce_nodes.DceNode):
     def name(self):
         return self.json["Name"]
 
-    def audit(self, audit_settings: types.ConfigSettings = None):
+    def audit(self, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
         log.info("Auditing %s", str(self))
         return (
             self.__audit_official()

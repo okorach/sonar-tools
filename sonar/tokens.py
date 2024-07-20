@@ -26,6 +26,7 @@ import sonar.platform as pf
 import sonar.utilities as util
 from sonar.util import types
 
+
 class UserToken(sq.SqObject):
     """
     Abstraction of the SonarQube "user token" concept
