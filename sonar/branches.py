@@ -266,7 +266,8 @@ class Branch(components.Component):
         _OBJECTS[self.uuid()] = self
         return True
 
-    def __audit_zero_loc(self):
+    def __audit_zero_loc(self) -> list[problem.Problem]:
+        """Audits whether a branch has 0 LoC"""
         if self.last_analysis() and self.loc() == 0:
             rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
             return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
@@ -326,7 +327,7 @@ class Branch(components.Component):
         counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
-    def __audit_last_analysis(self, audit_settings):
+    def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         age = util.age(self.last_analysis())
         if self.is_main() or age is None:
             # Main branch (not purgeable) or branch not analyzed yet
