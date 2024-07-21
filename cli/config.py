@@ -121,8 +121,10 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         "FULL_EXPORT": kwargs["fullExport"],
         "THREADS": kwargs[options.NBR_THREADS],
     }
-    if "projects" in what:
-        __check_projects_existence(endpoint, kwargs[options.KEYS])
+    if "projects" in what and kwargs[options.KEYS]:
+        non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
+        if len(non_existing_projects) > 0:
+            utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
 
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
