@@ -412,9 +412,9 @@ class QualityProfile(sq.SqObject):
 
         return (diff_rules, qp_json_data)
 
-    def projects(self) -> list[str]:
+    def projects(self) -> types.KeyList:
         """Returns the list of projects keys using this quality profile
-        :return: dict result of the diff ("inLeft", "modified")
+        :return: List of projects using explicitly this QP
         :rtype: List[project_key]
         """
 

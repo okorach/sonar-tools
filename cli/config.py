@@ -27,6 +27,7 @@ import json
 from cli import options
 from sonar import exceptions, errcodes, utilities
 import sonar.logging as log
+from sonar.util import types
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
 
@@ -103,7 +104,7 @@ def __parse_args(desc):
     return args
 
 
-def __check_projects_existence(endpoint: object, key_list: list[str]) -> None:
+def __check_projects_existence(endpoint: object, key_list: types.KeyList) -> None:
     if key_list is None:
         return
     for key in key_list:

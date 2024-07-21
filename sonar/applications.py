@@ -360,7 +360,7 @@ class Application(aggr.Aggregation):
         self.post("applications/set_tags", params={"application": self.key, "tags": my_tags})
         self._tags = util.csv_to_list(my_tags)
 
-    def add_projects(self, project_list: list[str]) -> bool:
+    def add_projects(self, project_list: types.KeyList) -> bool:
         """Add projects to an application"""
         current_projects = self.projects().keys()
         ok = True
@@ -461,7 +461,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, A
     )
 
 
-def get_list(endpoint: pf.Platform, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Application]:
+def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Application]:
     """
     :return: List of Applications (all of them if key_list is None or empty)
     :param Platform endpoint: Reference to the Sonar platform
@@ -489,7 +489,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: list[str] = None) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -511,7 +511,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     return apps_settings
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: list[str] = None) -> list[problem.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -533,7 +533,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list:
     return problems
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: list[str] = None) -> bool:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a list of application configuration in a SonarQube platform
 
     :param Platform endpoint: Reference to the SonarQube platform

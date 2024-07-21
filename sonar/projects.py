@@ -1266,10 +1266,10 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, P
     )
 
 
-def get_list(endpoint: pf.Platform, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Project]:
+def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Project]:
     """
     :param Platform endpoint: Reference to the SonarQube platform
-    :param list[str] key_list: List of portfolios keys to get, if None or empty all portfolios are returned
+    :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
     :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :return: the list of all projects
     :rtype: dict{key: Project}
@@ -1309,7 +1309,7 @@ def __audit_thread(queue: Queue[Project], results: list[pb.Problem], audit_setti
     log.debug("Queue empty, exiting thread")
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: Optional[list[str]] = None) -> list[pb.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[pb.Problem]:
     """Audits all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1354,7 +1354,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         queue.task_done()
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[list[str]] = None) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1394,15 +1394,13 @@ def exists(key: str, endpoint: pf.Platform) -> bool:
         return False
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: Optional[list[str]] = None) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports a configuration in SonarQube
 
-    :param endpoint: reference to the SonarQube platform
+    :param Platform endpoint: reference to the SonarQube platform
     :type endpoint: pf.Platform
-    :param config_data: the configuration to import
-    :type config_data: dict
-    :param key_list: List of project keys to be considered for the import, defaults to None (all projects)
-    :type key_list: str
+    :param ObjectJsonRepr config_data: the configuration to import
+    :param KeyList key_list: List of project keys to be considered for the import, defaults to None (all projects)
     :return: Nothing
     """
     if "projects" not in config_data:
@@ -1446,7 +1444,7 @@ def __export_zip_thread(queue: Queue[Project], results: list[dict[str, str]], st
         queue.task_done()
 
 
-def export_zip(endpoint: pf.Platform, key_list: list[str] = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
+def export_zip(endpoint: pf.Platform, key_list: types.KeyList = None, threads: int = 8, export_timeout: int = 30) -> dict[str, str]:
     """Export as zip all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform

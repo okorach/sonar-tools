@@ -273,13 +273,13 @@ class Portfolio(aggregations.Aggregation):
             subp.create_sub_portfolios()
             subp.projects()
 
-    def regexp(self) -> Union[str, None]:
+    def regexp(self) -> Optional[str]:
         """Returns the regexp if selection mode is regexp, None otherwise"""
         if self.selection_mode()["mode"] != SELECTION_MODE_REGEXP:
             return None
         return self.selection_mode()["regexp"]
 
-    def tags(self) -> Union[list[str], None]:
+    def tags(self) -> Optional[list[str]]:
         """Returns the list of tags if selection mode is tags, None otherwise"""
         if self.selection_mode()["mode"] != SELECTION_MODE_TAGS:
             self._tags = None
@@ -423,7 +423,7 @@ class Portfolio(aggregations.Aggregation):
         self._selection_mode = {"mode": SELECTION_MODE_MANUAL, "projects": {}}
         return self
 
-    def set_tags_mode(self, tags: list[str], branch: str = None) -> Portfolio:
+    def set_tags_mode(self, tags: list[str], branch: Optional[str] = None) -> Portfolio:
         """Sets a portfolio to tags mode"""
         mode = self._selection_mode
         if not mode or mode["mode"] != SELECTION_MODE_TAGS or mode["branch"] != branch:
@@ -460,7 +460,12 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def set_selection_mode(
-        self, selection_mode: str, projects: dict[str, str] = None, regexp: str = None, tags: list[str] = None, branch: str = None
+        self,
+        selection_mode: str,
+        projects: Optional[dict[str, str]] = None,
+        regexp: Optional[str] = None,
+        tags: Optional[list[str]] = None,
+        branch: Optional[str] = None,
     ) -> Portfolio:
         """Sets a portfolio selection mode"""
         log.debug("Setting selection mode %s for %s", str(selection_mode), str(self))
@@ -570,7 +575,7 @@ def count(endpoint: pf.Platform) -> int:
     return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
 
 
-def get_list(endpoint: pf.Platform, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Portfolio]:
+def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
     """
     :return: List of Portfolios (all of them if key_list is None or empty)
     :param key_list: List of portfolios keys to get, if None or empty all portfolios are returned
@@ -676,7 +681,7 @@ def exists(key: str, endpoint: pf.Platform) -> bool:
         return False
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: Optional[list[str]] = None) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports portfolio configuration described in a JSON"""
     if "portfolios" not in config_data:
         log.info("No portfolios to import")
@@ -730,7 +735,7 @@ def search_by_key(endpoint: pf.Platform, key: str) -> types.ApiPayload:
     return util.search_by_key(endpoint, key, _SEARCH_API, "components")
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[list[str]] = None) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform

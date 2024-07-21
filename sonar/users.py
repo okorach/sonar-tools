@@ -140,7 +140,7 @@ class User(sqobject.SqObject):
         self._groups = self.groups(data)  #: User groups
         self._json = data
 
-    def groups(self, data: types.ApiPayload = None) -> list[str]:
+    def groups(self, data: types.ApiPayload = None) -> types.KeyList:
         """Returns the list of groups of a user"""
         if self._groups is not None:
             return self._groups
@@ -199,8 +199,7 @@ class User(sqobject.SqObject):
         :type email: str, optional
         :param login: New login of the user
         :type login: str, optional
-        :param groups: List of groups to add membership
-        :type groups: list[str], optional
+        :param KeyList groups: List of groups to add membership
         :param scm_accounts: List of SCM accounts
         :type scm_accounts: list[str], optional
         :return: self

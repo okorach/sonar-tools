@@ -362,7 +362,9 @@ def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: obj
     return settings
 
 
-def get_bulk(endpoint: pf.Platform, settings_list: list[str] = None, component: object = None, include_not_set: bool = False) -> dict[str, Setting]:
+def get_bulk(
+    endpoint: pf.Platform, settings_list: types.KeyList = None, component: object = None, include_not_set: bool = False
+) -> dict[str, Setting]:
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
     params = get_component_params(component)
