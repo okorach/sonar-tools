@@ -99,6 +99,11 @@
         "type": "PERFORMANCE",
         "message": "Short Lived Branches retention duration of {} days is outside of recommended range [{}-{}]"
     },
+    "CUSTOM_PLUGIN": {
+        "severity": "LOW",
+        "type": "OPERATIONS",
+        "message": "{}: Unknown custom plugin key '{}' (name '{}') installed"
+    },
     "WEB_HEAP_TOO_LOW": {
         "severity": "HIGH",
         "type": "PERFORMANCE",

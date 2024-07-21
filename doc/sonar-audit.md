@@ -84,6 +84,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - The log4shell fix is has not been implemented (either with recent enough SonarQube patch level or the `-Dlog4j2.formatMsgNoLookups=true` option)
   - Commercial edition but not using branch analysis
   - Projects with undetected SCM
+  - 3rd party plugins installed and not listed in a whitelist (`audit.plugins.whitelist`)
   - Available disk space is at least 4 x search store size and at least 10 GB
   - DCE: Different plugins are installed on different app nodes
   - DCE: Different version of SonarQube running on different app nodes

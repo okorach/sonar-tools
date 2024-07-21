@@ -26,6 +26,7 @@
 from typing import Union
 
 import sonar.logging as log
+from sonar.util import types
 import sonar.utilities as util
 from sonar.audit import rules
 import sonar.audit.problem as pb
@@ -49,7 +50,8 @@ class SearchNode(nodes.DceNode):
     def node_type(self):
         return "SEARCH"
 
-    def audit(self):
+    def audit(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+        """Audit a DCE search node"""
         log.info("%s: Auditing...", str(self))
         return self.__audit_store_size() + self.__audit_available_disk()
 

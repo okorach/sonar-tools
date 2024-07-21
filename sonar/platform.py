@@ -26,6 +26,7 @@
 from http import HTTPStatus
 import sys
 import os
+from typing import Optional
 import time
 import datetime
 import json
@@ -503,11 +504,10 @@ class Platform:
         global_permissions.import_config(self, config_data)
         devops.import_config(self, config_data)
 
-    def audit(self, audit_settings=None):
+    def audit(self, audit_settings: Optional[types.ConfigSettings] = None) -> list[pb.Problem]:
         """Audits a global platform configuration and returns the list of problems found
 
-        :param audit_settings: Options of what to audit and thresholds to raise problems
-        :type audit_settings: dict
+        :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
