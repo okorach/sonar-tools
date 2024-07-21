@@ -527,7 +527,6 @@ class Project(components.Component):
         """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
         data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500, "q": "pom.xml"}).text)
         for comp in data["components"]:
-            log.info("Maven Looking at %s", comp["name"])
             if comp["name"] == "pom.xml":
                 log.info("%s is a MAVEN project", str(self))
                 return "MAVEN"
@@ -537,13 +536,11 @@ class Project(components.Component):
                 return "GRADLE"
         data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
         for comp in data["components"]:
-            log.info(".Net Looking at %s", comp["name"])
             if re.match(r".*\.(cs|csx|vb)$", comp["name"]):
                 log.info("%s is a DOTNET project", str(self))
                 return "DOTNET"
         data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
         for comp in data["components"]:
-            log.info(".Net Looking at %s", comp["name"])
             if re.match(r".*\.(java)$", comp["name"]):
                 log.info("%s is a JAVA project", str(self))
                 return "JAVA"
