@@ -341,7 +341,7 @@ class Finding(sq.SqObject):
         """
         return set([v["user"] for v in self.comments() if "user" in v])
 
-    def can_be_synced(self, user_list: types.KeyList) -> bool:
+    def can_be_synced(self, user_list: list[str]) -> bool:
         """
         :meta private:
         """

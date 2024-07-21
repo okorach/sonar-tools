@@ -30,7 +30,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings, KeyList
+from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 from sonar import users, syncer, sqobject, findings, changelog, projects
 import sonar.utilities as util
@@ -284,7 +284,7 @@ class Issue(findings.Finding):
             return self.post("issues/assign", {"issue": self.key, "assignee": assignee}).ok
         return False
 
-    def set_tags(self, tags: types.KeyList) -> bool:
+    def set_tags(self, tags: list[str]) -> bool:
         """Sets tags to an issue (Replacing all previous tags)
         :param list tags: Tags to set
         :return: Whether the operation succeeded
