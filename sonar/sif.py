@@ -25,11 +25,12 @@
 
 import datetime
 import re
-from typing import Union
+from typing import Union, Optional
 from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
 import sonar.utilities as util
+from sonar.util import types
 from sonar.audit import rules
 import sonar.audit.problem as pb
 import sonar.sif_node as sifn
@@ -152,17 +153,19 @@ class Sif:
             return None
         return util.int_memory(setting)
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+        """Audits a SIF"""
         log.info("Auditing System Info")
         problems = self.__audit_jdbc_url()
         log.debug("Edition = %s", self.edition())
         if self.edition() == "datacenter":
             log.info("DCE SIF audit")
-            problems += self.__audit_dce_settings()
+            problems += self.__audit_dce_settings(audit_settings)
         else:
             problems += (
-                sifn.audit_web(self, "Web process", self.json)
-                + sifn.audit_ce(self, "CE process", self.json)
+                sifn.audit_web(self, "Web process")
+                + sifn.audit_ce(self, "CE process")
+                + sifn.audit_plugins(self, "WebApp", audit_settings)
                 + self.__audit_es_settings()
                 + self.__audit_branch_use()
                 + self.__audit_undetected_scm()
@@ -272,7 +275,7 @@ class Sif:
             log.info("JDBC URL %s does not use localhost, all good!", jdbc_url)
         return []
 
-    def __audit_dce_settings(self):
+    def __audit_dce_settings(self, audit_settings: types.ConfigSettings):
         log.info("Auditing DCE settings for version %s", str(self.version()))
         problems = []
         sq_edition = self.edition()
@@ -283,7 +286,7 @@ class Sif:
             log.info("Not a Data Center Edition, skipping DCE checks")
             return problems
         if _APP_NODES in self.json:
-            problems += appnodes.audit(self.json[_APP_NODES], self)
+            problems += appnodes.audit(self.json[_APP_NODES], self, audit_settings=audit_settings)
         else:
             log.info("Sys Info too old (pre-8.9), can't check plugins")
 
@@ -322,7 +325,6 @@ class Sif:
             )
         problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_ES)
         return problems
-
 
 def is_sysinfo(sysinfo):
     counter = 0

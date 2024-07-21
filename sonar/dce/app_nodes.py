@@ -69,13 +69,14 @@ class AppNode(dce_nodes.DceNode):
     def name(self):
         return self.json["Name"]
 
-    def audit(self, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         log.info("Auditing %s", str(self))
         return (
             self.__audit_official()
             + self.__audit_health()
-            + sifn.audit_web(self, f"{str(self)} Web process", self.json)
-            + sifn.audit_ce(self, f"{str(self)} CE process", self.json)
+            + sifn.audit_web(self, f"{str(self)} Web process")
+            + sifn.audit_ce(self, f"{str(self)} CE process")
+            + sifn.audit_plugins(self, f"{str(self)} WebApp", audit_settings)
         )
 
     def __audit_health(self):
@@ -102,7 +103,7 @@ class AppNode(dce_nodes.DceNode):
             return []
 
 
-def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
+def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
     """Audits application nodes of a DCE instance
 
     :param dict sub_sif: The JSON subsection of the SIF pertaining to the App Nodes
@@ -111,8 +112,6 @@ def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: types.Con
     :return: List of Problems
     :rtype: list[Problem]
     """
-    if audit_settings is None:
-        audit_settings = {}
     nodes = []
     problems = []
     for n in sub_sif:

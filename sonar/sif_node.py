@@ -27,6 +27,8 @@ import datetime
 from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
+import sonar.utilities as util
+from sonar.util import types
 from sonar.audit import rules
 import sonar.audit.problem as pb
 
@@ -39,19 +41,18 @@ _CE_TASKS = "Compute Engine Tasks"
 _WORKER_COUNT = "Worker Count"
 
 
-def __audit_background_tasks(obj: object, obj_name: str, ce_data: dict[str, str]) -> list[pb.Problem]:
+def __audit_background_tasks(obj: object, obj_name: str) -> list[pb.Problem]:
     """Audits the SIF for the health of background tasks stats, namely the failure rate
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
     :param str obj_name: String name of the object as it will appear in the audit warning, if any audit warning
-    :param dict ce_data: CE section of the SIF (global or for a given DCE app node)
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
     log.info("%s: Auditing CE background tasks", obj_name)
     problems = []
-    ce_tasks = ce_data.get(_CE_TASKS)
+    ce_tasks = obj.json.get(_CE_TASKS)
     if ce_tasks is None:
         log.warning("%s: Can't find Compute Engine Tasks in SIF, audit on CE task is skipped", obj_name)
         return []
@@ -155,7 +156,7 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, sq_v_str, java_version), concerned_object=obj)]
 
 
-def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list[pb.Problem]:
+def __audit_workers(obj: object, obj_name: str) -> list[pb.Problem]:
     """Audits the SIF for number of CE workers configured (global SIF or App Node level)
 
     :param obj: Object concerned by the audit (SIF or App Node)
@@ -170,7 +171,7 @@ def __audit_workers(obj: object, obj_name: str, ce_data: dict[str, str]) -> list
         log.info("%s: %s edition, CE workers audit skipped...", obj_name, ed)
         return []
     try:
-        ce_workers = ce_data[_CE_TASKS][_WORKER_COUNT]
+        ce_workers = obj.json[_CE_TASKS][_WORKER_COUNT]
     except KeyError:
         log.warning("%s: CE section missing from SIF, CE workers audit skipped...", obj_name)
         return []
@@ -252,45 +253,39 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
     return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lta_str))]
 
 
-def audit_ce(obj: object, obj_name: str, node_data: dict[str, dict]) -> list[pb.Problem]:
+def audit_ce(obj: object, obj_name: str) -> list[pb.Problem]:
     """Audits the CE section of a SIF (global SIF or App Node level),
     and returns list of Problem for each problem found
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
-    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
-    :type obj_name: str
-    :param node_data: Global SIF or one Application node section a DCE SIF
-    :type node_data: dict
+    :param str obj_name: String name of the object as it will appear in the audit warning, if any audit warning
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
     try:
-        nb_workers = node_data[_CE_TASKS][_WORKER_COUNT]
+        nb_workers = obj.json[_CE_TASKS][_WORKER_COUNT]
     except KeyError:
         nb_workers = 0
 
     heap_min = max(2048, 1024 * nb_workers)
     heap_max = max(4096, 2048 * nb_workers)
     return (
-        __audit_background_tasks(obj, obj_name, node_data)
-        + __audit_workers(obj, obj_name, node_data)
-        + __audit_jvm(obj, obj_name, node_data["Compute Engine JVM State"], (heap_min, heap_max))
-        + __audit_log_level(obj, obj_name, node_data["Compute Engine Logging"])
-        + __audit_jvm_version(obj, obj_name, node_data["Compute Engine JVM Properties"])
+        __audit_background_tasks(obj, obj_name)
+        + __audit_workers(obj, obj_name)
+        + __audit_jvm(obj, obj_name, obj.json["Compute Engine JVM State"], (heap_min, heap_max))
+        + __audit_log_level(obj, obj_name, obj.json["Compute Engine Logging"])
+        + __audit_jvm_version(obj, obj_name, obj.json["Compute Engine JVM Properties"])
     )
 
 
-def audit_web(obj: object, obj_name: str, node_data: dict[str, dict]) -> list[pb.Problem]:
+def audit_web(obj: object, obj_name: str) -> list[pb.Problem]:
     """Audits the Web section of a SIF (global SIF or App Node level),
     and returns list of Problem for each problem found
 
     :param obj: Object concerned by the audit (SIF or App Node)
     :type obj: Sif or AppNode
-    :param obj_name: String name of the object as it will appear in the audit warning, if any audit warning
-    :type obj_name: str
-    :param node_data: Global SIF or one Application node section a DCE SIF
-    :type node_data: dict
+    :param str obj_name: String name of the object as it will appear in the audit warning, if any audit warning
     :return: List of problems found, or empty list
     :rtype: list[Problem]
     """
@@ -299,7 +294,22 @@ def audit_web(obj: object, obj_name: str, node_data: dict[str, dict]) -> list[pb
         (heap_min, heap_max) = (2048, 8192)
     return (
         audit_version(obj, obj_name)
-        + __audit_jvm(obj, obj_name, node_data["Web JVM State"], (heap_min, heap_max))
-        + __audit_log_level(obj, obj_name, node_data["Web Logging"])
-        + __audit_jvm_version(obj, obj_name, node_data["Web JVM Properties"])
+        + __audit_jvm(obj, obj_name, obj.json["Web JVM State"], (heap_min, heap_max))
+        + __audit_log_level(obj, obj_name, obj.json["Web Logging"])
+        + __audit_jvm_version(obj, obj_name, obj.json["Web JVM Properties"])
     )
+
+
+def audit_plugins(obj: object, obj_name: str, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    """Audit for the presence of 3rd party plugins outside a white list"""
+    if "Plugins" not in obj.json:
+        log.info("Plugins entry not found for %s, audit of 3rd party plugins skipped...", obj_name)
+        return []
+    whitelist = util.csv_to_list(audit_settings.get("audit.plugins.whitelist", ""))
+    log.info("Auditing 3rd part plugins with CSV whitelist '%s'", ", ".join(whitelist))
+    problems = []
+    for key, name in obj.json["Plugins"].items():
+        if key not in whitelist:
+            rule = rules.get_rule(rules.RuleId.CUSTOM_PLUGIN)
+            problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(obj_name, key, name), concerned_object=obj))
+    return problems
