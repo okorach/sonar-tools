@@ -105,6 +105,7 @@ def __parse_args(desc):
 
 
 def __check_projects_existence(endpoint: object, key_list: types.KeyList) -> None:
+    """Verifies the projects existence and exits fi one does not exist"""
     if key_list is None:
         return
     for key in key_list:
