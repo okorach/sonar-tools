@@ -202,7 +202,7 @@ class Finding(sq.SqObject):
             return None
 
     def language(self) -> str:
-        """Returns the finding languae"""
+        """Returns the finding language"""
         return rules.get_object(endpoint=self.endpoint, key=self.rule).language
 
     def to_csv(self, separator: str = ",", without_time: bool = False) -> list[str]:

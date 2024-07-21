@@ -147,7 +147,7 @@ class Component(sq.SqObject):
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
 
-    def get_measures(self, metrics_list: list[str]) -> dict[str, any]:
+    def get_measures(self, metrics_list: types.KeyList) -> dict[str, any]:
         """Retrieves a project list of measures
 
         :param list metrics_list: List of metrics to return
@@ -214,7 +214,7 @@ class Component(sq.SqObject):
             return last_task.audit(audit_settings)
         return []
 
-    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+    def get_measures_history(self, metrics_list: types.KeyList) -> dict[str, str]:
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
 

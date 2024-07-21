@@ -461,11 +461,11 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, A
     )
 
 
-def get_list(endpoint: pf.Platform, key_list: list[str] = None, use_cache: bool = True) -> dict[str, Application]:
+def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Application]:
     """
     :return: List of Applications (all of them if key_list is None or empty)
     :param Platform endpoint: Reference to the Sonar platform
-    :param key_list: List of app keys to get, if None or empty all applications are returned
+    :param KeyList key_list: List of app keys to get, if None or empty all applications are returned
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :type use_cache: bool
     :rtype: dict{<branchName>: <Branch>}
@@ -489,12 +489,11 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: list[str] = None) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
-    :param key_list: list of Application keys to export, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Application keys to export, defaults to all if None
     :param full: Whether to export all attributes, including those that can't be set, defaults to False
     :type full: bool
     :return: Dict of applications settings
@@ -511,13 +510,12 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     return apps_settings
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: list[str] = None) -> list[problem.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
     :param Platform endpoint: Reference to the Sonar platform
     :param dict audit_settings: dict of audit config settings
-    :param key_list: list of Application keys to audit, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Application keys to audit, defaults to all if None
     :return: List of problems found
     :rtype: list [Problem]
     """
@@ -533,13 +531,12 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list:
     return problems
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: list[str] = None) -> bool:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a list of application configuration in a SonarQube platform
 
     :param Platform endpoint: Reference to the SonarQube platform
     :param dict config_data: JSON representation of applications configuration
-    :param key_list: list of Application keys to import, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Application keys to import, defaults to all if None
     :return: Whether import succeeded
     :rtype: bool
     """

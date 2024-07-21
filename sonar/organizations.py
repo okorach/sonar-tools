@@ -135,12 +135,12 @@ class Organization(sqobject.SqObject):
         return self._json.get("alm", None)
 
 
-def get_list(endpoint: pf.Platform, key_list: Optional[list[str]] = None, use_cache: bool = True) -> dict[str, object]:
+def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
     """
     :return: List of Organizations (all of them if key_list is None or empty)
-    :param str key_list: List of org keys to get, if None or empty all orgs are returned
+    :param KeyList key_list: List of org keys to get, if None or empty all orgs are returned
     :param bool use_cache: Whether to use local cache or query SonarCloud, default True (use cache)
-    :rtype: dict{<branchName>: <Branch>}
+    :rtype: dict{<orgName>: <Organization>}
     """
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
@@ -152,7 +152,7 @@ def get_list(endpoint: pf.Platform, key_list: Optional[list[str]] = None, use_ca
     return object_list
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str:Organization]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Organization]:
     """Searches organizations
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -171,12 +171,11 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str:Or
     )
 
 
-def export(endpoint: pf.Platform, key_list: Optional[list[str]] = None) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Exports organizations as JSON
 
     :param Platform endpoint: Reference to the SonarCloud platform
-    :param key_list: list of Organizations keys to export, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Organizations keys to export, defaults to all if None
     :return: Dict of organization settings
     :rtype: dict
     """
