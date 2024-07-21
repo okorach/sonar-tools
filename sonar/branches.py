@@ -345,12 +345,10 @@ class Branch(components.Component):
             log.debug("%s age is %d days", str(self), age)
         return problems
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits a branch and return list of problems found
 
-        :meta private:
-        :param audit_settings: Options of what to audit and thresholds to raise problems
-        :type audit_settings: dict
+        :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
