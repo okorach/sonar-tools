@@ -302,6 +302,9 @@ def audit_web(obj: object, obj_name: str) -> list[pb.Problem]:
 
 def audit_plugins(obj: object, obj_name: str, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
     """Audit for the presence of 3rd party plugins outside a white list"""
+    if not audit_settings.get("audit.plugins", True):
+        log.info("Audit of 3rd party plugins skipped...")
+        return []
     if "Plugins" not in obj.json:
         log.info("Plugins entry not found for %s, audit of 3rd party plugins skipped...", obj_name)
         return []
