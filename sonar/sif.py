@@ -275,7 +275,8 @@ class Sif:
             log.info("JDBC URL %s does not use localhost, all good!", jdbc_url)
         return []
 
-    def __audit_dce_settings(self, audit_settings: types.ConfigSettings):
+    def __audit_dce_settings(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+        """Audits DCE settings"""
         log.info("Auditing DCE settings for version %s", str(self.version()))
         problems = []
         sq_edition = self.edition()
