@@ -175,8 +175,7 @@ def export(endpoint: pf.Platform, key_list: types.KeyList = None) -> types.Objec
     """Exports organizations as JSON
 
     :param Platform endpoint: Reference to the SonarCloud platform
-    :param key_list: list of Organizations keys to export, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Organizations keys to export, defaults to all if None
     :return: Dict of organization settings
     :rtype: dict
     """

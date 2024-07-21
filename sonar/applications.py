@@ -465,7 +465,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     """
     :return: List of Applications (all of them if key_list is None or empty)
     :param Platform endpoint: Reference to the Sonar platform
-    :param key_list: List of app keys to get, if None or empty all applications are returned
+    :param KeyList key_list: List of app keys to get, if None or empty all applications are returned
     :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :type use_cache: bool
     :rtype: dict{<branchName>: <Branch>}
@@ -493,8 +493,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
-    :param key_list: list of Application keys to export, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Application keys to export, defaults to all if None
     :param full: Whether to export all attributes, including those that can't be set, defaults to False
     :type full: bool
     :return: Dict of applications settings
@@ -516,8 +515,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list:
 
     :param Platform endpoint: Reference to the Sonar platform
     :param dict audit_settings: dict of audit config settings
-    :param key_list: list of Application keys to audit, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Application keys to audit, defaults to all if None
     :return: List of problems found
     :rtype: list [Problem]
     """
@@ -538,8 +536,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
     :param Platform endpoint: Reference to the SonarQube platform
     :param dict config_data: JSON representation of applications configuration
-    :param key_list: list of Application keys to import, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Application keys to import, defaults to all if None
     :return: Whether import succeeded
     :rtype: bool
     """

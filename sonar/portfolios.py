@@ -578,9 +578,8 @@ def count(endpoint: pf.Platform) -> int:
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
     """
     :return: List of Portfolios (all of them if key_list is None or empty)
-    :param key_list: List of portfolios keys to get, if None or empty all portfolios are returned
-    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :type use_cache: bool
+    :param KeyList key_list: List of portfolios keys to get, if None or empty all portfolios are returned
+    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :rtype: dict{<branchName>: <Branch>}
     """
     with _CLASS_LOCK:
@@ -739,10 +738,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
-    :param key_list: list of portfoliios keys to export as csv or list, defaults to all if None
-    :type key_list: list, optional
-    :param full: Whether to export all attributes, including those that can't be set, defaults to False
-    :type full: bool
+    :param KeyList key_list: list of portfoliios keys to export as csv or list, defaults to all if None
+    :param ConfigSetting export_settings: Options to use for export
     :return: Dict of applications settings
     :rtype: dict
     """
