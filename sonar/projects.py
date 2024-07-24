@@ -90,6 +90,10 @@ class Project(components.Component):
     SEARCH_RETURN_FIELD = "components"
 
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
+        """
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str key: The project key
+        """
         super().__init__(endpoint=endpoint, key=key)
         self._last_analysis = "undefined"
         self._branches_last_analysis = "undefined"
