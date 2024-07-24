@@ -29,7 +29,7 @@ class Problem:
     Abstraction of an audit problem
     """
 
-    def __init__(self, broken_rule: object, msg: str = "", concerned_object: object = None, **kwargs) -> None:
+    def __init__(self, broken_rule: object, concerned_object: object, msg: str = "", **kwargs) -> None:
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
         self.type = broken_rule.type

@@ -244,13 +244,13 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
         current_lta = (6, 7, 0)
     else:
         current_lta = (5, 9, 0)
-    lta_str = f"{current_lta[0]}.{current_lta[1]}"
+    lta_str = ".".join(current_lta[:2])
     if sq_version >= current_lta:
         log.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, obj.version(as_string=True), lta_str)
         return []
 
     rule = rules.get_rule(rules.RuleId.BELOW_LTA)
-    return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lta_str))]
+    return [pb.Problem(broken_rule=rule, msg=rule.msg.format(obj.version(as_string=True), lta_str), concerned_object="")]
 
 
 def audit_ce(obj: object, obj_name: str) -> list[pb.Problem]:
