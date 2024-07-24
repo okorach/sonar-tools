@@ -32,7 +32,6 @@ class Problem:
     def __init__(self, broken_rule: object, msg: str = "", concerned_object: object = None, **kwargs) -> None:
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
-        self.rule_id = "UNDEF"
         self.type = broken_rule.type
         self.severity = broken_rule.severity
         self.rule_id = broken_rule.id
