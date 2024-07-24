@@ -34,8 +34,7 @@ from sonar.audit import rules, problem
 
 _OBJECTS = {}
 
-_SEARCH_API_SQ = "users/search"
-_SEARCH_API_SC = "organizations/search_members"
+
 CREATE_API = "users/create"
 UPDATE_API = "users/update"
 DEACTIVATE_API = "users/deactivate"
@@ -50,6 +49,12 @@ class User(sqobject.SqObject):
     Abstraction of the SonarQube "user" concept
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
+
+    SEARCH_API = "users/search"
+    SEARCH_KEY_FIELD = "login"
+    SEARCH_RETURN_FIELD = "users"
+
+    SEARCH_API_SC = "organizations/search_members"
 
     def __init__(self, endpoint: pf.Platform, login: str, data: types.ApiPayload) -> None:
         """Do not use to create users, use on of the constructor class methods"""
@@ -156,9 +161,9 @@ class User(sqobject.SqObject):
 
         :return:  Nothing
         """
-        api = _SEARCH_API_SQ
+        api = User.SEARCH_API
         if self.endpoint.is_sonarcloud():
-            api = _SEARCH_API_SC
+            api = User.SEARCH_API_SC
         data = self.get(api, params={"q": self.login})
         for d in data["users"]:
             if d["login"] == self.login:
@@ -360,26 +365,16 @@ class User(sqobject.SqObject):
         return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, full))
 
 
-def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, object]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, User]:
     """Searches users in SonarQube or SonarCloud
 
-    :param endpoint: Reference to the SonarQube platform
-    :type endpoint: Platform
-    :param params: list of parameters to narrow down the search
-    :type params: dict
-    :return: list of projects
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param ApiParams params: list of parameters to narrow down the search
+    :return: list of users
     :rtype: dict{login: User}
     """
     log.debug("Searching users with params %s", str(params))
-    api = _SEARCH_API_SQ
-    if endpoint.is_sonarcloud():
-        api = _SEARCH_API_SC
-        if params is None:
-            params = {"organization": endpoint.organization}
-        else:
-            params["organization"] = endpoint.organization
-
-    return sqobject.search_objects(api=api, params=params, returned_field="users", key_field="login", object_class=User, endpoint=endpoint)
+    return sqobject.search_objects(endpoint=endpoint, object_class=User, params=params)
 
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:

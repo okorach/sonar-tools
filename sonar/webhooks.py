@@ -39,6 +39,10 @@ class WebHook(sq.SqObject):
     Abstraction of the SonarQube "webhook" concept
     """
 
+    SEARCH_API = "webhooks/list"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "webhooks"
+
     def __init__(
         self, endpoint: pf.Platform, name: str, url: str = None, secret: str = None, project: str = None, data: types.ApiPayload = None
     ) -> None:
@@ -106,7 +110,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, W
     :return: List of webhooks
     :rtype: dict{<key>: <WebHook>}
     """
-    return sq.search_objects(api="webhooks/list", params=params, returned_field="webhooks", key_field="key", object_class=WebHook, endpoint=endpoint)
+    return sq.search_objects(endpoint=endpoint, object_class=WebHook, params=params)
 
 
 def get_list(endpoint: pf.Platform, project_key: str = None) -> dict[str, WebHook]:

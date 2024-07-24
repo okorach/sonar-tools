@@ -42,9 +42,7 @@ import sonar.audit.rules as arules
 import sonar.audit.problem as pb
 
 _CREATE_API = "qualityprofiles/create"
-_SEARCH_API = "qualityprofiles/search"
 _DETAILS_API = "qualityprofiles/show"
-_SEARCH_FIELD = "profiles"
 _OBJECTS = {}
 
 _KEY_PARENT = "parent"
@@ -60,6 +58,10 @@ class QualityProfile(sq.SqObject):
     Abstraction of the SonarQube "quality profile" concept
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
+
+    SEARCH_API = "qualityprofiles/search"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "profiles"
 
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Do not use, use class methods to create objects"""
@@ -106,7 +108,7 @@ class QualityProfile(sq.SqObject):
         uid = uuid(name, language, endpoint.url)
         if uid in _OBJECTS:
             return _OBJECTS[uid]
-        data = util.search_by_name(endpoint, name, _SEARCH_API, _SEARCH_FIELD, extra_params={"language": language})
+        data = util.search_by_name(endpoint, name, QualityProfile.SEARCH_API, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
@@ -520,9 +522,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Q
     :return: list of quality profiles
     :rtype: dict{key: QualityProfile}
     """
-    return sq.search_objects(
-        endpoint=endpoint, api=_SEARCH_API, params=params, key_field="key", returned_field=_SEARCH_FIELD, object_class=QualityProfile
-    )
+    return sq.search_objects(endpoint=endpoint, object_class=QualityProfile, params=params)
 
 
 def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, QualityProfile]:

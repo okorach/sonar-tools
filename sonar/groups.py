@@ -31,7 +31,6 @@ from sonar.util import types
 
 SONAR_USERS = "sonar-users"
 
-_SEARCH_API = "user_groups/search"
 _CREATE_API = "user_groups/create"
 _UPDATE_API = "user_groups/update"
 ADD_USER_API = "user_groups/add_user"
@@ -45,6 +44,10 @@ class Group(sq.SqObject):
     Abstraction of the SonarQube "group" concept.
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
+
+    SEARCH_API = "user_groups/search"
+    SEARCH_KEY_FIELD = "name"
+    SEARCH_RETURN_FIELD = "groups"
 
     def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
@@ -70,7 +73,7 @@ class Group(sq.SqObject):
         uu = sq.uuid(name, endpoint.url)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
-        data = util.search_by_name(endpoint, name, _SEARCH_API, "groups")
+        data = util.search_by_name(endpoint, name, Group.SEARCH_API, "groups")
         if data is None:
             raise exceptions.UnsupportedOperation(f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
@@ -227,7 +230,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, G
     :return: dict of groups with group name as key
     :rtype: dict{name: Group}
     """
-    return sq.search_objects(api=_SEARCH_API, params=params, key_field="name", returned_field="groups", endpoint=endpoint, object_class=Group)
+    return sq.search_objects(endpoint=endpoint, object_class=Group, params=params)
 
 
 def get_list(endpoint: pf.Platform) -> dict[str, Group]:

@@ -40,10 +40,6 @@ import sonar.utilities as util
 _OBJECTS = {}
 _CLASS_LOCK = Lock()
 
-_APIS = {
-    "search": "api/organizations/search",
-}
-
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "url", "avatar", "newCodePeriod")
 _NOT_SUPPORTED = "Organizations do not exist in SonarQube"
 
@@ -52,6 +48,10 @@ class Organization(sqobject.SqObject):
     """
     Abstraction of the SonarCloud "organization" concept
     """
+
+    SEARCH_API = "api/organizations/search"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "organizations"
 
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -78,7 +78,7 @@ class Organization(sqobject.SqObject):
         if uu in _OBJECTS:
             return _OBJECTS[uu]
         try:
-            data = json.loads(endpoint.get(_APIS["search"], params={"organizations": key}).text)
+            data = json.loads(endpoint.get(Organization.SEARCH_API, params={"organizations": key}).text)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
@@ -166,9 +166,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, O
     new_params = {"member": "true"}
     if params is not None:
         new_params.update(params)
-    return sqobject.search_objects(
-        api=_APIS["search"], params=new_params, returned_field="organizations", key_field="key", object_class=Organization, endpoint=endpoint
-    )
+    return sqobject.search_objects(endpoint=endpoint, object_class=Organization, params=new_params)
 
 
 def export(endpoint: pf.Platform, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
