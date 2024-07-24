@@ -58,6 +58,10 @@ class Application(aggr.Aggregation):
     Abstraction of the SonarQube "application" concept
     """
 
+    SEARCH_API = "api/components/search_projects"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "components"
+
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=endpoint, key=key)
@@ -456,9 +460,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, A
     new_params = {"filter": "qualifier = APP"}
     if params is not None:
         new_params.update(params)
-    return sq.search_objects(
-        api=APIS["search"], params=new_params, returned_field="components", key_field="key", object_class=Application, endpoint=endpoint
-    )
+    return sq.search_objects(endpoint=endpoint, object_class=Application, params=new_params)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Application]:

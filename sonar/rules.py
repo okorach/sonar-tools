@@ -34,7 +34,7 @@ from sonar.util import types
 from sonar import platform, utilities, exceptions
 
 _OBJECTS = {}
-SEARCH_API = "rules/search"
+
 _DETAILS_API = "rules/show"
 _UPDATE_API = "rules/update"
 _CREATE_API = "rules/create"
@@ -46,6 +46,10 @@ class Rule(sq.SqObject):
     """
     Abstraction of the Sonar Rule concept
     """
+
+    SEARCH_API = "rules/search"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "rules"
 
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
@@ -179,18 +183,18 @@ class Rule(sq.SqObject):
 
 def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
     """Returns a facet as a count per item in the facet"""
-    data = json.loads(endpoint.get(SEARCH_API, params={"ps": 1, "facets": facet}).text)
+    data = json.loads(endpoint.get(Rule.SEARCH_API, params={"ps": 1, "facets": facet}).text)
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
 def search(endpoint: platform.Platform, **params) -> dict[str, Rule]:
     """Searches ruless with optional filters"""
-    return sq.search_objects(SEARCH_API, endpoint, "key", "rules", Rule, params, threads=4)
+    return sq.search_objects(endpoint=endpoint, object_class=Rule, params=params, threads=4)
 
 
 def count(endpoint: platform.Platform, **params) -> int:
     """Count number of rules that correspond to certain filters"""
-    return json.loads(endpoint.get(SEARCH_API, params={**params, "ps": 1}).text)["total"]
+    return json.loads(endpoint.get(Rule.SEARCH_API, params={**params, "ps": 1}).text)["total"]
 
 
 def get_list(endpoint: platform.Platform, **params) -> dict[str, Rule]:

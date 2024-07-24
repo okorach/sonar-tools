@@ -55,7 +55,6 @@ _OBJECTS = {}
 _CLASS_LOCK = Lock()
 
 MAX_PAGE_SIZE = 500
-_SEARCH_API = "projects/search"
 _CREATE_API = "projects/create"
 _NAV_API = "navigation/component"
 _TREE_API = "components/tree"
@@ -86,6 +85,10 @@ class Project(components.Component):
     Abstraction of the SonarQube project concept
     """
 
+    SEARCH_API = "projects/search"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "components"
+
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
         super().__init__(endpoint=endpoint, key=key)
         self._last_analysis = "undefined"
@@ -113,7 +116,7 @@ class Project(components.Component):
         if uu in _OBJECTS:
             return _OBJECTS[uu]
         try:
-            data = json.loads(endpoint.get(_SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
+            data = json.loads(endpoint.get(Project.SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             if len(data["components"]) == 0:
                 log.error("Project key '%s' not found", key)
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
@@ -178,7 +181,7 @@ class Project(components.Component):
         :return: self
         :rtype: Project
         """
-        data = json.loads(self.get(_SEARCH_API, params={"projects": self.key}).text)
+        data = json.loads(self.get(Project.SEARCH_API, params={"projects": self.key}).text)
         if len(data["components"]) == 0:
             _OBJECTS.pop(self.uuid(), None)
             raise exceptions.ObjectNotFound(self.key, f"Project key {self.key} not found")
@@ -1237,7 +1240,7 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     """
     new_params = {} if params is None else params.copy()
     new_params.update({"ps": 1, "p": 1})
-    data = json.loads(endpoint.get(_SEARCH_API, params=params).text)
+    data = json.loads(endpoint.get(Project.SEARCH_API, params=params).text)
     return data["paging"]["total"]
 
 
@@ -1253,14 +1256,7 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, P
     """
     new_params = {} if params is None else params.copy()
     new_params["qualifiers"] = "TRK"
-    return sqobject.search_objects(
-        api=_SEARCH_API,
-        params=new_params,
-        key_field="key",
-        returned_field="components",
-        endpoint=endpoint,
-        object_class=Project,
-    )
+    return sqobject.search_objects(endpoint=endpoint, object_class=Project, params=new_params)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Project]:

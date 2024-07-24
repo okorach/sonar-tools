@@ -327,6 +327,7 @@ class Sif:
         problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_ES)
         return problems
 
+
 def is_sysinfo(sysinfo):
     counter = 0
     for key in (_SETTINGS, _SYSTEM, "Database", "License"):

@@ -48,7 +48,6 @@ _CLASS_LOCK = Lock()
 _NOT_SUPPORTED = "Portfolios not supported in Community and Developer Edition"
 
 _LIST_API = "views/list"
-_SEARCH_API = "views/search"
 _CREATE_API = "views/create"
 _GET_API = "views/show"
 
@@ -84,6 +83,10 @@ class Portfolio(aggregations.Aggregation):
     """
     Abstraction of the Sonar portfolio concept
     """
+
+    SEARCH_API = "views/search"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "components"
 
     def __init__(self, endpoint: pf.Platform, name: str, key: str = None) -> None:
         """Constructor, don't use - use class methods instead"""
@@ -572,7 +575,7 @@ class Portfolio(aggregations.Aggregation):
 
 def count(endpoint: pf.Platform) -> int:
     """Counts number of portfolios"""
-    return aggregations.count(api=_SEARCH_API, endpoint=endpoint)
+    return aggregations.count(api=Portfolio.SEARCH_API, endpoint=endpoint)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Portfolio]:
@@ -594,17 +597,8 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Portfolio]:
     """Search all portfolios of a platform and returns as dict"""
-    portfolio_list = {}
     check_supported(endpoint)
-    portfolio_list = sq.search_objects(
-        api=_SEARCH_API,
-        params=params,
-        returned_field="components",
-        key_field="key",
-        object_class=Portfolio,
-        endpoint=endpoint,
-    )
-    return portfolio_list
+    return sq.search_objects(endpoint=endpoint, object_class=Portfolio, params=params)
 
 
 def check_supported(endpoint: pf.Platform) -> None:
@@ -726,12 +720,12 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
     """Searches portfolio by nmame and and, if found, returns data as JSON"""
-    return util.search_by_name(endpoint, name, _SEARCH_API, "components")
+    return util.search_by_name(endpoint, name, Portfolio.SEARCH_API, "components")
 
 
 def search_by_key(endpoint: pf.Platform, key: str) -> types.ApiPayload:
     """Searches portfolio by key and and, if found, returns data as JSON"""
-    return util.search_by_key(endpoint, key, _SEARCH_API, "components")
+    return util.search_by_key(endpoint, key, Portfolio.SEARCH_API, "components")
 
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:

@@ -23,6 +23,7 @@
 
 """
 
+from contextlib import suppress
 import json
 from http import HTTPStatus
 from queue import Queue
@@ -30,25 +31,28 @@ from threading import Thread
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
+from sonar.util import types
 from sonar import utilities, exceptions
 
 
 class SqObject:
-    def __init__(self, endpoint: object, key: str):
+    def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
         self._json = None
 
-    def uuid(self):
+    def uuid(self) -> str:
+        """Returns object unique ID in its class"""
         return uuid(self.key, self.endpoint.url)
 
-    def reload(self, data):
+    def reload(self, data: types.ObjectJsonRepr):
+        """Reload a Sonar object with its JSON representation"""
         if self._json is None:
             self._json = data
         else:
             self._json.update(data)
 
-    def get(self, api, params=None, exit_on_error=False, mute=()):
+    def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()):
         """Executes and HTTP GET against the SonarQube platform
 
         :param str api: API to invoke (eg api/issues/search)
@@ -63,13 +67,12 @@ class SqObject:
         """
         return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error, mute=mute)
 
-    def post(self, api, params=None, exit_on_error=False, mute=()):
+    def post(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()):
         """Executes and HTTP POST against the SonarQube platform
 
         :param str api: API to invoke (eg api/issues/search)
-        :param dict params: List of parameters to pass to the API
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
+        :param ApiParams params: List of parameters to pass to the API
+        :param bool exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :type mute: tuple, optional
@@ -79,7 +82,8 @@ class SqObject:
         return self.endpoint.post(api=api, params=params, exit_on_error=exit_on_error, mute=mute)
 
 
-def __search_thread(queue):
+def __search_thread(queue: Queue) -> None:
+    """Performs a search for a given object"""
     while not queue.empty():
         (endpoint, api, objects, key_field, returned_field, object_class, params, page) = queue.get()
         page_params = params.copy()
@@ -94,14 +98,18 @@ def __search_thread(queue):
         queue.task_done()
 
 
-def search_objects(api, endpoint, key_field, returned_field, object_class, params, threads=8):
-    """Runs a multi-threaded SonarQube search on any type of object (api, returned field etc... being passed in the request)
-    :meta private:
-    """
-    __MAX_SEARCH = 500
+def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8) -> dict[str, SqObject]:
+    """Runs a multi-threaded object search for searchable Sonar Objects"""
+    api = object_class.SEARCH_API
+    key_field = object_class.SEARCH_KEY_FIELD
+    returned_field = object_class.SEARCH_RETURN_FIELD
+    if endpoint.is_sonarcloud():
+        with suppress(AttributeError):
+            api = object_class.SEARCH_API_SC
+
     new_params = {} if params is None else params.copy()
     if "ps" not in new_params:
-        new_params["ps"] = __MAX_SEARCH
+        new_params["ps"] = 500
     new_params["p"] = 1
     objects_list = {}
     data = json.loads(endpoint.get(api, params=new_params).text)
@@ -127,7 +135,8 @@ def search_objects(api, endpoint, key_field, returned_field, object_class, param
     return objects_list
 
 
-def delete_object(object, api, params, map):
+def delete_object(object: SqObject, api: str, params: types.ApiParams, map: dict[str, SqObject]) -> bool:
+    """Deletes a Sonar object"""
     try:
         log.info("Deleting %s", str(object))
         r = object.post(api, params=params, mute=(HTTPStatus.NOT_FOUND,))
