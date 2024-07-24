@@ -25,20 +25,20 @@ from sonar import utilities
 
 
 class Problem:
-    def __init__(self, broken_rule: object, msg: str = "", problem_type=None, severity=None, concerned_object: object = None) -> None:
+    """
+    Abstraction of an audit problem
+    """
+
+    def __init__(self, broken_rule: object, msg: str = "", concerned_object: object = None, **kwargs) -> None:
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
         self.rule_id = "UNDEF"
-        if broken_rule is None:
-            self.type = problem_type
-            self.severity = severity
-            self.message = msg
-        else:
-            self.type = broken_rule.type
-            self.severity = broken_rule.severity
-            self.rule_id = broken_rule.id
-            self.message = msg
-
+        self.type = broken_rule.type
+        self.severity = broken_rule.severity
+        self.rule_id = broken_rule.id
+        self.message = msg
+        if "severity" in kwargs:
+            self.severity = kwargs["severity"]
         log.warning(msg)
 
     def __str__(self):
