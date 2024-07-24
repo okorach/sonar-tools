@@ -269,15 +269,13 @@ class Branch(components.Component):
     def __audit_zero_loc(self) -> list[problem.Problem]:
         """Audits whether a branch has 0 LoC"""
         if self.last_analysis() and self.loc() == 0:
-            rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
-            return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
+            return [problem.Problem(rules.get_rule(rules.RuleId.PROJ_ZERO_LOC), self, str(self))]
         return []
 
     def __audit_never_analyzed(self) -> list[problem.Problem]:
         """Detects branches that have never been analyzed are are kept when inactive"""
         if not self.last_analysis() and self.is_kept_when_inactive():
-            rule = rules.get_rule(rules.RuleId.BRANCH_NEVER_ANALYZED)
-            return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
+            return [problem.Problem(rules.get_rule(rules.RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
         return []
 
     def get_findings(self):
@@ -339,9 +337,7 @@ class Branch(components.Component):
         elif self.is_kept_when_inactive():
             log.debug("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
-            rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
-            msg = rule.msg.format(str(self), age)
-            problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
+            problems.append(problem.Problem(rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
         else:
             log.debug("%s age is %d days", str(self), age)
         return problems

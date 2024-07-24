@@ -324,27 +324,19 @@ class User(sqobject.SqObject):
         for t in self.tokens():
             age = abs((today - t.created_at).days)
             if age > settings.get("audit.tokens.maxAge", 90):
-                rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
-                msg = rule.msg.format(str(t), age)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=t))
+                problems.append(problem.Problem(rules.get_rule(rules.RuleId.TOKEN_TOO_OLD), t, str(t), age))
             if t.last_connection_date is None and age > settings.get("audit.tokens.maxUnusedAge", 30):
-                rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
-                msg = rule.msg.format(str(t), age)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=t))
+                problems.append(problem.Problem(rules.get_rule(rules.RuleId.TOKEN_NEVER_USED), t, str(t), age))
             if t.last_connection_date is None:
                 continue
             last_cnx_age = abs((today - t.last_connection_date).days)
             if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
-                rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
-                msg = rule.msg.format(str(t), last_cnx_age)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=t))
+                problems.append(problem.Problem(rules.get_rule(rules.RuleId.TOKEN_UNUSED), t, str(t), last_cnx_age))
 
         if self.last_login:
             age = abs((today - self.last_login).days)
             if age > settings.get("audit.users.maxLoginAge", 180):
-                rule = rules.get_rule(rules.RuleId.USER_UNUSED)
-                msg = rule.msg.format(str(self), age)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
+                problems.append(problem.Problem(rules.get_rule(rules.RuleId.USER_UNUSED), self, str(self), age))
         return problems
 
     def to_json(self, full: bool = False) -> types.ObjectJsonRepr:

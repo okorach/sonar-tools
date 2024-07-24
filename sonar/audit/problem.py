@@ -29,16 +29,19 @@ class Problem:
     Abstraction of an audit problem
     """
 
-    def __init__(self, broken_rule: object, concerned_object: object, msg: str = "", **kwargs) -> None:
+    def __init__(self, broken_rule: object, concerned_object: object, *args, **kwargs) -> None:
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
         self.type = broken_rule.type
         self.severity = broken_rule.severity
         self.rule_id = broken_rule.id
-        self.message = msg
+        if len(args) > 0:
+            self.message = broken_rule.msg.format(*args)
+        else:
+            self.message = broken_rule.msg
         if "severity" in kwargs:
             self.severity = kwargs["severity"]
-        log.warning(msg)
+        log.warning(self.message)
 
     def __str__(self):
         return f"Type: {self.type} - Severity: {self.severity} - Description: {self.message}"

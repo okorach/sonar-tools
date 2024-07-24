@@ -499,6 +499,11 @@ def string_to_version(sif_v: str, digits: int = 3, as_string: bool = False) -> U
         return None
 
 
+def version_to_string(vers: tuple[int, int, int]) -> str:
+    """Converts a version tuple to string"""
+    return ".".join([str(n) for n in vers])
+
+
 def is_sonarcloud_url(url: str) -> bool:
     """Returns whether an URL is the SonarCloud URL
 

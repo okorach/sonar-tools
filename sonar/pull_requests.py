@@ -82,8 +82,7 @@ class PullRequest(components.Component):
         max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         problems = []
         if age > max_age:
-            rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
-            problems.append(problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self), age), concerned_object=self))
+            problems.append(problem.Problem(rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS), self, str(self), age))
         else:
             log.debug("%s age is %d days", str(self), age)
         return problems
