@@ -756,7 +756,8 @@ def _audit_maintainability_rating_grid(platform_settings: dict[str, any], audit_
     return problems
 
 
-def _get_multiple_values(n: int, setting, severity: sev.Severity, domain: typ.Type):
+def _get_multiple_values(n: int, setting: str, severity: sev.Severity, domain: typ.Type) -> Optional[list[str]]:
+    """Returns the multiple elements that define a setting rule from sonar-audit config properties"""
     values = util.csv_to_list(setting)
     if len(values) < (n - 2):
         return None

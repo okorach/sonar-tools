@@ -28,7 +28,9 @@ import json
 from http import HTTPStatus
 from queue import Queue
 from threading import Thread
+import requests
 from requests.exceptions import HTTPError
+
 
 import sonar.logging as log
 from sonar.util import types
@@ -45,29 +47,26 @@ class SqObject:
         """Returns object unique ID in its class"""
         return uuid(self.key, self.endpoint.url)
 
-    def reload(self, data: types.ObjectJsonRepr):
+    def reload(self, data: types.ObjectJsonRepr) -> None:
         """Reload a Sonar object with its JSON representation"""
         if self._json is None:
             self._json = data
         else:
             self._json.update(data)
 
-    def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()):
+    def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()) -> requests.Response:
         """Executes and HTTP GET against the SonarQube platform
 
-        :param str api: API to invoke (eg api/issues/search)
-        :param dict params: List of parameters to pass to the API
+        :param api: API to invoke (eg api/issues/search)
+        :param params: List of parameters to pass to the API
         :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
-        :type exit_on_error: bool, optional
         :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
-        :type mute: tuple, optional
         :return: The request response
-        :rtype: requests.Response
         """
         return self.endpoint.get(api=api, params=params, exit_on_error=exit_on_error, mute=mute)
 
-    def post(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()):
+    def post(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()) -> requests.Response:
         """Executes and HTTP POST against the SonarQube platform
 
         :param str api: API to invoke (eg api/issues/search)
@@ -77,7 +76,6 @@ class SqObject:
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :type mute: tuple, optional
         :return: The request response
-        :rtype: requests.Response
         """
         return self.endpoint.post(api=api, params=params, exit_on_error=exit_on_error, mute=mute)
 
