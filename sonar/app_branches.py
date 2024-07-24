@@ -70,12 +70,12 @@ class ApplicationBranch(Component):
     def get_object(cls, app: App, branch_name: str) -> ApplicationBranch:
         """Gets an Application object from SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str key: Application key, must not already exist on SonarQube
+        :param Application app: Reference to the Application holding that branch
+        :param str branch_name: Name of the application branch
         :raises UnsupportedOperation: If on a Community Edition
-        :raises ObjectNotFound: If Application key not found in SonarQube
-        :return: The found Application object
-        :rtype: Application
+        :raises ObjectNotFound: If Application or Brnach not found
+        :return: The found ApplicationBranch
+        :rtype: ApplicationBranch
         """
         if app.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
@@ -92,13 +92,12 @@ class ApplicationBranch(Component):
     def create(cls, app: App, name: str, project_branches: list[Branch]) -> ApplicationBranch:
         """Creates an ApplicationBranch object in SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str key: Application key, must not already exist on SonarQube
-        :param str name: Application name
+        :param Application app: Reference to the Application holding that branch
+        :param str name: Name of the application branch
         :raises UnsupportedOperation: If on a Community Edition
-        :raises ObjectAlreadyExists: If key already exist for another Application
-        :return: The created Application object
-        :rtype: Application
+        :raises ObjectAlreadyExists: If a branch of that name already exist
+        :return: The created ApplicationBranch object
+        :rtype: ApplicationBranch
         """
         if app.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
