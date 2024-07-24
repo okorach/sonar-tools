@@ -45,7 +45,7 @@ def main():
     kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-export"))
     sq = platform.Platform(**kwargs)
 
-    if sq.edition() in ("community", "developer") and sq.version(digits=2) < (9, 2):
+    if sq.edition() in ("community", "developer") and sq.version()[:2] < (9, 2):
         utilities.exit_fatal(
             "Can't export projects on Community and Developer Edition before 9.2, aborting...",
             errcodes.UNSUPPORTED_OPERATION,

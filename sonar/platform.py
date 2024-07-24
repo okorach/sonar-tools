@@ -90,39 +90,27 @@ class Platform:
 
     def __str__(self) -> str:
         """
-        :return: string representation of the SonarQube connection, with the token recognizable but largely redacted
-        :rtype: str
+        Returns the string representation of the SonarQube connection, with the token recognizable but largely redacted
         """
         return f"{util.redacted_token(self.__token)}@{self.url}"
 
     def __credentials(self) -> tuple[str, str]:
         return (self.__token, "")
 
-    def version(self, digits: int = 3, as_string: bool = False) -> Union[tuple[int, int, int], str]:
-        """Returns the SonarQube platform version
-
-        :param digits: Number of digits to include in the version, defaults to 3
-        :type digits: int, optional
-        :param as_string: Whether to return the version as string or tuple, default to False (ie returns a tuple)
-        :type as_string: bool, optional
-        :return: the SonarQube platform version, or 0.0.0 for SonarCloud
-        :rtype: tuple or str
+    def version(self) -> tuple[int, int, int]:
+        """
+        Returns the SonarQube platform version or 0.0.0 for SonarCloud
         """
         if self.is_sonarcloud():
-            return "sonarcloud" if as_string else tuple(int(n) for n in [0, 0, 0][0:digits])
-        if digits < 1 or digits > 3:
-            digits = 3
+            return 0, 0, 0
         if self._version is None:
             self._version = self.get("/api/server/version").text.split(".")
             log.debug("Version = %s", self._version)
-        if as_string:
-            return ".".join(self._version[0:digits])
-        else:
-            return tuple(int(n) for n in self._version[0:digits])
+        return tuple(int(n) for n in self._version[0:3])
 
     def edition(self) -> str:
         """
-        :return: the SonarQube platform edition: "community", "developer", "enterprise", "datacenter" or "sonarcloud"
+        Returns the Sonar edition: "community", "developer", "enterprise", "datacenter" or "sonarcloud"
         """
         if self.is_sonarcloud():
             return "sonarcloud"
@@ -143,7 +131,7 @@ class Platform:
 
     def server_id(self) -> str:
         """
-        :return: the SonarQube platform server id
+        Returns the SonarQube instance server id
         """
         if self._server_id is not None:
             return self._server_id
@@ -155,7 +143,7 @@ class Platform:
 
     def is_sonarcloud(self) -> bool:
         """
-        :return: whether the target platform is SonarCloud
+        Returns whether the target platform is SonarCloud
         """
         return self.__is_sonarcloud
 
@@ -168,7 +156,7 @@ class Platform:
             return {"edition": self.edition()}
 
         return {
-            "version": self.version(as_string=True),
+            "version": ".".join(self.version()),
             "edition": self.edition(),
             "serverId": self.server_id(),
         }
@@ -633,7 +621,7 @@ class Platform:
     def _audit_lta_latest(self) -> list[pb.Problem]:
         if self.is_sonarcloud():
             return []
-        sq_vers, v = self.version(3), None
+        sq_vers, v = self.version(), None
         if sq_vers < lta()[:2]:
             rule = rules.get_rule(rules.RuleId.BELOW_LTA)
             v = lta()
