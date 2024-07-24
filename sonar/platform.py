@@ -831,7 +831,7 @@ def lta(digits: int = 3) -> tuple[int]:
     return __lta_and_latest()[0][0:digits]
 
 
-def latest(digits: int = 3):
+def latest(digits: int = 3) -> tuple[int]:
     """
     :return: the current SonarQube LATEST version
     :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
