@@ -635,13 +635,13 @@ class Platform:
         if self.is_sonarcloud():
             return []
         sq_vers, v = self.version(3), None
-        if sq_vers < lta(2):
+        if sq_vers < lta()[:2]:
             rule = rules.get_rule(rules.RuleId.BELOW_LTA)
             v = lta()
-        elif sq_vers < lta(3):
+        elif sq_vers < lta():
             rule = rules.get_rule(rules.RuleId.LTA_PATCH_MISSING)
             v = lta()
-        elif sq_vers[:2] > lta(2) and sq_vers < latest(2):
+        elif sq_vers[:2] > lta()[:2] and sq_vers < latest()[:2]:
             rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
             v = latest()
         if not v:
@@ -788,7 +788,7 @@ def _version_as_string(a_version: tuple[int, int, int]) -> str:
     return ".".join([str(n) for n in a_version])
 
 
-def __lta_and_latest() -> tuple[tuple[int], tuple[int]]:
+def __lta_and_latest() -> tuple[tuple[int, int, int], tuple[int, int, int]]:
     """Returns the current version of LTA and LATEST, if possible querying the update center,
     using hardcoded values as fallback"""
     global LTA
@@ -821,25 +821,18 @@ def __lta_and_latest() -> tuple[tuple[int], tuple[int]]:
     return LTA, LATEST
 
 
-def lta(digits: int = 3) -> tuple[int]:
+def lta() -> tuple[int, int, int]:
     """
     :return: the current SonarQube LTA (ex-LTS) version
-    :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
     """
-    if digits < 1 or digits > 3:
-        digits = 3
-    return __lta_and_latest()[0][0:digits]
+    return __lta_and_latest()[0]
 
 
-def latest(digits: int = 3) -> tuple[int]:
+def latest() -> tuple[int, int, int]:
     """
     :return: the current SonarQube LATEST version
-    :params digits: number of digits to consider in the version (min 1, max 3), defaults to 3
-    :rtype: tuple (x, y, z)
     """
-    if digits < 1 or digits > 3:
-        digits = 3
-    return __lta_and_latest()[1][0:digits]
+    return __lta_and_latest()[1]
 
 
 def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
