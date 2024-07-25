@@ -32,9 +32,9 @@ class Problem:
     def __init__(self, broken_rule: object, concerned_object: object, *args, **kwargs) -> None:
         # dict.__init__(type=problem_type, severity=severity, message=msg)
         self.concerned_object = concerned_object
+        self.rule_id = broken_rule.id
         self.type = broken_rule.type
         self.severity = broken_rule.severity
-        self.rule_id = broken_rule.id
         if len(args) > 0:
             self.message = broken_rule.msg.format(*args)
         else:
