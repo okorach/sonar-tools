@@ -26,7 +26,8 @@ import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar import exceptions
 
-from sonar.audit import rules, problem
+from sonar.audit import rules
+from sonar.audit.problem import Problem
 from sonar.util import types
 
 SONAR_USERS = "sonar-users"
@@ -155,7 +156,7 @@ class Group(sq.SqObject):
         """
         return self.post(REMOVE_USER_API, params={"login": user_login, "name": self.name}).ok
 
-    def audit(self, audit_settings: types.ConfigSettings = None) -> list[problem.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a group and return list of problems found
         Current audit is limited to verifying that the group is not empty
 
@@ -167,8 +168,7 @@ class Group(sq.SqObject):
         log.debug("Auditing %s", str(self))
         problems = []
         if audit_settings.get("audit.groups.empty", True) and self.__members_count == 0:
-            rule = rules.get_rule(rules.RuleId.GROUP_EMPTY)
-            problems = [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
+            problems = [Problem(rules.get_rule(rules.RuleId.GROUP_EMPTY), self, str(self))]
         return problems
 
     def to_json(self, full_specs: bool = False) -> types.ObjectJsonRepr:
@@ -262,7 +262,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     return g_list
 
 
-def audit(audit_settings: types.ConfigSettings, endpoint: pf.Platform) -> list[problem.Problem]:
+def audit(audit_settings: types.ConfigSettings, endpoint: pf.Platform) -> list[Problem]:
     """Audits all groups
 
     :param dict audit_settings: Configuration of audit

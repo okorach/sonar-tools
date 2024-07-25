@@ -29,8 +29,8 @@ import sonar.sqobject as sq
 import sonar.platform as pf
 
 import sonar.utilities as util
-from sonar.audit import rules
-import sonar.audit.problem as pb
+from sonar.audit.rules import get_rule, RuleId
+from sonar.audit.problem import Problem
 from sonar.util import types
 
 SUCCESS = "SUCCESS"
@@ -361,7 +361,7 @@ class Task(sq.SqObject):
         self.__load_context()
         return self._json.get("errorMessage", None)
 
-    def __audit_exclusions(self, exclusion_pattern: str, susp_exclusions: str, susp_exceptions: str) -> list[pb.Problem]:
+    def __audit_exclusions(self, exclusion_pattern: str, susp_exclusions: str, susp_exceptions: str) -> list[Problem]:
         """Audits a task exclusion patterns are returns found problems"""
         problems = []
         for susp in susp_exclusions:
@@ -374,13 +374,12 @@ class Task(sq.SqObject):
                     is_exception = True
                     break
             if not is_exception:
-                rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
-                msg = rule.msg.format(str(self.concerned_object), exclusion_pattern)
-                problems.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object))
+                rule = get_rule(RuleId.PROJ_SUSPICIOUS_EXCLUSION)
+                problems.append(Problem(rule, self.concerned_object, str(self.concerned_object), exclusion_pattern))
                 break  # Report only on the 1st suspicious match
         return problems
 
-    def __audit_disabled_scm(self, audit_settings: types.ConfigSettings, scan_context: dict[str, str]) -> list[pb.Problem]:
+    def __audit_disabled_scm(self, audit_settings: types.ConfigSettings, scan_context: dict[str, str]) -> list[Problem]:
         """Audits a bg task for eventual SCM disabled and reports the problem if found"""
         if not audit_settings.get("audit.project.scm.disabled", True):
             log.info("Auditing disabled SCM integration is turned off, skipping...")
@@ -388,10 +387,9 @@ class Task(sq.SqObject):
 
         if scan_context.get("sonar.scm.disabled", "false") == "false":
             return []
-        rule = rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED)
-        return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self.concerned_object)), concerned_object=self)]
+        return [Problem(get_rule(RuleId.PROJ_SCM_DISABLED), self, str(self.concerned_object))]
 
-    def __audit_warnings(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_warnings(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits for warning in background tasks and reports found problems"""
         if not audit_settings.get("audit.projects.analysisWarnings", True):
             log.info("Project analysis warnings auditing disabled, skipping...")
@@ -401,28 +399,24 @@ class Task(sq.SqObject):
         warnings_left = []
         for w in warnings:
             if w.find("SCM provider autodetection failed") >= 0:
-                rule = rules.get_rule(rules.RuleId.PROJ_SCM_UNDETECTED)
-                pbs.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self.concerned_object)), concerned_object=self.concerned_object))
+                pbs.append(Problem(get_rule(RuleId.PROJ_SCM_UNDETECTED), self.concerned_object, str(self.concerned_object)))
             else:
                 warnings_left.append(w)
         if len(warnings_left) > 0:
-            rule = rules.get_rule(rules.RuleId.PROJ_ANALYSIS_WARNING)
-            msg = rule.msg.format(str(self.concerned_object), " --- ".join(warnings_left))
-            pbs.append(pb.Problem(broken_rule=rule, msg=msg, concerned_object=self))
+            rule = get_rule(RuleId.PROJ_ANALYSIS_WARNING)
+            pbs.append(Problem(rule, self, str(self.concerned_object), " --- ".join(warnings_left)))
         return pbs
 
-    def __audit_failed_task(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_failed_task(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if not audit_settings.get("audit.projects.failedTasks", True):
             log.debug("Project failed background tasks auditing disabled, skipping...")
             return []
         if self._json["status"] != "FAILED":
             log.debug("Last bg task of %s has status %s...", str(self.concerned_object), self._json["status"])
             return []
-        rule = rules.get_rule(rules.RuleId.BG_TASK_FAILED)
-        msg = rule.msg.format(str(self.concerned_object))
-        return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self)]
+        return [Problem(get_rule(RuleId.BG_TASK_FAILED), self, str(self.concerned_object))]
 
-    def __audit_scanner_version(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_scanner_version(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if not self.has_scanner_context():
             return []
         context = self.scanner_context()
@@ -445,9 +439,7 @@ class Task(sq.SqObject):
             return []
 
         if scanner_type == "Ant":
-            rule = rules.get_rule(rules.RuleId.ANT_SCANNER_DEPRECATED)
-            msg = rule.msg.format(str(self.concerned_object))
-            return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object)]
+            return [Problem(get_rule(RuleId.ANT_SCANNER_DEPRECATED), self.concerned_object, str(self.concerned_object))]
 
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
             (scanner_version, build_tool_version) = scanner_version.split("/")
@@ -456,7 +448,7 @@ class Task(sq.SqObject):
         if len(scanner_version) == 2:
             scanner_version.append(0)
         scanner_version = tuple(scanner_version[0:3])
-        str_version = ".".join([str(n) for n in scanner_version])
+        str_version = util.version_to_string(scanner_version)
         versions_list = SCANNER_VERSIONS[scanner_type].keys()
         log.debug("versions = %s", str(versions_list))
         try:
@@ -480,12 +472,20 @@ class Task(sq.SqObject):
         index = tuple_version_list.index(scanner_version)
         log.debug("Scanner used is %d versions old", index)
         if delta_days > audit_settings.get("audit.projects.scannerMaxAge", 730):
-            rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER) if index >= 3 else rules.get_rule(rules.RuleId.NOT_LATEST_SCANNER)
-            msg = rule.msg.format(str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False))
-            return [pb.Problem(broken_rule=rule, msg=msg, concerned_object=self.concerned_object)]
+            rule = get_rule(RuleId.OBSOLETE_SCANNER) if index >= 3 else get_rule(RuleId.NOT_LATEST_SCANNER)
+            return [
+                Problem(
+                    rule,
+                    self.concerned_object,
+                    str(self.concerned_object),
+                    scanner_type,
+                    str_version,
+                    util.date_to_string(release_date, with_time=False),
+                )
+            ]
         return []
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a background task and returns the list of found problems"""
         if not audit_settings.get("audit.projects.exclusions", True):
             log.debug("Project exclusions auditing disabled, skipping...")

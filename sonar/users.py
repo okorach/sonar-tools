@@ -29,7 +29,8 @@ from sonar import platform as pf
 from sonar.util import types
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
-from sonar.audit import rules, problem
+from sonar.audit.rules import get_rule, RuleId
+from sonar.audit.problem import Problem
 
 
 _OBJECTS = {}
@@ -304,7 +305,7 @@ class User(sqobject.SqObject):
         self.scm_accounts = accounts_list
         return True
 
-    def audit(self, settings: types.ConfigSettings = None) -> list[problem.Problem]:
+    def audit(self, settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a user (user last connection date and tokens) and
         returns the list of problems found (too old)
 
@@ -324,27 +325,19 @@ class User(sqobject.SqObject):
         for t in self.tokens():
             age = abs((today - t.created_at).days)
             if age > settings.get("audit.tokens.maxAge", 90):
-                rule = rules.get_rule(rules.RuleId.TOKEN_TOO_OLD)
-                msg = rule.msg.format(str(t), age)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=t))
+                problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), t, str(t), age))
             if t.last_connection_date is None and age > settings.get("audit.tokens.maxUnusedAge", 30):
-                rule = rules.get_rule(rules.RuleId.TOKEN_NEVER_USED)
-                msg = rule.msg.format(str(t), age)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=t))
+                problems.append(Problem(get_rule(RuleId.TOKEN_NEVER_USED), t, str(t), age))
             if t.last_connection_date is None:
                 continue
             last_cnx_age = abs((today - t.last_connection_date).days)
             if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
-                rule = rules.get_rule(rules.RuleId.TOKEN_UNUSED)
-                msg = rule.msg.format(str(t), last_cnx_age)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=t))
+                problems.append(Problem(get_rule(RuleId.TOKEN_UNUSED), t, str(t), last_cnx_age))
 
         if self.last_login:
             age = abs((today - self.last_login).days)
             if age > settings.get("audit.users.maxLoginAge", 180):
-                rule = rules.get_rule(rules.RuleId.USER_UNUSED)
-                msg = rule.msg.format(str(self), age)
-                problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
+                problems.append(Problem(get_rule(RuleId.USER_UNUSED), self, str(self), age))
         return problems
 
     def to_json(self, full: bool = False) -> types.ObjectJsonRepr:
@@ -394,7 +387,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     return u_list
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits all users for last login date and too old tokens
 
     :param Platform endpoint: reference to the SonarQube platform
