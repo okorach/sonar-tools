@@ -28,7 +28,7 @@ from typing import Union
 import sonar.logging as log
 from sonar.util import types
 import sonar.utilities as util
-from sonar.audit import rules
+from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.problem as pb
 from sonar.dce import nodes
 
@@ -70,7 +70,7 @@ class SearchNode(nodes.DceNode):
         es_heap = self.max_heap()
         if es_heap is None:
             log.warning("%s: No ES heap found, audit of ES head is skipped", str(self))
-            return [pb.Problem(rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP), self)]
+            return [pb.Problem(get_rule(RuleId.SETTING_ES_NO_HEAP), self)]
 
         index_size = self.store_size()
 
@@ -80,11 +80,11 @@ class SearchNode(nodes.DceNode):
         if index_size is None:
             log.warning("%s: Search server store size missing, audit of ES index vs heap skipped...", str(self))
         elif index_size == 0:
-            es_pb = [pb.Problem(rules.get_rule(rules.RuleId.DCE_ES_INDEX_EMPTY), self, str(self))]
+            es_pb = [pb.Problem(get_rule(RuleId.DCE_ES_INDEX_EMPTY), self, str(self))]
         elif es_heap < es_min:
-            es_pb = [pb.Problem(rules.get_rule(rules.RuleId.ES_HEAP_TOO_LOW), self, str(self), es_heap, index_size)]
+            es_pb = [pb.Problem(get_rule(RuleId.ES_HEAP_TOO_LOW), self, str(self), es_heap, index_size)]
         elif es_heap > es_max:
-            es_pb = [pb.Problem(rules.get_rule(rules.RuleId.ES_HEAP_TOO_HIGH), self, str(self), es_heap, 32 * 1024)]
+            es_pb = [pb.Problem(get_rule(RuleId.ES_HEAP_TOO_HIGH), self, str(self), es_heap, 32 * 1024)]
         else:
             log.info("%s: Search server memory %d MB is correct wrt to store size of %d MB", str(self), es_heap, index_size)
         return es_pb
@@ -104,9 +104,9 @@ class SearchNode(nodes.DceNode):
             store_size,
         )
         if space_avail < 10000:
-            return [pb.Problem(rules.get_rule(rules.RuleId.LOW_FREE_DISK_SPACE_2), self, str(self), space_avail // 1024)]
+            return [pb.Problem(get_rule(RuleId.LOW_FREE_DISK_SPACE_2), self, str(self), space_avail // 1024)]
         elif store_size * 2 > space_avail:
-            return [pb.Problem(rules.get_rule(rules.RuleId.LOW_FREE_DISK_SPACE_1), self, str(self), space_avail // 1024, store_size // 1024)]
+            return [pb.Problem(get_rule(RuleId.LOW_FREE_DISK_SPACE_1), self, str(self), space_avail // 1024, store_size // 1024)]
 
         return []
 
@@ -125,7 +125,7 @@ def __audit_index_balance(searchnodes):
             store_ratio = size_i / size_j
             if store_ratio >= 0.5 or store_ratio <= 2:
                 continue
-            return [pb.Problem(rules.get_rule(rules.RuleId.DCE_ES_UNBALANCED_INDEX), "SearchNodes")]
+            return [pb.Problem(get_rule(RuleId.DCE_ES_UNBALANCED_INDEX), "SearchNodes")]
     log.info("Search nodes store size balance acceptable")
     return []
 
@@ -139,12 +139,12 @@ def audit(sub_sif, sif):
     nbr_search_nodes = len(searchnodes)
     log.info("Auditing number of search nodes")
     if nbr_search_nodes < 3:
-        problems.append(pb.Problem(rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_NOT_HA), "ES Cluster"))
+        problems.append(pb.Problem(get_rule(RuleId.DCE_ES_CLUSTER_NOT_HA), "ES Cluster"))
     elif nbr_search_nodes > 3:
         if nbr_search_nodes % 2 == 0:
-            rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_EVEN_NUMBER_OF_NODES)
+            rule = get_rule(RuleId.DCE_ES_CLUSTER_EVEN_NUMBER_OF_NODES)
         else:
-            rule = rules.get_rule(rules.RuleId.DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES)
+            rule = get_rule(RuleId.DCE_ES_CLUSTER_WRONG_NUMBER_OF_NODES)
         problems.append(pb.Problem(rule, "ES Cluster", nbr_search_nodes))
     else:
         log.info("%d search nodes found, all OK", nbr_search_nodes)

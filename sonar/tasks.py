@@ -29,7 +29,7 @@ import sonar.sqobject as sq
 import sonar.platform as pf
 
 import sonar.utilities as util
-from sonar.audit import rules
+from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.problem as pb
 from sonar.util import types
 
@@ -374,7 +374,7 @@ class Task(sq.SqObject):
                     is_exception = True
                     break
             if not is_exception:
-                rule = rules.get_rule(rules.RuleId.PROJ_SUSPICIOUS_EXCLUSION)
+                rule = get_rule(RuleId.PROJ_SUSPICIOUS_EXCLUSION)
                 problems.append(pb.Problem(rule, self.concerned_object, str(self.concerned_object), exclusion_pattern))
                 break  # Report only on the 1st suspicious match
         return problems
@@ -387,7 +387,7 @@ class Task(sq.SqObject):
 
         if scan_context.get("sonar.scm.disabled", "false") == "false":
             return []
-        return [pb.Problem(rules.get_rule(rules.RuleId.PROJ_SCM_DISABLED), self, str(self.concerned_object))]
+        return [pb.Problem(get_rule(RuleId.PROJ_SCM_DISABLED), self, str(self.concerned_object))]
 
     def __audit_warnings(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         """Audits for warning in background tasks and reports found problems"""
@@ -399,11 +399,11 @@ class Task(sq.SqObject):
         warnings_left = []
         for w in warnings:
             if w.find("SCM provider autodetection failed") >= 0:
-                pbs.append(pb.Problem(rules.get_rule(rules.RuleId.PROJ_SCM_UNDETECTED), self.concerned_object, str(self.concerned_object)))
+                pbs.append(pb.Problem(get_rule(RuleId.PROJ_SCM_UNDETECTED), self.concerned_object, str(self.concerned_object)))
             else:
                 warnings_left.append(w)
         if len(warnings_left) > 0:
-            rule = rules.get_rule(rules.RuleId.PROJ_ANALYSIS_WARNING)
+            rule = get_rule(RuleId.PROJ_ANALYSIS_WARNING)
             pbs.append(pb.Problem(rule, self, str(self.concerned_object), " --- ".join(warnings_left)))
         return pbs
 
@@ -414,7 +414,7 @@ class Task(sq.SqObject):
         if self._json["status"] != "FAILED":
             log.debug("Last bg task of %s has status %s...", str(self.concerned_object), self._json["status"])
             return []
-        return [pb.Problem(rules.get_rule(rules.RuleId.BG_TASK_FAILED), self, str(self.concerned_object))]
+        return [pb.Problem(get_rule(RuleId.BG_TASK_FAILED), self, str(self.concerned_object))]
 
     def __audit_scanner_version(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         if not self.has_scanner_context():
@@ -439,7 +439,7 @@ class Task(sq.SqObject):
             return []
 
         if scanner_type == "Ant":
-            return [pb.Problem(rules.get_rule(rules.RuleId.ANT_SCANNER_DEPRECATED), self.concerned_object, str(self.concerned_object))]
+            return [pb.Problem(get_rule(RuleId.ANT_SCANNER_DEPRECATED), self.concerned_object, str(self.concerned_object))]
 
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
             (scanner_version, build_tool_version) = scanner_version.split("/")
@@ -472,7 +472,7 @@ class Task(sq.SqObject):
         index = tuple_version_list.index(scanner_version)
         log.debug("Scanner used is %d versions old", index)
         if delta_days > audit_settings.get("audit.projects.scannerMaxAge", 730):
-            rule = rules.get_rule(rules.RuleId.OBSOLETE_SCANNER) if index >= 3 else rules.get_rule(rules.RuleId.NOT_LATEST_SCANNER)
+            rule = get_rule(RuleId.OBSOLETE_SCANNER) if index >= 3 else get_rule(RuleId.NOT_LATEST_SCANNER)
             return [
                 pb.Problem(
                     rule,

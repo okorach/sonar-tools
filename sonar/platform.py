@@ -42,7 +42,8 @@ from sonar.util import types
 
 from sonar import errcodes, settings, devops, version, sif
 from sonar.permissions import permissions, global_permissions, permission_templates
-from sonar.audit import rules, config
+from sonar.audit import config
+from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.severities as sev
 import sonar.audit.types as typ
 import sonar.audit.problem as pb
@@ -518,16 +519,16 @@ class Platform:
                 rule = None
                 if level == "ERROR":
                     log.warning("Error found in %s: %s", logfile, line)
-                    rule = rules.get_rule(rules.RuleId.ERROR_IN_LOGS)
+                    rule = get_rule(RuleId.ERROR_IN_LOGS)
                 elif level == "WARN":
                     log.warning("Warning found in %s: %s", logfile, line)
-                    rule = rules.get_rule(rules.RuleId.WARNING_IN_LOGS)
+                    rule = get_rule(RuleId.WARNING_IN_LOGS)
                 if rule is not None:
                     problems.append(pb.Problem(rule, f"{self.url}/admin/system", logfile, line))
         logs = self.get("system/logs", params={"name": "deprecation"}).text
         nb_deprecation = len(logs.splitlines())
         if nb_deprecation > 0:
-            rule = rules.get_rule(rules.RuleId.DEPRECATION_WARNINGS)
+            rule = get_rule(RuleId.DEPRECATION_WARNINGS)
             problems.append(pb.Problem(rule, f"{self.url}/admin/system", nb_deprecation))
         return problems
 
@@ -545,7 +546,7 @@ class Platform:
             visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if config.get_property("checkDefaultProjectVisibility") and visi != "private":
-            rule = rules.get_rule(rules.RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
+            rule = get_rule(RuleId.SETTING_PROJ_DEFAULT_VISIBILITY)
             problems.append(pb.Problem(rule, f"{self.url}/admin/projects_management", visi))
         return problems
 
@@ -556,7 +557,7 @@ class Platform:
             r = requests.get(url=self.url + "/api/authentication/validate", auth=("admin", "admin"), timeout=self.http_timeout)
             data = json.loads(r.text)
             if data.get("valid", False):
-                problems.append(pb.Problem(rules.get_rule(rules.RuleId.DEFAULT_ADMIN_PASSWORD), self.url))
+                problems.append(pb.Problem(get_rule(RuleId.DEFAULT_ADMIN_PASSWORD), self.url))
             else:
                 log.info("User 'admin' default password has been changed")
         except requests.RequestException as e:
@@ -569,22 +570,22 @@ class Platform:
         perms_url = f"{self.url}/admin/permissions"
         groups = self.global_permissions().groups()
         if len(groups) > 10:
-            problems.append(pb.Problem(rules.get_rule(rule_id=rules.RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, len(groups)))
+            problems.append(pb.Problem(get_rule(rule_id=RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, len(groups)))
 
         for gr_name, gr_perms in groups.items():
             if gr_name == "Anyone":
-                problems.append(pb.Problem(rules.get_rule(rules.RuleId.ANYONE_WITH_GLOBAL_PERMS), perms_url))
+                problems.append(pb.Problem(get_rule(RuleId.ANYONE_WITH_GLOBAL_PERMS), perms_url))
             if gr_name == "sonar-users" and (
                 "admin" in gr_perms or "gateadmin" in gr_perms or "profileadmin" in gr_perms or "provisioning" in gr_perms
             ):
-                problems.append(pb.Problem(rules.get_rule(rules.RuleId.SONAR_USERS_WITH_ELEVATED_PERMS), perms_url))
+                problems.append(pb.Problem(get_rule(RuleId.SONAR_USERS_WITH_ELEVATED_PERMS), perms_url))
 
         maxis = {"admin": 2, "gateadmin": 2, "profileadmin": 2, "scan": 2, "provisioning": 3}
         for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="groups", perm_filter=(key,))
             if key in maxis and counter > maxis[key]:
                 msg = f"Too many ({counter}) groups with permission '{name}', {maxis[key]} max recommended"
-                problems.append(pb.Problem(rules.get_rule(rule_id=rules.RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, msg))
+                problems.append(pb.Problem(get_rule(rule_id=RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, msg))
         return problems
 
     def __audit_user_permissions(self) -> list[pb.Problem]:
@@ -594,14 +595,14 @@ class Platform:
         users = self.global_permissions().users()
         if len(users) > 10:
             msg = f"Too many ({len(users)}) users with direct global permissions, use groups instead"
-            problems.append(pb.Problem(rules.get_rule(rule_id=rules.RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, msg))
+            problems.append(pb.Problem(get_rule(rule_id=RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, msg))
 
         maxis = {"admin": 3, "gateadmin": 3, "profileadmin": 3, "scan": 3, "provisioning": 3}
         for key, name in permissions.ENTERPRISE_GLOBAL_PERMISSIONS.items():
             counter = self.global_permissions().count(perm_type="users", perm_filter=(key,))
             if key in maxis and counter > maxis[key]:
                 msg = f"Too many ({counter}) users with permission '{name}', use groups instead"
-                problems.append(pb.Problem(rules.get_rule(rule_id=rules.RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, msg))
+                problems.append(pb.Problem(get_rule(rule_id=RuleId.RISKY_GLOBAL_PERMISSIONS), perms_url, msg))
         return problems
 
     def _audit_global_permissions(self) -> list[pb.Problem]:
@@ -613,13 +614,13 @@ class Platform:
             return []
         sq_vers, v = self.version(), None
         if sq_vers < lta()[:2]:
-            rule = rules.get_rule(rules.RuleId.BELOW_LTA)
+            rule = get_rule(RuleId.BELOW_LTA)
             v = lta()
         elif sq_vers < lta():
-            rule = rules.get_rule(rules.RuleId.LTA_PATCH_MISSING)
+            rule = get_rule(RuleId.LTA_PATCH_MISSING)
             v = lta()
         elif sq_vers[:2] > lta()[:2] and sq_vers < latest()[:2]:
-            rule = rules.get_rule(rules.RuleId.BELOW_LATEST)
+            rule = get_rule(RuleId.BELOW_LATEST)
             v = latest()
         if not v:
             return []
@@ -660,7 +661,7 @@ def _audit_setting_value(key: str, platform_settings: dict[str, any], audit_sett
     if s == v[1]:
         return []
     msg = f"Setting {v[0]} has potentially incorrect or unsafe value '{s}'"
-    return [pb.Problem(rules.get_rule(rules.RuleId.DUBIOUS_GLOBAL_SETTING), url, msg)]
+    return [pb.Problem(get_rule(RuleId.DUBIOUS_GLOBAL_SETTING), url, msg)]
 
 
 def _audit_setting_in_range(
@@ -681,9 +682,9 @@ def _audit_setting_in_range(
     log.info("Auditing that setting %s is within recommended range [%.2f-%.2f]", v[0], min_v, max_v)
     if min_v <= value <= max_v:
         return []
-    rule = rules.get_rule(rules.RuleId.DUBIOUS_GLOBAL_SETTING)
+    rule = get_rule(RuleId.DUBIOUS_GLOBAL_SETTING)
     msg = f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]"
-    return [pb.Problem(rules.get_rule(rules.RuleId.DUBIOUS_GLOBAL_SETTING), url, msg)]
+    return [pb.Problem(get_rule(RuleId.DUBIOUS_GLOBAL_SETTING), url, msg)]
 
 
 def _audit_setting_set(
@@ -697,11 +698,11 @@ def _audit_setting_set(
     log.info("Auditing whether setting %s is set or not", v[0])
     if platform_settings.get(v[0], "") == "":  # Setting is not set
         if check_is_set:
-            return [pb.Problem(rules.get_rule(rules.RuleId.SETTING_NOT_SET), url, v[0])]
+            return [pb.Problem(get_rule(RuleId.SETTING_NOT_SET), url, v[0])]
         log.info("Setting %s is not set", v[0])
     else:
         if not check_is_set:
-            return [pb.Problem(rules.get_rule(rules.RuleId.SETTING_SET), url)]
+            return [pb.Problem(get_rule(RuleId.SETTING_SET), url)]
         log.info("Setting %s is set with value %s", v[0], platform_settings[v[0]])
     return []
 
@@ -717,9 +718,9 @@ def _audit_maintainability_rating_range(value: float, range: tuple[float, float]
     )
     if range[0] <= value <= range[1]:
         return []
-    rule = rules.get_rule(rules.RuleId.SETTING_MAINT_GRID)
+    rule = get_rule(RuleId.SETTING_MAINT_GRID)
     msg = rule.msg.format(f"{value * 100:.1f}", rating_letter, f"{range[0] * 100:.1f}", f"{range[1] * 100:.1f}")
-    return [pb.Problem(rules.get_rule(rules.RuleId.SETTING_MAINT_GRID), url, msg)]
+    return [pb.Problem(get_rule(RuleId.SETTING_MAINT_GRID), url, msg)]
 
 
 def _audit_maintainability_rating_grid(platform_settings: dict[str, any], audit_settings: types.ConfigSettings, url: str) -> list[pb.Problem]:

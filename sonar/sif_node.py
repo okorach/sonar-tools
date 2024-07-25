@@ -29,7 +29,7 @@ from dateutil.relativedelta import relativedelta
 import sonar.logging as log
 import sonar.utilities as util
 from sonar.util import types
-from sonar.audit import rules
+from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.problem as pb
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
@@ -62,9 +62,9 @@ def __audit_background_tasks(obj: object, obj_name: str) -> list[pb.Problem]:
     if ce_success != 0 or ce_error != 0:
         failure_rate = ce_error / (ce_success + ce_error)
     if ce_error > 10 and failure_rate > 0.01:
-        rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
+        rule = get_rule(RuleId.BACKGROUND_TASKS_FAILURE_RATE_HIGH)
         if failure_rate > 0.1:
-            rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_FAILURE_RATE_VERY_HIGH)
+            rule = get_rule(RuleId.BACKGROUND_TASKS_FAILURE_RATE_VERY_HIGH)
         problems.append(pb.Problem(rule, obj, int(failure_rate * 100)))
     else:
         log.info(
@@ -75,10 +75,10 @@ def __audit_background_tasks(obj: object, obj_name: str) -> list[pb.Problem]:
         )
     ce_pending = ce_tasks["Pending"]
     if ce_pending > 100:
-        rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
+        rule = get_rule(RuleId.BACKGROUND_TASKS_PENDING_QUEUE_VERY_LONG)
         problems.append(pb.Problem(rule, obj, ce_pending))
     elif ce_pending > 20 and ce_pending > (10 * ce_tasks[_WORKER_COUNT]):
-        rule = rules.get_rule(rules.RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
+        rule = get_rule(RuleId.BACKGROUND_TASKS_PENDING_QUEUE_LONG)
         problems.append(pb.Problem(rule, obj, ce_pending))
     else:
         log.info("%s: Number of pending background tasks (%d) is OK", obj_name, ce_pending)
@@ -109,15 +109,15 @@ def __audit_jvm(obj: object, obj_name: str, jvm_state: dict[str, str], heap_limi
 
     if heap < min_heap:
         if "CE process" in obj_name:
-            rule = rules.get_rule(rules.RuleId.CE_HEAP_TOO_LOW)
+            rule = get_rule(RuleId.CE_HEAP_TOO_LOW)
         else:
-            rule = rules.get_rule(rules.RuleId.WEB_HEAP_TOO_LOW)
+            rule = get_rule(RuleId.WEB_HEAP_TOO_LOW)
         limit = min_heap
     else:
         if "CE process" in obj_name:
-            rule = rules.get_rule(rules.RuleId.CE_HEAP_TOO_HIGH)
+            rule = get_rule(RuleId.CE_HEAP_TOO_HIGH)
         else:
-            rule = rules.get_rule(rules.RuleId.WEB_HEAP_TOO_HIGH)
+            rule = get_rule(RuleId.WEB_HEAP_TOO_HIGH)
         limit = max_heap
     return [pb.Problem(rule, obj, obj_name, heap, limit)]
 
@@ -152,7 +152,7 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     ):
         log.info("%s: SonarQube %s running on a supported java version (java %d)", obj_name, sq_v_str, java_version)
         return []
-    return [pb.Problem(rules.get_rule(rules.RuleId.SETTING_WEB_WRONG_JAVA_VERSION), obj, obj_name, sq_v_str, java_version)]
+    return [pb.Problem(get_rule(RuleId.SETTING_WEB_WRONG_JAVA_VERSION), obj, obj_name, sq_v_str, java_version)]
 
 
 def __audit_workers(obj: object, obj_name: str) -> list[pb.Problem]:
@@ -178,7 +178,7 @@ def __audit_workers(obj: object, obj_name: str) -> list[pb.Problem]:
     if ed == "datacenter":
         MAX_WORKERS = 6
     if ce_workers > MAX_WORKERS:
-        return [pb.Problem(rules.get_rule(rules.RuleId.TOO_MANY_CE_WORKERS), obj, ce_workers, MAX_WORKERS)]
+        return [pb.Problem(get_rule(RuleId.TOO_MANY_CE_WORKERS), obj, ce_workers, MAX_WORKERS)]
     else:
         log.info(
             "%s: %d CE workers configured, correct compared to the max %d recommended",
@@ -206,9 +206,9 @@ def __audit_log_level(obj: object, obj_name: str, logging_data: dict[str, str]) 
         log.warning("%s: log level is missing, audit of log level is skipped...", obj_name)
         return []
     if lvl == "TRACE":
-        return [pb.Problem(rules.get_rule(rules.RuleId.LOGS_IN_TRACE_MODE), obj, obj_name)]
+        return [pb.Problem(get_rule(RuleId.LOGS_IN_TRACE_MODE), obj, obj_name)]
     if lvl == "DEBUG":
-        return [pb.Problem(rules.get_rule(rules.RuleId.LOGS_IN_DEBUG_MODE), obj, obj_name)]
+        return [pb.Problem(get_rule(RuleId.LOGS_IN_DEBUG_MODE), obj, obj_name)]
     log.info("%s: Log level is '%s', this is fine", obj_name, lvl)
     return []
 
@@ -245,7 +245,7 @@ def audit_version(obj: object, obj_name: str) -> list[pb.Problem]:
         log.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, obj.version(as_string=True), lta_str)
         return []
 
-    return [pb.Problem(rules.get_rule(rules.RuleId.BELOW_LTA), "", util.version_to_string(obj.version()), lta_str)]
+    return [pb.Problem(get_rule(RuleId.BELOW_LTA), "", util.version_to_string(obj.version()), lta_str)]
 
 
 def audit_ce(obj: object, obj_name: str) -> list[pb.Problem]:
@@ -308,5 +308,5 @@ def audit_plugins(obj: object, obj_name: str, audit_settings: types.ConfigSettin
     problems = []
     for key, name in obj.json["Plugins"].items():
         if key not in whitelist:
-            problems.append(pb.Problem(rules.get_rule(rules.RuleId.CUSTOM_PLUGIN), obj, obj_name, key, name))
+            problems.append(pb.Problem(get_rule(RuleId.CUSTOM_PLUGIN), obj, obj_name, key, name))
     return problems

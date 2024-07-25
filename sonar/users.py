@@ -29,7 +29,8 @@ from sonar import platform as pf
 from sonar.util import types
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
-from sonar.audit import rules, problem
+from sonar.audit.rules import get_rule, RuleId
+from sonar.audit import problem
 
 
 _OBJECTS = {}
@@ -324,19 +325,19 @@ class User(sqobject.SqObject):
         for t in self.tokens():
             age = abs((today - t.created_at).days)
             if age > settings.get("audit.tokens.maxAge", 90):
-                problems.append(problem.Problem(rules.get_rule(rules.RuleId.TOKEN_TOO_OLD), t, str(t), age))
+                problems.append(problem.Problem(get_rule(RuleId.TOKEN_TOO_OLD), t, str(t), age))
             if t.last_connection_date is None and age > settings.get("audit.tokens.maxUnusedAge", 30):
-                problems.append(problem.Problem(rules.get_rule(rules.RuleId.TOKEN_NEVER_USED), t, str(t), age))
+                problems.append(problem.Problem(get_rule(RuleId.TOKEN_NEVER_USED), t, str(t), age))
             if t.last_connection_date is None:
                 continue
             last_cnx_age = abs((today - t.last_connection_date).days)
             if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
-                problems.append(problem.Problem(rules.get_rule(rules.RuleId.TOKEN_UNUSED), t, str(t), last_cnx_age))
+                problems.append(problem.Problem(get_rule(RuleId.TOKEN_UNUSED), t, str(t), last_cnx_age))
 
         if self.last_login:
             age = abs((today - self.last_login).days)
             if age > settings.get("audit.users.maxLoginAge", 180):
-                problems.append(problem.Problem(rules.get_rule(rules.RuleId.USER_UNUSED), self, str(self), age))
+                problems.append(problem.Problem(get_rule(RuleId.USER_UNUSED), self, str(self), age))
         return problems
 
     def to_json(self, full: bool = False) -> types.ObjectJsonRepr:
