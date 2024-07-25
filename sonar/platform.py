@@ -682,7 +682,6 @@ def _audit_setting_in_range(
     log.info("Auditing that setting %s is within recommended range [%.2f-%.2f]", v[0], min_v, max_v)
     if min_v <= value <= max_v:
         return []
-    rule = get_rule(RuleId.DUBIOUS_GLOBAL_SETTING)
     msg = f"Setting '{v[0]}' value {platform_settings[v[0]]} is outside recommended range [{v[1]}-{v[2]}]"
     return [Problem(get_rule(RuleId.DUBIOUS_GLOBAL_SETTING), url, msg)]
 
