@@ -39,7 +39,7 @@ import sonar.sqobject as sq
 import sonar.utilities as util
 
 from sonar.audit.rules import get_rule, RuleId
-import sonar.audit.problem as pb
+from sonar.audit.problem import Problem
 
 _CREATE_API = "qualityprofiles/create"
 _DETAILS_API = "qualityprofiles/show"
@@ -466,7 +466,7 @@ class QualityProfile(sq.SqObject):
         """
         self.permissions().set(perms)
 
-    def audit(self, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a quality profile and return list of problems found
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -482,25 +482,25 @@ class QualityProfile(sq.SqObject):
         problems = []
         age = util.age(self.last_update(), rounded=True)
         if age > audit_settings.get("audit.qualityProfiles.maxLastChangeAge", 180):
-            problems.append(pb.Problem(get_rule(RuleId.QP_LAST_CHANGE_DATE), self, str(self, age)))
+            problems.append(Problem(get_rule(RuleId.QP_LAST_CHANGE_DATE), self, str(self, age)))
 
         total_rules = rules.count(endpoint=self.endpoint, languages=self.language)
         if self.nbr_rules < int(total_rules * audit_settings.get("audit.qualityProfiles.minNumberOfRules", 0.5)):
-            problems.append(pb.Problem(get_rule(RuleId.QP_TOO_FEW_RULES), self, str(self), self.nbr_rules, total_rules))
+            problems.append(Problem(get_rule(RuleId.QP_TOO_FEW_RULES), self, str(self), self.nbr_rules, total_rules))
 
         age = util.age(self.last_use(), rounded=True)
         if self.project_count == 0 or age is None:
-            problems.append(pb.Problem(get_rule(RuleId.QP_NOT_USED), self, str(self)))
+            problems.append(Problem(get_rule(RuleId.QP_NOT_USED), self, str(self)))
         elif age > audit_settings.get("audit.qualityProfiles.maxUnusedAge", 60):
             rule = get_rule(RuleId.QP_LAST_USED_DATE)
-            problems.append(pb.Problem(rule, self, str(self), age))
+            problems.append(Problem(rule, self, str(self), age))
         if audit_settings.get("audit.qualityProfiles.checkDeprecatedRules", True):
             max_deprecated_rules = 0
             parent_qp = self.built_in_parent()
             if parent_qp is not None:
                 max_deprecated_rules = parent_qp.nbr_deprecated_rules
             if self.nbr_deprecated_rules > max_deprecated_rules:
-                problems.append(pb.Problem(get_rule(RuleId.QP_USE_DEPRECATED_RULES), self, str(self), self.nbr_deprecated_rules))
+                problems.append(Problem(get_rule(RuleId.QP_USE_DEPRECATED_RULES), self, str(self), self.nbr_deprecated_rules))
         return problems
 
 
@@ -529,7 +529,7 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
     return _OBJECTS
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) -> list[Problem]:
     """Audits all quality profiles and return list of problems found
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -547,7 +547,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) ->
     for lang, nb_qp in langs.items():
         if nb_qp > 5:
             rule = get_rule(RuleId.QP_TOO_MANY_QP)
-            problems.append(pb.Problem(rule, f"{endpoint.url}/profiles?language={lang}", nb_qp, lang, 5))
+            problems.append(Problem(rule, f"{endpoint.url}/profiles?language={lang}", nb_qp, lang, 5))
     return problems
 
 

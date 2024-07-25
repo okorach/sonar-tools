@@ -40,7 +40,7 @@ import sonar.permissions.qualitygate_permissions as permissions
 import sonar.utilities as util
 
 from sonar.audit.rules import get_rule, RuleId
-import sonar.audit.problem as pb
+from sonar.audit.problem import Problem
 
 
 _OBJECTS = {}
@@ -287,22 +287,22 @@ class QualityGate(sq.SqObject):
             self.set_as_default()
         return ok
 
-    def __audit_conditions(self) -> list[pb.Problem]:
+    def __audit_conditions(self) -> list[Problem]:
         problems = []
         for c in self.conditions():
             m = c["metric"]
             if m not in GOOD_QG_CONDITIONS:
-                problems.append(pb.Problem(get_rule(RuleId.QG_WRONG_METRIC), self, str(self), m))
+                problems.append(Problem(get_rule(RuleId.QG_WRONG_METRIC), self, str(self), m))
                 continue
             val = int(c["error"])
             (mini, maxi, precise_msg) = GOOD_QG_CONDITIONS[m]
             log.info("Condition on metric '%s': Check that %d in range [%d - %d]", m, val, mini, maxi)
             if val < mini or val > maxi:
                 rule = get_rule(RuleId.QG_WRONG_THRESHOLD)
-                problems.append(pb.Problem(rule, self, str(self), val, m, mini, maxi, precise_msg))
+                problems.append(Problem(rule, self, str(self), val, m, mini, maxi, precise_msg))
         return problems
 
-    def audit(self, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings = None) -> list[Problem]:
         """Audits a quality gate, returns found problems"""
         my_name = str(self)
         log.debug("Auditing %s", my_name)
@@ -313,13 +313,13 @@ class QualityGate(sq.SqObject):
         nb_conditions = len(self.conditions())
         log.debug("Auditing %s number of conditions (%d) is OK", my_name, nb_conditions)
         if nb_conditions == 0:
-            problems.append(pb.Problem(get_rule(RuleId.QG_NO_COND), self, my_name))
+            problems.append(Problem(get_rule(RuleId.QG_NO_COND), self, my_name))
         elif nb_conditions > max_cond:
-            problems.append(pb.Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
+            problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_COND), self, my_name, nb_conditions, max_cond))
         problems += self.__audit_conditions()
         log.debug("Auditing that %s has some assigned projects", my_name)
         if not self.is_default and len(self.projects()) == 0:
-            problems.append(pb.Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
+            problems.append(Problem(get_rule(RuleId.QG_NOT_USED), self, my_name))
         return problems
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -339,7 +339,7 @@ class QualityGate(sq.SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
-def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None) -> list[pb.Problem]:
+def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None) -> list[Problem]:
     """Audits Sonar platform quality gates, returns found problems"""
     log.info("--- Auditing quality gates ---")
     problems = []
@@ -348,7 +348,7 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
     nb_qg = len(quality_gates_list)
     log.debug("Auditing that there are no more than %s quality gates", str(max_qg))
     if nb_qg > max_qg:
-        problems.append(pb.Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.url}/quality_gates", nb_qg, 5))
+        problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.url}/quality_gates", nb_qg, 5))
     for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
     return problems

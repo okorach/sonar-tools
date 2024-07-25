@@ -50,8 +50,7 @@ import sonar.permissions.project_permissions as pperms
 
 from sonar.audit import severities
 from sonar.audit.rules import get_rule, RuleId
-
-import sonar.audit.problem as pb
+from sonar.audit.problem import Problem
 
 _OBJECTS = {}
 _CLASS_LOCK = Lock()
@@ -367,7 +366,7 @@ class Project(components.Component):
             key += _BIND_SEP + p_bind["slug"]
         return key
 
-    def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits whether the last analysis of the project is too old or not
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -382,7 +381,7 @@ class Project(components.Component):
             if not audit_settings.get("audit.projects.neverAnalyzed", True):
                 log.debug("Auditing of never analyzed projects is disabled, skipping")
             else:
-                problems.append(pb.Problem(get_rule(RuleId.PROJ_NOT_ANALYZED), self, str(self)))
+                problems.append(Problem(get_rule(RuleId.PROJ_NOT_ANALYZED), self, str(self)))
             return problems
 
         max_age = audit_settings.get("audit.projects.maxLastAnalysisAge", 180)
@@ -391,12 +390,12 @@ class Project(components.Component):
         elif age > max_age:
             rule = get_rule(RuleId.PROJ_LAST_ANALYSIS)
             severity = severities.Severity.HIGH if age > 365 else rule.severity
-            problems.append(pb.Problem(rule, self, str(self), self.get_measure("ncloc", fallback="0"), age, severity=severity))
+            problems.append(Problem(rule, self, str(self), self.get_measure("ncloc", fallback="0"), age, severity=severity))
 
         log.debug("%s last analysis is %d days old", str(self), age)
         return problems
 
-    def __audit_branches(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_branches(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project branches
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -415,10 +414,10 @@ class Project(components.Component):
             if branch.name in ("main", "master"):
                 main_br_count += 1
                 if main_br_count > 1:
-                    problems.append(pb.Problem(get_rule(RuleId.PROJ_MAIN_AND_MASTER), self, str(self)))
+                    problems.append(Problem(get_rule(RuleId.PROJ_MAIN_AND_MASTER), self, str(self)))
         return problems
 
-    def __audit_pull_requests(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_pull_requests(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project pul requests
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -435,7 +434,7 @@ class Project(components.Component):
             problems += pr.audit(audit_settings)
         return problems
 
-    def __audit_visibility(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_visibility(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project visibility and return problems if project is public
 
         :param audit_settings: Options and Settings (thresholds) to raise problems
@@ -449,11 +448,11 @@ class Project(components.Component):
         log.debug("Auditing %s visibility", str(self))
         visi = self.visibility()
         if visi != "private":
-            return [pb.Problem(get_rule(RuleId.PROJ_VISIBILITY), self, str(self), visi)]
+            return [Problem(get_rule(RuleId.PROJ_VISIBILITY), self, str(self), visi)]
         log.debug("%s visibility is 'private'", str(self))
         return []
 
-    def __audit_languages(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_languages(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project utility languages and returns problems if too many LoCs of these
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -477,11 +476,11 @@ class Project(components.Component):
             total_locs += int(ncloc)
         utility_locs = sum(lcount for lang, lcount in languages.items() if lang in ("xml", "json"))
         if total_locs > 100000 and (utility_locs / total_locs) > 0.5:
-            return [pb.Problem(get_rule(RuleId.PROJ_UTILITY_LOCS), self, str(self), utility_locs)]
+            return [Problem(get_rule(RuleId.PROJ_UTILITY_LOCS), self, str(self), utility_locs)]
         log.debug("%s utility LoCs count (%d) seems reasonable", str(self), utility_locs)
         return []
 
-    def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_zero_loc(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project utility projects with 0 LoCs
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -494,10 +493,10 @@ class Project(components.Component):
             and self.last_analysis() is not None
             and self.loc() == 0
         ):
-            return [pb.Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
+            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
         return []
 
-    def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         if self.endpoint.edition() == "community":
             log.info("Community edition, skipping binding validation...")
             return []
@@ -518,7 +517,7 @@ class Project(components.Component):
         except HTTPError as e:
             # Hack: 8.9 returns 404, 9.x returns 400
             if e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                return [pb.Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
+                return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
             else:
                 util.exit_fatal(f"alm_settings/validate_binding returning status code {e.response.status_code}, exiting", errcodes.SONAR_API)
         return []
@@ -559,7 +558,7 @@ class Project(components.Component):
         last_task.concerned_object = self
         return last_task.scanner()
 
-    def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         proj_type, scanner = self.get_type(), self.scanner()
         log.debug("%s is of type %s and uses scanner %s", proj_type, scanner)
         if proj_type == "UNKNOWN":
@@ -570,9 +569,9 @@ class Project(components.Component):
             return []
         if proj_type == scanner:
             return []
-        return [pb.Problem(get_rule(RuleId.PROJ_WRONG_SCANNER), self, str(self), proj_type, scanner)]
+        return [Problem(get_rule(RuleId.PROJ_WRONG_SCANNER), self, str(self), proj_type, scanner)]
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a project and returns the list of problems found
 
         :param dict audit_settings: Options of what to audit and thresholds to raise problems
@@ -1270,7 +1269,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     return {key: Project.get_object(endpoint, key) for key in util.csv_to_list(key_list)}
 
 
-def __audit_thread(queue: Queue[Project], results: list[pb.Problem], audit_settings: types.ConfigSettings, bindings: dict[str, str]) -> None:
+def __audit_thread(queue: Queue[Project], results: list[Problem], audit_settings: types.ConfigSettings, bindings: dict[str, str]) -> None:
     """Audit callback function for multitheaded audit"""
     audit_bindings = audit_settings.get("audit.projects.bindings", True)
     while not queue.empty():
@@ -1284,7 +1283,7 @@ def __audit_thread(queue: Queue[Project], results: list[pb.Problem], audit_setti
                 continue
             bindkey = project.binding_key()
             if bindkey and bindkey in bindings:
-                results.append(pb.Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
+                results.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
             else:
                 bindings[bindkey] = project
         except HTTPError as e:
@@ -1297,7 +1296,7 @@ def __audit_thread(queue: Queue[Project], results: list[pb.Problem], audit_setti
     log.debug("Queue empty, exiting thread")
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[pb.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[Problem]:
     """Audits all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1327,7 +1326,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list:
         log.debug("Auditing for potential duplicate projects")
         for key2 in plist:
             if key2 != key and re.match(key2, key):
-                problems.append(pb.Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
+                problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
     return problems
 
 

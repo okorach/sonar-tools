@@ -33,7 +33,8 @@ import sonar.logging as log
 from sonar.util import types
 from sonar import components, sqobject, exceptions
 import sonar.utilities as util
-from sonar.audit import rules, problem
+from sonar.audit.rules import get_rule, RuleId
+from sonar.audit.problem import Problem
 
 _OBJECTS = {}
 
@@ -75,14 +76,14 @@ class PullRequest(components.Component):
         """Deletes a PR and returns whether the operation succeeded"""
         return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS)
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         age = util.age(self.last_analysis())
         if age is None:  # Main branch not analyzed yet
             return []
         max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         problems = []
         if age > max_age:
-            problems.append(problem.Problem(rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS), self, str(self), age))
+            problems.append(Problem(get_rule(RuleId.PULL_REQUEST_LAST_ANALYSIS), self, str(self), age))
         else:
             log.debug("%s age is %d days", str(self), age)
         return problems

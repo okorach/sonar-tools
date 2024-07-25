@@ -33,7 +33,7 @@ from sonar import components, syncer, settings, exceptions
 from sonar import projects
 import sonar.utilities as util
 
-from sonar.audit import problem
+from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
 _OBJECTS = {}
@@ -267,16 +267,16 @@ class Branch(components.Component):
         _OBJECTS[self.uuid()] = self
         return True
 
-    def __audit_zero_loc(self) -> list[problem.Problem]:
+    def __audit_zero_loc(self) -> list[Problem]:
         """Audits whether a branch has 0 LoC"""
         if self.last_analysis() and self.loc() == 0:
-            return [problem.Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
+            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
         return []
 
-    def __audit_never_analyzed(self) -> list[problem.Problem]:
+    def __audit_never_analyzed(self) -> list[Problem]:
         """Detects branches that have never been analyzed are are kept when inactive"""
         if not self.last_analysis() and self.is_kept_when_inactive():
-            return [problem.Problem(get_rule(RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
+            return [Problem(get_rule(RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
         return []
 
     def get_findings(self):
@@ -326,7 +326,7 @@ class Branch(components.Component):
         counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
-    def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
+    def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         age = util.age(self.last_analysis())
         if self.is_main() or age is None:
             # Main branch (not purgeable) or branch not analyzed yet
@@ -338,12 +338,12 @@ class Branch(components.Component):
         elif self.is_kept_when_inactive():
             log.debug("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
-            problems.append(problem.Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
+            problems.append(Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
         else:
             log.debug("%s age is %d days", str(self), age)
         return problems
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a branch and return list of problems found
 
         :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
