@@ -338,7 +338,10 @@ class Setting(sqobject.SqObject):
 
 def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Setting:
     """Returns a Setting object from its key and, optionally, component"""
-    return _OBJECTS.get(uuid(key, component, endpoint.url), None)
+    uid = uuid(key, component, endpoint.url)
+    if uid not in _OBJECTS:
+        get_all(endpoint, component)
+    return _OBJECTS.get(uid, None)
 
 
 def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> dict[str, Setting]:
