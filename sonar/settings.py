@@ -476,14 +476,14 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
     """Sets a setting to a particular value"""
     s = get_object(endpoint=endpoint, key=key, component=component)
     if not s:
-        log.warning("Setting %s does not exist on target platform, it cannot be set")
+        log.warning("Setting %s does not exist on target platform, it cannot be set", key)
         return False
     else:
         try:
             s.set(value)
             return True
         except HTTPError:
-            log.warning("Setting %s does not exist on target platform, it cannot be set", key)
+            log.warning("Setting %s cannot be set", key)
             return False
 
 
