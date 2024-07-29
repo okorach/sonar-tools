@@ -17,3 +17,23 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+""" Sonar Custom Types for type hints """
+
+from typing import Union, Optional
+
+ConfigSettings = dict[str, str]
+
+ObjectFilter = dict[str, str]
+
+ObjectJsonRepr = dict[str, any]
+
+ApiParams = Optional[dict[str, str]]
+
+ApiPayload = Optional[dict[str, any]]
+
+KeyList = Optional[list[str]]
+
+ObjectDict = Optional[dict[str, object]]
+
+CliParams = Optional[dict[str, Union[str, int, float, list[str]]]]

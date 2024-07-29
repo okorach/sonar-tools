@@ -84,6 +84,7 @@ disable=raw-checker-failed,
         W0613,
         R0123,
         W0611,
+        W0238,
         R0911
 
 

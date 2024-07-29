@@ -24,16 +24,17 @@
 """
 from __future__ import annotations
 import json
-from typing import Union
+from typing import Optional
 from http import HTTPStatus
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.sqobject as sq
+from sonar.util import types
 from sonar import platform, utilities, exceptions
 
 _OBJECTS = {}
-SEARCH_API = "rules/search"
+
 _DETAILS_API = "rules/show"
 _UPDATE_API = "rules/update"
 _CREATE_API = "rules/create"
@@ -46,7 +47,11 @@ class Rule(sq.SqObject):
     Abstraction of the Sonar Rule concept
     """
 
-    def __init__(self, endpoint: platform.Platform, key: str, data: dict[str, str]) -> None:
+    SEARCH_API = "rules/search"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "rules"
+
+    def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
         log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
         self._json = data
@@ -83,7 +88,7 @@ class Rule(sq.SqObject):
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod
-    def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Union[None, Rule]:
+    def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Optional[Rule]:
         """Creates a rule object"""
         params = kwargs.copy()
         (_, params["customKey"]) = key.split(":")
@@ -93,7 +98,7 @@ class Rule(sq.SqObject):
         return cls.get_object(endpoint=endpoint, key=key)
 
     @classmethod
-    def load(cls, endpoint: platform.Platform, key: str, data: dict[str, str]) -> Rule:
+    def load(cls, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> Rule:
         """Loads a rule object"""
         uid = sq.uuid(key, endpoint.url)
         if uid in _OBJECTS:
@@ -102,7 +107,7 @@ class Rule(sq.SqObject):
         return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
-    def instantiate(cls, endpoint: platform.Platform, key: str, template_key: str, data: dict[str, str]) -> Rule:
+    def instantiate(cls, endpoint: platform.Platform, key: str, template_key: str, data: types.ObjectJsonRepr) -> Rule:
         try:
             rule = Rule.get_object(endpoint, key)
             log.info("Rule key '%s' already exists, instantiation skipped...", key)
@@ -124,7 +129,7 @@ class Rule(sq.SqObject):
     def __str__(self) -> str:
         return f"rule key '{self.key}'"
 
-    def to_json(self) -> dict[str, str]:
+    def to_json(self) -> types.ObjectJsonRepr:
         return self._json
 
     def to_csv(self) -> list[str]:
@@ -138,7 +143,7 @@ class Rule(sq.SqObject):
             rule_type = "INSTANTIATED"
         return [self.key, self.language, self.repo, self.type, self.name, rule_type, ",".join(tags)]
 
-    def export(self, full: bool = False) -> dict[str, str]:
+    def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
         return convert_for_export(self.to_json(), self.language, full=full)
 
@@ -178,18 +183,18 @@ class Rule(sq.SqObject):
 
 def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
     """Returns a facet as a count per item in the facet"""
-    data = json.loads(endpoint.get(SEARCH_API, params={"ps": 1, "facets": facet}).text)
+    data = json.loads(endpoint.get(Rule.SEARCH_API, params={"ps": 1, "facets": facet}).text)
     return {f["val"]: f["count"] for f in data["facets"][0]["values"]}
 
 
 def search(endpoint: platform.Platform, **params) -> dict[str, Rule]:
     """Searches ruless with optional filters"""
-    return sq.search_objects(SEARCH_API, endpoint, "key", "rules", Rule, params, threads=4)
+    return sq.search_objects(endpoint=endpoint, object_class=Rule, params=params, threads=4)
 
 
 def count(endpoint: platform.Platform, **params) -> int:
     """Count number of rules that correspond to certain filters"""
-    return json.loads(endpoint.get(SEARCH_API, params={**params, "ps": 1}).text)["total"]
+    return json.loads(endpoint.get(Rule.SEARCH_API, params={**params, "ps": 1}).text)["total"]
 
 
 def get_list(endpoint: platform.Platform, **params) -> dict[str, Rule]:
@@ -197,7 +202,7 @@ def get_list(endpoint: platform.Platform, **params) -> dict[str, Rule]:
     return search(endpoint, include_external="false", **params)
 
 
-def get_object(endpoint: platform.Platform, key: str) -> Union[Rule, None]:
+def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
     """Returns a Rule object from its key
     :return: The Rule object corresponding to the input rule key, or None if not found
     :param str key: The rule key
@@ -212,7 +217,7 @@ def get_object(endpoint: platform.Platform, key: str) -> Union[Rule, None]:
         return None
 
 
-def export_all(endpoint: platform.Platform, full: bool = False) -> dict[str, str]:
+def export_all(endpoint: platform.Platform, full: bool = False) -> types.ObjectJsonRepr:
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
@@ -240,7 +245,7 @@ def export_all(endpoint: platform.Platform, full: bool = False) -> dict[str, str
     return rule_list
 
 
-def export_instantiated(endpoint: platform.Platform, full: bool = False) -> Union[None, dict[str, str]]:
+def export_instantiated(endpoint: platform.Platform, full: bool = False) -> Optional[types.ObjectJsonRepr]:
     """Returns a JSON of all instantiated rules"""
     rule_list = {}
     for template_key in get_list(endpoint=endpoint, is_template="true"):
@@ -249,7 +254,7 @@ def export_instantiated(endpoint: platform.Platform, full: bool = False) -> Unio
     return rule_list if len(rule_list) > 0 else None
 
 
-def export_customized(endpoint: platform.Platform, full: bool = False) -> Union[None, dict[str, str]]:
+def export_customized(endpoint: platform.Platform, full: bool = False) -> Optional[types.ObjectJsonRepr]:
     """Returns a JSON export of all customized rules (custom tags or description added)"""
     rule_list = {}
     for rule_key, rule in get_list(endpoint=endpoint, is_template="false").items():
@@ -266,7 +271,7 @@ def export_customized(endpoint: platform.Platform, full: bool = False) -> Union[
     return rule_list if len(rule_list) > 0 else None
 
 
-def export_needed(endpoint: platform.Platform, instantiated: bool = True, extended: bool = True, full: bool = False) -> dict[str, str]:
+def export_needed(endpoint: platform.Platform, instantiated: bool = True, extended: bool = True, full: bool = False) -> types.ObjectJsonRepr:
     """Returns a JSON export selected / needed rules"""
     rule_list = {}
     if instantiated:
@@ -277,17 +282,17 @@ def export_needed(endpoint: platform.Platform, instantiated: bool = True, extend
 
 
 def export(
-    endpoint: platform.Platform, export_settings: dict[str, str], instantiated: bool = True, extended: bool = True, standard: bool = False
-) -> dict[str, Rule]:
+    endpoint: platform.Platform, export_settings: types.ConfigSettings, instantiated: bool = True, extended: bool = True, standard: bool = False
+) -> types.ObjectJsonRepr:
     """Returns a dict of rules for export
     :return: a dict of rule onbjects indexed with rule key
-    :param object endpoint: The SonarQube Platform object to connect to
-    :param dict[str, str] export_settings: parameters to export
+    :param Platform endpoint: The SonarQube Platform object to connect to
+    :param ConfigSettings export_settings: parameters to export
     :param bool instantiated: Include instantiated rules in the list
     :param bool extended: Include extended rules in the list
     :param bool standard: Include standard rules in the list
     :param full standard: Include full rule information in the export
-    :rtype: dict{ruleKey: Rule}
+    :rtype: dict{ruleKey: <ruleJson.}
     """
     log.info("Exporting rules")
     if standard:
@@ -296,7 +301,7 @@ def export(
         return export_needed(endpoint, instantiated, extended, export_settings["FULL_EXPORT"])
 
 
-def import_config(endpoint: platform.Platform, config_data: dict[str, str]) -> bool:
+def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr) -> bool:
     """Imports a sonar-config configuration"""
     if "rules" not in config_data:
         log.info("No customized rules (custom tags, extended description) to import")
@@ -331,7 +336,7 @@ def import_config(endpoint: platform.Platform, config_data: dict[str, str]) -> b
     return True
 
 
-def convert_for_export(rule: dict[str, str], qp_lang: str, with_template_key: bool = True, full: bool = False) -> dict[str, str]:
+def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_key: bool = True, full: bool = False) -> types.ObjectJsonRepr:
     """Converts rule data for export"""
     d = {"severity": rule.get("severity", "")}
     if len(rule.get("params", {})) > 0:

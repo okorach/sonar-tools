@@ -1,5 +1,9 @@
 # Next version yet unreleased
 
+# Version 3.2.2
+
+- Fix regressions in `sonar-config -i`
+
 # Version 3.2.1
 
 - Patch release to fix all compatibility problems with

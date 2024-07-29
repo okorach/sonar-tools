@@ -26,16 +26,18 @@ import json
 
 import sonar.logging as log
 import sonar.platform as pf
+from sonar.util.types import ApiPayload, ApiParams
 
 import sonar.components as comp
 
-from sonar.audit import rules, problem
+from sonar.audit.rules import get_rule
+from sonar.audit.problem import Problem
 
 
 class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, any] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None) -> None:
         self._nbr_projects = None
         self._permissions = None
         super().__init__(endpoint=endpoint, key=key)
@@ -73,24 +75,23 @@ class Aggregation(comp.Component):
                     self.ncloc = int(m["value"])
         return self._nbr_projects
 
-    def _audit_aggregation_cardinality(self, sizes: tuple[int], broken_rule: object) -> list[problem.Problem]:
+    def _audit_aggregation_cardinality(self, sizes: tuple[int], broken_rule: object) -> list[Problem]:
         problems = []
         n = self.nbr_projects()
         if n in sizes:
-            rule = rules.get_rule(broken_rule)
-            problems.append(problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self))
+            problems.append(Problem(get_rule(broken_rule), self, str(self)))
         else:
             log.debug("%s has %d projects", str(self), n)
         return problems
 
-    def _audit_empty_aggregation(self, broken_rule: object) -> list[problem.Problem]:
+    def _audit_empty_aggregation(self, broken_rule: object) -> list[Problem]:
         return self._audit_aggregation_cardinality((0, None), broken_rule)
 
-    def _audit_singleton_aggregation(self, broken_rule: object) -> list[problem.Problem]:
+    def _audit_singleton_aggregation(self, broken_rule: object) -> list[Problem]:
         return self._audit_aggregation_cardinality((1, 1), broken_rule)
 
 
-def count(api: str, endpoint: pf.Platform, params: dict[str, str] = None) -> int:
+def count(api: str, endpoint: pf.Platform, params: ApiParams = None) -> int:
     """Returns number of aggregations of a given type (Application OR Portfolio)
     :return: number of Apps or Portfolios
     :rtype: int

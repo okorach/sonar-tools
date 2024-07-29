@@ -26,9 +26,10 @@ import re
 import json
 from typing import Union
 from requests.exceptions import HTTPError
+
 import sonar.logging as log
 import sonar.platform as pf
-
+from sonar.util import types
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
@@ -128,7 +129,7 @@ class Setting(sqobject.SqObject):
     Abstraction of the Sonar setting concept
     """
 
-    def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.component = component
@@ -171,7 +172,7 @@ class Setting(sqobject.SqObject):
         return o
 
     @classmethod
-    def load(cls, key: str, endpoint: pf.Platform, data: dict[str, str], component: object = None) -> Setting:
+    def load(cls, key: str, endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
         uid = uuid(key, component, endpoint.url)
@@ -179,7 +180,7 @@ class Setting(sqobject.SqObject):
         o.reload(data)
         return o
 
-    def reload(self, data: dict[str, str]) -> None:
+    def reload(self, data: types.ApiPayload) -> None:
         """Reloads a Setting with JSON returned from Sonar API"""
         if not data:
             return
@@ -236,7 +237,7 @@ class Setting(sqobject.SqObject):
             value = decode(self.key, value)
 
         # With SonarQube 10.x you can't set the github URL
-        if re.match(r"^sonar\.auth\.(.*)Url$", self.key) and self.endpoint.version() >= (10, 0, 0):
+        if re.match(r"^sonar\.auth\.(.*)[Uu]rl$", self.key) and self.endpoint.version() >= (10, 0, 0):
             log.warning("GitHub URL (%s) cannot be set, skipping this setting", self.key)
             return False
 
@@ -253,7 +254,7 @@ class Setting(sqobject.SqObject):
             params["value"] = value
         return self.post(_API_SET, params=params).ok
 
-    def to_json(self, list_as_csv: bool = True) -> dict[str, str]:
+    def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
         val = self.value
         if self.key == NEW_CODE_PERIOD:
             val = new_code_to_string(self.value)
@@ -349,7 +350,7 @@ def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Set
     return _OBJECTS.get(uid, None)
 
 
-def __get_settings(endpoint: pf.Platform, data: dict[str, str], component: object = None) -> dict[str, Setting]:
+def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> dict[str, Setting]:
     """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
     settings = {}
     settings_type_list = ["settings"]
@@ -370,7 +371,9 @@ def __get_settings(endpoint: pf.Platform, data: dict[str, str], component: objec
     return settings
 
 
-def get_bulk(endpoint: pf.Platform, settings_list: list[str] = None, component: object = None, include_not_set: bool = False) -> dict[str, Setting]:
+def get_bulk(
+    endpoint: pf.Platform, settings_list: types.KeyList = None, component: object = None, include_not_set: bool = False
+) -> dict[str, Setting]:
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
     params = get_component_params(component)
@@ -476,14 +479,14 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
     """Sets a setting to a particular value"""
     s = get_object(endpoint=endpoint, key=key, component=component)
     if not s:
-        log.warning("Setting %s does not exist on target platform, it cannot be set", key)
+        log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
         return False
     else:
         try:
             s.set(value)
             return True
         except HTTPError:
-            log.warning("Setting %s cannot be set", key)
+            log.warning("Setting '%s' cannot be set", key)
             return False
 
 
@@ -511,7 +514,7 @@ def reset_setting(endpoint: pf.Platform, setting_key: str, project_key: str = No
     return endpoint.post("settings/reset", params={"key": setting_key, "component": project_key}).ok
 
 
-def get_component_params(component: object, name: str = "component") -> dict[str, str]:
+def get_component_params(component: object, name: str = "component") -> types.ApiParamss:
     """Gets the parameters to read or write settings"""
     if not component:
         return {}

@@ -25,13 +25,14 @@
 
 import datetime
 import re
-from typing import Union
+from typing import Union, Optional
 from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
 import sonar.utilities as util
-from sonar.audit import rules
-import sonar.audit.problem as pb
+from sonar.util import types
+from sonar.audit.rules import get_rule, RuleId
+from sonar.audit.problem import Problem
 import sonar.sif_node as sifn
 
 import sonar.dce.app_nodes as appnodes
@@ -152,17 +153,19 @@ class Sif:
             return None
         return util.int_memory(setting)
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits a SIF"""
         log.info("Auditing System Info")
         problems = self.__audit_jdbc_url()
         log.debug("Edition = %s", self.edition())
         if self.edition() == "datacenter":
             log.info("DCE SIF audit")
-            problems += self.__audit_dce_settings()
+            problems += self.__audit_dce_settings(audit_settings)
         else:
             problems += (
-                sifn.audit_web(self, "Web process", self.json)
-                + sifn.audit_ce(self, "CE process", self.json)
+                sifn.audit_web(self, "Web process")
+                + sifn.audit_ce(self, "CE process")
+                + sifn.audit_plugins(self, "WebApp", audit_settings)
                 + self.__audit_es_settings()
                 + self.__audit_branch_use()
                 + self.__audit_undetected_scm()
@@ -177,8 +180,7 @@ class Sif:
             use_br = self.json[_STATS]["usingBranches"]
             if use_br:
                 return []
-            rule = rules.get_rule(rules.RuleId.NOT_USING_BRANCH_ANALYSIS)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self)]
+            return [Problem(get_rule(RuleId.NOT_USING_BRANCH_ANALYSIS), self)]
         except KeyError:
             log.info("Branch usage information not in SIF, ignoring audit...")
             return []
@@ -193,8 +195,7 @@ class Sif:
                     undetected_scm_count = scm["count"]
             if undetected_scm_count == 0:
                 return []
-            rule = rules.get_rule(rules.RuleId.SIF_UNDETECTED_SCM)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(undetected_scm_count), concerned_object=self)]
+            return [Problem(get_rule(RuleId.SIF_UNDETECTED_SCM), self, undetected_scm_count)]
         except KeyError:
             log.info("SCM information not in SIF, ignoring audit...")
             return []
@@ -244,11 +245,10 @@ class Sif:
             for s in jvm_settings.split(" "):
                 if s == "-Dlog4j2.formatMsgNoLookups=true":
                     return []
-            rule = rules.get_rule(broken_rule)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self)]
+            return [Problem(get_rule(broken_rule), self)]
         return []
 
-    def __audit_jdbc_url(self) -> list[pb.Problem]:
+    def __audit_jdbc_url(self) -> list[Problem]:
         log.info("Auditing JDBC settings")
         stats = self.json.get(_SETTINGS)
         if stats is None:
@@ -256,23 +256,22 @@ class Sif:
             return []
         jdbc_url = stats.get("sonar.jdbc.url", None)
         if jdbc_url is None:
-            rule = rules.get_rule(rules.RuleId.SETTING_JDBC_URL_NOT_SET)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self)]
+            return [Problem(get_rule(RuleId.SETTING_JDBC_URL_NOT_SET), self)]
         if re.search(
             r":(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]",
             jdbc_url,
         ):
             lic = self.license_type()
             if lic == "PRODUCTION":
-                rule = rules.get_rule(rules.RuleId.DB_ON_SAME_HOST)
-                return [pb.Problem(broken_rule=rule, msg=rule.msg.format(jdbc_url), concerned_object=self)]
+                return [Problem(get_rule(RuleId.DB_ON_SAME_HOST), self, jdbc_url)]
             else:
                 log.info("JDBC URL %s is on localhost but this is not a production license. So be it!", jdbc_url)
         else:
             log.info("JDBC URL %s does not use localhost, all good!", jdbc_url)
         return []
 
-    def __audit_dce_settings(self):
+    def __audit_dce_settings(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits DCE settings"""
         log.info("Auditing DCE settings for version %s", str(self.version()))
         problems = []
         sq_edition = self.edition()
@@ -283,7 +282,7 @@ class Sif:
             log.info("Not a Data Center Edition, skipping DCE checks")
             return problems
         if _APP_NODES in self.json:
-            problems += appnodes.audit(self.json[_APP_NODES], self)
+            problems += appnodes.audit(self.json[_APP_NODES], self, audit_settings=audit_settings)
         else:
             log.info("Sys Info too old (pre-8.9), can't check plugins")
 
@@ -306,21 +305,18 @@ class Sif:
         if index_size is None:
             log.warning("Search server index size is missing. Audit of ES heap vs index size is skipped...")
         elif es_ram is None:
-            rule = rules.get_rule(rules.RuleId.SETTING_ES_NO_HEAP)
-            problems.append(pb.Problem(broken_rule=rule, msg=rule.msg, concerned_object=self))
+            problems.append(Problem(get_rule(RuleId.SETTING_ES_NO_HEAP), self))
         elif es_ram < 2 * index_size and es_ram < index_size + 1000:
-            rule = rules.get_rule(rules.RuleId.ES_HEAP_TOO_LOW)
-            problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format("ES", es_ram, index_size), concerned_object=self))
+            problems.append(Problem(get_rule(RuleId.ES_HEAP_TOO_LOW), self, "ES", es_ram, index_size))
         elif es_ram > 32 * 1024:
-            rule = rules.get_rule(rules.RuleId.ES_HEAP_TOO_HIGH)
-            problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format("ES", es_ram, 32 * 1024), concerned_object=self))
+            problems.append(Problem(get_rule(RuleId.ES_HEAP_TOO_HIGH), self, "ES", es_ram, 32 * 1024))
         else:
             log.debug(
                 "Search server memory %d MB is correct wrt to index size of %d MB",
                 es_ram,
                 index_size,
             )
-        problems += self.__audit_log4shell(jvm_cmdline, rules.RuleId.LOG4SHELL_ES)
+        problems += self.__audit_log4shell(jvm_cmdline, RuleId.LOG4SHELL_ES)
         return problems
 
 
