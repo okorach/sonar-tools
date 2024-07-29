@@ -236,7 +236,7 @@ class Setting(sqobject.SqObject):
             value = decode(self.key, value)
 
         # With SonarQube 10.x you can't set the github URL
-        if re.match(r"^sonar\.auth\.(.*)Url$", self.key) and self.endpoint.version() >= (10, 0, 0):
+        if re.match(r"^sonar\.auth\.(.*)[Uu]rl$", self.key) and self.endpoint.version() >= (10, 0, 0):
             log.warning("GitHub URL (%s) cannot be set, skipping this setting", self.key)
             return False
 
