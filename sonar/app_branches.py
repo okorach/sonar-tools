@@ -28,11 +28,12 @@ from requests.exceptions import HTTPError
 from requests.utils import quote
 
 import sonar.logging as log
+from sonar.util import types
+
 from sonar.components import Component, KEY_SEPARATOR
 
 from sonar.applications import Application as App
 from sonar.branches import Branch
-
 from sonar import exceptions, projects
 import sonar.sqobject as sq
 
@@ -69,12 +70,12 @@ class ApplicationBranch(Component):
     def get_object(cls, app: App, branch_name: str) -> ApplicationBranch:
         """Gets an Application object from SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str key: Application key, must not already exist on SonarQube
+        :param Application app: Reference to the Application holding that branch
+        :param str branch_name: Name of the application branch
         :raises UnsupportedOperation: If on a Community Edition
-        :raises ObjectNotFound: If Application key not found in SonarQube
-        :return: The found Application object
-        :rtype: Application
+        :raises ObjectNotFound: If Application or Brnach not found
+        :return: The found ApplicationBranch
+        :rtype: ApplicationBranch
         """
         if app.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
@@ -91,13 +92,12 @@ class ApplicationBranch(Component):
     def create(cls, app: App, name: str, project_branches: list[Branch]) -> ApplicationBranch:
         """Creates an ApplicationBranch object in SonarQube
 
-        :param Platform endpoint: Reference to the SonarQube platform
-        :param str key: Application key, must not already exist on SonarQube
-        :param str name: Application name
+        :param Application app: Reference to the Application holding that branch
+        :param str name: Name of the application branch
         :raises UnsupportedOperation: If on a Community Edition
-        :raises ObjectAlreadyExists: If key already exist for another Application
-        :return: The created Application object
-        :rtype: Application
+        :raises ObjectAlreadyExists: If a branch of that name already exist
+        :return: The created ApplicationBranch object
+        :rtype: ApplicationBranch
         """
         if app.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
@@ -114,7 +114,7 @@ class ApplicationBranch(Component):
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
     @classmethod
-    def load(cls, app: App, branch_data: dict[str, str]) -> ApplicationBranch:
+    def load(cls, app: App, branch_data: types.ApiPayload) -> ApplicationBranch:
         project_branches = []
         for proj_data in branch_data["projects"]:
             proj = projects.Project.get_object(app.endpoint, proj_data["key"])
@@ -146,12 +146,12 @@ class ApplicationBranch(Component):
             return False
         return sq.delete_object(self, APIS["delete"], self.search_params(), _OBJECTS)
 
-    def reload(self, data: dict[str, str]) -> None:
+    def reload(self, data: types.ApiPayload) -> None:
         """Reloads an App Branch from JSON data coming from Sonar"""
         super().reload(data)
         self.name = data.get("branch", "")
 
-    def export(self) -> dict[str, str]:
+    def export(self) -> types.ObjectJsonRepr:
         """Exports an application branch
 
         :param full: Whether to do a full export including settings that can't be set, defaults to False
@@ -206,7 +206,7 @@ class ApplicationBranch(Component):
         """
         return self.update(name=self.name, project_branches=new_project_branches)
 
-    def search_params(self) -> dict[str, str]:
+    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"application": self.concerned_object.key, "branch": self.name}
 
@@ -214,7 +214,7 @@ class ApplicationBranch(Component):
         """Returns the object UUID"""
         return uuid(self.concerned_object.key, self.name, self.endpoint.url)
 
-    def component_data(self) -> dict[str, str]:
+    def component_data(self) -> types.Obj:
         """Returns key data"""
         return {
             "key": self.concerned_object.key,
@@ -234,7 +234,7 @@ def uuid(app_key: str, branch_name: str, url: str) -> str:
     return f"{app_key}{KEY_SEPARATOR}{branch_name}@{url}"
 
 
-def list_from(app: App, data: dict[str, str]) -> dict[str, ApplicationBranch]:
+def list_from(app: App, data: types.ApiPayload) -> dict[str, ApplicationBranch]:
     """Returns a dict of application branches form the pure App JSON"""
     if not data or "branches" not in data:
         return {}

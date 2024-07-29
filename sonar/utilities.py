@@ -22,7 +22,7 @@
     Utilities for sonar-tools
 
 """
-from typing import TextIO
+from typing import TextIO, Union, Optional
 from http import HTTPStatus
 import sys
 import contextlib
@@ -31,7 +31,6 @@ import json
 import datetime
 from datetime import timezone
 
-from typing import Union
 import requests
 
 import sonar.logging as log
@@ -189,7 +188,7 @@ def csv_to_list(string: str, separator: str = ",") -> list[str]:
     return [s.strip() for s in string.split(separator)]
 
 
-def list_to_csv(array: Union[None, str, list[str]], separator: str = ",", check_for_separator: bool = False) -> Union[str, None]:
+def list_to_csv(array: Union[None, str, list[str]], separator: str = ",", check_for_separator: bool = False) -> Optional[str]:
     """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
@@ -498,6 +497,11 @@ def string_to_version(sif_v: str, digits: int = 3, as_string: bool = False) -> U
             return tuple(int(n) for n in split_version[0:digits])
     except ValueError:
         return None
+
+
+def version_to_string(vers: tuple[int, int, int]) -> str:
+    """Converts a version tuple to string"""
+    return ".".join([str(n) for n in vers])
 
 
 def is_sonarcloud_url(url: str) -> bool:

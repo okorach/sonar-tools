@@ -23,15 +23,19 @@
 
 """
 
+from sonar.util import types
+
 HEALTH_GREEN = "GREEN"
 HEALTH_YELLOW = "YELLOW"
 HEALTH_RED = "RED"
 
 
 class DceNode:
-    def __init__(self, data, sif):
+    def __init__(self, data: dict[str, any], sif: object) -> None:
+        """Constructor"""
         self.json = data
         self.sif = sif
 
-    def audit(self):
+    def audit(self, audit_settings: types.ConfigSettings) -> list[object]:
+        """Audits a node, implementation should be in subclasses"""
         return []

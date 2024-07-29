@@ -28,7 +28,7 @@ import sys
 import csv
 from http import HTTPStatus
 from requests.exceptions import HTTPError
-
+from sonar.util import types
 from cli import options
 import sonar.logging as log
 from sonar import metrics, platform, exceptions, errcodes
@@ -51,7 +51,7 @@ def __last_analysis(component: object) -> str:
     return last_analysis
 
 
-def __get_json_measures_history(obj: object, wanted_metrics: list[str]) -> dict[str, str]:
+def __get_json_measures_history(obj: object, wanted_metrics: types.KeyList) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
     data = {}
     try:
@@ -61,7 +61,7 @@ def __get_json_measures_history(obj: object, wanted_metrics: list[str]) -> dict[
     return data
 
 
-def __get_object_measures(obj: object, wanted_metrics: list[str]) -> dict[str, str]:
+def __get_object_measures(obj: object, wanted_metrics: types.KeyList) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
     measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
@@ -70,9 +70,9 @@ def __get_object_measures(obj: object, wanted_metrics: list[str]) -> dict[str, s
     return measures_d
 
 
-def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: list[str]) -> list[str]:
+def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyList) -> types.KeyList:
     """Returns an ordered list of metrics based on CLI inputs"""
-    if wanted_metrics[0] == "_all":
+    if wanted_metrics[0] in ("_all", "*"):
         all_metrics = list(metrics.search(endpoint).keys())
         all_metrics.remove("quality_gate_details")
         # Hack: With SonarQube 7.9 and below new_development_cost measure can't be retrieved
@@ -161,7 +161,7 @@ def __get_ts(ts: str, **kwargs) -> str:
     return ts
 
 
-def __write_measures_history_csv_as_table(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
+def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
 
     w_br, w_url = kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
@@ -217,7 +217,7 @@ def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwar
                 csvwriter.writerow([__get_ts(metric_data[0], **kwargs), key, metric_data[1], metric_data[2]])
 
 
-def __write_measures_history_csv(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
+def __write_measures_history_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """Writes measures history of object list in CSV format"""
     if kwargs["asTable"]:
         __write_measures_history_csv_as_table(file, wanted_metrics, data, **kwargs)
@@ -225,7 +225,7 @@ def __write_measures_history_csv(file: str, wanted_metrics: list[str], data: dic
         __write_measures_history_csv_as_list(file, data, **kwargs)
 
 
-def __write_measures_csv(file: str, wanted_metrics: list[str], data: dict[str, str], **kwargs) -> None:
+def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[str, str], **kwargs) -> None:
     """writes measures in CSV"""
     header_list = ["key", "type"]
     if kwargs[options.WITH_NAME]:

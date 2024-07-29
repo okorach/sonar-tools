@@ -84,6 +84,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - The log4shell fix is has not been implemented (either with recent enough SonarQube patch level or the `-Dlog4j2.formatMsgNoLookups=true` option)
   - Commercial edition but not using branch analysis
   - Projects with undetected SCM
+  - 3rd party plugins installed and not listed in a whitelist (`audit.plugins.whitelist`)
   - Available disk space is at least 4 x search store size and at least 10 GB
   - DCE: Different plugins are installed on different app nodes
   - DCE: Different version of SonarQube running on different app nodes
@@ -163,7 +164,6 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Project branches not kept permanently and not analyzed since `audit.projects.branches.maxLastAnalysisAge` (default 30 days)
   - Pull requests not analyzed since `audit.projects.pullRequests.maxLastAnalysisAge`(default 30 days)
   - Projects with `public` visibility
-  - Large projects with too much XML: Projects with more than 200K LoC and XML representing more than 50% of it
   - Permissions: (if `audit.projects.permissions = yes`, default `yes`)
     - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
     - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
@@ -188,6 +188,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Last background task with failed SCM detection
   - Last background task on main branch `FAILED`
   - Last analysis with an obsolete scanner version (by default more than 2 years old)
+  - Project analyzed with apparently a wrong scanner (Can't be certain in all cases)
 - Branches: (if `audit.project.branches = yes`, default `yes`)
   - Branches never analyzed but marked as "keep when inactive"
 - Portfolios: (if `audit.applications = yes`, default `yes`)

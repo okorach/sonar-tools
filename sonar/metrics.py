@@ -23,6 +23,7 @@ from threading import Lock
 
 import sonar.logging as log
 import sonar.platform as pf
+from sonar.util.types import ApiPayload
 
 from sonar import sqobject, utilities
 
@@ -76,7 +77,7 @@ class Metric(sqobject.SqObject):
     Abstraction of the SonarQube "metric" concept
     """
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.type = None  #: Type (FLOAT, INT, STRING, WORK_DUR...)
@@ -90,7 +91,7 @@ class Metric(sqobject.SqObject):
         self.__load(data)
         _OBJECTS[self.uuid()] = self
 
-    def __load(self, data: dict[str, str]) -> bool:
+    def __load(self, data: ApiPayload) -> bool:
         log.debug("Loading metric %s", str(data))
         self.type = data["type"]
         self.name = data["name"]

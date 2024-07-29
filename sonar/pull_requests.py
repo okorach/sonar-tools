@@ -25,15 +25,16 @@
 
 import json
 from datetime import datetime
-from typing import Union
+from typing import Optional
 
 import requests.utils
 
 import sonar.logging as log
-
+from sonar.util import types
 from sonar import components, sqobject, exceptions
 import sonar.utilities as util
-from sonar.audit import rules, problem
+from sonar.audit.rules import get_rule, RuleId
+from sonar.audit.problem import Problem
 
 _OBJECTS = {}
 
@@ -45,7 +46,7 @@ class PullRequest(components.Component):
     Abstraction of the Sonar pull request concept
     """
 
-    def __init__(self, project: object, key: str, data: dict[str, str] = None) -> None:
+    def __init__(self, project: object, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
         self.project = project
@@ -75,20 +76,19 @@ class PullRequest(components.Component):
         """Deletes a PR and returns whether the operation succeeded"""
         return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS)
 
-    def audit(self, audit_settings: dict[str, str]) -> list[problem.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         age = util.age(self.last_analysis())
         if age is None:  # Main branch not analyzed yet
             return []
         max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         problems = []
         if age > max_age:
-            rule = rules.get_rule(rules.RuleId.PULL_REQUEST_LAST_ANALYSIS)
-            problems.append(problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self), age), concerned_object=self))
+            problems.append(Problem(get_rule(RuleId.PULL_REQUEST_LAST_ANALYSIS), self, str(self), age))
         else:
             log.debug("%s age is %d days", str(self), age)
         return problems
 
-    def search_params(self) -> dict[str, str]:
+    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"project": self.project.key, "pullRequest": self.key}
 
@@ -98,7 +98,7 @@ def uuid(project_key: str, pull_request_key: str, url: str) -> str:
     return f"{project_key}{components.KEY_SEPARATOR}{pull_request_key}@{url}"
 
 
-def get_object(pull_request_key: str, project: object, data: dict[str, str] = None) -> Union[PullRequest, None]:
+def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""
     if project.endpoint.edition() == "community":
         log.debug("Pull requests not available in Community Edition")

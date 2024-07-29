@@ -26,13 +26,15 @@ from requests.exceptions import HTTPError
 import requests.utils
 
 from sonar import platform
+from sonar.util import types
 import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import components, syncer, settings, exceptions
 from sonar import projects
 import sonar.utilities as util
 
-from sonar.audit import rules, problem
+from sonar.audit.problem import Problem
+from sonar.audit.rules import get_rule, RuleId
 
 _OBJECTS = {}
 
@@ -96,7 +98,7 @@ class Branch(components.Component):
         raise exceptions.ObjectNotFound(branch_name, f"Branch '{branch_name}' of project '{concerned_object.key}' not found")
 
     @classmethod
-    def load(cls, concerned_object: projects.Project, branch_name: str, data: dict[str, str]) -> Branch:
+    def load(cls, concerned_object: projects.Project, branch_name: str, data: types.ApiPayload) -> Branch:
         """Gets a Branch object from JSON data gotten from a list API call
 
         :param projects.Project concerned_object: the projects.Project the branch belonsg to
@@ -210,7 +212,7 @@ class Branch(components.Component):
                     Branch.get_object(self.concerned_object, b["branchKey"])._new_code = new_code
         return self._new_code
 
-    def export(self, export_settings: dict[str, str]) -> dict[str, str]:
+    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a branch configuration (is main, keep when inactive, optionally name, project)
 
         :param full_export: Also export branches attributes that are not needed for import, defaults to True
@@ -265,17 +267,16 @@ class Branch(components.Component):
         _OBJECTS[self.uuid()] = self
         return True
 
-    def __audit_zero_loc(self):
+    def __audit_zero_loc(self) -> list[Problem]:
+        """Audits whether a branch has 0 LoC"""
         if self.last_analysis() and self.loc() == 0:
-            rule = rules.get_rule(rules.RuleId.PROJ_ZERO_LOC)
-            return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
+            return [Problem(get_rule(RuleId.PROJ_ZERO_LOC), self, str(self))]
         return []
 
-    def __audit_never_analyzed(self) -> list[problem.Problem]:
+    def __audit_never_analyzed(self) -> list[Problem]:
         """Detects branches that have never been analyzed are are kept when inactive"""
         if not self.last_analysis() and self.is_kept_when_inactive():
-            rule = rules.get_rule(rules.RuleId.BRANCH_NEVER_ANALYZED)
-            return [problem.Problem(broken_rule=rule, msg=rule.msg.format(str(self)), concerned_object=self)]
+            return [Problem(get_rule(RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
         return []
 
     def get_findings(self):
@@ -296,13 +297,11 @@ class Branch(components.Component):
             "url": self.url(),
         }
 
-    def sync(self, another_branch: Branch, sync_settings: dict[str, str]) -> tuple[list[dict[str, str]], dict[str, int]]:
+    def sync(self, another_branch: Branch, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs branch findings with another branch
 
-        :param another_branch: other branch to sync issues into (not necesssarily of same project)
-        :type another_branch: Branch
-        :param sync_settings: Parameters to configure the sync
-        :type sync_settings: dict
+        :param Branch another_branch: other branch to sync issues into (not necesssarily of same project)
+        :param dict sync_settings: Parameters to configure the sync
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
@@ -327,7 +326,7 @@ class Branch(components.Component):
         counters = util.dict_add(counters, tmp_counts)
         return (report, counters)
 
-    def __audit_last_analysis(self, audit_settings):
+    def __audit_last_analysis(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         age = util.age(self.last_analysis())
         if self.is_main() or age is None:
             # Main branch (not purgeable) or branch not analyzed yet
@@ -339,19 +338,15 @@ class Branch(components.Component):
         elif self.is_kept_when_inactive():
             log.debug("%s is kept when inactive (not purgeable)", str(self))
         elif age > max_age:
-            rule = rules.get_rule(rules.RuleId.BRANCH_LAST_ANALYSIS)
-            msg = rule.msg.format(str(self), age)
-            problems.append(problem.Problem(broken_rule=rule, msg=msg, concerned_object=self))
+            problems.append(Problem(get_rule(RuleId.BRANCH_LAST_ANALYSIS), self, str(self), age))
         else:
             log.debug("%s age is %d days", str(self), age)
         return problems
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a branch and return list of problems found
 
-        :meta private:
-        :param audit_settings: Options of what to audit and thresholds to raise problems
-        :type audit_settings: dict
+        :param ConfigSettings audit_settings: Options of what to audit and thresholds to raise problems
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
@@ -368,7 +363,7 @@ class Branch(components.Component):
             log.debug("Branch audit disabled, skipping audit of %s", str(self))
         return []
 
-    def search_params(self) -> dict[str, str]:
+    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"project": self.concerned_object.key, "branch": self.name}
 

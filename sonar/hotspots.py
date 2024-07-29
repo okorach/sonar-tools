@@ -31,6 +31,7 @@ import sonar.logging as log
 import sonar.platform as pf
 
 import sonar.utilities as util
+from sonar.util import types
 
 from sonar.sqobject import uuid
 from sonar import syncer, users
@@ -83,7 +84,7 @@ class TooManyHotspotsError(Exception):
 
 
 class Hotspot(findings.Finding):
-    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self.vulnerabilityProbability = None  #:
@@ -125,7 +126,7 @@ class Hotspot(findings.Finding):
             branch = f"pullRequest={requests.utils.quote(self.pull_request)}&"
         return f"{self.endpoint.url}/security_hotspots?{branch}id={self.projectKey}&hotspots={self.key}"
 
-    def to_json(self, without_time: bool = False) -> dict[str, str]:
+    def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
         """
         :return: JSON representation of the hotspot
         :rtype: dict
@@ -221,7 +222,7 @@ class Hotspot(findings.Finding):
             params["comment"] = comment
         return self.post("hotspots/assign", params=params)
 
-    def __apply_event(self, event: object, settings: dict[str, str]) -> bool:
+    def __apply_event(self, event: object, settings: types.ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
         log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
@@ -254,7 +255,7 @@ class Hotspot(findings.Finding):
             return False
         return True
 
-    def apply_changelog(self, source_hotspot: Hotspot, settings: dict[str, str]) -> bool:
+    def apply_changelog(self, source_hotspot: Hotspot, settings: types.ConfigSettings) -> bool:
         """
         :meta private:
         """
@@ -347,7 +348,7 @@ class Hotspot(findings.Finding):
         return self._comments
 
 
-def search_by_project(endpoint: pf.Platform, project_key: str, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search_by_project(endpoint: pf.Platform, project_key: str, filters: types.ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots of a project
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -374,11 +375,11 @@ def component_filter(endpoint: pf.Platform) -> str:
         return PROJECT_FILTER_OLD
 
 
-def search(endpoint: pf.Platform, filters: dict[str, str] = None) -> dict[str, Hotspot]:
+def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, Hotspot]:
     """Searches hotspots
 
-    :param pf.Platform endpoint: Reference to the SonarQube platform
-    :param dict[str, str] filters: Search filters to narrow down the search, defaults to None
+    :param Platform endpoint: Reference to the SonarQube platform
+    :param ApiParams filters: Search filters to narrow down the search, defaults to None
     :return: List of found hotspots
     :rtype: dict{<key>: <Hotspot>}
     """
@@ -430,7 +431,7 @@ def get_object(endpoint: pf.Platform, key: str, data: dict[str] = None, from_exp
     return _OBJECTS[uid]
 
 
-def get_search_filters(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, str]:
+def get_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> types.ApiParams:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
     if params is None:
         return {}
@@ -447,7 +448,7 @@ def get_search_filters(endpoint: pf.Platform, params: dict[str, str]) -> dict[st
     return util.dict_subset(criterias, SEARCH_CRITERIAS)
 
 
-def split_filter(params: dict[str, str], criteria: str) -> list[dict[str, str]]:
+def split_filter(params: types.ApiParams, criteria: str) -> list[types.ApiParams]:
     """Creates a list of filters from a single one that has values that requires multiple hotspot searches"""
     crit_list = util.csv_to_list(params.get(criteria, None))
     if not crit_list or len(crit_list) <= 1:
@@ -461,7 +462,7 @@ def split_filter(params: dict[str, str], criteria: str) -> list[dict[str, str]]:
     return search_filters_list
 
 
-def split_search_filters(params: dict[str, str]) -> list[dict[str, str]]:
+def split_search_filters(params: types.ApiParams) -> list[types.ApiParams]:
     """Split search filters for which you can only pass 1 value at a time in api/hotspots/search"""
     search_filters_list_1 = split_filter(params, "resolution")
     search_filters_list_2 = []
@@ -471,7 +472,7 @@ def split_search_filters(params: dict[str, str]) -> list[dict[str, str]]:
     return search_filters_list_2
 
 
-def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: dict[str, str]) -> dict[str, Hotspot]:
+def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiParams) -> dict[str, Hotspot]:
     """Filters a dict of hotspots with provided filters"""
     filtered_findings = hotspots_dict.copy()
     log.info("Post filtering findings with %s", str(filters))
