@@ -235,6 +235,11 @@ class Setting(sqobject.SqObject):
         if self.endpoint.version() > (9, 4, 0) or not self.key.startswith("sonar.cobol"):
             value = decode(self.key, value)
 
+        # With SonarQube 10.x you can't set the github URL
+        if re.match(r"^sonar\.auth\.(.*)Url$", self.key) and self.endpoint.version() >= (10, 0, 0):
+            log.warning("GitHub URL (%s) cannot be set, skipping this setting", self.key)
+            return False
+
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None}
         if isinstance(value, list):
