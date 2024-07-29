@@ -638,6 +638,7 @@ def __import_thread(queue: Queue) -> None:
             if qp_data.get("isBuiltIn", False):
                 log.warning("Can't import built-in quality profile '%s' because it is not present on target platform", name)
                 queue.task_done()
+                continue
             o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
         log.info("Importing quality profile '%s' of language '%s'", name, lang)
         o.update(qp_data, queue)
