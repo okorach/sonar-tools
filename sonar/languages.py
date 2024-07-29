@@ -107,4 +107,4 @@ def exists(endpoint: pf.Platform, language: str) -> bool:
     :param str language: The language key
     :return: Whether the language exists
     """
-    return language in [l.name for l in get_list(endpoint).values()]
+    return language in [l.key for l in get_list(endpoint).values()]
