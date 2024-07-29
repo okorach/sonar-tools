@@ -334,14 +334,15 @@ class Portfolio(aggregations.Aggregation):
             json_data["subPortfolios"] = {}
             for s in subportfolios.values():
                 json_data["subPortfolios"][s.key] = s.to_json(export_settings)
+        if not self.is_sub_portfolio:
+            json_data["permissions"] = self.permissions().export(export_settings=export_settings)
+            json_data["visibility"]: self._visibility
         json_data.update(
             {
                 "key": self.key,
                 "name": self.name,
                 "description": None if self._description == "" else self._description,
                 _PROJECT_SELECTION_MODE: self.selection_mode(export_settings),
-                "visibility": self._visibility,
-                "permissions": self.permissions().export(export_settings=export_settings),
             }
         )
         return json_data
