@@ -102,7 +102,7 @@ class Group(sq.SqObject):
         :return: The group object
         :rtype: Group or None
         """
-        return cls(name=data["name"], endpoint=endpoint, data=data)
+        return cls(endpoint=endpoint, name=data["name"], data=data)
 
     def __str__(self) -> str:
         """
@@ -110,6 +110,10 @@ class Group(sq.SqObject):
         :rtype: str
         """
         return f"group '{self.name}'"
+
+    def uuid(self) -> str:
+        """Returns object unique ID in its class"""
+        return sq.uuid(self.name, self.endpoint.url)
 
     def is_default(self) -> bool:
         """
