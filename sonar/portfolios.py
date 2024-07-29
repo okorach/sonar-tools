@@ -223,7 +223,7 @@ class Portfolio(aggregations.Aggregation):
         if self._selection_mode["mode"] != SELECTION_MODE_MANUAL:
             log.debug("%s: Not manual mode, no projects", str(self))
             return None
-        if self._selection_mode["projects"] is not None:
+        if self._selection_mode["projects"] is not None and len(self._selection_mode["projects"]) > 0:
             log.debug("%s: Projects already set, returning %s", str(self), str(self._selection_mode["projects"]))
             return self._selection_mode["projects"]
         if self._json is None or "selectedProjects" not in self._json:
@@ -400,13 +400,17 @@ class Portfolio(aggregations.Aggregation):
             return self
         self.set_manual_mode()
         proj_dict = {}
+        my_projects = self.projects()
         for proj, branch in branch_dict.items():
             key = proj if isinstance(proj, str) else proj.key
             try:
-                if branch and branch != settings.DEFAULT_BRANCH:
-                    self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch})
-                else:
+                if key not in my_projects:
                     self.post("views/add_project", params={"key": self.key, "project": key})
+                    self._selection_mode["projects"][key] = settings.DEFAULT_BRANCH
+                if branch and branch != settings.DEFAULT_BRANCH:
+                    if key not in my_projects or my_projects[key] != branch:
+                        self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch})
+                        self._selection_mode["projects"][key] = branch
                 proj_dict[key] = branch
                 self._selection_mode["projects"] = proj_dict
             except HTTPError as e:
