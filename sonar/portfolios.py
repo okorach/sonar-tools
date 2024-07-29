@@ -236,7 +236,7 @@ class Portfolio(aggregations.Aggregation):
                 self._selection_mode["projects"][p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
                 self._selection_mode["projects"][p["projectKey"]] = settings.DEFAULT_BRANCH
-        log.debug("%s projects = %s", str(self), util.json_dump(self._selection_mode["projects"]))
+        log.debug("%s projects = %s", str(self), str(self._selection_mode["projects"]))
         return self._selection_mode["projects"]
 
     def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
@@ -328,7 +328,9 @@ class Portfolio(aggregations.Aggregation):
     def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
         """Returns the portfolio representation as JSON"""
         self.refresh()
-        json_data = self._json
+        json_data = self._json.copy()
+        for k in "referencedBy", "qualifier", "originalKey", "selectedProjects", "subViews", "projects", "isFavorite":
+            json_data.pop(k, None)
         subportfolios = self.sub_portfolios()
         if subportfolios:
             json_data["subPortfolios"] = {}
@@ -336,15 +338,13 @@ class Portfolio(aggregations.Aggregation):
                 json_data["subPortfolios"][s.key] = s.to_json(export_settings)
         if not self.is_sub_portfolio:
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
-            json_data["visibility"]: self._visibility
-        json_data.update(
-            {
-                "key": self.key,
-                "name": self.name,
-                "description": None if self._description == "" else self._description,
-                _PROJECT_SELECTION_MODE: self.selection_mode(export_settings),
-            }
-        )
+            json_data["visibility"] = self._visibility
+        json_data["key"] = self.key
+        json_data["name"] = self.name
+        json_data["tags"] = self._tags
+        if self._description:
+            json_data["description"] = self._description
+        json_data[_PROJECT_SELECTION_MODE] = self.selection_mode(export_settings)
         return json_data
 
     def export(self, export_settings: dict[str, str]) -> dict[str, str]:
@@ -546,8 +546,11 @@ class Portfolio(aggregations.Aggregation):
         else:
             log.debug("Skipping setting portfolio details, it's a reference")
 
+        subps = self.sub_portfolios(full=True)
+        key_list = []
+        if subps:
+            key_list = list(subps.keys())
         for key, subp in data.get("subPortfolios", {}).items():
-            key_list = list(self.sub_portfolios(full=True).keys())
             if subp.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
                 if o_subp.key not in key_list:
@@ -700,18 +703,21 @@ def import_config(endpoint: pf.Platform, config_data: dict[str, str], key_list: 
         try:
             o = Portfolio.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
-            log.debug("Portfolio not found, creating it")
+            log.info("Portfolio not found, creating it")
             newdata = data.copy()
             name = newdata.pop("name")
             o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
             o.reload(data)
-        nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
-        # Hack: When subportfolios are created, recompute is needed to get them in the
-        # api/views/search results
-        if nbr_creations > 0:
-            o.recompute()
-            # Sleep 500ms per created portfolio
-            time.sleep(nbr_creations * 500 / 1000)
+        # nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
+        # # Hack: When subportfolios are created, recompute is needed to get them in the
+        # # api/views/search results
+        # if nbr_creations > 0:
+        #     o.recompute()
+        #     # Sleep 500ms per created portfolio
+        #     time.sleep(nbr_creations * 500 / 1000)
+    log.info("Recomputing top level portfolios")
+    o.recompute()
+    time.sleep(5)
     # Second pass to define hierarchies
     log.info("Importing portfolios - pass 2: Creating sub-portfolios")
     for key, data in config_data["portfolios"].items():
