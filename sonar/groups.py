@@ -308,13 +308,13 @@ def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Grou
     :return: The group
     :rtype: Group
     """
-    o = get_object(endpoint=endpoint, name=name)
-    if o is None:
-        log.debug("Group '%s' does not exist, creating...", name)
-        return Group.create(endpoint, name, description)
-    else:
+    try:
+        o = get_object(endpoint=endpoint, name=name)
         o.set_description(description)
         return o
+    except exceptions.ObjectNotFound:
+        log.debug("Group '%s' does not exist, creating...", name)
+        return Group.create(endpoint, name, description)
 
 
 def import_config(endpoint: pf.Platform, config_data: dict[str, str]) -> None:
