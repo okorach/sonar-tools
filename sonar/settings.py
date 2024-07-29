@@ -471,6 +471,7 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
         log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
         return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
+
 def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
     """Sets a setting to a particular value"""
     s = get_object(endpoint=endpoint, key=key, component=component)
@@ -484,6 +485,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
         except HTTPError:
             log.warning("Setting %s does not exist on target platform, it cannot be set", key)
             return False
+
 
 def decode(setting_key: str, setting_value: any) -> any:
     """Decodes a setting"""
