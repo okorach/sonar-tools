@@ -180,14 +180,15 @@ class Application(aggr.Aggregation):
         :return: Whether the Application branch exists
         :rtype: bool
         """
-        return branch_name in [b.name for b in self.branches()]
+        return branch_name in self.branches()
 
     def branch_is_main(self, branch: str) -> bool:
         """
         :return: Whether the Application branch is the main branch
         :rtype: bool
         """
-        return branch in self.branches() and self._branches[branch]["isMain"]
+        br = self.branches()
+        return branch in br and br[branch].is_main()
 
     def set_branch(self, branch_name: str, branch_data: dict[str, str]) -> Application:
         """Creates or updates an Application branch with a set of project branches

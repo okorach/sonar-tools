@@ -125,7 +125,7 @@ class QualityGate(sq.SqObject):
         # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
         o = _OBJECTS.get(sq.uuid(data["name"], endpoint.url), None)
         if not o:
-            o = cls(data["name"], endpoint, data=data)
+            o = cls(endpoint, data["name"], data=data)
         o._json = data
         return o
 

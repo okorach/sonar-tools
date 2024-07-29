@@ -25,7 +25,7 @@ from __future__ import annotations
 import re
 import json
 from typing import Union
-
+from requests.exceptions import HTTPError
 import sonar.logging as log
 import sonar.platform as pf
 
@@ -235,6 +235,11 @@ class Setting(sqobject.SqObject):
         if self.endpoint.version() > (9, 4, 0) or not self.key.startswith("sonar.cobol"):
             value = decode(self.key, value)
 
+        # With SonarQube 10.x you can't set the github URL
+        if re.match(r"^sonar\.auth\.(.*)Url$", self.key) and self.endpoint.version() >= (10, 0, 0):
+            log.warning("GitHub URL (%s) cannot be set, skipping this setting", self.key)
+            return False
+
         log.debug("Setting %s to value '%s'", str(self), str(value))
         params = {"key": self.key, "component": self.component.key if self.component else None}
         if isinstance(value, list):
@@ -338,7 +343,10 @@ class Setting(sqobject.SqObject):
 
 def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Setting:
     """Returns a Setting object from its key and, optionally, component"""
-    return _OBJECTS.get(uuid(key, component, endpoint.url), None)
+    uid = uuid(key, component, endpoint.url)
+    if uid not in _OBJECTS:
+        get_all(endpoint, component)
+    return _OBJECTS.get(uid, None)
 
 
 def __get_settings(endpoint: pf.Platform, data: dict[str, str], component: object = None) -> dict[str, Setting]:
@@ -463,11 +471,19 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
         log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
         return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
-
-def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> None:
+def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
     """Sets a setting to a particular value"""
-    get_object(endpoint=endpoint, key=key, component=component).set(value)
-
+    s = get_object(endpoint=endpoint, key=key, component=component)
+    if not s:
+        log.warning("Setting %s does not exist on target platform, it cannot be set")
+        return False
+    else:
+        try:
+            s.set(value)
+            return True
+        except HTTPError:
+            log.warning("Setting %s does not exist on target platform, it cannot be set", key)
+            return False
 
 def decode(setting_key: str, setting_value: any) -> any:
     """Decodes a setting"""
