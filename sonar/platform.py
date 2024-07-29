@@ -209,7 +209,8 @@ class Platform:
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
             params["organization"] = self.organization
-        log.debug("%s: %s", getattr(request, "__name__", repr(request)).upper(), self.__urlstring(api, params))
+        req_type = getattr(request, "__name__", repr(request)).upper()
+        log.debug("%s: %s", req_type, self.__urlstring(api, params))
 
         try:
             retry = True
@@ -231,10 +232,10 @@ class Platform:
                 util.log_and_exit(r)
             else:
                 _, msg = util.http_error(r)
+                lvl = log.ERROR
                 if r.status_code in mute:
-                    log.debug(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
-                else:
-                    log.error(_HTTP_ERROR, "GET", self.__urlstring(api, params), r.status_code, msg)
+                    lvl = log.DEBUG
+                log.log(lvl, _HTTP_ERROR, req_type, self.__urlstring(api, params), r.status_code, msg)
                 raise e
         except requests.exceptions.Timeout as e:
             util.exit_fatal(str(e), errcodes.HTTP_TIMEOUT)
