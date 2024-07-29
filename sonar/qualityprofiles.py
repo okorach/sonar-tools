@@ -643,8 +643,12 @@ def __import_thread(queue: Queue) -> None:
     """Callback function for multithreaded QP import"""
     while not queue.empty():
         (name, lang, endpoint, qp_data) = queue.get()
-        o = get_object(endpoint=endpoint, name=name, language=lang)
-        if o is None:
+        try:
+            o = get_object(endpoint=endpoint, name=name, language=lang)
+        except exceptions.ObjectNotFound:
+            if qp_data.get("isBuiltIn", False):
+                log.warning("Can't import built-in quality profile '%s' because it is not present on target platform", name)
+                queue.task_done()
             o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
         log.info("Importing quality profile '%s' of language '%s'", name, lang)
         o.update(qp_data, queue)
@@ -669,7 +673,7 @@ def import_config(endpoint: pf.Platform, config_data: dict[str, str], threads: i
     get_list(endpoint=endpoint)
     for lang, lang_data in config_data["qualityProfiles"].items():
         if not languages.exists(endpoint=endpoint, language=lang):
-            log.warning("Language '%s' does not exist, quality profile '%s' import skipped", lang, name)
+            log.warning("Language '%s' does not exist, quality profiles import skipped for this language", lang)
             continue
         for name, qp_data in lang_data.items():
             q.put((name, lang, endpoint, qp_data))
