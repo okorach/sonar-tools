@@ -59,7 +59,7 @@ class ApplicationBranch(Component):
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
         self.concerned_object = app
         self.name = name
-        self.is_main = is_main
+        self._is_main = is_main
         self._project_branches = project_branches
         self._last_analysis = None
         log.debug("Created object %s with uuid %s id %x", str(self), self.uuid(), id(self))
@@ -124,6 +124,10 @@ class ApplicationBranch(Component):
     def __str__(self) -> str:
         return f"application '{self.concerned_object.key}' branch '{self.name}'"
 
+    def is_main(self) -> bool:
+        """Returns whether app branch is main"""
+        return self._is_main
+
     def projects_branches(self) -> list[Branch]:
         """
         :return: The list of project branches included in the application branch
@@ -137,7 +141,7 @@ class ApplicationBranch(Component):
         :return: Whether the delete succeeded
         :rtype: bool
         """
-        if self.is_main:
+        if self.is_main():
             log.warning("Can't delete main %s, simply delete the application for that", str(self))
             return False
         return sq.delete_object(self, APIS["delete"], self.search_params(), _OBJECTS)
@@ -155,7 +159,7 @@ class ApplicationBranch(Component):
         """
         log.info("Exporting %s", str(self))
         jsondata = {"projects": {b.concerned_object.key: b.name for b in self._project_branches}}
-        if self.is_main:
+        if self.is_main():
             jsondata["isMain"] = True
         return jsondata
 
