@@ -349,6 +349,7 @@ def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Set
         get_all(endpoint, component)
     return _OBJECTS.get(uid, None)
 
+
 def __get_settings(endpoint: pf.Platform, data: dict[str, str], component: object = None) -> dict[str, Setting]:
     """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
     settings = {}
@@ -476,15 +477,16 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
     """Sets a setting to a particular value"""
     s = get_object(endpoint=endpoint, key=key, component=component)
     if not s:
-        log.warning("Setting %s does not exist on target platform, it cannot be set")
+        log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
         return False
     else:
         try:
             s.set(value)
             return True
         except HTTPError:
-            log.warning("Setting %s does not exist on target platform, it cannot be set", key)
+            log.warning("Setting '%s' cannot be set", key)
             return False
+
 
 def decode(setting_key: str, setting_value: any) -> any:
     """Decodes a setting"""
