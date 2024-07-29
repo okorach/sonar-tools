@@ -1,8 +1,8 @@
 # Next version yet unreleased
 
-- `sonar-audit`:
-  - Audits for projects that are apparently not scanned with the right scanner (the check is approximate, it is not always possible to determine the type of a project, and the scanner that should be used)
-  - Audits for 3rd party plugins installed and not explicitly defined in a white list (properties `audit.plugins` and `audit.plugins.whitelist`)
+# Version 3.2.2
+
+- Fix regressions in `sonar-config -i`
 
 # Version 3.2.1
 
