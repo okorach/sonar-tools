@@ -25,6 +25,7 @@ from __future__ import annotations
 import re
 import json
 from typing import Union
+from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -471,10 +472,19 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
         return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
 
-def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> None:
+def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
     """Sets a setting to a particular value"""
-    get_object(endpoint=endpoint, key=key, component=component).set(value)
-
+    s = get_object(endpoint=endpoint, key=key, component=component)
+    if not s:
+        log.warning("Setting %s does not exist on target platform, it cannot be set")
+        return False
+    else:
+        try:
+            s.set(value)
+            return True
+        except HTTPError:
+            log.warning("Setting %s does not exist on target platform, it cannot be set", key)
+            return False
 
 def decode(setting_key: str, setting_value: any) -> any:
     """Decodes a setting"""
