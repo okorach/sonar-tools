@@ -68,19 +68,18 @@ class Group(sq.SqObject):
         :param str name: Group name
         :raises ObjectNotFound: if group name not found
         :return: The group object
-        :rtype: Group or None if not found
         """
         log.debug("Reading group '%s'", name)
-        uu = sq.uuid(name, endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        uid = sq.uuid(name, endpoint.url)
+        if uid in _OBJECTS:
+            return _OBJECTS[uid]
         data = util.search_by_name(endpoint, name, Group.SEARCH_API, "groups")
         if data is None:
             raise exceptions.UnsupportedOperation(f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
-        uu = sq.uuid(data.get("id", data["name"]), endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        uid = sq.uuid(data.get("id", data["name"]), endpoint.url)
+        if uid in _OBJECTS:
+            return _OBJECTS[uid]
         return cls(endpoint, name, data=data)
 
     @classmethod
@@ -107,7 +106,7 @@ class Group(sq.SqObject):
         :return: The group object
         :rtype: Group or None
         """
-        return cls(name=data["name"], endpoint=endpoint, data=data)
+        return cls(endpoint=endpoint, name=data["name"], data=data)
 
     def __str__(self) -> str:
         """
@@ -115,6 +114,10 @@ class Group(sq.SqObject):
         :rtype: str
         """
         return f"group '{self.name}'"
+
+    def uuid(self) -> str:
+        """Returns object unique ID in its class"""
+        return sq.uuid(self.name, self.endpoint.url)
 
     def is_default(self) -> bool:
         """
@@ -286,7 +289,6 @@ def get_object(endpoint: pf.Platform, name: str) -> Group:
     :param Platform endpoint: reference to the SonarQube platform
     :param str name: group name
     :return: The group
-    :rtype: Group
     """
     uid = sq.uuid(name, endpoint.url)
     if len(_OBJECTS) == 0 or uid not in _OBJECTS:

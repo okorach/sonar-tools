@@ -80,7 +80,7 @@ class PermissionTemplate(sqobject.SqObject):
 
     def uuid(self) -> str:
         """Returns object unique id"""
-        sqobject.uuid(self.name.lower(), self.endpoint.url)
+        return sqobject.uuid(self.name.lower(), self.endpoint.url)
 
     def is_default_for(self, qualifier: str) -> bool:
         """Returns whether a template is the default for a type of qualifier"""

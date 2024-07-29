@@ -91,8 +91,7 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Languag
     """Gets the list of languages existing on the SonarQube platform
     Unlike read_list, get_list() is using a local cache if available (so no API call)
     :param Platform endpoint: Reference of the SonarQube platform
-    :param use_cache: Whether to use local cache or query SonarQube, default True (use cache)
-    :type use_cache: bool
+    :param bool use_cache: Whether to use local cache or query SonarQube, default True (use cache)
     :return: List of languages
     :rtype: dict{<language_key>: <language_name>}
     """
@@ -108,4 +107,4 @@ def exists(endpoint: pf.Platform, language: str) -> bool:
     :param str language: The language key
     :return: Whether the language exists
     """
-    return language in [l.name for l in get_list(endpoint).values()]
+    return language in [l.key for l in get_list(endpoint).values()]

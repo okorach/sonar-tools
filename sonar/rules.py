@@ -91,7 +91,7 @@ class Rule(sq.SqObject):
     def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Optional[Rule]:
         """Creates a rule object"""
         params = kwargs.copy()
-        (_, params["custom_key"]) = key.split(":")
+        (_, params["customKey"]) = key.split(":")
         log.debug("Creating rule key '%s'", key)
         if not endpoint.post(_CREATE_API, params=params).ok:
             return None
@@ -119,11 +119,11 @@ class Rule(sq.SqObject):
         return Rule.create(
             key=key,
             endpoint=endpoint,
-            template_key=template_key,
+            templateKey=template_key,
             name=data.get("name", key),
             severity=data.get("severity", "MAJOR"),
             params=rule_params,
-            markdown_description=data.get("description", "NO DESCRIPTION"),
+            markdownDescription=data.get("description", "NO DESCRIPTION"),
         )
 
     def __str__(self) -> str:
