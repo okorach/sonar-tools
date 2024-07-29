@@ -1402,7 +1402,11 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         try:
             o = Project.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
-            o = Project.create(endpoint, key, data["name"])
+            try:
+                o = Project.create(endpoint, key, data["name"])
+            except exceptions.ObjectAlreadyExists as e:
+                log.warning("Can't create project with key '%s', %s", key, e.message)
+                continue
         o.update(data)
         i += 1
         if i % 20 == 0 or i == nb_projects:
