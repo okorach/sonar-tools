@@ -301,9 +301,7 @@ class Portfolio(aggregations.Aggregation):
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns the portfolio representation as JSON"""
         self.refresh()
-        json_data = self._json.copy()
-        for k in "referencedBy", "qualifier", "originalKey", "selectedProjects", "subViews", "projects", "isFavorite", "desc", "regexp":
-            json_data.pop(k, None)
+        json_data = {}
         subportfolios = self.sub_portfolios()
         if subportfolios:
             json_data["subPortfolios"] = {}
@@ -319,7 +317,10 @@ class Portfolio(aggregations.Aggregation):
         json_data["tags"] = self._tags
         if self._description:
             json_data["description"] = self._description
-        json_data[_PROJECT_SELECTION_MODE] = self.selection_mode(export_settings)
+        mode = self.selection_mode(export_settings)
+        # Don't export when selection mode is none
+        if mode["mode"] != SELECTION_MODE_NONE:
+            json_data[_PROJECT_SELECTION_MODE] = self.selection_mode(export_settings)
         return json_data
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
