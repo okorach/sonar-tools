@@ -129,7 +129,7 @@ class Portfolio(aggregations.Aggregation):
         check_supported(endpoint)
         log.debug("Creating portfolio name '%s', key '%s', parent = %s", name, str(kwargs.get("key", None)), str(kwargs.get("parent", None)))
         params = {"name": name, "key": key}
-        for p in ("description", "visibility"):
+        for p in "description", "visibility":
             params[p] = kwargs.get(p, None)
         endpoint.post(_CREATE_API, params=params)
         o = cls(endpoint=endpoint, name=name, key=kwargs.get("key", None))
