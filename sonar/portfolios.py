@@ -345,8 +345,7 @@ class Portfolio(aggregations.Aggregation):
         subportfolios = self.sub_portfolios()
         if subportfolios:
             json_data["subPortfolios"] = {}
-            for infos in subportfolios.values():
-                (s_type, s) = infos
+            for s_type, s in subportfolios.values():
                 if s_type == _PORTFOLIO_QUALIFIER:
                     json_data["subPortfolios"][s.key] = {"byReference": True}
                 else:
