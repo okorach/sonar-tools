@@ -415,6 +415,8 @@ class Application(aggr.Aggregation):
 def _project_list(data):
     plist = {}
     for b in data.get("branches", {}).values():
+        if "projects" not in b:
+            continue
         if isinstance(b["projects"], dict):
             plist.update(b["projects"])
         else:
