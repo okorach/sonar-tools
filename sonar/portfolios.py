@@ -520,7 +520,7 @@ class Portfolio(aggregations.Aggregation):
         log.debug("Recomputing %s", str(self))
         key = self._root_portfolio.key if self._root_portfolio else self.key
         return self.post("views/refresh", params={"key": key}).ok
-    
+
     def _update_portfolio_details(self, data: dict[str, str]) -> None:
         if "permissions" in data:
             decoded_perms = {}
