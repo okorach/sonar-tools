@@ -1461,7 +1461,7 @@ def export_zip(endpoint: pf.Platform, key_list: types.KeyList = None, threads: i
 
     return {
         "sonarqube_environment": {
-            "version": ".".join(endpoint.version()[:2]),
+            "version": ".".join([str(n) for n in endpoint.version()[:2]]),
             "plugins": endpoint.plugins(),
         },
         "project_exports": exports,
