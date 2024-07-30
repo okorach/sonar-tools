@@ -30,6 +30,7 @@ from threading import Thread
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
+from sonar.util import types
 
 import sonar.utilities as util
 from sonar import projects, rules
@@ -99,7 +100,7 @@ class Finding(sq.SqObject):
     A finding is a general concept that can be either an issue or a security hotspot
     """
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.severity = None  #: Severity (str)
@@ -122,14 +123,14 @@ class Finding(sq.SqObject):
         self.pull_request = None  #: Pull request (str)
         self._load(data, from_export)
 
-    def _load(self, data: dict[str, str], from_export: bool = False) -> None:
+    def _load(self, data: types.ApiPayload, from_export: bool = False) -> None:
         if data is not None:
             if from_export:
                 self._load_from_export(data)
             else:
                 self._load_from_search(data)
 
-    def _load_common(self, jsondata: dict[str, str]) -> None:
+    def _load_common(self, jsondata: types.ApiPayload) -> None:
         if self._json is None:
             self._json = jsondata
         else:
@@ -151,7 +152,7 @@ class Finding(sq.SqObject):
             except ValueError:
                 pass
 
-    def _load_from_search(self, jsondata: dict[str, str]) -> None:
+    def _load_from_search(self, jsondata: types.ApiPayload) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata["project"]
         self.creation_date = util.string_to_date(jsondata["creationDate"])
@@ -168,7 +169,7 @@ class Finding(sq.SqObject):
             else:
                 self.branch = re.sub("^BRANCH:", "", self.branch)
 
-    def _load_from_export(self, jsondata: dict[str, str]) -> None:
+    def _load_from_export(self, jsondata: types.ObjectJsonRepr) -> None:
         self._load_common(jsondata)
         self.projectKey = jsondata["projectKey"]
         self.creation_date = util.string_to_date(jsondata["createdAt"])
@@ -201,7 +202,7 @@ class Finding(sq.SqObject):
             return None
 
     def language(self) -> str:
-        """Returns the finding languae"""
+        """Returns the finding language"""
         return rules.get_object(endpoint=self.endpoint, key=self.rule).language
 
     def to_csv(self, separator: str = ",", without_time: bool = False) -> list[str]:
@@ -219,7 +220,7 @@ class Finding(sq.SqObject):
         else:
             return [str(data.get(field, "")) for field in _CSV_FIELDS]
 
-    def to_json(self, without_time: bool = False) -> dict[str, str]:
+    def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
         """
         :return: The finding as dict
         :rtype: dict

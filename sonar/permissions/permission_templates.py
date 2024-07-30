@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 
 import sonar.logging as log
+from sonar.util import types
 from sonar import sqobject, utilities
 from sonar.permissions import template_permissions
 import sonar.platform as pf
@@ -40,7 +41,7 @@ _IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "permissions", "defa
 
 
 class PermissionTemplate(sqobject.SqObject):
-    def __init__(self, endpoint: pf.Platform, name: str, data: dict[str, str] = None, create_data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload = None, create_data: types.ObjectJsonRepr = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
         self.key = None
@@ -97,7 +98,7 @@ class PermissionTemplate(sqobject.SqObject):
         """Returns whether a template is the default for portfolios"""
         return self.is_default_for("VW")
 
-    def set_permissions(self, perms: dict[str, str]) -> PermissionTemplate:
+    def set_permissions(self, perms: types.ObjectJsonRepr) -> PermissionTemplate:
         """Sets the permissions of a permission template"""
         if perms is None or len(perms) == 0:
             return self
@@ -143,7 +144,7 @@ class PermissionTemplate(sqobject.SqObject):
             return self
         return self.update(pattern=pattern)
 
-    def to_json(self, export_settings: dict[str, str] = None) -> dict[str, str]:
+    def to_json(self, export_settings: types.ConfigSettings = None) -> types.ObjectJsonRepr:
         """Returns JSON representation of a permission template"""
         json_data = self._json.copy()
         json_data.update(
@@ -170,7 +171,7 @@ class PermissionTemplate(sqobject.SqObject):
         json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
         return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
-    def audit(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         log.debug("Auditing %s", str(self))
         return self.permissions().audit(audit_settings)
 
@@ -182,7 +183,7 @@ def get_object(endpoint: pf.Platform, name: str) -> PermissionTemplate:
     return _OBJECTS.get(sqobject.uuid(name.lower(), endpoint.url), None)
 
 
-def create_or_update(endpoint: pf.Platform, name: str, data: dict[str, str]) -> PermissionTemplate:
+def create_or_update(endpoint: pf.Platform, name: str, data: types.ObjectJsonRepr) -> PermissionTemplate:
     """Creates or update a permission template with sonar-config JSON data"""
     log.debug("Create or update permission template '%s'", name)
     o = get_object(endpoint=endpoint, name=name)
@@ -193,7 +194,7 @@ def create_or_update(endpoint: pf.Platform, name: str, data: dict[str, str]) -> 
         return o.update(name=name, **data)
 
 
-def create(endpoint: pf.Platform, name: str, create_data: dict[str, str] = None) -> PermissionTemplate:
+def create(endpoint: pf.Platform, name: str, create_data: types.ObjectJsonRepr = None) -> PermissionTemplate:
     """Creates a permission template from sonar-config data"""
     o = get_object(endpoint=endpoint, name=name)
     if o is None:
@@ -203,7 +204,7 @@ def create(endpoint: pf.Platform, name: str, create_data: dict[str, str] = None)
     return o
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, PermissionTemplate]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, PermissionTemplate]:
     """Searches permissions templates"""
     log.debug("Searching all permission templates")
     objects_list = {}
@@ -225,7 +226,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, PermissionTemplate]:
     return search(endpoint=endpoint)
 
 
-def _load_default_templates(endpoint: pf.Platform, data: dict[str, str] = None) -> None:
+def _load_default_templates(endpoint: pf.Platform, data: types.ApiPayload = None) -> None:
     """Loads default templates"""
     if data is None:
         data = json.loads(endpoint.get(_SEARCH_API).text)
@@ -233,7 +234,7 @@ def _load_default_templates(endpoint: pf.Platform, data: dict[str, str] = None) 
         _DEFAULT_TEMPLATES[d["qualifier"]] = d["templateId"]
 
 
-def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Exports permission templates as JSON"""
     log.info("Exporting permission templates")
     pt_list = get_list(endpoint)
@@ -246,7 +247,7 @@ def export(endpoint: pf.Platform, export_settings: dict[str, str]) -> dict[str, 
     return json_data
 
 
-def import_config(endpoint: pf.Platform, config_data: dict[str, str]) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> None:
     """Imports sonar-conmfig JSON as permission templates"""
     if "permissionTemplates" not in config_data:
         log.info("No permissions templates in config, skipping import...")
@@ -261,7 +262,7 @@ def import_config(endpoint: pf.Platform, config_data: dict[str, str]) -> None:
             o.set_as_default(utilities.csv_to_list(data.get("defaultFor", None)))
 
 
-def audit(endpoint: pf.Platform, audit_settings: dict[str, str]) -> list[pb.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
     """Audits permission templates and returns list of detected problems"""
     log.info("--- Auditing permission templates ---")
     problems = []

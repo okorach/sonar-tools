@@ -28,9 +28,10 @@ from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
 import sonar.utilities as util
-from sonar.audit import rules
+from sonar.util import types
+from sonar.audit.rules import get_rule, RuleId
 import sonar.sif_node as sifn
-import sonar.audit.problem as pb
+from sonar.audit.problem import Problem
 import sonar.dce.nodes as dce_nodes
 
 _RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
@@ -68,20 +69,20 @@ class AppNode(dce_nodes.DceNode):
     def name(self):
         return self.json["Name"]
 
-    def audit(self, audit_settings: dict[str, str] = None):
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         log.info("Auditing %s", str(self))
         return (
             self.__audit_official()
             + self.__audit_health()
-            + sifn.audit_web(self, f"{str(self)} Web process", self.json)
-            + sifn.audit_ce(self, f"{str(self)} CE process", self.json)
+            + sifn.audit_web(self, f"{str(self)} Web process")
+            + sifn.audit_ce(self, f"{str(self)} CE process")
+            + sifn.audit_plugins(self, f"{str(self)} WebApp", audit_settings)
         )
 
     def __audit_health(self):
         log.info("%s: Auditing node health", str(self))
         if self.health() != dce_nodes.HEALTH_GREEN:
-            rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_NOT_GREEN)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self), self.health()))]
+            return [Problem(get_rule(RuleId.DCE_APP_NODE_NOT_GREEN), self, str(self), self.health())]
 
         log.info("%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN)
         return []
@@ -94,40 +95,36 @@ class AppNode(dce_nodes.DceNode):
             )
             return []
         elif not self.json[_SYSTEM]["Official Distribution"]:
-            rule = rules.get_rule(rules.RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO)
-            return [pb.Problem(broken_rule=rule, msg=rule.msg.format(str(self)))]
+            return [Problem(get_rule(RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO), self, str(self))]
         else:
             log.debug("%s: Node is official distribution", str(self))
             return []
 
 
-def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: dict[str, str] = None) -> list[pb.Problem]:
+def audit(sub_sif: dict[str, str], sif_object: object, audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits application nodes of a DCE instance
 
     :param dict sub_sif: The JSON subsection of the SIF pertaining to the App Nodes
-    :param Sif sif: The Sif object
-    :param dict audit_settings: Config settings for audit
+    :param Sif sif_object: The Sif object
+    :param ConfigSettings audit_settings: Config settings for audit
     :return: List of Problems
-    :rtype: list
+    :rtype: list[Problem]
     """
-    if audit_settings is None:
-        audit_settings = {}
     nodes = []
     problems = []
     for n in sub_sif:
         nodes.append(AppNode(n, sif_object))
     if len(nodes) == 1:
-        rule = rules.get_rule(rules.RuleId.DCE_APP_CLUSTER_NOT_HA)
-        return [pb.Problem(broken_rule=rule, msg=rule.msg)]
+        return [Problem(get_rule(RuleId.DCE_APP_CLUSTER_NOT_HA), "AppNodes Cluster")]
     for node_1 in nodes:
         problems += node_1.audit(audit_settings)
         for node_2 in nodes:
             v1 = node_1.version()
             v2 = node_2.version()
             if v1 is not None and v2 is not None and v1 != v2:
-                rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
-                problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(node_1), str(node_2))))
+                rule = get_rule(RuleId.DCE_DIFFERENT_APP_NODES_VERSIONS)
+                problems.append(Problem(rule, "AppNodes Cluster", str(node_1), str(node_2)))
             if node_1.plugins() != node_2.plugins():
-                rule = rules.get_rule(rules.RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
-                problems.append(pb.Problem(broken_rule=rule, msg=rule.msg.format(str(node_1), str(node_2))))
+                rule = get_rule(RuleId.DCE_DIFFERENT_APP_NODES_PLUGINS)
+                problems.append(Problem(rule, "AppNodes Cluster", str(node_1), str(node_2)))
     return problems

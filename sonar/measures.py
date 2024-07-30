@@ -27,6 +27,7 @@ import re
 from http import HTTPStatus
 from requests.exceptions import HTTPError
 from sonar import metrics, exceptions
+from sonar.util.types import ApiPayload, ApiParams, KeyList
 
 import sonar.logging as log
 import sonar.utilities as util
@@ -54,7 +55,7 @@ class Measure(sq.SqObject):
         self.value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
 
     @classmethod
-    def load(cls, concerned_object: object, data: dict[str, str]) -> Measure:
+    def load(cls, concerned_object: object, data: ApiPayload) -> Measure:
         """Loads a measure from data
 
         :param endpoint: Reference to SonarQube platform
@@ -78,14 +79,14 @@ class Measure(sq.SqObject):
         self.value = _search_value(data)
         return self.value
 
-    def count_history(self, params: dict[str, str] = None) -> int:
+    def count_history(self, params: ApiParams = None) -> int:
         if params is None:
             params = {}
         params.update({"component": self.concerned_object.key, "metrics": self.metric, "ps": 1})
         data = json.loads(self.get(Measure.API_HISTORY, params=params).text)
         return data["paging"]["total"]
 
-    def search_history(self, params: dict[str, str] = None) -> dict[str, any]:
+    def search_history(self, params: ApiParams = None) -> dict[str, any]:
         """Searches the history of the measure
 
         :param dict params: List of search parameters to narrow down the search, defaults to None
@@ -108,12 +109,11 @@ class Measure(sq.SqObject):
         return measures
 
 
-def get(concerned_object: object, metrics_list: list[str], **kwargs) -> dict[str, Measure]:
+def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, Measure]:
     """Reads a list of measures of a component (project, branch, pull request, application or portfolio)
 
     :param Component concerned_object: Concerned object (project, branch, pull request, application or portfolio)
-    :param list[str] metrics_list: List of metrics to read
-    :param Platform endpoint: Reference to the SonarQube platform
+    :param KeyList metrics_list: List of metrics to read
     :param kwargs: List of filters to search for the measures, defaults to None
     :type kwargs: dict, optional
     :return: Dict of found measures
@@ -136,13 +136,12 @@ def get(concerned_object: object, metrics_list: list[str], **kwargs) -> dict[str
     return m_dict
 
 
-def get_history(concerned_object: object, metrics_list: list[str], **kwargs) -> list[str, str, str]:
+def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> list[str, str, str]:
     """Reads the history of measures of a component (project, branch, application or portfolio)
 
     :param concerned_object: Concerned object (project, branch, pull request, application or portfolio)
     :type concerned_object: Project, Branch, PullRequest, Application or Portfolio
-    :param metrics_list: List of metrics to read
-    :type metrics_list: list
+    :param KeyList metrics_list: List of metrics to read
     :param kwargs: List of filters to search for the measures history, defaults to None
     :type kwargs: dict, optional
     :return: List of found history of measures

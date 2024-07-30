@@ -24,7 +24,7 @@
 """
 
 from __future__ import annotations
-from typing import Union
+from typing import Optional
 import json
 from http import HTTPStatus
 from threading import Lock
@@ -32,16 +32,13 @@ from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.platform as pf
+from sonar.util import types
 
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
 _OBJECTS = {}
 _CLASS_LOCK = Lock()
-
-_APIS = {
-    "search": "api/organizations/search",
-}
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "url", "avatar", "newCodePeriod")
 _NOT_SUPPORTED = "Organizations do not exist in SonarQube"
@@ -51,6 +48,10 @@ class Organization(sqobject.SqObject):
     """
     Abstraction of the SonarCloud "organization" concept
     """
+
+    SEARCH_API = "api/organizations/search"
+    SEARCH_KEY_FIELD = "key"
+    SEARCH_RETURN_FIELD = "organizations"
 
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -77,14 +78,14 @@ class Organization(sqobject.SqObject):
         if uu in _OBJECTS:
             return _OBJECTS[uu]
         try:
-            data = json.loads(endpoint.get(_APIS["search"], params={"organizations": key}).text)
+            data = json.loads(endpoint.get(Organization.SEARCH_API, params={"organizations": key}).text)
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
         return cls.load(endpoint, data["organizations"][0])
 
     @classmethod
-    def load(cls, endpoint: pf.Platform, data: dict[str, str]) -> Organization:
+    def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> Organization:
         """Loads an Organization object with data retrieved from SonarCloud
 
         :param Platform endpoint: Reference to the SonarCloud platform
@@ -106,7 +107,7 @@ class Organization(sqobject.SqObject):
     def __str__(self) -> str:
         return f"organization key '{self.key}'"
 
-    def export(self) -> dict[str, str]:
+    def export(self) -> types.ObjectJsonRepr:
         """Exports an organization"""
         log.info("Exporting %s", str(self))
         json_data = self._json.copy()
@@ -118,7 +119,7 @@ class Organization(sqobject.SqObject):
             json_data["newCodePeriod"] = f"{nctype} = {ncval}"
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, True))
 
-    def search_params(self) -> dict[str, str]:
+    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"organizations": self.key}
 
@@ -130,16 +131,16 @@ class Organization(sqobject.SqObject):
     def subscription(self) -> str:
         return self._json.get("subscription", "UNKNOWN")
 
-    def alm(self) -> Union[dict[str, str], None]:
+    def alm(self) -> types.ApiPayload:
         return self._json.get("alm", None)
 
 
-def get_list(endpoint: pf.Platform, key_list: str = None, use_cache: bool = True) -> dict[str, object]:
+def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
     """
     :return: List of Organizations (all of them if key_list is None or empty)
-    :param str key_list: List of org keys to get, if None or empty all orgs are returned
+    :param KeyList key_list: List of org keys to get, if None or empty all orgs are returned
     :param bool use_cache: Whether to use local cache or query SonarCloud, default True (use cache)
-    :rtype: dict{<branchName>: <Branch>}
+    :rtype: dict{<orgName>: <Organization>}
     """
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
@@ -151,7 +152,7 @@ def get_list(endpoint: pf.Platform, key_list: str = None, use_cache: bool = True
     return object_list
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str:Organization]:
+def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Organization]:
     """Searches organizations
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -165,17 +166,14 @@ def search(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str:Org
     new_params = {"member": "true"}
     if params is not None:
         new_params.update(params)
-    return sqobject.search_objects(
-        api=_APIS["search"], params=new_params, returned_field="organizations", key_field="key", object_class=Organization, endpoint=endpoint
-    )
+    return sqobject.search_objects(endpoint=endpoint, object_class=Organization, params=new_params)
 
 
-def export(endpoint: pf.Platform, key_list: str = None) -> dict[str, str]:
+def export(endpoint: pf.Platform, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Exports organizations as JSON
 
     :param Platform endpoint: Reference to the SonarCloud platform
-    :param key_list: list of Organizations keys to export, defaults to all if None
-    :type key_list: list, optional
+    :param KeyList key_list: list of Organizations keys to export, defaults to all if None
     :return: Dict of organization settings
     :rtype: dict
     """

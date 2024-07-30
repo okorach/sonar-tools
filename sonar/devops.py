@@ -19,13 +19,14 @@
 #
 
 from __future__ import annotations
-from typing import Union
+from typing import Optional
 from http import HTTPStatus
 import json
 
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
+from sonar.util import types
 from sonar import platform
 import sonar.sqobject as sq
 from sonar import exceptions
@@ -76,7 +77,7 @@ class DevopsPlatform(sq.SqObject):
         raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
 
     @classmethod
-    def load(cls, endpoint: platform.Platform, plt_type: str, data: dict[str, str]) -> DevopsPlatform:
+    def load(cls, endpoint: platform.Platform, plt_type: str, data: types.ApiPayload) -> DevopsPlatform:
         """Finds a devops platform object and loads it with data"""
         key = data["key"]
         uu = sq.uuid(key, endpoint.url)
@@ -117,7 +118,7 @@ class DevopsPlatform(sq.SqObject):
         o.refresh()
         return o
 
-    def _load(self, data: dict[str, str]) -> DevopsPlatform:
+    def _load(self, data: types.ApiPayload) -> DevopsPlatform:
         """Loads a devops platform object with data"""
         self._json = data
         self.url = "https://bitbucket.org" if self.type == "bitbucketcloud" else data["url"]
@@ -145,11 +146,10 @@ class DevopsPlatform(sq.SqObject):
                 return True
         return False
 
-    def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
+    def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a DevOps platform configuration in JSON format
 
-        :param full: Whether to export all properties, including those that can't be set, or not, defaults to False
-        :type full: bool, optional
+        :param ConfigSettings export_settings: Config params for the export
         :return: The configuration of the DevOps platform (except secrets)
         :rtype: dict
         """
@@ -240,7 +240,7 @@ def exists(devops_platform_key: str, endpoint: platform.Platform) -> bool:
     return get_object(devops_platform_key, endpoint) is not None
 
 
-def export(endpoint: platform.Platform, export_settings: dict[str, str]) -> dict[str, str]:
+def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """
     :meta private:
     """
@@ -252,7 +252,7 @@ def export(endpoint: platform.Platform, export_settings: dict[str, str]) -> dict
     return json_data
 
 
-def import_config(endpoint: platform.Platform, config_data: dict[str, str]) -> None:
+def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr) -> None:
     """
     :meta private:
     """
@@ -275,7 +275,7 @@ def import_config(endpoint: platform.Platform, config_data: dict[str, str]) -> N
         o.update(**data)
 
 
-def devops_type(platform_key: str, endpoint: platform.Platform) -> Union[str, None]:
+def devops_type(platform_key: str, endpoint: platform.Platform) -> Optional[str]:
     """
     :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES), or None if not found
     :rtype: str or None

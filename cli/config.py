@@ -27,6 +27,7 @@ import json
 from cli import options
 from sonar import exceptions, errcodes, utilities
 import sonar.logging as log
+from sonar.util import types
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
 
@@ -103,7 +104,8 @@ def __parse_args(desc):
     return args
 
 
-def __check_projects_existence(endpoint: object, key_list: list[str]) -> None:
+def __check_projects_existence(endpoint: object, key_list: types.KeyList) -> None:
+    """Verifies the projects existence and exits fi one does not exist"""
     if key_list is None:
         return
     for key in key_list:
@@ -119,8 +121,10 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         "FULL_EXPORT": kwargs["fullExport"],
         "THREADS": kwargs[options.NBR_THREADS],
     }
-    if "projects" in what:
-        __check_projects_existence(endpoint, kwargs[options.KEYS])
+    if "projects" in what and kwargs[options.KEYS]:
+        non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
+        if len(non_existing_projects) > 0:
+            utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
 
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]

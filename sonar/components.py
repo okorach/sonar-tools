@@ -26,6 +26,8 @@ from __future__ import annotations
 import json
 
 from datetime import datetime
+
+from sonar.util import types
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
@@ -47,7 +49,7 @@ class Component(sq.SqObject):
     Abstraction of the Sonar component concept
     """
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.name = None
@@ -60,7 +62,7 @@ class Component(sq.SqObject):
         if data is not None:
             self.reload(data)
 
-    def reload(self, data: dict[str, str]) -> Component:
+    def reload(self, data: types.ApiPayload) -> Component:
         if self._json:
             self._json.update(data)
         else:
@@ -122,7 +124,7 @@ class Component(sq.SqObject):
                 log.debug("Component %s has %d issues", d["key"], nbr_issues)
         return comp_list
 
-    def get_issues(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_issues(self, filters: types.ApiParams = None) -> dict[str, object]:
         """Returns list of issues for a component, optionally on branches or/and PRs"""
         from sonar.issues import component_filter, search_all
 
@@ -135,7 +137,7 @@ class Component(sq.SqObject):
         self.nbr_issues = len(issue_list)
         return issue_list
 
-    def get_hotspots(self, filters: dict[str, str] = None) -> dict[str, object]:
+    def get_hotspots(self, filters: types.ApiParams = None) -> dict[str, object]:
         """Returns list of hotspots for a component, optionally on branches or/and PRs"""
         from sonar.hotspots import component_filter, search
 
@@ -145,7 +147,7 @@ class Component(sq.SqObject):
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
 
-    def get_measures(self, metrics_list: list[str]) -> dict[str, any]:
+    def get_measures(self, metrics_list: types.KeyList) -> dict[str, any]:
         """Retrieves a project list of measures
 
         :param list metrics_list: List of metrics to return
@@ -195,7 +197,7 @@ class Component(sq.SqObject):
         settings.set_visibility(self.endpoint, visibility=visibility, component=self)
         self._visibility = visibility
 
-    def _audit_bg_task(self, audit_settings: dict[str, str]) -> list[pb.Problem]:
+    def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         """Audits project background tasks"""
         if (
             not audit_settings.get("audit.projects.exclusions", True)
@@ -212,11 +214,11 @@ class Component(sq.SqObject):
             return last_task.audit(audit_settings)
         return []
 
-    def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
+    def get_measures_history(self, metrics_list: types.KeyList) -> dict[str, str]:
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
 
-    def search_params(self) -> dict[str, str]:
+    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         from sonar.issues import component_filter
 

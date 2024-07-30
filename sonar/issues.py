@@ -23,13 +23,14 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 import json
 import re
-from typing import Union
+from typing import Union, Optional
 from queue import Queue
 from threading import Thread
 import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
+from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 from sonar import users, syncer, sqobject, findings, changelog, projects
 import sonar.utilities as util
@@ -125,7 +126,7 @@ class Issue(findings.Finding):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self._debt = None
@@ -185,7 +186,7 @@ class Issue(findings.Finding):
                 self._debt = int(self._json["effort"])
         return self._debt
 
-    def to_json(self, without_time: bool = False) -> dict[str, str]:
+    def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
         """
         :return: The issue attributes as JSON
         :rtype: dict
@@ -426,7 +427,7 @@ class Issue(findings.Finding):
         log.debug("Marking %s as accepted", str(self))
         return self.do_transition("accept")
 
-    def __apply_event(self, event: str, settings: dict[str, str]) -> bool:
+    def __apply_event(self, event: str, settings: ConfigSettings) -> bool:
         log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
@@ -484,7 +485,7 @@ class Issue(findings.Finding):
             return False
         return True
 
-    def apply_changelog(self, source_issue: Issue, settings: dict[str, str]) -> bool:
+    def apply_changelog(self, source_issue: Issue, settings: ConfigSettings) -> bool:
         """
         :meta private:
         """
@@ -504,10 +505,7 @@ class Issue(findings.Finding):
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
-                log.debug(
-                    "Skipping change already applied in a previous sync: %s",
-                    str(events[key]),
-                )
+                log.debug("Skipping change already applied in a previous sync: %s", str(events[key]))
                 continue
             self.__apply_event(events[key], settings)
 
@@ -519,20 +517,12 @@ class Issue(findings.Finding):
         else:
             start_change = len(self.comments())
             log.info("Target %s already has %d comments", str(self), start_change)
-        log.info(
-            "Applying comments of %s to %s, from comment %d",
-            str(source_issue),
-            str(self),
-            start_change,
-        )
+        log.info("Applying comments of %s to %s, from comment %d", str(source_issue), str(self), start_change)
         change_nbr = 0
         for key in sorted(comments.keys()):
             change_nbr += 1
             if change_nbr < start_change:
-                log.debug(
-                    "Skipping comment already applied in a previous sync: %s",
-                    str(comments[key]),
-                )
+                log.debug("Skipping comment already applied in a previous sync: %s", str(comments[key]))
                 continue
             # origin = f"originally by *{event['userName']}* on original branch"
             self.add_comment(comments[key]["value"])
@@ -550,7 +540,7 @@ def component_filter(endpoint: pf.Platform) -> str:
         return COMPONENT_FILTER_OLD
 
 
-def __search_all_by_directories(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+def __search_all_by_directories(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by directory to avoid exceeding the 10K limit"""
     new_params = params.copy()
     facets = _get_facets(endpoint=endpoint, project_key=new_params[component_filter(endpoint)], facets="directories", params=new_params)
@@ -563,7 +553,7 @@ def __search_all_by_directories(endpoint: pf.Platform, params: dict[str, str]) -
     return issue_list
 
 
-def __search_all_by_types(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+def __search_all_by_types(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by type to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = params.copy()
@@ -579,7 +569,7 @@ def __search_all_by_types(endpoint: pf.Platform, params: dict[str, str]) -> dict
     return issue_list
 
 
-def __search_all_by_severities(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, Issue]:
+def __search_all_by_severities(endpoint: pf.Platform, params: ApiParams) -> dict[str, Issue]:
     """Searches issues splitting by severity to avoid exceeding the 10K limit"""
     issue_list = {}
     new_params = params.copy()
@@ -595,7 +585,7 @@ def __search_all_by_severities(endpoint: pf.Platform, params: dict[str, str]) ->
     return issue_list
 
 
-def __search_all_by_date(endpoint: pf.Platform, params: dict[str, str], date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
+def __search_all_by_date(endpoint: pf.Platform, params: ApiParams, date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
     """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if date_start is None:
@@ -638,7 +628,7 @@ def __search_all_by_date(endpoint: pf.Platform, params: dict[str, str], date_sta
     return issue_list
 
 
-def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: dict[str, str] = None) -> dict[str, Issue]:
+def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
     """Search issues by project"""
     new_params = {} if params is None else params.copy()
     new_params[component_filter(endpoint)] = project_key
@@ -652,7 +642,7 @@ def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: dic
     return issue_list
 
 
-def search_by_project(endpoint: pf.Platform, project_key: str, params: dict[str, str] = None, search_findings: bool = False) -> dict[str, Issue]:
+def search_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None, search_findings: bool = False) -> dict[str, Issue]:
     """Search all issues of a given project
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -681,7 +671,7 @@ def search_by_project(endpoint: pf.Platform, project_key: str, params: dict[str,
     return issue_list
 
 
-def search_all(endpoint: pf.Platform, params: dict[str, str] = None) -> dict[str, Issue]:
+def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Issue]:
     """Returns all issues of the platforms with chosen filtering parameters
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -735,7 +725,7 @@ def search_first(endpoint: pf.Platform, **params) -> Union[Issue, None]:
     return get_object(endpoint=endpoint, key=i["key"], data=i)
 
 
-def search(endpoint: pf.Platform, params: dict[str, str] = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
+def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = True, threads: int = 8) -> dict[str, Issue]:
     """Multi-threaded search of issues
 
     :param dict params: Search filter criteria to narrow down the search
@@ -787,7 +777,7 @@ def search(endpoint: pf.Platform, params: dict[str, str] = None, raise_error: bo
     return issue_list
 
 
-def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "directories", params: dict[str, str] = None) -> dict[str, str]:
+def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "directories", params: ApiParams = None) -> dict[str, str]:
     """Returns the facets of a search"""
     params.update({component_filter(endpoint): project_key, "facets": facets, "ps": Issue.MAX_PAGE_SIZE, "additionalFields": "comments"})
     filters = pre_search_filters(endpoint=endpoint, params=params)
@@ -800,7 +790,7 @@ def _get_facets(endpoint: pf.Platform, project_key: str, facets: str = "director
     return l
 
 
-def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params: dict[str, str] = None) -> Union[datetime, None]:
+def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params: ApiParams = None) -> Optional[datetime]:
     """Returns the date of one issue found"""
     issue = search_first(endpoint=endpoint, s="CREATION_DATE", asc=asc_sort, **params)
     if not issue:
@@ -808,12 +798,12 @@ def __get_one_issue_date(endpoint: pf.Platform, asc_sort: str = "false", params:
     return issue.creation_date
 
 
-def get_oldest_issue(endpoint: pf.Platform, params: dict[str, str] = None) -> Union[datetime, None]:
+def get_oldest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[datetime, None]:
     """Returns the oldest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="true", params=params)
 
 
-def get_newest_issue(endpoint: pf.Platform, params: dict[str, str] = None) -> Union[datetime, None]:
+def get_newest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[datetime, None]:
     """Returns the newest date of all issues found"""
     return __get_one_issue_date(endpoint=endpoint, asc_sort="false", params=params)
 
@@ -831,7 +821,7 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     return nbr_issues
 
 
-def get_object(endpoint: pf.Platform, key: str, data: dict[str, str] = None, from_export: bool = False) -> Issue:
+def get_object(endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> Issue:
     """Returns an issue from its key"""
     uu = sqobject.uuid(key, endpoint.url)
     if uu not in _OBJECTS:
@@ -839,7 +829,7 @@ def get_object(endpoint: pf.Platform, key: str, data: dict[str, str] = None, fro
     return _OBJECTS[uu]
 
 
-def pre_search_filters(endpoint: pf.Platform, params: dict[str, str]) -> dict[str, str]:
+def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
     """Returns the filtered list of params that are allowed for api/issue/search"""
     if not params:
         return {}
@@ -866,7 +856,7 @@ def pre_search_filters(endpoint: pf.Platform, params: dict[str, str]) -> dict[st
     return filters
 
 
-def _change_filters_for_10_4(filters: dict[str, str]) -> Union[dict[str, str], None]:
+def _change_filters_for_10_4(filters: ApiParams) -> ApiParams:
     """Adjust filters for new 10.4 issues/search API parameters"""
     if not filters:
         return None

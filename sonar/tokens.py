@@ -24,6 +24,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 import sonar.utilities as util
+from sonar.util import types
 
 
 class UserToken(sq.SqObject):
@@ -36,7 +37,7 @@ class UserToken(sq.SqObject):
     API_SEARCH = API_ROOT + "/search"
     API_GENERATE = API_ROOT + "/generate"
 
-    def __init__(self, endpoint: pf.Platform, login: str, json_data: dict[str, str], name: str = None) -> None:
+    def __init__(self, endpoint: pf.Platform, login: str, json_data: types.ApiPayload, name: str = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login

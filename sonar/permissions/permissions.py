@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 
 import sonar.logging as log
 from sonar import utilities, errcodes
+from sonar.util import types
 
 COMMUNITY_GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
@@ -71,7 +72,7 @@ class Permissions(ABC):
         self.permissions = None
         self.read()
 
-    def to_json(self, perm_type: str = None, csv: bool = False) -> dict[str, str]:
+    def to_json(self, perm_type: str = None, csv: bool = False) -> types.ObjectJsonRepr:
         """
         :return: The permissions as dict
         :rtype: dict {"users": {<login>: [<perm>, <perm>, ...], ...}, "groups": {<name>: [<perm>, <perm>, ...], ...}}
