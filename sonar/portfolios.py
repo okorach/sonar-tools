@@ -43,6 +43,8 @@ import sonar.sqobject as sq
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
+from sonar.ref_portfolio import ReferencePortfolio
+
 _OBJECTS = {}
 _CLASS_LOCK = Lock()
 _NOT_SUPPORTED = "Portfolios not supported in Community and Developer Edition"
@@ -97,10 +99,11 @@ class Portfolio(aggregations.Aggregation):
         self._selection_mode = {"mode": SELECTION_MODE_NONE}  #: Portfolio project selection mode
         self._tags = []  #: Portfolio tags when selection mode is TAGS
         self._description = None  #: Portfolio description
-        self.is_sub_portfolio = False  #: Whether the portfolio is a subportfolio
         self._visibility = None  #: Portfolio visibility
-        self._sub_portfolios = None  #: Subportfolios
+        self._ref_portfolios = {}  #: Subportfolios
+        self._sub_portfolios = {}  #: Subportfolios
         self._permissions = None  #: Permissions
+        self.is_sub_portfolio = None
         self.parent = None  #: Ref to parent portfolio object, if any
         self._root_portfolio = None  #: Ref to root portfolio, if any
         _OBJECTS[self.uuid()] = self
@@ -112,28 +115,21 @@ class Portfolio(aggregations.Aggregation):
         """Gets a portfolio object from its key"""
         check_supported(endpoint)
         log.info("Getting portfolio object key '%s'", key)
-        # if root_key is None:
-        # data = search_by_name(endpoint=endpoint, name=name)
-        # else:
-        #    data = _find_sub_portfolio_by_name(name=name, data=_OBJECTS[root_key]._json)
-        # if data is None:
-        #    return None
-        # key = data["key"]
-        uu = sq.uuid(key, endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        uid = sq.uuid(key, endpoint.url)
+        if uid in _OBJECTS:
+            return _OBJECTS[uid]
         data = search_by_key(endpoint, key)
         if data is None:
             raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' not found")
         return Portfolio.load(endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, **kwargs) -> Portfolio:
+    def create(cls, endpoint: pf.Platform, key: str, name: str, **kwargs) -> Portfolio:
         """Creates a portfolio object"""
         check_supported(endpoint)
         log.debug("Creating portfolio name '%s', key '%s', parent = %s", name, str(kwargs.get("key", None)), str(kwargs.get("parent", None)))
-        params = {"name": name}
-        for p in ("description", "parent", "key", "visibility"):
+        params = {"name": name, "key": key}
+        for p in "description", "visibility":
             params[p] = kwargs.get(p, None)
         endpoint.post(_CREATE_API, params=params)
         o = cls(endpoint=endpoint, name=name, key=kwargs.get("key", None))
@@ -148,29 +144,32 @@ class Portfolio(aggregations.Aggregation):
         log.debug("Loading portfolio '%s' with data %s", data["name"], util.json_dump(data))
         o = cls(endpoint=endpoint, name=data["name"], key=data["key"])
         o.reload(data)
-        if not o.is_sub_portfolio:
-            try:
-                o.refresh()
-            except HTTPError as e:
-                log.warning("HTTP Error %s when refreshing %s", str(e), str(o))
         return o
+
+    def __str__(self) -> str:
+        """Returns string representation of object"""
+        return f"subportfolio '{self.key}'" if self.is_sub_portfolio else f"portfolio '{self.key}'"
 
     def reload(self, data: types.ApiPayload) -> None:
         """Reloads a portfolio with returned API data"""
         log.debug("Reloading %s with %s", str(self), util.json_dump(data))
         super().reload(data)
-        if "name" in data:
-            self.name = data["name"]
-        self.load_selection_mode(self._json.get("selectionMode", None))
+        self.name = data.get("name", self.name)
         self.is_sub_portfolio = self._json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
-        if "visibility" in self._json:
-            self._visibility = self._json["visibility"]
-        parent = data.get("parentKey", data.get("parent", None))
-        if parent:
-            self.load_parent(Portfolio.get_object(self.endpoint, parent))
+        self._visibility = self._json.get("visibility", self._visibility)
+        self.load_selection_mode()
+        self.reload_sub_portfolios()
 
-    def load_selection_mode(self, mode: types.ApiPayload) -> None:
+    def reload_sub_portfolios(self) -> None:
+        if "subViews" not in self._json:
+            return
+        self._sub_portfolios = {}
+        for data in self._json["subViews"]:
+            self.load_sub_portfolio(data.copy())
+
+    def load_selection_mode(self) -> None:
         """Loads the portfolio selection mode"""
+        mode = self._json.get("selectionMode", None)
         if mode is None:
             return
         self._selection_mode = {"mode": mode}
@@ -187,18 +186,13 @@ class Portfolio(aggregations.Aggregation):
         elif mode == SELECTION_MODE_OTHERS:
             self._selection_mode.update({"branch": branch})
 
-    def __str__(self) -> str:
-        """Returns string representation of object"""
-        return f"subportfolio '{self.key}'" if self.is_sub_portfolio else f"portfolio '{self.key}'"
-
     def refresh(self) -> None:
         """Refreshes a portfolio data from the Sonar instance"""
         log.debug("Updating details for %s root key %s", str(self), self._root_portfolio)
         data = json.loads(self.get(_GET_API, params={"key": self.root_portfolio().key}).text)
         if not self.is_sub_portfolio:
             self.reload(data)
-        self.root_portfolio().load_sub_portfolios()
-        self.projects()
+        self.root_portfolio().reload_sub_portfolios()
 
     def last_analysis(self) -> datetime.datetime:
         """Returns the portfolio last computation date"""
@@ -231,69 +225,37 @@ class Portfolio(aggregations.Aggregation):
         if self._selection_mode["mode"] != SELECTION_MODE_MANUAL:
             log.debug("%s: Not manual mode, no projects", str(self))
             return None
-        if self._selection_mode["projects"] is not None and len(self._selection_mode["projects"]) > 0:
-            log.debug("%s: Projects already set, returning %s", str(self), str(self._selection_mode["projects"]))
-            return self._selection_mode["projects"]
-        if self._json is None or "selectedProjects" not in self._json:
-            self.refresh()
-        if self.endpoint.version() < (9, 3, 0):
-            self._selection_mode["projects"] = {p: settings.DEFAULT_BRANCH for p in self._json.get("projects", {})}
-            return self._selection_mode["projects"]
-        for p in self._json.get("selectedProjects", {}):
-            if "selectedBranches" in p:
-                self._selection_mode["projects"][p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
-            else:
-                self._selection_mode["projects"][p["projectKey"]] = settings.DEFAULT_BRANCH
-        log.debug("%s projects = %s", str(self), str(self._selection_mode["projects"]))
         return self._selection_mode["projects"]
 
     def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
         """Returns the list of sub portfolios as dict"""
         self.refresh()
         # self._sub_portfolios = _sub_portfolios(self._json, self.endpoint.version(), full=full)
-        self.load_sub_portfolios()
+        self.reload_sub_portfolios()
         return self._sub_portfolios
 
-    def load_sub_portfolios(self) -> None:
-        """Loads Portfolio objects for subportfolios of a (parent) Portfolio"""
-        log.debug("Loading subportfolios for %s with JSON %s", str(self), str(self._json))
-        if "subViews" not in self._json or len(self._json["subViews"]) == 0:
-            return
+    def add_reference_portfolio(self, reference: Portfolio) -> bool:
+        ref = ReferencePortfolio.create(parent=self, reference=reference)
+        self._sub_portfolios.update({ref.key: ref})
+        return ref
 
-        log.debug("Inspecting %s subportfolios data = %s", str(self), util.json_dump(self._json["subViews"]))
-        self._sub_portfolios = {}
-        for oldp in self._json["subViews"]:
-            p = oldp.copy()
-            log.debug("Found subport data = %s", util.json_dump(p))
-            key = p.pop("key")
-            if p["qualifier"] == _PORTFOLIO_QUALIFIER:
-                key = p.get("originalKey", key.split(":")[-1])
-            try:
-                subp = Portfolio.get_object(self.endpoint, key)
-            except exceptions.ObjectNotFound as e:
-                if p["qualifier"] == _SUBPORTFOLIO_QUALIFIER:
-                    subp = Portfolio.create(self.endpoint, name=p.pop("name"), key=key, parent=self.key, description=p.pop("desc", None), **p)
-                else:
-                    raise e
-            log.debug("%s Subp = %s", str(self), str(subp))
-            self._sub_portfolios[subp.key] = (p["qualifier"], subp)
-            if p["qualifier"] == _SUBPORTFOLIO_QUALIFIER:
-                subp.load_parent(self)
-                subp.reload(oldp)
-                subp.load_sub_portfolios()
-                subp.projects()
+    def add_sub_portfolio(self, key: str, name: str, **kwargs) -> Portfolio:
+        """Adds a subportfolio"""
+        subp = Portfolio.create(endpoint=self.endpoint, key=key, name=name, parent=self, **kwargs)
+        self._sub_portfolios.update({subp.key: subp})
+        return subp
 
-    def regexp(self) -> Optional[str]:
-        """Returns the regexp if selection mode is regexp, None otherwise"""
-        if self.selection_mode()["mode"] != SELECTION_MODE_REGEXP:
-            return None
-        return self.selection_mode()["regexp"]
-
-    def tags(self) -> Optional[list[str]]:
-        """Returns the list of tags if selection mode is tags, None otherwise"""
-        if self.selection_mode()["mode"] != SELECTION_MODE_TAGS:
-            self._tags = None
-        return self.selection_mode()["tags"]
+    def load_sub_portfolio(self, data: types.ApiPayload) -> Portfolio:
+        """Loads an existing a subportfolio"""
+        if data["qualifier"] == _PORTFOLIO_QUALIFIER:
+            ref = Portfolio.get_object(endpoint=self.endpoint, key=data["originalKey"])
+            subp = ReferencePortfolio.load(reference=ref, parent=self)
+        else:
+            subp = Portfolio.load(endpoint=self.endpoint, data=data)
+            subp.parent = self
+            subp.reload_sub_portfolios()
+        self._sub_portfolios.update({subp.key: subp})
+        return subp
 
     def get_components(self) -> types.ApiPayload:
         """Returns subcomponents of a Portfolio"""
@@ -339,18 +301,14 @@ class Portfolio(aggregations.Aggregation):
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns the portfolio representation as JSON"""
         self.refresh()
-        json_data = self._json.copy()
-        for k in "referencedBy", "qualifier", "originalKey", "selectedProjects", "subViews", "projects", "isFavorite", "desc", "regexp":
-            json_data.pop(k, None)
+        json_data = {}
         subportfolios = self.sub_portfolios()
         if subportfolios:
             json_data["subPortfolios"] = {}
-            for s_type, s in subportfolios.values():
-                if s_type == _PORTFOLIO_QUALIFIER:
-                    json_data["subPortfolios"][s.key] = {"byReference": True}
-                else:
-                    json_data["subPortfolios"][s.key] = s.to_json(export_settings)
-                    json_data["subPortfolios"][s.key].pop("key", None)
+            for s in subportfolios.values():
+                subp_json = s.to_json(export_settings)
+                subp_key = subp_json.pop("key")
+                json_data["subPortfolios"][subp_key] = subp_json
         if not self.is_sub_portfolio:
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
             json_data["visibility"] = self._visibility
@@ -359,7 +317,10 @@ class Portfolio(aggregations.Aggregation):
         json_data["tags"] = self._tags
         if self._description:
             json_data["description"] = self._description
-        json_data[_PROJECT_SELECTION_MODE] = self.selection_mode(export_settings)
+        mode = self.selection_mode(export_settings)
+        # Don't export when selection mode is none
+        if mode["mode"] != SELECTION_MODE_NONE:
+            json_data[_PROJECT_SELECTION_MODE] = self.selection_mode(export_settings)
         return json_data
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -515,7 +476,7 @@ class Portfolio(aggregations.Aggregation):
                 try:
                     Portfolio.get_object(self.endpoint, key)
                 except exceptions.ObjectNotFound:
-                    Portfolio.create(self.endpoint, name, key=key, parent=self.key)
+                    Portfolio.create(self.endpoint, key=key, name=name, parent=self)
             r = self.post("views/add_portfolio", params={"portfolio": self.key, "reference": key})
         elif by_ref:
             r = self.post("views/add_local_view", params={"key": self.key, "ref_key": key})
@@ -750,12 +711,12 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
-    """Searches portfolio by nmame and and, if found, returns data as JSON"""
+    """Searches portfolio by name and, if found, returns data as JSON"""
     return util.search_by_name(endpoint, name, Portfolio.SEARCH_API, "components")
 
 
 def search_by_key(endpoint: pf.Platform, key: str) -> types.ApiPayload:
-    """Searches portfolio by key and and, if found, returns data as JSON"""
+    """Searches portfolio by key and, if found, returns data as JSON"""
     return util.search_by_key(endpoint, key, Portfolio.SEARCH_API, "components")
 
 
