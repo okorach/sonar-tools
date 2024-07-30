@@ -512,37 +512,40 @@ class Portfolio(aggregations.Aggregation):
         key = self._root_portfolio.key if self._root_portfolio else self.key
         return self.post("views/refresh", params={"key": key}).ok
 
+    def _update_portfolio_details(self, data: dict[str, str]) -> None:
+        if "permissions" in data:
+            decoded_perms = {}
+            for ptype in perms.PERMISSION_TYPES:
+                if ptype not in data["permissions"]:
+                    continue
+                decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
+            self.set_permissions(decoded_perms)
+            # self.set_permissions(data.get("permissions", {}))
+        selection_mode = data.get("selectionMode", "NONE")
+        branch, regexp, tags, projects = None, None, None, None
+        if isinstance(selection_mode, str):
+            sel_mode = selection_mode
+            branch = data.get(_PROJECT_SELECTION_BRANCH, None)
+            regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
+            tags = data.get(_PROJECT_SELECTION_TAGS, None)
+            projects = data.get("projects", None)
+        else:
+            sel_mode = selection_mode["mode"]
+            if sel_mode == SELECTION_MODE_MANUAL:
+                projects = selection_mode["projects"]
+            elif sel_mode == SELECTION_MODE_REGEXP:
+                regexp = selection_mode["regexp"]
+            elif sel_mode == SELECTION_MODE_TAGS:
+                tags = selection_mode["tags"]
+        self._root_portfolio = self.root_portfolio()
+        log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
+        self.set_selection_mode(selection_mode=sel_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+
     def update(self, data: dict[str, str]) -> None:
         """Updates a portfolio with sonar-config JSON data"""
         log.debug("Updating %s with %s", str(self), util.json_dump(data))
         if "byReference" not in data or not data["byReference"]:
-            if "permissions" in data:
-                decoded_perms = {}
-                for ptype in perms.PERMISSION_TYPES:
-                    if ptype not in data["permissions"]:
-                        continue
-                    decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
-                self.set_permissions(decoded_perms)
-                # self.set_permissions(data.get("permissions", {}))
-            selection_mode = data.get("selectionMode", "NONE")
-            branch, regexp, tags, projects = None, None, None, None
-            if isinstance(selection_mode, str):
-                sel_mode = selection_mode
-                branch = data.get(_PROJECT_SELECTION_BRANCH, None)
-                regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
-                tags = data.get(_PROJECT_SELECTION_TAGS, None)
-                projects = data.get("projects", None)
-            else:
-                sel_mode = selection_mode["mode"]
-                if sel_mode == SELECTION_MODE_MANUAL:
-                    projects = selection_mode["projects"]
-                elif sel_mode == SELECTION_MODE_REGEXP:
-                    regexp = selection_mode["regexp"]
-                elif sel_mode == SELECTION_MODE_TAGS:
-                    tags = selection_mode["tags"]
-            self._root_portfolio = self.root_portfolio()
-            log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
-            self.set_selection_mode(selection_mode=sel_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+            self._update_portfolio_details(data)
         else:
             log.debug("Skipping setting portfolio details, it's a reference")
 
