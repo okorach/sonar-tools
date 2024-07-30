@@ -223,7 +223,7 @@ class Portfolio(aggregations.Aggregation):
         if self._selection_mode["mode"] != SELECTION_MODE_MANUAL:
             log.debug("%s: Not manual mode, no projects", str(self))
             return None
-        if self._selection_mode["projects"] is not None:
+        if self._selection_mode["projects"] is not None and len(self._selection_mode["projects"]) > 0:
             log.debug("%s: Projects already set, returning %s", str(self), str(self._selection_mode["projects"]))
             return self._selection_mode["projects"]
         if self._json is None or "selectedProjects" not in self._json:
@@ -236,7 +236,7 @@ class Portfolio(aggregations.Aggregation):
                 self._selection_mode["projects"][p["projectKey"]] = util.list_to_csv(p["selectedBranches"], ", ", True)
             else:
                 self._selection_mode["projects"][p["projectKey"]] = settings.DEFAULT_BRANCH
-        log.debug("%s projects = %s", str(self), util.json_dump(self._selection_mode["projects"]))
+        log.debug("%s projects = %s", str(self), str(self._selection_mode["projects"]))
         return self._selection_mode["projects"]
 
     def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
@@ -328,22 +328,23 @@ class Portfolio(aggregations.Aggregation):
     def to_json(self, export_settings: dict[str, str]) -> dict[str, str]:
         """Returns the portfolio representation as JSON"""
         self.refresh()
-        json_data = self._json
+        json_data = self._json.copy()
+        for k in "referencedBy", "qualifier", "originalKey", "selectedProjects", "subViews", "projects", "isFavorite":
+            json_data.pop(k, None)
         subportfolios = self.sub_portfolios()
         if subportfolios:
             json_data["subPortfolios"] = {}
             for s in subportfolios.values():
                 json_data["subPortfolios"][s.key] = s.to_json(export_settings)
-        json_data.update(
-            {
-                "key": self.key,
-                "name": self.name,
-                "description": None if self._description == "" else self._description,
-                _PROJECT_SELECTION_MODE: self.selection_mode(export_settings),
-                "visibility": self._visibility,
-                "permissions": self.permissions().export(export_settings=export_settings),
-            }
-        )
+        if not self.is_sub_portfolio:
+            json_data["permissions"] = self.permissions().export(export_settings=export_settings)
+            json_data["visibility"] = self._visibility
+        json_data["key"] = self.key
+        json_data["name"] = self.name
+        json_data["tags"] = self._tags
+        if self._description:
+            json_data["description"] = self._description
+        json_data[_PROJECT_SELECTION_MODE] = self.selection_mode(export_settings)
         return json_data
 
     def export(self, export_settings: dict[str, str]) -> dict[str, str]:
@@ -400,13 +401,17 @@ class Portfolio(aggregations.Aggregation):
             return self
         self.set_manual_mode()
         proj_dict = {}
+        my_projects = self.projects()
         for proj, branch in branch_dict.items():
             key = proj if isinstance(proj, str) else proj.key
             try:
-                if branch and branch != settings.DEFAULT_BRANCH:
-                    self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch})
-                else:
+                if key not in my_projects:
                     self.post("views/add_project", params={"key": self.key, "project": key})
+                    self._selection_mode["projects"][key] = settings.DEFAULT_BRANCH
+                if branch and branch != settings.DEFAULT_BRANCH:
+                    if key not in my_projects or my_projects[key] != branch:
+                        self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch})
+                        self._selection_mode["projects"][key] = branch
                 proj_dict[key] = branch
                 self._selection_mode["projects"] = proj_dict
             except HTTPError as e:
@@ -507,42 +512,48 @@ class Portfolio(aggregations.Aggregation):
         key = self._root_portfolio.key if self._root_portfolio else self.key
         return self.post("views/refresh", params={"key": key}).ok
 
+    def _update_portfolio_details(self, data: dict[str, str]) -> None:
+        if "permissions" in data:
+            decoded_perms = {}
+            for ptype in perms.PERMISSION_TYPES:
+                if ptype not in data["permissions"]:
+                    continue
+                decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
+            self.set_permissions(decoded_perms)
+            # self.set_permissions(data.get("permissions", {}))
+        selection_mode = data.get("selectionMode", "NONE")
+        branch, regexp, tags, projects = None, None, None, None
+        if isinstance(selection_mode, str):
+            sel_mode = selection_mode
+            branch = data.get(_PROJECT_SELECTION_BRANCH, None)
+            regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
+            tags = data.get(_PROJECT_SELECTION_TAGS, None)
+            projects = data.get("projects", None)
+        else:
+            sel_mode = selection_mode["mode"]
+            if sel_mode == SELECTION_MODE_MANUAL:
+                projects = selection_mode["projects"]
+            elif sel_mode == SELECTION_MODE_REGEXP:
+                regexp = selection_mode["regexp"]
+            elif sel_mode == SELECTION_MODE_TAGS:
+                tags = selection_mode["tags"]
+        self._root_portfolio = self.root_portfolio()
+        log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
+        self.set_selection_mode(selection_mode=sel_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+
     def update(self, data: dict[str, str]) -> None:
         """Updates a portfolio with sonar-config JSON data"""
         log.debug("Updating %s with %s", str(self), util.json_dump(data))
         if "byReference" not in data or not data["byReference"]:
-            if "permissions" in data:
-                decoded_perms = {}
-                for ptype in perms.PERMISSION_TYPES:
-                    if ptype not in data["permissions"]:
-                        continue
-                    decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
-                self.set_permissions(decoded_perms)
-                # self.set_permissions(data.get("permissions", {}))
-            selection_mode = data.get("selectionMode", "NONE")
-            branch, regexp, tags, projects = None, None, None, None
-            if isinstance(selection_mode, str):
-                sel_mode = selection_mode
-                branch = data.get(_PROJECT_SELECTION_BRANCH, None)
-                regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
-                tags = data.get(_PROJECT_SELECTION_TAGS, None)
-                projects = data.get("projects", None)
-            else:
-                sel_mode = selection_mode["mode"]
-                if sel_mode == SELECTION_MODE_MANUAL:
-                    projects = selection_mode["projects"]
-                elif sel_mode == SELECTION_MODE_REGEXP:
-                    regexp = selection_mode["regexp"]
-                elif sel_mode == SELECTION_MODE_TAGS:
-                    tags = selection_mode["tags"]
-            self._root_portfolio = self.root_portfolio()
-            log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
-            self.set_selection_mode(selection_mode=sel_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+            self._update_portfolio_details(data)
         else:
             log.debug("Skipping setting portfolio details, it's a reference")
 
+        subps = self.sub_portfolios(full=True)
+        key_list = []
+        if subps:
+            key_list = list(subps.keys())
         for key, subp in data.get("subPortfolios", {}).items():
-            key_list = list(self.sub_portfolios(full=True).keys())
             if subp.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
                 if o_subp.key not in key_list:
@@ -695,18 +706,21 @@ def import_config(endpoint: pf.Platform, config_data: dict[str, str], key_list: 
         try:
             o = Portfolio.get_object(endpoint, key)
         except exceptions.ObjectNotFound:
-            log.debug("Portfolio not found, creating it")
+            log.info("Portfolio not found, creating it")
             newdata = data.copy()
             name = newdata.pop("name")
             o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
             o.reload(data)
-        nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
-        # Hack: When subportfolios are created, recompute is needed to get them in the
-        # api/views/search results
-        if nbr_creations > 0:
-            o.recompute()
-            # Sleep 500ms per created portfolio
-            time.sleep(nbr_creations * 500 / 1000)
+        # nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
+        # # Hack: When subportfolios are created, recompute is needed to get them in the
+        # # api/views/search results
+        # if nbr_creations > 0:
+        #     o.recompute()
+        #     # Sleep 500ms per created portfolio
+        #     time.sleep(nbr_creations * 500 / 1000)
+    log.info("Recomputing top level portfolios")
+    o.recompute()
+    time.sleep(5)
     # Second pass to define hierarchies
     log.info("Importing portfolios - pass 2: Creating sub-portfolios")
     for key, data in config_data["portfolios"].items():

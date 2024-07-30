@@ -163,6 +163,23 @@ def remove_nones(d: dict[str, str]) -> dict[str, str]:
         return d
 
 
+def remove_empties(d: dict[str, any]) -> dict[str, any]:
+    """Recursively removes empty lists and dicts and none from a dict"""
+    # log.debug("Cleaning up %s", json_dump(d))
+    new_d = d.copy()
+    for k, v in d.items():
+        if v is None:
+            new_d.pop(k)
+            continue
+        if not isinstance(v, (list, dict)):
+            continue
+        if len(v) == 0:
+            new_d.pop(k)
+        elif isinstance(v, dict):
+            new_d[k] = remove_empties(v)
+    return new_d
+
+
 def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
     return {key: d[key] for key in subset_list if key in d}
