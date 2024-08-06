@@ -625,7 +625,7 @@ class Platform:
             v = latest()
         if not v:
             return []
-        return [Problem(rule, self.url, _version_as_string(sq_vers), _version_as_string(v))]
+        return [Problem(rule, self.url, ".".join(sq_vers), ".".join(v))]
 
 
 # --------------------- Static methods -----------------
