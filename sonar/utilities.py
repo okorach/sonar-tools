@@ -420,7 +420,7 @@ def http_error(response: requests.models.Response) -> tuple[str, int]:
         tool_msg += f"HTTP error {code} - Insufficient permissions to perform operation"
         err_code = errcodes.SONAR_API_AUTHORIZATION
     else:
-        tool_msg += f"HTTP error {code} - Exiting"
+        tool_msg += f"HTTP error {code} - "
         err_code = errcodes.SONAR_API
     return err_code, f"{tool_msg}: {sq_msg}"
 
