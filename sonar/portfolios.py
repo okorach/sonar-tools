@@ -238,7 +238,7 @@ class Portfolio(aggregations.Aggregation):
         self.reload_sub_portfolios()
         return self._sub_portfolios
 
-    def add_reference_portfolio(self, reference: Portfolio) -> bool:
+    def add_reference_portfolio(self, reference: Portfolio) -> object:
         ref = ReferencePortfolio.create(parent=self, reference=reference)
         try:
             self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
@@ -470,32 +470,38 @@ class Portfolio(aggregations.Aggregation):
             self._selection_mode = {"mode": SELECTION_MODE_NONE}
         return self
 
-    def set_selection_mode(
-        self,
-        selection_mode: str,
-        projects: Optional[dict[str, str]] = None,
-        regexp: Optional[str] = None,
-        tags: Optional[list[str]] = None,
-        branch: Optional[str] = None,
-    ) -> Portfolio:
+    def set_selection_mode(self, data: dict[str, str]) -> Portfolio:
         """Sets a portfolio selection mode"""
-        log.debug("Setting selection mode %s for %s", str(selection_mode), str(self))
-        if selection_mode == SELECTION_MODE_MANUAL:
-            self.set_manual_mode().add_project_branches(projects)
-        elif selection_mode == SELECTION_MODE_TAGS:
-            self.set_tags_mode(tags=tags, branch=branch)
-        elif selection_mode == SELECTION_MODE_REGEXP:
-            self.set_regexp_mode(regexp=regexp, branch=branch)
-        elif selection_mode == SELECTION_MODE_OTHERS:
-            self.set_remaining_projects_mode(branch)
-        elif selection_mode == SELECTION_MODE_NONE:
-            self.set_none_mode()
+        params = data.get("selectionMode", {})
+        if isinstance(params, str):
+            mode = params
+            log.info("Setting selection mode %s for %s", mode, str(self))
+            branch = data.get(_PROJECT_SELECTION_BRANCH, None)
+            regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
+            tags = data.get(_PROJECT_SELECTION_TAGS, None)
+            projects = data.get("projects", None)
         else:
-            log.error("Invalid portfolio project selection mode %s during import, skipped...", selection_mode)
-
+            mode = params.get("mode", SELECTION_MODE_NONE)
+            branch = params.get("branch", None)
+            regexp = params.get("regexp", "")
+            tags = params.get("tags", [])
+            projects = params.get("projects", {})
+            log.info("Setting selection mode %s for %s", mode, str(self))
+        if mode == SELECTION_MODE_NONE:
+            self.set_none_mode()
+        elif mode == SELECTION_MODE_MANUAL:
+            self.set_manual_mode().add_projects(projects)
+        elif mode == SELECTION_MODE_TAGS:
+            self.set_tags_mode(tags, branch)
+        elif mode == SELECTION_MODE_REGEXP:
+            self.set_regexp_mode(regexp, branch)
+        elif mode == SELECTION_MODE_OTHERS:
+            self.set_remaining_projects_mode(branch)
+        else:
+            log.error("Invalid portfolio project selection mode %s during import, skipped...", mode)
         return self
 
-    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> bool:
+    def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
         # if not exists(key, self.endpoint):
         #    log.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
@@ -504,22 +510,16 @@ class Portfolio(aggregations.Aggregation):
         log.info("Adding sub-portfolios to %s", str(self))
         if self.is_parent_of(key):
             log.warning("Portfolio '%s' is already subportfolio of %s", key, str(self))
-            return True
-        else:
-            log.info("Portfolio '%s' is not already subportfolio of %s", key, str(self))
+            return self._sub_portfolios[key]
         if by_ref:
-            self.add_reference_portfolio(Portfolio.get_object(self.endpoint, key))
+            subp = self.add_reference_portfolio(Portfolio.get_object(self.endpoint, key))
         else:
-            self.add_sub_portfolio(key=key, name=name)
-            try:
-                Portfolio.get_object(self.endpoint, key)
-            except exceptions.ObjectNotFound:
-                Portfolio.create(self.endpoint, key=key, name=name, parent=self)
+            subp = self.add_sub_portfolio(key=key, name=name)
 
         if not by_ref:
             self.recompute()
             time.sleep(0.5)
-        return True
+        return subp
 
     def is_parent_of(self, key: str) -> bool:
         """Returns whether a portfolio is parent of another subportfolio (given by key)"""
@@ -540,7 +540,7 @@ class Portfolio(aggregations.Aggregation):
         key = self._root_portfolio.key if self._root_portfolio else self.key
         return self.post("views/refresh", params={"key": key}).ok
 
-    def _update_portfolio_details(self, data: dict[str, str]) -> None:
+    def update_portfolio_details(self, data: dict[str, str]) -> None:
         if "permissions" in data:
             decoded_perms = {}
             for ptype in perms.PERMISSION_TYPES:
@@ -567,13 +567,13 @@ class Portfolio(aggregations.Aggregation):
                 tags = selection_mode["tags"]
         self._root_portfolio = self.root_portfolio()
         log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
-        self.set_selection_mode(selection_mode=sel_mode, projects=projects, branch=branch, regexp=regexp, tags=tags)
+        self.set_selection_mode(data)
 
     def update(self, data: dict[str, str]) -> None:
         """Updates a portfolio with sonar-config JSON data"""
         log.debug("Updating %s with %s", str(self), util.json_dump(data))
         if "byReference" not in data or not data["byReference"]:
-            self._update_portfolio_details(data)
+            self.update_portfolio_details(data)
         else:
             log.debug("Skipping setting portfolio details, it's a reference")
 
@@ -581,6 +581,23 @@ class Portfolio(aggregations.Aggregation):
         key_list = []
         if subps:
             key_list = list(subps.keys())
+        if "description" in data:
+            self.set_description(data["description"])
+        if "name" in data:
+            self.set_name(data["name"])
+        if "permissions" in data:
+            self.set_permissions(data["permissions"])
+        if "visibility" in data:
+            self.set_visibility(data["visibility"])
+        mode = data.get("selectionMode", SELECTION_MODE_NONE)
+        if mode == SELECTION_MODE_NONE:
+            self.set_none_mode()
+        elif mode == SELECTION_MODE_MANUAL:
+            self.set_manual_mode().add_projects(data["selectionMode"].get("projects", {}))
+        elif mode == SELECTION_MODE_TAGS:
+            self.set_tags_mode(data["selectionMode"].get("tags", []))
+        elif mode == SELECTION_MODE_REGEXP:
+            self.set_regexp_mode(data["selectionMode"].get("regexp", ""))
         for key, subp in data.get("subPortfolios", {}).items():
             if subp.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
