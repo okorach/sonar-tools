@@ -1,5 +1,9 @@
 # Next version yet unreleased
 
+# Version 3.2.2
+
+- Patch release to fix bug (crash) when using `sonar-config` import
+
 # Version 3.2.1
 
 - Patch release to fix all compatibility problems with
