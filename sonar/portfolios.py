@@ -420,7 +420,7 @@ class Portfolio(aggregations.Aggregation):
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.key, f"Project '{key}' or branch '{branch}' not found, can't be added to {str(self)}")
-                elif e.response.status_code == HTTPStatus.BAD_REQUEST:
+                if e.response.status_code == HTTPStatus.BAD_REQUEST:
                     # Project or branch already in portfolio
                     pass
                 else:
@@ -502,12 +502,14 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def set_description(self, desc: str) -> Portfolio:
-        # TODO
-        pass
+        self.post("views/update", params={"key": self.key, "description": desc})
+        self._description = desc
+        return self
 
     def set_name(self, name: str) -> Portfolio:
-        # TODO
-        pass
+        self.post("views/update", params={"key": self.key, "name": name})
+        self.name = name
+        return self
 
     def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
