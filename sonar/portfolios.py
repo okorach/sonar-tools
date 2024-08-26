@@ -557,22 +557,6 @@ class Portfolio(aggregations.Aggregation):
                 decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
             self.set_permissions(decoded_perms)
             # self.set_permissions(data.get("permissions", {}))
-        selection_mode = data.get("selectionMode", "NONE")
-        branch, regexp, tags, projects = None, None, None, None
-        if isinstance(selection_mode, str):
-            sel_mode = selection_mode
-            branch = data.get(_PROJECT_SELECTION_BRANCH, None)
-            regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
-            tags = data.get(_PROJECT_SELECTION_TAGS, None)
-            projects = data.get("projects", None)
-        else:
-            sel_mode = selection_mode["mode"]
-            if sel_mode == SELECTION_MODE_MANUAL:
-                projects = selection_mode["projects"]
-            elif sel_mode == SELECTION_MODE_REGEXP:
-                regexp = selection_mode["regexp"]
-            elif sel_mode == SELECTION_MODE_TAGS:
-                tags = selection_mode["tags"]
         self._root_portfolio = self.root_portfolio()
         log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
         self.set_selection_mode(data)
