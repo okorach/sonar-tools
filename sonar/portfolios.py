@@ -501,6 +501,14 @@ class Portfolio(aggregations.Aggregation):
             log.error("Invalid portfolio project selection mode %s during import, skipped...", mode)
         return self
 
+    def set_description(self, desc: str) -> Portfolio:
+        # TODO
+        pass
+
+    def set_name(self, name: str) -> Portfolio:
+        # TODO
+        pass
+
     def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
         # if not exists(key, self.endpoint):
@@ -593,6 +601,7 @@ class Portfolio(aggregations.Aggregation):
         if mode == SELECTION_MODE_NONE:
             self.set_none_mode()
         elif mode == SELECTION_MODE_MANUAL:
+            log.info("data = %s", str(data))
             self.set_manual_mode().add_projects(data["selectionMode"].get("projects", {}))
         elif mode == SELECTION_MODE_TAGS:
             self.set_tags_mode(data["selectionMode"].get("tags", []))
