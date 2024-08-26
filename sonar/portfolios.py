@@ -581,16 +581,7 @@ class Portfolio(aggregations.Aggregation):
             self.set_permissions(data["permissions"])
         if "visibility" in data:
             self.set_visibility(data["visibility"])
-        mode = data.get("selectionMode", SELECTION_MODE_NONE)
-        if mode == SELECTION_MODE_NONE:
-            self.set_none_mode()
-        elif mode == SELECTION_MODE_MANUAL:
-            log.info("data = %s", str(data))
-            self.set_manual_mode().add_projects(data["selectionMode"].get("projects", {}))
-        elif mode == SELECTION_MODE_TAGS:
-            self.set_tags_mode(data["selectionMode"].get("tags", []))
-        elif mode == SELECTION_MODE_REGEXP:
-            self.set_regexp_mode(data["selectionMode"].get("regexp", ""))
+        self.set_selection_mode(data)
         for key, subp in data.get("subPortfolios", {}).items():
             if subp.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
