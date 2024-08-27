@@ -476,12 +476,12 @@ class Portfolio(aggregations.Aggregation):
     def set_selection_mode(self, data: dict[str, str]) -> Portfolio:
         """Sets a portfolio selection mode"""
         params = data.get("selectionMode", {})
+        log.info("Setting %s selection mode params %s", str(self), str(params))
         if isinstance(params, str):
             mode = params
-            log.info("Setting selection mode %s for %s", mode, str(self))
             branch = data.get(_PROJECT_SELECTION_BRANCH, None)
             regexp = data.get(_PROJECT_SELECTION_REGEXP, None)
-            tags = data.get(_PROJECT_SELECTION_TAGS, None)
+            tags = data.get(_PROJECT_SELECTION_TAGS, [])
             projects = data.get("projects", None)
         else:
             mode = params.get("mode", SELECTION_MODE_NONE)
@@ -489,7 +489,6 @@ class Portfolio(aggregations.Aggregation):
             regexp = params.get("regexp", "")
             tags = params.get("tags", [])
             projects = params.get("projects", {})
-            log.info("Setting selection mode %s for %s", mode, str(self))
         if mode == SELECTION_MODE_NONE:
             self.set_none_mode()
         elif mode == SELECTION_MODE_MANUAL:
@@ -554,6 +553,7 @@ class Portfolio(aggregations.Aggregation):
         return self.post("views/refresh", params={"key": key}).ok
 
     def update_portfolio_details(self, data: dict[str, str]) -> None:
+        log.debug("Updating details of %s with %s", str(self), str(data))
         if "permissions" in data:
             decoded_perms = {}
             for ptype in perms.PERMISSION_TYPES:
@@ -586,7 +586,7 @@ class Portfolio(aggregations.Aggregation):
             self.set_permissions(data["permissions"])
         if "visibility" in data:
             self.set_visibility(data["visibility"])
-        self.set_selection_mode(data)
+        # self.set_selection_mode(data)
         for key, subp in data.get("subPortfolios", {}).items():
             if subp.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
