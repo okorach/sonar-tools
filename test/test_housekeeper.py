@@ -36,6 +36,7 @@ __GOOD_OPTS = [
     [],
     [f"--{options.NBR_THREADS}", "1"],
     ["-P", "30"],
+    ["--httpTimeout", "100"],
 ]
 
 
