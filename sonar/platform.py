@@ -85,7 +85,7 @@ class Platform:
         self.__global_nav = None
         self._server_id = None
         self._permissions = None
-        self.http_timeout = http_timeout
+        self.http_timeout = int(http_timeout)
         self.organization = org
         self.__is_sonarcloud = util.is_sonarcloud_url(self.url)
 
