@@ -441,7 +441,7 @@ class Portfolio(aggregations.Aggregation):
         """Sets a portfolio to tags mode"""
         mode = self._selection_mode
         if not mode or mode["mode"] != SELECTION_MODE_TAGS or mode["branch"] != branch:
-            self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": branch})
+            self.post("views/set_tags_mode", params={"portfolio": self.key, "tags": util.list_to_csv(tags), "branch": get_api_branch(branch)})
             self._selection_mode = {"mode": SELECTION_MODE_TAGS, "tags": tags, "branch": branch}
         return self
 
@@ -449,7 +449,7 @@ class Portfolio(aggregations.Aggregation):
         """Sets a portfolio to regexp mode"""
         mode = self._selection_mode
         if not mode or mode["mode"] != SELECTION_MODE_REGEXP or mode["branch"] != branch:
-            self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": branch})
+            self.post("views/set_regexp_mode", params={"portfolio": self.key, "regexp": regexp, "branch": get_api_branch(branch)})
             self._selection_mode = {"mode": SELECTION_MODE_REGEXP, "regexp": regexp, "branch": branch}
         return self
 
@@ -457,7 +457,7 @@ class Portfolio(aggregations.Aggregation):
         """Sets a portfolio to remaining projects mode"""
         mode = self._selection_mode
         if not mode or mode["mode"] != SELECTION_MODE_OTHERS or mode["branch"] != branch:
-            self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": branch})
+            self.post("views/set_remaining_projects_mode", params={"portfolio": self.key, "branch": get_api_branch(branch)})
             self._selection_mode = {"mode": SELECTION_MODE_OTHERS, "branch": branch}
         return self
 
@@ -836,3 +836,8 @@ def __create_portfolio_hierarchy(endpoint: pf.Platform, data: types.ApiPayload, 
         o.load_parent(o_parent)
         nbr_creations += __create_portfolio_hierarchy(endpoint, subp, parent_key=key)
     return nbr_creations
+
+
+def get_api_branch(branch: str) -> str:
+    """Returns the value to pass to the API for the branch parameter"""
+    return branch if branch != settings.DEFAULT_BRANCH else None
