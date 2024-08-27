@@ -241,7 +241,10 @@ class Portfolio(aggregations.Aggregation):
     def add_reference_portfolio(self, reference: Portfolio) -> object:
         ref = ReferencePortfolio.create(parent=self, reference=reference)
         try:
-            self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
+            if self.endpoint.version() >= (9, 3, 0):
+                self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
+            else:
+                self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
         except HTTPError as e:
             if e.response.status_code != HTTPStatus.BAD_REQUEST:
                 raise
@@ -253,7 +256,7 @@ class Portfolio(aggregations.Aggregation):
         subp = Portfolio.create(endpoint=self.endpoint, key=key, name=name, parent=self, **kwargs)
         try:
             if self.endpoint.version() >= (9, 3, 0):
-                self.post("views/add_portfolio", params={"portfolio": self.key, "reference": key}, mute=(HTTPStatus.BAD_REQUEST,))
+                self.post("views/create", params={"key": key, "parent": self.key, "name": name}, mute=(HTTPStatus.BAD_REQUEST,))
             else:
                 self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
         except HTTPError as e:
@@ -502,7 +505,7 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def set_description(self, desc: str) -> Portfolio:
-        self.post("views/update", params={"key": self.key, "description": desc})
+        self.post("views/update", params={"key": self.key, "name": self.name, "description": desc})
         self._description = desc
         return self
 
