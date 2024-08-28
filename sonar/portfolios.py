@@ -552,8 +552,20 @@ class Portfolio(aggregations.Aggregation):
         key = self._root_portfolio.key if self._root_portfolio else self.key
         return self.post("views/refresh", params={"key": key}).ok
 
-    def update_portfolio_details(self, data: dict[str, str]) -> None:
+    def update(self, data: dict[str, str], recurse: bool) -> None:
+        """Updates a portfolio with sonar-config JSON data, if recurse is true, this recurses in sub portfolios"""
+        log.debug("Updating %s with %s", str(self), util.json_dump(data))
+        if "byReference" in data and data["byReference"]:
+            log.debug("Skipping setting portfolio details, it's a reference")
+            return
+
         log.debug("Updating details of %s with %s", str(self), str(data))
+        if "description" in data:
+            self.set_description(data["description"])
+        if "name" in data:
+            self.set_name(data["name"])
+        if "visibility" in data:
+            self.set_visibility(data["visibility"])
         if "permissions" in data:
             decoded_perms = {}
             for ptype in perms.PERMISSION_TYPES:
@@ -566,43 +578,29 @@ class Portfolio(aggregations.Aggregation):
         log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
         self.set_selection_mode(data)
 
-    def update(self, data: dict[str, str]) -> None:
-        """Updates a portfolio with sonar-config JSON data"""
-        log.debug("Updating %s with %s", str(self), util.json_dump(data))
-        if "byReference" not in data or not data["byReference"]:
-            self.update_portfolio_details(data)
-        else:
-            log.debug("Skipping setting portfolio details, it's a reference")
+        if not recurse:
+            return
 
         subps = self.sub_portfolios(full=True)
         key_list = []
         if subps:
             key_list = list(subps.keys())
-        if "description" in data:
-            self.set_description(data["description"])
-        if "name" in data:
-            self.set_name(data["name"])
-        if "permissions" in data:
-            self.set_permissions(data["permissions"])
-        if "visibility" in data:
-            self.set_visibility(data["visibility"])
-        # self.set_selection_mode(data)
-        for key, subp in data.get("subPortfolios", {}).items():
-            if subp.get("byReference", False):
+        for key, subp_data in data.get("subPortfolios", {}).items():
+            if subp_data.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
                 if o_subp.key not in key_list:
                     self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
-                o_subp.update(subp)
+                o_subp.update(data=subp_data, recurse=True)
             else:
                 # get_list(endpoint=self.endpoint)
                 try:
-                    o = Portfolio.get_object(self.endpoint, key)
+                    o_subp = Portfolio.get_object(self.endpoint, key)
                 except exceptions.ObjectNotFound:
-                    log.info("%s: Creating subportfolio from %s", str(self), util.json_dump(subp))
+                    log.info("%s: Creating subportfolio from %s", str(self), util.json_dump(subp_data))
                     # o = Portfolio.create(endpoint=self.endpoint, name=name, parent=self.key, **subp)
-                    self.add_subportfolio(key=key, name=subp["name"], by_ref=False)
-                o.load_parent(self)
-                o.update(subp)
+                    self.add_subportfolio(key=key, name=subp_data["name"], by_ref=False)
+                o_subp.load_parent(self)
+                o_subp.update(data=subp_data, recurse=True)
 
     def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
@@ -738,7 +736,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             newdata = data.copy()
             name = newdata.pop("name")
             o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
-            o.reload(data)
+            o.update(data=data, recurse=False)
         # nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
         # # Hack: When subportfolios are created, recompute is needed to get them in the
         # # api/views/search results
@@ -756,7 +754,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             continue
         try:
             o = Portfolio.get_object(endpoint, key)
-            o.update(data)
+            o.update(data=data, recurse=True)
         except exceptions.ObjectNotFound:
             log.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
 
