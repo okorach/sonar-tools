@@ -128,17 +128,16 @@ class Portfolio(aggregations.Aggregation):
         """Creates a portfolio object"""
         check_supported(endpoint)
         if exists(endpoint=endpoint, key=key):
-            raise exceptions.ObjectAlreadyExists
-        log.debug("Creating portfolio name '%s', key '%s', parent = %s", name, key, str(kwargs.get("parent", None)))
-        params = {"name": name, "key": key}
+            raise exceptions.ObjectAlreadyExists(key=key, message=f"Portfolio '{key}' already exists")
+        parent_key = kwargs["parent"].key if "parent" in kwargs else None
+        log.debug("Creating portfolio name '%s', key '%s', parent = %s", name, key, str(parent_key))
+        params = {"name": name, "key": key, "parent": parent_key}
         for p in "description", "visibility":
             params[p] = kwargs.get(p, None)
-        if "parent" in kwargs:
-            params["parent"] = kwargs["parent"].key
         endpoint.post(_CREATE_API, params=params)
         o = cls(endpoint=endpoint, name=name, key=key)
-        if "parent" in kwargs:
-            o.load_parent(Portfolio.get_object(endpoint, kwargs["parent"]))
+        if parent_key:
+            o.load_parent(Portfolio.get_object(endpoint, parent_key))
         # TODO - Allow on the fly selection mode
         return o
 
@@ -255,9 +254,7 @@ class Portfolio(aggregations.Aggregation):
         """Adds a subportfolio"""
         subp = Portfolio.create(endpoint=self.endpoint, key=key, name=name, parent=self, **kwargs)
         try:
-            if self.endpoint.version() >= (9, 3, 0):
-                self.post("views/create", params={"key": key, "parent": self.key, "name": name}, mute=(HTTPStatus.BAD_REQUEST,))
-            else:
+            if self.endpoint.version() < (9, 3, 0):
                 self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
         except HTTPError as e:
             if e.response.status_code != HTTPStatus.BAD_REQUEST:
@@ -366,6 +363,7 @@ class Portfolio(aggregations.Aggregation):
     def selection_mode(self, export_settings: types.ConfigSettings = None) -> dict[str, str]:
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
+            # FIXME: If portfolio is a subportfolio you must reload with sub-JSON
             self.reload(json.loads(self.get(_GET_API, params={"key": self.root_portfolio().key}).text))
         if export_settings and export_settings.get("INLINE_LISTS", True):
             if self._selection_mode["mode"] == SELECTION_MODE_TAGS:
@@ -541,7 +539,7 @@ class Portfolio(aggregations.Aggregation):
     def is_subporfolio_of(self, key: str) -> bool:
         """Returns whether a portfolio is already a subportfolio of another portfolio (given by key)"""
         try:
-            parent = Portfolio.get_object(endpoint=self.endpoint, key=str)
+            parent = Portfolio.get_object(endpoint=self.endpoint, key=key)
         except exceptions.ObjectNotFound:
             return False
         return parent.is_parent_of(self.key)
@@ -581,24 +579,23 @@ class Portfolio(aggregations.Aggregation):
         if not recurse:
             return
 
+        log.info("Updating %s subportfolios", str(self))
         subps = self.sub_portfolios(full=True)
+        get_list(endpoint=self.endpoint)
         key_list = []
         if subps:
             key_list = list(subps.keys())
         for key, subp_data in data.get("subPortfolios", {}).items():
+            log.info("Processing subportfolio %s", key)
             if subp_data.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
                 if o_subp.key not in key_list:
                     self.add_subportfolio(o_subp.key, name=o_subp.name, by_ref=True)
-                o_subp.update(data=subp_data, recurse=True)
             else:
-                # get_list(endpoint=self.endpoint)
                 try:
                     o_subp = Portfolio.get_object(self.endpoint, key)
                 except exceptions.ObjectNotFound:
-                    log.info("%s: Creating subportfolio from %s", str(self), util.json_dump(subp_data))
-                    # o = Portfolio.create(endpoint=self.endpoint, name=name, parent=self.key, **subp)
-                    self.add_subportfolio(key=key, name=subp_data["name"], by_ref=False)
+                    o_subp = self.add_subportfolio(key=key, name=subp_data["name"], by_ref=False)
                 o_subp.load_parent(self)
                 o_subp.update(data=subp_data, recurse=True)
 
@@ -736,7 +733,6 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             newdata = data.copy()
             name = newdata.pop("name")
             o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
-            o.update(data=data, recurse=False)
         # nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
         # # Hack: When subportfolios are created, recompute is needed to get them in the
         # # api/views/search results
