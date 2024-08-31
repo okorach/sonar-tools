@@ -112,7 +112,7 @@ def test_config_inline_commas() -> None:
         assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["selectionMode"]["tags"], str)
         # This is a list because there is a comma in one of the branches
         if util.SQ.version() >= (10, 0, 0):
-            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["selectionMode"]["projects"]["okorach_sonar-tools"], list)
+            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["selectionMode"]["projects"]["BANKING-PORTAL"], list)
     util.clean(util.JSON_FILE)
 
 
@@ -131,5 +131,5 @@ def test_config_no_inline_commas() -> None:
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], list)
         assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["selectionMode"]["tags"], list)
         if util.SQ.version() >= (10, 0, 0):
-            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["selectionMode"]["projects"]["okorach_sonar-tools"], list)
+            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["selectionMode"]["projects"]["BANKING-PORTAL"], list)
     util.clean(util.JSON_FILE)

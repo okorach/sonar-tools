@@ -37,9 +37,9 @@ import sonar.sqobject as sq
 _OBJECTS = {}
 
 
-class ReferencePortfolio(sq.SqObject):
+class PortfolioReference(sq.SqObject):
     """
-    Abstraction of the Sonar sub-portfolio by reference concept
+    Abstraction of the Sonar portfolio reference concept
     """
 
     def __init__(self, reference: object, parent: object) -> None:
@@ -53,7 +53,7 @@ class ReferencePortfolio(sq.SqObject):
         log.debug("Created subportfolio by reference key '%s'", self.key)
 
     @classmethod
-    def get_object(cls, endpoint: pf.Platform, key: str, parent_key: str) -> ReferencePortfolio:
+    def get_object(cls, endpoint: pf.Platform, key: str, parent_key: str) -> PortfolioReference:
         """Gets a subportfolio by reference object from its key and parent"""
         check_supported(endpoint)
         log.info("Getting subportfolio by ref key '%s:%s'", parent_key, key)
@@ -63,12 +63,12 @@ class ReferencePortfolio(sq.SqObject):
         return _OBJECTS[uid]
 
     @classmethod
-    def load(cls, reference: object, parent: object) -> ReferencePortfolio:
+    def load(cls, reference: object, parent: object) -> PortfolioReference:
         """Constructor, don't use - use class methods instead"""
-        return ReferencePortfolio(reference=reference, parent=parent)
+        return PortfolioReference(reference=reference, parent=parent)
 
     @classmethod
-    def create(cls, reference: object, parent: object, params: types.ApiParams = None) -> ReferencePortfolio:
+    def create(cls, reference: object, parent: object, params: types.ApiParams = None) -> PortfolioReference:
         """Constructor, don't use - use class methods instead"""
 
         try:
@@ -76,10 +76,10 @@ class ReferencePortfolio(sq.SqObject):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists
-        return ReferencePortfolio(reference=reference, parent=parent)
+        return PortfolioReference(reference=reference, parent=parent)
 
     def __str__(self) -> str:
-        return f"subportfolio by reference '{self.key}'"
+        return f"Portfolio reference '{self.key}'"
 
     def uuid(self) -> str:
         """Returns the object unique id in its class"""
