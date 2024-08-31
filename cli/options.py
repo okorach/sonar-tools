@@ -291,7 +291,7 @@ def set_common_args(desc: str) -> argparse.ArgumentParser:
         f"--{HTTP_TIMEOUT}",
         required=False,
         default=10,
-        help="HTTP timeout for requests to SonarQube, 10s by default",
+        help="HTTP timeout for requests to SonarQube, 10 by default (in seconds)",
     )
     parser.add_argument(
         f"--{SKIP_VERSION_CHECK}",
