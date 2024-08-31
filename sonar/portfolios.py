@@ -523,10 +523,6 @@ class Portfolio(aggregations.Aggregation):
             subp = self.add_reference_subportfolio(Portfolio.get_object(self.endpoint, key))
         else:
             subp = self.add_standard_subportfolio(key=key, name=name)
-
-        # if not by_ref:
-        #    self.recompute()
-        #    time.sleep(0.5)
         return subp
 
     def is_parent_of(self, key: str) -> bool:
@@ -741,16 +737,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             newdata = data.copy()
             name = newdata.pop("name")
             o = Portfolio.create(endpoint=endpoint, name=name, key=key, **newdata)
-        # nbr_creations = __create_portfolio_hierarchy(endpoint=endpoint, data=data, parent_key=key)
-        # # Hack: When subportfolios are created, recompute is needed to get them in the
-        # # api/views/search results
-        # if nbr_creations > 0:
-        #     o.recompute()
-        #     # Sleep 500ms per created portfolio
-        #     time.sleep(nbr_creations * 500 / 1000)
-    log.info("Recomputing top level portfolios")
-    o.recompute()
-    time.sleep(5)
+
     # Second pass to define hierarchies
     log.info("Importing portfolios - pass 2: Creating sub-portfolios")
     for key, data in config_data["portfolios"].items():
