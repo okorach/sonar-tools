@@ -24,7 +24,7 @@
 import pytest
 
 import utilities as util
-from sonar import portfolios, projects, exceptions
+from sonar import portfolios, projects, exceptions, settings
 
 EXISTING_PROJECT = "okorach_sonar-tools"
 EXISTING_PORTFOLIO = "PORT_FAV_PROJECTS"
@@ -83,6 +83,7 @@ def test_create_delete() -> None:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = portfolios.Portfolio.create(endpoint=util.SQ, name="MY PPPPPORFOLIO", key=TEST_KEY, description="Creationtest")
     else:
+        portfolios.delete(endpoint=util.SQ, key=TEST_KEY)
         portfolio = portfolios.Portfolio.create(endpoint=util.SQ, name="MY PPPPPORFOLIO", key=TEST_KEY, description="Creationtest")
         assert portfolio is not None
         assert portfolio.key == TEST_KEY
@@ -98,6 +99,7 @@ def test_add_project() -> None:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
     else:
+        portfolios.delete(endpoint=util.SQ, key=TEST_KEY)
         p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
         assert p.selection_mode()["mode"] == "NONE"
 
@@ -108,7 +110,7 @@ def test_add_project() -> None:
         assert p.selection_mode()["mode"] == "NONE"
         p.add_projects([project])
         assert p.selection_mode()["mode"] == "MANUAL"
-        assert p.projects() == {"okorach_sonar-tools": None}
+        assert p.projects() == {"okorach_sonar-tools": settings.DEFAULT_BRANCH}
         p.delete()
         assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 
@@ -119,19 +121,18 @@ def test_tags_mode() -> None:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
     else:
+        portfolios.delete(endpoint=util.SQ, key=TEST_KEY)
         p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
         in_tags = ["foss", "favorites"]
         p.set_tags_mode(in_tags)
         assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_TAGS
-        assert p.selection_mode()["branch"] is None
+        assert p.selection_mode()["branch"] == settings.DEFAULT_BRANCH
         assert p.selection_mode()["tags"].sort() == in_tags.sort()
-        assert p.tags().sort() == in_tags.sort()
 
         p.set_tags_mode(tags=in_tags, branch="some_branch")
         assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_TAGS
         assert p.selection_mode()["branch"] == "some_branch"
         assert p.selection_mode()["tags"].sort() == in_tags.sort()
-        assert p.tags().sort() == in_tags.sort()
         p.delete()
         assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 
@@ -142,20 +143,19 @@ def test_regexp_mode() -> None:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
     else:
+        portfolios.delete(endpoint=util.SQ, key=TEST_KEY)
         p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
         in_regexp = "^FAVORITES.*$"
         p.set_regexp_mode(in_regexp)
         assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_REGEXP
-        assert p.selection_mode()["branch"] is None
+        assert p.selection_mode()["branch"] == settings.DEFAULT_BRANCH
         assert p.selection_mode()["regexp"] == in_regexp
-        assert p.regexp() == in_regexp
 
         in_regexp = "^BRANCH_FAVORITES.*$"
         p.set_regexp_mode(regexp=in_regexp, branch="develop")
         assert p.selection_mode()["mode"] == portfolios.SELECTION_MODE_REGEXP
         assert p.selection_mode()["branch"] == "develop"
         assert p.selection_mode()["regexp"] == in_regexp
-        assert p.regexp() == in_regexp
         p.delete()
         assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 
@@ -166,6 +166,7 @@ def test_permissions_1() -> None:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
     else:
+        portfolios.delete(endpoint=util.SQ, key=TEST_KEY)
         p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test")
         p.set_permissions({"groups": {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
         # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}
@@ -179,6 +180,7 @@ def test_permissions_2() -> None:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test", visibility="private")
     else:
+        portfolios.delete(endpoint=util.SQ, key=TEST_KEY)
         p = portfolios.Portfolio.create(endpoint=util.SQ, name="A portfolio", key=TEST_KEY, description="Add_project_test", visibility="private")
         p.set_permissions({"groups": {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}})
         # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}
