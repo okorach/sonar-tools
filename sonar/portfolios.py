@@ -336,7 +336,7 @@ class Portfolio(aggregations.Aggregation):
         json_data["tags"] = self._tags
         if self._description:
             json_data["description"] = self._description
-        mode = self.selection_mode(export_settings).copy()
+        mode = self.selection_mode().copy()
         found = False
         for k in SELECTION_MODES:
             # Don't export selection mode when is none
