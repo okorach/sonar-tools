@@ -365,7 +365,7 @@ class Portfolio(aggregations.Aggregation):
             # No permissions for SVW
             self.permissions().set(portfolio_perms)
 
-    def selection_mode(self, export_settings: types.ConfigSettings = None) -> dict[str, str]:
+    def selection_mode(self) -> dict[str, str]:
         """Returns a portfolio selection mode"""
         if self._selection_mode is None:
             # FIXME: If portfolio is a subportfolio you must reload with sub-JSON
