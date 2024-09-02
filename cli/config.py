@@ -161,6 +161,8 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint, export_settings=export_settings)
 
     sq_settings = utilities.remove_empties(sq_settings)
+    if not kwargs["dontInlineLists"]:
+        sq_settings = utilities.inline_lists(sq_settings)
     with utilities.open_file(kwargs["file"]) as fd:
         print(utilities.json_dump(sq_settings), file=fd)
     log.info("Exporting configuration from %s completed", kwargs["url"])

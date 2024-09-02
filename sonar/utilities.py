@@ -588,6 +588,20 @@ def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:
     return original_dict
 
 
+def inline_lists(element: any) -> any:
+    """Recursively explores a dict and replace string lists by CSV strings, if list values do not contain commas"""
+    if isinstance(element, dict):
+        return {k: inline_lists(v) for k, v in element.items()}
+    elif isinstance(element, (list, set)):
+        cannot_be_csv = any(not isinstance(v, str) or "," in v for v in element)
+        if cannot_be_csv:
+            return element
+        else:
+            return list_to_csv(element, separator=", ")
+    else:
+        return element
+
+
 def dict_remap_and_stringify(original_dict: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
     """Remaps keys and stringify values of a dict"""
     return dict_stringify(dict_remap(original_dict, remapping))
