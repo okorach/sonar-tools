@@ -228,7 +228,7 @@ class Portfolio(aggregations.Aggregation):
         if not self._selection_mode or _SELECTION_MODE_MANUAL not in self._selection_mode:
             log.debug("%s: Not manual mode, no projects", str(self))
             return None
-        return self._selection_mode[_SELECTION_MODE_MANUAL].get("projects", {})
+        return self._selection_mode[_SELECTION_MODE_MANUAL]
 
     def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
         """Returns the list of sub portfolios as dict"""
