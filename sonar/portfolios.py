@@ -337,13 +337,7 @@ class Portfolio(aggregations.Aggregation):
         if self._description:
             json_data["description"] = self._description
         mode = self.selection_mode().copy()
-        found = False
-        for k in SELECTION_MODES:
-            # Don't export selection mode when is none
-            if k in mode and k != _SELECTION_MODE_NONE:
-                mode[k.lower()] = mode.pop(k)
-                found = True
-        if found:
+        if mode and "none" not in mode:
             json_data["projects"] = mode
         return json_data
 
@@ -370,7 +364,7 @@ class Portfolio(aggregations.Aggregation):
         if self._selection_mode is None:
             # FIXME: If portfolio is a subportfolio you must reload with sub-JSON
             self.reload(json.loads(self.get(_GET_API, params={"key": self.root_portfolio().key}).text))
-        return self._selection_mode
+        return {k.lower(): v for k, v in self._selection_mode.items()}
 
     def has_project(self, key: str) -> bool:
         return _SELECTION_MODE_MANUAL in self._selection_mode and key in self._selection_mode[_SELECTION_MODE_MANUAL]
