@@ -75,6 +75,7 @@ _IMPORTABLE_PROPERTIES = (
     "visibility",
     "permissions",
     "subPortfolios",
+    "portfolios",
     "projects",
 )
 
@@ -321,11 +322,11 @@ class Portfolio(aggregations.Aggregation):
         json_data = {}
         subportfolios = self.sub_portfolios()
         if subportfolios:
-            json_data["subPortfolios"] = {}
+            json_data["portfolios"] = {}
             for s in subportfolios.values():
                 subp_json = s.to_json(export_settings)
                 subp_key = subp_json.pop("key")
-                json_data["subPortfolios"][subp_key] = subp_json
+                json_data["portfolios"][subp_key] = subp_json
         if not self.is_sub_portfolio:
             json_data["permissions"] = self.permissions().export(export_settings=export_settings)
             json_data["visibility"] = self._visibility
@@ -579,7 +580,8 @@ class Portfolio(aggregations.Aggregation):
         key_list = []
         if subps:
             key_list = list(subps.keys())
-        for key, subp_data in data.get("subPortfolios", {}).items():
+        subportfolios_json = data.get("portfolios", data.get("subPortfolios", {}))
+        for key, subp_data in subportfolios_json.items():
             log.info("Processing subportfolio %s", key)
             if subp_data.get("byReference", False):
                 o_subp = Portfolio.get_object(self.endpoint, key)
@@ -675,7 +677,7 @@ def _sub_portfolios(json_data, version, full=False):
     if projects is not None and len(projects) > 0:
         ret["projects"] = projects
     if len(subport) > 0:
-        ret["subPortfolios"] = subport
+        ret["portfolios"] = subport
     return ret
 
 
@@ -810,7 +812,8 @@ def __create_portfolio_hierarchy(endpoint: pf.Platform, data: types.ApiPayload, 
     """Creates the hierarchy of portfolios that are new defined by reference"""
     nbr_creations = 0
     o_parent = Portfolio.get_object(endpoint, parent_key)
-    for key, subp in data.get("subPortfolios", {}).items():
+    subportfolios_json = data.get("portfolios", data.get("subPortfolios", {}))
+    for key, subp in subportfolios_json.items():
         if subp.get("byReference", False):
             continue
         try:
