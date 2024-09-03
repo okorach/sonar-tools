@@ -613,7 +613,7 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Union[Quality
     :return: The quality profile object, of None if not found
     :rtype: QualityProfile or None
     """
-    get_list(endpoint, use_cache=False)
+    get_list(endpoint)
     uid = uuid(name, language, endpoint.url)
     if uid not in _OBJECTS:
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
