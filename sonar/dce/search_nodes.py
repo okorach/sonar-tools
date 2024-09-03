@@ -130,7 +130,7 @@ def __audit_index_balance(searchnodes):
     return []
 
 
-def audit(sub_sif, sif):
+def audit(sub_sif: dict[str, any], sif: dict[str, any], audit_settings: types.ConfigSettings) -> list[Problem]:
     log.info("Auditing search node(s)")
     searchnodes = []
     problems = []
@@ -149,6 +149,6 @@ def audit(sub_sif, sif):
     else:
         log.info("%d search nodes found, all OK", nbr_search_nodes)
     for i in range(nbr_search_nodes):
-        problems += searchnodes[i].audit()
+        problems += searchnodes[i].audit(audit_settings)
     problems += __audit_index_balance(searchnodes)
     return problems
