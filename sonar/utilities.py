@@ -588,10 +588,14 @@ def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:
     return original_dict
 
 
-def inline_lists(element: any) -> any:
+def inline_lists(element: any, exceptions: tuple[str]) -> any:
     """Recursively explores a dict and replace string lists by CSV strings, if list values do not contain commas"""
     if isinstance(element, dict):
-        return {k: inline_lists(v) for k, v in element.items()}
+        new_dict = element.copy()
+        for k, v in element.items():
+            if k not in exceptions:
+                new_dict[k] = inline_lists(v, exceptions=exceptions)
+        return new_dict
     elif isinstance(element, (list, set)):
         cannot_be_csv = any(not isinstance(v, str) or "," in v for v in element)
         if cannot_be_csv:
