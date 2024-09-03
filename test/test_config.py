@@ -28,13 +28,14 @@ from unittest.mock import patch
 import pytest
 
 import utilities as util
-from sonar import errcodes
+from sonar import errcodes, portfolios
 from sonar import logging
 import cli.options as opt
 from cli import config
 
 CMD = "config.py"
 OPTS = [CMD] + util.STD_OPTS + ["-e", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
+OPTS_IMPORT = [CMD] + util.TEST_OPTS + ["-i", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
 
 
 def __test_config_cmd(arguments: list[str]) -> None:
@@ -109,10 +110,10 @@ def test_config_inline_commas() -> None:
 
     if util.SQ.edition() not in ("community", "developer"):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], str)
-        assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["selectionMode"]["tags"], str)
+        assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["projects"]["tags"], str)
         # This is a list because there is a comma in one of the branches
         if util.SQ.version() >= (10, 0, 0):
-            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["selectionMode"]["projects"]["BANKING-PORTAL"], list)
+            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
     util.clean(util.JSON_FILE)
 
 
@@ -129,7 +130,33 @@ def test_config_no_inline_commas() -> None:
     assert isinstance(json_config["projects"]["okorach_sonar-tools"]["permissions"]["groups"]["sonar-users"], list)
     if util.SQ.edition() not in ("community", "developer"):
         assert isinstance(json_config["portfolios"]["PORTFOLIO_ALL"]["permissions"]["groups"]["sonar-administrators"], list)
-        assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["selectionMode"]["tags"], list)
+        assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["projects"]["tags"], list)
         if util.SQ.version() >= (10, 0, 0):
-            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["selectionMode"]["projects"]["BANKING-PORTAL"], list)
+            assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
     util.clean(util.JSON_FILE)
+
+
+def test_config_import() -> None:
+    """test_config_non_existing_project"""
+    util.clean(util.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", OPTS):
+            config.main()
+    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+
+    # delete all portfolios in test
+    logging.set_debug_level("DEBUG")
+    logging.info("Deleting all portfolios")
+    for p in portfolios.get_list(util.TEST_SQ).values():
+        if p.is_toplevel():
+            p.delete()
+    # Import config
+    logging.info("Loading config")
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", OPTS_IMPORT + ["-l", "test.log"]):
+            config.main()
+    logging.info("Comparing portfolios")
+    portfolio_list = portfolios.get_list(util.TEST_SQ)
+    assert len(portfolio_list) == len(json_config["portfolios"])
+    assert portfolio_list.keys().sort() == json_config["portfolios"].keys().sort()
