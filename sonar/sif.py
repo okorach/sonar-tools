@@ -287,7 +287,7 @@ class Sif:
             log.info("Sys Info too old (pre-8.9), can't check plugins")
 
         if _ES_NODES in self.json:
-            problems += searchnodes.audit(self.json[_ES_NODES], self)
+            problems += searchnodes.audit(self.json[_ES_NODES], self, audit_settings)
         else:
             log.info("Sys Info too old (pre-8.9), can't check plugins")
         return problems
