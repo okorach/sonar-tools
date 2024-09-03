@@ -616,7 +616,7 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Union[Quality
     get_list(endpoint)
     uid = uuid(name, language, endpoint.url)
     if uid not in _OBJECTS:
-        raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{name}' not found")
+        raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
     return _OBJECTS[uid]
 
 
@@ -636,9 +636,10 @@ def __import_thread(queue: Queue) -> None:
             o = get_object(endpoint=endpoint, name=name, language=lang)
         except exceptions.ObjectNotFound:
             if qp_data.get("isBuiltIn", False):
-                log.warning("Can't import built-in quality profile '%s' because it is not present on target platform", name)
+                log.info("Won't import built-in quality profile '%s'", name)
                 queue.task_done()
                 continue
+            log.info("Qualiy profile '%s' of language '%s' does not exist, creating it", name, lang)
             o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
         log.info("Importing quality profile '%s' of language '%s'", name, lang)
         o.update(qp_data, queue)
