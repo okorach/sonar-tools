@@ -175,11 +175,10 @@ class Portfolio(aggregations.Aggregation):
             return
         branch = self._json.get("branch", settings.DEFAULT_BRANCH)
         if mode == _SELECTION_MODE_MANUAL:
-            self._selection_mode = {mode: {"projects": {}}}
+            self._selection_mode = {mode: {}}
             for projdata in self._json.get("selectedProjects", {}):
                 branch_list = projdata.get("selectedBranches", [settings.DEFAULT_BRANCH])
-                self._selection_mode[mode]["projects"].update({projdata["projectKey"]: branch_list})
-            log.debug("Manual proj selection = %s", str(self._selection_mode[mode]["projects"]))
+                self._selection_mode[mode].update({projdata["projectKey"]: branch_list})
         elif mode == _SELECTION_MODE_REGEXP:
             self._selection_mode = {mode: self._json["regexp"], "branch": branch}
         elif mode == _SELECTION_MODE_TAGS:
@@ -495,6 +494,9 @@ class Portfolio(aggregations.Aggregation):
         else:
             subp = self.add_standard_subportfolio(key=key, name=name)
         return subp
+
+    def is_toplevel(self) -> bool:
+        return self.is_sub_portfolio is None or not self.is_sub_portfolio
 
     def is_parent_of(self, key: str) -> bool:
         """Returns whether a portfolio is parent of another subportfolio (given by key)"""
