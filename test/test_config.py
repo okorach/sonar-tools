@@ -136,11 +136,11 @@ def test_config_no_inline_commas() -> None:
     util.clean(util.JSON_FILE)
 
 
-def test_config_import() -> None:
+def test_config_import_portfolios() -> None:
     """test_config_non_existing_project"""
     util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS):
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + ["-e", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE, f"--{opt.WHAT}", "portfolios"]):
             config.main()
     with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
@@ -152,11 +152,11 @@ def test_config_import() -> None:
         if p.is_toplevel():
             p.delete()
     # Import config
-    logging.info("Loading config")
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS_IMPORT + ["-l", "test.log"]):
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", [CMD] + util.TEST_OPTS + ["-i", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE, "-l", "test.log"]):
             config.main()
-    logging.info("Comparing portfolios")
+
+    # Compare portfolios
     portfolio_list = portfolios.get_list(util.TEST_SQ)
     assert len(portfolio_list) == len(json_config["portfolios"])
-    assert portfolio_list.keys().sort() == json_config["portfolios"].keys().sort()
+    assert sorted(list(portfolio_list.keys())) == sorted(list(json_config["portfolios"].keys()))
