@@ -36,7 +36,7 @@ import sonar.logging as log
 import sonar.platform as pf
 from sonar.util import types
 
-from sonar import aggregations, exceptions, settings
+from sonar import aggregations, exceptions, settings, applications, app_branches
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
@@ -235,10 +235,14 @@ class Portfolio(aggregations.Aggregation):
 
     def applications(self) -> Optional[dict[str, str]]:
         log.debug("Collecting portfolios applications")
-        for data in self._json["subViews"]:
-            log.debug("Looking at subView %s, Qualifier %s", data["key"], data["qualifier"])
-            if data["qualifier"] == "APP":
-                self._applications[data["originalKey"]] = data["selectedBranches"]
+        apps = [data for data in self._json["subViews"] if data["qualifier"] == "APP"]
+        for app_data in apps:
+            app_o = applications.Application.get_object(self.endpoint, app_data["originalKey"])
+            for branch in app_data["selectedBranches"]:
+                if app_branches.ApplicationBranch.get_object(app=app_o, branch_name=branch).is_main():
+                    app_data["selectedBranches"].remove(branch)
+                    app_data["selectedBranches"].insert(0, settings.DEFAULT_BRANCH)
+            self._applications[app_data["originalKey"]] = app_data["selectedBranches"]
         return self._applications
 
     def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
@@ -493,6 +497,19 @@ class Portfolio(aggregations.Aggregation):
         self.name = name
         return self
 
+    def add_application(self, app_key: str) -> bool:
+        self.add_application_branch(app_key=app_key, branch=settings.DEFAULT_BRANCH)
+
+    def add_application_branch(self, app_key: str, branch: str = settings.DEFAULT_BRANCH) -> bool:
+        app = applications.Application.get_object(self.endpoint, app_key)
+        if branch == settings.DEFAULT_BRANCH:
+            self.post("views/add_application", params={"portfolio": self.key, "application": app_key})
+        else:
+            _ = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
+            self.post("views/add_application", params={"key": self.key, "application": app_key, "branch": branch})
+        self._applications[app_key] = branch
+        return True
+
     def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
         # if not exists(key, self.endpoint):
@@ -556,7 +573,9 @@ class Portfolio(aggregations.Aggregation):
         self._root_portfolio = self.root_portfolio()
         log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
         self.set_selection_mode(data)
-
+        for app_key, branches in data.get("applications", {}).items():
+            for branch in util.csv_to_list(branches):
+                self.add_application_branch(app_key=app_key, branch=branch)
         if not recurse:
             return
 
