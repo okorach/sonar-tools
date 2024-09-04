@@ -101,6 +101,7 @@ class Portfolio(aggregations.Aggregation):
         self._visibility = None  #: Portfolio visibility
         self._ref_portfolios = {}  #: Subportfolios
         self._sub_portfolios = {}  #: Subportfolios
+        self._applications = {}  #: applications
         self._permissions = None  #: Permissions
         self.is_sub_portfolio = None
         self.parent = None  #: Ref to parent portfolio object, if any
@@ -166,7 +167,8 @@ class Portfolio(aggregations.Aggregation):
             return
         self._sub_portfolios = {}
         for data in self._json["subViews"]:
-            self.load_sub_portfolio(data.copy())
+            if data["qualifier"] == "SVW":
+                self.load_sub_portfolio(data.copy())
 
     def load_selection_mode(self) -> None:
         """Loads the portfolio selection mode"""
@@ -195,6 +197,7 @@ class Portfolio(aggregations.Aggregation):
         if not self.is_sub_portfolio:
             self.reload(data)
         self.root_portfolio().reload_sub_portfolios()
+        self.applications()
 
     def last_analysis(self) -> datetime.datetime:
         """Returns the portfolio last computation date"""
@@ -228,6 +231,12 @@ class Portfolio(aggregations.Aggregation):
             log.debug("%s: Not manual mode, no projects", str(self))
             return None
         return self._selection_mode[_SELECTION_MODE_MANUAL]
+
+    def applications(self) -> Optional[dict[str, str]]:
+        for data in self._json["subViews"]:
+            if data["qualifier"] == "APP":
+                self._applications[data["originalKey"]] = data["selectedBranches"]
+        return self._applications
 
     def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
         """Returns the list of sub portfolios as dict"""
