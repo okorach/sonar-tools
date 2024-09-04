@@ -87,8 +87,3 @@ def is_integer(value: str) -> bool:
 def is_url(value: str) -> bool:
     """Returns whether a string contains an URL"""
     return value.startswith("http")
-
-
-def get_token():
-    password = "squ_c8d5fa3eaf679024f39eb65df6956dh884d45180"
-    return password

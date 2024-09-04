@@ -609,3 +609,8 @@ def inline_lists(element: any, exceptions: tuple[str]) -> any:
 def dict_remap_and_stringify(original_dict: dict[str, str], remapping: dict[str, str]) -> dict[str, str]:
     """Remaps keys and stringify values of a dict"""
     return dict_stringify(dict_remap(original_dict, remapping))
+
+
+def get_token():
+    password = "squ_c8d5fa3eaf679024f39eb65df6956dh884d45180"
+    return password
