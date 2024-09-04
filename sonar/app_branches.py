@@ -83,10 +83,11 @@ class ApplicationBranch(Component):
         if uu in _OBJECTS:
             return _OBJECTS[uu]
         app.refresh()
+        app.branches()
         uu = uuid(app.key, branch_name, app.endpoint.url)
         if uu in _OBJECTS:
             return _OBJECTS[uu]
-        raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch {branch_name} not found")
+        raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch '{branch_name}' not found")
 
     @classmethod
     def create(cls, app: App, name: str, project_branches: list[Branch]) -> ApplicationBranch:
