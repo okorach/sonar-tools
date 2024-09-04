@@ -502,12 +502,23 @@ class Portfolio(aggregations.Aggregation):
 
     def add_application_branch(self, app_key: str, branch: str = settings.DEFAULT_BRANCH) -> bool:
         app = applications.Application.get_object(self.endpoint, app_key)
-        if branch == settings.DEFAULT_BRANCH:
-            self.post("views/add_application", params={"portfolio": self.key, "application": app_key})
-        else:
-            _ = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
-            self.post("views/add_application", params={"key": self.key, "application": app_key, "branch": branch})
-        self._applications[app_key] = branch
+        try:
+            if branch == settings.DEFAULT_BRANCH:
+                log.info("%s: Adding %s default branch", str(self), str(app))
+                self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
+            else:
+                app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
+                log.info("%s: Adding %s", str(self), str(app_branch))
+                params = {"key": self.key, "application": app_key, "branch": branch}
+                self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
+        except HTTPError as e:
+            if e.response.status_code != HTTPStatus.BAD_REQUEST:
+                raise
+            else:
+                log.warning(util.sonar_error(e.response))
+        if app_key not in self._applications:
+            self._applications[app_key] = []
+        self._applications[app_key].append(branch)
         return True
 
     def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
@@ -708,8 +719,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         try:
             o = Portfolio.get_object(endpoint, key)
             o.update(data=data, recurse=True)
-        except exceptions.ObjectNotFound:
-            log.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
+        except exceptions.ObjectNotFound as e:
+            log.error(e.message)
 
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
