@@ -183,17 +183,13 @@ class Permissions(ABC):
         """
         :meta private:
         """
-        for p in PERMISSION_TYPES:
-            for u, perms in self.permissions[p].items():
-                self.permissions[p][u] = black_list(perms, disallowed_perms)
+        self.permissions = black_list(self.permissions, disallowed_perms)
 
     def white_list(self, allowed_perms):
         """
         :meta private:
         """
-        for p in PERMISSION_TYPES:
-            for u, perms in self.permissions[p].items():
-                self.permissions[p][u] = white_list(perms, allowed_perms)
+        self.permissions = white_list(self.permissions, allowed_perms)
 
     def _filter_permissions_for_edition(self, perms):
         ed = self.endpoint.edition()
@@ -206,7 +202,7 @@ class Permissions(ABC):
             allowed_perms += list(ENTERPRISE_GLOBAL_PERMISSIONS.keys())
         for p in perms.copy():
             if p not in allowed_perms:
-                log.warning("Can't set permission '%s' on a %s edition", ENTERPRISE_GLOBAL_PERMISSIONS[p], ed)
+                log.warning("Can't set permission '%s' on a %s edition", p, ed)
                 perms.remove(p)
         return perms
 
@@ -291,6 +287,16 @@ def decode(encoded_perms):
     return utilities.csv_to_list(encoded_perms)
 
 
+def decode_full(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
+    """Decodes sonar-config encoded perms"""
+    decoded_perms = {}
+    for ptype in PERMISSION_TYPES:
+        if ptype not in encoded_perms:
+            continue
+        decoded_perms[ptype] = {u: utilities.csv_to_list(v) for u, v in encoded_perms[ptype].items()}
+    return decoded_perms
+
+
 def is_valid(perm_type):
     """
     :param str perm_type:
@@ -357,15 +363,25 @@ def diffarray(perms_1, perms_2):
     return diff_perms
 
 
-def white_list(perms, allowed_perms):
-    """
-    :meta private:
-    """
-    return [p for p in perms if p in allowed_perms]
+def white_list(perms: types.JsonPermissions, allowed_perms: list[str]) -> types.JsonPermissions:
+    """Returns permissions filtered from a white list of allowed permissions"""
+    resulting_perms = {}
+    for perm_type, sub_perms in perms.items():
+        # if perm_type not in PERMISSION_TYPES:
+        #    continue
+        resulting_perms[perm_type] = {}
+        for user_or_group, original_perms in sub_perms.items():
+            resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p in allowed_perms]
+    return resulting_perms
 
 
-def black_list(perms, disallowed_perms):
-    """
-    :meta private:
-    """
-    return [p for p in perms if p not in disallowed_perms]
+def black_list(perms: types.JsonPermissions, disallowed_perms: list[str]) -> types.JsonPermissions:
+    """Returns permissions filtered after a black list of disallowed permissions"""
+    resulting_perms = {}
+    for perm_type, sub_perms in perms.items():
+        # if perm_type not in PERMISSION_TYPES:
+        #    continue
+        resulting_perms[perm_type] = {}
+        for user_or_group, original_perms in sub_perms.items():
+            resulting_perms[perm_type][user_or_group] = [p for p in original_perms if p not in disallowed_perms]
+    return resulting_perms

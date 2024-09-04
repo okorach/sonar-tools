@@ -36,7 +36,7 @@ import sonar.logging as log
 import sonar.platform as pf
 from sonar.util import types
 
-from sonar import aggregations, exceptions, settings
+from sonar import aggregations, exceptions, settings, applications, app_branches
 import sonar.permissions.permissions as perms
 import sonar.permissions.portfolio_permissions as pperms
 import sonar.sqobject as sq
@@ -235,10 +235,14 @@ class Portfolio(aggregations.Aggregation):
 
     def applications(self) -> Optional[dict[str, str]]:
         log.debug("Collecting portfolios applications")
-        for data in self._json["subViews"]:
-            log.debug("Looking at subView %s, Qualifier %s", data["key"], data["qualifier"])
-            if data["qualifier"] == "APP":
-                self._applications[data["originalKey"]] = data["selectedBranches"]
+        apps = [data for data in self._json["subViews"] if data["qualifier"] == "APP"]
+        for app_data in apps:
+            app_o = applications.Application.get_object(self.endpoint, app_data["originalKey"])
+            for branch in app_data["selectedBranches"]:
+                if app_branches.ApplicationBranch.get_object(app=app_o, branch_name=branch).is_main():
+                    app_data["selectedBranches"].remove(branch)
+                    app_data["selectedBranches"].insert(0, settings.DEFAULT_BRANCH)
+            self._applications[app_data["originalKey"]] = app_data["selectedBranches"]
         return self._applications
 
     def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
@@ -345,7 +349,6 @@ class Portfolio(aggregations.Aggregation):
         json_data["key"] = self.key
         json_data["name"] = self.name
         json_data["tags"] = self._tags
-        log.info("%s: Apps = %s", str(self), self._applications)
         json_data["applications"] = self._applications
         if self._description:
             json_data["description"] = self._description
@@ -484,14 +487,39 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def set_description(self, desc: str) -> Portfolio:
-        self.post("views/update", params={"key": self.key, "name": self.name, "description": desc})
-        self._description = desc
+        if desc:
+            self.post("views/update", params={"key": self.key, "name": self.name, "description": desc})
+            self._description = desc
         return self
 
     def set_name(self, name: str) -> Portfolio:
-        self.post("views/update", params={"key": self.key, "name": name})
-        self.name = name
+        if name:
+            self.post("views/update", params={"key": self.key, "name": name})
+            self.name = name
         return self
+
+    def add_application(self, app_key: str) -> bool:
+        self.add_application_branch(app_key=app_key, branch=settings.DEFAULT_BRANCH)
+
+    def add_application_branch(self, app_key: str, branch: str = settings.DEFAULT_BRANCH) -> bool:
+        app = applications.Application.get_object(self.endpoint, app_key)
+        try:
+            if branch == settings.DEFAULT_BRANCH:
+                log.info("%s: Adding %s default branch", str(self), str(app))
+                self.post("views/add_application", params={"portfolio": self.key, "application": app_key}, mute=(HTTPStatus.BAD_REQUEST,))
+            else:
+                app_branch = app_branches.ApplicationBranch.get_object(app=app, branch_name=branch)
+                log.info("%s: Adding %s", str(self), str(app_branch))
+                params = {"key": self.key, "application": app_key, "branch": branch}
+                self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
+        except HTTPError as e:
+            if e.response.status_code != HTTPStatus.BAD_REQUEST:
+                raise
+            log.warning(util.sonar_error(e.response))
+        if app_key not in self._applications:
+            self._applications[app_key] = []
+        self._applications[app_key].append(branch)
+        return True
 
     def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
@@ -539,24 +567,17 @@ class Portfolio(aggregations.Aggregation):
             return
 
         log.debug("Updating details of %s with %s", str(self), str(data))
-        if "description" in data:
-            self.set_description(data["description"])
-        if "name" in data:
-            self.set_name(data["name"])
-        if "visibility" in data:
-            self.set_visibility(data["visibility"])
+        self.set_description(data.get("description", None))
+        self.set_name(data.get("name", None))
+        self.set_visibility(data.get("visibility", None))
         if "permissions" in data:
-            decoded_perms = {}
-            for ptype in perms.PERMISSION_TYPES:
-                if ptype not in data["permissions"]:
-                    continue
-                decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
-            self.set_permissions(decoded_perms)
-            # self.set_permissions(data.get("permissions", {}))
+            self.set_permissions(perms.decode_full(data["permissions"]))
         self._root_portfolio = self.root_portfolio()
         log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
         self.set_selection_mode(data)
-
+        for app_key, branches in data.get("applications", {}).items():
+            for branch in util.csv_to_list(branches):
+                self.add_application_branch(app_key=app_key, branch=branch)
         if not recurse:
             return
 
@@ -689,8 +710,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         try:
             o = Portfolio.get_object(endpoint, key)
             o.update(data=data, recurse=True)
-        except exceptions.ObjectNotFound:
-            log.error("Can't find portfolio key '%s', name '%s'", key, data["name"])
+        except exceptions.ObjectNotFound as e:
+            log.error(e.message)
 
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:

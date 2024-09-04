@@ -194,8 +194,9 @@ class Component(sq.SqObject):
 
     def set_visibility(self, visibility: str) -> None:
         """Sets a component visibility (public or private)"""
-        settings.set_visibility(self.endpoint, visibility=visibility, component=self)
-        self._visibility = visibility
+        if visibility:
+            settings.set_visibility(self.endpoint, visibility=visibility, component=self)
+            self._visibility = visibility
 
     def _audit_bg_task(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         """Audits project background tasks"""

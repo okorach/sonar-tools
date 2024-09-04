@@ -402,17 +402,20 @@ def search_by_key(endpoint, key, api, returned_field, extra_params=None):
     return None
 
 
+def sonar_error(response: requests.models.Response) -> str:
+    """Formats the error returned in a Sonar HTTP response"""
+    try:
+        return " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
+    except json.decoder.JSONDecodeError:
+        return ""
+
+
 def http_error(response: requests.models.Response) -> tuple[str, int]:
     """Returns the Sonar error code of an API HTTP response, or None if no error"""
     if response.ok:
         return None, None
     tool_msg = f"For request URL {response.request.url}\n"
     code = response.status_code
-    try:
-        sq_msg = " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
-    except json.decoder.JSONDecodeError:
-        sq_msg = ""
-
     if code == HTTPStatus.UNAUTHORIZED:
         tool_msg += f"HTTP error {code} - Authentication error. Is token valid ?"
         err_code = errcodes.SONAR_API_AUTHENTICATION
@@ -422,7 +425,7 @@ def http_error(response: requests.models.Response) -> tuple[str, int]:
     else:
         tool_msg += f"HTTP error {code} - "
         err_code = errcodes.SONAR_API
-    return err_code, f"{tool_msg}: {sq_msg}"
+    return err_code, f"{tool_msg}: {sonar_error(response)}"
 
 
 def log_and_exit(response: requests.models.Response) -> None:
