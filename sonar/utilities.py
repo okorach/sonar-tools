@@ -402,7 +402,7 @@ def search_by_key(endpoint, key, api, returned_field, extra_params=None):
     return None
 
 
-def sonar_error(response) -> str:
+def sonar_error(response: requests.models.Response) -> str:
     """Formats the error returned in a Sonar HTTP response"""
     try:
         return " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
