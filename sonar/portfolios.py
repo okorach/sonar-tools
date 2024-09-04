@@ -349,7 +349,6 @@ class Portfolio(aggregations.Aggregation):
         json_data["key"] = self.key
         json_data["name"] = self.name
         json_data["tags"] = self._tags
-        log.info("%s: Apps = %s", str(self), self._applications)
         json_data["applications"] = self._applications
         if self._description:
             json_data["description"] = self._description
