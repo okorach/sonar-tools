@@ -588,7 +588,6 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing portfolios")
             object_list = search(endpoint=endpoint)
-            log.debug("PORTFOLIO LIST = %s", str(list(_OBJECTS.keys())))
             return object_list
         object_list = {}
         for key in util.csv_to_list(key_list):
