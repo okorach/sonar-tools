@@ -290,6 +290,13 @@ def decode(encoded_perms):
     """
     return utilities.csv_to_list(encoded_perms)
 
+def decode_full(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
+    """Decodes sonar-config encoded perms"""
+    decoded_perms = {}
+    for ptype in PERMISSION_TYPES:
+        if ptype not in encoded_perms:
+            continue
+        decoded_perms[ptype] = {u: utilities.csv_to_list(v) for u, v in encoded_perms[ptype].items()}
 
 def is_valid(perm_type):
     """

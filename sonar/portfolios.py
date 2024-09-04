@@ -488,13 +488,15 @@ class Portfolio(aggregations.Aggregation):
         return self
 
     def set_description(self, desc: str) -> Portfolio:
-        self.post("views/update", params={"key": self.key, "name": self.name, "description": desc})
-        self._description = desc
+        if desc:
+            self.post("views/update", params={"key": self.key, "name": self.name, "description": desc})
+            self._description = desc
         return self
 
     def set_name(self, name: str) -> Portfolio:
-        self.post("views/update", params={"key": self.key, "name": name})
-        self.name = name
+        if name:
+            self.post("views/update", params={"key": self.key, "name": name})
+            self.name = name
         return self
 
     def add_application(self, app_key: str) -> bool:
@@ -514,8 +516,7 @@ class Portfolio(aggregations.Aggregation):
         except HTTPError as e:
             if e.response.status_code != HTTPStatus.BAD_REQUEST:
                 raise
-            else:
-                log.warning(util.sonar_error(e.response))
+            log.warning(util.sonar_error(e.response))
         if app_key not in self._applications:
             self._applications[app_key] = []
         self._applications[app_key].append(branch)
@@ -567,20 +568,11 @@ class Portfolio(aggregations.Aggregation):
             return
 
         log.debug("Updating details of %s with %s", str(self), str(data))
-        if "description" in data:
-            self.set_description(data["description"])
-        if "name" in data:
-            self.set_name(data["name"])
-        if "visibility" in data:
-            self.set_visibility(data["visibility"])
+        self.set_description(data.get("description", None))
+        self.set_name(data.get("name", None))
+        self.set_visibility(data.get("visibility", None))
         if "permissions" in data:
-            decoded_perms = {}
-            for ptype in perms.PERMISSION_TYPES:
-                if ptype not in data["permissions"]:
-                    continue
-                decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
-            self.set_permissions(decoded_perms)
-            # self.set_permissions(data.get("permissions", {}))
+            self.set_permissions(perms.decode_full(data["permissions"]))
         self._root_portfolio = self.root_portfolio()
         log.debug("1.Setting root of %s is %s", str(self), str(self._root_portfolio))
         self.set_selection_mode(data)
