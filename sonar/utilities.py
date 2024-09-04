@@ -425,7 +425,7 @@ def http_error(response: requests.models.Response) -> tuple[str, int]:
     else:
         tool_msg += f"HTTP error {code} - "
         err_code = errcodes.SONAR_API
-    return err_code, f"{tool_msg}: {sonar_error(response.text)}"
+    return err_code, f"{tool_msg}: {sonar_error(response)}"
 
 
 def log_and_exit(response: requests.models.Response) -> None:
