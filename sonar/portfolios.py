@@ -77,6 +77,7 @@ _IMPORTABLE_PROPERTIES = (
     "projects",
     "portfolios",
     "subPortfolios",
+    "applications",
 )
 
 
@@ -233,7 +234,9 @@ class Portfolio(aggregations.Aggregation):
         return self._selection_mode[_SELECTION_MODE_MANUAL]
 
     def applications(self) -> Optional[dict[str, str]]:
+        log.debug("Collecting portfolios applications")
         for data in self._json["subViews"]:
+            log.debug("Looking at subView %s, Qualifier %s", data["key"], data["qualifier"])
             if data["qualifier"] == "APP":
                 self._applications[data["originalKey"]] = data["selectedBranches"]
         return self._applications
@@ -342,6 +345,8 @@ class Portfolio(aggregations.Aggregation):
         json_data["key"] = self.key
         json_data["name"] = self.name
         json_data["tags"] = self._tags
+        log.info("%s: Apps = %s", str(self), self._applications)
+        json_data["applications"] = self._applications
         if self._description:
             json_data["description"] = self._description
         mode = self.selection_mode().copy()
