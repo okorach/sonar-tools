@@ -264,6 +264,7 @@ class Permissions(ABC):
 
 
 def simplify(perms_dict: dict[str, list[str]]) -> Optional[dict[str, str]]:
+    """Simplifies permissions by converting to CSV an array"""
     if perms_dict is None or len(perms_dict) == 0:
         return None
     return {k: encode(v) for k, v in perms_dict.items() if len(v) > 0}

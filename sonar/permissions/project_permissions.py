@@ -70,7 +70,9 @@ class ProjectPermissions(permissions.Permissions):
         self.white_list(tuple(PROJECT_PERMISSIONS.keys()))
         return self
 
-    def _set_perms(self, new_perms: types.JsonPermissions, apis: dict[str, str], field: dict[str, str], diff_func: Callable, **kwargs):
+    def _set_perms(
+        self, new_perms: types.JsonPermissions, apis: dict[str, str], field: dict[str, str], diff_func: Callable, **kwargs
+    ) -> ProjectPermissions:
         log.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
