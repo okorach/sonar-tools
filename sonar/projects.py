@@ -960,14 +960,21 @@ class Project(components.Component):
             self._permissions = pperms.ProjectPermissions(self)
         return self._permissions
 
-    def set_permissions(self, desired_permissions: types.ObjectJsonRepr) -> Project:
+    def set_permissions(self, desired_permissions: types.ObjectJsonRepr) -> bool:
         """Sets project permissions
 
         :param desired_permissions: dict describing permissions
         :type desired_permissions: dict
         :return: Nothing
         """
-        self.permissions().set(desired_permissions)
+        try:
+            self.permissions().set(desired_permissions)
+            return True
+        except HTTPError as e:
+            if e.response.status_code != HTTPStatus.BAD_REQUEST:
+                raise e
+            log.error(util.sonar_error(e.response))
+            return False
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
         """Sets project links
