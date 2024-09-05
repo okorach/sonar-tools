@@ -257,14 +257,13 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     """
     :meta private:
     """
+    if endpoint.edition() == "community":
+        raise exceptions.UnsupportedOperation("Can't import devops integration settings on a community edition")
     devops_settings = config_data.get("devopsIntegration", {})
     if len(devops_settings) == 0:
         log.info("No devops integration settings in config, skipping import...")
         return
-    if endpoint.edition() == "community":
-        log.warning("Can't import devops integration settings on a community edition")
-        return
-    log.info("Importing devops integration settings")
+    log.info("Importing DevOps config %s", util.json_dump(devops_settings))
     if len(_OBJECTS) == 0:
         get_list(endpoint)
     for name, data in devops_settings.items():
