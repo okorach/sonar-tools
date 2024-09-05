@@ -27,7 +27,6 @@ import json
 from cli import options
 from sonar import exceptions, errcodes, utilities
 import sonar.logging as log
-from sonar.util import types
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
 
@@ -104,15 +103,6 @@ def __parse_args(desc):
     return args
 
 
-def __check_projects_existence(endpoint: object, key_list: types.KeyList) -> None:
-    """Verifies the projects existence and exits fi one does not exist"""
-    if key_list is None:
-        return
-    for key in key_list:
-        if not projects.exists(key, endpoint):
-            utilities.exit_fatal(f"Project key '{key}' does not exist", errcodes.NO_SUCH_KEY)
-
-
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
     export_settings = {
@@ -149,12 +139,12 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         try:
             sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=key_list, export_settings=export_settings)
         except exceptions.UnsupportedOperation as e:
-            log.info("%s", e.message)
+            log.warning(e.message)
     if options.WHAT_PORTFOLIOS in what:
         try:
             sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=key_list, export_settings=export_settings)
         except exceptions.UnsupportedOperation as e:
-            log.info("%s", e.message)
+            log.warning(e.message)
     if options.WHAT_USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint, export_settings=export_settings)
     if options.WHAT_GROUPS in what:
@@ -192,9 +182,15 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     if options.WHAT_PROJECTS in what:
         projects.import_config(endpoint, data, key_list=key_list)
     if options.WHAT_APPS in what:
-        applications.import_config(endpoint, data, key_list=key_list)
+        try:
+            applications.import_config(endpoint, data, key_list=key_list)
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
     if options.WHAT_PORTFOLIOS in what:
-        portfolios.import_config(endpoint, data, key_list=key_list)
+        try:
+            portfolios.import_config(endpoint, data, key_list=key_list)
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
     log.info("Importing configuration to %s completed", kwargs[options.URL])
 
 

@@ -73,7 +73,7 @@ class DevopsPlatform(sq.SqObject):
         for plt_type, platforms in data.items():
             for p in platforms:
                 if p["key"] == key:
-                    return cls.load(endpoint, plt_type, data)
+                    return cls.load(endpoint, plt_type, p)
         raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
 
     @classmethod
@@ -247,23 +247,19 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
     log.info("Exporting DevOps integration settings")
     json_data = {}
     for s in get_list(endpoint).values():
-        json_data[s.uuid()] = s.to_json(export_settings)
-        json_data[s.uuid()].pop("key")
+        export_data = s.to_json(export_settings)
+        key = export_data.pop("key")
+        json_data[key] = export_data
     return json_data
 
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr) -> None:
-    """
-    :meta private:
-    """
+    """Imports DevOps platform configuration in SonarQube/Cloud"""
     devops_settings = config_data.get("devopsIntegration", {})
     if len(devops_settings) == 0:
         log.info("No devops integration settings in config, skipping import...")
         return
-    if endpoint.edition() == "community":
-        log.warning("Can't import devops integration settings on a community edition")
-        return
-    log.info("Importing devops integration settings")
+    log.info("Importing DevOps config %s", util.json_dump(devops_settings))
     if len(_OBJECTS) == 0:
         get_list(endpoint)
     for name, data in devops_settings.items():

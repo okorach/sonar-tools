@@ -18,6 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
+from sonar.util import types
 from sonar.permissions import permissions, project_permissions
 
 AGGREGATION_PERMISSIONS = {
@@ -31,21 +33,17 @@ class AggregationPermissions(project_permissions.ProjectPermissions):
     Abstraction of aggregations (Portfolios and Applications) permissions
     """
 
-    def read(self):
-        """
-        :return: Permissions associated to the aggregation
-        :rtype: self
-        """
+    def read(self) -> AggregationPermissions:
+        """Reads permissions of an aggregation (Portfolio or Application) in SonarQube"""
         super().read()
         # Hack: SonarQube return permissions for aggregations that do not exist
         self.white_list(AGGREGATION_PERMISSIONS)
         return self
 
-    def set(self, new_perms):
+    def set(self, new_perms: types.JsonPermissions) -> AggregationPermissions:
         """Sets permissions of an aggregation
 
-        :param new_perms:
-        :type new_perms: dict {"users": [<user>, <user>, ...], "groups": [<group>, <group>, ...]}
+        :param JsonPermissions new_perms:
         :return: Permissions associated to the aggregation
         :rtype: self
         """

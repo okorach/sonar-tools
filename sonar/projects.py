@@ -960,14 +960,21 @@ class Project(components.Component):
             self._permissions = pperms.ProjectPermissions(self)
         return self._permissions
 
-    def set_permissions(self, desired_permissions: types.ObjectJsonRepr) -> Project:
+    def set_permissions(self, desired_permissions: types.ObjectJsonRepr) -> bool:
         """Sets project permissions
 
         :param desired_permissions: dict describing permissions
         :type desired_permissions: dict
         :return: Nothing
         """
-        self.permissions().set(desired_permissions)
+        try:
+            self.permissions().set(desired_permissions)
+            return True
+        except HTTPError as e:
+            if e.response.status_code != HTTPStatus.BAD_REQUEST:
+                raise e
+            log.error(util.sonar_error(e.response))
+            return False
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
         """Sets project links
@@ -1094,6 +1101,8 @@ class Project(components.Component):
         :return: Nothing
         """
         log.debug("Setting devops binding of %s to %s", str(self), util.json_dump(data))
+        if self.endpoint.edition() == "community":
+            raise exceptions.UnsupportedOperation(f"{str(self)}: Can't set project binding on Community Edition")
         alm_key = data["key"]
         if not devops.exists(alm_key, self.endpoint):
             log.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
@@ -1101,23 +1110,31 @@ class Project(components.Component):
         alm_type = devops.devops_type(platform_key=alm_key, endpoint=self.endpoint)
         mono = data.get("monorepo", False)
         repo = data["repository"]
-        if alm_type == "github":
-            self.set_binding_github(alm_key, repository=repo, monorepo=mono, summary_comment=data.get("summaryComment", True))
-        elif alm_type == "gitlab":
-            self.set_binding_gitlab(alm_key, repository=repo, monorepo=mono)
-        elif alm_type == "azure":
-            self.set_binding_azure_devops(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
-        elif alm_type == "bitbucket":
-            self.set_binding_bitbucket_server(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
-        elif alm_type == "bitbucketcloud":
-            self.set_binding_bitbucket_cloud(alm_key, repository=repo, monorepo=mono)
-        else:
-            log.error("Invalid devops platform type '%s' for %s, setting skipped", alm_key, str(self))
-            return False
+        try:
+            if alm_type == "github":
+                self.set_binding_github(alm_key, repository=repo, monorepo=mono, summary_comment=data.get("summaryComment", True))
+            elif alm_type == "gitlab":
+                self.set_binding_gitlab(alm_key, repository=repo, monorepo=mono)
+            elif alm_type == "azure":
+                self.set_binding_azure_devops(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
+            elif alm_type == "bitbucket":
+                self.set_binding_bitbucket_server(alm_key, repository=repo, monorepo=mono, slug=data["slug"])
+            elif alm_type == "bitbucketcloud":
+                self.set_binding_bitbucket_cloud(alm_key, repository=repo, monorepo=mono)
+            else:
+                log.error("Invalid devops platform type '%s' for %s, setting skipped", alm_key, str(self))
+                return False
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
         return True
 
     def __std_binding_params(self, alm_key: str, repo: str, monorepo: bool) -> types.ApiParams:
         return {"almSetting": alm_key, "project": self.key, "repository": repo, "monorepo": str(monorepo).lower()}
+
+    def _check_binding_supported(self) -> bool:
+        if self.endpoint.edition() == "community":
+            raise exceptions.UnsupportedOperation(f"{str(self)}: Can't set project binding on Community Edition")
+        return True
 
     def set_binding_github(self, devops_platform_key: str, repository: str, monorepo: bool = False, summary_comment: bool = True) -> bool:
         """Sets project devops binding for github
@@ -1143,6 +1160,7 @@ class Project(components.Component):
         :type monorepo: bool, optional
         :return: Nothing
         """
+        self._check_binding_supported()
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         return self.post("alm_settings/set_gitlab_binding", params=params).ok
 
@@ -1156,6 +1174,7 @@ class Project(components.Component):
         :type monorepo: bool, optional
         :return: Nothing
         """
+        self._check_binding_supported()
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["slug"] = slug
         return self.post("alm_settings/set_bitbucket_binding", params=params).ok
@@ -1170,6 +1189,7 @@ class Project(components.Component):
         :type monorepo: bool, optional
         :return: Nothing
         """
+        self._check_binding_supported()
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         return self.post("alm_settings/set_bitbucketcloud_binding", params=params).ok
 
@@ -1179,10 +1199,10 @@ class Project(components.Component):
         :param str devops_platform_key: key of the platform in the global admin devops configuration
         :param str slug: project SLUG in Azure DevOps
         :param str repository: project repository name in azure devops
-        :param monorepo: Whether the project is part of a monorepo, defaults to False
-        :type monorepo: bool, optional
-        :return: Nothing
+        :param Optional[bool] monorepo: Whether the project is part of a monorepo, defaults to False
+        :return: Whether the operation succeeded
         """
+        self._check_binding_supported()
         params = self.__std_binding_params(devops_platform_key, repository, monorepo)
         params["projectName"] = slug
         params["repositoryName"] = params.pop("repository")
@@ -1211,7 +1231,10 @@ class Project(components.Component):
                 self.rename_main_branch(bname)
                 break
         if "binding" in data:
-            self.set_devops_binding(data["binding"])
+            try:
+                self.set_devops_binding(data["binding"])
+            except exceptions.UnsupportedOperation as e:
+                log.warning(e.message)
         else:
             log.debug("%s has no devops binding, skipped", str(self))
         settings_to_apply = {
