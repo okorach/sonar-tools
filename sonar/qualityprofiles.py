@@ -695,4 +695,8 @@ def exists(endpoint: pf.Platform, name: str, language: str) -> bool:
     :return: whether the project exists
     :rtype: bool
     """
-    return get_object(endpoint=endpoint, name=name, language=language) is not None
+    try:
+        get_object(endpoint=endpoint, name=name, language=language)
+        return True
+    except exceptions.ObjectNotFound:
+        return False
