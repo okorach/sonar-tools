@@ -139,12 +139,12 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         try:
             sq_settings[__JSON_KEY_APPS] = applications.export(endpoint, key_list=key_list, export_settings=export_settings)
         except exceptions.UnsupportedOperation as e:
-            log.info("%s", e.message)
+            log.warning(e.message)
     if options.WHAT_PORTFOLIOS in what:
         try:
             sq_settings[__JSON_KEY_PORTFOLIOS] = portfolios.export(endpoint, key_list=key_list, export_settings=export_settings)
         except exceptions.UnsupportedOperation as e:
-            log.info("%s", e.message)
+            log.warning(e.message)
     if options.WHAT_USERS in what:
         sq_settings[__JSON_KEY_USERS] = users.export(endpoint, export_settings=export_settings)
     if options.WHAT_GROUPS in what:
@@ -182,9 +182,15 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     if options.WHAT_PROJECTS in what:
         projects.import_config(endpoint, data, key_list=key_list)
     if options.WHAT_APPS in what:
-        applications.import_config(endpoint, data, key_list=key_list)
+        try:
+            applications.import_config(endpoint, data, key_list=key_list)
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
     if options.WHAT_PORTFOLIOS in what:
-        portfolios.import_config(endpoint, data, key_list=key_list)
+        try:
+            portfolios.import_config(endpoint, data, key_list=key_list)
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
     log.info("Importing configuration to %s completed", kwargs[options.URL])
 
 
