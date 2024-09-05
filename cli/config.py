@@ -104,15 +104,6 @@ def __parse_args(desc):
     return args
 
 
-def __check_projects_existence(endpoint: object, key_list: types.KeyList) -> None:
-    """Verifies the projects existence and exits fi one does not exist"""
-    if key_list is None:
-        return
-    for key in key_list:
-        if not projects.exists(key, endpoint):
-            utilities.exit_fatal(f"Project key '{key}' does not exist", errcodes.NO_SUCH_KEY)
-
-
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
     export_settings = {
