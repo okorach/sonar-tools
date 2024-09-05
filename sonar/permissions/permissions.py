@@ -20,6 +20,9 @@
 
 """Abstract permissions class, parent of sub-objects permissions classes"""
 
+from __future__ import annotations
+from typing import Optional
+
 import json
 from http import HTTPStatus
 from abc import ABC, abstractmethod
@@ -67,16 +70,13 @@ class Permissions(ABC):
     Abstraction of sonar objects permissions
     """
 
-    def __init__(self, endpoint):
+    def __init__(self, endpoint: object) -> None:
         self.endpoint = endpoint
         self.permissions = None
         self.read()
 
-    def to_json(self, perm_type: str = None, csv: bool = False) -> types.ObjectJsonRepr:
-        """
-        :return: The permissions as dict
-        :rtype: dict {"users": {<login>: [<perm>, <perm>, ...], ...}, "groups": {<name>: [<perm>, <perm>, ...], ...}}
-        """
+    def to_json(self, perm_type: str = None, csv: bool = False) -> types.JsonPermissions:
+        """Converts a permission object to JSON"""
         if not csv:
             return self.permissions[perm_type] if is_valid(perm_type) else self.permissions
         perms = {}
@@ -87,11 +87,8 @@ class Permissions(ABC):
                 perms[p] = simplify(dperms)
         return perms if len(perms) > 0 else None
 
-    def export(self, export_settings: dict[str, str]):
-        """
-        :return: The permissions as dict
-        :rtype: dict {"users": {<login>: [<perm>, <perm>, ...], ...}, "groups": {<name>: [<perm>, <perm>, ...], ...}}
-        """
+    def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+        """Exports permissions as JSON"""
         inlined = export_settings.get("INLINE_LISTS", True)
         perms = self.to_json(csv=inlined)
         if not inlined:
@@ -101,34 +98,36 @@ class Permissions(ABC):
         return perms
 
     @abstractmethod
-    def __str__(self):
+    def __str__(self) -> str:
         pass
 
     @abstractmethod
-    def read(self):
+    def read(self) -> Permissions:
         """
         :return: The concerned object permissions
         :rtype: Permissions
         """
 
     @abstractmethod
-    def set(self, new_perms):
+    def set(self, new_perms: types.JsonPermissions) -> Permissions:
         """Sets permissions of an object
 
-        :param dict new_perms: The permissions as dict
-        :rtype: self
+        :param JsonPermissions new_perms: The permissions to set
         """
 
-    def set_user_permissions(self, user_perms):
+    def set_user_permissions(self, user_perms: dict[str, list[str]]) -> Permissions:
         """Sets user permissions of an object
 
-        :param dict new_perms: The user permissions
-        :rtype: self
+        :param dict[str, list[str]] user_perms: The user permissions to apply
         """
-        self.set({"users": user_perms})
+        return self.set({"users": user_perms})
 
-    def set_group_permissions(self, group_perms):
-        self.set({"groups": group_perms})
+    def set_group_permissions(self, group_perms: dict[str, list[str]]) -> Permissions:
+        """Sets user permissions of an object
+
+        :param dict[str, list[str]] group_perms: The group permissions to apply
+        """
+        return self.set({"groups": group_perms})
 
     """
     @abstractmethod
@@ -145,14 +144,14 @@ class Permissions(ABC):
         self.remove_group_permissions(perms_dict.get("groups", None))
     """
 
-    def clear(self):
+    def clear(self) -> Permissions:
         """Clears all permissions of an object
         :return: self
         :rtype: Permissions
         """
-        self.set({"users": {}, "groups": {}})
+        return self.set({"users": {}, "groups": {}})
 
-    def users(self):
+    def users(self) -> dict[str, list[str]]:
         """
         :return: User permissions of an object
         :rtype: list (for QualityGate and QualityProfile) or dict (for other objects)
@@ -161,7 +160,7 @@ class Permissions(ABC):
             self.read()
         return self.to_json(perm_type="users")
 
-    def groups(self):
+    def groups(self) -> dict[str, list[str]]:
         """
         :return: Group permissions of an object
         :rtype: list (for QualityGate and QualityProfile) or dict (for other objects)
@@ -170,28 +169,28 @@ class Permissions(ABC):
             self.read()
         return self.to_json(perm_type="groups")
 
-    def added_permissions(self, other_perms):
+    def added_permissions(self, other_perms: types.JsonPermissions) -> types.JsonPermissions:
         return diff(self.permissions, other_perms)
 
-    def removed_permissions(self, other_perms):
+    def removed_permissions(self, other_perms: types.JsonPermissions) -> types.JsonPermissions:
         return diff(other_perms, self.permissions)
 
-    def compare(self, other_perms):
+    def compare(self, other_perms: types.JsonPermissions) -> dict[str, types.JsonPermissions]:
         return {"added": diff(self.permissions, other_perms), "removed": diff(other_perms, self.permissions)}
 
-    def black_list(self, disallowed_perms):
+    def black_list(self, disallowed_perms: list[str]) -> None:
         """
         :meta private:
         """
         self.permissions = black_list(self.permissions, disallowed_perms)
 
-    def white_list(self, allowed_perms):
+    def white_list(self, allowed_perms: list[str]) -> None:
         """
         :meta private:
         """
         self.permissions = white_list(self.permissions, allowed_perms)
 
-    def _filter_permissions_for_edition(self, perms):
+    def _filter_permissions_for_edition(self, perms: types.JsonPermissions) -> types.JsonPermissions:
         ed = self.endpoint.edition()
         allowed_perms = list(PROJECT_PERMISSIONS.keys())
         if ed == "community":
@@ -206,15 +205,12 @@ class Permissions(ABC):
                 perms.remove(p)
         return perms
 
-    def count(self, perm_type=None, perm_filter=None):
+    def count(self, perm_type: Optional[str] = None, perm_filter: Optional[list[str]] = None) -> int:
         """Counts number of permissions of an object
 
-        :param perm_type: Optional "users" or "groups", both assumed if not specified.
-        :type perm_type: str, optional
-        :param perm_filter: Optional filter to count only specific types of permissions, defaults to None.
-        :type perm_type: str, Optional
+        :param Optional[str] perm_type: Optional "users" or "groups", both assumed if not specified.
+        :param Optional[list[str]] perm_filter: Optional filter to count only specific types of permissions, defaults to None.
         :return: The number of permissions.
-        :rtype: int
         """
         perms = PERMISSION_TYPES if perm_type is None else (perm_type,)
         elem_counter, perm_counter = 0, 0
@@ -227,7 +223,7 @@ class Permissions(ABC):
         log.debug("Perm counts = %d", (elem_counter if perm_filter is None else perm_counter))
         return elem_counter if perm_filter is None else perm_counter
 
-    def _get_api(self, api, perm_type, ret_field, **extra_params):
+    def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params) -> types.JsonPermissions:
         perms = {}
         params = extra_params.copy()
         page, nbr_pages = 1, 1
@@ -252,7 +248,7 @@ class Permissions(ABC):
                 break
         return perms
 
-    def _post_api(self, api, set_field, perms_dict, **extra_params):
+    def _post_api(self, api: str, set_field: str, perms_dict: types.JsonPermissions, **extra_params) -> bool:
         if perms_dict is None:
             return True
         result = False
@@ -267,20 +263,20 @@ class Permissions(ABC):
         return result
 
 
-def simplify(perms_dict):
+def simplify(perms_dict: dict[str, list[str]]) -> Optional[dict[str, str]]:
     if perms_dict is None or len(perms_dict) == 0:
         return None
     return {k: encode(v) for k, v in perms_dict.items() if len(v) > 0}
 
 
-def encode(perms_array):
+def encode(perms_array: dict[str, list[str]]) -> dict[str, str]:
     """
     :meta private:
     """
     return utilities.list_to_csv(perms_array, ", ", check_for_separator=True)
 
 
-def decode(encoded_perms):
+def decode(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
     """
     :meta private:
     """
@@ -297,7 +293,7 @@ def decode_full(encoded_perms: dict[str, str]) -> dict[str, list[str]]:
     return decoded_perms
 
 
-def is_valid(perm_type):
+def is_valid(perm_type: str) -> bool:
     """
     :param str perm_type:
     :return: Whether that permission type exists
@@ -306,14 +302,14 @@ def is_valid(perm_type):
     return perm_type and perm_type in PERMISSION_TYPES
 
 
-def normalize(perm_type):
+def normalize(perm_type: str) -> tuple[str]:
     """
     :meta private:
     """
-    return (perm_type) if is_valid(perm_type) else PERMISSION_TYPES
+    return (perm_type,) if is_valid(perm_type) else PERMISSION_TYPES
 
 
-def apply_api(endpoint, api, ufield, uvalue, ofield, ovalue, perm_list):
+def apply_api(endpoint: object, api: str, ufield: str, uvalue: str, ofield: str, ovalue: str, perm_list: list[str]) -> None:
     """
     :meta private:
     """
@@ -321,12 +317,12 @@ def apply_api(endpoint, api, ufield, uvalue, ofield, ovalue, perm_list):
         endpoint.post(api, params={ufield: uvalue, ofield: ovalue, "permission": p})
 
 
-def diff_full(perms_1, perms_2):
+def diff_full(perms_1: types.JsonPermissions, perms_2: types.JsonPermissions) -> types.JsonPermissions:
     """
     :meta private:
     """
     diff_perms = perms_1.copy()
-    for perm_type in ("users", "groups"):
+    for perm_type in PERMISSION_TYPES:
         for elem, perms in perms_2:
             if elem not in perms_1:
                 continue
@@ -337,7 +333,7 @@ def diff_full(perms_1, perms_2):
     return diff_perms
 
 
-def diff(perms_1, perms_2):
+def diff(perms_1: types.JsonPermissions, perms_2: types.JsonPermissions) -> types.JsonPermissions:
     """
     :meta private:
     """
@@ -352,7 +348,7 @@ def diff(perms_1, perms_2):
     return diff_perms
 
 
-def diffarray(perms_1, perms_2):
+def diffarray(perms_1: list[str], perms_2: list[str]) -> list[str]:
     """
     :meta private:
     """
