@@ -247,8 +247,9 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
     log.info("Exporting DevOps integration settings")
     json_data = {}
     for s in get_list(endpoint).values():
-        json_data[s.uuid()] = s.to_json(export_settings)
-        json_data[s.uuid()].pop("key")
+        export_data = s.to_json(export_settings)
+        key = export_data.pop("key")
+        json_data[key] = export_data
     return json_data
 
 
