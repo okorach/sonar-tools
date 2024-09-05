@@ -73,7 +73,7 @@ class DevopsPlatform(sq.SqObject):
         for plt_type, platforms in data.items():
             for p in platforms:
                 if p["key"] == key:
-                    return cls.load(endpoint, plt_type, data)
+                    return cls.load(endpoint, plt_type, p)
         raise exceptions.ObjectNotFound(key, f"DevOps platform key '{key}' not found")
 
     @classmethod
@@ -254,11 +254,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
 
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr) -> None:
-    """
-    :meta private:
-    """
-    if endpoint.edition() == "community":
-        raise exceptions.UnsupportedOperation("Can't import devops integration settings on a community edition")
+    """Imports DevOps platform configuration in SonarQube/Cloud"""
     devops_settings = config_data.get("devopsIntegration", {})
     if len(devops_settings) == 0:
         log.info("No devops integration settings in config, skipping import...")
