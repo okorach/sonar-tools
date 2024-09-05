@@ -21,6 +21,7 @@
 """Projects permissions class"""
 
 from __future__ import annotations
+from typing import Callable
 import sonar.logging as log
 from sonar.util import types
 from sonar.permissions import permissions
@@ -46,7 +47,7 @@ class ProjectPermissions(permissions.Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, concerned_object) -> None:
+    def __init__(self, concerned_object: object) -> None:
         self.concerned_object = concerned_object
         super().__init__(concerned_object.endpoint)
 
@@ -69,7 +70,7 @@ class ProjectPermissions(permissions.Permissions):
         self.white_list(tuple(PROJECT_PERMISSIONS.keys()))
         return self
 
-    def _set_perms(self, new_perms: types.JsonPermissions, apis: dict[str, str], field: dict[str, str], diff_func, **kwargs):
+    def _set_perms(self, new_perms: types.JsonPermissions, apis: dict[str, str], field: dict[str, str], diff_func: Callable, **kwargs):
         log.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
