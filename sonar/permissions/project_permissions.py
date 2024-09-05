@@ -20,7 +20,9 @@
 
 """Projects permissions class"""
 
+from __future__ import annotations
 import sonar.logging as log
+from sonar.util import types
 from sonar.permissions import permissions
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
@@ -44,14 +46,15 @@ class ProjectPermissions(permissions.Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, concerned_object):
+    def __init__(self, concerned_object) -> None:
         self.concerned_object = concerned_object
         super().__init__(concerned_object.endpoint)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"permissions of {str(self.concerned_object)}"
 
-    def read(self):
+    def read(self) -> ProjectPermissions:
+        """Reads permissions in SonarQube"""
         self.permissions = permissions.NO_PERMISSIONS.copy()
         for p in permissions.PERMISSION_TYPES:
             self.permissions[p] = self._get_api(
@@ -66,7 +69,7 @@ class ProjectPermissions(permissions.Permissions):
         self.white_list(tuple(PROJECT_PERMISSIONS.keys()))
         return self
 
-    def _set_perms(self, new_perms, apis, field, diff_func, **kwargs):
+    def _set_perms(self, new_perms: types.JsonPermissions, apis: dict[str, str], field: dict[str, str], diff_func, **kwargs):
         log.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
@@ -79,26 +82,27 @@ class ProjectPermissions(permissions.Permissions):
             self._post_api(apis["add"][p], field[p], to_add, **kwargs)
         return self.read()
 
-    def set(self, new_perms):
+    def set(self, new_perms: types.JsonPermissions) -> ProjectPermissions:
         """Sets permissions of a project
 
-        :param new_perms:
-        :type new_perms: dict {"users": {<user>: [<perm>, ...], <user>: [], ...}, "groups": {<group>: [<perm>, ...], <group>:[], ...}}
-        :return: Permissions associated to the aggregation
-        :rtype: self
+        :param JsonPermissions new_perms: New permissions to apply
+        :return: Permissions associated to the project
+        :rtype: ProjectPermissions
         """
         return self._set_perms(
             new_perms, ProjectPermissions.APIS, ProjectPermissions.API_SET_FIELD, permissions.diff, projectKey=self.concerned_object.key
         )
 
-    def audit(self, audit_settings):
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits project permissions"""
         if not audit_settings.get("audit.projects.permissions", True):
             log.debug("Auditing project permissions is disabled by configuration, skipping")
             return []
         log.debug("Auditing %s", str(self))
         return self.__audit_user_permissions(audit_settings) + self.__audit_group_permissions(audit_settings)
 
-    def __audit_user_permissions(self, audit_settings):
+    def __audit_user_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits project user permissions"""
         problems = []
         user_count = self.count("users")
         max_users = audit_settings.get("audit.projects.permissions.maxUsers", 5)
@@ -113,7 +117,8 @@ class ProjectPermissions(permissions.Permissions):
 
         return problems
 
-    def __audit_group_permissions(self, audit_settings):
+    def __audit_group_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits project group permissions"""
         problems = []
         groups = self.read().to_json(perm_type="groups")
         for gr_name, gr_perms in groups.items():
