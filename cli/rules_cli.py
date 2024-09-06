@@ -43,7 +43,10 @@ def __parse_args(desc: str) -> object:
 def main() -> int:
     """Main entry point"""
     start_time = util.start_clock()
-    kwargs = util.convert_args(__parse_args("Extract rules"))
+    try:
+        kwargs = util.convert_args(__parse_args("Extract rules"))
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
     endpoint = platform.Platform(**kwargs)
     file = kwargs[options.OUTPUTFILE]
     fmt = util.deduct_format(kwargs[options.FORMAT], file)

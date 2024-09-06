@@ -59,7 +59,10 @@ def main():
     start_time = util.start_clock()
     parser = options.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
-    kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
+    try:
+        kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
     sq = platform.Platform(**kwargs)
 
     with open(kwargs["projectsFile"], "r", encoding="utf-8") as file:

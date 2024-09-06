@@ -196,7 +196,10 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
 def main():
     start_time = utilities.start_clock()
-    kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
+    try:
+        kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
+    except options.ArgumentsError as e:
+        utilities.exit_fatal(e.message, e.errcode)
     if not kwargs["export"] and not kwargs["import"]:
         utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=errcodes.ARGS_ERROR)
 

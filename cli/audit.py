@@ -128,7 +128,10 @@ def __parser_args(desc):
 
 def main():
     start_time = util.start_clock()
-    kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
+    try:
+        kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
     sq = platform.Platform(**kwargs)
 
     settings = config.load("sonar-audit")

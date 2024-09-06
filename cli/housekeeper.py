@@ -203,7 +203,10 @@ def _delete_objects(problems, mode):
 
 def main():
     start_time = util.start_clock()
-    kwargs = util.convert_args(_parse_arguments())
+    try:
+        kwargs = util.convert_args(_parse_arguments())
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
     sq = platform.Platform(**kwargs)
     mode, proj_age, branch_age, pr_age, token_age = (
         kwargs["mode"],

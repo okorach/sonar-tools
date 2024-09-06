@@ -29,7 +29,7 @@ import sys
 
 from cli import options
 import sonar.logging as log
-from sonar import custom_measures, platform, utilities, errcodes
+from sonar import custom_measures, platform, utilities, errcodes, exceptions
 
 
 def parse_args(desc):
@@ -43,7 +43,10 @@ def parse_args(desc):
 
 def main():
     start_time = utilities.start_clock()
-    kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
+    try:
+        kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
+    except options.ArgumentsError as e:
+        utilities.exit_fatal(e.message, e.errcode)
     sqenv = platform.Platform(**kwargs)
     if sqenv.version() >= (9, 0, 0):
         utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", errcodes.UNSUPPORTED_OPERATION)

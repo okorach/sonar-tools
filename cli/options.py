@@ -29,7 +29,7 @@ import random
 import argparse
 
 import sonar.logging as log
-from sonar import errcodes, version, utilities
+from sonar import errcodes, version, utilities, exceptions
 
 # Command line options
 
@@ -139,6 +139,16 @@ COMPONENT_TYPE = "compType"
 COMPONENT_TYPES = ("projects", "apps", "portfolios")
 
 
+class ArgumentsError(exceptions.SonarException):
+    """
+    Arguments error
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.errcode = errcodes.ARGS_ERROR
+
+
 def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> argparse.ArgumentParser:
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
@@ -168,6 +178,8 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
         utilities.check_last_sonar_tools_version()
     kwargs.pop(SKIP_VERSION_CHECK, None)
+    if utilities.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
+        raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarCloud")
     if verify_token:
         utilities.check_token(args.token, utilities.is_sonarcloud_url(kwargs[URL]))
     return args

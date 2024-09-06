@@ -374,7 +374,10 @@ def main():
     global IS_FIRST
     IS_FIRST = True
     start_time = util.start_clock()
-    kwargs = util.convert_args(parse_args("Sonar findings export"))
+    try:
+        kwargs = util.convert_args(parse_args("Sonar findings export"))
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
     sqenv = platform.Platform(**kwargs)
     del kwargs[options.TOKEN]
     kwargs.pop(options.HTTP_TIMEOUT, None)

@@ -106,10 +106,13 @@ def __dump_report(report, file):
 def main() -> int:
     """Main entry point"""
     start_time = util.start_clock()
-    args = __parse_args(
-        "Synchronizes issues changelog of different branches of same or different projects, "
-        "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
-    )
+    try:
+        args = __parse_args(
+            "Synchronizes issues changelog of different branches of same or different projects, "
+            "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
+        )
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
 
     params = util.convert_args(args)
     source_env = platform.Platform(**params)

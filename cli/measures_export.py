@@ -268,7 +268,10 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
 
 def main():
     start_time = util.start_clock()
-    kwargs = util.convert_args(__parse_args("Extract measures of projects"))
+    try:
+        kwargs = util.convert_args(__parse_args("Extract measures of projects"))
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
     endpoint = platform.Platform(**kwargs)
 
     wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
