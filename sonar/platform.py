@@ -27,7 +27,7 @@
 from http import HTTPStatus
 import sys
 import os
-from typing import Optional, Union
+from typing import Optional
 import time
 import datetime
 import json
@@ -154,15 +154,15 @@ class Platform:
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>}
         """
         if self.is_sonarcloud():
-            return {"edition": self.edition()}
+            return {"edition": self.edition(), "organization": self.organization}
 
         return {
-            "version": util.version_to_string(self.version()),
+            "version": util.version_to_string(self.version()[:3]),
             "edition": self.edition(),
             "serverId": self.server_id(),
         }
 
-    def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()) -> requests.Response:
+    def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -172,9 +172,9 @@ class Platform:
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.get, api, params, exit_on_error, mute)
+        return self.__run_request(requests.get, api, params, exit_on_error, mute, **kwargs)
 
-    def post(self, api, params=None, exit_on_error=False, mute=()):
+    def post(self, api, params=None, exit_on_error=False, mute: tuple[HTTPStatus] = (), **kwargs):
         """Makes an HTTP POST request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -184,9 +184,9 @@ class Platform:
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.post, api, params, exit_on_error, mute)
+        return self.__run_request(requests.post, api, params, exit_on_error, mute, **kwargs)
 
-    def delete(self, api, params=None, exit_on_error=False, mute=()):
+    def delete(self, api, params=None, exit_on_error=False, mute: tuple[HTTPStatus] = (), **kwargs):
         """Makes an HTTP DELETE request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -196,10 +196,10 @@ class Platform:
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.delete, api, params, exit_on_error, mute)
+        return self.__run_request(requests.delete, api, params, exit_on_error, mute, **kwargs)
 
     def __run_request(
-        self, request: callable, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = ()
+        self, request: callable, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = (), **kwargs
     ) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         api = _normalize_api(api)
@@ -208,7 +208,8 @@ class Platform:
             params = {}
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
-            params["organization"] = self.organization
+            if kwargs.get("with_organization", True):
+                params["organization"] = self.organization
         req_type = getattr(request, "__name__", repr(request)).upper()
         log.debug("%s: %s", req_type, self.__urlstring(api, params))
 
@@ -312,7 +313,7 @@ class Platform:
         :rtype: dict{<key>: <value>, ...}
         """
         params = util.remove_nones({"keys": util.list_to_csv(settings_list)})
-        resp = self.get("settings/values", params=params)
+        resp = self.get(settings.API_GET, params=params)
         json_s = json.loads(resp.text)
         platform_settings = {}
         for s in json_s["settings"]:
@@ -543,7 +544,7 @@ class Platform:
             )
             visi = json.loads(resp.text)["organization"]["projectVisibility"]
         else:
-            resp = self.get("settings/values", params={"keys": "projects.default.visibility"})
+            resp = self.get(settings.API_GET, params={"keys": "projects.default.visibility"})
             visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if config.get_property("checkDefaultProjectVisibility") and visi != "private":
