@@ -45,11 +45,14 @@ def main():
     start_time = utilities.start_clock()
     try:
         kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
-    except options.ArgumentsError as e:
+        sqenv = platform.Platform(**kwargs)
+        sqenv.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
-    sqenv = platform.Platform(**kwargs)
     if sqenv.version() >= (9, 0, 0):
         utilities.exit_fatal("Custom measures are no longer supported after 8.9.x", errcodes.UNSUPPORTED_OPERATION)
+    elif sqenv.is_sonarcloud():
+        utilities.exit_fatal("Custom measures are not supported on SonarCloud", errcodes.UNSUPPORTED_OPERATION)
     else:
         log.warning("Custom measures are are deprecated in 8.9 and lower and are dropped starting from SonarQube 9.0")
 
