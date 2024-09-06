@@ -154,7 +154,7 @@ class Setting(sqobject.SqObject):
                 key = "sonar.leak.period.type"
             params = get_component_params(component)
             params.update({"keys": key})
-            data = json.loads(endpoint.get(API_GET, params=params).text)["settings"]
+            data = json.loads(endpoint.get(API_GET, params=params, with_organization=(component is None)).text)["settings"]
             if not endpoint.is_sonarcloud() and len(data) > 0:
                 data = data[0]
             else:
@@ -377,8 +377,9 @@ def get_bulk(
     """Gets several settings as bulk (returns a dict)"""
     settings_dict = {}
     params = get_component_params(component)
+
     if include_not_set:
-        data = json.loads(endpoint.get(API_LIST, params=params).text)
+        data = json.loads(endpoint.get(API_LIST, params=params, with_organization=(component is None)).text)
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
@@ -388,7 +389,7 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    data = json.loads(endpoint.get(API_GET, params=params).text)
+    data = json.loads(endpoint.get(API_GET, params=params, with_organization=(component is None)).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
