@@ -114,12 +114,12 @@ _INLINE_SETTINGS = (
     r"^sonar\.auth\..*\.organizations$",
 )
 
-_API_SET = "settings/set"
-_CREATE_API = "settings/set"
-_API_GET = "settings/values"
-_API_LIST = "settings/list_definitions"
+API_SET = "settings/set"
+API_CREATE = "settings/set"
+API_GET = "settings/values"
+API_LIST = "settings/list_definitions"
 API_NEW_CODE_GET = "new_code_periods/show"
-_API_NEW_CODE_SET = "new_code_periods/set"
+API_NEW_CODE_SET = "new_code_periods/set"
 
 VALID_SETTINGS = set()
 
@@ -154,7 +154,7 @@ class Setting(sqobject.SqObject):
                 key = "sonar.leak.period.type"
             params = get_component_params(component)
             params.update({"keys": key})
-            data = json.loads(endpoint.get(_API_GET, params=params).text)["settings"]
+            data = json.loads(endpoint.get(API_GET, params=params).text)["settings"]
             if not endpoint.is_sonarcloud() and len(data) > 0:
                 data = data[0]
             else:
@@ -165,7 +165,7 @@ class Setting(sqobject.SqObject):
     def create(cls, key: str, endpoint: pf.Platform, value: any = None, component: object = None) -> Union[Setting, None]:
         """Creates a setting with a custom value"""
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        r = endpoint.post(_CREATE_API, params={"key": key, "component": component})
+        r = endpoint.post(API_CREATE, params={"key": key, "component": component})
         if not r.ok:
             return None
         o = cls.read(key=key, endpoint=endpoint, component=component)
@@ -252,7 +252,7 @@ class Setting(sqobject.SqObject):
             if isinstance(value, bool):
                 value = "true" if value else "false"
             params["value"] = value
-        return self.post(_API_SET, params=params).ok
+        return self.post(API_SET, params=params).ok
 
     def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
         val = self.value
@@ -378,7 +378,7 @@ def get_bulk(
     settings_dict = {}
     params = get_component_params(component)
     if include_not_set:
-        data = json.loads(endpoint.get(_API_LIST, params=params).text)
+        data = json.loads(endpoint.get(API_LIST, params=params).text)
         for s in data["definitions"]:
             if s["key"].endswith("coverage.reportPath") or s["key"] == "languageSpecificParameters":
                 continue
@@ -388,7 +388,7 @@ def get_bulk(
     if settings_list is not None:
         params["keys"] = util.list_to_csv(settings_list)
 
-    data = json.loads(endpoint.get(_API_GET, params=params).text)
+    data = json.loads(endpoint.get(API_GET, params=params).text)
     settings_dict |= __get_settings(endpoint, data, component)
 
     # Hack since projects.default.visibility is not returned by settings/list_definitions
@@ -446,7 +446,7 @@ def get_new_code_period(endpoint: pf.Platform, project_or_branch: object) -> Set
 def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, project_key: str = None, branch: str = None) -> bool:
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
-    return endpoint.post(_API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
+    return endpoint.post(API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
 
 
 def get_visibility(endpoint: pf.Platform, component: object) -> str:
@@ -461,7 +461,7 @@ def get_visibility(endpoint: pf.Platform, component: object) -> str:
     else:
         if endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation("Project default visibility does not exist in SonarCloud")
-        data = json.loads(endpoint.get(_API_GET, params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
+        data = json.loads(endpoint.get(API_GET, params={"keys": PROJECT_DEFAULT_VISIBILITY}).text)
         return Setting.load(key=PROJECT_DEFAULT_VISIBILITY, endpoint=endpoint, component=None, data=data["settings"][0])
 
 
