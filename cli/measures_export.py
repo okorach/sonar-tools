@@ -270,9 +270,10 @@ def main():
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(__parse_args("Extract measures of projects"))
-    except options.ArgumentsError as e:
+        endpoint = platform.Platform(**kwargs)
+        endpoint.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
-    endpoint = platform.Platform(**kwargs)
 
     wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
     file = kwargs.pop(options.OUTPUTFILE)

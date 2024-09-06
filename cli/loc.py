@@ -204,10 +204,11 @@ def main():
         kwargs = util.convert_args(
             __parse_args("Extract projects, applications or portfolios lines of code - for projects LoC it is as computed for the license")
         )
-    except options.ArgumentsError as e:
+        endpoint = platform.Platform(**kwargs)
+        endpoint.verify_connection()
+    except (options.ArgumentsError, exceptions.ConnectionError) as e:
         util.exit_fatal(e.message, e.errcode)
 
-    endpoint = platform.Platform(**kwargs)
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
 
     edition = endpoint.edition()

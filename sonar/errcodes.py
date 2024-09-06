@@ -58,3 +58,6 @@ HTTP_TIMEOUT = 12
 
 # Request to create an object that already exists
 OBJECT_ALREADY_EXISTS = 13
+
+# Connection error (because of wrong token or (on SonarCloud) wrong organization)
+CONNECTION_ERROR = 14

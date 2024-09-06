@@ -205,9 +205,11 @@ def main():
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(_parse_arguments())
-    except options.ArgumentsError as e:
+        sq = platform.Platform(**kwargs)
+        sq.verify_connection()
+    except (options.ArgumentsError, ex.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
-    sq = platform.Platform(**kwargs)
+
     mode, proj_age, branch_age, pr_age, token_age = (
         kwargs["mode"],
         kwargs["projectsMaxAge"],

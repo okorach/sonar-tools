@@ -198,12 +198,13 @@ def main():
     start_time = utilities.start_clock()
     try:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
-    except options.ArgumentsError as e:
+        endpoint = platform.Platform(**kwargs)
+        endpoint.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
     if not kwargs["export"] and not kwargs["import"]:
         utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
-    endpoint = platform.Platform(**kwargs)
     what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
     if kwargs["export"]:
         try:

@@ -61,9 +61,10 @@ def main():
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
     try:
         kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
-    except options.ArgumentsError as e:
+        sq = platform.Platform(**kwargs)
+        sq.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
-    sq = platform.Platform(**kwargs)
 
     with open(kwargs["projectsFile"], "r", encoding="utf-8") as file:
         data = json.load(file)

@@ -45,9 +45,10 @@ def main():
     )
     try:
         kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-export"))
-    except options.ArgumentsError as e:
+        sq = platform.Platform(**kwargs)
+        sq.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
-    sq = platform.Platform(**kwargs)
 
     if sq.edition() in ("community", "developer") and sq.version()[:2] < (9, 2):
         utilities.exit_fatal(

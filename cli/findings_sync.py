@@ -111,11 +111,12 @@ def main() -> int:
             "Synchronizes issues changelog of different branches of same or different projects, "
             "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
         )
-    except options.ArgumentsError as e:
+        params = util.convert_args(args)
+        source_env = platform.Platform(**params)
+        source_env.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
 
-    params = util.convert_args(args)
-    source_env = platform.Platform(**params)
     source_key = params[options.KEYS][0]
     target_key = params.get("targetProjectKey", None)
     if target_key is None:
@@ -130,8 +131,13 @@ def main() -> int:
         target_env, target_url = source_env, source_url
     else:
         util.check_token(args.tokenTarget)
-        target_params = util.convert_args(args, second_platform=True)
-        target_env = platform.Platform(**target_params)
+        try:
+            target_params = util.convert_args(args, second_platform=True)
+            target_env = platform.Platform(**target_params)
+            target_env.verify_connection()
+        except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
+            util.exit_fatal(e.message, e.errcode)
+
     params["login"] = target_env.user()
     if params["login"] == "admin":
         util.exit_fatal("sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync", errcodes.ARGS_ERROR)

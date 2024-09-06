@@ -26,7 +26,7 @@ import csv
 
 from cli import options
 import sonar.logging as log
-from sonar import rules, platform
+from sonar import rules, platform, exceptions
 import sonar.utilities as util
 
 
@@ -45,9 +45,10 @@ def main() -> int:
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(__parse_args("Extract rules"))
-    except options.ArgumentsError as e:
+        endpoint = platform.Platform(**kwargs)
+        endpoint.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
-    endpoint = platform.Platform(**kwargs)
     file = kwargs[options.OUTPUTFILE]
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
 

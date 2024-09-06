@@ -376,9 +376,10 @@ def main():
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(parse_args("Sonar findings export"))
-    except options.ArgumentsError as e:
+        sqenv = platform.Platform(**kwargs)
+        sqenv.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
-    sqenv = platform.Platform(**kwargs)
     del kwargs[options.TOKEN]
     kwargs.pop(options.HTTP_TIMEOUT, None)
     del kwargs[options.URL]

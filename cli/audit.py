@@ -130,9 +130,10 @@ def main():
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
-    except options.ArgumentsError as e:
+        sq = platform.Platform(**kwargs)
+        sq.verify_connection()
+    except (options.ArgumentsError, exceptions.ConnectionError) as e:
         util.exit_fatal(e.message, e.errcode)
-    sq = platform.Platform(**kwargs)
 
     settings = config.load("sonar-audit")
     settings["threads"] = kwargs[options.NBR_THREADS]
