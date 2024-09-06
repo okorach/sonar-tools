@@ -27,7 +27,7 @@
 from http import HTTPStatus
 import sys
 import os
-from typing import Optional, Union
+from typing import Optional
 import time
 import datetime
 import json
@@ -208,7 +208,8 @@ class Platform:
             params = {}
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
-            params["organization"] = self.organization
+            if api != _normalize_api(settings.API_GET):
+                params["organization"] = self.organization
         req_type = getattr(request, "__name__", repr(request)).upper()
         log.debug("%s: %s", req_type, self.__urlstring(api, params))
 
@@ -312,7 +313,7 @@ class Platform:
         :rtype: dict{<key>: <value>, ...}
         """
         params = util.remove_nones({"keys": util.list_to_csv(settings_list)})
-        resp = self.get("settings/values", params=params)
+        resp = self.get(settings.API_GET, params=params)
         json_s = json.loads(resp.text)
         platform_settings = {}
         for s in json_s["settings"]:
@@ -543,7 +544,7 @@ class Platform:
             )
             visi = json.loads(resp.text)["organization"]["projectVisibility"]
         else:
-            resp = self.get("settings/values", params={"keys": "projects.default.visibility"})
+            resp = self.get(settings.API_GET, params={"keys": "projects.default.visibility"})
             visi = json.loads(resp.text)["settings"][0]["value"]
         log.info("Project default visibility is '%s'", visi)
         if config.get_property("checkDefaultProjectVisibility") and visi != "private":
