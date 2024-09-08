@@ -70,3 +70,11 @@ class UnsupportedOperation(SonarException):
     def __init__(self, message: str) -> None:
         super().__init__(message)
         self.errcode = errcodes.UNSUPPORTED_OPERATION
+
+
+class ConnectionError(SonarException):
+    """ConnectionError error"""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.errcode = errcodes.CONNECTION_ERROR

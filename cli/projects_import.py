@@ -59,8 +59,12 @@ def main():
     start_time = util.start_clock()
     parser = options.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
-    kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
-    sq = platform.Platform(**kwargs)
+    try:
+        kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
+        sq = platform.Platform(**kwargs)
+        sq.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
+        util.exit_fatal(e.message, e.errcode)
 
     with open(kwargs["projectsFile"], "r", encoding="utf-8") as file:
         data = json.load(file)

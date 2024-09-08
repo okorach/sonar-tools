@@ -268,8 +268,12 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
 
 def main():
     start_time = util.start_clock()
-    kwargs = util.convert_args(__parse_args("Extract measures of projects"))
-    endpoint = platform.Platform(**kwargs)
+    try:
+        kwargs = util.convert_args(__parse_args("Extract measures of projects"))
+        endpoint = platform.Platform(**kwargs)
+        endpoint.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
+        util.exit_fatal(e.message, e.errcode)
 
     wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
     file = kwargs.pop(options.OUTPUTFILE)

@@ -40,7 +40,7 @@ import sonar.logging as log
 import sonar.utilities as util
 from sonar.util import types
 
-from sonar import errcodes, settings, devops, version, sif
+from sonar import errcodes, settings, devops, version, sif, exceptions
 from sonar.permissions import permissions, global_permissions, permission_templates
 from sonar.audit import config
 from sonar.audit.rules import get_rule, RuleId
@@ -97,6 +97,12 @@ class Platform:
 
     def __credentials(self) -> tuple[str, str]:
         return (self.__token, "")
+
+    def verify_connection(self) -> None:
+        try:
+            self.get("projects/search", params={"qualifiers": "TRK", "ps": 1})
+        except HTTPError as e:
+            raise exceptions.ConnectionError(util.sonar_error(e.response))
 
     def version(self) -> tuple[int, int, int]:
         """

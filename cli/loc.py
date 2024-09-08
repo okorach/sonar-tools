@@ -200,10 +200,15 @@ def __parse_args(desc):
 
 def main():
     start_time = util.start_clock()
-    kwargs = util.convert_args(
-        __parse_args("Extract projects, applications or portfolios lines of code - for projects LoC it is as computed for the license")
-    )
-    endpoint = platform.Platform(**kwargs)
+    try:
+        kwargs = util.convert_args(
+            __parse_args("Extract projects, applications or portfolios lines of code - for projects LoC it is as computed for the license")
+        )
+        endpoint = platform.Platform(**kwargs)
+        endpoint.verify_connection()
+    except (options.ArgumentsError, exceptions.ConnectionError) as e:
+        util.exit_fatal(e.message, e.errcode)
+
     kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
 
     edition = endpoint.edition()

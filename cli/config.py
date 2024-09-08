@@ -129,10 +129,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
             sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, export_settings=export_settings)
         sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, export_settings=export_settings)
     if options.WHAT_GATES in what:
-        if not endpoint.is_sonarcloud():
-            sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, export_settings=export_settings)
-        else:
-            log.warning("Quality gates export not yet supported for SonarCloud")
+        sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, export_settings=export_settings)
     if options.WHAT_PROJECTS in what:
         sq_settings[__JSON_KEY_PROJECTS] = projects.export(endpoint, key_list=key_list, export_settings=export_settings)
     if options.WHAT_APPS in what:
@@ -196,11 +193,15 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
 def main():
     start_time = utilities.start_clock()
-    kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
+    try:
+        kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
+        endpoint = platform.Platform(**kwargs)
+        endpoint.verify_connection()
+    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
+        utilities.exit_fatal(e.message, e.errcode)
     if not kwargs["export"] and not kwargs["import"]:
         utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
-    endpoint = platform.Platform(**kwargs)
     what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
     if kwargs["export"]:
         try:

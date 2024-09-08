@@ -1,5 +1,15 @@
 # Next version yet unreleased
 
+# Version 3.3
+
+- `sonar-config`: Improved / Hardened several elements for both import and export
+  - Fixed portfolios import/export
+  - Fixed permissions import (for projects, applications and portfolios)
+  - Better compatibility with SonarCloud
+  - Other misc bug fixes
+- `sonar-audit`: Added verification that projects are analyzed with the right scanner (Maven, Gradle, .Net). This verification is not 100% reliable
+
+
 # Version 3.2.2
 
 - Fix regressions in `sonar-config -i`

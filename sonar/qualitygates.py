@@ -163,7 +163,10 @@ class QualityGate(sq.SqObject):
         """
         if self._projects is not None:
             return self._projects
-        params = {"gateName": self.name, "ps": 500}
+        if self.endpoint.is_sonarcloud():
+            params = {"gateId": self.key, "ps": 500}
+        else:
+            params = {"gateName": self.name, "ps": 500}
         page, nb_pages = 1, 1
         self._projects = {}
         while page <= nb_pages:
@@ -363,8 +366,8 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     data = json.loads(endpoint.get(APIS["list"]).text)
     qg_list = {}
     for qg in data["qualitygates"]:
-        log.debug("Getting QG %s", str(qg))
-        qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg)
+        log.debug("Getting QG %s", util.json_dump(qg))
+        qg_obj = QualityGate(endpoint=endpoint, name=qg["name"], data=qg.copy())
         if endpoint.version() < (7, 9, 0) and "default" in data and data["default"] == qg["id"]:
             qg_obj.is_default = True
         qg_list[qg_obj.name] = qg_obj

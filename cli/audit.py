@@ -128,8 +128,10 @@ def __parser_args(desc):
 
 def main():
     start_time = util.start_clock()
-    kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
-    sq = platform.Platform(**kwargs)
+    try:
+        kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
 
     settings = config.load("sonar-audit")
     settings["threads"] = kwargs[options.NBR_THREADS]
@@ -150,6 +152,11 @@ def main():
         except sif.NotSystemInfo:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
     else:
+        try:
+            sq = platform.Platform(**kwargs)
+            sq.verify_connection()
+        except exceptions.ConnectionError as e:
+            util.exit_fatal(e.message, e.errcode)
         server_id = sq.server_id()
         util.check_token(kwargs[options.TOKEN])
         key_list = kwargs[options.KEYS]
