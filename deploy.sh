@@ -20,12 +20,16 @@
 #
 
 build_docs=1
+build_image=1
 release=0
 
 while [ $# -ne 0 ]; do
     case $1 in
         nodoc)
             build_docs=0
+            ;;
+        nodocker)
+            build_image=0
             ;;
         pypi)
             release=1
@@ -45,6 +49,10 @@ python3 setup.py bdist_wheel
 # python3 -m pip install dist/*-py3-*.whl
 echo "y" | pip uninstall sonar-tools
 pip install dist/*-py3-*.whl
+
+if [ "$build_image" == "1" ]; then
+    docker build -t sonar-tools:latest .
+fi
 
 if [ "$build_docs" == "1" ]; then
     rm -rf api-doc/build
