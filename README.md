@@ -341,6 +341,8 @@ When tools complete successfully they return exit code 0. En case of fatal error
 - Code 10: Incorrect command line arguments
 - Code 11: Global analysis or project analysis token provided (user token needed for sonar-tools)
 - Code 12: HTTP request time-out using the SonarQube API
+- Code 13: Some operation attempted to create a Sonar object that already exists
+- Code 14: Sonar connection error
 
 # License
 
