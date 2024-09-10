@@ -10,14 +10,14 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install python/pip
 ENV PYTHONUNBUFFERED=1
-ADD sonar sonar
-ADD requirements.txt .
-ADD cli cli
-ADD setup.py .
-ADD sonar-tools .
-ADD README.md .
-ADD LICENSE .
-ADD sonar/audit sonar/audit
+COPY ./sonar sonar
+COPY ./requirements.txt .
+COPY ./cli cli
+COPY ./setup.py .
+COPY ./sonar-tools .
+COPY ./README.md .
+COPY ./LICENSE .
+COPY ./sonar/audit sonar/audit
 
 RUN pip install --upgrade pip \
 && pip install --no-cache-dir -r requirements.txt \
