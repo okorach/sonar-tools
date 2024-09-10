@@ -27,8 +27,7 @@ rmdir /S /Q dist
 python setup.py bdist_wheel
 
 :: Deploy locally for tests
-echo y | pip uninstall sonar-tools
-pip install dist/sonar_tools-2.5-py3-none-any.whl
+pip install pip install --upgrade --force-reinstall dist\*-py3-*.whl
 
 :: sphinx-build -b html api-doc/source api-doc/build
 

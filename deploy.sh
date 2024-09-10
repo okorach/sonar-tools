@@ -45,10 +45,7 @@ rm -rf build dist
 python3 setup.py bdist_wheel
 
 # Deploy locally for tests
-# echo "y" | python3 -m pip uninstall sonar-tools
-# python3 -m pip install dist/*-py3-*.whl
-echo "y" | pip uninstall sonar-tools
-pip install dist/*-py3-*.whl
+pip install pip install --upgrade --force-reinstall dist/*-py3-*.whl
 
 if [ "$build_image" == "1" ]; then
     docker build -t sonar-tools:latest .
