@@ -25,6 +25,7 @@
 from typing import TextIO, Union, Optional
 from http import HTTPStatus
 import sys
+import os
 import contextlib
 import re
 import json
@@ -367,7 +368,7 @@ def nbr_pages(sonar_api_json: dict[str, str]) -> int:
 def open_file(file: str = None, mode: str = "w") -> TextIO:
     """Opens a file if not None or -, otherwise stdout"""
     if file and file != "-":
-        log.debug("Opening file '%s'", file)
+        log.debug("Opening file '%s' in directory '%s'", file, os.getcwd())
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
     else:
         log.debug("Writing to stdout")
