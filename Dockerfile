@@ -38,7 +38,6 @@ RUN pip install --upgrade pip \
 && pip install dist/*-py3-*.whl --force-reinstall
 
 USER ${USERNAME}
-RUN mkdir /tmp/sonar-tools
-WORKDIR /tmp/sonar-tools
+WORKDIR /home/${USERNAME}
 
 CMD [ "sonar-tools" ]
