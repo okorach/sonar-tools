@@ -45,7 +45,7 @@ deletes tokens created since more than a certain number of days
   - Copy the downloaded file on the install machine
   - On the install machine, run `python3 -m pip install sonar_tools-<VERSION>-py3-none-any.whl`
   - Note: The package is dependent upon `argparse`, `datetime`, `python-dateutil`, `requests` and `jprops` python packages that are automatically installed when installing `sonar-tools`
-- `sonar-tools` is now also available as a docker image. See 
+- `sonar-tools` is now also available as a docker image. See [Using sonar-tools in Docker](#docker)
 
 # Common command line parameters
 
@@ -326,7 +326,7 @@ sonar-config --import --what "rules,qualityprofiles" -f config.json
 
 For more about what is exported and imported by `sonar-config` please see the [sonar-config complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
 
-# Using the docker image
+# <a name="docker"></a>Using sonar-tools in Docker
 
 Starting from version 3.4 `sonar-tools` is available a docker image. Here is how to use the docker version:
 ```
