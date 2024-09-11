@@ -32,14 +32,17 @@ sort -o findings.docker.csv findings.docker.csv
 sonar-findings-export $HOST_OPTS 2>/dev/null | sort > findings.host.csv
 test_passed_if_identical findings.docker.csv findings.host.csv
 
-announce_test "sonar-config"
-docker run --rm -w `pwd` -v `pwd`:`pwd` sonar-tools sonar-config $DOCKER_OPTS -f config.docker.json 2>/dev/null
-sonar-config $HOST_OPTS -f config.host.json 2>/dev/null
+announce_test "sonar-config export"
+docker run --rm -w `pwd` -v `pwd`:`pwd` sonar-tools sonar-config $DOCKER_OPTS -e -f config.docker.json 2>/dev/null
+sonar-config $HOST_OPTS -e -f config.host.json 2>/dev/null
 test_passed_if_identical config.docker.json config.host.json
 
 announce_test "sonar-audit"
 docker run --rm -w `pwd` -v `pwd`:`pwd` sonar-tools sonar-audit $DOCKER_OPTS 2>/dev/null | sort > audit.docker.csv
 sonar-audit $HOST_OPTS 2>/dev/null | sort > audit.host.csv
+# MacOS style sed
+sed -i '' 's/[0-9]\{1,\} deprecation/some deprecation/' audit.docker.csv
+sed -i '' 's/[0-9]\{1,\} deprecation/some deprecation/' audit.host.csv
 test_passed_if_identical audit.docker.csv audit.host.csv
 
 announce_test "sonar-projects-export"
