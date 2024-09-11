@@ -18,7 +18,8 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-set -euo pipefail
+
+#set -euo pipefail
 
 REPO_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd .. ; pwd -P )"
 TMP="$REPO_ROOT/tmp"
@@ -73,8 +74,12 @@ test_passed_if_identical() {
 
 test_result() {
     if [ $1 -eq 0 ]; then
-        echo -e "${GREEN}PASSED${RESET}"
+        echo -e "--> ${GREEN}PASSED${RESET}"
     else
-        echo -e "${RED}*** FAILED ***${RESET}"
+        echo -e "==> ${RED}*** FAILED ***${RESET}"
     fi
+}
+
+announce_test() {
+    echo -n "Test: $* "
 }
