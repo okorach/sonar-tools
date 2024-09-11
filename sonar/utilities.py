@@ -25,6 +25,7 @@
 from typing import TextIO, Union, Optional
 from http import HTTPStatus
 import sys
+import os
 import contextlib
 import re
 import json
@@ -108,17 +109,20 @@ def date_to_string(date: datetime.datetime, with_time=True) -> str:
     return "" if date is None else date.strftime(SQ_DATETIME_FORMAT if with_time else SQ_DATE_FORMAT)
 
 
-def age(some_date: datetime.datetime, rounded: bool = True) -> Union[int, datetime.timedelta]:
+def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[datetime.datetime] = None) -> Union[int, datetime.timedelta]:
     """returns the age (in days) of a date
 
     :param datetime some_date: date
     :param bool rounded: Whether to rounddown to nearest day
+    :param datetime now: The current datetime. Will be computed if None is provided
     :return: The age in days, or by the second if not rounded
     :rtype: timedelta or int if rounded
     """
     if not some_date:
         return None
-    delta = datetime.datetime.today().replace(tzinfo=timezone.utc) - some_date
+    if not now:
+        now = datetime.datetime.now(timezone.utc).astimezone()
+    delta = now - some_date
     return delta.days if rounded else delta
 
 
@@ -367,7 +371,7 @@ def nbr_pages(sonar_api_json: dict[str, str]) -> int:
 def open_file(file: str = None, mode: str = "w") -> TextIO:
     """Opens a file if not None or -, otherwise stdout"""
     if file and file != "-":
-        log.debug("Opening file '%s'", file)
+        log.debug("Opening file '%s' in directory '%s'", file, os.getcwd())
         fd = open(file=file, mode=mode, encoding="utf-8", newline="")
     else:
         log.debug("Writing to stdout")
