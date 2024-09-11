@@ -320,22 +320,22 @@ class User(sqobject.SqObject):
             log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
 
-        today = dt.datetime.today().replace(tzinfo=dt.timezone.utc)
+        today = dt.datetime.now(dt.timezone.utc).astimezone()
         problems = []
         for t in self.tokens():
-            age = abs((today - t.created_at).days)
+            age = util.age(t.created_at, now=today)
             if age > settings.get("audit.tokens.maxAge", 90):
                 problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), t, str(t), age))
             if t.last_connection_date is None and age > settings.get("audit.tokens.maxUnusedAge", 30):
                 problems.append(Problem(get_rule(RuleId.TOKEN_NEVER_USED), t, str(t), age))
             if t.last_connection_date is None:
                 continue
-            last_cnx_age = abs((today - t.last_connection_date).days)
+            last_cnx_age = util.age(t.last_connection_date, now=today)
             if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
                 problems.append(Problem(get_rule(RuleId.TOKEN_UNUSED), t, str(t), last_cnx_age))
 
         if self.last_login:
-            age = abs((today - self.last_login).days)
+            age = util.age(self.last_login, now=today)
             if age > settings.get("audit.users.maxLoginAge", 180):
                 problems.append(Problem(get_rule(RuleId.USER_UNUSED), self, str(self), age))
         return problems

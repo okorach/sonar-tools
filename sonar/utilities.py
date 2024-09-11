@@ -109,17 +109,20 @@ def date_to_string(date: datetime.datetime, with_time=True) -> str:
     return "" if date is None else date.strftime(SQ_DATETIME_FORMAT if with_time else SQ_DATE_FORMAT)
 
 
-def age(some_date: datetime.datetime, rounded: bool = True) -> Union[int, datetime.timedelta]:
+def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[datetime.datetime] = None) -> Union[int, datetime.timedelta]:
     """returns the age (in days) of a date
 
     :param datetime some_date: date
     :param bool rounded: Whether to rounddown to nearest day
+    :param datetime now: The current datetime. Will be computed if None is provided
     :return: The age in days, or by the second if not rounded
     :rtype: timedelta or int if rounded
     """
     if not some_date:
         return None
-    delta = datetime.datetime.today().replace(tzinfo=timezone.utc) - some_date
+    if not now:
+        now = datetime.datetime.now(timezone.utc).astimezone()
+    delta = now - some_date
     return delta.days if rounded else delta
 
 
