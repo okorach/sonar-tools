@@ -176,7 +176,7 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     ofile = kwargs.get(OUTPUTFILE, None)
     if ofile and ofile != "-":
         try:
-            with open(ofile, mode="w", encoding="utf-8") as f:
+            with open(ofile, mode="w", encoding="utf-8"):
                 pass
         except PermissionError as e:
             utilities.exit_fatal(f"Can't write to file '{ofile}': {e}", exit_code=errcodes.OS_ERROR)
