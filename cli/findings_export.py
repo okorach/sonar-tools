@@ -369,6 +369,23 @@ def store_findings(components_list: dict[str, object], params: ConfigSettings) -
     log.debug("WriteQueue joined")
 
 
+def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) -> dict[str, str]:
+    """Turn off use-findings option if some incompatible options (issue filters) are used"""
+    if not params[options.USE_FINDINGS]:
+        return params
+    if util.is_sonarcloud_url(endpoint.url):
+        log.warning("--%s option is not available with SonarCloud, disabling the option to proceed", options.USE_FINDINGS)
+        params[options.USE_FINDINGS] = False
+        return params
+
+    for p in _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS:
+        if params.get(p, None) is not None:
+            log.warning("Selected search criteria %s will disable --%s", params[p], options.USE_FINDINGS)
+            params[options.USE_FINDINGS] = False
+            break
+    return params
+
+
 def main():
     global DATES_WITHOUT_TIME
     global IS_FIRST
@@ -388,16 +405,7 @@ def main():
     params[options.OUTPUTFILE] = kwargs[options.OUTPUTFILE]
     __verify_inputs(params)
 
-    if util.is_sonarcloud_url(sqenv.url) and params[options.USE_FINDINGS]:
-        log.warning("--%s option is not available with SonarCloud, disabling the option to proceed", options.USE_FINDINGS)
-        params[options.USE_FINDINGS] = False
-
-    for p in _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS:
-        if params.get(p, None) is not None:
-            if params[options.USE_FINDINGS]:
-                log.warning("Selected search criteria %s will disable --%s", params[p], options.USE_FINDINGS)
-            params[options.USE_FINDINGS] = False
-            break
+    params = __turn_off_use_findings_if_needed(sqenv, params=params)
 
     try:
         if params[options.COMPONENT_TYPE] == "portfolios":
