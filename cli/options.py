@@ -173,6 +173,13 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     if kwargs.get(LANGUAGES, None) not in (None, ""):
         kwargs[LANGUAGES] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
         kwargs[LANGUAGES] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
+    ofile = kwargs.get(OUTPUTFILE, None)
+    if ofile and ofile != "-":
+        try:
+            with open(ofile, mode="w", encoding="utf-8") as f:
+                pass
+        except PermissionError as e:
+            utilities.exit_fatal(f"Can't write to file '{ofile}': {e}", exit_code=errcodes.OS_ERROR)
 
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
