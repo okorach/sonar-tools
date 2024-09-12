@@ -40,6 +40,27 @@ def __parse_args(desc: str) -> object:
     return args
 
 
+def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: str = ",") -> None:
+    """Writes a rule list in a CSV file (or stdout)"""
+    with util.open_file(file) as fd:
+        csvwriter = csv.writer(fd, delimiter=separator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for rule in rule_list.values():
+            csvwriter.writerow([str(x) for x in rule.to_csv()])
+
+
+def __write_rules_json(file: str, rule_list: dict[str, rules.Rule]) -> None:
+    """Writes a rule list in a JSON file (or stdout)"""
+    with util.open_file(file) as fd:
+        print("[", end="", file=fd)
+        is_first = True
+        for rule in rule_list.values():
+            if not is_first:
+                print(",", end="", file=fd)
+            print(util.json_dump(rule.to_json()), file=fd)
+            is_first = False
+        print("\n]\n", file=fd)
+
+
 def main() -> int:
     """Main entry point"""
     start_time = util.start_clock()
@@ -58,22 +79,10 @@ def main() -> int:
     rule_list = rules.get_list(endpoint=endpoint, **params)
 
     try:
-        with util.open_file(file) as fd:
-            if fmt == "json":
-                print("[", end="", file=fd)
-            elif fmt == "csv":
-                csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR], quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            is_first = True
-            for rule in rule_list.values():
-                if fmt == "csv":
-                    csvwriter.writerow([str(x) for x in rule.to_csv()])
-                elif fmt == "json":
-                    if not is_first:
-                        print(",", end="", file=fd)
-                    print(util.json_dump(rule.to_json()), file=fd)
-                    is_first = False
-            if fmt == "json":
-                print("\n]\n", file=fd)
+        if fmt == "csv":
+            __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])
+        else:
+            __write_rules_json(file=file, rule_list=rule_list)
     except PermissionError as e:
         util.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
 
