@@ -24,7 +24,6 @@
 
 """
 import sys
-import datetime
 import json
 
 from cli import options
@@ -170,13 +169,14 @@ def main():
             util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
     ofile = kwargs.pop(options.OUTPUTFILE)
-    problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs[options.FORMAT], ofile))
-
-    log.info("Total audit execution time: %s", str(datetime.datetime.today() - start_time))
     if problems:
         log.warning("%d issues found during audit", len(problems))
     else:
         log.info("%d issues found during audit", len(problems))
+    try:
+        problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs[options.FORMAT], ofile))
+    except (PermissionError, FileNotFoundError) as e:
+        util.exit_fatal(f"OS error while writing file '{ofile}': {e}", exit_code=errcodes.OS_ERROR)
     util.stop_clock(start_time)
     sys.exit(0)
 

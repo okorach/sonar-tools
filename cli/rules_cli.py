@@ -26,7 +26,7 @@ import csv
 
 from cli import options
 import sonar.logging as log
-from sonar import rules, platform, exceptions
+from sonar import rules, platform, exceptions, errcodes
 import sonar.utilities as util
 
 
@@ -38,6 +38,27 @@ def __parse_args(desc: str) -> object:
     parser = options.add_import_export_arg(parser, "rules", import_opt=False)
     args = options.parse_and_check(parser=parser, logger_name="sonar-rules")
     return args
+
+
+def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: str = ",") -> None:
+    """Writes a rule list in a CSV file (or stdout)"""
+    with util.open_file(file) as fd:
+        csvwriter = csv.writer(fd, delimiter=separator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for rule in rule_list.values():
+            csvwriter.writerow([str(x) for x in rule.to_csv()])
+
+
+def __write_rules_json(file: str, rule_list: dict[str, rules.Rule]) -> None:
+    """Writes a rule list in a JSON file (or stdout)"""
+    with util.open_file(file) as fd:
+        print("[", end="", file=fd)
+        is_first = True
+        for rule in rule_list.values():
+            if not is_first:
+                print(",", end="", file=fd)
+            print(util.json_dump(rule.to_json()), file=fd)
+            is_first = False
+        print("\n]\n", file=fd)
 
 
 def main() -> int:
@@ -57,22 +78,13 @@ def main() -> int:
         params = {"languages": util.list_to_csv(kwargs[options.LANGUAGES])}
     rule_list = rules.get_list(endpoint=endpoint, **params)
 
-    with util.open_file(file) as fd:
-        if fmt == "json":
-            print("[", end="", file=fd)
-        elif fmt == "csv":
-            csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR], quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        is_first = True
-        for rule in rule_list.values():
-            if fmt == "csv":
-                csvwriter.writerow([str(x) for x in rule.to_csv()])
-            elif fmt == "json":
-                if not is_first:
-                    print(",", end="", file=fd)
-                print(util.json_dump(rule.to_json()), file=fd)
-                is_first = False
-        if fmt == "json":
-            print("\n]\n", file=fd)
+    try:
+        if fmt == "csv":
+            __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])
+        else:
+            __write_rules_json(file=file, rule_list=rule_list)
+    except (PermissionError, FileNotFoundError) as e:
+        util.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
 
     log.info("%d rules exported", len(rule_list))
     util.stop_clock(start_time)

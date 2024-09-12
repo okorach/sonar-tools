@@ -149,6 +149,27 @@ class ArgumentsError(exceptions.SonarException):
         self.errcode = errcodes.ARGS_ERROR
 
 
+def __convert_args_to_lists(kwargs: dict[str, str]) -> dict[str, str]:
+    """Converts arguments that may be CSV into lists"""
+    for argname in MULTI_VALUED_OPTS:
+        if argname in kwargs and kwargs[argname] is not None and len(kwargs[argname]) > 0:
+            kwargs[argname] = utilities.csv_to_list(kwargs[argname])
+    if kwargs.get(LANGUAGES, None) not in (None, ""):
+        kwargs[LANGUAGES] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
+        kwargs[LANGUAGES] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
+    return kwargs
+
+
+def __check_file_writeable(file: str) -> None:
+    """If not stdout, verifies that the chosen output file is writeable"""
+    if file and file != "-":
+        try:
+            with open(file, mode="w", encoding="utf-8"):
+                pass
+        except (PermissionError, FileNotFoundError) as e:
+            utilities.exit_fatal(f"Can't write to file '{file}': {e}", exit_code=errcodes.OS_ERROR)
+
+
 def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> argparse.ArgumentParser:
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
@@ -167,12 +188,8 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
         if "tokenTarget" in sanitized_args:
             sanitized_args["tokenTarget"] = utilities.redacted_token(sanitized_args["tokenTarget"])
         log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
-    for argname in MULTI_VALUED_OPTS:
-        if argname in kwargs and kwargs[argname] is not None and len(kwargs[argname]) > 0:
-            kwargs[argname] = utilities.csv_to_list(kwargs[argname])
-    if kwargs.get(LANGUAGES, None) not in (None, ""):
-        kwargs[LANGUAGES] = [lang.lower() for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
-        kwargs[LANGUAGES] = [LANGUAGE_MAPPING[lang] if lang in LANGUAGE_MAPPING else lang for lang in utilities.csv_to_list(kwargs[LANGUAGES])]
+    kwargs = __convert_args_to_lists(kwargs=kwargs)
+    __check_file_writeable(kwargs.get(OUTPUTFILE, None))
 
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:

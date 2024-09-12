@@ -208,6 +208,8 @@ def main():
             __export_config(endpoint, what, **kwargs)
         except exceptions.ObjectNotFound as e:
             utilities.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
+        except (PermissionError, FileNotFoundError) as e:
+            utilities.exit_fatal(f"OS error while exporting config: {e}", exit_code=errcodes.OS_ERROR)
     if kwargs["import"]:
         if kwargs["file"] is None:
             utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ARGS_ERROR)

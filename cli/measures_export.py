@@ -266,7 +266,19 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
     return obj_list
 
 
-def main():
+def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
+    """Checks and potentially modify params according to edition of the target platform"""
+    if edition == "community" and params[options.WITH_BRANCHES]:
+        log.warning("SonarQube instance is a community edition, branch option ignored")
+        params[options.WITH_BRANCHES] = False
+    if edition in ("community", "developer") and params[options.COMPONENT_TYPE] == "portfolio":
+        log.warning("SonarQube instance is a %s edition, there are no portfolios", edition)
+        util.exit_fatal("SonarQube instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
+    return params
+
+
+def main() -> None:
+    """Entry point for sonar-measures-export"""
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(__parse_args("Extract measures of projects"))
@@ -278,13 +290,7 @@ def main():
     wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
     file = kwargs.pop(options.OUTPUTFILE)
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
-    edition = endpoint.edition()
-    if edition == "community" and kwargs[options.WITH_BRANCHES]:
-        log.warning("SonarQube instance is a community edition, branch option ignored")
-        kwargs[options.WITH_BRANCHES] = False
-    if edition in ("community", "developer") and kwargs[options.COMPONENT_TYPE] == "portfolio":
-        log.warning("SonarQube instance is a %s edition, there are no portfolios", edition)
-        util.exit_fatal("SonarQube instance is a %s edition, there are no portfolios", exit_code=errcodes.UNSUPPORTED_OPERATION)
+    kwargs = __check_options_vs_edition(edition=endpoint.edition(), params=kwargs)
     kwargs[options.WITH_NAME] = True
 
     try:
@@ -318,11 +324,12 @@ def main():
         if file:
             log.info("File '%s' created", file)
         log.info("%d %s, %d branches", len(obj_list), kwargs[options.COMPONENT_TYPE], nb_branches)
-        util.stop_clock(start_time)
-        sys.exit(0)
     except exceptions.UnsupportedOperation as e:
-        util.stop_clock(start_time)
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
+    except (PermissionError, FileNotFoundError) as e:
+        util.exit_fatal(f"OS error while writing LoCs: {e}", exit_code=errcodes.OS_ERROR)
+    util.stop_clock(start_time)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
