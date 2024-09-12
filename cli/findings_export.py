@@ -429,7 +429,7 @@ def main():
         __write_header(**params)
         store_findings(components_list, params=params)
         __write_footer(fname, params[options.FORMAT])
-    except PermissionError as e:
+    except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while exporting findings: {e}", exit_code=errcodes.OS_ERROR)
     log.info("Returned findings: %d", TOTAL_FINDINGS)
     util.stop_clock(start_time)

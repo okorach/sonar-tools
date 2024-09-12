@@ -83,7 +83,7 @@ def main() -> int:
             __write_rules_csv(file=file, rule_list=rule_list, separator=kwargs[options.CSV_SEPARATOR])
         else:
             __write_rules_json(file=file, rule_list=rule_list)
-    except PermissionError as e:
+    except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
 
     log.info("%d rules exported", len(rule_list))

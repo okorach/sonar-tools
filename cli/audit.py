@@ -175,7 +175,7 @@ def main():
         log.info("%d issues found during audit", len(problems))
     try:
         problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs[options.FORMAT], ofile))
-    except PermissionError as e:
+    except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while writing file '{ofile}': {e}", exit_code=errcodes.OS_ERROR)
     util.stop_clock(start_time)
     sys.exit(0)

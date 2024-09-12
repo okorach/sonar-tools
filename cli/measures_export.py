@@ -326,7 +326,7 @@ def main() -> None:
         log.info("%d %s, %d branches", len(obj_list), kwargs[options.COMPONENT_TYPE], nb_branches)
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
-    except PermissionError as e:
+    except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while writing LoCs: {e}", exit_code=errcodes.OS_ERROR)
     util.stop_clock(start_time)
     sys.exit(0)
