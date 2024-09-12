@@ -54,6 +54,11 @@ OUTPUTFILE = "file"
 KEYS_SHORT = "k"
 KEYS = "projectKeys"
 
+EXPORT = "export"
+EXPORT_SHORT = "e"
+IMPORT = "import"
+IMPORT_SHORT = "i"
+
 METRIC_KEYS_SHORT = "m"
 METRIC_KEYS = "metricKeys"
 
@@ -189,7 +194,8 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
             sanitized_args["tokenTarget"] = utilities.redacted_token(sanitized_args["tokenTarget"])
         log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
     kwargs = __convert_args_to_lists(kwargs=kwargs)
-    __check_file_writeable(kwargs.get(OUTPUTFILE, None))
+    if not kwargs.get(IMPORT, False):
+        __check_file_writeable(kwargs.get(OUTPUTFILE, None))
 
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
@@ -266,13 +272,13 @@ def add_import_export_arg(parser: argparse.ArgumentParser, topic: str, import_op
     if export_opt:
         msg = ""
         if import_opt:
-            msg = " (exclusive of --import)"
-        group.add_argument("-e", "--export", required=False, default=False, action="store_true", help=f"To export {topic}{msg}")
+            msg = f" (exclusive of --{IMPORT})"
+        group.add_argument(f"-{EXPORT_SHORT}", f"--{EXPORT}", required=False, default=False, action="store_true", help=f"To export {topic}{msg}")
     if import_opt:
         msg = ""
         if export_opt:
-            msg = " (exclusive of --export)"
-        group.add_argument("-i", "--import", required=False, default=False, action="store_true", help=f"To import {topic}{msg}")
+            msg = f" (exclusive of --{EXPORT})"
+        group.add_argument(f"-{IMPORT_SHORT}", f"--{IMPORT}", required=False, default=False, action="store_true", help=f"To import {topic}{msg}")
     return parser
 
 
