@@ -55,7 +55,8 @@ def _check_sq_environments(import_sq, export_sq):
             )
 
 
-def main():
+def main() -> None:
+    """Main entry point for sonar-project-import"""
     start_time = util.start_clock()
     parser = options.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
@@ -66,8 +67,14 @@ def main():
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
 
-    with open(kwargs["projectsFile"], "r", encoding="utf-8") as file:
-        data = json.load(file)
+    file = kwargs["projectsFile"]
+    try:
+        with open(file, "r", encoding="utf-8") as fd:
+            data = json.load(fd)
+    except FileNotFoundError as e:
+        util.exit_fatal(f"OS error while reading file '{file}': {e}", exit_code=errcodes.OS_ERROR)
+    except json.JSONDecodeError as e:
+        util.exit_fatal(f"JSON decoding error while reading file '{file}': {e}", exit_code=errcodes.OS_ERROR)
     project_list = data["project_exports"]
     _check_sq_environments(sq, data["sonarqube_environment"])
 
