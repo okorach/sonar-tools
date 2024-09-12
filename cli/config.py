@@ -159,9 +159,11 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     """Imports a platform configuration from a JSON file"""
     log.info("Importing configuration to %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    with open(kwargs[options.OUTPUTFILE], "r", encoding="utf-8") as fd:
-        data = json.loads(fd.read())
-
+    try:
+        with open(kwargs[options.OUTPUTFILE], "r", encoding="utf-8") as fd:
+            data = json.loads(fd.read())
+    except FileNotFoundError as e:
+        utilities.exit_fatal(f"OS error while reading file: {e}", exit_code=errcodes.OS_ERROR)
     if options.WHAT_GROUPS in what:
         groups.import_config(endpoint, data)
     if options.WHAT_USERS in what:
@@ -192,6 +194,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
 
 def main():
+    """Main entry point for sonar-config"""
     start_time = utilities.start_clock()
     try:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
@@ -199,11 +202,11 @@ def main():
         endpoint.verify_connection()
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
-    if not kwargs["export"] and not kwargs["import"]:
-        utilities.exit_fatal("One of --export or --import option must be chosen", exit_code=errcodes.ARGS_ERROR)
+    if not kwargs[options.EXPORT] and not kwargs[options.IMPORT]:
+        utilities.exit_fatal(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
     what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
-    if kwargs["export"]:
+    if kwargs[options.EXPORT]:
         try:
             __export_config(endpoint, what, **kwargs)
         except exceptions.ObjectNotFound as e:
