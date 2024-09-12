@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.20.3
 LABEL maintainer="olivier.korach@gmail.com" 
 
 ARG USERNAME=sonar
