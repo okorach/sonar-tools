@@ -159,14 +159,15 @@ class Platform:
         :return: the 3 basic information of the platform: ServerId, Edition and Version
         :rtype: dict{"serverId": <id>, "edition": <edition>, "version": <version>}
         """
-        if self.is_sonarcloud():
-            return {"edition": self.edition(), "organization": self.organization}
 
-        return {
-            "version": util.version_to_string(self.version()[:3]),
-            "edition": self.edition(),
-            "serverId": self.server_id(),
-        }
+        url = self.get_setting(key="sonar.core.serverBaseURL")
+        if url in (None, ""):
+            url = self.url
+        data = {"edition": self.edition(), "url": url}
+        if self.is_sonarcloud():
+            return {**data, "organization": self.organization}
+
+        return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id()}
 
     def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
