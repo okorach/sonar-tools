@@ -26,7 +26,7 @@ import csv
 
 from cli import options
 import sonar.logging as log
-from sonar import rules, platform, exceptions
+from sonar import rules, platform, exceptions, errcodes
 import sonar.utilities as util
 
 
@@ -57,22 +57,25 @@ def main() -> int:
         params = {"languages": util.list_to_csv(kwargs[options.LANGUAGES])}
     rule_list = rules.get_list(endpoint=endpoint, **params)
 
-    with util.open_file(file) as fd:
-        if fmt == "json":
-            print("[", end="", file=fd)
-        elif fmt == "csv":
-            csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR], quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        is_first = True
-        for rule in rule_list.values():
-            if fmt == "csv":
-                csvwriter.writerow([str(x) for x in rule.to_csv()])
-            elif fmt == "json":
-                if not is_first:
-                    print(",", end="", file=fd)
-                print(util.json_dump(rule.to_json()), file=fd)
-                is_first = False
-        if fmt == "json":
-            print("\n]\n", file=fd)
+    try:
+        with util.open_file(file) as fd:
+            if fmt == "json":
+                print("[", end="", file=fd)
+            elif fmt == "csv":
+                csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR], quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            is_first = True
+            for rule in rule_list.values():
+                if fmt == "csv":
+                    csvwriter.writerow([str(x) for x in rule.to_csv()])
+                elif fmt == "json":
+                    if not is_first:
+                        print(",", end="", file=fd)
+                    print(util.json_dump(rule.to_json()), file=fd)
+                    is_first = False
+            if fmt == "json":
+                print("\n]\n", file=fd)
+    except PermissionError as e:
+        util.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
 
     log.info("%d rules exported", len(rule_list))
     util.stop_clock(start_time)
