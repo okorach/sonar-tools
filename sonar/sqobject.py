@@ -23,7 +23,7 @@
 
 """
 
-from contextlib import suppress
+from typing import Optional
 import json
 from http import HTTPStatus
 from queue import Queue
@@ -31,17 +31,30 @@ from threading import Thread
 import requests
 from requests.exceptions import HTTPError
 
-
 import sonar.logging as log
 from sonar.util import types
 from sonar import utilities, exceptions
 
 
 class SqObject:
+    """Abstraction of Sonar objects"""
+
+    SEARCH_API = None
+
     def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
         self._json = None
+
+    @classmethod
+    def get_search_api(cls, endpoint: object) -> Optional[str]:
+        api = cls.SEARCH_API
+        if endpoint.is_sonarcloud():
+            try:
+                api = cls.SEARCH_API_SC
+            except AttributeError:
+                api = cls.SEARCH_API
+        return api
 
     def uuid(self) -> str:
         """Returns object unique ID in its class"""
@@ -98,12 +111,9 @@ def __search_thread(queue: Queue) -> None:
 
 def search_objects(endpoint: object, object_class: any, params: types.ApiParams, threads: int = 8) -> dict[str, SqObject]:
     """Runs a multi-threaded object search for searchable Sonar Objects"""
-    api = object_class.SEARCH_API
+    api = object_class.get_search_api(endpoint)
     key_field = object_class.SEARCH_KEY_FIELD
     returned_field = object_class.SEARCH_RETURN_FIELD
-    if endpoint.is_sonarcloud():
-        with suppress(AttributeError):
-            api = object_class.SEARCH_API_SC
 
     new_params = {} if params is None else params.copy()
     if "ps" not in new_params:

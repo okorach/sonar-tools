@@ -19,7 +19,7 @@
 #
 
 from __future__ import annotations
-
+from typing import Optional
 import sonar.logging as log
 import sonar.platform as pf
 import sonar.sqobject as sq
@@ -47,16 +47,18 @@ class Group(sq.SqObject):
     """
 
     SEARCH_API = "user_groups/search"
+    SEARCH_API_V2 = "v2/authorizations/groups"
     SEARCH_KEY_FIELD = "name"
     SEARCH_RETURN_FIELD = "groups"
 
     def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
         """Do not use, use class methods to create objects"""
-        super().__init__(endpoint=endpoint, key=data.get("id", name))
+        super().__init__(endpoint=endpoint, key=name)
         self.name = name  #: Group name
         self.description = data.get("description", "")  #: Group description
         self.__members_count = data.get("membersCount", None)
         self.__is_default = data.get("default", None)
+        self._id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self._json = data
         _OBJECTS[self.uuid()] = self
         log.debug("Created %s object", str(self))
@@ -107,6 +109,13 @@ class Group(sq.SqObject):
         :rtype: Group or None
         """
         return cls(endpoint=endpoint, name=data["name"], data=data)
+
+    @classmethod
+    def get_search_api(cls, endpoint: object) -> Optional[str]:
+        api = cls.SEARCH_API
+        if endpoint.version() >= (10, 4, 0):
+            api = cls.SEARCH_API_V2
+        return api
 
     def __str__(self) -> str:
         """
@@ -296,6 +305,18 @@ def get_object(endpoint: pf.Platform, name: str) -> Group:
     if uid not in _OBJECTS:
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
     return _OBJECTS[uid]
+
+
+def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
+    """Searches a Group object from its id - SonarQube 10.4+"""
+    if endpoint.version() < (10, 4, 0):
+        raise exceptions.UnsupportedOperation
+    if len(_OBJECTS) == 0:
+        get_list(endpoint)
+    for o in _OBJECTS.values():
+        if o._id == id:
+            return o
+    raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
 
 
 def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Group:
