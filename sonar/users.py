@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Union, Optional
 import datetime as dt
 import json
 
@@ -41,6 +41,7 @@ UPDATE_API = "users/update"
 DEACTIVATE_API = "users/deactivate"
 UPDATE_LOGIN_API = "users/update_login"
 _GROUPS_API_SC = "users/groups"
+_GROUPS_API_V2 = "v2/authorizations/group-memberships"
 
 SETTABLE_PROPERTIES = ("login", "name", "scmAccounts", "email", "groups", "local")
 
@@ -52,6 +53,7 @@ class User(sqobject.SqObject):
     """
 
     SEARCH_API = "users/search"
+    SEARCH_API_V2 = "v2/users-management/users"
     SEARCH_KEY_FIELD = "login"
     SEARCH_RETURN_FIELD = "users"
 
@@ -61,6 +63,7 @@ class User(sqobject.SqObject):
         """Do not use to create users, use on of the constructor class methods"""
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login (str)
+        self._id = None  #: SonarQube 10+ User Id (str)
         self.name = None  #: User name (str)
         self._groups = None  #: User groups (list)
         self.scm_accounts = None  #: User SCM accounts (list)
@@ -128,6 +131,15 @@ class User(sqobject.SqObject):
                 return o
         raise exceptions.ObjectNotFound(login, f"User '{login}' not found")
 
+    @classmethod
+    def get_search_api(cls, endpoint: object) -> Optional[str]:
+        api = cls.SEARCH_API
+        if endpoint.is_sonarcloud():
+            api = cls.SEARCH_API_SC
+        elif endpoint.version() >= (10, 4, 0):
+            api = cls.SEARCH_API_V2
+        return api
+
     def __str__(self) -> str:
         """
         :return: String formatting of the object
@@ -140,8 +152,21 @@ class User(sqobject.SqObject):
         self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local - read-only
-        self.last_login = util.string_to_date(data.get("lastConnectionDate", None))  #: User last login - read-only
-        self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
+        self.last_login = None  #: User last login - read-only
+        self.nb_tokens = None
+        if self.endpoint.version() < (10, 4, 0):
+            self.last_login = util.string_to_date(data.get("lastConnectionDate", None))
+            self.nb_tokens = data.get("tokenCount", None)  #: Nbr of tokens - read-only
+        else:
+            dt1 = util.string_to_date(data.get("sonarQubeLastConnectionDate", None))
+            dt2 = util.string_to_date(data.get("sonarQubeLastConnectionDate", None))
+            if not dt1:
+                self.last_login = dt2
+            elif not dt2:
+                self.last_login = dt1
+            else:
+                self.last_login = max(dt1, dt2)
+            self._id = data["id"]
         self.__tokens = None
         self._groups = self.groups(data)  #: User groups
         self._json = data
@@ -153,23 +178,31 @@ class User(sqobject.SqObject):
         if self.endpoint.is_sonarcloud():
             data = json.loads(self.get(_GROUPS_API_SC, {"login": self.key}).text)["groups"]
             self._groups = [g["name"] for g in data]
-        else:
+        elif self.endpoint.version() < (10, 4, 0):
             self._groups = data.get("groups", [])  #: User groups
+        else:
+            data = json.loads(self.get(_GROUPS_API_V2, {"userId": self._id, "pageSize": 500}).text)["groupMemberships"]
+            util.log.debug("Groups = %s", str(data))
+            self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
         return self._groups
 
-    def refresh(self) -> None:
+    def refresh(self) -> User:
         """Refreshes a User object from SonarQube data
 
-        :return:  Nothing
+        :return:  The user itself
         """
-        api = User.SEARCH_API
         if self.endpoint.is_sonarcloud():
             api = User.SEARCH_API_SC
+        elif self.endpoint.version() < (10, 4, 0):
+            api = User.SEARCH_API
+        else:
+            api = User.SEARCH_API_V2
         data = self.get(api, params={"q": self.login})
         for d in data["users"]:
             if d["login"] == self.login:
                 self.__load(d)
                 break
+        return self
 
     def url(self) -> str:
         """
