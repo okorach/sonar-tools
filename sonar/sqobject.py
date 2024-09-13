@@ -36,7 +36,7 @@ from sonar.util import types
 from sonar import utilities, exceptions
 
 
-class SqObject(object):
+class SqObject:
     """Abstraction of Sonar objects"""
 
     SEARCH_API = None
