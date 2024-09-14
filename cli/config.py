@@ -70,7 +70,7 @@ __MAP = {
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
+    parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.add_thread_arg(parser, "project export")
     parser = options.set_what(parser, what_list=_EVERYTHING, operation="export or import")
     parser = options.add_import_export_arg(parser, "configuration")

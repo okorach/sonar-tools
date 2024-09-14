@@ -107,7 +107,7 @@ def _audit_sq(
 def __parser_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser)
+    parser = options.set_output_file_args(parser, allowed_formats=("csv", "json"))
     parser = options.set_url_arg(parser)
     parser = options.add_thread_arg(parser, "project audit")
     parser = options.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")

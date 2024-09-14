@@ -78,7 +78,7 @@ _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS = (
 def parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, sarif_fmt=True)
+    parser = options.set_output_file_args(parser, allowed_formats=("csv", "json", "sarif"))
     parser = options.add_thread_arg(parser, "findings search")
     parser = options.add_component_type_arg(parser)
     parser.add_argument(
