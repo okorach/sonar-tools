@@ -48,8 +48,8 @@ SKIP_VERSION_CHECK = "skipVersionCheck"
 CERT_SHORT = "c"
 CERT = "clientCert"
 
-OUTPUTFILE_SHORT = "f"
-OUTPUTFILE = "file"
+REPORT_FILE_SHORT = "f"
+REPORT_FILE = "file"
 
 KEYS_SHORT = "k"
 KEYS = "projectKeys"
@@ -196,7 +196,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
         log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
     kwargs = __convert_args_to_lists(kwargs=kwargs)
     if not kwargs.get(IMPORT, False):
-        __check_file_writeable(kwargs.get(OUTPUTFILE, None))
+        __check_file_writeable(kwargs.get(REPORT_FILE, None))
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
         utilities.check_last_sonar_tools_version()
@@ -396,7 +396,7 @@ def set_output_file_args(parser: ArgumentParser, help_str: str = None, allowed_f
     """Sets the output file CLI options"""
     if not help_str:
         help_str = "Report file, stdout by default"
-    parser.add_argument(f"-{OUTPUTFILE_SHORT}", f"--{OUTPUTFILE}", required=False, default=None, help=help_str)
+    parser.add_argument(f"-{REPORT_FILE_SHORT}", f"--{REPORT_FILE}", required=False, default=None, help=help_str)
     if len(allowed_formats) > 1:
         parser.add_argument(
             f"--{FORMAT}",

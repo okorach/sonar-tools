@@ -24,96 +24,20 @@
 
 """
 import sys
-import json
+from unittest.mock import patch
 
-from cli import options
+from cli import options, projects_cli
 import sonar.logging as log
-from sonar import errcodes, exceptions
-from sonar import platform, projects
-import sonar.utilities as util
-
-
-def _check_sq_environments(import_sq, export_sq):
-    imp_version = import_sq.version(digits=2, as_string=True)
-    if imp_version != export_sq["version"]:
-        util.exit_fatal(
-            "Export was not performed with same SonarQube version, aborting...",
-            errcodes.UNSUPPORTED_OPERATION,
-        )
-    for export_plugin in export_sq["plugins"]:
-        e_name = export_plugin["name"]
-        e_vers = export_plugin["version"]
-        found = False
-        for import_plugin in import_sq.plugins():
-            if import_plugin["name"] == e_name and import_plugin["version"] == e_vers:
-                found = True
-                break
-        if not found:
-            util.exit_fatal(
-                f"Plugin '{e_name}' version '{e_vers}' was not found or not in same version on import platform, aborting...",
-                errcodes.UNSUPPORTED_OPERATION,
-            )
 
 
 def main() -> None:
-    """Main entry point for sonar-project-import"""
-    start_time = util.start_clock()
-    parser = options.set_common_args("Imports a list of projects in a SonarQube platform")
-    parser.add_argument(
-        f"-{options.OUTPUTFILE_SHORT}", f"--{options.OUTPUTFILE}", "--projectsFile", required=True, help="File with the list of projects"
-    )
-    try:
-        kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
-        sq = platform.Platform(**kwargs)
-        sq.verify_connection()
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        util.exit_fatal(e.message, e.errcode)
-
-    file = kwargs["projectsFile"]
-    try:
-        with open(file, "r", encoding="utf-8") as fd:
-            data = json.load(fd)
-    except (FileNotFoundError, PermissionError) as e:
-        util.exit_fatal(f"OS error while reading file '{file}': {e}", exit_code=errcodes.OS_ERROR)
-    except json.JSONDecodeError as e:
-        util.exit_fatal(f"JSON decoding error while reading file '{file}': {e}", exit_code=errcodes.OS_ERROR)
-    project_list = data["project_exports"]
-    _check_sq_environments(sq, data["sonarqube_environment"])
-
-    nb_projects = len(project_list)
-    log.info("%d projects to import", nb_projects)
-    i = 0
-    statuses = {}
-    for project in project_list:
-        try:
-            o_proj = projects.Project.create(key=project["key"], endpoint=sq, name=project["key"])
-            status = o_proj.import_zip()
-            s = f"IMPORT {status}"
-            if s in statuses:
-                statuses[s] += 1
-            else:
-                statuses[s] = 1
-        except exceptions.ObjectAlreadyExists:
-            s = "CREATE projectAlreadyExist"
-            if s in statuses:
-                statuses[s] += 1
-            else:
-                statuses[s] = 1
-        i += 1
-        log.info(
-            "%d/%d exports (%d%%) - Latest: %s - %s",
-            i,
-            nb_projects,
-            int(i * 100 / nb_projects),
-            project["key"],
-            status,
-        )
-        summary = ""
-        for k, v in statuses.items():
-            summary += f"{k}:{v}, "
-        log.info("%s", summary[:-2])
-    util.stop_clock(start_time)
-    sys.exit(0)
+    """Deprecated entry point for sonar-projects-import"""
+    log.warning("\n*** sonar-projects-import is deprecated, please use 'sonar-projects -i' instead ***\n")
+    args = sys.argv.copy()
+    args[0] = "sonar-projects"
+    args.append(f"-{options.IMPORT_SHORT}")
+    with patch.object(sys, "argv", args):
+        projects_cli.main()
 
 
 if __name__ == "__main__":

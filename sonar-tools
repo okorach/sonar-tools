@@ -37,8 +37,7 @@ Collections of utilities for SonarQube and SonarCloud:
 - sonar-findings-sync: Synchronizes issues between 2 branches of a same project, a whole project
   branches of 2 different projects (potentially on different platforms).
   (also available as sonar-issues-sync for backward compatibility, but deprecated)
-- sonar-projects-export: Exports all projects from a platform (All editions)
-- sonar-projects-import: Imports a list of projects into a platform (EE and higher)
+- sonar-projects: Exports / Imports projects to/from zip file (Import works for EE and higher)
 - sonar-config: Exports and imports an entire (or subsets of a) SonarQube/SonarCloud platform configuration as code (JSON)
 - sonar-rules: Exports Sonar rules
 See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation

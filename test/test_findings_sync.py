@@ -43,7 +43,7 @@ PLAT_OPTS = [f"--{opt.URL}", os.getenv("SONAR_HOST_URL"), f"--{opt.TOKEN}", os.g
     os.getenv("SONAR_TOKEN_SYNC_USER"),
 ]
 SYNC_OPTS = ["--login", "syncer", f"-{opt.KEYS_SHORT}", "TESTSYNC", "-K", "TESTSYNC"]
-ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
+ALL_OPTS = [CMD] + PLAT_OPTS + SYNC_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
 
 def test_sync_help() -> None:

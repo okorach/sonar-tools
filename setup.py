@@ -63,6 +63,7 @@ setuptools.setup(
             "sonar-audit = cli.audit:main",
             "sonar-projects-export = cli.projects_export:main",
             "sonar-projects-import = cli.projects_import:main",
+            "sonar-projects = cli.projects_cli:main",
             "sonar-measures-export = cli.measures_export:main",
             "sonar-housekeeper = cli.housekeeper:main",
             "sonar-issues-sync = cli.findings_sync:main",

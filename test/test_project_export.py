@@ -29,11 +29,11 @@ import pytest
 
 import utilities as util
 from sonar import errcodes
-from cli import projects_export
+from cli import projects_cli
 import cli.options as opt
 
-CMD = "projects_export.py"
-OPTS = [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.JSON_FILE]
+CMD = "projects_cli.py"
+OPTS = [CMD] + util.STD_OPTS + [f"-{opt.EXPORT_SHORT}", f"--{opt.REPORT_FILE}", util.JSON_FILE]
 
 
 def __test_project_export(arguments: list[str], file: str) -> None:
@@ -41,7 +41,7 @@ def __test_project_export(arguments: list[str], file: str) -> None:
     util.clean(file)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", arguments):
-            projects_export.main()
+            projects_cli.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(file)
     util.clean(file)
@@ -67,7 +67,7 @@ def test_export_non_existing_project() -> None:
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_project"]):
-            projects_export.main()
+            projects_cli.main()
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(util.JSON_FILE)
     util.clean(util.JSON_FILE)

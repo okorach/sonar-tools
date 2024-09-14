@@ -168,7 +168,7 @@ def main():
         except exceptions.ObjectNotFound as e:
             util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
-    ofile = kwargs.pop(options.OUTPUTFILE)
+    ofile = kwargs.pop(options.REPORT_FILE)
     if problems:
         log.warning("%d issues found during audit", len(problems))
     else:

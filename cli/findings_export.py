@@ -146,7 +146,7 @@ def parse_args(desc):
 
 def __write_header(**kwargs) -> None:
     """Writes the file header"""
-    with util.open_file(kwargs[options.OUTPUTFILE], mode="a") as fd:
+    with util.open_file(kwargs[options.REPORT_FILE], mode="a") as fd:
         if kwargs[options.FORMAT] == "sarif":
             print(SARIF_HEADER, file=fd)
         elif kwargs[options.FORMAT] == "json":
@@ -174,7 +174,7 @@ def __dump_findings(findings_list: dict[str, findings.Finding], **kwargs) -> Non
     :param str file: Filename to dump the findings
     :return: Nothing
     """
-    file = kwargs[options.OUTPUTFILE]
+    file = kwargs[options.REPORT_FILE]
     file_format = kwargs[options.FORMAT]
     log.info("Writing %d more findings to %s in format %s", len(findings_list), f"file '{file}'" if file else "stdout", file_format)
     if file_format in ("json", "sarif"):
@@ -188,7 +188,7 @@ def __write_json_findings(findings_list: dict[str, findings.Finding], **kwargs) 
     """Appends a list of findings in JSON or SARIF format in a file"""
     i = len(findings_list)
     comma = ","
-    with util.open_file(kwargs[options.OUTPUTFILE], mode="a") as fd:
+    with util.open_file(kwargs[options.REPORT_FILE], mode="a") as fd:
         for finding in findings_list.values():
             i -= 1
             if i == 0:
@@ -233,7 +233,7 @@ def __write_findings(queue: Queue[list[findings.Finding]], params: ConfigSetting
 
         if params[options.FORMAT] in ("sarif", "json") and not IS_FIRST:
             with WRITE_SEM:
-                with util.open_file(params[options.OUTPUTFILE], mode="a") as f:
+                with util.open_file(params[options.REPORT_FILE], mode="a") as f:
                     print(",", file=f)
         IS_FIRST = False
         with WRITE_SEM:
@@ -305,7 +305,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
             new_params.pop(options.CSV_SEPARATOR, None)
             new_params.pop(options.COMPONENT_TYPE, None)
             new_params.pop(options.DATES_WITHOUT_TIME, None)
-            new_params.pop(options.OUTPUTFILE, None)
+            new_params.pop(options.REPORT_FILE, None)
             new_params.pop(options.WITH_LAST_ANALYSIS, None)
             new_params.pop(options.WITH_URL, None)
             if options.PULL_REQUESTS in new_params:
@@ -402,7 +402,7 @@ def main():
     del kwargs[options.URL]
     DATES_WITHOUT_TIME = kwargs[options.DATES_WITHOUT_TIME]
     params = util.remove_nones(kwargs.copy())
-    params[options.OUTPUTFILE] = kwargs[options.OUTPUTFILE]
+    params[options.REPORT_FILE] = kwargs[options.REPORT_FILE]
     __verify_inputs(params)
 
     params = __turn_off_use_findings_if_needed(sqenv, params=params)
@@ -419,7 +419,7 @@ def main():
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
 
-    fmt, fname = params.get(options.FORMAT, None), params.get(options.OUTPUTFILE, None)
+    fmt, fname = params.get(options.FORMAT, None), params.get(options.REPORT_FILE, None)
     params[options.FORMAT] = util.deduct_format(fmt, fname, allowed_formats=("csv", "json", "sarif"))
     if fname is not None and os.path.exists(fname):
         os.remove(fname)

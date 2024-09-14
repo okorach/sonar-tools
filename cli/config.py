@@ -160,7 +160,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Importing configuration to %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
     try:
-        with open(kwargs[options.OUTPUTFILE], "r", encoding="utf-8") as fd:
+        with open(kwargs[options.REPORT_FILE], "r", encoding="utf-8") as fd:
             data = json.loads(fd.read())
     except FileNotFoundError as e:
         utilities.exit_fatal(f"OS error while reading file: {e}", exit_code=errcodes.OS_ERROR)

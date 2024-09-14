@@ -70,7 +70,7 @@ def main() -> int:
         endpoint.verify_connection()
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
-    file = kwargs[options.OUTPUTFILE]
+    file = kwargs[options.REPORT_FILE]
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
 
     params = {}

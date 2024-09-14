@@ -37,8 +37,8 @@ import cli.options as opt
 
 CMD = "sonar-findings-export.py"
 SARIF_FILE = "issues.sarif"
-CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
 SEVERITY_COL = 3
 STATUS_COL = 4
@@ -57,20 +57,20 @@ if util.SQ.version() < (10, 2, 0):
 
 __GOOD_OPTS = [
     [f"--{opt.FORMAT}", "json", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
-    [f"--{opt.FORMAT}", "json", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE],
-    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "4", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
-    [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
-    [f"--{opt.DATE_BEFORE}", "2024-05-01", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE],
-    [f"--{opt.DATE_AFTER}", "2023-05-01", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
-    [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,REMOVED", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.TYPES}", "BUG,VULNERABILITY", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
-    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "MINOR,MAJOR,CRITICAL", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.OUTPUTFILE}", util.CSV_FILE],
-    [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.FORMAT}", "json", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
+    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "4", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.DATE_BEFORE}", "2024-05-01", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
+    [f"--{opt.DATE_AFTER}", "2023-05-01", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,REMOVED", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.TYPES}", "BUG,VULNERABILITY", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "MINOR,MAJOR,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.USE_FINDINGS}", "-f", util.CSV_FILE],
-    ["--apps", f"--{opt.BRANCHES}", "*", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
-    ["--portfolios", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    ["--apps", f"--{opt.BRANCHES}", "*", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    ["--portfolios", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
 
 __WRONG_FILTER_OPTS = [
@@ -78,7 +78,7 @@ __WRONG_FILTER_OPTS = [
     [f"--{opt.RESOLUTIONS}", "ACCEPTED,SAFE,DO_FIX,WONTFIX"],
     [f"--{opt.TYPES}", "BUG,VULN"],
     [f"--{opt.SEVERITIES}", "HIGH,SUPER_HIGH"],
-    [f"--{opt.CSV_SEPARATOR}", "';'", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE],
+    [f"--{opt.CSV_SEPARATOR}", "';'", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
 
 __WRONG_OPTS = [
@@ -103,7 +103,7 @@ def test_findings_export_sarif_implicit() -> None:
     """Test SARIF export for a single project and implicit format"""
     util.clean(SARIF_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.OUTPUTFILE_SHORT}", SARIF_FILE]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.REPORT_FILE_SHORT}", SARIF_FILE]):
             findings_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_contains(SARIF_FILE, "schemas/json/sarif-2.1.0-rtm.4")
@@ -386,7 +386,7 @@ def test_output_format_sarif() -> None:
     """test_output_format_sarif"""
     util.clean(SARIF_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", SARIF_FILE, f"--{opt.KEYS}", "okorach_sonar-tools"]):
+        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", SARIF_FILE, f"--{opt.KEYS}", "okorach_sonar-tools"]):
             findings_export.main()
     assert int(str(e.value)) == errcodes.OK
     with open(SARIF_FILE, encoding="utf-8") as fh:

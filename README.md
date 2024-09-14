@@ -22,8 +22,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-measures-export](#sonar-measures-export): Exports measures/metrics of one, several or all projects of the instance in CSV
 - [sonar-findings-export](#sonar-findings-export) (Also available as **sonar-issues-export** (deprecated) for backward compatibility): Exports issues and hotspots (potentially filtered) from the instance in CSV
 - [sonar-findings-sync](#sonar-findings-sync): Synchronizes issues and hotspots changelog between branches, projects or even SonarQube instances (formerly **sonar-issues-sync**, now deprecated)
-- [sonar-projects-export](#sonar-projects-export): Exports all projects from a SonarQube instance (EE and higher)
-- [sonar-projects-import](#sonar-projects-import): Imports a list of projects into a SonarQube instance (EE and higher)
+- [sonar-projects](#sonar-projects): Exports or imports projects from/to a SonarQube instance (EE and higher required for import)
 - [sonar-config](#sonar-config): Exports or Imports a SonarQube platform configuration to/from configuration as code file (JSON file).
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTA (Long Term Active, currently 9.9.x) and LATEST versions**
@@ -232,59 +231,46 @@ sonar-findings-export -types VULNERABILITY,BUG --format sarif >bugs_and_vulnerab
 sonar-findings-export -k myProjectKey ----sarifNoCustomProperties -f myProjectKey.sarif
 ```
 
-# <a name="sonar-projects-export"></a>sonar-projects-export
+# <a name="sonar-projects"></a>sonar-projects (export/import)
 
-Exports all projects of a given SonarQube instance.
-It sends to the output a JSON with the list of project keys, the export result (`SUCCESS` or `FAIL`), and:
-- If the export was successful, the generated zip file
-- If the export was failed, the failure reason
+Exports (or imports) projects of a given SonarQube instance to / from zip files
 
-Basic Usage: `sonar-projects-export [--exportTimeout <timeout>] >exported_projects.json`
+- When exporting, the tool generates a JSON with the list of project keys, the export result (`SUCCESS` or `FAIL`), and:
+  - If the export was successful, the generated zip file
+  - If the export was failed, the failure reason
+
+- When importing, a JSON file (result of export) must be provided
+
+`sonar-projects` replaces the deprecated `sonar-projects-export` and `sonar-projects-import` commands
+
+Basic Usage:
+`sonar-projects -e [--exportTimeout <timeout>] -f exported_projects.json`
 - `--exportTimeout`: Defines timeout to export a single project in seconds,
                      by default 180 s (large projects can take time to export)
-- `-f`: Define file for JSON output (default stdout)
+- `-f`: Defines the file for JSON output (default stdout)
+
+`sonar-projects -i -f exported_projects.json`
 
 :information_source: All zip files are generated in the SonarQube instance standard location (under `data/governance/project_dumps/export`). On a DCE, the export may be distributed over all the Application Nodes
 :warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
 
-The JSON file generated is to be used by the `sonar-projects-import` tool
+To import, the zip file smust be first copied under (under `data/governance/project_dumps/import`) of the target platform
 
 ## Required Permissions
 
-`sonar-projects-export` requires `Administer project` permission on all projects to be exported
+`sonar-projects -e` requires `Administer project` permission on all projects to be exported
+`sonar-projects -i` requires `Administer project` and `Project  creation` permission
 
 ## Examples
 ```
 export SONAR_HOST_URL=https://sonar.acme-corp.com
 export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 # Exports all projects, with results of export in CSV file exported_projects.json
-sonar-projects-export >exported_projects.json
+sonar-projects -e >exported_projects.json
 # Exports 2 projects with keys myProjectKey1 and myOtherProjectKey, with results of export in JSON file exports.json
-sonar-projects-export -k myProjectKey1,myOtherProjectKey -f exports.json
+sonar-projects -e -k myProjectKey1,myOtherProjectKey -f exports.json
 # Exports all projects, with results of export in JSON file exported_projects.json
 sonar-projects-export -f exported_projects.json
-```
-
-# <a name="sonar-projects-import"></a>sonar-projects-import
-
-Imports a list of projects previously exported with `sonar-projects-export`.
-:warning: Unlike projects export that is available on all editions, project import requires a SonarQube Enterprise or Data Center Edition.
-It takes as input a CSV or JSON file produced by `sonar-projects-export`
-:warning: **sonar-tools** 2.7 or higher is required for compatibility with SonarQube 10
-
-Basic Usage: `sonar-projects-import -f <file.json>`
-- `-f`: Define input file for project import, result of a `sonar-projects-export` command
-
-:information_source: All exported zip files must be first copied to the right location on the target SonarQube instance for the import to be successful (In `data/governance/project_dumps/import`)
-
-## Required Permissions
-
-`sonar-projects-import` needs the global `Create Projects` permission
-
-## Examples
-```
-export SONAR_HOST_URL=https://sonar.acme-corp.com
-export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 
 # Import all projects with the JSON information file generated by `sonar-projects-export`
 sonar-projects-import -f exported_projects.json
