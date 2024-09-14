@@ -107,10 +107,7 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
             statuses[s] = 1
         i += 1
         log.info("%d/%d exports (%d%%) - Latest: %s - %s", i, nb_projects, int(i * 100 / nb_projects), project["key"], status)
-        summary = ""
-        for k, v in statuses.items():
-            summary += f"{k}:{v}, "
-        log.info("%s", summary[:-2])
+        log.info("%s", ", ".join([f"{k}:{v}" for k, v in statuses.items()]))
 
 
 def main() -> None:
