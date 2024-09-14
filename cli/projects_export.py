@@ -24,53 +24,20 @@
 
 """
 import sys
+from unittest.mock import patch
 
-from cli import options
+from cli import options, projects_cli
 import sonar.logging as log
-from sonar import platform, utilities, exceptions, projects, errcodes
 
 
-def main():
-    start_time = utilities.start_clock()
-    parser = options.set_common_args("Exports all projects of a SonarQube platform")
-    parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, allowed_formats=("json",))
-    parser = options.add_thread_arg(parser, "projects zip export")
-    parser.add_argument(
-        "--exportTimeout",
-        required=False,
-        type=int,
-        default=180,
-        help="Maximum wait time for export",
-    )
-    try:
-        kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-export"))
-        sq = platform.Platform(**kwargs)
-        sq.verify_connection()
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        utilities.exit_fatal(e.message, e.errcode)
-
-    if sq.edition() in ("community", "developer") and sq.version()[:2] < (9, 2):
-        utilities.exit_fatal(
-            "Can't export projects on Community and Developer Edition before 9.2, aborting...",
-            errcodes.UNSUPPORTED_OPERATION,
-        )
-
-    try:
-        dump = projects.export_zip(
-            endpoint=sq, key_list=kwargs[options.KEYS], export_timeout=kwargs["exportTimeout"], threads=kwargs[options.NBR_THREADS]
-        )
-    except exceptions.ObjectNotFound:
-        sys.exit(errcodes.NO_SUCH_KEY)
-
-    try:
-        with utilities.open_file(kwargs[options.REPORT_FILE]) as fd:
-            print(utilities.json_dump(dump), file=fd)
-    except (PermissionError, FileNotFoundError) as e:
-        utilities.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
-
-    utilities.stop_clock(start_time)
-    sys.exit(0)
+def main() -> None:
+    """Deprecated entry point for sonar-projects-export"""
+    log.warning("\n*** sonar-projects-export is deprecated, please use 'sonar-projects -e' instead ***\n")
+    args = sys.argv.copy()
+    args[0] = "sonar-projects"
+    args.append(f"-{options.EXPORT_SHORT}")
+    with patch.object(sys, "argv", args):
+        projects_cli.main()
 
 
 if __name__ == "__main__":
