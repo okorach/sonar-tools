@@ -167,7 +167,7 @@ def __dump_loc(object_list: list[object], file: str, **kwargs) -> None:
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser)
+    parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
     parser.add_argument(
         f"-{options.WITH_NAME_SHORT}",
         f"--{options.WITH_NAME}",

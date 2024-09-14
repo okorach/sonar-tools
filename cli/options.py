@@ -26,7 +26,7 @@
 import os
 import sys
 import random
-import argparse
+from argparse import ArgumentParser
 
 import sonar.logging as log
 from sonar import errcodes, version, utilities, exceptions
@@ -173,9 +173,10 @@ def __check_file_writeable(file: str) -> None:
                 pass
         except (PermissionError, FileNotFoundError) as e:
             utilities.exit_fatal(f"Can't write to file '{file}': {e}", exit_code=errcodes.OS_ERROR)
+        os.remove(file)
 
 
-def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, verify_token: bool = True) -> argparse.ArgumentParser:
+def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_token: bool = True) -> ArgumentParser:
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
         args = parser.parse_args()
@@ -196,7 +197,6 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     kwargs = __convert_args_to_lists(kwargs=kwargs)
     if not kwargs.get(IMPORT, False):
         __check_file_writeable(kwargs.get(OUTPUTFILE, None))
-
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
         utilities.check_last_sonar_tools_version()
@@ -208,17 +208,19 @@ def parse_and_check(parser: argparse.ArgumentParser, logger_name: str = None, ve
     return args
 
 
-def set_url_arg(parser):
+def set_url_arg(parser: ArgumentParser) -> ArgumentParser:
+    """Adds the URL argument for CLI"""
     parser.add_argument(f"--{WITH_URL}", action="store_true", default=False, required=False, help="Add objects URLs in report")
     return parser
 
 
-def add_thread_arg(parser, action):
+def add_thread_arg(parser: ArgumentParser, action: str) -> ArgumentParser:
+    """Adds the threads argument for CLI"""
     parser.add_argument(f"--{NBR_THREADS}", required=False, type=int, default=8, help=f"Define number of threads for {action}, default 8")
     return parser
 
 
-def add_branch_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def add_branch_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the branch argument to the parser"""
     parser.add_argument(
         f"-{WITH_BRANCHES_SHORT}",
@@ -230,7 +232,7 @@ def add_branch_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     return parser
 
 
-def add_dateformat_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def add_dateformat_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the date format argument to the parser"""
     parser.add_argument(
         f"-{DATES_WITHOUT_TIME_SHORT}",
@@ -243,7 +245,7 @@ def add_dateformat_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     return parser
 
 
-def add_url_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def add_url_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the option to export URL of objects"""
     parser.add_argument(
         f"--{WITH_URL}",
@@ -255,7 +257,7 @@ def add_url_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     return parser
 
 
-def add_what_arg(parser: argparse.ArgumentParser, allowed_list: tuple[str], default_value: str) -> argparse.ArgumentParser:
+def add_what_arg(parser: ArgumentParser, allowed_list: tuple[str], default_value: str) -> ArgumentParser:
     """Adds the option to export URL of objects"""
     parser.add_argument(
         f"--{WHAT}",
@@ -266,7 +268,7 @@ def add_what_arg(parser: argparse.ArgumentParser, allowed_list: tuple[str], defa
     return parser
 
 
-def add_import_export_arg(parser: argparse.ArgumentParser, topic: str, import_opt: bool = True, export_opt: bool = True) -> argparse.ArgumentParser:
+def add_import_export_arg(parser: ArgumentParser, topic: str, import_opt: bool = True, export_opt: bool = True) -> ArgumentParser:
     """Adds the CLI params for export/import"""
     group = parser.add_mutually_exclusive_group()
     if export_opt:
@@ -282,9 +284,9 @@ def add_import_export_arg(parser: argparse.ArgumentParser, topic: str, import_op
     return parser
 
 
-def set_common_args(desc: str) -> argparse.ArgumentParser:
+def set_common_args(desc: str) -> ArgumentParser:
     """Parses options common to all sonar-tools scripts"""
-    parser = argparse.ArgumentParser(description=desc)
+    parser = ArgumentParser(description=desc)
     parser.add_argument(
         f"-{TOKEN_SHORT}",
         f"--{TOKEN}",
@@ -345,7 +347,7 @@ def set_common_args(desc: str) -> argparse.ArgumentParser:
     return parser
 
 
-def set_key_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def set_key_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the cmd line parameter to select object keys"""
     parser.add_argument(
         f"-{KEYS_SHORT}",
@@ -358,13 +360,13 @@ def set_key_arg(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     return parser
 
 
-def add_language_arg(parser: argparse.ArgumentParser, object_types: str) -> argparse.ArgumentParser:
+def add_language_arg(parser: ArgumentParser, object_types: str) -> ArgumentParser:
     """Adds the language selection option"""
     parser.add_argument(f"--{LANGUAGES}", required=False, help=f"Commas separated list of language to filter {object_types}")
     return parser
 
 
-def add_component_type_arg(parser: argparse.ArgumentParser, comp_types: tuple[str] = COMPONENT_TYPES) -> argparse.ArgumentParser:
+def add_component_type_arg(parser: ArgumentParser, comp_types: tuple[str] = COMPONENT_TYPES) -> ArgumentParser:
     """Adds the component type selection option"""
     group = parser.add_mutually_exclusive_group()
     for c in comp_types:
@@ -373,7 +375,7 @@ def add_component_type_arg(parser: argparse.ArgumentParser, comp_types: tuple[st
     return parser
 
 
-def set_target_sonar_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def set_target_sonar_args(parser: ArgumentParser) -> ArgumentParser:
     """Sets the target SonarQube CLI options"""
     parser.add_argument(
         "-U",
@@ -390,43 +392,30 @@ def set_target_sonar_args(parser: argparse.ArgumentParser) -> argparse.ArgumentP
     return parser
 
 
-def set_output_file_args(
-    parser: argparse.ArgumentParser, json_fmt: bool = True, csv_fmt: bool = True, sarif_fmt: bool = False
-) -> argparse.ArgumentParser:
+def set_output_file_args(parser: ArgumentParser, help_str: str = None, allowed_formats: tuple[str, ...] = ("csv",)) -> ArgumentParser:
     """Sets the output file CLI options"""
-    parser.add_argument(
-        f"-{OUTPUTFILE_SHORT}",
-        f"--{OUTPUTFILE}",
-        required=False,
-        default=None,
-        help="Output file for the report, stdout by default",
-    )
-    fmt_choice = []
-    if csv_fmt:
-        fmt_choice.append("csv")
-    if json_fmt:
-        fmt_choice.append("json")
-    if sarif_fmt:
-        fmt_choice.append("sarif")
-    if json_fmt and csv_fmt:
+    if not help_str:
+        help_str = "Report file, stdout by default"
+    parser.add_argument(f"-{OUTPUTFILE_SHORT}", f"--{OUTPUTFILE}", required=False, default=None, help=help_str)
+    if len(allowed_formats) > 1:
         parser.add_argument(
             f"--{FORMAT}",
-            choices=fmt_choice,
+            choices=allowed_formats,
             required=False,
             default=None,
             help="Output format for generated report.\nIf not specified, it is the output file extension if json or csv, then csv by default",
         )
-    if csv_fmt:
+    if "csv" in allowed_formats:
         parser.add_argument(
             f"--{CSV_SEPARATOR}",
             required=False,
             default=__DEFAULT_CSV_SEPARATOR,
-            help=f"CSV separator (for CSV output), default '{__DEFAULT_CSV_SEPARATOR}'",
+            help=f"CSV separator (for CSV files), default '{__DEFAULT_CSV_SEPARATOR}'",
         )
     return parser
 
 
-def set_what(parser: argparse.ArgumentParser, what_list: list[str], operation: str) -> argparse.ArgumentParser:
+def set_what(parser: ArgumentParser, what_list: list[str], operation: str) -> ArgumentParser:
     """Sets the argumant to select what to audit or to export as config"""
     parser.add_argument(
         "-w",

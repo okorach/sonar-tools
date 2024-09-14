@@ -94,7 +94,7 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyL
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser)
+    parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
     parser.add_argument(
         f"-{options.METRIC_KEYS_SHORT}",
         f"--{options.METRIC_KEYS}",

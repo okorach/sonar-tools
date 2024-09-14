@@ -59,7 +59,9 @@ def main() -> None:
     """Main entry point for sonar-project-import"""
     start_time = util.start_clock()
     parser = options.set_common_args("Imports a list of projects in a SonarQube platform")
-    parser.add_argument("-f", "--projectsFile", required=True, help="File with the list of projects")
+    parser.add_argument(
+        f"-{options.OUTPUTFILE_SHORT}", f"--{options.OUTPUTFILE}", "--projectsFile", required=True, help="File with the list of projects"
+    )
     try:
         kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))
         sq = platform.Platform(**kwargs)
@@ -71,7 +73,7 @@ def main() -> None:
     try:
         with open(file, "r", encoding="utf-8") as fd:
             data = json.load(fd)
-    except FileNotFoundError as e:
+    except (FileNotFoundError, PermissionError) as e:
         util.exit_fatal(f"OS error while reading file '{file}': {e}", exit_code=errcodes.OS_ERROR)
     except json.JSONDecodeError as e:
         util.exit_fatal(f"JSON decoding error while reading file '{file}': {e}", exit_code=errcodes.OS_ERROR)

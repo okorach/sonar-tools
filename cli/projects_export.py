@@ -34,7 +34,7 @@ def main():
     start_time = utilities.start_clock()
     parser = options.set_common_args("Exports all projects of a SonarQube platform")
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, json_fmt=True, csv_fmt=False)
+    parser = options.set_output_file_args(parser, allowed_formats=("json",))
     parser = options.add_thread_arg(parser, "projects zip export")
     parser.add_argument(
         "--exportTimeout",
