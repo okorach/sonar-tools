@@ -48,7 +48,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
         sys.exit(errcodes.NO_SUCH_KEY)
 
     try:
-        with utilities.open_file(kwargs[options.OUTPUTFILE]) as fd:
+        with utilities.open_file(kwargs[options.REPORT_FILE]) as fd:
             print(utilities.json_dump(dump), file=fd)
     except (PermissionError, FileNotFoundError) as e:
         utilities.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
@@ -76,9 +76,9 @@ def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, s
 
 def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     """Imports a list of projects in SonarQube EE+"""
-    file = kwargs[options.OUTPUTFILE]
+    file = kwargs[options.REPORT_FILE]
     if not file:
-        utilities.exit_fatal(f"Option --{options.OUTPUTFILE} is mandatory to import", exit_code=errcodes.ARGS_ERROR)
+        utilities.exit_fatal(f"Option --{options.REPORT_FILE} is mandatory to import", exit_code=errcodes.ARGS_ERROR)
 
     try:
         with open(file, "r", encoding="utf-8") as fd:

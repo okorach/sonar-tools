@@ -60,7 +60,7 @@ def main() -> None:
     start_time = util.start_clock()
     parser = options.set_common_args("Imports a list of projects in a SonarQube platform")
     parser.add_argument(
-        f"-{options.OUTPUTFILE_SHORT}", f"--{options.OUTPUTFILE}", "--projectsFile", required=True, help="File with the list of projects"
+        f"-{options.REPORT_FILE_SHORT}", f"--{options.REPORT_FILE}", "--projectsFile", required=True, help="File with the list of projects"
     )
     try:
         kwargs = util.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects-import"))

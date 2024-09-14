@@ -33,7 +33,7 @@ from cli import projects_cli
 import cli.options as opt
 
 CMD = "projects_cli.py"
-OPTS = [CMD] + util.STD_OPTS + [f"-{opt.EXPORT_SHORT}", f"--{opt.OUTPUTFILE}", util.JSON_FILE]
+OPTS = [CMD] + util.STD_OPTS + [f"-{opt.EXPORT_SHORT}", f"--{opt.REPORT_FILE}", util.JSON_FILE]
 
 
 def __test_project_export(arguments: list[str], file: str) -> None:

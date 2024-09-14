@@ -32,7 +32,7 @@ from cli import loc
 import cli.options as opt
 
 CMD = "sonar-loc.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.CSV_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.CSV_FILE]
 
 
 def test_no_log_file() -> None:

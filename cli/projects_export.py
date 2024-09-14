@@ -64,7 +64,7 @@ def main():
         sys.exit(errcodes.NO_SUCH_KEY)
 
     try:
-        with utilities.open_file(kwargs[options.OUTPUTFILE]) as fd:
+        with utilities.open_file(kwargs[options.REPORT_FILE]) as fd:
             print(utilities.json_dump(dump), file=fd)
     except (PermissionError, FileNotFoundError) as e:
         utilities.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)

@@ -209,7 +209,7 @@ def main():
     except (options.ArgumentsError, exceptions.ConnectionError) as e:
         util.exit_fatal(e.message, e.errcode)
 
-    kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.OUTPUTFILE])
+    kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE])
 
     edition = endpoint.edition()
     if kwargs[options.WITH_BRANCHES] and edition == "community":

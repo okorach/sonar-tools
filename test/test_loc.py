@@ -33,8 +33,8 @@ from cli import loc
 import cli.options as opt
 
 CMD = "sonar-loc.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.OUTPUTFILE_SHORT}", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.JSON_FILE]
+CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
+JSON_OPTS = [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE]
 
 ALL_OPTIONS = [f"-{opt.WITH_BRANCHES_SHORT}", f"--{opt.WITH_LAST_ANALYSIS}", f"--{opt.WITH_NAME}", f"--{opt.WITH_URL}"]
 
@@ -142,7 +142,7 @@ def test_loc_branches_json() -> None:
     """test_loc"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.OUTPUTFILE}", util.JSON_FILE] + ALL_OPTIONS):
+        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", util.JSON_FILE] + ALL_OPTIONS):
             loc.main()
     if util.SQ.edition() == "community":
         assert int(str(e.value)) == errcodes.UNSUPPORTED_OPERATION

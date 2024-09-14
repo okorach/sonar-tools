@@ -34,8 +34,8 @@ import cli.options as opt
 from cli import config
 
 CMD = "config.py"
-OPTS = [CMD] + util.STD_OPTS + ["-e", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
-OPTS_IMPORT = [CMD] + util.TEST_OPTS + ["-i", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE]
+OPTS = [CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+OPTS_IMPORT = [CMD] + util.TEST_OPTS + ["-i", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
 
 def __test_config_cmd(arguments: list[str]) -> None:
@@ -140,7 +140,7 @@ def test_config_import_portfolios() -> None:
     """test_config_non_existing_project"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + ["-e", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE, f"--{opt.WHAT}", "portfolios"]):
+        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE, f"--{opt.WHAT}", "portfolios"]):
             config.main()
     with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
@@ -153,7 +153,7 @@ def test_config_import_portfolios() -> None:
             p.delete()
     # Import config
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", [CMD] + util.TEST_OPTS + ["-i", f"-{opt.OUTPUTFILE_SHORT}", util.JSON_FILE, "-l", "test.log"]):
+        with patch.object(sys, "argv", [CMD] + util.TEST_OPTS + ["-i", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE, "-l", "test.log"]):
             config.main()
 
     # Compare portfolios

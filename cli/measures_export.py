@@ -288,7 +288,7 @@ def main() -> None:
         util.exit_fatal(e.message, e.errcode)
 
     wanted_metrics = __get_wanted_metrics(endpoint=endpoint, wanted_metrics=kwargs[options.METRIC_KEYS])
-    file = kwargs.pop(options.OUTPUTFILE)
+    file = kwargs.pop(options.REPORT_FILE)
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
     kwargs = __check_options_vs_edition(edition=endpoint.edition(), params=kwargs)
     kwargs[options.WITH_NAME] = True
