@@ -109,12 +109,15 @@ def __search_thread(queue: Queue) -> None:
         page_params = params.copy()
         page_params["p"] = page
         log.debug("Threaded search: API = %s params = %s", api, str(params))
-        data = json.loads(endpoint.get(api, params=page_params).text)
-        for obj in data[returned_field]:
-            if object_class.__name__ in ("QualityProfile", "QualityGate", "Groups", "Portfolio", "Project"):
-                objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
-            else:
-                objects[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
+        try:
+            data = json.loads(endpoint.get(api, params=page_params).text)
+            for obj in data[returned_field]:
+                if object_class.__name__ in ("QualityProfile", "QualityGate", "Groups", "Portfolio", "Project"):
+                    objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
+                else:
+                    objects[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
+        except HTTPError as e:
+            log.critical("HTTP error while searching %s, search skipped: %s", object_class.__name__, str(e))
         queue.task_done()
 
 

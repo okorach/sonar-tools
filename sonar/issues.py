@@ -23,10 +23,12 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 import json
 import re
+
 from typing import Union, Optional
 from queue import Queue
 from threading import Thread
 import requests.utils
+from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -702,12 +704,15 @@ def __search_thread(queue: Queue) -> None:
         page_params = params.copy()
         page_params["p"] = page
         log.debug("Threaded issue search params = %s", str(page_params))
-        data = json.loads(endpoint.get(api, params=page_params).text)
-        for i in data["issues"]:
-            i["branch"] = page_params.get("branch", None)
-            i["pullRequest"] = page_params.get("pullRequest", None)
-            issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
-        log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
+        try:
+            data = json.loads(endpoint.get(api, params=page_params).text)
+            for i in data["issues"]:
+                i["branch"] = page_params.get("branch", None)
+                i["pullRequest"] = page_params.get("pullRequest", None)
+                issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
+            log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
+        except HTTPError as e:
+            log.critical("HTTP Error while searching issues, search may be incomplete: %s", str(e))
         queue.task_done()
 
 
