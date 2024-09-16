@@ -23,6 +23,7 @@
 """
 import sys
 import json
+import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities
@@ -70,7 +71,7 @@ __MAP = {
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, allowed_formats=("json",))
+    parser = options.set_output_file_args(parser, allowed_formats=("json", "yaml"))
     parser = options.add_thread_arg(parser, "project export")
     parser = options.set_what(parser, what_list=_EVERYTHING, operation="export or import")
     parser = options.add_import_export_arg(parser, "configuration")
@@ -151,7 +152,10 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     if not kwargs["dontInlineLists"]:
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
     with utilities.open_file(kwargs["file"]) as fd:
-        print(utilities.json_dump(sq_settings), file=fd)
+        if kwargs[options.FORMAT] == "yaml":
+            print(yaml.dump(sq_settings), file=fd)
+        else:
+            print(utilities.json_dump(sq_settings), file=fd)
     log.info("Exporting configuration from %s completed", kwargs["url"])
 
 
@@ -193,7 +197,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Importing configuration to %s completed", kwargs[options.URL])
 
 
-def main():
+def main() -> None:
     """Main entry point for sonar-config"""
     start_time = utilities.start_clock()
     try:
@@ -206,6 +210,7 @@ def main():
         utilities.exit_fatal(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
     what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
+    kwargs[options.FORMAT] = utilities.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))
     if kwargs[options.EXPORT]:
         try:
             __export_config(endpoint, what, **kwargs)
