@@ -104,6 +104,15 @@ def __parse_args(desc):
     return args
 
 
+def __write_export(config: dict[str, str], file: str, format: str) -> None:
+    """Writes the configuration in file"""
+    with utilities.open_file(file) as fd:
+        if format == "yaml":
+            print(yaml.dump(config), file=fd)
+        else:
+            print(utilities.json_dump(config), file=fd)
+
+
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
     export_settings = {
@@ -119,15 +128,12 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    sq_settings = {}
-    sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
+    sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
     if options.WHAT_SETTINGS in what:
         sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(export_settings=export_settings)
-    if options.WHAT_RULES in what:
+    if options.WHAT_RULES in what or options.WHAT_PROFILES in what:
         sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, export_settings=export_settings)
     if options.WHAT_PROFILES in what:
-        if options.WHAT_RULES not in what:
-            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, export_settings=export_settings)
         sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, export_settings=export_settings)
     if options.WHAT_GATES in what:
         sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, export_settings=export_settings)
@@ -151,11 +157,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     sq_settings = utilities.remove_empties(sq_settings)
     if not kwargs["dontInlineLists"]:
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
-    with utilities.open_file(kwargs["file"]) as fd:
-        if kwargs[options.FORMAT] == "yaml":
-            print(yaml.dump(sq_settings), file=fd)
-        else:
-            print(utilities.json_dump(sq_settings), file=fd)
+    __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
     log.info("Exporting configuration from %s completed", kwargs["url"])
 
 
