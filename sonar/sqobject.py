@@ -56,6 +56,15 @@ class SqObject:
                 api = cls.SEARCH_API
         return api
 
+    @classmethod
+    def empty_cache(cls) -> None:
+        """Empties the cache of objects of the given class"""
+        log.info("Emptying cache of %s", str(cls))
+        try:
+            cls._OBJECTS = {}
+        except AttributeError:
+            pass
+
     def uuid(self) -> str:
         """Returns object unique ID in its class"""
         return uuid(self.key, self.endpoint.url)
