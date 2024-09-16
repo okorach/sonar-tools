@@ -45,7 +45,6 @@ from sonar.audit import rules, problem
 
 from sonar.portfolio_reference import PortfolioReference
 
-_OBJECTS = {}
 _CLASS_LOCK = Lock()
 
 _CREATE_API = "views/create"
@@ -90,6 +89,8 @@ class Portfolio(aggregations.Aggregation):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
 
+    _OBJECTS = {}
+
     def __init__(self, endpoint: pf.Platform, name: str, key: str = None) -> None:
         """Constructor, don't use - use class methods instead"""
         if not key:
@@ -107,7 +108,7 @@ class Portfolio(aggregations.Aggregation):
         self.is_sub_portfolio = None
         self.parent = None  #: Ref to parent portfolio object, if any
         self._root_portfolio = None  #: Ref to root portfolio, if any
-        _OBJECTS[self.uuid()] = self
+        Portfolio._OBJECTS[self.uuid()] = self
         log.debug("Created portfolio object name '%s'", name)
 
     @classmethod
@@ -116,8 +117,8 @@ class Portfolio(aggregations.Aggregation):
         check_supported(endpoint)
         log.debug("Getting portfolio object key '%s'", key)
         uid = sq.uuid(key, endpoint.url)
-        if uid in _OBJECTS:
-            return _OBJECTS[uid]
+        if uid in Portfolio._OBJECTS:
+            return Portfolio._OBJECTS[uid]
         data = search_by_key(endpoint, key)
         if data is None:
             raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' not found")
@@ -311,7 +312,7 @@ class Portfolio(aggregations.Aggregation):
 
     def delete(self) -> bool:
         """Deletes a portfolio, returns whether the operation succeeded"""
-        return sq.delete_object(self, "views/delete", {"key": self.key}, _OBJECTS)
+        return sq.delete_object(self, "views/delete", {"key": self.key}, Portfolio._OBJECTS)
 
     def _audit_empty(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits if a portfolio is empty (no projects)"""
@@ -623,6 +624,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing portfolios")
             object_list = search(endpoint=endpoint)
+            log.info("List = %s", ", ".join(list(object_list.keys())))
             return object_list
         object_list = {}
         for key in util.csv_to_list(key_list):
