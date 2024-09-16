@@ -403,7 +403,7 @@ def set_output_file_args(parser: ArgumentParser, help_str: str = None, allowed_f
             choices=allowed_formats,
             required=False,
             default=None,
-            help="Output format for generated report.\nIf not specified, it is the output file extension if json or csv, then csv by default",
+            help="Output format for generated report.\nIf not specified, it is the output file extension if json, csv or yaml, then csv by default",
         )
     if "csv" in allowed_formats:
         parser.add_argument(
