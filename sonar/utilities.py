@@ -569,6 +569,8 @@ def deduct_format(fmt: Union[str, None], filename: Union[str, None], allowed_for
     """Deducts output format from CLI format and filename"""
     if fmt is None and filename is not None:
         fmt = filename.split(".").pop(-1).lower()
+        if fmt == "yml":
+            fmt = "yaml"
     if fmt not in allowed_formats:
         fmt = "csv"
     return fmt

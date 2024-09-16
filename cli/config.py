@@ -23,6 +23,7 @@
 """
 import sys
 import json
+import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities
@@ -70,7 +71,7 @@ __MAP = {
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
-    parser = options.set_output_file_args(parser, allowed_formats=("json",))
+    parser = options.set_output_file_args(parser, allowed_formats=("json", "yaml"))
     parser = options.add_thread_arg(parser, "project export")
     parser = options.set_what(parser, what_list=_EVERYTHING, operation="export or import")
     parser = options.add_import_export_arg(parser, "configuration")
@@ -103,6 +104,15 @@ def __parse_args(desc):
     return args
 
 
+def __write_export(config: dict[str, str], file: str, format: str) -> None:
+    """Writes the configuration in file"""
+    with utilities.open_file(file) as fd:
+        if format == "yaml":
+            print(yaml.dump(config), file=fd)
+        else:
+            print(utilities.json_dump(config), file=fd)
+
+
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
     export_settings = {
@@ -118,15 +128,12 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
 
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    sq_settings = {}
-    sq_settings[__JSON_KEY_PLATFORM] = endpoint.basics()
+    sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
     if options.WHAT_SETTINGS in what:
         sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(export_settings=export_settings)
-    if options.WHAT_RULES in what:
+    if options.WHAT_RULES in what or options.WHAT_PROFILES in what:
         sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, export_settings=export_settings)
     if options.WHAT_PROFILES in what:
-        if options.WHAT_RULES not in what:
-            sq_settings[__JSON_KEY_RULES] = rules.export(endpoint, export_settings=export_settings)
         sq_settings[__JSON_KEY_PROFILES] = qualityprofiles.export(endpoint, export_settings=export_settings)
     if options.WHAT_GATES in what:
         sq_settings[__JSON_KEY_GATES] = qualitygates.export(endpoint, export_settings=export_settings)
@@ -150,8 +157,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     sq_settings = utilities.remove_empties(sq_settings)
     if not kwargs["dontInlineLists"]:
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
-    with utilities.open_file(kwargs["file"]) as fd:
-        print(utilities.json_dump(sq_settings), file=fd)
+    __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
     log.info("Exporting configuration from %s completed", kwargs["url"])
 
 
@@ -193,7 +199,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Importing configuration to %s completed", kwargs[options.URL])
 
 
-def main():
+def main() -> None:
     """Main entry point for sonar-config"""
     start_time = utilities.start_clock()
     try:
@@ -206,6 +212,7 @@ def main():
         utilities.exit_fatal(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
     what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
+    kwargs[options.FORMAT] = utilities.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))
     if kwargs[options.EXPORT]:
         try:
             __export_config(endpoint, what, **kwargs)

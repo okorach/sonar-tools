@@ -12,6 +12,8 @@ dist/
 tmp/
 .coverage
 *.json
+*.yaml
+*.yml
 .venv/
 .DS_Store
 
