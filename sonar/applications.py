@@ -576,3 +576,9 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
             data[app.key] = app
     # return {app.key: app for app in _OBJECTS.values() if app.name == name}
     return data
+
+
+def convert_for_yaml(app_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    new_json = {}
+    new_json["branches"] = util.dict_to_list(app_json["branches"], "name")
