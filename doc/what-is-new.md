@@ -1,5 +1,8 @@
 # Next version yet unreleased
 
+- `sonar-tools` is now available as a docker image
+- `sonar-config` export can now export configuration as a YAML file (Only JSON was available previously)
+
 # Version 3.3
 
 - `sonar-config`: Improved / Hardened several elements for both import and export
