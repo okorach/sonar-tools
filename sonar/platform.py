@@ -829,8 +829,8 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
         original_json["permissions"] = permissions.convert_for_yaml(original_json["permissions"])
     if "permissionTemplates" in original_json:
         for tpl in original_json["permissionTemplates"].values():
-            log.debug("Convert TPL %s", str(tpl["permissions"]))
-            tpl["permissions"] = permissions.convert_for_yaml(tpl["permissions"])
+            if "permissions" in tpl:
+                tpl["permissions"] = permissions.convert_for_yaml(tpl["permissions"])
         original_json["permissionTemplates"] = util.dict_to_list(original_json["permissionTemplates"], "name")
     if "devopsIntegration" in original_json:
         original_json["devopsIntegration"] = util.dict_to_list(original_json["devopsIntegration"], "name")
