@@ -115,16 +115,18 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
 
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
-    if "applications" in json_export:
-        json_export["applications"] = applications.convert_for_yaml(json_export["applications"])
-    if "qualityProfiles" in json_export:
-        json_export["qualityProfiles"] = qualityprofiles.convert_for_yaml(json_export["qualityProfiles"])
+    if "globalSettings" in json_export:
+        json_export["globalSettings"] = platform.convert_for_yaml(json_export["globalSettings"])
     if "qualityGates" in json_export:
         json_export["qualityGates"] = qualitygates.convert_for_yaml(json_export["qualityGates"])
+    if "qualityProfiles" in json_export:
+        json_export["qualityProfiles"] = qualityprofiles.convert_for_yaml(json_export["qualityProfiles"])
     if "projects" in json_export:
         json_export["projects"] = projects.convert_for_yaml(json_export["projects"])
     if "portfolios" in json_export:
         json_export["portfolios"] = portfolios.convert_for_yaml(json_export["portfolios"])
+    if "applications" in json_export:
+        json_export["applications"] = applications.convert_for_yaml(json_export["applications"])
     if "users" in json_export:
         json_export["users"] = users.convert_for_yaml(json_export["users"])
     if "groups" in json_export:
