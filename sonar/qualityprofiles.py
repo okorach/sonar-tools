@@ -365,7 +365,6 @@ class QualityProfile(sq.SqObject):
         my_rules = self.rules()
         for r in modified_rules:
             r_key, r_left, r_right = r["key"], r["left"], r["right"]
-            # diff_rules[r_key] = {"modified": True}
             diff_rules[r_key] = {}
             parms = None
             if r_left["severity"] != r_right["severity"]:

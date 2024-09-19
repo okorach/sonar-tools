@@ -369,12 +369,6 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
 def convert_rule_list_for_yaml(rule_list: types.ObjectJsonRepr) -> list[types.ObjectJsonRepr]:
     """Converts a rule dict (key: data) from a dict to a list ["key": key, **data]"""
     return utilities.dict_to_list(rule_list, "key", "severity")
-    for k, v in rule_list.items():
-        if isinstance(v, dict):
-            converted_list.append({"key": k, **v})
-        else:
-            converted_list.append({"key": k, "severity": v})
-    return converted_list
 
 
 def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
