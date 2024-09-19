@@ -108,9 +108,30 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
     """Writes the configuration in file"""
     with utilities.open_file(file) as fd:
         if format == "yaml":
-            print(yaml.dump(config), file=fd)
+            print(yaml.dump(__convert_for_yaml(config), sort_keys=False), file=fd)
         else:
             print(utilities.json_dump(config), file=fd)
+
+
+def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
+    """Converts the default JSON produced by export to a modified version more suitable for YAML"""
+    if "applications" in json_export:
+        json_export["applications"] = applications.convert_for_yaml(json_export["applications"])
+    if "qualityProfiles" in json_export:
+        json_export["qualityProfiles"] = qualityprofiles.convert_for_yaml(json_export["qualityProfiles"])
+    if "qualityGates" in json_export:
+        json_export["qualityGates"] = qualitygates.convert_for_yaml(json_export["qualityGates"])
+    if "projects" in json_export:
+        json_export["projects"] = projects.convert_for_yaml(json_export["projects"])
+    if "portfolios" in json_export:
+        json_export["portfolios"] = portfolios.convert_for_yaml(json_export["portfolios"])
+    if "users" in json_export:
+        json_export["users"] = users.convert_for_yaml(json_export["users"])
+    if "groups" in json_export:
+        json_export["groups"] = groups.convert_for_yaml(json_export["groups"])
+    if "rules" in json_export:
+        json_export["rules"] = rules.convert_for_yaml(json_export["rules"])
+    return json_export
 
 
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
