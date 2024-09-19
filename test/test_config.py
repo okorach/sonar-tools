@@ -40,13 +40,14 @@ OPTS_IMPORT = [CMD] + util.TEST_OPTS + ["-i", f"-{opt.REPORT_FILE_SHORT}", util.
 
 def __test_config_cmd(arguments: list[str]) -> None:
     """Runs a test command"""
-    util.clean(util.JSON_FILE)
+    outputfile = arguments[arguments.index(f"-{opt.REPORT_FILE_SHORT}") + 1]
+    util.clean(outputfile)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", arguments):
             config.main()
     assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    assert util.file_not_empty(outputfile)
+    util.clean(outputfile)
 
 
 def test_config_export() -> None:
@@ -72,6 +73,11 @@ def test_config_export_partial_2() -> None:
 def test_config_export_partial_3() -> None:
     """test_config_export_partial_3"""
     __test_config_cmd(OPTS + ["-w", "projects", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"])
+
+
+def test_config_export_yaml() -> None:
+    """test_config_export_partial_3"""
+    __test_config_cmd([CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.YAML_FILE])
 
 
 def test_config_export_wrong() -> None:

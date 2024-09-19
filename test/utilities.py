@@ -36,6 +36,7 @@ LATEST_CE = "http://localhost:8000"
 
 CSV_FILE = "temp.csv"
 JSON_FILE = "temp.json"
+YAML_FILE = "temp.yaml"
 
 STD_OPTS = [f"-{opt.URL_SHORT}", os.getenv("SONAR_HOST_URL"), f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
