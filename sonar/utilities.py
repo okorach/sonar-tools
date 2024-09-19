@@ -628,6 +628,6 @@ def list_to_dict(original_list: list[dict[str, any]], key_field: str) -> dict[st
     return converted_dict
 
 
-def dict_to_list(original_dict: dict[str, any], key_field: str) -> list[str, any]:
+def dict_to_list(original_dict: dict[str, any], key_field: str, value_field: Optional[str] = "value") -> list[str, any]:
     """Converts a dict to list adding dict key in list key_field"""
-    return [{key_field: key, **elem} for key, elem in original_dict.items()]
+    return [{key_field: key, value_field: elem} if not isinstance(elem, dict) else {key_field: key, **elem} for key, elem in original_dict.items()]
