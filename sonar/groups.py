@@ -267,7 +267,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     """
     log.info("Exporting groups")
     g_list = {}
-    for g_name, g_obj in search(endpoint=endpoint).items():
+    for g_name, g_obj in sorted(search(endpoint=endpoint).items()):
         if not export_settings["FULL_EXPORT"] and g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
@@ -365,3 +365,8 @@ def exists(group_name: str, endpoint: pf.Platform) -> bool:
     :rtype: bool
     """
     return get_object(name=group_name, endpoint=endpoint) is not None
+
+
+def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    return util.dict_to_list(original_json, "name", "description")

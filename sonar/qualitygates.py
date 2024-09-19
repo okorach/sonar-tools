@@ -380,7 +380,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     :rtype: dict
     """
     log.info("Exporting quality gates")
-    return {k: qg.to_json(export_settings) for k, qg in get_list(endpoint).items()}
+    return {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> bool:
@@ -465,3 +465,8 @@ def _decode_condition(c: str) -> tuple[str, str, str]:
 def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, QualityGate]:
     """Searches quality gates matching name"""
     return util.search_by_name(endpoint, name, APIS["list"], "qualitygates")
+
+
+def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    return util.dict_to_list(original_json, "name")

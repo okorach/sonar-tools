@@ -153,8 +153,8 @@ class DevopsPlatform(sq.SqObject):
         :return: The configuration of the DevOps platform (except secrets)
         :rtype: dict
         """
-        json_data = self._json.copy()
-        json_data.update({"key": self.key, "type": self.type, "url": self.url})
+        json_data = {"key": self.key, "type": self.type, "url": self.url}
+        json_data.update(self._json.copy())
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
     def set_pat(self, pat, user_name=None):

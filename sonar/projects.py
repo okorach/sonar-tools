@@ -1385,7 +1385,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         worker.setName(f"ProjectExport{i}")
         worker.start()
     q.join()
-    return project_settings
+    return dict(sorted(project_settings.items()))
 
 
 def exists(key: str, endpoint: pf.Platform) -> bool:
@@ -1489,3 +1489,22 @@ def export_zip(endpoint: pf.Platform, key_list: types.KeyList = None, threads: i
         },
         "project_exports": exports,
     }
+
+
+def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    if "branches" in proj_json:
+        proj_json["branches"] = util.dict_to_list(proj_json["branches"], "name")
+    if "qualityProfiles" in proj_json:
+        proj_json["qualityProfiles"] = util.dict_to_list(proj_json["qualityProfiles"], "language", "name")
+    if "permissions" in proj_json:
+        proj_json["permissions"] = perms.convert_for_yaml(proj_json["permissions"])
+    return proj_json
+
+
+def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    new_json = []
+    for proj in util.dict_to_list(original_json, "key"):
+        new_json.append(convert_proj_for_yaml(proj))
+    return new_json

@@ -364,3 +364,17 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
     if len(d) == 1:
         return d["severity"]
     return d
+
+
+def convert_rule_list_for_yaml(rule_list: types.ObjectJsonRepr) -> list[types.ObjectJsonRepr]:
+    """Converts a rule dict (key: data) from a dict to a list ["key": key, **data]"""
+    return utilities.dict_to_list(rule_list, "key", "severity")
+
+
+def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    new_json = {}
+    for category in ("instantiated", "extended"):
+        if category in original_json:
+            new_json[category] = convert_rule_list_for_yaml(original_json[category])
+    return new_json

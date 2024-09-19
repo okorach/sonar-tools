@@ -512,7 +512,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     for k in apps_settings:
         # remove key from JSON value, it's already the dict key
         apps_settings[k].pop("key")
-    return apps_settings
+    return dict(sorted(apps_settings.items()))
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[problem.Problem]:
@@ -576,3 +576,16 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
             data[app.key] = app
     # return {app.key: app for app in _OBJECTS.values() if app.name == name}
     return data
+
+
+def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    new_json = util.dict_to_list(original_json, "key")
+    for app_json in new_json:
+        app_json["branches"] = util.dict_to_list(app_json["branches"], "name")
+        for b in app_json["branches"]:
+            if "projects" in b:
+                b["projects"] = [{"key": k, "branch": br} for k, br in b["projects"].items()]
+        if "permissions" in app_json:
+            app_json["permissions"] = permissions.convert_for_yaml(app_json["permissions"])
+    return new_json
