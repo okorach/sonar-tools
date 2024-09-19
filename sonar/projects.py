@@ -1496,7 +1496,7 @@ def convert_proj_for_yaml(proj_json: types.ObjectJsonRepr) -> types.ObjectJsonRe
     if "branches" in proj_json:
         proj_json["branches"] = util.dict_to_list(proj_json["branches"], "name")
     if "qualityProfiles" in proj_json:
-        proj_json["qualityProfiles"] = util.key_val_to_list(proj_json["qualityProfiles"], "language", "name")
+        proj_json["qualityProfiles"] = util.dict_to_list(proj_json["qualityProfiles"], "language", "name")
     if "permissions" in proj_json:
         proj_json["permissions"] = perms.convert_for_yaml(proj_json["permissions"])
     return proj_json
