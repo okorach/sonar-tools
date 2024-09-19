@@ -414,7 +414,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     """
     log.info("Exporting users")
     u_list = {}
-    for u_login, u_obj in search(endpoint=endpoint).items():
+    for u_login, u_obj in sorted(search(endpoint=endpoint).items()):
         u_list[u_login] = u_obj.to_json(export_settings["FULL_EXPORT"])
         u_list[u_login].pop("login", None)
     return u_list

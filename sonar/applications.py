@@ -512,7 +512,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     for k in apps_settings:
         # remove key from JSON value, it's already the dict key
         apps_settings[k].pop("key")
-    return apps_settings
+    return dict(sorted(apps_settings.items()))
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[problem.Problem]:

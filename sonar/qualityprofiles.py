@@ -601,7 +601,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, in_hier
         qp_list[lang][name] = json_data
     if in_hierarchy:
         qp_list = hierarchize(qp_list, endpoint)
-    return qp_list
+    return dict(sorted(qp_list.items()))
 
 
 def get_object(endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:

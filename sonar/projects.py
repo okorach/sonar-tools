@@ -1385,7 +1385,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         worker.setName(f"ProjectExport{i}")
         worker.start()
     q.join()
-    return project_settings
+    return dict(sorted(project_settings.items()))
 
 
 def exists(key: str, endpoint: pf.Platform) -> bool:

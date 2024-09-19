@@ -380,7 +380,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     :rtype: dict
     """
     log.info("Exporting quality gates")
-    return {k: qg.to_json(export_settings) for k, qg in get_list(endpoint).items()}
+    return {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> bool:

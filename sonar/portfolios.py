@@ -336,26 +336,24 @@ class Portfolio(aggregations.Aggregation):
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns the portfolio representation as JSON"""
         self.refresh()
-        json_data = {}
+        json_data = {"key": self.key, "name": self.name}
+        if self._description:
+            json_data["description"] = self._description
         subportfolios = self.sub_portfolios()
+        if not self.is_sub_portfolio:
+            json_data["visibility"] = self._visibility
+            json_data["permissions"] = self.permissions().export(export_settings=export_settings)
+        json_data["tags"] = self._tags
         if subportfolios:
             json_data["portfolios"] = {}
             for s in subportfolios.values():
                 subp_json = s.to_json(export_settings)
                 subp_key = subp_json.pop("key")
                 json_data["portfolios"][subp_key] = subp_json
-        if not self.is_sub_portfolio:
-            json_data["permissions"] = self.permissions().export(export_settings=export_settings)
-            json_data["visibility"] = self._visibility
-        json_data["key"] = self.key
-        json_data["name"] = self.name
-        json_data["tags"] = self._tags
-        json_data["applications"] = self._applications
-        if self._description:
-            json_data["description"] = self._description
         mode = self.selection_mode().copy()
         if mode and "none" not in mode:
             json_data["projects"] = mode
+        json_data["applications"] = self._applications
         return json_data
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -744,7 +742,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         nb_portfolios = count(endpoint=endpoint)
     i = 0
     exported_portfolios = {}
-    for k, p in get_list(endpoint=endpoint, key_list=key_list).items():
+    for k, p in sorted(get_list(endpoint=endpoint, key_list=key_list).items()):
         if not p.is_sub_portfolio:
             exported_portfolios[k] = p.export(export_settings)
             exported_portfolios[k].pop("key")

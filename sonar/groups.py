@@ -267,7 +267,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     """
     log.info("Exporting groups")
     g_list = {}
-    for g_name, g_obj in search(endpoint=endpoint).items():
+    for g_name, g_obj in sorted(search(endpoint=endpoint).items()):
         if not export_settings["FULL_EXPORT"] and g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
