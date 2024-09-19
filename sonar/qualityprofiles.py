@@ -365,7 +365,8 @@ class QualityProfile(sq.SqObject):
         my_rules = self.rules()
         for r in modified_rules:
             r_key, r_left, r_right = r["key"], r["left"], r["right"]
-            diff_rules[r_key] = {"modified": True}
+            # diff_rules[r_key] = {"modified": True}
+            diff_rules[r_key] = {}
             parms = None
             if r_left["severity"] != r_right["severity"]:
                 diff_rules[r_key]["severity"] = r_left["severity"]
@@ -700,3 +701,26 @@ def exists(endpoint: pf.Platform, name: str, language: str) -> bool:
         return True
     except exceptions.ObjectNotFound:
         return False
+
+
+def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Converts a QP in a modified version more suitable for YAML export"""
+
+    if "children" in qp:
+        qp["children"] = {k: convert_one_qp_yaml(q) for k, q in qp["children"].items()}
+        qp["children"] = util.dict_to_list(qp["children"], "name")
+    for rule_group in "rules", "modifiedRules", "addedRules", "removedRules":
+        if rule_group in qp:
+            qp[rule_group] = rules.convert_rule_list_for_yaml(qp[rule_group])
+    return qp
+
+
+def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Convert the original JSON defined for JSON export into a JSON format more adapted for YAML export"""
+    new_json = {}
+    for lang, qp_list in original_json.items():
+        new_json[lang] = {"profiles": util.dict_to_list(qp_list, "name")}
+    new_json = util.dict_to_list(new_json, "language")
+    for lang in new_json:
+        lang["profiles"] = [convert_one_qp_yaml(qp) for qp in lang["profiles"]]
+    return new_json
