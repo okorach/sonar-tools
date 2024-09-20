@@ -196,14 +196,23 @@ def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     if options.WHAT_GROUPS in what:
         groups.import_config(endpoint, data)
     if options.WHAT_USERS in what:
-        users.import_config(endpoint, data)
+        try:
+            users.import_config(endpoint, data)
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
     if options.WHAT_GATES in what:
         qualitygates.import_config(endpoint, data)
     if options.WHAT_RULES in what:
-        rules.import_config(endpoint, data)
+        try:
+            rules.import_config(endpoint, data)
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
     if options.WHAT_PROFILES in what:
         if options.WHAT_RULES not in what:
-            rules.import_config(endpoint, data)
+            try:
+                rules.import_config(endpoint, data)
+            except exceptions.UnsupportedOperation as e:
+                log.warning(e.message)
         qualityprofiles.import_config(endpoint, data)
     if options.WHAT_SETTINGS in what:
         endpoint.import_config(data)

@@ -465,6 +465,8 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> N
     if "users" not in config_data:
         log.info("No users to import")
         return
+    if endpoint.is_sonarcloud():
+        raise exceptions.UnsupportedOperation("Can't import users in SonarCloud")
     log.info("Importing users")
     for login, data in config_data["users"].items():
         data["scm_accounts"] = util.csv_to_list(data.pop("scmAccounts", ""))

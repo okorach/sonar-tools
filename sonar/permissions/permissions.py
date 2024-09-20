@@ -24,8 +24,9 @@ from __future__ import annotations
 from typing import Optional
 
 import json
-from http import HTTPStatus
 from abc import ABC, abstractmethod
+from http import HTTPStatus
+from requests.exceptions import HTTPError
 
 import sonar.logging as log
 from sonar import utilities, errcodes
@@ -258,7 +259,10 @@ class Permissions(ABC):
             filtered_perms = self._filter_permissions_for_edition(perms)
             for p in filtered_perms:
                 params["permission"] = p
-                r = self.endpoint.post(api, params=params)
+                try:
+                    r = self.endpoint.post(api, params=params)
+                except HTTPError as e:
+                    log.error("HTTP Error: %s", utilities.sonar_error(e.response))
                 result = result and r.ok
         return result
 

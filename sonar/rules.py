@@ -90,6 +90,8 @@ class Rule(sq.SqObject):
     @classmethod
     def create(cls, endpoint: platform.Platform, key: str, **kwargs) -> Optional[Rule]:
         """Creates a rule object"""
+        if endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("Can't create or extend rules on SonarCloud")
         params = kwargs.copy()
         (_, params["customKey"]) = key.split(":")
         log.debug("Creating rule key '%s'", key)
@@ -108,6 +110,8 @@ class Rule(sq.SqObject):
 
     @classmethod
     def instantiate(cls, endpoint: platform.Platform, key: str, template_key: str, data: types.ObjectJsonRepr) -> Rule:
+        if endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("Can't instantiate rules on SonarCloud")
         try:
             rule = Rule.get_object(endpoint, key)
             log.info("Rule key '%s' already exists, instantiation skipped...", key)
@@ -162,6 +166,8 @@ class Rule(sq.SqObject):
 
     def set_description(self, description: str) -> bool:
         """Extends rule description"""
+        if self.endpoint.is_sonarcloud():
+            raise exceptions.UnsupportedOperation("Can't extend rules description on SonarCloud")
         log.debug("Settings custom description of %s to '%s'", str(self), description)
         ok = self.post(_UPDATE_API, params={"key": self.key, "markdown_note": description}).ok
         if ok:
@@ -306,6 +312,8 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     if "rules" not in config_data:
         log.info("No customized rules (custom tags, extended description) to import")
         return True
+    if endpoint.is_sonarcloud():
+        raise exceptions.UnsupportedOperation("Can't import rules in SonarCloud")
     log.info("Importing customized (custom tags, extended description) rules")
     get_list(endpoint=endpoint)
     for key, custom in config_data["rules"].get("extended", {}).items():

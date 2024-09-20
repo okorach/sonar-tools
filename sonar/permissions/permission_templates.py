@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import json
+from requests.exceptions import HTTPError
 
 import sonar.logging as log
 from sonar.util import types
@@ -136,7 +137,10 @@ class PermissionTemplate(sqobject.SqObject):
             if (ed == "community" and qual in ("VW", "APP")) or (ed == "developer" and qual == "VW"):
                 log.warning("Can't set permission template as default for %s on a %s edition", qual, ed)
                 continue
-            self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
+            try:
+                self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
+            except HTTPError as e:
+                log.error("HTTP Error: %s", utilities.sonar_error(e.response))
 
     def set_pattern(self, pattern: str) -> PermissionTemplate:
         """Sets a permission template pattern"""

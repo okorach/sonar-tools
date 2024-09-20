@@ -38,14 +38,14 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
         return f"permissions of {str(self.concerned_object)}"
 
     def read(self):
-        if self.endpoint.version() < (9, 2, 0):
+        if not self.endpoint.is_sonarcloud() and self.endpoint.version() < (9, 2, 0):
             log.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
         self._read_perms(QualityGatePermissions.APIS, QualityGatePermissions.API_GET_FIELD, gateName=self.concerned_object.name)
         return self
 
     def set(self, new_perms):
-        if self.endpoint.version() < (9, 2, 0):
+        if not self.endpoint.is_sonarcloud() and self.endpoint.version() < (9, 2, 0):
             raise exceptions.UnsupportedOperation(f"Can't set {str(self)} on SonarQube < 9.2")
 
         return self._set_perms(

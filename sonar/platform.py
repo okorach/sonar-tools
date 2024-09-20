@@ -460,10 +460,16 @@ class Platform:
 
         if settings.NEW_CODE_PERIOD in config_data["generalSettings"]:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
-            settings.set_new_code_period(self, nc_type, nc_val)
+            try:
+                settings.set_new_code_period(self, nc_type, nc_val)
+            except exceptions.UnsupportedOperation as e:
+                log.error(e.message)
         permission_templates.import_config(self, config_data)
         global_permissions.import_config(self, config_data)
-        devops.import_config(self, config_data)
+        try:
+            devops.import_config(self, config_data)
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a global platform configuration and returns the list of problems found
