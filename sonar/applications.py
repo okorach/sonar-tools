@@ -498,11 +498,10 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
+    :param ConfigSetting export_settings: Options to use for export
     :param KeyList key_list: list of Application keys to export, defaults to all if None
-    :param full: Whether to export all attributes, including those that can't be set, defaults to False
-    :type full: bool
     :return: Dict of applications settings
-    :rtype: dict
+    :rtype: ObjectJsonRepr
     """
     if endpoint.is_sonarcloud():
         # log.info("Applications do not exist in SonarCloud, export skipped")

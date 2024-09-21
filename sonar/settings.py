@@ -25,6 +25,7 @@ from __future__ import annotations
 import re
 import json
 from typing import Union
+from http import HTTPStatus
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
@@ -115,7 +116,7 @@ _INLINE_SETTINGS = (
 )
 
 API_SET = "settings/set"
-API_CREATE = "settings/set"
+API_CREATE = API_SET
 API_GET = "settings/values"
 API_LIST = "settings/list_definitions"
 API_NEW_CODE_GET = "new_code_periods/show"
@@ -447,7 +448,17 @@ def get_new_code_period(endpoint: pf.Platform, project_or_branch: object) -> Set
 def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, project_key: str = None, branch: str = None) -> bool:
     """Sets the new code period at global level or for a project"""
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
-    return endpoint.post(API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
+    try:
+        if endpoint.is_sonarcloud():
+            ok = endpoint.post(API_SET, params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
+            ok = ok and endpoint.post(API_SET, params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
+        else:
+            ok = endpoint.post(API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
+    except HTTPError as e:
+        if e.response.status_code == HTTPStatus.BAD_REQUEST:
+            raise exceptions.UnsupportedOperation(f"Can't set project new code period: {e.response.text}")
+        raise
+    return ok
 
 
 def get_visibility(endpoint: pf.Platform, component: object) -> str:
@@ -468,12 +479,17 @@ def get_visibility(endpoint: pf.Platform, component: object) -> str:
 
 def set_visibility(endpoint: pf.Platform, visibility: str, component: object = None) -> bool:
     """Sets the platform global default visibility or component visibility"""
-    if component:
-        log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
-        return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility}).ok
-    else:
-        log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
-        return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
+    try:
+        if component:
+            log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
+            return endpoint.post("projects/update_visibility", params={"project": component.key, "visibility": visibility}).ok
+        else:
+            log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
+            return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
+    except HTTPError as e:
+        if e.response.status_code == HTTPStatus.BAD_REQUEST:
+            raise exceptions.UnsupportedOperation(f"Can't set project default visibility: {e.response.text}")
+        raise
 
 
 def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
@@ -485,10 +501,13 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
     else:
         try:
             s.set(value)
-            return True
-        except HTTPError:
-            log.warning("Setting '%s' cannot be set", key)
+        except HTTPError as e:
+            log.error("Setting '%s' cannot be set: %s", key, util.sonar_error(e.response))
             return False
+        except exceptions.UnsupportedOperation as e:
+            log.error("Setting '%s' cannot be set: %s", key, e.message)
+            return False
+    return True
 
 
 def decode(setting_key: str, setting_value: any) -> any:

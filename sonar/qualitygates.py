@@ -234,7 +234,10 @@ class QualityGate(sq.SqObject):
             return False
         self.clear_conditions()
         log.debug("Setting conditions of %s", str(self))
-        params = {"gateName": self.name}
+        if self.endpoint.is_sonarcloud():
+            params = {"gateId": self.key}
+        else:
+            params = {"gateName": self.name}
         ok = True
         for cond in conditions_list:
             (params["metric"], params["op"], params["error"]) = _decode_condition(cond)
@@ -265,7 +268,10 @@ class QualityGate(sq.SqObject):
         :return: Whether setting as default quality gate was successful
         :rtype: bool
         """
-        r = self.post("qualitygates/set_as_default", params={"name": self.name})
+        if self.endpoint.is_sonarcloud():
+            r = self.post("qualitygates/set_as_default", params={"id": self.key})
+        else:
+            r = self.post("qualitygates/set_as_default", params={"name": self.name})
         if r.ok:
             self.is_default = True
             # Turn off default for all other quality gates except the current one
@@ -374,16 +380,20 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     return qg_list
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
-    """
-    :return: The list of quality gates in their JSON representation
-    :rtype: dict
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+    """Exports quality gates as JSON
+
+    :param Platform endpoint: Reference to the Sonar platform
+    :param ConfigSetting export_settings: Options to use for export
+    :param KeyList key_list: Unused
+    :return: Quality gates representations as JSON
+    :rtype: ObjectJsonRepr
     """
     log.info("Exporting quality gates")
     return {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> bool:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports quality gates in a SonarQube platform, fom sonar-config data
     Quality gates already existing are updates with the provided configuration
 
@@ -400,7 +410,9 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> b
     for name, data in config_data["qualityGates"].items():
         try:
             o = QualityGate.get_object(endpoint, name)
+            log.debug("Found existing %s", str(o))
         except exceptions.ObjectNotFound:
+            log.debug("QG %s not found, creating it", name)
             o = QualityGate.create(endpoint, name)
         ok = ok and o.update(**data)
     return ok

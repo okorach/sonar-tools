@@ -460,10 +460,16 @@ class Platform:
 
         if settings.NEW_CODE_PERIOD in config_data["generalSettings"]:
             (nc_type, nc_val) = settings.decode(settings.NEW_CODE_PERIOD, config_data["generalSettings"][settings.NEW_CODE_PERIOD])
-            settings.set_new_code_period(self, nc_type, nc_val)
+            try:
+                settings.set_new_code_period(self, nc_type, nc_val)
+            except exceptions.UnsupportedOperation as e:
+                log.error(e.message)
         permission_templates.import_config(self, config_data)
         global_permissions.import_config(self, config_data)
-        devops.import_config(self, config_data)
+        try:
+            devops.import_config(self, config_data)
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a global platform configuration and returns the list of problems found
@@ -813,6 +819,17 @@ def latest() -> tuple[int, int, int]:
     return __lta_and_latest()[1]
 
 
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+    """Imports a configuration in SonarQube
+
+    :param Platform endpoint: reference to the SonarQube platform
+    :param ObjectJsonRepr config_data: the configuration to import
+    :param KeyList key_list: Unused
+    :return: Nothing
+    """
+    endpoint.import_config(config_data)
+
+
 def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
     """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
     if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:
@@ -836,3 +853,15 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
     if "devopsIntegration" in original_json:
         original_json["devopsIntegration"] = util.dict_to_list(original_json["devopsIntegration"], "name")
     return original_json
+
+
+def export(endpoint: Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+    """Exports all or a list of projects configuration as dict
+
+    :param Platform endpoint: reference to the SonarQube platform
+    :param ConfigSettings export_settings: Export parameters
+    :param KeyList key_list: Unused
+    :return: Platform settings
+    :rtype: ObjectJsonRepr
+    """
+    return endpoint.export(export_settings)

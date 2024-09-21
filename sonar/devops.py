@@ -209,6 +209,8 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     :return: List of DevOps platforms
     :rtype: dict{<platformKey>: <DevopsPlatform>}
     """
+    if endpoint.is_sonarcloud():
+        raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarCloud")
     if endpoint.edition() == "community":
         return _OBJECTS
     data = json.loads(endpoint.get(APIS["list"]).text)
@@ -253,12 +255,14 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
     return json_data
 
 
-def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr) -> None:
+def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports DevOps platform configuration in SonarQube/Cloud"""
     devops_settings = config_data.get("devopsIntegration", {})
     if len(devops_settings) == 0:
         log.info("No devops integration settings in config, skipping import...")
         return
+    if endpoint.is_sonarcloud():
+        raise exceptions.UnsupportedOperation("Can't get import DevOps platforms in SonarCloud")
     log.info("Importing DevOps config %s", util.json_dump(devops_settings))
     if len(_OBJECTS) == 0:
         get_list(endpoint)

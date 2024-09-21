@@ -256,15 +256,16 @@ def get_list(endpoint: pf.Platform) -> dict[str, Group]:
     return search(endpoint)
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
-    """Exports all groups configuration as dict
-    Default groups (sonar-users) are not exported
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+    """Exports groups representation in JSON
 
-    :param endpoint: reference to the SonarQube platform
-    :type endpoint: pf.Platform
-    :return: list of groups
-    :rtype: dict{name: description}
+    :param Platform endpoint: reference to the SonarQube platform
+    :param ConfigSettings export_settings: Export parameters
+    :param KeyList key_list: List of project keys to export, defaults to None (all projects)
+    :return: list of groups settings
+    :rtype: ObjectJsonRepr
     """
+
     log.info("Exporting groups")
     g_list = {}
     for g_name, g_obj in sorted(search(endpoint=endpoint).items()):
@@ -337,7 +338,7 @@ def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Grou
         return Group.create(endpoint, name, description)
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports a group configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform

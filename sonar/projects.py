@@ -1368,8 +1368,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
     :param KeyList key_list: List of project keys to export, defaults to None (all projects)
-    :return: list of projects
-    :rtype: dict{key: Project}
+    :return: list of projects settings
+    :rtype: ObjectJsonRepr
     """
     for qp in qualityprofiles.get_list(endpoint).values():
         qp.projects()

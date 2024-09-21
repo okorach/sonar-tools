@@ -728,10 +728,10 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
-    :param KeyList key_list: list of portfoliios keys to export as csv or list, defaults to all if None
     :param ConfigSetting export_settings: Options to use for export
-    :return: Dict of applications settings
-    :rtype: dict
+    :param KeyList key_list: list of portfoliios keys to export as csv or list, defaults to all if None
+    :return: Dict of portfolio settings
+    :rtype: ObjectJsonRepr
     """
     check_supported(endpoint)
 
