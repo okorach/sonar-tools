@@ -287,24 +287,19 @@ def export_needed(endpoint: platform.Platform, instantiated: bool = True, extend
     return utilities.remove_nones(rule_list)
 
 
-def export(
-    endpoint: platform.Platform, export_settings: types.ConfigSettings, instantiated: bool = True, extended: bool = True, standard: bool = False
-) -> types.ObjectJsonRepr:
+def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Returns a dict of rules for export
-    :return: a dict of rule onbjects indexed with rule key
     :param Platform endpoint: The SonarQube Platform object to connect to
     :param ConfigSettings export_settings: parameters to export
-    :param bool instantiated: Include instantiated rules in the list
-    :param bool extended: Include extended rules in the list
-    :param bool standard: Include standard rules in the list
-    :param full standard: Include full rule information in the export
-    :rtype: dict{ruleKey: <ruleJson.}
+    :param KeyList key_list: Unused
+    :return: a dict of rules with their JSON representation
+    :rtype: ObjectJsonRepr
     """
     log.info("Exporting rules")
-    if standard:
-        return export_all(endpoint, export_settings["FULL_EXPORT"])
-    else:
-        return export_needed(endpoint, instantiated, extended, export_settings["FULL_EXPORT"])
+    # if standard:
+    return export_all(endpoint, export_settings["FULL_EXPORT"])
+    # else:
+    #    return export_needed(endpoint, instantiated, extended, export_settings["FULL_EXPORT"])
 
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:

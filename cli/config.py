@@ -149,9 +149,34 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         if len(non_existing_projects) > 0:
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
 
+    calls = {
+        options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
+        options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
+        options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
+        options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
+        options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
+        options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
+        options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
+        options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
+        options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
+    }
+
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
     sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
+    for what_item, call_data in calls.items():
+        if what_item in what:
+            ndx, func = call_data
+            try:
+                sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
+            except exceptions.UnsupportedOperation as e:
+                log.warning(e.message)
+    sq_settings = utilities.remove_empties(sq_settings)
+    if not kwargs["dontInlineLists"]:
+        sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
+    __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
+    log.info("Exporting configuration from %s completed", kwargs["url"])
+
     if options.WHAT_SETTINGS in what:
         sq_settings[__JSON_KEY_SETTINGS] = endpoint.export(export_settings=export_settings)
     if options.WHAT_RULES in what or options.WHAT_PROFILES in what:
@@ -177,12 +202,6 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     if options.WHAT_GROUPS in what:
         sq_settings[__JSON_KEY_GROUPS] = groups.export(endpoint, export_settings=export_settings)
 
-    sq_settings = utilities.remove_empties(sq_settings)
-    if not kwargs["dontInlineLists"]:
-        sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
-    __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
-    log.info("Exporting configuration from %s completed", kwargs["url"])
-
 
 def __read_input_file(file: str) -> dict[str, any]:
     try:
@@ -203,6 +222,7 @@ def __import_config(endpoint: platform.Platform, what: list[str], data: dict[str
         options.WHAT_USERS: users.import_config,
         options.WHAT_GATES: qualitygates.import_config,
         options.WHAT_RULES: rules.import_config,
+        options.WHAT_PROFILES: qualityprofiles.import_config,
         options.WHAT_SETTINGS: platform.import_config,
         options.WHAT_PROJECTS: projects.import_config,
         options.WHAT_APPS: applications.import_config,
@@ -216,7 +236,6 @@ def __import_config(endpoint: platform.Platform, what: list[str], data: dict[str
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
     log.info("Importing configuration to %s completed", kwargs[options.URL])
-    return None
 
 
 def main() -> None:

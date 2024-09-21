@@ -380,10 +380,14 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     return qg_list
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
-    """
-    :return: The list of quality gates in their JSON representation
-    :rtype: dict
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+    """Exports quality gates as JSON
+
+    :param Platform endpoint: Reference to the Sonar platform
+    :param ConfigSetting export_settings: Options to use for export
+    :param KeyList key_list: Unused
+    :return: Quality gates representations as JSON
+    :rtype: ObjectJsonRepr
     """
     log.info("Exporting quality gates")
     return {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}

@@ -579,14 +579,14 @@ def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> types.ObjectJ
     return qp_list
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, in_hierarchy: bool = True) -> types.ObjectJsonRepr:
-    """Exports all quality profiles configuration as dict
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+    """Exports all or a list of quality profiles configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
-    :param dict export_settings: Export settings
-    :param bool in_hierarchy: Whether quality profiles dict should be organized hierarchically (following inheritance)
-    :return: dict structure of all quality profiles
-    :rtype: dict
+    :param ConfigSettings export_settings: Export parameters
+    :param KeyList key_list: Unused
+    :return: Dict of quality profiles JSON representation
+    :rtype: ObjectJsonRepr
     """
     log.info("Exporting quality profiles")
     qp_list = {}
@@ -598,8 +598,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, in_hier
         if lang not in qp_list:
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
-    if in_hierarchy:
-        qp_list = hierarchize(qp_list, endpoint)
+    qp_list = hierarchize(qp_list, endpoint)
     return dict(sorted(qp_list.items()))
 
 

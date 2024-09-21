@@ -824,7 +824,7 @@ def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_lis
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ObjectJsonRepr config_data: the configuration to import
-    :param KeyList key_list: List of project keys to be considered for the import, defaults to None (all projects)
+    :param KeyList key_list: Unused
     :return: Nothing
     """
     endpoint.import_config(config_data)
@@ -853,3 +853,15 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
     if "devopsIntegration" in original_json:
         original_json["devopsIntegration"] = util.dict_to_list(original_json["devopsIntegration"], "name")
     return original_json
+
+
+def export(endpoint: Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+    """Exports all or a list of projects configuration as dict
+
+    :param Platform endpoint: reference to the SonarQube platform
+    :param ConfigSettings export_settings: Export parameters
+    :param KeyList key_list: Unused
+    :return: Platform settings
+    :rtype: ObjectJsonRepr
+    """
+    return endpoint.export(export_settings)
