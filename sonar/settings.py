@@ -116,7 +116,7 @@ _INLINE_SETTINGS = (
 )
 
 API_SET = "settings/set"
-API_CREATE = "settings/set"
+API_CREATE = API_SET
 API_GET = "settings/values"
 API_LIST = "settings/list_definitions"
 API_NEW_CODE_GET = "new_code_periods/show"
@@ -450,8 +450,8 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
     log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
     try:
         if endpoint.is_sonarcloud():
-            ok = endpoint.post("settings/set", params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
-            ok = ok and endpoint.post("settings/set", params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
+            ok = endpoint.post(API_SET, params={"key": "sonar.leak.period.type", "value": nc_type, "project": project_key}).ok
+            ok = ok and endpoint.post(API_SET, params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
         else:
             ok = endpoint.post(API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
     except HTTPError as e:
