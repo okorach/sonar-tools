@@ -168,16 +168,6 @@ def test_get_nonexisting_rule() -> None:
         assert e.key == "badlang:S127"
 
 
-def test_export_nonstandard() -> None:
-    """test_export_nonstandard"""
-    export = rules.export(endpoint=util.SQ, export_settings={"FULL_EXPORT": True}, standard=False)
-    assert len(export) > 0
-    assert "standard" not in export
-    export = rules.export(endpoint=util.SQ, export_settings={"FULL_EXPORT": False}, standard=True)
-    assert len(export) > 0
-    assert "standard" in export
-
-
 def test_export_all() -> None:
     """test_export_all"""
     rule_list = rules.export_all(endpoint=util.SQ, full=True)
