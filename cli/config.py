@@ -184,51 +184,39 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Exporting configuration from %s completed", kwargs["url"])
 
 
-def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
-    """Imports a platform configuration from a JSON file"""
-    log.info("Importing configuration to %s", kwargs[options.URL])
-    key_list = kwargs[options.KEYS]
+def __read_input_file(file: str) -> dict[str, any]:
     try:
-        with open(kwargs[options.REPORT_FILE], "r", encoding="utf-8") as fd:
+        with open(file, "r", encoding="utf-8") as fd:
             data = json.loads(fd.read())
     except FileNotFoundError as e:
         utilities.exit_fatal(f"OS error while reading file: {e}", exit_code=errcodes.OS_ERROR)
-    if options.WHAT_GROUPS in what:
-        groups.import_config(endpoint, data)
-    if options.WHAT_USERS in what:
-        try:
-            users.import_config(endpoint, data)
-        except exceptions.UnsupportedOperation as e:
-            log.warning(e.message)
-    if options.WHAT_GATES in what:
-        qualitygates.import_config(endpoint, data)
-    if options.WHAT_RULES in what:
-        try:
-            rules.import_config(endpoint, data)
-        except exceptions.UnsupportedOperation as e:
-            log.warning(e.message)
-    if options.WHAT_PROFILES in what:
-        if options.WHAT_RULES not in what:
+    return data
+
+
+def __import_config(endpoint: platform.Platform, what: list[str], data: dict[str, any], **kwargs) -> None:
+    """Imports a platform configuration from a JSON file"""
+    log.info("Importing configuration to %s", kwargs[options.URL])
+    key_list = kwargs[options.KEYS]
+
+    calls = {
+        options.WHAT_GROUPS: groups.import_config,
+        options.WHAT_USERS: users.import_config,
+        options.WHAT_GATES: qualitygates.import_config,
+        options.WHAT_RULES: rules.import_config,
+        options.WHAT_SETTINGS: platform.import_config,
+        options.WHAT_PROJECTS: projects.import_config,
+        options.WHAT_APPS: applications.import_config,
+        options.WHAT_PORTFOLIOS: portfolios.import_config,
+    }
+
+    for what_item, func in calls.items():
+        if what_item in what:
             try:
-                rules.import_config(endpoint, data)
+                func(endpoint, data, key_list=key_list)
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
-        qualityprofiles.import_config(endpoint, data)
-    if options.WHAT_SETTINGS in what:
-        endpoint.import_config(data)
-    if options.WHAT_PROJECTS in what:
-        projects.import_config(endpoint, data, key_list=key_list)
-    if options.WHAT_APPS in what:
-        try:
-            applications.import_config(endpoint, data, key_list=key_list)
-        except exceptions.UnsupportedOperation as e:
-            log.warning(e.message)
-    if options.WHAT_PORTFOLIOS in what:
-        try:
-            portfolios.import_config(endpoint, data, key_list=key_list)
-        except exceptions.UnsupportedOperation as e:
-            log.warning(e.message)
     log.info("Importing configuration to %s completed", kwargs[options.URL])
+    return None
 
 
 def main() -> None:
@@ -244,6 +232,8 @@ def main() -> None:
         utilities.exit_fatal(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", exit_code=errcodes.ARGS_ERROR)
 
     what = utilities.check_what(kwargs.pop(options.WHAT, None), _EVERYTHING, "exported or imported")
+    if options.WHAT_PROFILES in what and options.WHAT_RULES not in what:
+        what.append(options.WHAT_RULES)
     kwargs[options.FORMAT] = utilities.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE], allowed_formats=("json", "yaml"))
     if kwargs[options.EXPORT]:
         try:
@@ -255,7 +245,7 @@ def main() -> None:
     if kwargs["import"]:
         if kwargs["file"] is None:
             utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ARGS_ERROR)
-        __import_config(endpoint, what, **kwargs)
+        __import_config(endpoint, what, __read_input_file(kwargs[options.REPORT_FILE]), **kwargs)
     utilities.stop_clock(start_time)
     sys.exit(0)
 
