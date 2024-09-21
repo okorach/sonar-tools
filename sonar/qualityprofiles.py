@@ -647,7 +647,7 @@ def __import_thread(queue: Queue) -> None:
         queue.task_done()
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, threads: int = 8) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -656,6 +656,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, thre
     :type threads: int
     :return: Nothing
     """
+    threads = 8
     if "qualityProfiles" not in config_data:
         log.info("No quality profiles to import")
         return

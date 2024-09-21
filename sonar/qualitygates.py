@@ -389,7 +389,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings) -> type
     return {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> bool:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports quality gates in a SonarQube platform, fom sonar-config data
     Quality gates already existing are updates with the provided configuration
 

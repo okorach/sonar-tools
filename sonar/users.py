@@ -455,7 +455,7 @@ def get_login_from_name(endpoint: pf.Platform, name: str) -> Union[str, None]:
     return list(u_list.keys()).pop(0)
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports in SonarQube a complete users configuration described from a sonar-config JSON
 
     :param Platform endpoint: reference to the SonarQube platform

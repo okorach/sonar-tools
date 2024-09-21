@@ -307,7 +307,7 @@ def export(
         return export_needed(endpoint, instantiated, extended, export_settings["FULL_EXPORT"])
 
 
-def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr) -> bool:
+def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a sonar-config configuration"""
     if "rules" not in config_data:
         log.info("No customized rules (custom tags, extended description) to import")

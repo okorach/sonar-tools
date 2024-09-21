@@ -819,6 +819,17 @@ def latest() -> tuple[int, int, int]:
     return __lta_and_latest()[1]
 
 
+def import_config(endpoint: Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+    """Imports a configuration in SonarQube
+
+    :param Platform endpoint: reference to the SonarQube platform
+    :param ObjectJsonRepr config_data: the configuration to import
+    :param KeyList key_list: List of project keys to be considered for the import, defaults to None (all projects)
+    :return: Nothing
+    """
+    endpoint.import_config(config_data)
+
+
 def _check_for_retry(response: requests.models.Response) -> tuple[bool, str]:
     """Verifies if a response had a 301 Moved permanently and if so provide the new location"""
     if len(response.history) > 0 and response.history[0].status_code == HTTPStatus.MOVED_PERMANENTLY:

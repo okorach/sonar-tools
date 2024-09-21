@@ -255,7 +255,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -
     return json_data
 
 
-def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr) -> None:
+def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports DevOps platform configuration in SonarQube/Cloud"""
     devops_settings = config_data.get("devopsIntegration", {})
     if len(devops_settings) == 0:

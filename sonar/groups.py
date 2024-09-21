@@ -337,7 +337,7 @@ def create_or_update(endpoint: pf.Platform, name: str, description: str) -> Grou
         return Group.create(endpoint, name, description)
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
     """Imports a group configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
