@@ -9,6 +9,16 @@
         "type": "BAD_PRACTICE",
         "message": "{}"
     },
+    "OBJECT_WITH_NO_PERMISSIONS": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "{} has no permissions defined"
+    },
+    "OBJECT_WITH_NO_ADMIN_PERMISSION": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "{} has no user or group with admin permission"
+    },
     "DUBIOUS_GLOBAL_SETTING": {
         "severity": "HIGH",
         "type": "BAD_PRACTICE",
