@@ -917,7 +917,7 @@ class Project(components.Component):
             json_data["links"] = self.links()
             json_data["permissions"] = self.permissions().to_json(csv=export_settings.get("INLINE_LISTS", True))
             json_data["branches"] = self.__get_branch_export(export_settings)
-            json_data["tags"] = util.list_to_csv(self.tags(), separator=", ")
+            json_data["tags"] = self.tags()
             json_data["visibility"] = self.visibility()
             (json_data["qualityGate"], qg_is_default) = self.quality_gate()
             if qg_is_default:
