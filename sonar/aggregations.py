@@ -22,11 +22,13 @@
     Parent module of applications and portfolios
 
 """
+
+from typing import Optional
 import json
 
 import sonar.logging as log
+from sonar.util import types
 import sonar.platform as pf
-from sonar.util.types import ApiPayload, ApiParams
 
 import sonar.components as comp
 
@@ -37,7 +39,7 @@ from sonar.audit.problem import Problem
 class Aggregation(comp.Component):
     """Parent class of applications and portfolios"""
 
-    def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None) -> None:
+    def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         self._nbr_projects = None
         self._permissions = None
         super().__init__(endpoint=endpoint, key=key)
@@ -90,8 +92,17 @@ class Aggregation(comp.Component):
     def _audit_singleton_aggregation(self, broken_rule: object) -> list[Problem]:
         return self._audit_aggregation_cardinality((1, 1), broken_rule)
 
+    def permissions(self) -> Optional[object]:
+        """Should be implement in child classes"""
+        return self._permissions
 
-def count(api: str, endpoint: pf.Platform, params: ApiParams = None) -> int:
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        if self.permissions() is None:
+            return []
+        return self.permissions().audit(audit_settings)
+
+
+def count(api: str, endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     """Returns number of aggregations of a given type (Application OR Portfolio)
     :return: number of Apps or Portfolios
     :rtype: int
