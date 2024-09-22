@@ -121,6 +121,10 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - `sonar-users` group with elevated project permissions
     - `Anyone` group with any project permissions
+    - No projectKeyPattern for a template that is not a default
+    - Suspicious projectKeyPattern (a pattern that is likely to not select more than 1 key) for instance:
+      - `my_favorite_project` (no `.` in pattern)
+      - `BUXXXX-*` (Likely confusion between wildcards and regexp)
 - DB Cleaner: (if `audit.globalSettings = yes`, default `yes`)
   - Delay to delete inactive short lived branches (7.9) or branches (8.0+) not between 10 and 60 days
   - Delay to delete closed issues not between 10 and 60 days

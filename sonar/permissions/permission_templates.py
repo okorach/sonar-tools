@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import json
+import re
 from requests.exceptions import HTTPError
 
 import sonar.logging as log
@@ -28,6 +29,7 @@ from sonar.util import types
 from sonar import sqobject, utilities
 from sonar.permissions import template_permissions
 import sonar.platform as pf
+from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.problem as pb
 
 _OBJECTS = {}
@@ -176,9 +178,23 @@ class PermissionTemplate(sqobject.SqObject):
         json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
         return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
+    def _audit_pattern(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
+        log.debug("Auditing %s projectKeyPattern ('%s')", str(self.project_key_pattern))
+        if not self.project_key_pattern or self.project_key_pattern == "":
+            if not (self.is_applications_default() or self.is_portfolios_default() or self.is_projects_default()):
+                return [pb.Problem(get_rule(RuleId.TEMPLATE_WITH_NO_PATTERN), self, str(self))]
+        else:
+            # Inspect regexp to detect suspicious pattern - Can't determine all bad cases but do our best
+            # Currently detecting:
+            # - Absence of '.' in the regexp
+            # - '*' not preceded by '.' (confusion between wildcard and regexp)
+            if not re.search(r"(^|[^\\])\.", self.project_key_pattern) or re.search(r"(^|[^.])\*", self.project_key_pattern):
+                return [pb.Problem(get_rule(RuleId.TEMPLATE_WITH_SUSPICIOUS_PATTERN), self, str(self), self.project_key_pattern)]
+        return []
+
     def audit(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
         log.debug("Auditing %s", str(self))
-        return self.permissions().audit(audit_settings)
+        return self._audit_pattern(audit_settings) + self.permissions().audit(audit_settings)
 
 
 def get_object(endpoint: pf.Platform, name: str) -> PermissionTemplate:
