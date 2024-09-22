@@ -560,7 +560,7 @@ class Project(components.Component):
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         proj_type, scanner = self.get_type(), self.scanner()
-        log.debug("%s is of type %s and uses scanner %s", proj_type, scanner)
+        log.debug("%s is of type %s and uses scanner %s", str(self), proj_type, scanner)
         if proj_type == "UNKNOWN":
             log.info("%s project type can't be identified, skipping check", str(self))
             return []
