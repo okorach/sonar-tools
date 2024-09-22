@@ -153,9 +153,9 @@ def test_get_rule_cache() -> None:
 
 def test_export_not_full() -> None:
     """test_export_not_full"""
-    rule_list = rules.export_all(endpoint=util.SQ, full=False)
+    rule_list = rules.export(endpoint=util.SQ, export_settings={"FULL_EXPORT": False})
     assert len(rule_list["extended"]) > 0
-    rule_list = rules.export_all(endpoint=util.SQ, full=True)
+    rule_list = rules.export(endpoint=util.SQ, export_settings={"FULL_EXPORT": True})
     assert len(rule_list["extended"]) > 0
 
 
@@ -170,7 +170,7 @@ def test_get_nonexisting_rule() -> None:
 
 def test_export_all() -> None:
     """test_export_all"""
-    rule_list = rules.export_all(endpoint=util.SQ, full=True)
+    rule_list = rules.export(endpoint=util.SQ, export_settings={"FULL_EXPORT": True})
     if util.SQ.version() < (10, 0, 0) and util.SQ.edition() == "community":
         assert len(rule_list.get("standard", {})) > 2800
     else:
