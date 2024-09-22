@@ -625,9 +625,8 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     """
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
-            log.info("Listing portfolios")
+            log.debug("Listing portfolios")
             object_list = search(endpoint=endpoint)
-            log.info("List = %s", ", ".join(list(object_list.keys())))
             return object_list
         object_list = {}
         for key in util.csv_to_list(key_list):
