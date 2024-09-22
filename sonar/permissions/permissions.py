@@ -197,9 +197,9 @@ class Permissions(ABC):
         """Audits that at least one permission is granted to a user or a group
         and that at least one group or user has admin permission on the object"""
         if self.count() == 0:
-            return [Problem(get_rule(RuleId.OBJECT_WITH_NO_PERMISSIONS), self.concerned_object)]
+            return [Problem(get_rule(RuleId.OBJECT_WITH_NO_PERMISSIONS), self.concerned_object, str(self.concerned_object))]
         elif self.count(perm_filter=["admin"]) == 0:
-            return [Problem(get_rule(RuleId.OBJECT_WITH_NO_ADMIN_PERMISSION), self.concerned_object)]
+            return [Problem(get_rule(RuleId.OBJECT_WITH_NO_ADMIN_PERMISSION), self.concerned_object, str(self.concerned_object))]
         return []
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -220,7 +220,6 @@ class Permissions(ABC):
                 if perm_filter is None:
                     continue
                 perm_counter += len([1 for p in elem_perms if p in perm_filter])
-        log.debug("Perm counts = %d", (elem_counter if perm_filter is None else perm_counter))
         return elem_counter if perm_filter is None else perm_counter
 
     def _get_api(self, api: str, perm_type: str, ret_field: str, **extra_params) -> types.JsonPermissions:
