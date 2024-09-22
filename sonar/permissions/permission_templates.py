@@ -170,7 +170,8 @@ class PermissionTemplate(sqobject.SqObject):
             defaults.append("portfolios")
         if len(defaults) > 0:
             json_data["defaultFor"] = utilities.list_to_csv(defaults, ", ")
-
+        if not self.project_key_pattern or self.project_key_pattern == "":
+            json_data.pop("pattern")
         json_data["creationDate"] = utilities.date_to_string(self.creation_date)
         json_data["lastUpdate"] = utilities.date_to_string(self.last_update)
         return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
