@@ -111,6 +111,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - More than 3 groups with `create project` permission
   - More than 10 groups with any global permissions
 - Permission Templates: (if `audit.projects.permissions = yes`, default `yes`)
+    - Permissions Templates with no permissions granted
     - More than `audit.projects.permissions.maxUsers` different users with direct permissions (default 5)
     - More than `audit.projects.permissions.maxAdminUsers` users with Project admin permission (default 2)
     - More than `audit.projects.permissions.maxGroups` different groups with permissions on project (default 5)
@@ -120,6 +121,10 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - More than `audit.projects.permissions.maxAdminGroups` groups with project admin permission (default 2)
     - `sonar-users` group with elevated project permissions
     - `Anyone` group with any project permissions
+    - No projectKeyPattern for a template that is not a default
+    - Suspicious projectKeyPattern (a pattern that is likely to not select more than 1 key) for instance:
+      - `my_favorite_project` (no `.` in pattern)
+      - `BUXXXX-*` (Likely confusion between wildcards and regexp)
 - DB Cleaner: (if `audit.globalSettings = yes`, default `yes`)
   - Delay to delete inactive short lived branches (7.9) or branches (8.0+) not between 10 and 60 days
   - Delay to delete closed issues not between 10 and 60 days
@@ -195,10 +200,12 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
   - Empty portfolios (with no projects) if `audit.portfolios.empty` is `yes`
   - Portfolios composed of a single project if `audit.portfolios.singleton` is `yes`
   - Last recomputation `FAILED`
+  - Portfolios with no permissions
 - Applications: (if `audit.applications = yes`, default `yes`)
   - Empty applications (with no projects) if `audit.applications.empty` is `yes`
   - Applications composed of a single project if `audit.applications.singleton` is `yes`
   - Last recomputation `FAILED`
+  - Applications with no permissions
 - Users: (if `audit.users = yes`, default `yes`)
   - Users that did not login on the platform since `audit.users.maxLoginAge` days (default 180 days)
   - Tokens older than `audit.tokens.maxAge` days (default 90 days)

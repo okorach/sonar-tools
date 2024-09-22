@@ -47,13 +47,6 @@ class ProjectPermissions(permissions.Permissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __init__(self, concerned_object: object) -> None:
-        self.concerned_object = concerned_object
-        super().__init__(concerned_object.endpoint)
-
-    def __str__(self) -> str:
-        return f"permissions of {str(self.concerned_object)}"
-
     def read(self) -> ProjectPermissions:
         """Reads permissions in SonarQube"""
         self.permissions = permissions.NO_PERMISSIONS.copy()
@@ -71,7 +64,7 @@ class ProjectPermissions(permissions.Permissions):
         return self
 
     def _set_perms(
-        self, new_perms: types.JsonPermissions, apis: dict[str, str], field: dict[str, str], diff_func: Callable, **kwargs
+        self, new_perms: types.JsonPermissions, apis: dict[str, dict[str, str]], field: dict[str, str], diff_func: Callable, **kwargs
     ) -> ProjectPermissions:
         log.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
@@ -102,7 +95,7 @@ class ProjectPermissions(permissions.Permissions):
             log.debug("Auditing project permissions is disabled by configuration, skipping")
             return []
         log.debug("Auditing %s", str(self))
-        return self.__audit_user_permissions(audit_settings) + self.__audit_group_permissions(audit_settings)
+        return super().audit(audit_settings) + self.__audit_user_permissions(audit_settings) + self.__audit_group_permissions(audit_settings)
 
     def __audit_user_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project user permissions"""
@@ -113,7 +106,7 @@ class ProjectPermissions(permissions.Permissions):
             problems.append(Problem(get_rule(RuleId.PROJ_PERM_MAX_USERS), self, str(self.concerned_object), user_count))
 
         max_admins = audit_settings.get("audit.projects.permissions.maxAdminUsers", 2)
-        admin_count = self.count("users", ("admin"))
+        admin_count = self.count("users", ("admin",))
         if admin_count > max_admins:
             rule = get_rule(RuleId.PROJ_PERM_MAX_ADM_USERS)
             problems.append(Problem(rule, self, str(self.concerned_object), admin_count, max_admins))

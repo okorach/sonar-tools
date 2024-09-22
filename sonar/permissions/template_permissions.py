@@ -20,18 +20,25 @@
 
 """Permissions templates permissions class"""
 
+from __future__ import annotations
 import sonar.logging as log
+from sonar.util import types
 from sonar.permissions import permissions, project_permissions
 
 
 class TemplatePermissions(project_permissions.ProjectPermissions):
+    """
+    Abstraction of the permission templates permissions
+    """
+
     API_GET = {"users": "permissions/template_users", "groups": "permissions/template_groups"}
     API_SET = {"users": "permissions/add_user_to_template", "groups": "permissions/add_group_to_template"}
     API_REMOVE = {"users": "permissions/remove_user_from_template", "groups": "permissions/remove_group_from_template"}
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def read(self):
+    def read(self) -> TemplatePermissions:
+        """Reads permissions of a permission template"""
         self.permissions = permissions.NO_PERMISSIONS
         for p in permissions.PERMISSION_TYPES:
             self.permissions[p] = self._get_api(
@@ -46,8 +53,9 @@ class TemplatePermissions(project_permissions.ProjectPermissions):
         self.white_list(tuple(project_permissions.PROJECT_PERMISSIONS.keys()))
         return self
 
-    def set(self, new_perms):
-        log.debug("Setting %s with %s", str(self), str(new_perms))
+    def set(self, new_perms: types.JsonPermissions) -> TemplatePermissions:
+        """Sets permissions of a permission template"""
+        log.info("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
         for p in permissions.PERMISSION_TYPES:

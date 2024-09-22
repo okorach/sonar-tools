@@ -321,7 +321,12 @@ class Application(aggr.Aggregation):
         :rtype: list [Problem]
         """
         log.info("Auditing %s", str(self))
-        return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
+        return (
+            super().audit(audit_settings)
+            + self._audit_empty(audit_settings)
+            + self._audit_singleton(audit_settings)
+            + self._audit_bg_task(audit_settings)
+        )
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports an application
@@ -346,7 +351,7 @@ class Application(aggr.Aggregation):
         )
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
-    def set_permissions(self, data):
+    def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
         """Sets an application permissions
 
         :param dict data: dict of permission {"users": [<user1>, <user2>, ...], "groups": [<group1>, <group2>, ...]}

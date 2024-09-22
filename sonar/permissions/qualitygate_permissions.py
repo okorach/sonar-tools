@@ -20,12 +20,18 @@
 
 """Quality gates permissions class"""
 
+from __future__ import annotations
+
 import sonar.logging as log
 from sonar import exceptions
 from sonar.permissions import permissions, quality_permissions
 
 
 class QualityGatePermissions(quality_permissions.QualityPermissions):
+    """
+    Abstraction of quality gates permissions
+    """
+
     APIS = {
         "get": {"users": "qualitygates/search_users", "groups": "qualitygates/search_groups"},
         "add": {"users": "qualitygates/add_user", "groups": "qualitygates/add_group"},
@@ -34,17 +40,15 @@ class QualityGatePermissions(quality_permissions.QualityPermissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __str__(self):
-        return f"permissions of {str(self.concerned_object)}"
-
-    def read(self):
+    def read(self) -> QualityGatePermissions:
         if not self.endpoint.is_sonarcloud() and self.endpoint.version() < (9, 2, 0):
             log.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
         self._read_perms(QualityGatePermissions.APIS, QualityGatePermissions.API_GET_FIELD, gateName=self.concerned_object.name)
         return self
 
-    def set(self, new_perms):
+    def set(self, new_perms: dict[str, any]) -> QualityGatePermissions:
+        """Sets permissions of a quality gate"""
         if not self.endpoint.is_sonarcloud() and self.endpoint.version() < (9, 2, 0):
             raise exceptions.UnsupportedOperation(f"Can't set {str(self)} on SonarQube < 9.2")
 

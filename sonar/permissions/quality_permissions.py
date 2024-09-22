@@ -20,9 +20,13 @@
 
 """Parent permissions class for quality gates and quality profiles permissions subclasses"""
 
+from __future__ import annotations
+from typing import Optional
+
 import json
 from http import HTTPStatus
 
+from sonar.util import types
 import sonar.logging as log
 from sonar import utilities, errcodes
 from sonar.permissions import permissions
@@ -31,14 +35,12 @@ MAX_PERMS = 25
 
 
 class QualityPermissions(permissions.Permissions):
-    def __init__(self, concerned_object):
-        self.concerned_object = concerned_object
-        super().__init__(concerned_object.endpoint)
+    """
+    Abstractions of QP and QG permissions
+    """
 
-    def __str__(self):
-        return f"permissions of {str(self.concerned_object)}"
-
-    def _post_api(self, api, set_field, perms_dict, **extra_params):
+    def _post_api(self, api: str, set_field: str, perms_dict: types.JsonPermissions, **extra_params) -> bool:
+        """Runs a post on QG or QP permissions"""
         if perms_dict is None:
             return True
         result = False
@@ -49,7 +51,8 @@ class QualityPermissions(permissions.Permissions):
             result = result and r.ok
         return result
 
-    def to_json(self, perm_type=None, csv=False):
+    def to_json(self, perm_type: Optional[tuple[str, ...]] = None, csv: bool = False) -> types.ObjectJsonRepr:
+        """Returns the JSON representation of permissions"""
         if not csv:
             return self.permissions[perm_type] if permissions.is_valid(perm_type) else self.permissions
         perms = {}
@@ -61,7 +64,7 @@ class QualityPermissions(permissions.Permissions):
                 perms[p] = permissions.encode(self.permissions.get(p, None))
         return perms if len(perms) > 0 else None
 
-    def _get_api(self, api, perm_type, ret_field, **extra_params):
+    def _get_api(self, api: str, perm_type: tuple[str, ...], ret_field: str, **extra_params) -> list[str]:
         perms = []
         params = extra_params.copy()
         params["ps"] = MAX_PERMS
@@ -80,11 +83,12 @@ class QualityPermissions(permissions.Permissions):
             page, nbr_pages = page + 1, utilities.nbr_pages(data)
         return perms
 
-    def _set_perms(self, new_perms, apis, field, diff_func, **kwargs):
+    def _set_perms(self, new_perms: types.ObjectJsonRepr, apis: dict[str, dict[str, str]], field: str, diff_func: callable, **kwargs) -> bool:
+        """Sets permissions of a QG or QP"""
         if self.concerned_object.is_built_in:
             log.debug("Can't set %s because it's built-in", str(self))
             self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
-            return self
+            return False
         log.debug("Setting %s with %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
@@ -99,7 +103,8 @@ class QualityPermissions(permissions.Permissions):
         self.read()
         return True
 
-    def _read_perms(self, apis, field, **kwargs):
+    def _read_perms(self, apis: dict[str, dict[str, str]], field: str, **kwargs) -> types.ObjectJsonRepr:
+        """Reads permissions of a QP or QG"""
         self.permissions = {p: [] for p in permissions.PERMISSION_TYPES}
         if self.endpoint.is_sonarcloud():
             log.debug("No permissions for %s because it's SonarCloud", str(self))

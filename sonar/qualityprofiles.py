@@ -473,7 +473,7 @@ class QualityProfile(sq.SqObject):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        log.debug("Auditing %s", str(self))
+        log.info("Auditing %s", str(self))
         if self.is_built_in:
             log.info("%s is built-in, skipping audit", str(self))
             return []

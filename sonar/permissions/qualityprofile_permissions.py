@@ -20,11 +20,17 @@
 
 """Quality profiles permissions class"""
 
+from __future__ import annotations
+
 import sonar.logging as log
+from sonar.util import types
 from sonar.permissions import permissions, quality_permissions
 
 
 class QualityProfilePermissions(quality_permissions.QualityPermissions):
+    """
+    Abtraction of quality profiles permissions
+    """
 
     APIS = {
         "get": {"users": "qualityprofiles/search_users", "groups": "qualityprofiles/search_groups"},
@@ -34,7 +40,7 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "group"}
 
-    def read(self):
+    def read(self) -> QualityProfilePermissions:
         if self.endpoint.version() < (9, 2, 0):
             log.debug("Can't read %s on SonarQube < 9.2", str(self))
             return self
@@ -46,7 +52,7 @@ class QualityProfilePermissions(quality_permissions.QualityPermissions):
         )
         return self
 
-    def set(self, new_perms):
+    def set(self, new_perms: types.JsonPermissions) -> bool:
         if self.endpoint.version() < (6, 6, 0):
             log.debug("Can set %s on SonarQube < 6.6", str(self))
             return self

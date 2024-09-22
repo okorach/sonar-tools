@@ -1,7 +1,11 @@
 # Next version yet unreleased
 
 - `sonar-tools` is now available as a docker image
-- `sonar-config` export can now export configuration as a YAML file (Only JSON was available previously). Import of YAML is not yet available
+- `sonar-config`
+  - Export can now export configuration as a YAML file (Only JSON was available previously).
+    Import of YAML is not yet available
+  - Beta version of config import in SonarCloud
+- `sonar-audit` a couple of new audit problems on permission templates (with no permissions, with no or wrong regexp)
 
 # Version 3.3
 

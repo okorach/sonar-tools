@@ -9,6 +9,26 @@
         "type": "BAD_PRACTICE",
         "message": "{}"
     },
+    "OBJECT_WITH_NO_PERMISSIONS": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "{} has no permissions defined"
+    },
+    "OBJECT_WITH_NO_ADMIN_PERMISSION": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "{} has no user or group with admin permission"
+    },
+    "TEMPLATE_WITH_NO_PATTERN": {
+        "severity": "MEDIUM",
+        "type": "OPERATIONS",
+        "message": "{} is not a default and has no projectKetPattern defined, it will never be used"
+    },
+    "TEMPLATE_WITH_SUSPICIOUS_PATTERN": {
+        "severity": "HIGH",
+        "type": "OPERATIONS",
+        "message": "{} has a suspicious projectKeyPattern '{}'. It should be a regexp that may match several keys"
+    },
     "DUBIOUS_GLOBAL_SETTING": {
         "severity": "HIGH",
         "type": "BAD_PRACTICE",
