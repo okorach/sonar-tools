@@ -18,22 +18,33 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+from __future__ import annotations
 
 import sonar.logging as log
 from sonar.permissions import permissions
+from sonar.util import types
 
 
 class GlobalPermissions(permissions.Permissions):
+    """Abstraction of SonarQube global permissions"""
+
     API_GET = {"users": "permissions/users", "groups": "permissions/groups"}
     API_SET = {"users": "permissions/add_user", "groups": "permissions/add_group"}
     API_REMOVE = {"users": "permissions/remove_user", "groups": "permissions/remove_group"}
     API_GET_FIELD = {"users": "login", "groups": "name"}
     API_SET_FIELD = {"users": "login", "groups": "groupName"}
 
-    def __str__(self):
+    def __init__(self, concerned_object: object) -> None:
+        self.concerned_object = concerned_object
+        self.endpoint = concerned_object
+        self.permissions = None
+        self.read()
+
+    def __str__(self) -> str:
         return "global permissions"
 
-    def read(self):
+    def read(self) -> GlobalPermissions:
+        """Reads global permissions"""
         self.permissions = permissions.NO_PERMISSIONS
         for ptype in permissions.PERMISSION_TYPES:
             self.permissions[ptype] = self._get_api(
@@ -41,7 +52,7 @@ class GlobalPermissions(permissions.Permissions):
             )
         return self
 
-    def set(self, new_perms):
+    def set(self, new_perms: types.JsonPermissions) -> GlobalPermissions:
         log.debug("Setting %s to %s", str(self), str(new_perms))
         if self.permissions is None:
             self.read()
@@ -57,7 +68,8 @@ class GlobalPermissions(permissions.Permissions):
         return self.read()
 
 
-def import_config(endpoint, config_data):
+def import_config(endpoint: object, config_data: types.ObjectJsonRepr):
+    """Imports global permissions in a SonarQube platform"""
     my_permissions = config_data.get("permissions", {})
     if len(my_permissions) == 0:
         log.info("No global permissions in config, skipping import...")
@@ -67,9 +79,10 @@ def import_config(endpoint, config_data):
     global_perms.set(my_permissions)
 
 
-def edition_filter(perms, ed):
+def edition_filter(perms: types.JsonPermissions, ed: str) -> types.JsonPermissions:
+    """Filters permissions available in a given edition"""
     for p in perms.copy():
         if ed == "community" and p in ("portfoliocreator", "applicationcreator") or ed == "developer" and p == "portfoliocreator":
-            log.warning("Can't remove permission '%s' on a %s edition", p, ed)
+            log.warning("Can't manage permission '%s' on a %s edition", p, ed)
             perms.remove(p)
     return perms
