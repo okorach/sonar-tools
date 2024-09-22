@@ -223,9 +223,10 @@ def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
         return None
 
 
-def export_all(endpoint: platform.Platform, full: bool = False) -> types.ObjectJsonRepr:
+def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
+    full = export_settings.get("FULL_EXPORT", False)
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
     for rule_key, rule in get_list(endpoint=endpoint).items():
         rule_export = rule.export(full)
@@ -249,57 +250,6 @@ def export_all(endpoint: platform.Platform, full: bool = False) -> types.ObjectJ
     if len(other_rules) > 0:
         rule_list["standard"] = other_rules
     return rule_list
-
-
-def export_instantiated(endpoint: platform.Platform, full: bool = False) -> Optional[types.ObjectJsonRepr]:
-    """Returns a JSON of all instantiated rules"""
-    rule_list = {}
-    for template_key in get_list(endpoint=endpoint, is_template="true"):
-        for rule_key, rule in get_list(endpoint=endpoint, template_key=template_key).items():
-            rule_list[rule_key] = rule.export(full)
-    return rule_list if len(rule_list) > 0 else None
-
-
-def export_customized(endpoint: platform.Platform, full: bool = False) -> Optional[types.ObjectJsonRepr]:
-    """Returns a JSON export of all customized rules (custom tags or description added)"""
-    rule_list = {}
-    for rule_key, rule in get_list(endpoint=endpoint, is_template="false").items():
-        if rule.tags is None and rule.custom_desc is None:
-            continue
-        if full:
-            rule_list[rule_key] = rule.export(full)
-            continue
-        rule_list[rule_key] = {}
-        if rule.tags:
-            rule_list[rule_key]["tags"] = utilities.list_to_csv(rule.tags, ", ")
-        if rule.custom_desc:
-            rule_list[rule_key]["description"] = rule.custom_desc
-    return rule_list if len(rule_list) > 0 else None
-
-
-def export_needed(endpoint: platform.Platform, instantiated: bool = True, extended: bool = True, full: bool = False) -> types.ObjectJsonRepr:
-    """Returns a JSON export selected / needed rules"""
-    rule_list = {}
-    if instantiated:
-        rule_list["instantiated"] = export_instantiated(endpoint, full)
-    if extended:
-        rule_list["extended"] = export_customized(endpoint, full)
-    return utilities.remove_nones(rule_list)
-
-
-def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
-    """Returns a dict of rules for export
-    :param Platform endpoint: The SonarQube Platform object to connect to
-    :param ConfigSettings export_settings: parameters to export
-    :param KeyList key_list: Unused
-    :return: a dict of rules with their JSON representation
-    :rtype: ObjectJsonRepr
-    """
-    log.info("Exporting rules")
-    # if standard:
-    return export_all(endpoint, export_settings["FULL_EXPORT"])
-    # else:
-    #    return export_needed(endpoint, instantiated, extended, export_settings["FULL_EXPORT"])
 
 
 def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
