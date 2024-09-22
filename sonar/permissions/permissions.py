@@ -31,6 +31,8 @@ from requests.exceptions import HTTPError
 import sonar.logging as log
 from sonar import utilities, errcodes
 from sonar.util import types
+from sonar.audit.rules import get_rule, RuleId
+from sonar.audit.problem import Problem
 
 COMMUNITY_GLOBAL_PERMISSIONS = {
     "admin": "Administer System",
@@ -71,10 +73,14 @@ class Permissions(ABC):
     Abstraction of sonar objects permissions
     """
 
-    def __init__(self, endpoint: object) -> None:
-        self.endpoint = endpoint
+    def __init__(self, concerned_object: object) -> None:
+        self.concerned_object = concerned_object
+        self.endpoint = concerned_object.endpoint
         self.permissions = None
         self.read()
+
+    def __str__(self) -> str:
+        return f"permissions of {str(self.concerned_object)}"
 
     def to_json(self, perm_type: str = None, csv: bool = False) -> types.JsonPermissions:
         """Converts a permission object to JSON"""
@@ -97,10 +103,6 @@ class Permissions(ABC):
         if not perms or len(perms) == 0:
             return None
         return perms
-
-    @abstractmethod
-    def __str__(self) -> str:
-        pass
 
     @abstractmethod
     def read(self) -> Permissions:
@@ -129,21 +131,6 @@ class Permissions(ABC):
         :param dict[str, list[str]] group_perms: The group permissions to apply
         """
         return self.set({"groups": group_perms})
-
-    """
-    @abstractmethod
-    def remove_user_permissions(self, user_perms_dict):
-        pass
-
-    @abstractmethod
-    def remove_group_permissions(self, group_perms_dict):
-        pass
-
-
-    def remove_permissions(self, perms_dict):
-        self.remove_user_permissions(perms_dict.get("users", None))
-        self.remove_group_permissions(perms_dict.get("groups", None))
-    """
 
     def clear(self) -> Permissions:
         """Clears all permissions of an object
@@ -205,6 +192,18 @@ class Permissions(ABC):
                 log.warning("Can't set permission '%s' on a %s edition", p, ed)
                 perms.remove(p)
         return perms
+
+    def audit_nbr_permissions(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits that at least one permission is granted to a user or a group
+        and that at least one group or user has admin permission on the object"""
+        if self.count() == 0:
+            return [Problem(get_rule(RuleId.OBJECT_WITH_NO_PERMISSIONS), self.concerned_object)]
+        elif self.count(perm_filter=["admin"]) == 0:
+            return [Problem(get_rule(RuleId.OBJECT_WITH_NO_ADMIN_PERMISSION), self.concerned_object)]
+        return []
+
+    def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        return self.audit_nbr_permissions(audit_settings)
 
     def count(self, perm_type: Optional[str] = None, perm_filter: Optional[list[str]] = None) -> int:
         """Counts number of permissions of an object
