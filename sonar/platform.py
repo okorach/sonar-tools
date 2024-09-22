@@ -722,7 +722,7 @@ def _audit_setting_set(
 
 def _audit_maintainability_rating_range(value: float, range: tuple[float, float], rating_letter: str, url: str) -> list[Problem]:
     """Audits a maintainability rating grid level range"""
-    log.info(
+    log.debug(
         "Checking that maintainability rating threshold %.1f%% for '%s' is within recommended range [%.1f%%-%.1f%%]",
         value * 100,
         rating_letter,
