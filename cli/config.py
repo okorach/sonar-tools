@@ -179,7 +179,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Exporting configuration from %s completed", kwargs["url"])
 
 
-def __import_config(endpoint: platform.Platform, what: list[str], data: dict[str, any], **kwargs) -> None:
+def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Imports a platform configuration from a JSON file"""
     log.info("Importing configuration to %s", kwargs[options.URL])
     try:
