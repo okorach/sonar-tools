@@ -331,7 +331,12 @@ class Portfolio(aggregations.Aggregation):
     def audit(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits a portfolio"""
         log.info("Auditing %s", str(self))
-        return self._audit_empty(audit_settings) + self._audit_singleton(audit_settings) + self._audit_bg_task(audit_settings)
+        return (
+            super().audit(audit_settings)
+            + self._audit_empty(audit_settings)
+            + self._audit_singleton(audit_settings)
+            + self._audit_bg_task(audit_settings)
+        )
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns the portfolio representation as JSON"""
