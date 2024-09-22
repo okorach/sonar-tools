@@ -512,7 +512,6 @@ class Platform:
             + self._audit_admin_password()
             + self._audit_lta_latest()
             + sif.Sif(pf_sif, self).audit(audit_settings)
-            + permission_templates.audit(self, audit_settings)
         )
         return problems
 
