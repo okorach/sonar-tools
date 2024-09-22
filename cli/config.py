@@ -179,18 +179,14 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Exporting configuration from %s completed", kwargs["url"])
 
 
-def __read_input_file(file: str) -> dict[str, any]:
-    try:
-        with open(file, "r", encoding="utf-8") as fd:
-            data = json.loads(fd.read())
-    except FileNotFoundError as e:
-        utilities.exit_fatal(f"OS error while reading file: {e}", exit_code=errcodes.OS_ERROR)
-    return data
-
-
 def __import_config(endpoint: platform.Platform, what: list[str], data: dict[str, any], **kwargs) -> None:
     """Imports a platform configuration from a JSON file"""
     log.info("Importing configuration to %s", kwargs[options.URL])
+    try:
+        with open(kwargs[options.REPORT_FILE], "r", encoding="utf-8") as fd:
+            data = json.loads(fd.read())
+    except FileNotFoundError as e:
+        utilities.exit_fatal(f"OS error while reading file: {e}", exit_code=errcodes.OS_ERROR)
     key_list = kwargs[options.KEYS]
 
     calls = {
@@ -240,7 +236,7 @@ def main() -> None:
     if kwargs["import"]:
         if kwargs["file"] is None:
             utilities.exit_fatal("--file is mandatory to import configuration", errcodes.ARGS_ERROR)
-        __import_config(endpoint, what, __read_input_file(kwargs[options.REPORT_FILE]), **kwargs)
+        __import_config(endpoint, what, **kwargs)
     utilities.stop_clock(start_time)
     sys.exit(0)
 
