@@ -482,7 +482,7 @@ class QualityProfile(sq.SqObject):
         problems = []
         age = util.age(self.last_update(), rounded=True)
         if age > audit_settings.get("audit.qualityProfiles.maxLastChangeAge", 180):
-            problems.append(Problem(get_rule(RuleId.QP_LAST_CHANGE_DATE), self, str(self, age)))
+            problems.append(Problem(get_rule(RuleId.QP_LAST_CHANGE_DATE), self, str(self), age))
 
         total_rules = rules.count(endpoint=self.endpoint, languages=self.language)
         if self.nbr_rules < int(total_rules * audit_settings.get("audit.qualityProfiles.minNumberOfRules", 0.5)):
