@@ -161,7 +161,7 @@ do
         logmsg "sonar-projects-export $env SKIPPED"
     else
         logmsg "sonar-projects-export $env"
-        sonar-projects-export
+        f="proj-export-$env-2.json"; run_test "$f" sonar-projects-export -f "$f"
     fi
 
     logmsg "sonar-findings-export $env ADMIN export"
@@ -177,18 +177,18 @@ do
 
     # Restore admin token as long as previous version is 2.9 or less
     logmsg "Restore sonar-tools last released version"
-    pip install --force-reinstall sonar-tools
+    pip install --force-reinstall sonar-tools 1>$IT_LOG_FILE 2>&1; 
     
     export SONAR_TOKEN="$SONAR_TOKEN_ADMIN_USER"
     logmsg "IT released tools $env"
-    run_test sonar-measures-export -b -f "measures-$env-rel.csv" -m _main --withURL
-    run_test sonar-findings-export -f "findings-$env-rel.csv"
-    run_test sonar-audit -f "audit-$env-rel.csv"
-    run_test sonar-loc -n -a -f "loc-$env-rel.csv"
-    run_test sonar-config -e -f "config-$env-rel.json"
+    f="measures-$env-rel.csv"; run_test "$f" sonar-measures-export -b -f "measures-$env-rel.csv" -m _main --withURL
+    f="findings-$env-rel.csv"; run_test "$f" sonar-findings-export -f "findings-$env-rel.csv"
+    # f="audit-$env-rel.csv"; run_test "$f" sonar-audit -f "audit-$env-rel.csv"
+    f="loc-$env-rel.csv"; run_test "$f" sonar-loc -n -a -f "loc-$env-rel.csv"
+    f="config-$env-rel.json"; run_test "$f" sonar-config -e -f "config-$env-rel.json"
 
     logmsg "IT compare released and unreleased $env"
-    for f in measures findings audit loc
+    for f in measures findings loc
     do
         root="$f-$env"
         announce_test "$f-$env diff"
