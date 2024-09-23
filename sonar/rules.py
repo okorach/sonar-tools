@@ -247,7 +247,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, k
         rule_list["instantiated"] = instantiated_rules
     if len(extended_rules) > 0:
         rule_list["extended"] = extended_rules
-    if len(other_rules) > 0:
+    if len(other_rules) > 0 and full:
         rule_list["standard"] = other_rules
     return rule_list
 
