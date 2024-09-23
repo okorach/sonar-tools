@@ -211,8 +211,7 @@ do
 
     # Restore admin token as long as previous version is 2.9 or less
     logmsg "Restore sonar-tools last released version"
-    echo "Y" | pip uninstall sonar-tools
-    pip install sonar-tools
+    pip install --force-reinstall sonar-tools
     
     export SONAR_TOKEN="$SONAR_TOKEN_ADMIN_USER"
     logmsg "IT released tools $env"
