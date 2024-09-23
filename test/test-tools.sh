@@ -37,13 +37,13 @@ function logmsg {
 function run_test {
     file=$1; shift
     announce_test "$@"
-    logmsg "========================================="
-    logmsg "$@"
-    logmsg "========================================="
+    # logmsg "========================================="
+    # logmsg "$@"
+    # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -l $IT_LOG_FILE
+        "$@" -o okorach -l $IT_LOG_FILE 2>/dev/null
     else
-        "$@" -l $IT_LOG_FILE
+        "$@" -l $IT_LOG_FILE 2>/dev/null
     fi
     test_passed_if_file_not_empty "$file"
 }
@@ -51,13 +51,13 @@ function run_test {
 function run_test_stdout {
     file=$1; shift
     announce_test "$@ >$file"
-    logmsg "========================================="
-    logmsg "$@ >$file"
-    logmsg "========================================="
+    # logmsg "========================================="
+    # logmsg "$@ >$file"
+    # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -l $IT_LOG_FILE >"$file"
+        "$@" -o okorach -l $IT_LOG_FILE >"$file" 2>/dev/null
     else
-        "$@" -l $IT_LOG_FILE >"$file"
+        "$@" -l $IT_LOG_FILE >"$file" 2>/dev/null
     fi
     test_passed_if_file_not_empty "$file"
 }
