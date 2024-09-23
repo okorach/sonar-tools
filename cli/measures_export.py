@@ -26,6 +26,9 @@
 """
 import sys
 import csv
+
+from typing import Union
+
 from http import HTTPStatus
 from requests.exceptions import HTTPError
 from sonar.util import types
@@ -277,6 +280,23 @@ def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str
     return params
 
 
+def __get_measures(obj: object, wanted_metrics: types.KeyList, hist: bool) -> Union[dict[str, any], None]:
+    """Returns object measures (last measures or history of measures)"""
+    data = obj.component_data()
+    try:
+        if hist:
+            data.update(__get_json_measures_history(obj, wanted_metrics))
+        else:
+            data.update(__get_object_measures(obj, wanted_metrics))
+    except HTTPError as e:
+        if e.response.status_code == HTTPStatus.FORBIDDEN:
+            log.error("Insufficient permission to retrieve measures of %s, export skipped for this object", str(obj))
+        else:
+            log.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
+        return None
+    return data
+
+
 def main() -> None:
     """Entry point for sonar-measures-export"""
     start_time = util.start_clock()
@@ -299,19 +319,9 @@ def main() -> None:
 
         measure_list = []
         for obj in obj_list:
-            data = obj.component_data()
-            try:
-                if kwargs["history"]:
-                    data.update(__get_json_measures_history(obj, wanted_metrics))
-                else:
-                    data.update(__get_object_measures(obj, wanted_metrics))
-            except HTTPError as e:
-                if e.response.status_code == HTTPStatus.FORBIDDEN:
-                    log.error("Insufficient permission to retrieve measures of %s, export skipped for this object", str(obj))
-                else:
-                    log.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
-                continue
-            measure_list += [data]
+            data = __get_measures(obj, wanted_metrics, kwargs["history"])
+            if data is not None:
+                measure_list += [data]
 
         if fmt == "json":
             with util.open_file(file) as fd:
