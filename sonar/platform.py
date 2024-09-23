@@ -100,7 +100,7 @@ class Platform:
 
     def verify_connection(self) -> None:
         try:
-            self.get("projects/search", params={"qualifiers": "TRK", "ps": 1})
+            self.get("server/version")
         except HTTPError as e:
             raise exceptions.ConnectionError(util.sonar_error(e.response))
 
