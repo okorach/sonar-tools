@@ -55,11 +55,11 @@ function run_test_stdout {
     # logmsg "$@ >$file"
     # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -l $IT_LOG_FILE >"$file" 2>/dev/null
+        "$@" -o okorach -l $IT_LOG_FILE >"$REPO_ROOT/tmp/$file" 2>/dev/null
     else
-        "$@" -l $IT_LOG_FILE >"$file" 2>/dev/null
+        "$@" -l $IT_LOG_FILE >"$REPO_ROOT/tmp/$file" 2>/dev/null
     fi
-    test_passed_if_file_not_empty "$file"
+    test_passed_if_file_not_empty "$REPO_ROOT/tmp/$file"
 }
 
 check_file_not_empty() {
