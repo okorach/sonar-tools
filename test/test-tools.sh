@@ -36,24 +36,30 @@ function logmsg {
 
 function run_test {
     file=$1; shift
+    announce_test "$@"
+    logmsg "========================================="
     logmsg "$@"
+    logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach
+        "$@" -o okorach -l $IT_LOG_FILE
     else
-        "$@"
+        "$@" -l $IT_LOG_FILE
     fi
-    check "$file"
+    test_passed_if_file_not_empty "$file"
 }
 
 function run_test_stdout {
     file=$1; shift
-    logmsg "$@" ">$file"
+    announce_test "$@ >$file"
+    logmsg "========================================="
+    logmsg "$@ >$file"
+    logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach >"$file"
+        "$@" -o okorach -l $IT_LOG_FILE >"$file"
     else
-        "$@" >"$file"
+        "$@" -l $IT_LOG_FILE >"$file"
     fi
-    check "$file"
+    test_passed_if_file_not_empty "$file"
 }
 
 check_file_not_empty() {
@@ -67,6 +73,13 @@ check_file_not_empty() {
 
 test_passed_if_identical() {
     diff $*
+    code=$?
+    test_result $code
+    return $code
+}
+
+test_passed_if_file_not_empty() {
+    [ -s "$1" ]
     code=$?
     test_result $code
     return $code

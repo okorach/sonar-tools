@@ -20,42 +20,9 @@
 #
 set -euo pipefail
 
+DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source "$DIR/test-tools.sh"
 DB_BACKUPS_DIR=~/backup
-
-function logmsg {
-    echo "$@" | tee -a "$IT_LOG_FILE"
-}
-
-function run_test {
-    file=$1; shift
-    logmsg "$@"
-    if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach
-    else
-        "$@"
-    fi
-    check "$file"
-}
-
-function run_test_stdout {
-    file=$1; shift
-    logmsg "$@" ">$file"
-    if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach >"$file"
-    else
-        "$@" >"$file"
-    fi
-    check "$file"
-}
-
-check() {
-    if [ -s "$1" ]; then
-        logmsg "Output file $1 is OK"
-    else
-        logmsg "Output file $1 is missing or empty"
-        # exit 1
-    fi
-}
 
 function backup_for {
     case $1 in
@@ -122,7 +89,7 @@ for env in "$@"
 do
 
     logmsg "Install sonar-tools current local version: root = $TMP"
-    cd "$REPO_ROOT"; ./deploy.sh nodoc; cd -
+    cd "$REPO_ROOT"; ./deploy.sh nodoc nodocker 1>$IT_LOG_FILE 2>&1; cd -
 
     if [ "$env" = "sonarcloud" ]; then
         logmsg "Running with environment $env"
@@ -130,15 +97,14 @@ do
         export SONAR_HOST_URL=$SONAR_HOST_URL_SONARCLOUD        
     else
         id="it$$"
-        logmsg "Running with environment $env - sonarId $id"
+        logmsg "Creating IT test environment $env - sonarId $id"
         sqport=10020
         # echo sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p 6020 -f "$(backup_for "$env")"
-        sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p 6020 -f "$(backup_for "$env")"
+        sonar create -i $id -t "$(tag_for "$env")" -s $sqport -p 6020 -f "$(backup_for "$env")" 1>$IT_LOG_FILE 2>&1
         export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
         export SONAR_HOST_URL="http://localhost:$sqport"
     fi
 
-    logmsg "IT $env sonar-measures-export"
     f="$TMP/measures-$env-unrel.csv"; run_test "$f" sonar-measures-export -b -f "$f" -m _main --withURL
     f="$TMP/measures-$env-2.csv";     run_test_stdout "$f" sonar-measures-export -b -m _main --withURL
     f="$TMP/measures-$env-3.csv";     run_test_stdout "$f" sonar-measures-export -b -p -r -d -m _all
@@ -215,40 +181,29 @@ do
     
     export SONAR_TOKEN="$SONAR_TOKEN_ADMIN_USER"
     logmsg "IT released tools $env"
-    sonar-measures-export -b -f "$TMP/measures-$env-rel.csv" -m _main --withURL
-    sonar-findings-export -f "$TMP/findings-$env-rel.csv"
-    if [ "$env" != "sonarcloud" ]; then
-        sonar-audit >"$TMP/audit-$env-rel.csv" || echo "OK"
-    fi
-    sonar-loc -n -a >"$TMP/loc-$env-rel.csv"
-    sonar-config -e >"$TMP/config-$env-rel.json"
+    run_test sonar-measures-export -b -f "$TMP/measures-$env-rel.csv" -m _main --withURL
+    run_test sonar-findings-export -f "$TMP/findings-$env-rel.csv"
+    run_test sonar-audit -f "$TMP/audit-$env-rel.csv"
+    run_test sonar-loc -n -a -f "$TMP/loc-$env-rel.csv"
+    run_test sonar-config -e -f "$TMP/config-$env-rel.json"
 
-    echo "IT compare released and unreleased $env" | tee -a "$IT_LOG_FILE"
+    logmsg "IT compare released and unreleased $env"
     for f in measures findings audit loc
     do
         root="$TMP/$f-$env"
-        logmsg "=========================="
-        logmsg "$f-$env diff"
-        logmsg "=========================="
-        sort "$root-rel.csv" >"$root-rel.sorted.csv"
-        sort "$root-unrel.csv" >"$root-unrel.sorted.csv"
-        diff "$root-rel.sorted.csv" "$root-unrel.sorted.csv" | tee -a "$IT_LOG_FILE" || echo "" 
+        announce_test "$f-$env diff"
+        sort -o "$root-rel.csv" "$root-rel.csv"
+        sort -o "$root-unrel.csv" "$root-unrel.csv"
+        test_passed_if_identical "$root-rel.csv" "$root-unrel.csv"
     done
     for f in config
     do
         root="$TMP/$f-$env"
-        logmsg "=========================="
-        logmsg "$f-$env diff"
-        logmsg "=========================="
-        diff "$root-rel.json" "$root-unrel.json" | tee -a "$IT_LOG_FILE" || echo "" 
+        announce_test "$f-$env diff"
+        test_passed_if_identical "$root-rel.json" "$root-unrel.json"
     done
-    logmsg "=========================="
-    logmsg "findings-$env admin vs user diff"
-    logmsg "=========================="
-    f1="$TMP/findings-$env-admin.csv"
-    f2="$TMP/findings-$env-user.csv"
-    diff "$f1" "$f2" | tee -a "$IT_LOG_FILE" || echo ""
-
+    announce_test "findings-$env admin vs user diff"
+    test_passed_if_identical "$TMP/findings-$env-admin.csv" "$TMP/findings-$env-user.csv"
     if [ "$env" != "sonarcloud" ]; then
         logmsg "Deleting environment sonarId $id"
         sonar delete -i "$id"
@@ -256,5 +211,5 @@ do
 done
 
 logmsg "====================================="
-logmsg "          IT tests success"
+logmsg "          IT tests end"
 logmsg "====================================="
