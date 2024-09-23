@@ -36,14 +36,16 @@ function logmsg {
 
 function run_test {
     file=$1; shift
-    announce_test "$@"
+    announce_test "$@ -f $file"
+    file="$REPO_ROOT/tmp/$file"
     # logmsg "========================================="
     # logmsg "$@"
     # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -l $IT_LOG_FILE 2>/dev/null
+        "$@" -o okorach -l $IT_LOG_FILE -f "$file" >/dev/null
     else
-        "$@" -l $IT_LOG_FILE 2>/dev/null
+        # echo "$@" -o okorach -l $IT_LOG_FILE -f "$file"
+        "$@" -l $IT_LOG_FILE -f "$file" 2>/dev/null
     fi
     test_passed_if_file_not_empty "$file"
 }
@@ -51,15 +53,18 @@ function run_test {
 function run_test_stdout {
     file=$1; shift
     announce_test "$@ >$file"
+    file="$REPO_ROOT/tmp/$file"
+    
     # logmsg "========================================="
     # logmsg "$@ >$file"
     # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -l $IT_LOG_FILE >"$REPO_ROOT/tmp/$file" 2>/dev/null
+        "$@" -o okorach -l $IT_LOG_FILE >"$file" 2>/dev/null
     else
-        "$@" -l $IT_LOG_FILE >"$REPO_ROOT/tmp/$file" 2>/dev/null
+        # echo "$@" -o okorach -l $IT_LOG_FILE "> $file"
+        "$@" -l $IT_LOG_FILE >"$file" 2>/dev/null
     fi
-    test_passed_if_file_not_empty "$REPO_ROOT/tmp/$file"
+    test_passed_if_file_not_empty "$file"
 }
 
 check_file_not_empty() {
@@ -72,7 +77,7 @@ check_file_not_empty() {
 }
 
 test_passed_if_identical() {
-    diff $*
+    diff $* >> $IT_LOG_FILE
     code=$?
     test_result $code
     return $code
