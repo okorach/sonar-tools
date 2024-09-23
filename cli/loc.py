@@ -198,7 +198,21 @@ def __parse_args(desc):
     return args
 
 
-def main():
+def __check_options(edition: str, kwargs: dict[str, str]) -> dict[str, str]:
+    """Verifies a certain number of options for compatibility with edition"""
+    kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE])
+    if kwargs[options.WITH_BRANCHES] and edition == "community":
+        util.exit_fatal(f"No branches in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
+    if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in ("community", "developer"):
+        util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
+    if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_BRANCHES]:
+        log.warning("Portfolio LoC export selected, branch option is ignored")
+        kwargs[options.WITH_BRANCHES] = False
+    return kwargs
+
+
+def main() -> None:
+    """sonar-loc entry point"""
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(
@@ -209,16 +223,7 @@ def main():
     except (options.ArgumentsError, exceptions.ConnectionError) as e:
         util.exit_fatal(e.message, e.errcode)
 
-    kwargs[options.FORMAT] = util.deduct_format(kwargs[options.FORMAT], kwargs[options.REPORT_FILE])
-
-    edition = endpoint.edition()
-    if kwargs[options.WITH_BRANCHES] and edition == "community":
-        util.exit_fatal(f"No branches in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
-    if kwargs[options.COMPONENT_TYPE] == "portfolios" and edition in ("community", "developer"):
-        util.exit_fatal(f"No portfolios in {edition} edition, aborting...", errcodes.UNSUPPORTED_OPERATION)
-    if kwargs[options.COMPONENT_TYPE] == "portfolios" and kwargs[options.WITH_BRANCHES]:
-        log.warning("Portfolio LoC export selected, branch option is ignored")
-        kwargs[options.WITH_BRANCHES] = False
+    kwargs = __check_options(endpoint.edition(), kwargs)
 
     try:
         if kwargs[options.COMPONENT_TYPE] == "portfolios":
