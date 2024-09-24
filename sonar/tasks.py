@@ -514,7 +514,7 @@ class Task(sq.SqObject):
         return problems
 
 
-def search(endpoint: pf.Platform, only_current: bool = False, component_key: str = None) -> list[Task]:
+def search(endpoint: pf.Platform, only_current: bool = False, component_key: str = None, **kwargs) -> list[Task]:
     """Searches background tasks
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -525,6 +525,7 @@ def search(endpoint: pf.Platform, only_current: bool = False, component_key: str
     :rtype: list[Task]
     """
     params = {"status": ",".join(STATUSES), "additionalFields": "warnings"}
+    params.update(**kwargs)
     if only_current:
         params["onlyCurrents"] = "true"
     if component_key is not None:
@@ -538,11 +539,12 @@ def search_all_last(endpoint: pf.Platform) -> list[Task]:
     return search(endpoint=endpoint, only_current=True)
 
 
-def search_last(endpoint: pf.Platform, component_key: str) -> Optional[Task]:
+def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional[Task]:
     """Searches for last background task of a component"""
-    bg_tasks = search(endpoint=endpoint, only_current=True, component_key=component_key)
+    bg_tasks = search(endpoint=endpoint, only_current=True, component_key=component_key, **params)
     if len(bg_tasks) == 0:
         # No bgtask was found
+        log.debug("No background task found for %s", component_key)
         return None
     return bg_tasks[0]
 
