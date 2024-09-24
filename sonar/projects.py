@@ -550,9 +550,13 @@ class Project(components.Component):
                 return "CLI"
         return "UNKNOWN"
 
+    def last_task(self) -> Optional[tasks.Task]:
+        """Returns the last analysis background task of a problem, or none if not found"""
+        return tasks.search_last(component_key=self.key, endpoint=self.endpoint, type="REPORT")
+
     def scanner(self) -> str:
         """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
-        last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
+        last_task = self.last_task()
         if not last_task:
             return "UNKNOWN"
         last_task.concerned_object = self
