@@ -77,8 +77,8 @@ check_file_not_empty() {
 }
 
 test_passed_if_identical() {
-    diff $* >> $IT_LOG_FILE
-    code=$?
+    code=0
+    diff $* >> $IT_LOG_FILE || code=$? || true
     test_result $code
     return $code
 }

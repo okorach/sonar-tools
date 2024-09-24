@@ -18,7 +18,8 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-set -euo pipefail
+
+# set -euo pipefail
 
 DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source "$DIR/test-tools.sh"
@@ -70,11 +71,6 @@ function tag_for {
 }
 
 [ $# -eq 0 ] && echo "Usage: $0 <env1> [... <envN>]" && exit 1
-
-REPO_ROOT="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; cd .. ; pwd -P )"
-TMP="$REPO_ROOT/tmp"
-IT_LOG_FILE="$TMP/it.log"
-mkdir -p "$TMP"
 rm -f "$TMP"/*.log "$TMP"/*.csv "$TMP"/*.json
 
 noExport=0
@@ -182,8 +178,8 @@ do
     export SONAR_TOKEN="$SONAR_TOKEN_ADMIN_USER"
     logmsg "IT released tools $env"
     f="measures-$env-rel.csv"; run_test "$f" sonar-measures-export -b -m _main --withURL
-    # sonar-measures-export -b -f "$f"
     f="findings-$env-rel.csv"; run_test "$f" sonar-findings-export
+    # Breaks in version 3.3
     # f="audit-$env-rel.csv"; run_test "$f" sonar-audit -f "audit-$env-rel.csv"
     f="loc-$env-rel.csv"; run_test "$f" sonar-loc -n -a
     f="config-$env-rel.json"; run_test "$f" sonar-config -e
@@ -207,7 +203,7 @@ do
     test_passed_if_identical "$TMP/findings-$env-admin.csv" "$TMP/findings-$env-user.csv"
     if [ "$env" != "sonarcloud" ]; then
         logmsg "Deleting environment sonarId $id"
-        sonar delete -i "$id"
+        sonar delete -i "$id" 1>$IT_LOG_FILE 2>&1
     fi
 done
 
