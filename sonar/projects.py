@@ -42,7 +42,7 @@ import sonar.platform as pf
 from sonar.util import types
 
 from sonar import exceptions, errcodes
-from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops, syncer
+from sonar import sqobject, components, qualitygates, qualityprofiles, rules, tasks, settings, webhooks, devops, syncer
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
 import sonar.utilities as util
@@ -783,6 +783,20 @@ class Project(components.Component):
                 findings_list = {**findings_list, **comp.get_issues()}
         return findings_list
 
+    def count_third_party_issues(self, filters: dict[str, str] = None) -> dict[str, int]:
+        branches_or_prs = self.get_branches_and_prs(filters)
+        if branches_or_prs is None:
+            return super().count_third_party_issues(filters)
+        issue_counts = {}
+        for comp in branches_or_prs.values():
+            if not comp:
+                continue
+            for k, total in comp.count_third_party_issues(filters):
+                if k not in issue_counts:
+                    issue_counts[k] = 0
+                issue_counts[k] += total
+        return issue_counts
+
     def __sync_community(self, another_project: object, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""
         report, counters = [], {}
@@ -978,6 +992,8 @@ class Project(components.Component):
                         "lastTaskWarnings": last_task.warnings(),
                         "taskHistory": [t._json for t in self.task_history()],
                     }
+                json_data["thirdPartyIssues"] = self.count_third_party_issues()
+                log.info("%s has %d 3rd party issues", str(self), sum(v for v in json_data["thirdPartyIssues"].values()))
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})

@@ -32,7 +32,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 
-from sonar import settings, tasks, measures, utilities
+from sonar import settings, tasks, measures, utilities, rules, issues
 
 import sonar.audit.problem as pb
 
@@ -137,6 +137,19 @@ class Component(sq.SqObject):
         self.nbr_issues = len(issue_list)
         return issue_list
 
+    def count_third_party_issues(self, filters: types.ApiParams = None) -> dict[str, int]:
+        """Returns list of issues for a component, optionally on branches or/and PRs"""
+        from sonar.issues import component_filter
+
+        third_party_rules = rules.third_party(self.endpoint)
+        params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
+        if filters is not None:
+            params.update(filters)
+        params["facets"] = "rules"
+        params["rules"] = [r.key for r in third_party_rules]
+        issues_count = {k: v for k, v in issues.count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
+        return issues_count
+
     def get_hotspots(self, filters: types.ApiParams = None) -> dict[str, object]:
         """Returns list of hotspots for a component, optionally on branches or/and PRs"""
         from sonar.hotspots import component_filter, search
@@ -161,8 +174,8 @@ class Component(sq.SqObject):
 
     def get_measure(self, metric: str, fallback: int = None) -> any:
         """Returns a component measure"""
-        meas = self.get_measures(metric)
-        return meas[metric].value if metric in meas and meas[metric].value is not None else fallback
+        meas = self.get_measures([metric])
+        return meas[metric].value if metric in meas and meas[metric] and meas[metric].value is not None else fallback
 
     def loc(self) -> int:
         """Returns a component nbr of LOC"""

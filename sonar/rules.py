@@ -41,6 +41,52 @@ _CREATE_API = "rules/create"
 
 TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
 
+SONAR_REPOS = {
+    "abap",
+    "apex",
+    "azureresourcemanager",
+    "c",
+    "cloudformation",
+    "cobol",
+    "cpp",
+    "csharpsquid",
+    "roslyn.sonaranalyzer.security.cs",
+    "css",
+    "docker",
+    "flex",
+    "go",
+    "java",
+    "javabugs",
+    "javasecurity",
+    "javascript",
+    "jssecurity",
+    "jcl",
+    "kotlin",
+    "kubernetes",
+    "objc",
+    "php",
+    "phpsecurity",
+    "pli",
+    "plsql",
+    "python",
+    "pythonbugs",
+    "pythonsecurity",
+    "rpg",
+    "ruby",
+    "scala",
+    "secrets",
+    "swift",
+    "terraform",
+    "text",
+    "tsql",
+    "typescript",
+    "tssecurity",
+    "vb",
+    "vbnet",
+    "Web",
+    "xml",
+}
+
 
 class Rule(sq.SqObject):
     """
@@ -205,7 +251,9 @@ def count(endpoint: platform.Platform, **params) -> int:
 
 def get_list(endpoint: platform.Platform, **params) -> dict[str, Rule]:
     """Returns a list of rules corresponding to certain csearch filters"""
-    return search(endpoint, include_external="false", **params)
+    if len(_OBJECTS) < 100:
+        return search(endpoint, include_external="false", **params)
+    return _OBJECTS
 
 
 def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
@@ -249,6 +297,8 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, k
         rule_list["extended"] = extended_rules
     if len(other_rules) > 0 and full:
         rule_list["standard"] = other_rules
+    if export_settings["MODE"] == "MIGRATION":
+        rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
     return rule_list
 
 
@@ -331,3 +381,8 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
         if category in original_json:
             new_json[category] = convert_rule_list_for_yaml(original_json[category])
     return new_json
+
+
+def third_party(endpoint: platform.Platform) -> list[Rule]:
+    """Returns the list of rules coming from 3rd party plugins"""
+    return [r for r in get_list(endpoint=endpoint).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
