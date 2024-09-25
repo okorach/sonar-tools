@@ -961,6 +961,7 @@ class Project(components.Component):
             json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
             if export_settings["MODE"] == "MIGRATION":
+                json_data["lastAnalysis"] = util.date_to_string(self.last_analysis())
                 json_data["detectedCi"] = self.ci()
                 json_data["revision"] = self.revision()
                 lang_distrib = self.get_measure("ncloc_language_distribution")

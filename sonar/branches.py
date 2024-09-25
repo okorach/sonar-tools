@@ -231,6 +231,7 @@ class Branch(components.Component):
         if export_settings.get("FULL_EXPORT", True):
             data.update({"name": self.name, "project": self.concerned_object.key})
         if export_settings["MODE"] == "MIGRATION":
+            data["lastAnalysis"] = util.date_to_string(self.last_analysis())
             lang_distrib = self.get_measure("ncloc_language_distribution")
             loc_distrib = {}
             if lang_distrib:
