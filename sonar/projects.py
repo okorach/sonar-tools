@@ -950,7 +950,15 @@ class Project(components.Component):
             (json_data["qualityGate"], qg_is_default) = self.quality_gate()
             if qg_is_default:
                 json_data.pop("qualityGate")
+
+            hooks = webhooks.export(self.endpoint, self.key)
+            if hooks is not None:
+                json_data["webhooks"] = hooks
+            json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+
             if export_settings["MODE"] == "MIGRATION":
+                json_data["detectedCi"] = self.ci()
+                json_data["revision"] = self.revision()
                 lang_distrib = self.get_measure("ncloc_language_distribution")
                 loc_distrib = {}
                 if lang_distrib:
@@ -958,13 +966,6 @@ class Project(components.Component):
                 loc_distrib["total"] = self.loc()
                 json_data["ncloc"] = loc_distrib
 
-            hooks = webhooks.export(self.endpoint, self.key)
-            if hooks is not None:
-                json_data["webhooks"] = hooks
-            json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
-            if export_settings["MODE"] == "MIGRATION":
-                json_data["detectedCi"] = self.ci()
-                json_data["revision"] = self.revision()
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             for s in settings_dict.values():
