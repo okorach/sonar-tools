@@ -1413,7 +1413,9 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         results[project.key].pop("key", None)
         with _CLASS_LOCK:
             export_settings["EXPORTED"] += 1
-        log.info("%d/%d projects exported", export_settings["EXPORTED"], export_settings["NBR_PROJECTS"])
+        nb, tot = export_settings["EXPORTED"], export_settings["NBR_PROJECTS"]
+        if nb % 10 == 0 or nb == tot:
+            log.info("%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
         queue.task_done()
 
 
