@@ -167,7 +167,7 @@ class Platform:
         if self.is_sonarcloud():
             return {**data, "organization": self.organization}
 
-        return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id()}
+        return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id(), "plugins": self.plugins()}
 
     def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
@@ -310,9 +310,12 @@ class Platform:
         """
         if self.is_sonarcloud():
             return {}
+        sysinfo = self.sys_info()
+        if "Application Nodes" in sysinfo:
+            sysinfo = sysinfo["Application Nodes"][0]
         if self.version() < (9, 7, 0):
-            return self.sys_info()["Statistics"]["plugins"]
-        return self.sys_info()["Plugins"]
+            return sysinfo["Statistics"]["plugins"]
+        return sysinfo["Plugins"]
 
     def get_settings(self, settings_list: list[str] = None) -> dict[str, any]:
         """Returns a list of (or all) platform global settings value from their key
