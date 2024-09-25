@@ -297,7 +297,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, k
         rule_list["extended"] = extended_rules
     if len(other_rules) > 0 and full:
         rule_list["standard"] = other_rules
-    if export_settings["MODE"] == "MIGRATION":
+    if export_settings.get("MODE", "") == "MIGRATION":
         rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
     return rule_list
 
