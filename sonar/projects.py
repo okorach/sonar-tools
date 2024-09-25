@@ -950,6 +950,13 @@ class Project(components.Component):
             (json_data["qualityGate"], qg_is_default) = self.quality_gate()
             if qg_is_default:
                 json_data.pop("qualityGate")
+            if export_settings["MODE"] == "MIGRATION":
+                lang_distrib = self.get_measure("ncloc_language_distribution")
+                loc_distrib = {}
+                if lang_distrib:
+                    loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
+                loc_distrib["total"] = self.loc()
+                json_data["ncloc"] = loc_distrib
 
             hooks = webhooks.export(self.endpoint, self.key)
             if hooks is not None:
