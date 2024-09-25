@@ -549,9 +549,9 @@ def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional
     return bg_tasks[0]
 
 
-def search_all(endpoint: pf.Platform, component_key: str) -> list[Task]:
+def search_all(endpoint: pf.Platform, component_key: str, **params) -> list[Task]:
     """Search all background tasks of a given component"""
-    return search(endpoint=endpoint, component_key=component_key)
+    return search(endpoint=endpoint, component_key=component_key, **params)
 
 
 def _get_suspicious_exclusions(patterns: str) -> list[str]:

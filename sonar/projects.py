@@ -556,6 +556,10 @@ class Project(components.Component):
         """Returns the last analysis background task of a problem, or none if not found"""
         return tasks.search_last(component_key=self.key, endpoint=self.endpoint, type="REPORT")
 
+    def task_history(self) -> Optional[tasks.Task]:
+        """Returns the last analysis background task of a problem, or none if not found"""
+        return tasks.search_all(component_key=self.key, endpoint=self.endpoint, type="REPORT")
+
     def scanner(self) -> str:
         """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
         last_task = self.last_task()
@@ -965,6 +969,14 @@ class Project(components.Component):
                     loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
                 loc_distrib["total"] = self.loc()
                 json_data["ncloc"] = loc_distrib
+                last_task = self.last_task()
+                json_data["backgroundTasks"] = {}
+                if last_task:
+                    json_data["backgroundTasks"] = {
+                        "lastTaskScannerContext": last_task.scanner_context(),
+                        "lastTaskWarnings": last_task.warnings(),
+                        "taskHistory": [t._json for t in self.task_history()],
+                    }
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
