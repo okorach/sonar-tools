@@ -1411,6 +1411,9 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         project = queue.get()
         results[project.key] = project.export(export_settings=export_settings)
         results[project.key].pop("key", None)
+        with _CLASS_LOCK:
+            export_settings["EXPORTED"] += 1
+        log.info("%d/%d projects exported", export_settings["EXPORTED"], export_settings["NBR_PROJECTS"])
         queue.task_done()
 
 
@@ -1427,7 +1430,11 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         qp.projects()
 
     q = Queue(maxsize=0)
-    for p in get_list(endpoint=endpoint, key_list=key_list).values():
+    proj_list = get_list(endpoint=endpoint, key_list=key_list)
+    export_settings["NBR_PROJECTS"] = len(proj_list)
+    export_settings["EXPORTED"] = 0
+    log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])
+    for p in proj_list.values():
         q.put(p)
     project_settings = {}
     for i in range(export_settings.get("THREADS", 8)):
