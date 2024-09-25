@@ -753,7 +753,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         else:
             log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
         i += 1
-        if i % 50 == 0 or i == nb_portfolios:
+        if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
     return exported_portfolios
 

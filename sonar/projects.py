@@ -104,6 +104,8 @@ class Project(components.Component):
         self._ncloc_with_branches = None
         self._binding = {"has_binding": True, "binding": None}
         self._new_code = None
+        self._ci = None
+        self._revision = None
         _OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
@@ -212,7 +214,7 @@ class Project(components.Component):
             self._last_analysis = util.string_to_date(data["analysisDate"])
         else:
             self._last_analysis = None
-        self.revision = data.get("revision", None)
+        self._revision = data.get("revision", self._revision)
         return self
 
     def url(self) -> str:
@@ -554,6 +556,10 @@ class Project(components.Component):
         """Returns the last analysis background task of a problem, or none if not found"""
         return tasks.search_last(component_key=self.key, endpoint=self.endpoint, type="REPORT")
 
+    def task_history(self) -> Optional[tasks.Task]:
+        """Returns the last analysis background task of a problem, or none if not found"""
+        return tasks.search_all(component_key=self.key, endpoint=self.endpoint, type="REPORT")
+
     def scanner(self) -> str:
         """Returns the project type (MAVEN, GRADLE, DOTNET, OTHER, UNKNOWN)"""
         last_task = self.last_task()
@@ -561,6 +567,28 @@ class Project(components.Component):
             return "UNKNOWN"
         last_task.concerned_object = self
         return last_task.scanner()
+
+    def ci(self) -> str:
+        """Returns the detected CI tool used, or undetected, or unknown if HTTP request fails"""
+        log.debug("Collecting detected CI")
+        if not self._ci or not self._revision:
+            self._ci, self._revision = "unknown", "unknown"
+            try:
+                data = json.loads(self.get("project_analyses/search", params={"project": self.key, "ps": 1}).text)["analyses"]
+                if len(data) > 0:
+                    self._ci, self._revision = data[0].get("detectedCI", "unknown"), data[0].get("revision", "unknown")
+            except HTTPError:
+                log.warning("HTTP Error, can't retrieve CI tool and revision")
+            except KeyError:
+                log.warning("KeyError, can't retrieve CI tool and revision")
+        return self._ci
+
+    def revision(self) -> str:
+        """Returns the last analysis commit, or unknown if HTTP request fails or no revision"""
+        log.debug("Collecting revision")
+        if not self._revision:
+            self.ci()
+        return self._revision
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         proj_type, scanner = self.get_type(), self.scanner()
@@ -931,6 +959,26 @@ class Project(components.Component):
             if hooks is not None:
                 json_data["webhooks"] = hooks
             json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
+
+            if export_settings["MODE"] == "MIGRATION":
+                json_data["lastAnalysis"] = util.date_to_string(self.last_analysis())
+                json_data["detectedCi"] = self.ci()
+                json_data["revision"] = self.revision()
+                lang_distrib = self.get_measure("ncloc_language_distribution")
+                loc_distrib = {}
+                if lang_distrib:
+                    loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
+                loc_distrib["total"] = self.loc()
+                json_data["ncloc"] = loc_distrib
+                last_task = self.last_task()
+                json_data["backgroundTasks"] = {}
+                if last_task:
+                    json_data["backgroundTasks"] = {
+                        "lastTaskScannerContext": last_task.scanner_context(),
+                        "lastTaskWarnings": last_task.warnings(),
+                        "taskHistory": [t._json for t in self.task_history()],
+                    }
+
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
             for s in settings_dict.values():
@@ -1363,6 +1411,11 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         project = queue.get()
         results[project.key] = project.export(export_settings=export_settings)
         results[project.key].pop("key", None)
+        with _CLASS_LOCK:
+            export_settings["EXPORTED"] += 1
+        nb, tot = export_settings["EXPORTED"], export_settings["NBR_PROJECTS"]
+        if nb % 10 == 0 or nb == tot:
+            log.info("%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
         queue.task_done()
 
 
@@ -1379,7 +1432,11 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         qp.projects()
 
     q = Queue(maxsize=0)
-    for p in get_list(endpoint=endpoint, key_list=key_list).values():
+    proj_list = get_list(endpoint=endpoint, key_list=key_list)
+    export_settings["NBR_PROJECTS"] = len(proj_list)
+    export_settings["EXPORTED"] = 0
+    log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])
+    for p in proj_list.values():
         q.put(p)
     project_settings = {}
     for i in range(export_settings.get("THREADS", 8)):
