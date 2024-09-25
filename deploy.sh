@@ -45,7 +45,7 @@ rm -rf build dist
 python3 setup.py bdist_wheel
 
 # Deploy locally for tests
-pip install --upgrade --force-reinstall dist/sonar-tools-*-py3-*.whl
+pip install --upgrade --force-reinstall dist/sonar_tools-*-py3-*.whl
 
 if [ "$build_image" == "1" ]; then
     docker build -t sonar-tools:latest .
@@ -61,6 +61,6 @@ if [ "$release" = "1" ]; then
     echo "Confirm release [y/n] ?"
     read -r confirm
     if [ "$confirm" = "y" ]; then
-        python3 -m twine upload dist/sonar-tools-*-py3-*.whl
+        python3 -m twine upload dist/sonar_tools-*-py3-*.whl
     fi
 fi
