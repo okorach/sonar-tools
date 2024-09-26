@@ -993,7 +993,7 @@ class Project(components.Component):
                         "taskHistory": [t._json for t in self.task_history()],
                     }
                 json_data["thirdPartyIssues"] = self.count_third_party_issues()
-                log.info("%s has %d 3rd party issues", str(self), sum(v for v in json_data["thirdPartyIssues"].values()))
+                log.debug("%s has %d 3rd party issues", str(self), sum(v for v in json_data["thirdPartyIssues"].values()))
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
