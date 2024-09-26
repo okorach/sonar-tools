@@ -240,7 +240,7 @@ class Branch(components.Component):
                 loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
             loc_distrib["total"] = self.loc()
             data["ncloc"] = loc_distrib
-        if export_settings["MODE"] == "MIGRATION":
+        if export_settings.get("MODE", "") == "MIGRATION":
             tpissues = self.count_third_party_issues()
             issue_data = {"thirdParty": tpissues if len(tpissues) > 0 else 0}
             if self.endpoint.version() >= (10, 0, 0):
