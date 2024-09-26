@@ -76,7 +76,7 @@ def main() -> int:
     params = {}
     if options.LANGUAGES in kwargs:
         params = {"languages": util.list_to_csv(kwargs[options.LANGUAGES])}
-    rule_list = rules.get_list(endpoint=endpoint, **params)
+    rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
 
     try:
         if fmt == "csv":
