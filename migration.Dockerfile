@@ -30,17 +30,11 @@ COPY ./README.md .
 COPY ./LICENSE .
 COPY ./sonar/audit sonar/audit
 
-# RUN pip install --upgrade pip \
-# && pip install --no-cache-dir -r requirements.txt \
-# && pip install --no-cache-dir --upgrade pip setuptools wheel \
-# && python setup-migration.py bdist_wheel \
-# && pip install dist/sonar_migration-py3-*.whl --force-reinstall
-
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-RUN python setup_migration.py bdist_wheel
-RUN pip install dist/sonar_migration-*-py3-*.whl --force-reinstall
+RUN pip install --upgrade pip \
+&& pip install --no-cache-dir -r requirements.txt \
+&& pip install --no-cache-dir --upgrade pip setuptools wheel \
+&& python setup_migration.py bdist_wheel \
+&& pip install dist/sonar_migration-py3-*.whl --force-reinstall
 
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
