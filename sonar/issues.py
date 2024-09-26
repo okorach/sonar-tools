@@ -34,7 +34,7 @@ import sonar.logging as log
 import sonar.platform as pf
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
-from sonar import users, syncer, sqobject, findings, changelog, projects
+from sonar import users, sqobject, findings, changelog, projects
 import sonar.utilities as util
 
 API_SET_TAGS = "issues/set_tags"
@@ -430,6 +430,8 @@ class Issue(findings.Finding):
         return self.do_transition("accept")
 
     def __apply_event(self, event: str, settings: ConfigSettings) -> bool:
+        from sonar import syncer
+
         log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
@@ -491,6 +493,8 @@ class Issue(findings.Finding):
         """
         :meta private:
         """
+        from sonar import syncer
+
         events = source_issue.changelog()
         if events is None or not events:
             log.debug("Sibling %s has no changelog, no action taken", source_issue.key)
