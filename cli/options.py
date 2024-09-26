@@ -176,7 +176,7 @@ def __check_file_writeable(file: str) -> None:
         os.remove(file)
 
 
-def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_token: bool = True) -> ArgumentParser:
+def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_token: bool = True, is_migration: bool = False) -> ArgumentParser:
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
         args = parser.parse_args()
@@ -187,7 +187,10 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
     log.set_debug_level(kwargs[VERBOSE])
     del kwargs[VERBOSE]
-    log.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    if is_migration:
+        log.info("sonar-migration version %s", version.MIGRATION_TOOL_VERSION)
+    else:
+        log.info("sonar-tools version %s", version.PACKAGE_VERSION)
     if log.get_level() == log.DEBUG:
         sanitized_args = kwargs.copy()
         sanitized_args[TOKEN] = utilities.redacted_token(sanitized_args[TOKEN])

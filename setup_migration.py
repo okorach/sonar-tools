@@ -26,16 +26,15 @@
 import setuptools
 from sonar import version
 
-
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 setuptools.setup(
     name="sonar-migration",
-    version=version.PACKAGE_VERSION,
+    version=version.MIGRATION_TOOL_VERSION,
     scripts=["sonar_migration"],
     author="Olivier Korach",
     author_email="olivier.korach@gmail.com",
-    description="A collection of utility scripts for SonarQube and SonarCloud",
+    description="A SonarQube collection tool to use in the context of SonarQube to SonarCloud migration",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/okorach/sonar-tools",
