@@ -48,7 +48,7 @@ python3 setup_migration.py bdist_wheel
 pip install --upgrade --force-reinstall dist/sonar_migration-*-py3-*.whl
 
 if [ "$build_image" == "1" ]; then
-    docker build -t sonar-migration:latest .
+    docker build -t sonar-migration:latest -f migration.Dockerfile .
 fi
 
 if [ "$build_docs" == "1" ]; then
