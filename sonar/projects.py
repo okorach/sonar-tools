@@ -42,7 +42,7 @@ import sonar.platform as pf
 from sonar.util import types
 
 from sonar import exceptions, errcodes
-from sonar import sqobject, components, qualitygates, qualityprofiles, rules, tasks, settings, webhooks, devops, syncer
+from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
 import sonar.permissions.permissions as perms
 from sonar import pull_requests, branches
 import sonar.utilities as util
@@ -799,6 +799,8 @@ class Project(components.Component):
 
     def __sync_community(self, another_project: object, sync_settings: types.ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs 2 projects findings on a community edition"""
+        from sonar import syncer
+
         report, counters = [], {}
         log.info("Syncing %s and %s issues", str(self), str(another_project))
         (report, counters) = syncer.sync_lists(
@@ -993,7 +995,7 @@ class Project(components.Component):
                         "taskHistory": [t._json for t in self.task_history()],
                     }
                 json_data["thirdPartyIssues"] = self.count_third_party_issues()
-                log.info("%s has %d 3rd party issues", str(self), sum(v for v in json_data["thirdPartyIssues"].values()))
+                log.debug("%s has %d 3rd party issues", str(self), sum(v for v in json_data["thirdPartyIssues"].values()))
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})

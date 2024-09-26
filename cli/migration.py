@@ -22,8 +22,6 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
-import json
-import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities
@@ -84,7 +82,7 @@ def __parse_args(desc):
         f"By default the export will show the value as '{utilities.DEFAULT}' "
         "and the setting will not be imported at import time",
     )
-    args = options.parse_and_check(parser=parser, logger_name="sonar-migration")
+    args = options.parse_and_check(parser=parser, logger_name="sonar-migration", is_migration=True)
     return args
 
 
