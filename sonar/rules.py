@@ -249,9 +249,9 @@ def count(endpoint: platform.Platform, **params) -> int:
     return json.loads(endpoint.get(Rule.SEARCH_API, params={**params, "ps": 1}).text)["total"]
 
 
-def get_list(endpoint: platform.Platform, **params) -> dict[str, Rule]:
+def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
     """Returns a list of rules corresponding to certain csearch filters"""
-    if len(_OBJECTS) < 100:
+    if not use_cache or params or len(_OBJECTS) < 100:
         return search(endpoint, include_external="false", **params)
     return _OBJECTS
 
@@ -276,7 +276,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, k
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
-    for rule_key, rule in get_list(endpoint=endpoint).items():
+    for rule_key, rule in get_list(endpoint=endpoint, use_cache=False).items():
         rule_export = rule.export(full)
         if rule.template_key is not None:
             instantiated_rules[rule_key] = rule_export
@@ -310,7 +310,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't import rules in SonarCloud")
     log.info("Importing customized (custom tags, extended description) rules")
-    get_list(endpoint=endpoint)
+    get_list(endpoint=endpoint, use_cache=False)
     for key, custom in config_data["rules"].get("extended", {}).items():
         try:
             rule = Rule.get_object(endpoint, key)
@@ -320,8 +320,6 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         rule.set_description(custom.get("description", ""))
         rule.set_tags(utilities.csv_to_list(custom.get("tags", None)))
 
-    log.debug("get_list from import")
-    get_list(endpoint=endpoint, templates=True)
     log.info("Importing custom rules (instantiated from rule templates)")
     for key, instantiation_data in config_data["rules"].get("instantiated", {}).items():
         try:
