@@ -953,6 +953,8 @@ class Project(components.Component):
         :return: All project configuration settings
         :rtype: dict
         """
+        from sonar import issues
+
         log.info("Exporting %s", str(self))
         try:
             json_data = self._json.copy()
@@ -994,8 +996,16 @@ class Project(components.Component):
                         "lastTaskWarnings": last_task.warnings(),
                         "taskHistory": [t._json for t in self.task_history()],
                     }
-                json_data["thirdPartyIssues"] = self.count_third_party_issues()
-                log.debug("%s has %d 3rd party issues", str(self), sum(v for v in json_data["thirdPartyIssues"].values()))
+                tpissues = self.count_third_party_issues()
+                issue_data = {"thirdParty": tpissues if len(tpissues) > 0 else 0}
+                if self.endpoint.version() >= (10, 0, 0):
+                    issue_data["falsePositives"] = issues.count(self.endpoint, components=self.key, issueStatuses="FALSE_POSITIVE")
+                    issue_data["accepted"] = issues.count(self.endpoint, components=self.key, issueStatuses="ACCEPTED")
+                else:
+                    issue_data["falsePositives"] = issues.count(self.endpoint, componentKeys=self.key, resolutions="FALSE-POSITIVE")
+                    issue_data["wontFix"] = issues.count(self.endpoint, componentKeys=self.key, resolutions="WONTFIX")
+                json_data["issues"] = issue_data
+                log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
