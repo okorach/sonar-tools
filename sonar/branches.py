@@ -220,6 +220,8 @@ class Branch(components.Component):
         :return: The branch new code period definition
         :rtype: str
         """
+        from sonar import issues
+
         log.debug("Exporting %s", str(self))
         data = {settings.NEW_CODE_PERIOD: self.new_code()}
         if self.is_main():
@@ -238,6 +240,21 @@ class Branch(components.Component):
                 loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
             loc_distrib["total"] = self.loc()
             data["ncloc"] = loc_distrib
+        if export_settings["MODE"] == "MIGRATION":
+            tpissues = self.count_third_party_issues()
+            issue_data = {"thirdParty": tpissues if len(tpissues) > 0 else 0}
+            if self.endpoint.version() >= (10, 0, 0):
+                issue_data["falsePositives"] = issues.count(
+                    self.endpoint, components=self.concerned_object.key, branch=self.name, issueStatuses="FALSE_POSITIVE"
+                )
+                issue_data["accepted"] = issues.count(self.endpoint, components=self.concerned_object.key, branch=self.name, issueStatuses="ACCEPTED")
+            else:
+                issue_data["falsePositives"] = issues.count(
+                    self.endpoint, componentKeys=self.concerned_object.key, branch=self.name, resolutions="FALSE-POSITIVE"
+                )
+                issue_data["wontFix"] = issues.count(self.endpoint, componentKeys=self.concerned_object.key, branch=self.name, resolutions="WONTFIX")
+            data["issues"] = issue_data
+            log.debug("%s has these notable issues %s", str(self), str(data["issues"]))
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
