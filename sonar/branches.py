@@ -230,7 +230,7 @@ class Branch(components.Component):
             data[settings.NEW_CODE_PERIOD] = self.new_code()
         if export_settings.get("FULL_EXPORT", True):
             data.update({"name": self.name, "project": self.concerned_object.key})
-        if export_settings["MODE"] == "MIGRATION":
+        if export_settings.get("MODE", "") == "MIGRATION":
             data["lastAnalysis"] = util.date_to_string(self.last_analysis())
             lang_distrib = self.get_measure("ncloc_language_distribution")
             loc_distrib = {}
