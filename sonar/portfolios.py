@@ -747,11 +747,16 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     i = 0
     exported_portfolios = {}
     for k, p in sorted(get_list(endpoint=endpoint, key_list=key_list).items()):
-        if not p.is_sub_portfolio:
-            exported_portfolios[k] = p.export(export_settings)
-            exported_portfolios[k].pop("key")
-        else:
-            log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
+        try:
+            if not p.is_sub_portfolio:
+                exported_portfolios[k] = p.export(export_settings)
+                exported_portfolios[k].pop("key")
+            else:
+                log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
+        except HTTPError as e:
+            _, msg = util.http_error(e.response)
+            log.error("%s while exporting %s, export will be empty for this portfolio", msg, str(p))
+            exported_portfolios[k] = {}
         i += 1
         if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
