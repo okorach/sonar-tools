@@ -30,6 +30,9 @@ while [ $# -ne 0 ]; do
         pypi)
             release=1
             ;;
+        dockerhub)
+            release_docker=1
+            ;;
         *)
             ;;
     esac
