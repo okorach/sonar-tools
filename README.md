@@ -316,7 +316,7 @@ For more about what is exported and imported by `sonar-config` please see the [s
 
 Starting from version 3.4 `sonar-tools` is available as a docker image. Here is how to use the docker version:
 ```
-docker pull sonar-tools:latest
+docker pull olivierkorach/sonar-tools:latest
 # Run `docker run sonar-tools` followed by your usual sonar-tools command with its parameters, and example below for sonar-loc
 docker run --rm sonar-tools sonar-loc -u <YOUR_SONAR_URL> -t <YOUR_SONAR_TOKEN> <parameters>
 
