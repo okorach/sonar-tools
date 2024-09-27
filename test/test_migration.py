@@ -47,6 +47,7 @@ def __test_config_cmd(arguments: list[str]) -> None:
     assert util.file_not_empty(outputfile)
     util.clean(outputfile)
 
+
 def test_migration_help() -> None:
     """test_migration_help"""
     util.clean(util.JSON_FILE)
