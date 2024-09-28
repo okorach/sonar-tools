@@ -68,7 +68,10 @@ def test_migration() -> None:
     assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
 
     u = json_config["users"]["olivier-korach65532"]
-    assert u["externalProvider"] == "github"
+    if util.SQ.version() >= (10, 0, 0):
+        assert u["externalProvider"] == "github"
+    else:
+        assert u["externalProvider"] == "sonarqube"
     assert u["name"] == "Olivier Korach"
     assert not u["local"]
     assert u["externalLogin"] == "okorach"
