@@ -1024,6 +1024,7 @@ class Project(components.Component):
             else:
                 log.critical("HTTP error %s while exporting %s, export of this project skipped", str(e), str(self))
             json_data = {}
+        log.info("Exporting %s done", str(self))
         return util.remove_nones(json_data)
 
     def new_code(self) -> str:
