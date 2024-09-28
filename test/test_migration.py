@@ -86,6 +86,7 @@ def test_migration() -> None:
         assert iss["accepted"] > 0
     else:
         assert iss["wontFix"] > 0
+
     assert iss["falsePositives"] > 0
     assert iss["thirdParty"] == 0
 
