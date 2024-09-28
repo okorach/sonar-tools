@@ -241,26 +241,19 @@ class Branch(components.Component):
                 loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
             loc_distrib["total"] = self.loc()
             data["ncloc"] = loc_distrib
-        if export_settings.get("MODE", "") == "MIGRATION":
             tpissues = self.count_third_party_issues()
-            issue_data = {"thirdParty": tpissues if len(tpissues) > 0 else 0}
-            proj_key = self.concerned_object.key
-            if self.endpoint.version() >= (10, 0, 0):
-                params = {"components": proj_key, "branch": self.name}
-                issue_data["falsePositives"] = issue_count(self.endpoint, issueStatuses="FALSE_POSITIVE", **params)
-                issue_data["accepted"] = issue_count(self.endpoint, issueStatuses="ACCEPTED", **params)
-                params = {"project": proj_key, "branch": self.name}
-            else:
-                params = {"componentKeys": proj_key, "branch": self.name}
-                issue_data["falsePositives"] = (issue_count(self.endpoint, resolutions="FALSE-POSITIVE", **params),)
-                issue_data["wontFix"] = (issue_count(self.endpoint, resolutions="WONTFIX", **params),)
-                params = {"projectKey": proj_key, "branch": self.name}
-            data["hotspots"] = {
-                "acknowledged": hotspot_count(self.endpoint, resolution="ACKNOWLEDGED", **params),
-                "safe": hotspot_count(self.endpoint, resolution="SAFE", **params),
-                "fixed": hotspot_count(self.endpoint, resolution="FIXED", **params),
+            params = self.search_params()
+            data["issues"] = {
+                "thirdParty": tpissues if len(tpissues) > 0 else 0,
+                "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
             }
-            data["issues"] = issue_data
+            status = "accepted" if self.endpoint.version() >= (10, 2, 0) else "wontFix"
+            data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
+            data["hotspots"] = {
+                "acknowledged": hotspot_count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
+                "safe": hotspot_count(self.endpoint, resolution=["SAFE"], **params),
+                "fixed": hotspot_count(self.endpoint, resolution=["FIXED"], **params),
+            }
             log.debug("%s has these notable issues %s", str(self), str(data["issues"]))
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
