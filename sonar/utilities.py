@@ -45,19 +45,20 @@ SQ_TIME_FORMAT = "%H:%M:%S"
 DEFAULT = "__default__"
 
 
-def check_last_sonar_tools_version() -> None:
+def check_last_version(package_url: str) -> None:
     """Checks last version of sonar-tools on pypi and displays a warning if the currently used version is older"""
     log.info("Checking latest sonar-version on pypi.org")
     try:
-        r = requests.get(url="https://pypi.org/simple/sonar-tools", headers={"Accept": "application/vnd.pypi.simple.v1+json"}, timeout=10)
+        r = requests.get(url=package_url, headers={"Accept": "application/vnd.pypi.simple.v1+json"}, timeout=10)
         r.raise_for_status()
     except (requests.RequestException, requests.exceptions.HTTPError, requests.exceptions.Timeout) as e:
         log.info("Can't access pypi.org, error %s", str(e))
         return
     txt_version = json.loads(r.text)["versions"][-1]
-    log.info("Latest sonar-tools version is %s", txt_version)
+    package_name = package_url.split("/")[-1]
+    log.info("Latest %s version is %s", package_name, txt_version)
     if tuple(".".split(txt_version)) > tuple(".".split(version.PACKAGE_VERSION)):
-        log.warning("A more recent version of sonar-tools (%s) is available, your are advised to upgrade", txt_version)
+        log.warning("A more recent version of %s (%s) is available, your are advised to upgrade", package_name, txt_version)
 
 
 def token_type(token: str) -> str:
