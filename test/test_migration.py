@@ -79,7 +79,10 @@ def test_migration() -> None:
     assert p["ncloc"]["total"] > 0
 
     iss = p["branches"]["master"]["issues"]
-    assert iss["accepted"] > 0
+    if util.SQ.version() >= (10, 0, 0):
+        assert iss["accepted"] > 0
+    else:
+        assert iss["wontFix"] > 0
     assert iss["falsePositives"] > 0
     assert iss["thirdParty"] == 0
 
