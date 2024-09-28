@@ -68,14 +68,14 @@ def test_migration() -> None:
     assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
 
     u = json_config["users"]["olivier-korach65532"]
-    if util.SQ.version() >= (10, 0, 0):
-        assert u["externalProvider"] == "github"
-    else:
-        assert u["externalProvider"] == "sonarqube"
     assert u["name"] == "Olivier Korach"
     assert not u["local"]
-    assert u["externalLogin"] == "okorach"
-    assert u["email"] == "olivier.korach@gmail.com"
+    if util.SQ.version() >= (10, 0, 0):
+        assert u["externalProvider"] == "github"
+        assert u["externalLogin"] == "okorach"
+        assert u["email"] == "olivier.korach@gmail.com"
+    else:
+        assert u["externalProvider"] == "sonarqube"
 
     p = json_config["projects"]["okorach_sonar-tools"]
     assert "lastTaskScannerContext" in p["backgroundTasks"]
