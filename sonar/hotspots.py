@@ -441,7 +441,8 @@ def get_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> types.
         criterias["status"] = util.allowed_values_string(criterias["status"], STATUSES)
     if "resolution" in criterias:
         criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
-        log.warning("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
+        if "status" in criterias:
+            log.warning("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
         criterias["status"] = "REVIEWED"
     if endpoint.version() >= (10, 2, 0):
         criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER_OLD: PROJECT_FILTER})
