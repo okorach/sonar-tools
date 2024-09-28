@@ -80,7 +80,7 @@ def test_migration() -> None:
 
     iss = p["branches"]["master"]["issues"]
     assert iss["accepted"] > 0
-    assert iss["fslePositives"] > 0
+    assert iss["falsePositives"] > 0
     assert iss["thirdParty"] == 0
 
     p = json_config["projects"]["checkstyle-issues"]
