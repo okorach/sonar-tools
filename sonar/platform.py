@@ -788,7 +788,7 @@ def __lta_and_latest() -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         _, tmpfile = tempfile.mkstemp(prefix="sonar-tools", suffix=".txt", text=True)
         try:
             with open(tmpfile, "w", encoding="utf-8") as fp:
-                print(requests.get(_UPDATE_CENTER, headers=_SONAR_TOOLS_AGENT, timeout=10).text, file=fp)
+                print(requests.get(_UPDATE_CENTER, headers={"user-agent": _SONAR_TOOLS_AGENT}, timeout=10).text, file=fp)
             with open(tmpfile, "r", encoding="utf-8") as fp:
                 upd_center_props = jprops.load_properties(fp)
             v = upd_center_props.get("ltsVersion", "9.9.0").split(".")
