@@ -253,7 +253,7 @@ class User(sqobject.SqObject):
                     params[p] = kwargs[p]
             if len(params) > 1:
                 self.post(UPDATE_API, params=params)
-            self.set_scm_accounts(kwargs.get("scmAccounts", ""))
+            self.set_scm_accounts(kwargs.get("scmAccounts", None))
             if "login" in kwargs:
                 new_login = kwargs["login"]
                 if new_login not in _OBJECTS:
@@ -380,8 +380,7 @@ class User(sqobject.SqObject):
         :rtype: dict
         """
         json_data = self._json.copy()
-        scm = self.scm_accounts
-        json_data["scmAccounts"] = util.list_to_csv(scm) if scm else None
+        json_data["scmAccounts"] = self.scm_accounts
         json_data["groups"] = self.groups().copy()
         if export_settings.get("MODE", "") == "MIGRATION":
             return json_data
