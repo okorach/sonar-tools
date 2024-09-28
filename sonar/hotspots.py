@@ -391,7 +391,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
     for inline_filters in filters_iterations:
         p = 1
         inline_filters["ps"] = ps
-        log.info("Searching hotspots with sanitized filters %s", str(inline_filters))
+        log.debug("Searching hotspots with sanitized filters %s", str(inline_filters))
         while True:
             inline_filters["p"] = p
             try:
