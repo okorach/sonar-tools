@@ -823,11 +823,9 @@ def get_newest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[d
 def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
     params = {} if not kwargs else kwargs.copy()
-    params["ps"] = 1
-    try:
-        nbr_issues = len(search(endpoint=endpoint, params=params))
-    except TooManyIssuesError as e:
-        nbr_issues = e.nbr_issues
+    filters = pre_search_filters(endpoint=endpoint, params=params)
+    filters["ps"] = 1
+    nbr_issues = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)["paging"]["total"]
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
     return nbr_issues
 
