@@ -247,17 +247,13 @@ class Branch(components.Component):
             proj_key = self.concerned_object.key
             if self.endpoint.version() >= (10, 0, 0):
                 params = {"components": proj_key, "branch": self.name}
-                data["issues"] = {
-                    "falsePositives": issue_count(self.endpoint, issueStatuses="FALSE_POSITIVE", **params),
-                    "accepted": issue_count(self.endpoint, issueStatuses="ACCEPTED", **params),
-                }
+                issue_data["falsePositives"] = issue_count(self.endpoint, issueStatuses="FALSE_POSITIVE", **params)
+                issue_data["accepted"] = issue_count(self.endpoint, issueStatuses="ACCEPTED", **params)
                 params = {"project": proj_key, "branch": self.name}
             else:
                 params = {"componentKeys": proj_key, "branch": self.name}
-                data["issues"] = {
-                    "falsePositives": issue_count(self.endpoint, resolutions="FALSE-POSITIVE", **params),
-                    "wontFix": issue_count(self.endpoint, resolutions="WONTFIX", **params),
-                }
+                issue_data["falsePositives"] = (issue_count(self.endpoint, resolutions="FALSE-POSITIVE", **params),)
+                issue_data["wontFix"] = (issue_count(self.endpoint, resolutions="WONTFIX", **params),)
                 params = {"projectKey": proj_key, "branch": self.name}
             data["hotspots"] = {
                 "acknowledged": hotspot_count(self.endpoint, resolution="ACKNOWLEDGED", **params),
