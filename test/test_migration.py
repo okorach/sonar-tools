@@ -60,8 +60,11 @@ def test_migration() -> None:
     u = json_config["users"]["admin"]
     assert "sonar-users" in u["groups"]
     assert u["local"] and u["active"]
-    assert "sonarQubeLastConnectionDate" in u
-    assert "sonarLintLastConnectionDate" in u
+    if util.SQ.version() >= (10, 0, 0):
+        assert "sonarQubeLastConnectionDate" in u
+        assert "sonarLintLastConnectionDate" in u
+    else:
+        assert "lastConnectionDate" in u
     assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
 
     u = json_config["users"]["olivier-korach65532"]
