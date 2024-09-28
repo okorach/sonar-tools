@@ -36,18 +36,6 @@ CMD = "migration.py"
 OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
 
-def __test_config_cmd(arguments: list[str]) -> None:
-    """Runs a test command"""
-    outputfile = arguments[arguments.index(f"-{opt.REPORT_FILE_SHORT}") + 1]
-    util.clean(outputfile)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", arguments):
-            migration.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(outputfile)
-    util.clean(outputfile)
-
-
 def test_migration_help() -> None:
     """test_migration_help"""
     util.clean(util.JSON_FILE)
@@ -58,6 +46,47 @@ def test_migration_help() -> None:
     assert not os.path.isfile(util.JSON_FILE)
 
 
-def test_migration_basic() -> None:
+def test_migration() -> None:
     """test_config_export"""
-    __test_config_cmd(OPTS)
+    util.clean(util.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", OPTS):
+            migration.main()
+    assert int(str(e.value)) == errcodes.OK
+    assert util.file_not_empty(util.JSON_FILE)
+    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+
+    u = json_config["users"]["admin"]
+    assert "sonar-users" in u["groups"]
+    assert u["local"] and u["active"]
+    assert "sonarQubeLastConnectionDate" in u
+    assert "sonarLintLastConnectionDate" in u
+    assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
+
+    u = json_config["users"]["olivier-korach65532"]
+    assert u["externalProvider"] == "github"
+    assert u["name"] == "Olivier Korach"
+    assert not u["local"]
+    assert u["externalLogin"] == "okorach"
+    assert u["email"] == "olivier.korach@gmail.com"
+
+    p = json_config["projects"]["okorach_sonar-tools"]
+    assert "lastTaskScannerContext" in p["backgroundTasks"]
+    for elem in "detectedCi", "lastAnalysis", "revision":
+        assert elem in p
+    assert p["ncloc"]["py"] > 0
+    assert p["ncloc"]["total"] > 0
+
+    iss = p["branches"]["master"]["issues"]
+    assert iss["accepted"] > 0
+    assert iss["fslePositives"] > 0
+    assert iss["thirdParty"] == 0
+
+    p = json_config["projects"]["checkstyle-issues"]
+    assert len(p["branches"]["issues"]["thirdParty"]) > 0
+
+    assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "GitLab CI"
+    assert json_config["projects"]["demo:gitlab-actions-cli"]["detectedCi"] == "Github Actions"
+
+    util.clean(util.JSON_FILE)
