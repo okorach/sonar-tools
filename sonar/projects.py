@@ -953,7 +953,8 @@ class Project(components.Component):
         :return: All project configuration settings
         :rtype: dict
         """
-        from sonar import issues
+        from sonar.issues import count as issue_count
+        from sonar.hotspots import count as hotspot_count
 
         log.info("Exporting %s", str(self))
         try:
@@ -997,14 +998,18 @@ class Project(components.Component):
                         "taskHistory": [t._json for t in self.task_history()],
                     }
                 tpissues = self.count_third_party_issues()
-                issue_data = {"thirdParty": tpissues if len(tpissues) > 0 else 0}
-                if self.endpoint.version() >= (10, 0, 0):
-                    issue_data["falsePositives"] = issues.count(self.endpoint, components=self.key, issueStatuses="FALSE_POSITIVE")
-                    issue_data["accepted"] = issues.count(self.endpoint, components=self.key, issueStatuses="ACCEPTED")
-                else:
-                    issue_data["falsePositives"] = issues.count(self.endpoint, componentKeys=self.key, resolutions="FALSE-POSITIVE")
-                    issue_data["wontFix"] = issues.count(self.endpoint, componentKeys=self.key, resolutions="WONTFIX")
-                json_data["issues"] = issue_data
+                params = self.search_params()
+                json_data["issues"] = {
+                    "thirdParty": tpissues if len(tpissues) > 0 else 0,
+                    "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
+                }
+                status = "accepted" if self.endpoint.version() >= (10, 2, 0) else "wontFix"
+                json_data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
+                json_data["hotspots"] = {
+                    "acknowledged": hotspot_count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
+                    "safe": hotspot_count(self.endpoint, resolution=["SAFE"], **params),
+                    "fixed": hotspot_count(self.endpoint, resolution=["FIXED"], **params),
+                }
                 log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)

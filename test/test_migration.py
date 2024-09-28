@@ -60,8 +60,11 @@ def test_migration() -> None:
     u = json_config["users"]["admin"]
     assert "sonar-users" in u["groups"]
     assert u["local"] and u["active"]
-    assert "sonarQubeLastConnectionDate" in u
-    assert "sonarLintLastConnectionDate" in u
+    if util.SQ.version() >= (10, 0, 0):
+        assert "sonarQubeLastConnectionDate" in u
+        assert "sonarLintLastConnectionDate" in u
+    else:
+        assert "lastConnectionDate" in u
     assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
 
     u = json_config["users"]["olivier-korach65532"]
@@ -79,9 +82,15 @@ def test_migration() -> None:
     assert p["ncloc"]["total"] > 0
 
     iss = p["branches"]["master"]["issues"]
-    assert iss["accepted"] > 0
+    if util.SQ.version() >= (10, 0, 0):
+        assert iss["accepted"] > 0
+    else:
+        assert iss["wontFix"] > 0
     assert iss["falsePositives"] > 0
     assert iss["thirdParty"] == 0
+
+    assert p["branches"]["master"]["hotspots"]["safe"] > 0
+    assert p["branches"]["master"]["hotspots"]["acknowledged"] == 0
 
     p = json_config["projects"]["checkstyle-issues"]
     assert len(p["branches"]["issues"]["thirdParty"]) > 0
