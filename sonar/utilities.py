@@ -209,19 +209,21 @@ def csv_to_list(string: str, separator: str = ",") -> list[str]:
     return [s.strip() for s in string.split(separator)]
 
 
-def list_to_csv(array: Union[None, str, list[str]], separator: str = ",", check_for_separator: bool = False) -> Optional[str]:
+def list_to_csv(array: Union[None, str, int, float, list[str]], separator: str = ",", check_for_separator: bool = False) -> Optional[str]:
     """Converts a list of strings to CSV"""
     if isinstance(array, str):
         return csv_normalize(array, separator) if " " in array else array
     if array is None:
         return None
-    if check_for_separator:
-        # Don't convert to string if one array item contains the string separator
-        s = separator.strip()
-        for item in array:
-            if s in item:
-                return array
-    return separator.join([v.strip() for v in array])
+    if isinstance(array, (list, set, tuple)):
+        if check_for_separator:
+            # Don't convert to string if one array item contains the string separator
+            s = separator.strip()
+            for item in array:
+                if s in item:
+                    return array
+        return separator.join([v.strip() for v in array])
+    return str(array)
 
 
 def csv_normalize(string: str, separator: str = ",") -> str:
@@ -585,6 +587,15 @@ def dict_remap(original_dict: dict[str, str], remapping: dict[str, str]) -> dict
         if old in original_dict and new not in remapped_filters:
             remapped_filters[new] = remapped_filters.pop(old)
     return remapped_filters
+
+
+def list_re_value(a_list: list[str], mapping: dict[str, str]) -> list[str]:
+    """Adjust findings search filters based on Sonar version"""
+    if not a_list or len(a_list) == 0:
+        return []
+    for old, new in mapping.items():
+        a_list = [new if v == old else v for v in a_list]
+    return a_list
 
 
 def dict_stringify(original_dict: dict[str, str]) -> dict[str, str]:

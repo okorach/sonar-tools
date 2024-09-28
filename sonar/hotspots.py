@@ -387,9 +387,10 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
     new_params = get_search_filters(endpoint=endpoint, params=filters)
     new_params = util.dict_remap(original_dict=new_params, remapping=_FILTERS_HOTSPOTS_REMAPPING)
     filters_iterations = split_search_filters(new_params)
+    ps = 500 if "ps" not in new_params else new_params["ps"]
     for inline_filters in filters_iterations:
         p = 1
-        inline_filters["ps"] = 500
+        inline_filters["ps"] = ps
         log.info("Searching hotspots with sanitized filters %s", str(inline_filters))
         while True:
             inline_filters["p"] = p
@@ -403,7 +404,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
                     nbr_hotspots = 0
                     return {}
                 raise e
-            nbr_pages = (nbr_hotspots + 499) // 500
+            nbr_pages = (nbr_hotspots + ps - 1) // ps
             log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)
             if nbr_hotspots > 10000:
                 raise TooManyHotspotsError(
@@ -433,6 +434,7 @@ def get_object(endpoint: pf.Platform, key: str, data: dict[str] = None, from_exp
 
 def get_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> types.ApiParams:
     """Returns the filtered list of params that are allowed for api/hotspots/search"""
+    log.debug("Sanitizing hotspot search criteria %s", str(params))
     if params is None:
         return {}
     criterias = util.remove_nones(params.copy())
@@ -441,11 +443,12 @@ def get_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> types.
         criterias["status"] = util.allowed_values_string(criterias["status"], STATUSES)
     if "resolution" in criterias:
         criterias["resolution"] = util.allowed_values_string(criterias["resolution"], RESOLUTIONS)
-        log.warning("hotspot 'status' criteria incompatible with 'resolution' criteria, ignoring 'status'")
         criterias["status"] = "REVIEWED"
-    if endpoint.version() >= (10, 2, 0):
-        criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER_OLD: PROJECT_FILTER})
-    return util.dict_subset(criterias, SEARCH_CRITERIAS)
+    if endpoint.version() <= (10, 2, 0):
+        criterias = util.dict_remap(original_dict=criterias, remapping={PROJECT_FILTER: PROJECT_FILTER_OLD})
+    criterias = util.dict_subset(criterias, SEARCH_CRITERIAS)
+    log.debug("Sanitized hotspot search criteria %s", str(criterias))
+    return criterias
 
 
 def split_filter(params: types.ApiParams, criteria: str) -> list[types.ApiParams]:
@@ -475,7 +478,7 @@ def split_search_filters(params: types.ApiParams) -> list[types.ApiParams]:
 def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiParams) -> dict[str, Hotspot]:
     """Filters a dict of hotspots with provided filters"""
     filtered_findings = hotspots_dict.copy()
-    log.info("Post filtering findings with %s", str(filters))
+    log.debug("Post filtering findings with %s", str(filters))
     if "createdAfter" in filters:
         min_date = util.string_to_date(filters["createdAfter"])
     if "createdBefore" in filters:
@@ -491,3 +494,12 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiPara
             filtered_findings.pop(key, None)
 
     return filtered_findings
+
+
+def count(endpoint: pf.Platform, **kwargs) -> int:
+    """Returns number of hotspots of a search"""
+    params = {} if not kwargs else kwargs.copy()
+    params["ps"] = 1
+    nbr_hotspots = len(search(endpoint=endpoint, filters=params))
+    log.debug("Hotspot counts with filters %s returned %d hotspots", str(kwargs), nbr_hotspots)
+    return nbr_hotspots
