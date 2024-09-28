@@ -68,11 +68,14 @@ def test_migration() -> None:
     assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
 
     u = json_config["users"]["olivier-korach65532"]
-    assert u["externalProvider"] == "github"
     assert u["name"] == "Olivier Korach"
     assert not u["local"]
-    assert u["externalLogin"] == "okorach"
-    assert u["email"] == "olivier.korach@gmail.com"
+    if util.SQ.version() >= (10, 0, 0):
+        assert u["externalProvider"] == "github"
+        assert u["externalLogin"] == "okorach"
+        assert u["email"] == "olivier.korach@gmail.com"
+    else:
+        assert u["externalProvider"] == "sonarqube"
 
     p = json_config["projects"]["okorach_sonar-tools"]
     assert "lastTaskScannerContext" in p["backgroundTasks"]
@@ -96,7 +99,8 @@ def test_migration() -> None:
     p = json_config["projects"]["checkstyle-issues"]
     assert len(p["branches"]["main"]["issues"]["thirdParty"]) > 0
 
-    assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "GitLab CI"
-    assert json_config["projects"]["demo:gitlab-actions-cli"]["detectedCi"] == "Github Actions"
+    if util.SQ.version() >= (10, 0, 0):
+        assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
+        assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
 
     util.clean(util.JSON_FILE)
