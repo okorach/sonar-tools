@@ -96,7 +96,7 @@ def test_migration() -> None:
     p = json_config["projects"]["checkstyle-issues"]
     assert len(p["branches"]["main"]["issues"]["thirdParty"]) > 0
 
-    assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "GitLab CI"
+    assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
     assert json_config["projects"]["demo:gitlab-actions-cli"]["detectedCi"] == "Github Actions"
 
     util.clean(util.JSON_FILE)
