@@ -491,3 +491,12 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiPara
             filtered_findings.pop(key, None)
 
     return filtered_findings
+
+
+def count(endpoint: pf.Platform, **kwargs) -> int:
+    """Returns number of hotspots of a search"""
+    params = {} if not kwargs else kwargs.copy()
+    params["ps"] = 1
+    nbr_hotspots = len(search(endpoint=endpoint, filters=params))
+    log.debug("Hotspot counts with filters %s is %d hotspots", str(kwargs), nbr_hotspots)
+    return nbr_hotspots

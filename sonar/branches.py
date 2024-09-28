@@ -220,7 +220,8 @@ class Branch(components.Component):
         :return: The branch new code period definition
         :rtype: str
         """
-        from sonar import issues
+        from sonar.issues import count as issue_count
+        from sonar.hotspots import count as hotspot_count
 
         log.debug("Exporting %s", str(self))
         data = {settings.NEW_CODE_PERIOD: self.new_code()}
@@ -243,16 +244,26 @@ class Branch(components.Component):
         if export_settings.get("MODE", "") == "MIGRATION":
             tpissues = self.count_third_party_issues()
             issue_data = {"thirdParty": tpissues if len(tpissues) > 0 else 0}
+            proj_key = self.concerned_object.key
             if self.endpoint.version() >= (10, 0, 0):
-                issue_data["falsePositives"] = issues.count(
-                    self.endpoint, components=self.concerned_object.key, branch=self.name, issueStatuses="FALSE_POSITIVE"
-                )
-                issue_data["accepted"] = issues.count(self.endpoint, components=self.concerned_object.key, branch=self.name, issueStatuses="ACCEPTED")
+                params = {"components": proj_key, "branch": self.name}
+                data["issues"] = {
+                    "falsePositives": issue_count(self.endpoint, issueStatuses="FALSE_POSITIVE", **params),
+                    "accepted": issue_count(self.endpoint, issueStatuses="ACCEPTED", **params),
+                }
+                params = {"project": proj_key, "branch": self.name}
             else:
-                issue_data["falsePositives"] = issues.count(
-                    self.endpoint, componentKeys=self.concerned_object.key, branch=self.name, resolutions="FALSE-POSITIVE"
-                )
-                issue_data["wontFix"] = issues.count(self.endpoint, componentKeys=self.concerned_object.key, branch=self.name, resolutions="WONTFIX")
+                params = {"componentKeys": proj_key, "branch": self.name}
+                data["issues"] = {
+                    "falsePositives": issue_count(self.endpoint, resolutions="FALSE-POSITIVE", **params),
+                    "wontFix": issue_count(self.endpoint, resolutions="WONTFIX", **params),
+                }
+                params = {"projectKey": proj_key, "branch": self.name}
+            data["hotspots"] = {
+                "acknowledged": hotspot_count(self.endpoint, resolution="ACKNOWLEDGED", **params),
+                "safe": hotspot_count(self.endpoint, resolution="SAFE", **params),
+                "fixed": hotspot_count(self.endpoint, resolution="FIXED", **params),
+            }
             data["issues"] = issue_data
             log.debug("%s has these notable issues %s", str(self), str(data["issues"]))
         data = util.remove_nones(data)
