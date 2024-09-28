@@ -373,7 +373,7 @@ class User(sqobject.SqObject):
                 problems.append(Problem(get_rule(RuleId.USER_UNUSED), self, str(self), age))
         return problems
 
-    def to_json(self, full: bool = False) -> types.ObjectJsonRepr:
+    def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports the user data (login, email, groups, SCM accounts local or not) as dict
 
         :return: User data
@@ -382,13 +382,15 @@ class User(sqobject.SqObject):
         json_data = self._json.copy()
         scm = self.scm_accounts
         json_data["scmAccounts"] = util.list_to_csv(scm) if scm else None
-        my_groups = self.groups().copy()
-        if "sonar-users" in my_groups:
-            my_groups.remove("sonar-users")
-        json_data["groups"] = util.list_to_csv(my_groups, ", ", True)
-        if not self.endpoint.is_sonarcloud() and not full and not json_data["local"]:
+        json_data["groups"] = self.groups().copy()
+        if export_settings.get("MODE", "") == "MIGRATION":
+            return json_data
+        if "sonar-users" in json_data["groups"]:
+            json_data["groups"].remove("sonar-users")
+
+        if not self.endpoint.is_sonarcloud() and not export_settings["FULL_EXPORT"] and not json_data["local"]:
             json_data.pop("local")
-        return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, full))
+        return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings["FULL_EXPORT"]))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, User]:
@@ -415,7 +417,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     log.info("Exporting users")
     u_list = {}
     for u_login, u_obj in sorted(search(endpoint=endpoint).items()):
-        u_list[u_login] = u_obj.to_json(export_settings["FULL_EXPORT"])
+        u_list[u_login] = u_obj.to_json(export_settings)
         u_list[u_login].pop("login", None)
     return u_list
 
