@@ -53,7 +53,7 @@ WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 _HTTP_ERROR = "%s Error: %s HTTP status code %d - %s"
 
-_SONAR_TOOLS_AGENT = {"user-agent": f"sonar-tools {version.PACKAGE_VERSION}"}
+_SONAR_TOOLS_AGENT = f"sonar-tools {version.PACKAGE_VERSION}"
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
 
 LTA = None
@@ -88,6 +88,7 @@ class Platform:
         self.http_timeout = int(http_timeout)
         self.organization = org
         self.__is_sonarcloud = util.is_sonarcloud_url(self.url)
+        self._user_agent = _SONAR_TOOLS_AGENT
 
     def __str__(self) -> str:
         """
@@ -135,6 +136,9 @@ class Platform:
         if self.__user_data is None:
             self.__user_data = json.loads(self.get("api/users/current").text)
         return self.__user_data
+
+    def set_user_agent(self, user_agent: str) -> None:
+        self._user_agent = user_agent
 
     def server_id(self) -> str:
         """
@@ -210,7 +214,7 @@ class Platform:
     ) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         api = _normalize_api(api)
-        headers = _SONAR_TOOLS_AGENT
+        headers = {"user-agent": self._user_agent}
         if params is None:
             params = {}
         if self.is_sonarcloud():

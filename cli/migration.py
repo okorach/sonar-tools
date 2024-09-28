@@ -24,7 +24,7 @@
 import sys
 
 from cli import options
-from sonar import exceptions, errcodes, utilities
+from sonar import exceptions, errcodes, utilities, version
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -143,6 +143,7 @@ def main() -> None:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
+        endpoint.set_user_agent(f"sonar-migration {version.MIGRATION_TOOL_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
 
