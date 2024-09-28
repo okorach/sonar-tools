@@ -204,7 +204,10 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
         __check_file_writeable(kwargs.get(REPORT_FILE, None))
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
-        utilities.check_last_sonar_tools_version()
+        if is_migration:
+            utilities.check_last_version("https://pypi.org/simple/sonar-migration")
+        else:
+            utilities.check_last_version("https://pypi.org/simple/sonar-tools")
     kwargs.pop(SKIP_VERSION_CHECK, None)
     if utilities.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
         raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarCloud")
