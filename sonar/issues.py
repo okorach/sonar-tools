@@ -757,7 +757,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     log.debug("Search filters = %s", str(filters))
     issue_list = {}
     data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
-    nbr_issues = data["paging"]["total"]
+    nbr_issues = util.nbr_total_elements(data)
     nbr_pages = util.nbr_pages(data)
     log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
 
@@ -820,7 +820,7 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
     filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
-    nbr_issues = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)["paging"]["total"]
+    nbr_issues = util.nbr_total_elements(json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text))
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
     return nbr_issues
 
