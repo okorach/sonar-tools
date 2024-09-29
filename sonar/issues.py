@@ -870,7 +870,9 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         return {}
     log.debug("Sanitizing issue search filters %s", str(params))
     version = endpoint.version()
-    filters = util.dict_remap(original_dict=params.copy(), remapping={"project": COMPONENT_FILTER})
+    filters = util.dict_remap(
+        original_dict=params.copy(), remapping={"project": COMPONENT_FILTER, "application": COMPONENT_FILTER, "portfolio": COMPONENT_FILTER}
+    )
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
     if version < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"
