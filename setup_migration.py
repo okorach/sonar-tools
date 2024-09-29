@@ -40,7 +40,7 @@ setuptools.setup(
     url="https://github.com/okorach/sonar-tools",
     project_urls={
         "Bug Tracker": "https://github.com/okorach/sonar-tools/issues",
-        "Documentation": "https://github.com/okorach/sonar-tools/README.md",
+        "Documentation": "https://github.com/okorach/sonar-tools/doc/README.sonar-migration.md",
         "Source Code": "https://github.com/okorach/sonar-tools",
     },
     packages=setuptools.find_packages(),

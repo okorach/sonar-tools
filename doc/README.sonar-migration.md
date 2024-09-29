@@ -12,6 +12,8 @@ Command line tool to collect SonarQube data to prepare eventual migration to Son
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=bugs)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=okorach_sonar-tools&metric=ncloc)](https://sonarcloud.io/dashboard?id=okorach_sonar-tools)
 
+[What's new](https://github.com/okorach/sonar-tools/blob/master/doc/what-is-new.sonar-migration.md)
+
 **DISCLAIMER**: This software is community software.
 
 
