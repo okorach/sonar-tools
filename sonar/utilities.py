@@ -365,6 +365,7 @@ def nbr_pages(sonar_api_json: dict[str, str]) -> int:
     else:
         return 1
 
+
 def nbr_total_elements(sonar_api_json: dict[str, str]) -> int:
     """Returns nbr of elements of a paginated Sonar API call"""
     if "total" in sonar_api_json:
@@ -373,6 +374,7 @@ def nbr_total_elements(sonar_api_json: dict[str, str]) -> int:
         return sonar_api_json["paging"]["total"]
     else:
         return 1
+
 
 @contextlib.contextmanager
 def open_file(file: str = None, mode: str = "w") -> TextIO:
