@@ -29,7 +29,7 @@ from sonar import platform
 from sonar.util import types
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar import components, syncer, settings, exceptions
+from sonar import components, settings, exceptions
 from sonar import projects
 import sonar.utilities as util
 
@@ -330,9 +330,11 @@ class Branch(components.Component):
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
+        from sonar.syncer import sync_lists
+
         report, counters = [], {}
         log.info("Syncing %s (%s) and %s (%s) issues", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
-        (report, counters) = syncer.sync_lists(
+        (report, counters) = sync_lists(
             list(self.get_issues().values()),
             list(another_branch.get_issues().values()),
             self,
@@ -340,7 +342,7 @@ class Branch(components.Component):
             sync_settings=sync_settings,
         )
         log.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
-        (tmp_report, tmp_counts) = syncer.sync_lists(
+        (tmp_report, tmp_counts) = sync_lists(
             list(self.get_hotspots().values()),
             list(another_branch.get_hotspots().values()),
             self,
