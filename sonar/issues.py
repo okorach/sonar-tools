@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import date, datetime, timedelta
 import json
 import re
@@ -830,7 +831,7 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
     SLICE_SIZE = 50  # Search rules facets by bulks of 50
     if "rules" in kwargs:
         ruleset = kwargs.pop("rules")
-        nbr_slices = (len(ruleset) + SLICE_SIZE - 1) // SLICE_SIZE
+        nbr_slices = math.ceil(len(ruleset) / SLICE_SIZE)
     params = pre_search_filters(endpoint=endpoint, params=kwargs)
     params.update({"ps": 1, "facets": "rules"})
     rulecount = {}
