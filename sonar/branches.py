@@ -242,9 +242,11 @@ class Branch(components.Component):
             loc_distrib["total"] = self.loc()
             data["ncloc"] = loc_distrib
             tpissues = self.count_third_party_issues()
+            inst_issues = self.count_instantiated_rules_issues()
             params = self.search_params()
             data["issues"] = {
                 "thirdParty": tpissues if len(tpissues) > 0 else 0,
+                "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
                 "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
             }
             status = "accepted" if self.endpoint.version() >= (10, 2, 0) else "wontFix"
