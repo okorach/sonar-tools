@@ -358,10 +358,10 @@ def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: any
 
 def nbr_pages(sonar_api_json: dict[str, str]) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
-    if "total" in sonar_api_json:
-        return math.ceil(sonar_api_json["total"] / sonar_api_json["ps"])
-    elif "paging" in sonar_api_json:
+    if "paging" in sonar_api_json:
         return math.ceil(sonar_api_json["paging"]["total"] / sonar_api_json["paging"]["pageSize"])
+    elif "total" in sonar_api_json:
+        return math.ceil(sonar_api_json["total"] / sonar_api_json["ps"])
     else:
         return 1
 
