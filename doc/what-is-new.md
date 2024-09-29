@@ -1,5 +1,9 @@
 # Next version yet unreleased
 
+# Version 3.4.1
+
+- Hotfix: Fix systematic crash on `sonar-findings-export`: [Issue #1358](https://github.com/okorach/sonar-tools/issues/1358)
+
 # Version 3.4
 
 - `sonar-tools` is now available as a docker image
