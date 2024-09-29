@@ -26,6 +26,7 @@ from typing import TextIO, Union, Optional
 from http import HTTPStatus
 import sys
 import os
+import math
 import contextlib
 import re
 import json
@@ -355,20 +356,23 @@ def update_json(json_data: dict[str, str], categ: str, subcateg: str, value: any
     return json_data
 
 
-def int_div_ceil(number: int, divider: int) -> int:
-    """Computes rounded up int division"""
-    return (number + divider - 1) // divider
-
-
 def nbr_pages(sonar_api_json: dict[str, str]) -> int:
     """Returns nbr of pages of a paginated Sonar API call"""
     if "total" in sonar_api_json:
-        return int_div_ceil(sonar_api_json["total"], sonar_api_json["ps"])
+        return math.ceil(sonar_api_json["total"] / sonar_api_json["ps"])
     elif "paging" in sonar_api_json:
-        return int_div_ceil(sonar_api_json["paging"]["total"], sonar_api_json["paging"]["pageSize"])
+        return math.ceil(sonar_api_json["paging"]["total"] / sonar_api_json["paging"]["pageSize"])
     else:
         return 1
 
+def nbr_total_elements(sonar_api_json: dict[str, str]) -> int:
+    """Returns nbr of elements of a paginated Sonar API call"""
+    if "total" in sonar_api_json:
+        return sonar_api_json["total"]
+    elif "paging" in sonar_api_json:
+        return sonar_api_json["paging"]["total"]
+    else:
+        return 1
 
 @contextlib.contextmanager
 def open_file(file: str = None, mode: str = "w") -> TextIO:
