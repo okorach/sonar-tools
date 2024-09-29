@@ -28,5 +28,5 @@ sonar-migration version {version.PACKAGE_VERSION}
 
 run: sonar-migration -u <SonarQubeURL> -t <SonarAdminUserToken>
 
-See tools built-in -h help and https://github.com/okorach/sonar-tools for more documentation
+See tools built-in -h help and https://github.com/okorach/sonar-tools/doc/README.sonar-migration.md for more documentation
 ''')
