@@ -83,8 +83,7 @@ class Measure(sq.SqObject):
         if params is None:
             params = {}
         params.update({"component": self.concerned_object.key, "metrics": self.metric, "ps": 1})
-        data = json.loads(self.get(Measure.API_HISTORY, params=params).text)
-        return data["paging"]["total"]
+        return util.nbr_total_elements(json.loads(self.get(Measure.API_HISTORY, params=params).text))
 
     def search_history(self, params: ApiParams = None) -> dict[str, any]:
         """Searches the history of the measure

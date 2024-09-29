@@ -23,6 +23,7 @@
 
 """
 from __future__ import annotations
+import math
 import json
 
 from datetime import datetime
@@ -104,9 +105,9 @@ class Component(sq.SqObject):
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
         data = json.loads(self.get("measures/component_tree", params=parms).text)
-        nb_comp = data["paging"]["total"]
+        nb_comp = utilities.nbr_total_elements(data)
         log.debug("Found %d subcomponents to %s", nb_comp, str(self))
-        nb_pages = (nb_comp + 500 - 1) // 500
+        nb_pages = math.ceil(nb_comp / 500)
         comp_list = {}
         parms["ps"] = 500
         for page in range(nb_pages):

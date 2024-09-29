@@ -1321,8 +1321,7 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     """
     new_params = {} if params is None else params.copy()
     new_params.update({"ps": 1, "p": 1})
-    data = json.loads(endpoint.get(Project.SEARCH_API, params=params).text)
-    return data["paging"]["total"]
+    util.nbr_total_elements(json.loads(endpoint.get(Project.SEARCH_API, params=params).text))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Project]:

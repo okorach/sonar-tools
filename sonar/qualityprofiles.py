@@ -433,8 +433,7 @@ class QualityProfile(sq.SqObject):
                     self._projects += [p["key"] for p in data["results"]]
                     page += 1
                     if self.endpoint.version() >= (10, 0, 0):
-                        nb_pages = (data["paging"]["total"] + 500 - 1) // 500
-                        more = nb_pages >= page
+                        more = util.nbr_pages(data) >= page
                     else:
                         more = data["more"]
 
