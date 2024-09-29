@@ -839,15 +839,13 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
         ruleset = params.pop("rules")
         nbr_slices = (len(ruleset) + SLICE_SIZE - 1) // SLICE_SIZE
     params = pre_search_filters(endpoint=endpoint, params=params)
-    params["ps"] = 1
-    params["facets"] = "rules"
+    params.update({"ps": 1, "facets": "rules"})
     if "rules" in params:
         nbr_slices = (len(ruleset) + SLICE_SIZE - 1) // SLICE_SIZE
     rulecount = {}
     for i in range(nbr_slices):
-        sliced_params = params.copy()
-        sliced_params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
-        data = json.loads(endpoint.get(Issue.SEARCH_API, params=sliced_params).text)["facets"][0]["values"]
+        params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
+        data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)["facets"][0]["values"]
         for d in data:
             if d["val"] not in ruleset:
                 continue
