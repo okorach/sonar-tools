@@ -51,7 +51,7 @@ python3 setup.py bdist_wheel
 pip install --upgrade --force-reinstall dist/sonar_tools-*-py3-*.whl
 
 if [ "$build_image" == "1" ]; then
-    docker build -t olivierkorach/sonar-tools:3.4 -t olivierkorach/sonar-tools:latest -f snapshot.Dockerfile .
+    docker build -t olivierkorach/sonar-tools:3.4.1 -t olivierkorach/sonar-tools:latest -f snapshot.Dockerfile .
 fi
 
 if [ "$build_docs" == "1" ]; then
@@ -69,5 +69,5 @@ if [ "$release" = "1" ]; then
 fi
 
 if [ "$release_docker" = "1" ]; then
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:3.4  -t olivierkorach/sonar-tools:latest -f release.Dockerfile .
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:3.4.1  -t olivierkorach/sonar-tools:latest -f release.Dockerfile .
 fi
