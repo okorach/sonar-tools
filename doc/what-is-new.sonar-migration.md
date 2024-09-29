@@ -11,6 +11,7 @@
 - sonar-migration has its own user agent to be recongnized in SonarQune access.log
 - Added check whether the running version is the last released
 - Fixed crash when accessing a portfolio with not enough permissions
+- `sonar-migration` now has its own doc pages (readme and what's new)
 
 # Version 0.1
 
