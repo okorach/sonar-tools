@@ -443,8 +443,7 @@ def count(endpoint: pf.Platform) -> int:
     :rtype: int
     """
     check_supported(endpoint)
-    data = json.loads(endpoint.get(APIS["search"], params={"ps": 1, "filter": "qualifier = APP"}).text)
-    return data["paging"]["total"]
+    return util.nbr_total_elements(json.loads(endpoint.get(APIS["search"], params={"ps": 1, "filter": "qualifier = APP"}).text))
 
 
 def check_supported(endpoint: pf.Platform) -> None:

@@ -23,6 +23,7 @@
 
 """
 from __future__ import annotations
+import math
 import json
 
 from datetime import datetime
@@ -104,9 +105,9 @@ class Component(sq.SqObject):
             "metricKeys": "bugs,vulnerabilities,code_smells,security_hotspots",
         }
         data = json.loads(self.get("measures/component_tree", params=parms).text)
-        nb_comp = data["paging"]["total"]
+        nb_comp = utilities.nbr_total_elements(data)
         log.debug("Found %d subcomponents to %s", nb_comp, str(self))
-        nb_pages = (nb_comp + 500 - 1) // 500
+        nb_pages = math.ceil(nb_comp / 500)
         comp_list = {}
         parms["ps"] = 500
         for page in range(nb_pages):
@@ -126,10 +127,10 @@ class Component(sq.SqObject):
 
     def get_issues(self, filters: types.ApiParams = None) -> dict[str, object]:
         """Returns list of issues for a component, optionally on branches or/and PRs"""
-        from sonar.issues import component_filter, search_all
+        from sonar.issues import search_all
 
         log.info("Searching issues for %s with filters %s", str(self), str(filters))
-        params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
+        params = self.search_params()
         if filters is not None:
             params.update(filters)
         params["additionalFields"] = "comments"
@@ -137,18 +138,24 @@ class Component(sq.SqObject):
         self.nbr_issues = len(issue_list)
         return issue_list
 
-    def count_third_party_issues(self, filters: types.ApiParams = None) -> dict[str, int]:
-        """Returns list of issues for a component, optionally on branches or/and PRs"""
-        from sonar.issues import component_filter, count_by_rule
+    def count_specific_rules_issues(self, ruleset: list[str], filters: types.ApiParams = None) -> dict[str, int]:
+        """Returns the count of issues of a component for a given ruleset"""
+        from sonar.issues import count_by_rule
 
-        third_party_rules = rules.third_party(self.endpoint)
-        params = utilities.replace_keys(_ALT_COMPONENTS, component_filter(self.endpoint), self.search_params())
+        params = self.search_params()
         if filters is not None:
             params.update(filters)
         params["facets"] = "rules"
-        params["rules"] = [r.key for r in third_party_rules]
-        issues_count = {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
-        return issues_count
+        params["rules"] = [r.key for r in ruleset]
+        return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
+
+    def count_third_party_issues(self, filters: types.ApiParams = None) -> dict[str, int]:
+        """Returns the count of issues of a component  corresponding to 3rd party rules"""
+        return self.count_specific_rules_issues(ruleset=rules.third_party(self.endpoint), filters=filters)
+
+    def count_instantiated_rules_issues(self, filters: types.ApiParams = None) -> dict[str, int]:
+        """Returns the count of issues of a component corresponding to instantiated rules"""
+        return self.count_specific_rules_issues(ruleset=rules.instantiated(self.endpoint), filters=filters)
 
     def get_hotspots(self, filters: types.ApiParams = None) -> dict[str, object]:
         """Returns list of hotspots for a component, optionally on branches or/and PRs"""
@@ -159,6 +166,35 @@ class Component(sq.SqObject):
         if filters is not None:
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
+
+    def migration_export(self) -> dict[str, any]:
+        from sonar.issues import count as issue_count
+        from sonar.hotspots import count as hotspot_count
+
+        json_data = {"lastAnalysis": utilities.date_to_string(self.last_analysis())}
+        lang_distrib = self.get_measure("ncloc_language_distribution")
+        loc_distrib = {}
+        if lang_distrib:
+            loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
+        loc_distrib["total"] = self.loc()
+        json_data["ncloc"] = loc_distrib
+        tpissues = self.count_third_party_issues()
+        inst_issues = self.count_instantiated_rules_issues()
+        params = self.search_params()
+        json_data["issues"] = {
+            "thirdParty": tpissues if len(tpissues) > 0 else 0,
+            "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
+            "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
+        }
+        status = "accepted" if self.endpoint.version() >= (10, 2, 0) else "wontFix"
+        json_data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
+        json_data["hotspots"] = {
+            "acknowledged": hotspot_count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
+            "safe": hotspot_count(self.endpoint, resolution=["SAFE"], **params),
+            "fixed": hotspot_count(self.endpoint, resolution=["FIXED"], **params),
+        }
+        log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
+        return json_data
 
     def get_measures(self, metrics_list: types.KeyList) -> dict[str, any]:
         """Retrieves a project list of measures

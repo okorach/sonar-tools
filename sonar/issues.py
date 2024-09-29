@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import date, datetime, timedelta
 import json
 import re
@@ -750,18 +751,13 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     :raises: TooManyIssuesError if more than 10'000 issues found
     """
     filters = pre_search_filters(endpoint=endpoint, params=params)
-    # if endpoint.version() >= (10, 2, 0):
-    #     new_params = util.dict_remap_and_stringify(new_params, _FILTERS_10_2_REMAPPING)
-
-    log.debug("Search filters = %s", str(filters))
-    if not filters:
-        filters = {"ps": Issue.MAX_PAGE_SIZE}
-    elif "ps" not in filters:
+    if "ps" not in filters:
         filters["ps"] = Issue.MAX_PAGE_SIZE
 
+    log.debug("Search filters = %s", str(filters))
     issue_list = {}
     data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
-    nbr_issues = data["paging"]["total"]
+    nbr_issues = util.nbr_total_elements(data)
     nbr_pages = util.nbr_pages(data)
     log.debug("Number of issues: %d - Nbr pages: %d", nbr_issues, nbr_pages)
 
@@ -822,37 +818,32 @@ def get_newest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[d
 
 def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
-    params = {} if not kwargs else kwargs.copy()
-    filters = pre_search_filters(endpoint=endpoint, params=params)
+    filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
-    nbr_issues = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)["paging"]["total"]
+    nbr_issues = util.nbr_total_elements(json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text))
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
     return nbr_issues
 
 
 def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
     """Returns number of issues of a search"""
-    params = {} if not kwargs else kwargs.copy()
-    params["ps"] = 1
-    params["facets"] = "rules"
-    SLICE_SIZE = 50  # Search rules facets by bulks of 50
     nbr_slices = 1
-    if "rules" in params:
-        nbr_slices = (len(params["rules"]) + SLICE_SIZE - 1) // SLICE_SIZE
+    SLICE_SIZE = 50  # Search rules facets by bulks of 50
+    if "rules" in kwargs:
+        ruleset = kwargs.pop("rules")
+        nbr_slices = math.ceil(len(ruleset) / SLICE_SIZE)
+    params = pre_search_filters(endpoint=endpoint, params=kwargs)
+    params.update({"ps": 1, "facets": "rules"})
     rulecount = {}
     for i in range(nbr_slices):
-        sliced_params = params.copy()
-        sliced_params["rules"] = ",".join(params["rules"][i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(params["rules"]))])
-        # log.debug("COUNT params = %s", str(sliced_params))
-        data = json.loads(endpoint.get(Issue.SEARCH_API, params=sliced_params).text)["facets"][0]["values"]
-        # log.debug("COUNT data results = %s", str(data))
+        params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
+        data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)["facets"][0]["values"]
         for d in data:
-            if d["val"] not in params["rules"]:
+            if d["val"] not in ruleset:
                 continue
             if d["val"] not in rulecount:
                 rulecount[d["val"]] = 0
             rulecount[d["val"]] += d["count"]
-    # log.debug("Rule counts = %s", util.json_dump(rulecount))
     return rulecount
 
 
@@ -870,7 +861,9 @@ def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:
         return {}
     log.debug("Sanitizing issue search filters %s", str(params))
     version = endpoint.version()
-    filters = util.dict_remap(original_dict=params.copy(), remapping={"project": COMPONENT_FILTER})
+    filters = util.dict_remap(
+        original_dict=params.copy(), remapping={"project": COMPONENT_FILTER, "application": COMPONENT_FILTER, "portfolio": COMPONENT_FILTER}
+    )
     filters = util.dict_subset(util.remove_nones(filters), _SEARCH_CRITERIAS)
     if version < (10, 2, 0):
         # Starting from 10.2 - "componentKeys" was renamed "components"

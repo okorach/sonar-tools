@@ -31,7 +31,7 @@ from sonar.util import types
 import sonar.platform as pf
 
 import sonar.components as comp
-
+from sonar import utilities
 from sonar.audit.rules import get_rule
 from sonar.audit.problem import Problem
 
@@ -110,5 +110,4 @@ def count(api: str, endpoint: pf.Platform, params: types.ApiParams = None) -> in
     if params is None:
         params = {}
     params["ps"] = 1
-    data = json.loads(endpoint.get(api, params=params).text)
-    return data["paging"]["total"]
+    return utilities.nbr_total_elements(json.loads(endpoint.get(api, params=params).text))

@@ -29,7 +29,7 @@ from sonar import platform
 from sonar.util import types
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar import components, syncer, settings, exceptions
+from sonar import components, settings, exceptions
 from sonar import projects
 import sonar.utilities as util
 
@@ -220,9 +220,6 @@ class Branch(components.Component):
         :return: The branch new code period definition
         :rtype: str
         """
-        from sonar.issues import count as issue_count
-        from sonar.hotspots import count as hotspot_count
-
         log.debug("Exporting %s", str(self))
         data = {settings.NEW_CODE_PERIOD: self.new_code()}
         if self.is_main():
@@ -234,27 +231,7 @@ class Branch(components.Component):
         if export_settings.get("FULL_EXPORT", True):
             data.update({"name": self.name, "project": self.concerned_object.key})
         if export_settings.get("MODE", "") == "MIGRATION":
-            data["lastAnalysis"] = util.date_to_string(self.last_analysis())
-            lang_distrib = self.get_measure("ncloc_language_distribution")
-            loc_distrib = {}
-            if lang_distrib:
-                loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
-            loc_distrib["total"] = self.loc()
-            data["ncloc"] = loc_distrib
-            tpissues = self.count_third_party_issues()
-            params = self.search_params()
-            data["issues"] = {
-                "thirdParty": tpissues if len(tpissues) > 0 else 0,
-                "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
-            }
-            status = "accepted" if self.endpoint.version() >= (10, 2, 0) else "wontFix"
-            data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
-            data["hotspots"] = {
-                "acknowledged": hotspot_count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
-                "safe": hotspot_count(self.endpoint, resolution=["SAFE"], **params),
-                "fixed": hotspot_count(self.endpoint, resolution=["FIXED"], **params),
-            }
-            log.debug("%s has these notable issues %s", str(self), str(data["issues"]))
+            data.update(self.migration_export())
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
@@ -330,9 +307,11 @@ class Branch(components.Component):
         :return: sync report as tuple, with counts of successful and unsuccessful issue syncs
         :rtype: tuple(report, counters)
         """
+        from sonar.syncer import sync_lists
+
         report, counters = [], {}
         log.info("Syncing %s (%s) and %s (%s) issues", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
-        (report, counters) = syncer.sync_lists(
+        (report, counters) = sync_lists(
             list(self.get_issues().values()),
             list(another_branch.get_issues().values()),
             self,
@@ -340,7 +319,7 @@ class Branch(components.Component):
             sync_settings=sync_settings,
         )
         log.info("Syncing %s (%s) and %s (%s) hotspots", str(self), self.endpoint.url, str(another_branch), another_branch.endpoint.url)
-        (tmp_report, tmp_counts) = syncer.sync_lists(
+        (tmp_report, tmp_counts) = sync_lists(
             list(self.get_hotspots().values()),
             list(another_branch.get_hotspots().values()),
             self,

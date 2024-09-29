@@ -455,12 +455,16 @@ def test_output_format_branch() -> None:
                 findings_export.main()
         assert int(str(e.value)) == errcodes.OK
         br_list = utilities.csv_to_list(br)
+        br, pr = BRANCH_COL, PR_COL
+        if util.SQ.version() < (10, 2, 0):
+            br += 1
+            pr += 1
         with open(util.CSV_FILE, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             next(reader)
             for line in reader:
-                assert line[BRANCH_COL] in br_list
-                assert line[PR_COL] == ""
+                assert line[br] in br_list
+                assert line[pr] == ""
                 assert line[PROJECT_COL] == "okorach_sonar-tools"
         util.clean(util.CSV_FILE)
 

@@ -384,3 +384,8 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
 def third_party(endpoint: platform.Platform) -> list[Rule]:
     """Returns the list of rules coming from 3rd party plugins"""
     return [r for r in get_list(endpoint=endpoint).values() if r.repo and r.repo not in SONAR_REPOS and not r.repo.startswith("external_")]
+
+
+def instantiated(endpoint: platform.Platform) -> list[Rule]:
+    """Returns the list of rules that are instantiated"""
+    return [r for r in get_list(endpoint=endpoint).values() if r.template_key is not None]
