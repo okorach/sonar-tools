@@ -23,15 +23,16 @@ WORKDIR /opt/sonar-migration
 
 COPY ./sonar sonar
 COPY ./requirements.txt .
+COPY ./migration migration
+COPY ./LICENSE .
 COPY ./cli cli
 COPY ./setup_migration.py .
-COPY ./sonar_migration .
-COPY ./README.md .
-COPY ./LICENSE .
-COPY ./sonar/audit sonar/audit
 
 RUN pip install --upgrade pip \
-&& pip install sonar-migration==0.1 --force-reinstall
+&& pip install --no-cache-dir -r requirements.txt \
+&& pip install --no-cache-dir --upgrade pip setuptools wheel \
+&& python setup_migration.py bdist_wheel \
+&& pip install dist/sonar_migration-*-py3-*.whl --force-reinstall
 
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}

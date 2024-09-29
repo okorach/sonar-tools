@@ -47,7 +47,7 @@ python3 setup_migration.py bdist_wheel
 pip install --upgrade --force-reinstall dist/sonar_migration-*-py3-*.whl
 
 if [ "$build_image" == "1" ]; then
-    docker build -t sonar-migration:latest -f migration.Dockerfile .
+    docker build -t olivierkorach/sonar-migration:latest -f migration/snapshot.Dockerfile . --load
 fi
 
 # Deploy on pypi.org once released
@@ -60,5 +60,5 @@ if [ "$release" = "1" ]; then
 fi
 
 if [ "$release_docker" = "1" ]; then
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-migration:0.1  -t olivierkorach/sonar-migration:latest -f migration-release.Dockerfile .
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-migration:0.2  -t olivierkorach/sonar-migration:latest -f migration/release.Dockerfile .
 fi

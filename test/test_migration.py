@@ -30,7 +30,7 @@ import pytest
 import utilities as util
 from sonar import errcodes
 import cli.options as opt
-from cli import migration
+from migration import migration
 
 CMD = "migration.py"
 OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
