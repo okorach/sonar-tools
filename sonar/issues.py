@@ -833,21 +833,23 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
 def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
     """Returns number of issues of a search"""
     params = {} if not kwargs else kwargs.copy()
+    nbr_slices = 1
+    SLICE_SIZE = 50  # Search rules facets by bulks of 50
+    if "rules" in params:
+        ruleset = params.pop("rules")
+        nbr_slices = (len(ruleset) + SLICE_SIZE - 1) // SLICE_SIZE
+    params = pre_search_filters(endpoint=endpoint, params=params)
     params["ps"] = 1
     params["facets"] = "rules"
-    SLICE_SIZE = 50  # Search rules facets by bulks of 50
-    nbr_slices = 1
     if "rules" in params:
-        nbr_slices = (len(params["rules"]) + SLICE_SIZE - 1) // SLICE_SIZE
+        nbr_slices = (len(ruleset) + SLICE_SIZE - 1) // SLICE_SIZE
     rulecount = {}
     for i in range(nbr_slices):
         sliced_params = params.copy()
-        sliced_params["rules"] = ",".join(params["rules"][i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(params["rules"]))])
-        # log.debug("COUNT params = %s", str(sliced_params))
+        sliced_params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
         data = json.loads(endpoint.get(Issue.SEARCH_API, params=sliced_params).text)["facets"][0]["values"]
-        # log.debug("COUNT data results = %s", str(data))
         for d in data:
-            if d["val"] not in params["rules"]:
+            if d["val"] not in ruleset:
                 continue
             if d["val"] not in rulecount:
                 rulecount[d["val"]] = 0
