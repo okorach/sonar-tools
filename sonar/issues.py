@@ -750,15 +750,10 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     :raises: TooManyIssuesError if more than 10'000 issues found
     """
     filters = pre_search_filters(endpoint=endpoint, params=params)
-    # if endpoint.version() >= (10, 2, 0):
-    #     new_params = util.dict_remap_and_stringify(new_params, _FILTERS_10_2_REMAPPING)
-
-    log.debug("Search filters = %s", str(filters))
-    if not filters:
-        filters = {"ps": Issue.MAX_PAGE_SIZE}
-    elif "ps" not in filters:
+    if "ps" not in filters:
         filters["ps"] = Issue.MAX_PAGE_SIZE
 
+    log.debug("Search filters = %s", str(filters))
     issue_list = {}
     data = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)
     nbr_issues = data["paging"]["total"]
@@ -822,8 +817,7 @@ def get_newest_issue(endpoint: pf.Platform, params: ApiParams = None) -> Union[d
 
 def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of issues of a search"""
-    params = {} if not kwargs else kwargs.copy()
-    filters = pre_search_filters(endpoint=endpoint, params=params)
+    filters = pre_search_filters(endpoint=endpoint, params=kwargs)
     filters["ps"] = 1
     nbr_issues = json.loads(endpoint.get(Issue.SEARCH_API, params=filters).text)["paging"]["total"]
     log.debug("Count issues with filters %s returned %d issues", str(kwargs), nbr_issues)
@@ -832,16 +826,13 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
 
 def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
     """Returns number of issues of a search"""
-    params = {} if not kwargs else kwargs.copy()
     nbr_slices = 1
     SLICE_SIZE = 50  # Search rules facets by bulks of 50
-    if "rules" in params:
-        ruleset = params.pop("rules")
+    if "rules" in kwargs:
+        ruleset = kwargs.pop("rules")
         nbr_slices = (len(ruleset) + SLICE_SIZE - 1) // SLICE_SIZE
-    params = pre_search_filters(endpoint=endpoint, params=params)
+    params = pre_search_filters(endpoint=endpoint, params=kwargs)
     params.update({"ps": 1, "facets": "rules"})
-    if "rules" in params:
-        nbr_slices = (len(ruleset) + SLICE_SIZE - 1) // SLICE_SIZE
     rulecount = {}
     for i in range(nbr_slices):
         params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
@@ -852,7 +843,6 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
             if d["val"] not in rulecount:
                 rulecount[d["val"]] = 0
             rulecount[d["val"]] += d["count"]
-    # log.debug("Rule counts = %s", util.json_dump(rulecount))
     return rulecount
 
 
