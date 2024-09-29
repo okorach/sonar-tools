@@ -166,6 +166,35 @@ class Component(sq.SqObject):
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
 
+    def migration_export(self) -> dict[str, any]:
+        from sonar.issues import count as issue_count
+        from sonar.hotspots import count as hotspot_count
+
+        json_data = {"lastAnalysis": utilities.date_to_string(self.last_analysis())}
+        lang_distrib = self.get_measure("ncloc_language_distribution")
+        loc_distrib = {}
+        if lang_distrib:
+            loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
+        loc_distrib["total"] = self.loc()
+        json_data["ncloc"] = loc_distrib
+        tpissues = self.count_third_party_issues()
+        inst_issues = self.count_instantiated_rules_issues()
+        params = self.search_params()
+        json_data["issues"] = {
+            "thirdParty": tpissues if len(tpissues) > 0 else 0,
+            "instantiatedRules": inst_issues if len(inst_issues) > 0 else 0,
+            "falsePositives": issue_count(self.endpoint, issueStatuses=["FALSE_POSITIVE"], **params),
+        }
+        status = "accepted" if self.endpoint.version() >= (10, 2, 0) else "wontFix"
+        json_data["issues"][status] = issue_count(self.endpoint, issueStatuses=[status.upper()], **params)
+        json_data["hotspots"] = {
+            "acknowledged": hotspot_count(self.endpoint, resolution=["ACKNOWLEDGED"], **params),
+            "safe": hotspot_count(self.endpoint, resolution=["SAFE"], **params),
+            "fixed": hotspot_count(self.endpoint, resolution=["FIXED"], **params),
+        }
+        log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
+        return json_data
+
     def get_measures(self, metrics_list: types.KeyList) -> dict[str, any]:
         """Retrieves a project list of measures
 
