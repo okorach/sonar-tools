@@ -699,7 +699,7 @@ def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Iss
     :rtype: dict{<key>: <Issue>}
     """
     issue_list = {}
-    new_params = params.copy()
+    new_params = params.copy() if params else {}
     new_params["ps"] = Issue.MAX_PAGE_SIZE
     try:
         issue_list = search(endpoint=endpoint, params=new_params.copy())
