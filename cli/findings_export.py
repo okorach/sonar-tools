@@ -300,14 +300,21 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
             write_queue.put([findings_list, False])
         else:
             new_params = params.copy()
-            new_params.pop("sarifNoCustomProperties", None)
-            new_params.pop(options.NBR_THREADS, None)
-            new_params.pop(options.CSV_SEPARATOR, None)
-            new_params.pop(options.COMPONENT_TYPE, None)
-            new_params.pop(options.DATES_WITHOUT_TIME, None)
-            new_params.pop(options.REPORT_FILE, None)
-            new_params.pop(options.WITH_LAST_ANALYSIS, None)
-            new_params.pop(options.WITH_URL, None)
+            for p in (
+                "sarifNoCustomProperties",
+                options.NBR_THREADS,
+                options.CSV_SEPARATOR,
+                options.COMPONENT_TYPE,
+                options.DATES_WITHOUT_TIME,
+                options.REPORT_FILE,
+                options.WITH_LAST_ANALYSIS,
+                options.WITH_URL,
+                options.HTTP_TIMEOUT,
+                "http_timeout",
+                options.LOGFILE,
+                options.FORMAT,
+            ):
+                new_params.pop(p, None)
             if options.PULL_REQUESTS in new_params:
                 new_params["pullRequest"] = new_params.pop(options.PULL_REQUESTS)
             if options.BRANCHES in new_params:
