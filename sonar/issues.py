@@ -597,7 +597,9 @@ def __search_all_by_severities(endpoint: pf.Platform, params: ApiParams) -> dict
     return issue_list
 
 
-def __search_all_by_date(endpoint: pf.Platform, params: ApiParams, date_start: date = None, date_stop: date = None) -> dict[str, Issue]:
+def __search_all_by_date(
+    endpoint: pf.Platform, params: ApiParams, date_start: Optional[date] = None, date_stop: Optional[date] = None
+) -> dict[str, Issue]:
     """Searches issues splitting by date windows to avoid exceeding the 10K limit"""
     new_params = params.copy()
     if date_start is None:
@@ -608,11 +610,15 @@ def __search_all_by_date(endpoint: pf.Platform, params: ApiParams, date_start: d
         date_stop = get_newest_issue(endpoint=endpoint, params=new_params).replace(hour=0, minute=0, second=0, microsecond=0)
         if isinstance(date_stop, datetime):
             date_stop = date_stop.date()
-    log.info("Splitting search by date between [%s - %s]", util.date_to_string(date_start, False), util.date_to_string(date_stop, False))
-    issue_list = {}
-    new_params.update(
-        {"createdAfter": util.date_to_string(date_start, with_time=False), "createdBefore": util.date_to_string(date_stop, with_time=False)}
+    log.info(
+        "Project '%s' Splitting search by date between [%s - %s]",
+        params["project"],
+        util.date_to_string(date_start, False),
+        util.date_to_string(date_stop, False),
     )
+    issue_list = {}
+    new_params["createdAfter"] = util.date_to_string(date_start, with_time=False)
+    new_params["createdBefore"] = util.date_to_string(date_stop, with_time=False)
     try:
         issue_list = search(endpoint=endpoint, params=new_params)
     except TooManyIssuesError as e:
@@ -631,8 +637,8 @@ def __search_all_by_date(endpoint: pf.Platform, params: ApiParams, date_start: d
             issue_list.update(__search_all_by_date(endpoint=endpoint, params=new_params, date_start=date_middle, date_stop=date_stop))
     if date_start is not None and date_stop is not None:
         log.debug(
-            "Project %s has %d issues between %s and %s",
-            new_params[component_filter(endpoint)],
+            "Project '%s' has %d issues between %s and %s",
+            params["project"],
             len(issue_list),
             util.date_to_string(date_start, False),
             util.date_to_string(date_stop, False),
@@ -643,7 +649,7 @@ def __search_all_by_date(endpoint: pf.Platform, params: ApiParams, date_start: d
 def __search_all_by_project(endpoint: pf.Platform, project_key: str, params: ApiParams = None) -> dict[str, Issue]:
     """Search issues by project"""
     new_params = {} if params is None else params.copy()
-    new_params[component_filter(endpoint)] = project_key
+    new_params["project"] = project_key
     issue_list = {}
     log.debug("Searching for issues of project '%s'", project_key)
     try:
@@ -693,17 +699,22 @@ def search_all(endpoint: pf.Platform, params: ApiParams = None) -> dict[str, Iss
     :rtype: dict{<key>: <Issue>}
     """
     issue_list = {}
+    new_params = params.copy() if params else {}
+    new_params["ps"] = Issue.MAX_PAGE_SIZE
     try:
-        issue_list = search(endpoint=endpoint, params=params)
+        issue_list = search(endpoint=endpoint, params=new_params.copy())
     except TooManyIssuesError:
         log.info(_TOO_MANY_ISSUES_MSG)
         comp_filter = component_filter(endpoint)
-        if params and comp_filter in params:
+        if params and "project" in params:
+            key_list = util.csv_to_list(params["project"])
+        elif params and comp_filter in params:
             key_list = util.csv_to_list(params[comp_filter])
         else:
             key_list = projects.search(endpoint).keys()
         for k in key_list:
-            issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=params))
+            issue_list.update(__search_all_by_project(endpoint=endpoint, project_key=k, params=new_params))
+    log.debug("SEARCH ALL %s returns %d issues", str(params), len(issue_list))
     return issue_list
 
 
@@ -750,7 +761,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     :rtype: dict{<key>: <Issue>}
     :raises: TooManyIssuesError if more than 10'000 issues found
     """
-    filters = pre_search_filters(endpoint=endpoint, params=params)
+    filters = pre_search_filters(endpoint=endpoint, params=params.copy())
     if "ps" not in filters:
         filters["ps"] = Issue.MAX_PAGE_SIZE
 
@@ -774,8 +785,9 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     if nbr_pages == 1:
         return issue_list
     q = Queue(maxsize=0)
+    prepared_params = pre_search_filters(endpoint=endpoint, params=params)
     for page in range(2, nbr_pages + 1):
-        q.put((endpoint, Issue.SEARCH_API, issue_list, filters, page))
+        q.put((endpoint, Issue.SEARCH_API, issue_list, prepared_params, page))
     for i in range(threads):
         log.debug("Starting issue search thread %d", i)
         worker = Thread(target=__search_thread, args=[q])

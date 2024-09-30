@@ -135,7 +135,6 @@ class Hotspot(findings.Finding):
         data = super().to_json(without_time)
         if self.endpoint.version() >= (10, 2, 0):
             data["impacts"] = {"SECURITY": "UNDEFINED"}
-        log.debug("Returning hotspot JSON data = %s", util.json_dump(data))
         return data
 
     def refresh(self) -> bool:
