@@ -25,8 +25,8 @@ COPY ./sonar sonar
 COPY ./requirements.txt .
 COPY ./cli cli
 COPY ./setup_migration.py .
-COPY ./sonar_migration .
-COPY ./README.md .
+COPY ./migration migration
+COPY ./migration/README.md .
 COPY ./LICENSE .
 COPY ./sonar/audit sonar/audit
 
