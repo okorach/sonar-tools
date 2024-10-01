@@ -16,7 +16,7 @@
 # Version 0.1
 
 - First alpha release
-- On top of the regular `sonar-config` export the follwoing is added
+- On top of the regular `sonar-config` export the following is added
   - Global:
     - List of 3rd party plugins installed
   - Per project
