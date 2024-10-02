@@ -8,7 +8,7 @@
   - Per project:
     - Issues coming from instantiated rules (e.g. custom secrets)
     - Hotspots which have been reviewed as SAFE or FIXED
-- sonar-migration has its own user agent to be recongnized in SonarQune access.log
+- sonar-migration has its own user agent to be recognized in SonarQube access.log
 - Added check whether the running version is the last released
 - Fixed crash when accessing a portfolio with not enough permissions
 - `sonar-migration` now has its own doc pages (readme and what's new)
@@ -16,7 +16,7 @@
 # Version 0.1
 
 - First alpha release
-- On top of the regular `sonar-config` export the following is added
+- On top of the regular `sonar-config` export of the following is added
   - Global:
     - List of 3rd party plugins installed
   - Per project
