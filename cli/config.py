@@ -31,6 +31,8 @@ import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
 
+WRITE_FILE = None
+
 _EVERYTHING = [
     options.WHAT_SETTINGS,
     options.WHAT_USERS,
@@ -112,6 +114,10 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
         else:
             print(utilities.json_dump(config), file=fd)
 
+def write_project(project_json: dict[str, any])
+    global WRITE_FILE
+    with utilities.open_file(WRITE_FILE) as fd:
+        print(utilities.json_dump(project_json), file=fd)
 
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
@@ -165,7 +171,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     key_list = kwargs[options.KEYS]
     sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
     for what_item, call_data in calls.items():
-        if what_item not in what:
+        if what_item not in what or what_item == options.WHAT_PROJECTS:
             continue
         ndx, func = call_data
         try:
@@ -176,6 +182,13 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     if not kwargs["dontInlineLists"]:
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
     __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
+    with utilities.open_file(WRITE_FILE) as fd:
+        print(utilities.json_dump(project_json), file=fd)
+
+    global WRITE_FILE
+    WRITE_FILE = kwargs[options.REPORT_FILE]
+    projects.export(endpoint, export_settings=export_settings, key_list=key_list, write_callback=write_project)
+
     log.info("Exporting configuration from %s completed", kwargs["url"])
 
 
