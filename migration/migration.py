@@ -22,6 +22,8 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
+import os
+from threading import Lock
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
@@ -65,6 +67,8 @@ __MAP = {
     options.WHAT_PORTFOLIOS: __JSON_KEY_PORTFOLIOS,
 }
 
+_WRITE_LOCK = Lock()
+
 
 def __parse_args(desc):
     parser = options.set_common_args(desc)
@@ -93,6 +97,36 @@ def __parse_args(desc):
     return args
 
 
+def __remove_chars_at_end(file: str, nb_bytes: int) -> None:
+    """Writes the configuration in file"""
+    with open(file, mode="rb+") as fd:
+        fd.seek(-nb_bytes, os.SEEK_END)
+        fd.truncate()
+
+
+def __add_project_header(file: str) -> None:
+    """Writes the configuration in file"""
+    with open(file, mode="a", encoding="utf-8") as fd:
+        print(',\n   "projects": {\n', file=fd)
+
+
+def __add_project_footer(file: str) -> None:
+    """Closes projects section"""
+    __remove_chars_at_end(file, 2)
+    with open(file, mode="a", encoding="utf-8") as fd:
+        print("\n   }\n}", file=fd)
+
+
+def write_project(project_json: dict[str, any], file: str) -> None:
+    """
+    writes a project JSON in a file
+    """
+    key = project_json.pop("key")
+    with _WRITE_LOCK:
+        with utilities.open_file(file, mode="a") as fd:
+            print(f'"{key}": {utilities.json_dump(project_json)},', file=fd)
+
+
 def __write_export(config: dict[str, str], file: str) -> None:
     """Writes the configuration in file"""
     with utilities.open_file(file) as fd:
@@ -108,6 +142,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         "FULL_EXPORT": False,
         "MODE": "MIGRATION",
         "THREADS": kwargs[options.NBR_THREADS],
+        options.REPORT_FILE: kwargs[options.REPORT_FILE],
         "SKIP_ISSUES": kwargs["skipIssues"],
     }
     if "projects" in what and kwargs[options.KEYS]:
@@ -120,7 +155,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
         options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
         options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
-        options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
+        # options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
         options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
         options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
         options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
@@ -136,12 +171,20 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         ndx, func = call_data
         try:
             sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
+            __write_export(sq_settings, kwargs[options.REPORT_FILE])
         except exceptions.UnsupportedOperation as e:
             log.warning(e.message)
     sq_settings = utilities.remove_empties(sq_settings)
     # if not kwargs.get("dontInlineLists", False):
     #    sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
-    __write_export(sq_settings, kwargs[options.REPORT_FILE])
+
+    log.info("Exporting project migration data streaming projects in '%s'", kwargs[options.REPORT_FILE])
+    export_settings["WRITE_CALLBACK"] = write_project
+    __remove_chars_at_end(kwargs[options.REPORT_FILE], 3)
+    __add_project_header(kwargs[options.REPORT_FILE])
+    projects.export(endpoint, export_settings=export_settings, key_list=key_list)
+    __add_project_footer(kwargs[options.REPORT_FILE])
+    log.info("Exporting migration data from %s completed", kwargs["url"])
 
 
 def main() -> None:
