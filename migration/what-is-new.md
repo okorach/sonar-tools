@@ -1,4 +1,8 @@
-# Next version yet unreleased
+# Version 0.3
+
+- Robustness: Handle connectionError errors in project extract threads
+- Added option --skipIssues to skip expensive issue count extraction task from the extract which may be necessary on large platforms extracts
+
 
 # Version 0.2
 
