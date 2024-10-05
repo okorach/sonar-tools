@@ -57,7 +57,7 @@ def check_last_version(package_url: str) -> None:
         return
     txt_version = json.loads(r.text)["versions"][-1]
     package_name = package_url.split("/")[-1]
-    log.info("Latest %s version is %s", package_name, txt_version)
+    log.info("Latest %s released version is %s", package_name, txt_version)
     if tuple(".".split(txt_version)) > tuple(".".split(version.PACKAGE_VERSION)):
         log.warning("A more recent version of %s (%s) is available, your are advised to upgrade", package_name, txt_version)
 
