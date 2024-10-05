@@ -167,7 +167,7 @@ class Component(sq.SqObject):
             params.update(filters)
         return search(endpoint=self.endpoint, filters=params)
 
-    def migration_export(self) -> dict[str, any]:
+    def migration_export(self, export_settings: types.ConfigSettings) -> dict[str, any]:
         from sonar.issues import count as issue_count
         from sonar.hotspots import count as hotspot_count
 
@@ -178,6 +178,10 @@ class Component(sq.SqObject):
             loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
         loc_distrib["total"] = self.loc()
         json_data["ncloc"] = loc_distrib
+        if export_settings["SKIP_ISSUES"]:
+            log.debug("Issues count extract skipped for %s`", str(self))
+            return json_data
+
         tpissues = self.count_third_party_issues()
         inst_issues = self.count_instantiated_rules_issues()
         params = self.search_params()

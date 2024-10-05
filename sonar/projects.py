@@ -977,7 +977,7 @@ class Project(components.Component):
             json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
             if export_settings.get("MODE", "") == "MIGRATION":
-                json_data.update(self.migration_export())
+                json_data.update(self.migration_export(export_settings))
                 json_data["detectedCi"] = self.ci()
                 json_data["revision"] = self.revision()
                 last_task = self.last_task()
