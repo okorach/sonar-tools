@@ -42,6 +42,7 @@ The user corresponding to the token must have sufficiently elevated permissions 
 `ERROR` and above is always active.
 - `-c` or `--clientCert` : Allows to specify an optional client certificate file (as .pem file)
 - `--httpTimeout` : Sets the timeout for HTTP(S) requests to the SonarQube platform
+- `--skipIssues` : Skips the "expensive" issue count extract from the migration. This reduces by a factor of 2 to 3 the extract duration and the number of API calls
 - `--skipVersionCheck` : `sonar-migration` occasionnally checks on pypi.org if there is a new version of **sonar-migration** available, and output a warning log if that is the case. You can skip this check with this option.
 - `-l <logFile>` : Send logs to **<logFile>**, stdout by default
 
@@ -106,6 +107,11 @@ When sonar-migration complete successfully they return exit code 0. En case of f
 
 
 # What's New - Release notes
+
+## Version 0.3
+
+- Robustness: Handle `connectionError` errors in project extract threads
+- Added option `--skipIssues` to skip expensive issue count extraction task from the extract which may be necessary on large platforms extracts
 
 ## Version 0.2
 
