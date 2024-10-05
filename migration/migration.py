@@ -143,6 +143,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         "THREADS": kwargs[options.NBR_THREADS],
         options.REPORT_FILE: kwargs[options.REPORT_FILE],
         "SKIP_ISSUES": kwargs["skipIssues"],
+        options.REPORT_FILE: kwargs[options.REPORT_FILE],
     }
     if "projects" in what and kwargs[options.KEYS]:
         non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
