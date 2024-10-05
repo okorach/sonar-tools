@@ -178,6 +178,7 @@ class Component(sq.SqObject):
             loc_distrib = {m.split("=")[0]: int(m.split("=")[1]) for m in lang_distrib.split(";")}
         loc_distrib["total"] = self.loc()
         json_data["ncloc"] = loc_distrib
+        json_data["analysisHistory"] = {r[0]: int(r[2]) for r in self.get_measures_history(["ncloc"])}
         if export_settings["SKIP_ISSUES"]:
             log.debug("Issues count extract skipped for %s`", str(self))
             return json_data
@@ -198,6 +199,7 @@ class Component(sq.SqObject):
             "fixed": hotspot_count(self.endpoint, resolution=["FIXED"], **params),
         }
         log.debug("%s has these notable issues %s", str(self), str(json_data["issues"]))
+
         return json_data
 
     def get_measures(self, metrics_list: types.KeyList) -> dict[str, any]:
