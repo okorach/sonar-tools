@@ -1420,6 +1420,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
     while not queue.empty():
         project = queue.get()
         results[project.key] = project.export(export_settings=export_settings)
+        export_settings["WRITE_CALLBACK"](results[project.key], export_settings["file"])
         results[project.key].pop("key", None)
         with _CLASS_LOCK:
             export_settings["EXPORTED"] += 1
@@ -1429,7 +1430,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         queue.task_done()
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None, ) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
