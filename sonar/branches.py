@@ -231,7 +231,7 @@ class Branch(components.Component):
         if export_settings.get("FULL_EXPORT", True):
             data.update({"name": self.name, "project": self.concerned_object.key})
         if export_settings.get("MODE", "") == "MIGRATION":
-            data.update(self.migration_export())
+            data.update(self.migration_export(export_settings))
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
