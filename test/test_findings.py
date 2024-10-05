@@ -40,6 +40,8 @@ SARIF_FILE = "issues.sarif"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 
+RULE_COL = 1
+LANG_COL = 2
 SEVERITY_COL = 3
 STATUS_COL = 4
 DATE_COL = 5
@@ -177,7 +179,8 @@ def test_findings_filter_on_type() -> None:
                 first = False
                 continue
             if util.SQ.version() >= (10, 2, 0):
-                assert "SECURITY:" in line[TYPE_COL] or "RELIABILITY:" in line[TYPE_COL]
+                # FIXME: Hack because SonarQube returns rule S2310 in the SECURITY or RELIABILITY although it's maintainability
+                assert line[RULE_COL] == "javascript:S2310" or "SECURITY:" in line[TYPE_COL] or "RELIABILITY:" in line[TYPE_COL]
             else:
                 assert line[TYPE_COL] in ("VULNERABILITY", "BUG")
         util.clean(util.CSV_FILE)
