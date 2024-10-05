@@ -69,6 +69,7 @@ __MAP = {
 
 _WRITE_LOCK = Lock()
 
+
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
@@ -124,6 +125,7 @@ def write_project(project_json: dict[str, any], file: str) -> None:
     with _WRITE_LOCK:
         with utilities.open_file(file, mode="a") as fd:
             print(f'"{key}": {utilities.json_dump(project_json)},', file=fd)
+
 
 def __write_export(config: dict[str, str], file: str) -> None:
     """Writes the configuration in file"""
