@@ -227,6 +227,7 @@ class Platform:
         try:
             retry = True
             while retry:
+                start = time.perf_counter_ns()
                 r = request(
                     url=self.url + api,
                     auth=self.__credentials(),
@@ -236,6 +237,7 @@ class Platform:
                     timeout=self.http_timeout,
                 )
                 (retry, new_url) = _check_for_retry(r)
+                log.debug("HTTP request took %d ms", (time.perf_counter_ns() - start) // 1000000)
                 if retry:
                     self.url = new_url
             r.raise_for_status()
