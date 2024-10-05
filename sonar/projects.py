@@ -998,9 +998,13 @@ class Project(components.Component):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.FORBIDDEN:
                 log.critical("Insufficient privileges to access %s, export of this project skipped", str(self))
+                json_data = {"error": "Insufficient permissions while extracting project"}
             else:
                 log.critical("HTTP error %s while exporting %s, export of this project skipped", str(e), str(self))
-            json_data = {}
+                json_data = {"error": f"HTTP error {str(e)} while extracting project"}
+        except ConnectionError as e:
+            log.critical("Connecting error %s while extracting %s, extract of this project skipped", str(self), str(e))
+            json_data = {"error": f"Connection error {str(e)} while extracting prooject"}
         log.info("Exporting %s done", str(self))
         return util.remove_nones(json_data)
 
