@@ -171,6 +171,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         ndx, func = call_data
         try:
             sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
+            __write_export(sq_settings, kwargs[options.REPORT_FILE])
         except exceptions.UnsupportedOperation as e:
             log.warning(e.message)
     sq_settings = utilities.remove_empties(sq_settings)

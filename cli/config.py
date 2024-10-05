@@ -208,12 +208,12 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         ndx, func = call_data
         try:
             sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
+            __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
         except exceptions.UnsupportedOperation as e:
             log.warning(e.message)
     sq_settings = utilities.remove_empties(sq_settings)
     if not kwargs["dontInlineLists"]:
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
-    __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
 
     export_settings["WRITE_CALLBACK"] = write_project
     __remove_chars_at_end(kwargs[options.REPORT_FILE], 3)
