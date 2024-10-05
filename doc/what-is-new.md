@@ -1,4 +1,6 @@
-# Next version yet unreleased
+# Version 3.5
+
+- Display HTTP request durations in DEBUG logs
 
 # Version 3.4
 

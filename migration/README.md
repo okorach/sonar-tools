@@ -111,8 +111,11 @@ When sonar-migration complete successfully they return exit code 0. En case of f
 ## Version 0.3
 
 - Robustness: Handle `connectionError` errors in project extract threads
-- Added option `--skipIssues` to skip expensive issue count extraction task from the extract which may be necessary on large platforms extracts
-- Added export of analysis history
+- Added option `--skipIssues` to skip expensive issue count extraction task from the extract (To speed up extract on very large platforms)
+- Added export of analysis history of each branch
+- Support of incremental dump of projects extracts
+- Display of HTTP requests duration in DEBUG logs
+- Fixes in documentation
 
 ## Version 0.2
 
