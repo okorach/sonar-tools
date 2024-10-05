@@ -74,6 +74,13 @@ def __parse_args(desc):
     parser = options.set_what(parser, what_list=_EVERYTHING, operation="export")
     parser = options.add_import_export_arg(parser, "migration")
     parser.add_argument(
+        "--skipIssues",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Skips the export of issues count which might be costly iin terms of API calls",
+    )
+    parser.add_argument(
         "--exportDefaults",
         required=False,
         default=False,
@@ -101,6 +108,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         "FULL_EXPORT": False,
         "MODE": "MIGRATION",
         "THREADS": kwargs[options.NBR_THREADS],
+        "SKIP_ISSUES": kwargs["skipIssues"],
     }
     if "projects" in what and kwargs[options.KEYS]:
         non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
@@ -140,7 +148,7 @@ def main() -> None:
     """Main entry point for sonar-config"""
     start_time = utilities.start_clock()
     try:
-        kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
+        kwargs = utilities.convert_args(__parse_args("Extract SonarQube to SonarCloud migration data"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
         endpoint.set_user_agent(f"sonar-migration {version.MIGRATION_TOOL_VERSION}")
