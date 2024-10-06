@@ -65,6 +65,7 @@ fi
 version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
+  -Dproject.settings=$CONFDIR/sonar-project.properties \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
