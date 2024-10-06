@@ -48,7 +48,7 @@ while [ $# -ne 0 ]; do
 done
 
 black --line-length=150 .
-rm -rf $ROOTDIR/build $ROOTDIR/dist
+rm -rf $ROOTDIR/build/lib/sonar $ROOTDIR/build/lib/cli $ROOTDIR/build/scripts*/sonar-tools $ROOTDIR/dist/sonar_tools*
 python3 $ROOTDIR/setup.py bdist_wheel
 
 # Deploy locally for tests
