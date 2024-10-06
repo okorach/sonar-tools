@@ -19,14 +19,18 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-buildDir="build"
+ME="$( basename "${BASH_SOURCE[0]}" )"
+ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+buildDir="$ROOTDIR/build"
 coverageReport="$buildDir/coverage.xml"
 
 [ ! -d $buildDir ] && mkdir $buildDir
 
 echo "Running tests"
-chmod u-rw test/sif_not_readable.json
+unreadableSif=$ROOTDIR/test/sif_not_readable.json
+chmod u-rw $unreadableSif
 export SONAR_HOST_URL=${1:-${SONAR_HOST_URL_TEST}}
-coverage run --source=. -m pytest test/
+coverage run --source=$ROOTDIR -m pytest $ROOTDIR/test/
 coverage xml -o $coverageReport
-chmod u+rw test/sif_not_readable.json
+chmod u+rw $unreadableSif
