@@ -32,6 +32,7 @@ import time
 import datetime
 import json
 import tempfile
+import logging
 import requests
 import jprops
 from requests.exceptions import HTTPError
@@ -221,12 +222,15 @@ class Platform:
             headers["Authorization"] = f"Bearer {self.__token}"
             if kwargs.get("with_organization", True):
                 params["organization"] = self.organization
-        req_type = getattr(request, "__name__", repr(request)).upper()
-        log.debug("%s: %s", req_type, self.__urlstring(api, params))
+        if log.get_level() >= logging.DEBUG:
+            req_type = getattr(request, "__name__", repr(request)).upper()
+            url = self.__urlstring(api, params)
+            log.debug("%s: %s", req_type, url)
 
         try:
             retry = True
             while retry:
+                start = time.perf_counter_ns()
                 r = request(
                     url=self.url + api,
                     auth=self.__credentials(),
@@ -236,6 +240,7 @@ class Platform:
                     timeout=self.http_timeout,
                 )
                 (retry, new_url) = _check_for_retry(r)
+                log.debug("%s: %s took %d ms", req_type, url, (time.perf_counter_ns() - start) // 1000000)
                 if retry:
                     self.url = new_url
             r.raise_for_status()
