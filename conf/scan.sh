@@ -19,6 +19,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+ME="$( basename "${BASH_SOURCE[0]}" )"
+ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 dolint=true
 dotest=false
 
@@ -40,7 +44,7 @@ do
   shift
 done
 
-buildDir="build"
+buildDir="$ROOTDIR/build"
 pylintReport="$buildDir/pylint-report.out"
 banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
@@ -51,14 +55,14 @@ externalIssuesReport="$buildDir/external-issue-report.json"
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
 if [ "$dotest" == "true" ]; then
-  ./run_tests.sh
+  $CONFDIR/run_tests.sh
 fi
 
 if [ "$dolint" != "false" ]; then
-  ./run_linters.sh
+  $CONFDIR/run_linters.sh
 fi
 
-version=$(grep PACKAGE_VERSION sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
+version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \

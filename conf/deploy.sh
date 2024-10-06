@@ -19,6 +19,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+ME="$( basename "${BASH_SOURCE[0]}" )"
+ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 build_docs=1
 build_image=1
 release=0
@@ -44,19 +48,19 @@ while [ $# -ne 0 ]; do
 done
 
 black --line-length=150 .
-rm -rf build dist
-python3 setup.py bdist_wheel
+rm -rf $ROOTDIR/build/lib/sonar $ROOTDIR/build/lib/cli $ROOTDIR/build/scripts*/sonar-tools $ROOTDIR/dist/sonar_tools*
+python3 $ROOTDIR/setup.py bdist_wheel
 
 # Deploy locally for tests
-pip install --upgrade --force-reinstall dist/sonar_tools-*-py3-*.whl
+pip install --upgrade --force-reinstall $ROOTDIR/dist/sonar_tools-*-py3-*.whl
 
 if [ "$build_image" == "1" ]; then
-    docker build -t olivierkorach/sonar-tools:3.5 -t olivierkorach/sonar-tools:latest -f snapshot.Dockerfile . --load
+    docker build -t olivierkorach/sonar-tools:3.5 -t olivierkorach/sonar-tools:latest -f $CONFDIR/snapshot.Dockerfile $ROOTDIR --load
 fi
 
 if [ "$build_docs" == "1" ]; then
-    rm -rf api-doc/build
-    sphinx-build -b html api-doc/source api-doc/build
+    rm -rf doc/api/build
+    sphinx-build -b html doc/api/source doc/api/build
 fi
 
 # Deploy on pypi.org once released
@@ -64,10 +68,10 @@ if [ "$release" = "1" ]; then
     echo "Confirm release [y/n] ?"
     read -r confirm
     if [ "$confirm" = "y" ]; then
-        python3 -m twine upload dist/sonar_tools-*-py3-*.whl
+        python3 -m twine upload $ROOTDIR/dist/sonar_tools-*-py3-*.whl
     fi
 fi
 
 if [ "$release_docker" = "1" ]; then
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:3.5  -t olivierkorach/sonar-tools:latest -f release.Dockerfile .
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:3.5  -t olivierkorach/sonar-tools:latest -f $ROOTDIR/release.Dockerfile .
 fi

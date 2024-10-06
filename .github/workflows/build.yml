@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pylint bandit pytest coverage
+          pip install flake8 pylint pytest coverage
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       #- name: Lint with flake8
       #  run: |
@@ -49,8 +49,8 @@ jobs:
       - name: Run linters
         working-directory: .
         run: |
-          chmod +x ./run_linters.sh
-          ./run_linters.sh
+          chmod +x conf/run_linters.sh
+          conf/run_linters.sh
       #- name: Cache SonarQube packages
       #  uses: actions/cache@v4
       #  with:
