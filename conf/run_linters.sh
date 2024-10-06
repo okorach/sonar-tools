@@ -19,7 +19,11 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-buildDir="build"
+ME="$( basename "${BASH_SOURCE[0]}" )"
+ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+buildDir="$ROOTDIR/build"
 pylintReport="$buildDir/pylint-report.out"
 # banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
@@ -29,7 +33,7 @@ externalIssueReport="$buildDir/external-issue-report.json"
 
 echo "Running pylint"
 rm -f $pylintReport
-pylint ./*.py ./*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee $pylintReport
+pylint --rcfile $CONFDIR/pylintrc ./*.py ./*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee $pylintReport
 re=$?
 if [ "$re" == "32" ]; then
     >&2 echo "ERROR: pylint execution failed, errcode $re, aborting..."
