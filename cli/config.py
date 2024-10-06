@@ -255,7 +255,7 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
 
 
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
-    if kwargs[options.KEYS] or options.WHAT_PROJECTS not in what:
+    if kwargs[options.KEYS] or options.WHAT_PROJECTS not in what or kwargs[options.FORMAT] != "json":
         __export_config_sync(endpoint=endpoint, what=what, **kwargs)
     else:
         __export_config_async(endpoint=endpoint, what=what, **kwargs)
