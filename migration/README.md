@@ -116,6 +116,7 @@ When sonar-migration complete successfully they return exit code 0. En case of f
 - Support of incremental dump of projects extracts
 - Display of HTTP requests duration in DEBUG logs
 - Fixes in documentation
+- Trimmed background task data to keep only what is need (to reduce memory and output JSON size)
 
 ## Version 0.2
 
