@@ -57,6 +57,8 @@ _HTTP_ERROR = "%s Error: %s HTTP status code %d - %s"
 _SONAR_TOOLS_AGENT = f"sonar-tools {version.PACKAGE_VERSION}"
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
 
+_NORMAL_HTTP_ERRORS = (HTTPStatus.UNAUTHORIZED, HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST)
+
 LTA = None
 LATEST = None
 _HARDCODED_LTA = (9, 9, 6)
@@ -246,7 +248,7 @@ class Platform:
                     self.url = new_url
             r.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            if exit_on_error or (r.status_code not in mute and r.status_code == HTTPStatus.UNAUTHORIZED):
+            if exit_on_error:  # or (r.status_code not in mute and r.status_code not in _NORMAL_HTTP_ERRORS):
                 util.log_and_exit(r)
             else:
                 _, msg = util.http_error(r)
