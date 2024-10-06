@@ -46,6 +46,7 @@ def test_sc_config_export() -> None:
     assert util.file_not_empty(util.JSON_FILE)
     util.clean(util.JSON_FILE)
 
+
 def test_sc_config_export_no_org() -> None:
     """test_sc_config_export"""
     util.clean(util.JSON_FILE)

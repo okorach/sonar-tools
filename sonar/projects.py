@@ -1008,7 +1008,6 @@ class Project(components.Component):
             }
         return json_data
 
-
     def export(self, export_settings: types.ConfigSettings, settings_list: dict[str, str] = None) -> types.ObjectJsonRepr:
         """Exports the entire project configuration as JSON
 
