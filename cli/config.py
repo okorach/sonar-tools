@@ -75,6 +75,18 @@ __MAP = {
 _WRITE_LOCK = Lock()
 
 
+_EXPORT_CALLS = {
+    options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
+    options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
+    options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
+    options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
+    options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
+    options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
+    options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
+    options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
+    options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
+}
+
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
@@ -173,8 +185,8 @@ def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     return json_export
 
 
-def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
-    """Exports a platform configuration in a JSON file"""
+def __export_config_sync(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
+    """Exports config in a synchronous way"""
     export_settings = {
         "INLINE_LISTS": not kwargs["dontInlineLists"],
         "EXPORT_DEFAULTS": kwargs["exportDefaults"],
@@ -186,42 +198,62 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
         if len(non_existing_projects) > 0:
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
-
-    calls = {
-        options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
-        options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
-        options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
-        options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
-        # options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
-        options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
-        options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
-        options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
-        options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
-    }
-
-    log.info("Exporting configuration from %s", kwargs[options.URL])
+    log.info("Exporting configuration synchronously from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
     sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
-    for what_item, call_data in calls.items():
-        if what_item not in what or what_item == options.WHAT_PROJECTS:
+    for what_item, call_data in _EXPORT_CALLS.items():
+        if what_item not in what:
             continue
         ndx, func = call_data
         try:
             sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
-            __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
         except exceptions.UnsupportedOperation as e:
             log.warning(e.message)
     sq_settings = utilities.remove_empties(sq_settings)
     if not kwargs["dontInlineLists"]:
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
+    __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
+    log.info("Synchronous export of configuration from %s completed", kwargs["url"])
 
-    export_settings["WRITE_CALLBACK"] = write_project
+
+def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
+    """Exports a platform configuration in a JSON file"""
+    export_settings = {
+        "INLINE_LISTS": not kwargs["dontInlineLists"],
+        "EXPORT_DEFAULTS": kwargs["exportDefaults"],
+        "FULL_EXPORT": kwargs["fullExport"],
+        "THREADS": kwargs[options.NBR_THREADS],
+        options.REPORT_FILE: kwargs[options.REPORT_FILE],
+        "WRITE_CALLBACK": write_project,
+    }
+    log.info("Exporting configuration from %s (asynchronously)", kwargs[options.URL])
+    key_list = kwargs[options.KEYS]
+    sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
+    for what_item, call_data in _EXPORT_CALLS.items():
+        if what_item not in what or what_item == options.WHAT_PROJECTS:
+            continue
+        ndx, func = call_data
+        try:
+            sq_settings[ndx] = utilities.remove_empties(func(endpoint, export_settings=export_settings, key_list=key_list))
+            __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
+        except exceptions.UnsupportedOperation as e:
+            log.warning(e.message)
+    if not kwargs["dontInlineLists"]:
+        sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
+    __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
+
     __remove_chars_at_end(kwargs[options.REPORT_FILE], 3)
     __add_project_header(kwargs[options.REPORT_FILE])
-    projects.export(endpoint, export_settings=export_settings, key_list=key_list)
+    projects.export(endpoint, export_settings=export_settings, key_list=None)
     __add_project_footer(kwargs[options.REPORT_FILE])
+    log.info("Asynchronous export of configuration from %s completed", kwargs["url"])
 
-    log.info("Exporting configuration from %s completed", kwargs["url"])
+
+def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
+    if kwargs[options.KEYS] or options.WHAT_PROJECTS not in what:
+        __export_config_async(endpoint=endpoint, what=what, **kwargs)
+    else:
+        __export_config_sync(endpoint=endpoint, what=what, **kwargs)
 
 
 def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
