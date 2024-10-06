@@ -987,6 +987,28 @@ class Project(components.Component):
             return None
         return util.remove_nones(branch_data)
 
+    def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+        """Produces the data that is exported for SQ to SC migration"""
+        json_data = super().migration_export(export_settings)
+        json_data["detectedCi"] = self.ci()
+        json_data["revision"] = self.revision()
+        last_task = self.last_task()
+        json_data["backgroundTasks"] = {}
+        if last_task:
+            ctxt = last_task.scanner_context()
+            if ctxt:
+                ctxt = {k: v for k, v in ctxt.items() if k not in _UNNEEDED_CONTEXT_DATA}
+            t_hist = []
+            for t in self.task_history():
+                t_hist.append({k: v for k, v in t._json.items() if k not in _UNNEEDED_TASK_DATA})
+            json_data["backgroundTasks"] = {
+                "lastTaskScannerContext": ctxt,
+                # "lastTaskWarnings": last_task.warnings(),
+                "taskHistory": t_hist,
+            }
+        return json_data
+
+
     def export(self, export_settings: types.ConfigSettings, settings_list: dict[str, str] = None) -> types.ObjectJsonRepr:
         """Exports the entire project configuration as JSON
 
@@ -1018,22 +1040,6 @@ class Project(components.Component):
 
             if export_settings.get("MODE", "") == "MIGRATION":
                 json_data.update(self.migration_export(export_settings))
-                json_data["detectedCi"] = self.ci()
-                json_data["revision"] = self.revision()
-                last_task = self.last_task()
-                json_data["backgroundTasks"] = {}
-                if last_task:
-                    ctxt = last_task.scanner_context()
-                    if ctxt:
-                        ctxt = {k: v for k, v in ctxt.items() if k not in _UNNEEDED_CONTEXT_DATA}
-                    t_hist = []
-                    for t in self.task_history():
-                        t_hist.append({k: v for k, v in t._json.items() if k not in _UNNEEDED_TASK_DATA})
-                    json_data["backgroundTasks"] = {
-                        "lastTaskScannerContext": ctxt,
-                        # "lastTaskWarnings": last_task.warnings(),
-                        "taskHistory": t_hist,
-                    }
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
