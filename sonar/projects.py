@@ -1473,7 +1473,8 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
     while not queue.empty():
         project = queue.get()
         results[project.key] = project.export(export_settings=export_settings)
-        export_settings["WRITE_CALLBACK"](results[project.key], export_settings["file"])
+        if export_settings.get("WRITE_CALLBACK", None):
+            export_settings["WRITE_CALLBACK"](results[project.key], export_settings["file"])
         results[project.key].pop("key", None)
         with _CLASS_LOCK:
             export_settings["EXPORTED"] += 1
