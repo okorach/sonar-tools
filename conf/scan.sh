@@ -55,17 +55,16 @@ externalIssuesReport="$buildDir/external-issue-report.json"
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
 if [ "$dotest" == "true" ]; then
-  ./run_tests.sh
+  $CONFDIR/run_tests.sh
 fi
 
 if [ "$dolint" != "false" ]; then
-  ./run_linters.sh
+  $CONFDIR/run_linters.sh
 fi
 
 version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
-  -Dproject.settings=$CONFDIR/sonar-project.properties \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
   -Dsonar.python.bandit.reportPaths=$banditReport \
