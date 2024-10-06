@@ -82,6 +82,9 @@ class Organization(sqobject.SqObject):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
+            raise e
+        if len(data["organizations"]) == 0:
+            raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
         return cls.load(endpoint, data["organizations"][0])
 
     @classmethod
@@ -99,7 +102,7 @@ class Organization(sqobject.SqObject):
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         uu = sqobject.uuid(data["key"], endpoint.url)
         o = _OBJECTS.get(uu, cls(endpoint, data["key"], data["name"]))
-        o.json_data = data
+        o._json = data
         o.name = data["name"]
         o.description = data["description"]
         return o

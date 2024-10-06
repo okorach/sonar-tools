@@ -134,7 +134,7 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
     objects_list = {}
     data = json.loads(endpoint.get(api, params=new_params).text)
     for obj in data[returned_field]:
-        if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project"):
+        if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
             objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
         else:
             objects_list[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
