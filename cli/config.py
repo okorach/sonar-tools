@@ -87,6 +87,7 @@ _EXPORT_CALLS = {
     options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
 }
 
+
 def __parse_args(desc):
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
@@ -209,6 +210,8 @@ def __export_config_sync(endpoint: platform.Platform, what: list[str], **kwargs)
             sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
         except exceptions.UnsupportedOperation as e:
             log.warning(e.message)
+        except exceptions.ObjectNotFound as e:
+            log.error(e.message)
     sq_settings = utilities.remove_empties(sq_settings)
     if not kwargs["dontInlineLists"]:
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
@@ -238,6 +241,8 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
             __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
         except exceptions.UnsupportedOperation as e:
             log.warning(e.message)
+        except exceptions.ObjectNotFound as e:
+            log.error(e.message)
     if not kwargs["dontInlineLists"]:
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
     __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
@@ -251,9 +256,9 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
 
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     if kwargs[options.KEYS] or options.WHAT_PROJECTS not in what:
-        __export_config_async(endpoint=endpoint, what=what, **kwargs)
-    else:
         __export_config_sync(endpoint=endpoint, what=what, **kwargs)
+    else:
+        __export_config_async(endpoint=endpoint, what=what, **kwargs)
 
 
 def __import_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
