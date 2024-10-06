@@ -1044,7 +1044,7 @@ class Project(components.Component):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.FORBIDDEN:
                 log.critical("Insufficient privileges to access %s, export of this project interrupted", str(self))
-                json_data["error"] = f"Insufficient permissions while exporting project, export interrupted"
+                json_data["error"] = "Insufficient permissions while exporting project, export interrupted"
             else:
                 log.critical("HTTP error %s while exporting %s, export of this project interrupted", str(e), str(self))
                 json_data["error"] = f"HTTP error {str(e)} while extracting project"
