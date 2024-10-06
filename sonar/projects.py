@@ -1472,10 +1472,12 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
     """Project export callback function for multitheaded export"""
     while not queue.empty():
         project = queue.get()
-        results[project.key] = project.export(export_settings=export_settings)
+        exp_json = project.export(export_settings=export_settings)
         if export_settings.get("WRITE_CALLBACK", None):
-            export_settings["WRITE_CALLBACK"](results[project.key], export_settings["file"])
-        results[project.key].pop("key", None)
+            export_settings["WRITE_CALLBACK"](exp_json, export_settings["file"])
+        else:
+            results[project.key] = exp_json
+            results[project.key].pop("key", None)
         with _CLASS_LOCK:
             export_settings["EXPORTED"] += 1
         nb, tot = export_settings["EXPORTED"], export_settings["NBR_PROJECTS"]
