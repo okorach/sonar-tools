@@ -80,6 +80,46 @@ _IMPORTABLE_PROPERTIES = (
     "webhooks",
 )
 
+_UNNEEDED_CONTEXT_DATA = (
+    "sonar.announcement.message",
+    "sonar.auth.github.allowUsersToSignUp",
+    "sonar.auth.github.apiUrl",
+    "sonar.auth.github.appId",
+    "sonar.auth.github.enabled",
+    "sonar.auth.github.groupsSync",
+    "sonar.auth.github.organizations",
+    "sonar.auth.github.webUrl",
+    "sonar.builtInQualityProfiles.disableNotificationOnUpdate",
+    "sonar.core.id",
+    "sonar.core.serverBaseURL",
+    "sonar.core.startTime",
+    "sonar.dbcleaner.branchesToKeepWhenInactive",
+    "sonar.forceAuthentication",
+    "sonar.host.url",
+    "sonar.java.jdkHome",
+    "sonar.links.ci",
+    "sonar.links.homepage",
+    "sonar.links.issue",
+    "sonar.links.scm",
+    "sonar.links.scm_dev",
+    "sonar.plugins.risk.consent",
+)
+
+_UNNEEDED_TASK_DATA = (
+    "analysisId",
+    "componentId",
+    "hasScannerContext",
+    "id",
+    "warningCount",
+    "componentQualifier",
+    "nodeName",
+    "componentName",
+    "componentKey",
+    "submittedAt",
+    "executedAt",
+    "type",
+)
+
 
 class Project(components.Component):
     """
@@ -953,6 +993,9 @@ class Project(components.Component):
         :return: All project configuration settings
         :rtype: dict
         """
+
+        remove_useless = lambda d, useless: {k: v for k, v in d if k not in useless}
+
         log.info("Exporting %s", str(self))
         try:
             json_data = self._json.copy()
@@ -983,10 +1026,16 @@ class Project(components.Component):
                 last_task = self.last_task()
                 json_data["backgroundTasks"] = {}
                 if last_task:
+                    ctxt = last_task.scanner_context()
+                    if ctxt:
+                        ctxt = {k: v for k, v in ctxt.items() if k not in _UNNEEDED_CONTEXT_DATA}
+                    t_hist = []
+                    for t in self.task_history():
+                        t_hist.append({k: v for k, v in t._json.items() if k not in _UNNEEDED_TASK_DATA})
                     json_data["backgroundTasks"] = {
-                        "lastTaskScannerContext": last_task.scanner_context(),
-                        "lastTaskWarnings": last_task.warnings(),
-                        "taskHistory": [t._json for t in self.task_history()],
+                        "lastTaskScannerContext": ctxt,
+                        # "lastTaskWarnings": last_task.warnings(),
+                        "taskHistory": t_hist,
                     }
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
