@@ -993,13 +993,10 @@ class Project(components.Component):
         :return: All project configuration settings
         :rtype: dict
         """
-
-        remove_useless = lambda d, useless: {k: v for k, v in d if k not in useless}
-
         log.info("Exporting %s", str(self))
+        json_data = self._json.copy()
+        json_data.update({"key": self.key, "name": self.name})
         try:
-            json_data = self._json.copy()
-            json_data.update({"key": self.key, "name": self.name})
             json_data["binding"] = self.__export_get_binding()
             nc = self.new_code()
             if nc != "":
@@ -1046,14 +1043,17 @@ class Project(components.Component):
                 json_data.update(s.to_json())
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.FORBIDDEN:
-                log.critical("Insufficient privileges to access %s, export of this project skipped", str(self))
-                json_data = {"error": "Insufficient permissions while extracting project"}
+                log.critical("Insufficient privileges to access %s, export of this project interrupted", str(self))
+                json_data["error"] = f"Insufficient permissions while exporting project, export interrupted"
             else:
-                log.critical("HTTP error %s while exporting %s, export of this project skipped", str(e), str(self))
-                json_data = {"error": f"HTTP error {str(e)} while extracting project"}
+                log.critical("HTTP error %s while exporting %s, export of this project interrupted", str(e), str(self))
+                json_data["error"] = f"HTTP error {str(e)} while extracting project"
         except ConnectionError as e:
-            log.critical("Connecting error %s while extracting %s, extract of this project skipped", str(self), str(e))
-            json_data = {"error": f"Connection error {str(e)} while extracting prooject"}
+            log.critical("Connecting error %s while exporting %s, export of this project interrupted", str(self), str(e))
+            json_data["error"] = f"Connection error {str(e)} while extracting project, export interrupted"
+        except Exception as e:
+            log.critical("Connecting error %s while exporting %s, export of this project interrupted", str(self), str(e))
+            json_data["error"] = f"Exception {str(e)} while exporting project, export interrupted"
         log.info("Exporting %s done", str(self))
         return util.remove_nones(json_data)
 
