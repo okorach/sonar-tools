@@ -171,8 +171,8 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
                     print(",", file=fd)
                 is_first = False
                 worker = Thread(target=write_objects, args=(q, fd, ndx))
-                worker.setDaemon(True)
-                worker.setName("WriteThread")
+                worker.daemon = True
+                worker.name = f"Write{ndx}"
                 worker.start()
                 export_settings["WRITE_QUEUE"] = q
                 sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
