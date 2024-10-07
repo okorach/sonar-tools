@@ -159,6 +159,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     key_list = kwargs[options.KEYS]
     sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
     is_first = True
+    q = Queue(maxsize=0)
     with utilities.open_file(file, mode="w") as fd:
         print("{", file=fd)
         for what_item, call_data in calls.items():
@@ -169,7 +170,6 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
                 if not is_first:
                     print(",", file=fd)
                 is_first = False
-                q = Queue(maxsize=0)
                 worker = Thread(target=write_objects, args=(q, fd, ndx))
                 worker.setDaemon(True)
                 worker.setName("WriteThread")
