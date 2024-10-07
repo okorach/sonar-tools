@@ -23,7 +23,8 @@
 """
 import sys
 import os
-from threading import Lock
+from threading import Thread, Lock
+from queue import Queue
 
 from cli import options
 from sonar import exceptions, errcodes, utilities, version
@@ -104,27 +105,25 @@ def __remove_chars_at_end(file: str, nb_bytes: int) -> None:
         fd.truncate()
 
 
-def __add_project_header(file: str) -> None:
-    """Writes the configuration in file"""
-    with open(file, mode="a", encoding="utf-8") as fd:
-        print(',\n   "projects": {\n', file=fd)
-
-
-def __add_project_footer(file: str) -> None:
-    """Closes projects section"""
-    __remove_chars_at_end(file, 2)
-    with open(file, mode="a", encoding="utf-8") as fd:
-        print("\n   }\n}", file=fd)
-
-
-def write_project(project_json: dict[str, any], file: str) -> None:
+def write_projects(queue: Queue, file: str) -> None:
     """
-    writes a project JSON in a file
+    Thread to write projects in the JSON file
     """
-    key = project_json.pop("key")
-    with _WRITE_LOCK:
-        with utilities.open_file(file, mode="a") as fd:
-            print(f'"{key}": {utilities.json_dump(project_json)},', file=fd)
+    done = False
+    prefix = ""
+    with utilities.open_file(file, mode="a") as fd:
+        print('"   projects": {', file=fd)
+        while not done:
+            project_json = queue.get()
+            done = project_json is None
+            if not done:
+                log.info("Writing project '%s'", project_json["key"])
+                key = project_json.pop("key")
+                print(f'{prefix}"{key}": {utilities.json_dump(project_json)}', end="", file=fd)
+                prefix = ",\n"
+            queue.task_done()
+        print("\n}", file=fd, end="")
+    log.info("Writing projects complete")
 
 
 def __write_export(config: dict[str, str], file: str) -> None:
@@ -179,12 +178,20 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     #    sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
 
     log.info("Exporting project migration data streaming projects in '%s'", kwargs[options.REPORT_FILE])
-    export_settings["WRITE_CALLBACK"] = write_project
     __remove_chars_at_end(kwargs[options.REPORT_FILE], 3)
-    __add_project_header(kwargs[options.REPORT_FILE])
+    with utilities.open_file(kwargs[options.REPORT_FILE], mode="a") as fd:
+        print(",", file=fd)
+    q = Queue(maxsize=0)
+    worker = Thread(target=write_projects, args=(q, kwargs[options.REPORT_FILE]))
+    worker.setDaemon(True)
+    worker.setName("WriteThread")
+    worker.start()
+    export_settings["WRITE_QUEUE"] = q
     projects.export(endpoint, export_settings=export_settings, key_list=key_list)
-    __add_project_footer(kwargs[options.REPORT_FILE])
+    q.join()
     log.info("Exporting migration data from %s completed", kwargs["url"])
+    with utilities.open_file(kwargs[options.REPORT_FILE], mode="a") as fd:
+        print("\n}", file=fd)
 
 
 def main() -> None:
