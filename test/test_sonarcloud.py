@@ -38,6 +38,7 @@ OPTS = [CMD] + SC_OPTS + [f"-{opt.EXPORT_SHORT}", f"-{opt.REPORT_FILE_SHORT}", u
 MY_ORG_1 = "okorach"
 MY_ORG_2 = "okorach-github"
 
+
 def test_sc_config_export() -> None:
     """test_sc_config_export"""
     util.clean(util.JSON_FILE)
