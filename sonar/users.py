@@ -417,7 +417,11 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     u_list = {}
     for u_login, u_obj in sorted(search(endpoint=endpoint).items()):
         u_list[u_login] = u_obj.to_json(export_settings)
-        u_list[u_login].pop("login", None)
+        if export_settings.get("WRITE_QUEUE", None):
+            export_settings["WRITE_QUEUE"].put(u_list[u_login])
+        else:
+            u_list[u_login].pop("login", None)
+    export_settings["WRITE_QUEUE"].put(None)
     return u_list
 
 

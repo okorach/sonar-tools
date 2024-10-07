@@ -511,11 +511,16 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         # log.info("Applications do not exist in SonarCloud, export skipped")
         raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
 
-    apps_settings = {k: app.export(export_settings) for k, app in get_list(endpoint, key_list).items()}
-    for k in apps_settings:
-        # remove key from JSON value, it's already the dict key
-        apps_settings[k].pop("key")
-    return dict(sorted(apps_settings.items()))
+    apps_settings = {}
+    for k, app in sorted(get_list(endpoint, key_list).items()):
+        app_json = app.export(export_settings)
+        if export_settings.get("WRITE_QUEUE", None):
+            export_settings["WRITE_QUEUE"].put(app_json)
+        else:
+            app_json.pop("key")
+            apps_settings[k] = app_json
+    export_settings["WRITE_QUEUE"].put(None)
+    return apps_settings
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[problem.Problem]:

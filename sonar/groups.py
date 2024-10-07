@@ -272,6 +272,9 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         if not export_settings["FULL_EXPORT"] and g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
+    if export_settings.get("WRITE_QUEUE", None):
+        export_settings["WRITE_QUEUE"].put(g_list)
+    export_settings["WRITE_QUEUE"].put(None)
     return g_list
 
 

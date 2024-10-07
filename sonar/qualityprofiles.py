@@ -598,6 +598,9 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
     qp_list = hierarchize(qp_list, endpoint)
+    if export_settings.get("WRITE_QUEUE", None):
+        export_settings["WRITE_QUEUE"].put(qp_list)
+        export_settings["WRITE_QUEUE"].put(None)
     return dict(sorted(qp_list.items()))
 
 

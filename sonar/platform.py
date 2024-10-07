@@ -878,4 +878,8 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, key_list: 
     :return: Platform settings
     :rtype: ObjectJsonRepr
     """
-    return endpoint.export(export_settings)
+    exp = endpoint.export(export_settings)
+    if export_settings.get("WRITE_QUEUE", None):
+        export_settings["WRITE_QUEUE"].put(exp)
+        export_settings["WRITE_QUEUE"].put(None)
+    return exp

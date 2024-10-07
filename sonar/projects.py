@@ -1479,6 +1479,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         project = queue.get()
         exp_json = project.export(export_settings=export_settings)
         if export_settings.get("WRITE_QUEUE", None):
+            log.info("Putting %s in queue %s", project.key, str(export_settings["WRITE_QUEUE"]))
             export_settings["WRITE_QUEUE"].put(exp_json)
         else:
             results[project.key] = exp_json

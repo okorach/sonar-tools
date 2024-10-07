@@ -390,7 +390,11 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     :rtype: ObjectJsonRepr
     """
     log.info("Exporting quality gates")
-    return {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
+    qg_list = {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
+    if export_settings.get("WRITE_QUEUE", None):
+        export_settings["WRITE_QUEUE"].put(qg_list)
+        export_settings["WRITE_QUEUE"].put(None)
+    return qg_list
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
