@@ -27,6 +27,7 @@
 from http import HTTPStatus
 import sys
 import os
+from queue import Queue
 from typing import Optional
 import time
 import datetime
@@ -869,7 +870,9 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
     return original_json
 
 
-def export(endpoint: Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -879,7 +882,7 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, key_list: 
     :rtype: ObjectJsonRepr
     """
     exp = endpoint.export(export_settings)
-    if export_settings.get("WRITE_QUEUE", None):
-        export_settings["WRITE_QUEUE"].put(exp)
-        export_settings["WRITE_QUEUE"].put(None)
+    if write_q:
+        write_q.put(exp)
+        write_q.put(None)
     return exp

@@ -19,7 +19,8 @@
 #
 
 from __future__ import annotations
-from typing import Union
+from queue import Queue
+from typing import Union, Optional
 import json
 from datetime import datetime
 
@@ -578,7 +579,9 @@ def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> types.ObjectJ
     return qp_list
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -598,9 +601,9 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
     qp_list = hierarchize(qp_list, endpoint)
-    if export_settings.get("WRITE_QUEUE", None):
-        export_settings["WRITE_QUEUE"].put(qp_list)
-        export_settings["WRITE_QUEUE"].put(None)
+    if write_q:
+        write_q.put(qp_list)
+        write_q.put(None)
     return dict(sorted(qp_list.items()))
 
 

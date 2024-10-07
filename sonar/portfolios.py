@@ -24,6 +24,7 @@
 """
 
 from __future__ import annotations
+from queue import Queue
 from typing import Union, Optional
 import json
 import datetime
@@ -727,7 +728,9 @@ def search_by_key(endpoint: pf.Platform, key: str) -> types.ApiPayload:
     return util.search_by_key(endpoint, key, Portfolio.SEARCH_API, "components")
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
@@ -749,8 +752,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         try:
             if not p.is_sub_portfolio:
                 exp = p.export(export_settings)
-                if export_settings.get("WRITE_QUEUE", None):
-                    export_settings["WRITE_QUEUE"].put(exp)
+                if write_q:
+                    write_q.put(exp)
                 else:
                     exp.pop("key")
                     exported_portfolios[k] = exp
@@ -763,7 +766,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         i += 1
         if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
-    export_settings["WRITE_QUEUE"].put(None)
+    if write_q:
+        write_q.put(None)
     return exported_portfolios
 
 

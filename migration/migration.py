@@ -118,8 +118,8 @@ def write_objects(queue: Queue, fd, object_type: str) -> None:
                 log.info("Writing %s key '%s'", object_type, key)
                 print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
             else:
-                log.info("Writing %s global", object_type)
-                print(f"{prefix}{utilities.json_dump(obj_json)[1:-1]}", end="", file=fd)
+                log.info("Writing %s", object_type)
+                print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
             prefix = ",\n"
         queue.task_done()
     print("\n}", file=fd, end="")
@@ -172,10 +172,9 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
                 is_first = False
                 worker = Thread(target=write_objects, args=(q, fd, ndx))
                 worker.daemon = True
-                worker.name = f"Write{ndx}"
+                worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
                 worker.start()
-                export_settings["WRITE_QUEUE"] = q
-                sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
+                sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
                 q.join()
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)

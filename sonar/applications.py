@@ -19,6 +19,7 @@
 #
 
 from __future__ import annotations
+from queue import Queue
 from typing import Union
 
 import json
@@ -498,7 +499,9 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None, write_q: Queue = None
+) -> types.ObjectJsonRepr:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -514,12 +517,13 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     apps_settings = {}
     for k, app in sorted(get_list(endpoint, key_list).items()):
         app_json = app.export(export_settings)
-        if export_settings.get("WRITE_QUEUE", None):
-            export_settings["WRITE_QUEUE"].put(app_json)
+        if write_q:
+            write_q.put(app_json)
         else:
             app_json.pop("key")
             apps_settings[k] = app_json
-    export_settings["WRITE_QUEUE"].put(None)
+    if write_q:
+        write_q.put(None)
     return apps_settings
 
 

@@ -23,6 +23,7 @@
 
 """
 from __future__ import annotations
+from queue import Queue
 import json
 from typing import Optional
 from http import HTTPStatus
@@ -271,7 +272,9 @@ def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
         return None
 
 
-def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: platform.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
@@ -299,9 +302,9 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, k
         rule_list["standard"] = other_rules
     if export_settings.get("MODE", "") == "MIGRATION":
         rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
-    if export_settings.get("WRITE_QUEUE", None):
-        export_settings["WRITE_QUEUE"].put(rule_list)
-        export_settings["WRITE_QUEUE"].put(None)
+    if write_q:
+        write_q.put(rule_list)
+        write_q.put(None)
     return rule_list
 
 

@@ -19,7 +19,7 @@
 #
 
 from __future__ import annotations
-
+from queue import Queue
 from typing import Union, Optional
 import datetime as dt
 import json
@@ -404,7 +404,9 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, U
     return sqobject.search_objects(endpoint=endpoint, object_class=User, params=params)
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
     """Exports all users in JSON representation
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -417,11 +419,12 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     u_list = {}
     for u_login, u_obj in sorted(search(endpoint=endpoint).items()):
         u_list[u_login] = u_obj.to_json(export_settings)
-        if export_settings.get("WRITE_QUEUE", None):
-            export_settings["WRITE_QUEUE"].put(u_list[u_login])
+        if write_q:
+            write_q.put(u_list[u_login])
         else:
             u_list[u_login].pop("login", None)
-    export_settings["WRITE_QUEUE"].put(None)
+    if write_q:
+        write_q.put(None)
     return u_list
 
 
