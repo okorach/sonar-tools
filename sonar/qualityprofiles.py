@@ -19,7 +19,6 @@
 #
 
 from __future__ import annotations
-from queue import Queue
 from typing import Union, Optional
 import json
 from datetime import datetime
