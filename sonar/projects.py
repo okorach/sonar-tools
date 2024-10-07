@@ -1478,8 +1478,8 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
     while not queue.empty():
         project = queue.get()
         exp_json = project.export(export_settings=export_settings)
-        if export_settings.get("WRITE_CALLBACK", None):
-            export_settings["WRITE_CALLBACK"](exp_json, export_settings["file"])
+        if export_settings.get("WRITE_QUEUE", None):
+            export_settings["WRITE_QUEUE"].put(exp_json)
         else:
             results[project.key] = exp_json
             results[project.key].pop("key", None)
@@ -1489,6 +1489,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         if nb % 10 == 0 or nb == tot:
             log.info("%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
         queue.task_done()
+    log.info("Putting DONE in queue %s", str(export_settings["WRITE_QUEUE"]))
 
 
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
@@ -1518,6 +1519,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         worker.setName(f"ProjectExport{i}")
         worker.start()
     q.join()
+    export_settings["WRITE_QUEUE"].put(None)
     return dict(sorted(project_settings.items()))
 
 
