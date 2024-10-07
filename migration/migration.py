@@ -98,42 +98,37 @@ def __parse_args(desc):
     return args
 
 
-def __remove_chars_at_end(file: str, nb_bytes: int) -> None:
-    """Writes the configuration in file"""
-    with open(file, mode="rb+") as fd:
-        fd.seek(-nb_bytes, os.SEEK_END)
-        fd.truncate()
-
-
-def write_projects(queue: Queue, file: str) -> None:
+def write_objects(queue: Queue, fd, object_type: str) -> None:
     """
     Thread to write projects in the JSON file
     """
     done = False
     prefix = ""
-    with utilities.open_file(file, mode="a") as fd:
-        print('"   projects": {', file=fd)
-        while not done:
-            project_json = queue.get()
-            done = project_json is None
-            if not done:
-                log.info("Writing project '%s'", project_json["key"])
-                key = project_json.pop("key")
-                print(f'{prefix}"{key}": {utilities.json_dump(project_json)}', end="", file=fd)
-                prefix = ",\n"
-            queue.task_done()
-        print("\n}", file=fd, end="")
-    log.info("Writing projects complete")
-
-
-def __write_export(config: dict[str, str], file: str) -> None:
-    """Writes the configuration in file"""
-    with utilities.open_file(file) as fd:
-        print(utilities.json_dump(config), file=fd)
+    log.info("Waiting %s to write...", object_type)
+    print(f'"{object_type}": ' + "{", file=fd)
+    while not done:
+        obj_json = queue.get()
+        done = obj_json is None
+        if not done:
+            if object_type in ("projects", "applications", "portfolios", "users"):
+                if object_type == "users":
+                    key = obj_json.pop("login", None)
+                else:
+                    key = obj_json.pop("key", None)
+                log.debug("Writing %s key '%s'", object_type[:-1], key)
+                print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
+            else:
+                log.debug("Writing %s", object_type)
+                print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
+            prefix = ",\n"
+        queue.task_done()
+    print("\n}", file=fd, end="")
+    log.info("Writing %s complete", object_type)
 
 
 def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
+    file = kwargs[options.REPORT_FILE]
     export_settings = {
         "INLINE_LISTS": False,
         "EXPORT_DEFAULTS": True,
@@ -141,7 +136,6 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         "FULL_EXPORT": False,
         "MODE": "MIGRATION",
         "THREADS": kwargs[options.NBR_THREADS],
-        options.REPORT_FILE: kwargs[options.REPORT_FILE],
         "SKIP_ISSUES": kwargs["skipIssues"],
     }
     if "projects" in what and kwargs[options.KEYS]:
@@ -154,7 +148,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
         options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
         options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
-        # options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
+        options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
         options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
         options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
         options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
@@ -164,34 +158,31 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
     sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
-    for what_item, call_data in calls.items():
-        if what_item not in what:
-            continue
-        ndx, func = call_data
-        try:
-            sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list)
-            __write_export(sq_settings, kwargs[options.REPORT_FILE])
-        except exceptions.UnsupportedOperation as e:
-            log.warning(e.message)
-    sq_settings = utilities.remove_empties(sq_settings)
-    # if not kwargs.get("dontInlineLists", False):
-    #    sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
-
-    log.info("Exporting project migration data streaming projects in '%s'", kwargs[options.REPORT_FILE])
-    __remove_chars_at_end(kwargs[options.REPORT_FILE], 3)
-    with utilities.open_file(kwargs[options.REPORT_FILE], mode="a") as fd:
-        print(",", file=fd)
+    is_first = True
     q = Queue(maxsize=0)
-    worker = Thread(target=write_projects, args=(q, kwargs[options.REPORT_FILE]))
-    worker.setDaemon(True)
-    worker.setName("WriteThread")
-    worker.start()
-    export_settings["WRITE_QUEUE"] = q
-    projects.export(endpoint, export_settings=export_settings, key_list=key_list)
-    q.join()
-    log.info("Exporting migration data from %s completed", kwargs["url"])
-    with utilities.open_file(kwargs[options.REPORT_FILE], mode="a") as fd:
+    with utilities.open_file(file, mode="w") as fd:
+        print("{", file=fd)
+        for what_item, call_data in calls.items():
+            if what_item not in what:
+                continue
+            ndx, func = call_data
+            try:
+                if not is_first:
+                    print(",", file=fd)
+                is_first = False
+                worker = Thread(target=write_objects, args=(q, fd, ndx))
+                worker.daemon = True
+                worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
+                worker.start()
+                sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
+                q.join()
+            except exceptions.UnsupportedOperation as e:
+                log.warning(e.message)
+        sq_settings = utilities.remove_empties(sq_settings)
+        # if not kwargs.get("dontInlineLists", False):
+        #    sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
         print("\n}", file=fd)
+    log.info("Exporting migration data from %s completed", kwargs["url"])
 
 
 def main() -> None:

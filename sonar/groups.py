@@ -19,6 +19,7 @@
 #
 
 from __future__ import annotations
+from queue import Queue
 from typing import Optional
 import sonar.logging as log
 import sonar.platform as pf
@@ -256,7 +257,9 @@ def get_list(endpoint: pf.Platform) -> dict[str, Group]:
     return search(endpoint)
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
     """Exports groups representation in JSON
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -272,6 +275,9 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
         if not export_settings["FULL_EXPORT"] and g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
+    if write_q:
+        write_q.put(g_list)
+        write_q.put(None)
     return g_list
 
 

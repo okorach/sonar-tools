@@ -1059,7 +1059,7 @@ class Project(components.Component):
         except Exception as e:
             log.critical("Connecting error %s while exporting %s, export of this project interrupted", str(self), str(e))
             json_data["error"] = f"Exception {str(e)} while exporting project, export interrupted"
-        log.info("Exporting %s done", str(self))
+        log.debug("Exporting %s done", str(self))
         return util.remove_nones(json_data)
 
     def new_code(self) -> str:
@@ -1473,13 +1473,13 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list:
     return problems
 
 
-def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: types.ConfigSettings) -> None:
+def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: types.ConfigSettings, write_q: Optional[Queue] = None) -> None:
     """Project export callback function for multitheaded export"""
     while not queue.empty():
         project = queue.get()
         exp_json = project.export(export_settings=export_settings)
-        if export_settings.get("WRITE_QUEUE", None):
-            export_settings["WRITE_QUEUE"].put(exp_json)
+        if write_q:
+            write_q.put(exp_json)
         else:
             results[project.key] = exp_json
             results[project.key].pop("key", None)
@@ -1489,10 +1489,11 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         if nb % 10 == 0 or nb == tot:
             log.info("%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
         queue.task_done()
-    log.info("Putting DONE in queue %s", str(export_settings["WRITE_QUEUE"]))
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -1514,12 +1515,13 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     project_settings = {}
     for i in range(export_settings.get("THREADS", 8)):
         log.debug("Starting project export thread %d", i)
-        worker = Thread(target=__export_thread, args=(q, project_settings, export_settings))
-        worker.setDaemon(True)
-        worker.setName(f"ProjectExport{i}")
+        worker = Thread(target=__export_thread, args=(q, project_settings, export_settings, write_q))
+        worker.daemon = True
+        worker.name = f"ProjectExport{i}"
         worker.start()
     q.join()
-    export_settings["WRITE_QUEUE"].put(None)
+    if write_q:
+        write_q.put(None)
     return dict(sorted(project_settings.items()))
 
 

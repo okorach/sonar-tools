@@ -24,8 +24,8 @@
 """
 
 from __future__ import annotations
-
-from typing import Union
+from queue import Queue
+from typing import Union, Optional
 
 from http import HTTPStatus
 import json
@@ -380,7 +380,9 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     return qg_list
 
 
-def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None) -> types.ObjectJsonRepr:
+def export(
+    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
     """Exports quality gates as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -390,7 +392,11 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, key_lis
     :rtype: ObjectJsonRepr
     """
     log.info("Exporting quality gates")
-    return {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
+    qg_list = {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
+    if write_q:
+        write_q.put(qg_list)
+        write_q.put(None)
+    return qg_list
 
 
 def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
