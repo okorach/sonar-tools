@@ -1060,7 +1060,7 @@ class Project(components.Component):
         except Exception as e:
             log.critical("Connecting error %s while exporting %s, export of this project interrupted", str(self), str(e))
             json_data["error"] = f"Exception {str(e)} while exporting project, export interrupted"
-        log.info("Exporting %s done", str(self))
+        log.debug("Exporting %s done", str(self))
         return util.remove_nones(json_data)
 
     def new_code(self) -> str:

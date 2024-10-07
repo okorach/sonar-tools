@@ -104,7 +104,7 @@ def write_objects(queue: Queue, fd, object_type: str) -> None:
     """
     done = False
     prefix = ""
-    log.info("Writing %s...", object_type)
+    log.info("Waiting %s to write...", object_type)
     print(f'"{object_type}": ' + "{", file=fd)
     while not done:
         obj_json = queue.get()
@@ -115,10 +115,10 @@ def write_objects(queue: Queue, fd, object_type: str) -> None:
                     key = obj_json.pop("login", None)
                 else:
                     key = obj_json.pop("key", None)
-                log.info("Writing %s key '%s'", object_type, key)
+                log.debug("Writing %s key '%s'", object_type[:-1], key)
                 print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
             else:
-                log.info("Writing %s", object_type)
+                log.debug("Writing %s", object_type)
                 print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
             prefix = ",\n"
         queue.task_done()
