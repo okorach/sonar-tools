@@ -268,18 +268,6 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
         if len(non_existing_projects) > 0:
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
 
-    calls = {
-        options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
-        options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
-        options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
-        options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
-        options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
-        options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
-        options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
-        options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
-        options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
-    }
-
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
     sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
@@ -287,7 +275,7 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
     q = Queue(maxsize=0)
     with utilities.open_file(file, mode="w") as fd:
         print("{", file=fd)
-        for what_item, call_data in calls.items():
+        for what_item, call_data in _EXPORT_CALLS.items():
             if what_item not in what:
                 continue
             ndx, func = call_data
