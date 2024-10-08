@@ -22,7 +22,6 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
-import os
 from threading import Thread, Lock
 from queue import Queue
 
