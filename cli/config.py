@@ -31,6 +31,7 @@ import yaml
 
 from cli import options
 from sonar import exceptions, errcodes, utilities
+from sonar.util import types
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
@@ -220,7 +221,7 @@ def __export_config_sync(endpoint: platform.Platform, what: list[str], **kwargs)
     log.info("Synchronous export of configuration from %s completed", kwargs["url"])
 
 
-def write_objects(queue: Queue, fd, object_type: str) -> None:
+def write_objects(queue: Queue, fd, object_type: str, export_settings: types.ConfigSettings) -> None:
     """
     Thread to write projects in the JSON file
     """
@@ -232,6 +233,8 @@ def write_objects(queue: Queue, fd, object_type: str) -> None:
         obj_json = queue.get()
         done = obj_json is None
         if not done:
+            if export_settings.get("INLINE_LISTS", True):
+                obj_json = utilities.inline_lists(obj_json, exceptions=("conditions",))
             if object_type in ("projects", "applications", "portfolios", "users"):
                 if object_type == "users":
                     key = obj_json.pop("login", None)
@@ -252,7 +255,7 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
     """Exports a platform configuration in a JSON file"""
     file = kwargs[options.REPORT_FILE]
     export_settings = {
-        "INLINE_LISTS": False,
+        "INLINE_LISTS": not kwargs["dontInlineLists"],
         "EXPORT_DEFAULTS": True,
         # "FULL_EXPORT": kwargs["fullExport"],
         "FULL_EXPORT": False,
@@ -292,7 +295,7 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
                 if not is_first:
                     print(",", file=fd)
                 is_first = False
-                worker = Thread(target=write_objects, args=(q, fd, ndx))
+                worker = Thread(target=write_objects, args=(q, fd, ndx, export_settings))
                 worker.daemon = True
                 worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
                 worker.start()
@@ -301,8 +304,6 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
         sq_settings = utilities.remove_empties(sq_settings)
-        # if not kwargs.get("dontInlineLists", False):
-        #    sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
         print("\n}", file=fd)
     log.info("Exporting migration data from %s completed", kwargs["url"])
 
