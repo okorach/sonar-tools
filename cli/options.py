@@ -193,7 +193,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
         log.info("sonar-tools version %s", version.PACKAGE_VERSION)
     if os.getenv("IN_DOCKER", "No") == "Yes":
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
-    if log.get_level() == log.DEBUG:
+    if log.get_level() >= log.DEBUG:
         sanitized_args = kwargs.copy()
         sanitized_args[TOKEN] = utilities.redacted_token(sanitized_args[TOKEN])
         if "tokenTarget" in sanitized_args:
