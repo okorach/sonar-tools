@@ -225,7 +225,7 @@ class Platform:
             if kwargs.get("with_organization", True):
                 params["organization"] = self.organization
         req_type, url = "", ""
-        if log.get_level() >= log.DEBUG:
+        if log.get_level() <= log.DEBUG:
             req_type = getattr(request, "__name__", repr(request)).upper()
             url = self.__urlstring(api, params)
             log.debug("%s: %s", req_type, url)
