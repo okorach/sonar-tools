@@ -57,6 +57,20 @@ def test_migration() -> None:
     with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
+    for item in (
+        "platform",
+        "globalSettings",
+        "rules",
+        "qualityProfiles",
+        "qualityGates",
+        "projects",
+        "applications",
+        "portfolios",
+        "users",
+        "groups",
+    ):
+        assert item in json_config
+
     u = json_config["users"]["admin"]
     assert "sonar-users" in u["groups"]
     assert u["local"] and u["active"]
