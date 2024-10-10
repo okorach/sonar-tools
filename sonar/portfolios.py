@@ -74,6 +74,7 @@ _IMPORTABLE_PROPERTIES = (
     "visibility",
     "permissions",
     "projects",
+    "projectsList",
     "portfolios",
     "subPortfolios",
     "applications",
@@ -359,11 +360,14 @@ class Portfolio(aggregations.Aggregation):
         if mode and "none" not in mode:
             json_data["projects"] = mode
         json_data["applications"] = self._applications
+        if export_settings.get("MODE", "") == "MIGRATION":
+            json_data["projectsList"] = self.get_project_list()
         return json_data
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
+        exp = self.to_json(export_settings)
         return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings["FULL_EXPORT"]))
 
     def permissions(self) -> pperms.PortfolioPermissions:
@@ -562,6 +566,30 @@ class Portfolio(aggregations.Aggregation):
         log.debug("Recomputing %s", str(self))
         key = self._root_portfolio.key if self._root_portfolio else self.key
         return self.post("views/refresh", params={"key": key}).ok
+
+    def get_project_list(self) -> list[str]:
+        log.debug("Search %s projects list", str(self))
+        proj_key_list = []
+        page = 0
+        params = {"component": self.key, "ps": 500, "qualifiers": "TRK", "strategy": "leaves", "metricKeys": "ncloc"}
+        while True:
+            page += 1
+            params["p"] = page
+            try:
+                data = json.loads(self.get("api/measures/component_tree", params=params).text)
+                nbr_projects = util.nbr_total_elements(data)
+                proj_key_list += [c["refKey"] for c in data["components"]]
+            except HTTPError as e:
+                log.critical("HTTP Error %s while collecting projects from %s, proceeding anyway", str(e), str(self))
+                continue
+            nbr_pages = util.nbr_pages(data)
+            log.debug("Number of projects: %d - Page: %d/%d", nbr_projects, page, nbr_pages)
+            if nbr_projects > 10000:
+                log.critical("Can't collect more than 10000 projects from %s", str(self))
+            if page >= nbr_pages:
+                break
+        log.debug("%s projects list = %s", str(self), str(proj_key_list))
+        return proj_key_list
 
     def update(self, data: dict[str, str], recurse: bool) -> None:
         """Updates a portfolio with sonar-config JSON data, if recurse is true, this recurses in sub portfolios"""
