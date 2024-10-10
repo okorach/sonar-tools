@@ -33,7 +33,6 @@ import time
 import datetime
 import json
 import tempfile
-import logging
 import requests
 import jprops
 from requests.exceptions import HTTPError
@@ -226,7 +225,7 @@ class Platform:
             if kwargs.get("with_organization", True):
                 params["organization"] = self.organization
         req_type, url = "", ""
-        if log.get_level() >= logging.DEBUG:
+        if log.get_level() >= log.DEBUG:
             req_type = getattr(request, "__name__", repr(request)).upper()
             url = self.__urlstring(api, params)
             log.debug("%s: %s", req_type, url)
@@ -882,6 +881,17 @@ def export(
     :rtype: ObjectJsonRepr
     """
     exp = endpoint.export(export_settings)
+    if write_q:
+        write_q.put(exp)
+        write_q.put(None)
+    return exp
+
+
+def basics(
+    endpoint: Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
+) -> types.ObjectJsonRepr:
+    """Returns an endpooint basic info (license, edition, version etc..)"""
+    exp = endpoint.basics()
     if write_q:
         write_q.put(exp)
         write_q.put(None)

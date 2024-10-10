@@ -109,6 +109,7 @@ def write_objects(queue: Queue, fd, object_type: str) -> None:
         obj_json = queue.get()
         done = obj_json is None
         if not done:
+            obj_json = utilities.remove_empties(obj_json)
             if object_type in ("projects", "applications", "portfolios", "users"):
                 if object_type == "users":
                     key = obj_json.pop("login", None)
@@ -143,6 +144,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
 
     calls = {
+        "platform": [__JSON_KEY_PLATFORM, platform.basics],
         options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
         options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
         options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
@@ -153,10 +155,9 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
         options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
     }
-
+    what.append("platform")
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
     is_first = True
     q = Queue(maxsize=0)
     with utilities.open_file(file, mode="w") as fd:
@@ -173,11 +174,10 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
                 worker.daemon = True
                 worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
                 worker.start()
-                sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
+                func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
                 q.join()
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
-        sq_settings = utilities.remove_empties(sq_settings)
         # if not kwargs.get("dontInlineLists", False):
         #    sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
         print("\n}", file=fd)
