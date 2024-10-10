@@ -109,7 +109,7 @@ def write_objects(queue: Queue, fd, object_type: str) -> None:
         obj_json = queue.get()
         done = obj_json is None
         if not done:
-            obj_json = utilities.remove_empties(obj_json)
+            obj_json = utilities.remove_nones(obj_json)
             if object_type in ("projects", "applications", "portfolios", "users"):
                 if object_type == "users":
                     key = obj_json.pop("login", None)
