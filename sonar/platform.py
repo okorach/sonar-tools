@@ -379,14 +379,17 @@ class Platform:
         url_prefix = f"{str(self)}{api}"
         if params is None:
             return url_prefix
+        temp_params = params.copy()
         for p in params:
             if params[p] is None:
                 continue
             sep = "?" if first else "&"
             first = False
-            if isinstance(params[p], datetime.date):
-                params[p] = util.format_date(params[p])
-            url_prefix += f"{sep}{p}={requests.utils.quote(str(params[p]))}"
+            if isinstance(temp_params[p], datetime.date):
+                temp_params[p] = util.format_date(temp_params[p])
+            elif isinstance(temp_params[p], (list, tuple, set)):
+                temp_params[p] = ",".join(temp_params[p])
+            url_prefix += f"{sep}{p}={requests.utils.quote(str(temp_params[p]))}"
         return url_prefix
 
     def webhooks(self) -> dict[str, object]:
