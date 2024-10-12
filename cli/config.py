@@ -78,6 +78,7 @@ _WRITE_LOCK = Lock()
 
 
 _EXPORT_CALLS = {
+    "platform": [__JSON_KEY_PLATFORM, platform.basics],
     options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
     options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
     options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
@@ -203,7 +204,8 @@ def __export_config_sync(endpoint: platform.Platform, what: list[str], **kwargs)
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
     log.info("Exporting configuration synchronously from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
+    what.append("platform")
+    sq_settings = {}
     for what_item, call_data in _EXPORT_CALLS.items():
         if what_item not in what:
             continue
@@ -256,10 +258,9 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
     file = kwargs[options.REPORT_FILE]
     export_settings = {
         "INLINE_LISTS": not kwargs["dontInlineLists"],
-        "EXPORT_DEFAULTS": True,
-        # "FULL_EXPORT": kwargs["fullExport"],
-        "FULL_EXPORT": False,
-        "MODE": "MIGRATION",
+        "EXPORT_DEFAULTS": kwargs["exportDefaults"],
+        "FULL_EXPORT": kwargs["fullExport"],
+        "MODE": "CONFIG",
         "THREADS": kwargs[options.NBR_THREADS],
         "SKIP_ISSUES": True,
     }
@@ -270,7 +271,7 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
 
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
+    what.append("platform")
     is_first = True
     q = Queue(maxsize=0)
     with utilities.open_file(file, mode="w") as fd:
@@ -287,12 +288,12 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
                 worker.daemon = True
                 worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
                 worker.start()
-                sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
+                func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
                 q.join()
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
-        sq_settings = utilities.remove_empties(sq_settings)
         print("\n}", file=fd)
+    utilities.normalize_json_file(file, remove_empty=True, remove_none=True)
     log.info("Exporting migration data from %s completed", kwargs["url"])
 
 
