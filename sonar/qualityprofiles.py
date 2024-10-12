@@ -550,8 +550,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) ->
     return problems
 
 
-def hierarchize_language(qp_list: dict[str, str], endpoint: pf.Platform) -> types.ObjectJsonRepr:
-    """Organizes a flat list of quality porfile in inheritance hierarchy"""
+def hierarchize_language(qp_list: dict[str, str]) -> types.ObjectJsonRepr:
+    """Organizes a flat list of quality profiles in inheritance hierarchy"""
     log.debug("Organizing QP list %s in hierarchy", str(qp_list.keys()))
     hierarchy = qp_list.copy()
     to_remove = []
@@ -570,7 +570,7 @@ def hierarchize_language(qp_list: dict[str, str], endpoint: pf.Platform) -> type
     return hierarchy
 
 
-def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> types.ObjectJsonRepr:
+def hierarchize(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Organize a flat list of QP in hierarchical (inheritance) fashion
 
     :param qp_list: List of quality profiles
@@ -581,7 +581,7 @@ def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> types.ObjectJ
     log.info("Organizing quality profiles in hierarchy")
     hierarchy = {}
     for lang, lang_qp_list in qp_list.items():
-        hierarchy[lang] = hierarchize_language(lang_qp_list, endpoint)
+        hierarchy[lang] = hierarchize_language(lang_qp_list)
     return hierarchy
 
 
@@ -590,7 +590,6 @@ def export(
 ) -> types.ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
-    :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
     :param KeyList key_list: Unused
     :return: Dict of quality profiles JSON representation
@@ -606,7 +605,7 @@ def export(
         if lang not in qp_list:
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
-    qp_list = hierarchize(qp_list, endpoint)
+    qp_list = hierarchize(qp_list)
     if write_q:
         write_q.put(qp_list)
         write_q.put(None)
