@@ -57,6 +57,36 @@ def test_migration() -> None:
     with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
+    for item in (
+        "platform",
+        "globalSettings",
+        "rules",
+        "qualityProfiles",
+        "qualityGates",
+        "projects",
+        "applications",
+        "portfolios",
+        "users",
+        "groups",
+    ):
+        assert item in json_config
+
+    for p in json_config["projects"].values():
+        for item in (
+            "backgroundTasks",
+            "branches",
+            "detectedCi",
+            "lastAnalysis",
+            "issues",
+            "hotspots",
+            "name",
+            "ncloc",
+            "permissions",
+            "revision",
+            "visibility",
+        ):
+            assert item in p
+
     u = json_config["users"]["admin"]
     assert "sonar-users" in u["groups"]
     assert u["local"] and u["active"]
@@ -102,5 +132,37 @@ def test_migration() -> None:
     if util.SQ.version() >= (10, 0, 0):
         assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
         assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
+
+    util.clean(util.JSON_FILE)
+
+
+def test_migration_skip_issues() -> None:
+    """test_config_export"""
+    util.clean(util.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", OPTS + ["--skipIssues"]):
+            migration.main()
+    assert int(str(e.value)) == errcodes.OK
+    assert util.file_not_empty(util.JSON_FILE)
+    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
+
+    for item in (
+        "platform",
+        "globalSettings",
+        "rules",
+        "qualityProfiles",
+        "qualityGates",
+        "projects",
+        "applications",
+        "portfolios",
+        "users",
+        "groups",
+    ):
+        assert item in json_config
+
+    for p in json_config["projects"].values():
+        assert "issues" not in p
+        assert "hotspots" not in p
 
     util.clean(util.JSON_FILE)

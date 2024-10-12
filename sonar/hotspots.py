@@ -21,7 +21,6 @@
 
 from __future__ import annotations
 
-import math
 import json
 import re
 from http import HTTPStatus
@@ -85,6 +84,12 @@ class TooManyHotspotsError(Exception):
 
 
 class Hotspot(findings.Finding):
+    """Abstraction of the Sonar hotspot concept"""
+
+    SEARCH_API = "hotspots/search"
+    MAX_PAGE_SIZE = 500
+    MAX_SEARCH = 10000
+
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
@@ -385,8 +390,9 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
     """
     hotspots_list = {}
     new_params = sanitize_search_filters(endpoint=endpoint, params=filters)
+    log.debug("Search hotspots with params %s", str(new_params))
     filters_iterations = split_search_filters(new_params)
-    ps = 500 if "ps" not in new_params else new_params["ps"]
+    ps = Hotspot.MAX_PAGE_SIZE if "ps" not in new_params else new_params["ps"]
     for inline_filters in filters_iterations:
         p = 1
         inline_filters["ps"] = ps
@@ -394,7 +400,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
         while True:
             inline_filters["p"] = p
             try:
-                data = json.loads(endpoint.get("hotspots/search", params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
+                data = json.loads(endpoint.get(Hotspot.SEARCH_API, params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
                 nbr_hotspots = util.nbr_total_elements(data)
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
@@ -404,10 +410,10 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
                 raise e
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)
-            if nbr_hotspots > 10000:
+            if nbr_hotspots > Hotspot.MAX_SEARCH:
                 raise TooManyHotspotsError(
                     nbr_hotspots,
-                    f"{nbr_hotspots} hotpots returned by api/hotspots/search, " "this is more than the max 10000 possible",
+                    f"{nbr_hotspots} hotpots returned by api/{Hotspot.SEARCH_API}, this is more than the max {Hotspot.MAX_SEARCH} possible",
                 )
 
             for i in data["hotspots"]:
@@ -500,6 +506,7 @@ def count(endpoint: pf.Platform, **kwargs) -> int:
     """Returns number of hotspots of a search"""
     params = {} if not kwargs else kwargs.copy()
     params["ps"] = 1
-    nbr_hotspots = len(search(endpoint=endpoint, filters=params))
+    params = sanitize_search_filters(endpoint, params)
+    nbr_hotspots = util.nbr_total_elements(json.loads(endpoint.get(Hotspot.SEARCH_API, params=params, mute=(HTTPStatus.NOT_FOUND,)).text))
     log.debug("Hotspot counts with filters %s returned %d hotspots", str(kwargs), nbr_hotspots)
     return nbr_hotspots

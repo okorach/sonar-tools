@@ -550,7 +550,27 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) ->
     return problems
 
 
-def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> types.ObjectJsonRepr:
+def hierarchize_language(qp_list: dict[str, str]) -> types.ObjectJsonRepr:
+    """Organizes a flat list of quality profiles in inheritance hierarchy"""
+    log.debug("Organizing QP list %s in hierarchy", str(qp_list.keys()))
+    hierarchy = qp_list.copy()
+    to_remove = []
+    for qp_name, qp_json_data in hierarchy.items():
+        if "parentName" in qp_json_data:
+            if qp_json_data["parentName"] not in hierarchy:
+                log.critical("Can't find parent %s in quality profiles", qp_json_data["parentName"])
+                continue
+            parent_qp = hierarchy[qp_json_data.pop("parentName")]
+            if _CHILDREN_KEY not in parent_qp:
+                parent_qp[_CHILDREN_KEY] = {}
+            parent_qp[_CHILDREN_KEY][qp_name] = qp_json_data
+            to_remove.append(qp_name)
+    for qp_name in to_remove:
+        hierarchy.pop(qp_name)
+    return hierarchy
+
+
+def hierarchize(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Organize a flat list of QP in hierarchical (inheritance) fashion
 
     :param qp_list: List of quality profiles
@@ -559,23 +579,10 @@ def hierarchize(qp_list: dict[str, str], endpoint: pf.Platform) -> types.ObjectJ
     :rtype: {<language>: {<qp_name>: {"children": <qp_list>; <qp_data>}}}
     """
     log.info("Organizing quality profiles in hierarchy")
-    for lang, qpl in qp_list.copy().items():
-        for qp_name, qp_json_data in qpl.copy().items():
-            log.debug("Treating %s:%s", lang, qp_name)
-            if "parentName" not in qp_json_data:
-                continue
-            parent_qp_name = qp_json_data["parentName"]
-            qp_json_data.pop("rules", None)
-            log.debug("QP name '%s:%s' has parent '%s'", lang, qp_name, qp_json_data["parentName"])
-            if _CHILDREN_KEY not in qp_list[lang][qp_json_data["parentName"]]:
-                qp_list[lang][qp_json_data["parentName"]][_CHILDREN_KEY] = {}
-
-            this_qp = get_object(endpoint=endpoint, name=qp_name, language=lang)
-            (_, qp_json_data) = this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=lang), qp_json_data)
-            qp_list[lang][parent_qp_name][_CHILDREN_KEY][qp_name] = qp_json_data
-            qp_list[lang].pop(qp_name)
-            qp_json_data.pop("parentName")
-    return qp_list
+    hierarchy = {}
+    for lang, lang_qp_list in qp_list.items():
+        hierarchy[lang] = hierarchize_language(lang_qp_list)
+    return hierarchy
 
 
 def export(
@@ -583,7 +590,6 @@ def export(
 ) -> types.ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
-    :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
     :param KeyList key_list: Unused
     :return: Dict of quality profiles JSON representation
@@ -599,7 +605,7 @@ def export(
         if lang not in qp_list:
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
-    qp_list = hierarchize(qp_list, endpoint)
+    qp_list = hierarchize(qp_list)
     if write_q:
         write_q.put(qp_list)
         write_q.put(None)
