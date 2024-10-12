@@ -457,7 +457,7 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
     except (HTTPError, ConnectionError, RequestException) as e:
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
             raise exceptions.UnsupportedOperation(f"Can't set project new code period: {e.response.text}")
-        log.error("%s setting new code period of '%s'", util.http_error(e), str(project_key))
+        log.error("%s setting new code period of '%s'", util.error_msg(e), str(project_key))
         return False
     return ok
 
@@ -490,7 +490,7 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
     except (HTTPError, ConnectionError, RequestException) as e:
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
             raise exceptions.UnsupportedOperation(f"Can't set project default visibility: {e.response.text}")
-        log.error("%s setting new code period of '%s'", util.http_error(e), str(component))
+        log.error("%s setting new code period of '%s'", util.error_msg(e), str(component))
         return False
 
 
@@ -504,7 +504,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
         try:
             s.set(value)
         except (HTTPError, ConnectionError, RequestException) as e:
-            log.error("%s while setting setting '%s'", util.http_error(e), key, str(component))
+            log.error("%s while setting setting '%s'", util.error_msg(e), key, str(component))
             return False
         except exceptions.UnsupportedOperation as e:
             log.error("Setting '%s' cannot be set: %s", key, e.message)

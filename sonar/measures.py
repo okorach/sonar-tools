@@ -127,7 +127,7 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
     except (HTTPError, ConnectionError, RequestException) as e:
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
             raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
-        log.error("%s while getting measures %s of %s", util.http_error(e), str(metrics_list), str(concerned_object))
+        log.error("%s while getting measures %s of %s", util.error_msg(e), str(metrics_list), str(concerned_object))
         raise e
     m_dict = {m: None for m in metrics_list}
     for m in data["component"]["measures"]:
@@ -158,7 +158,7 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     except (HTTPError, ConnectionError, RequestException) as e:
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
             raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
-        log.error("%s while getting measures %s history of %s", util.http_error(e), str(metrics_list), str(concerned_object))
+        log.error("%s while getting measures %s history of %s", util.error_msg(e), str(metrics_list), str(concerned_object))
         raise e
     res_list = []
     # last_metric, last_date = "", ""

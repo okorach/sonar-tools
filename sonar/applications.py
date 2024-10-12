@@ -93,7 +93,7 @@ class Application(aggr.Aggregation):
         except (HTTPError, ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
-            log.error("%s while getting app key '%s'", util.http_error(e), key)
+            log.error("%s while getting app key '%s'", util.error_msg(e), key)
             raise
         return cls.load(endpoint, data)
 
@@ -136,7 +136,7 @@ class Application(aggr.Aggregation):
         except (HTTPError, ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
-            log.critical("%s while creating app key '%s'", util.http_error(e), key)
+            log.critical("%s while creating app key '%s'", util.error_msg(e), key)
             raise
         return Application(endpoint, key, name)
 
@@ -154,7 +154,7 @@ class Application(aggr.Aggregation):
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 _OBJECTS.pop(self.uuid(), None)
                 raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
-            log.error("%s while refreshing %s", util.http_error(e), str(self))
+            log.error("%s while refreshing %s", util.error_msg(e), str(self))
             raise
 
     def __str__(self) -> str:
@@ -393,7 +393,7 @@ class Application(aggr.Aggregation):
                     log.warning("Project '%s' not found, can't be added to %s", proj, self)
                     ok = False
                 else:
-                    log.error("%s while adding projects to %s", util.http_error(e), str(self))
+                    log.error("%s while adding projects to %s", util.error_msg(e), str(self))
                     raise
         return ok
 

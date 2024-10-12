@@ -76,7 +76,7 @@ class PortfolioReference(sq.SqObject):
         except (HTTPError, ConnectionError, RequestException) as e:
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists
-            log.critical("%s while creating portfolio reference to %s in %s", utilities.http_error(e), str(reference), str(parent))
+            log.critical("%s while creating portfolio reference to %s in %s", utilities.error_msg(e), str(reference), str(parent))
             raise e
         return PortfolioReference(reference=reference, parent=parent)
 

@@ -733,7 +733,7 @@ def __search_thread(queue: Queue) -> None:
                 issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
             log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
         except (HTTPError, ConnectionError, RequestException, Exception) as e:
-            log.error("%s while searching issues, search may be incomplete", util.http_error(e))
+            log.error("%s while searching issues, search may be incomplete", util.error_msg(e))
         queue.task_done()
 
 
@@ -859,7 +859,7 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
                     rulecount[d["val"]] = 0
                 rulecount[d["val"]] += d["count"]
         except (HTTPError, Exception, RequestException) as e:
-            log.error("%s while counting issues per rule, count may be incomplete", util.http_error(e))
+            log.error("%s while counting issues per rule, count may be incomplete", util.error_msg(e))
     return rulecount
 
 

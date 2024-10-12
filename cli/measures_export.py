@@ -283,7 +283,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, hist: bool) -> Un
         else:
             data.update(__get_object_measures(obj, wanted_metrics))
     except (HTTPError, ConnectionError, RequestException) as e:
-        log.error("%s, measures export skipped for %s", util.http_error(e), str(obj))
+        log.error("%s, measures export skipped for %s", util.error_msg(e), str(obj))
         return None
     return data
 

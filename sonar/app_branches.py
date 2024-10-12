@@ -112,7 +112,7 @@ class ApplicationBranch(Component):
         except (HTTPError, ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(f"app.App {app.key} branch '{name}", e.response.text)
-            log.critical("%s while creating branch '%s' of '%s'", utilities.http_error(e), name, str(app))
+            log.critical("%s while creating branch '%s' of '%s'", utilities.error_msg(e), name, str(app))
             raise
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
@@ -187,7 +187,7 @@ class ApplicationBranch(Component):
         except (HTTPError, ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(str(self), e.response.text)
-            log.error("%s while updating '%s'", utilities.http_error(e), str(self))
+            log.error("%s while updating '%s'", utilities.error_msg(e), str(self))
             raise
 
         self.name = name

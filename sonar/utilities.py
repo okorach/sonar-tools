@@ -442,7 +442,7 @@ def http_error_and_code(exception: requests.HTTPError) -> tuple[int, str]:
     return err_code, f"{tool_msg}: {sonar_error(response)}"
 
 
-def http_error(exception: Exception) -> str:
+def error_msg(exception: Exception) -> str:
     """Returns the error of an Sonar API HTTP response, or None if no error"""
     if isinstance(exception, requests.HTTPError):
         _, errmsg = http_error_and_code(exception)

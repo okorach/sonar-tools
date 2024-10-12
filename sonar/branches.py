@@ -92,7 +92,7 @@ class Branch(components.Component):
         except (HTTPError, ConnectionError, RequestException) as e:
             if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(concerned_object.key, f"Project '{concerned_object.key}' not found")
-            log.critical("%s while getting branch '%s' of %s", util.http_error(e), branch_name, str(concerned_object))
+            log.critical("%s while getting branch '%s' of %s", util.error_msg(e), branch_name, str(concerned_object))
             raise
         for br in data.get("branches", []):
             if br["name"] == branch_name:
@@ -132,7 +132,7 @@ class Branch(components.Component):
         except (HTTPError, ConnectionError, RequestException) as e:
             if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found in SonarQube")
-            log.error("%s while refreshing %s", util.http_error(e), str(self))
+            log.error("%s while refreshing %s", util.error_msg(e), str(self))
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self._load(br)
@@ -189,7 +189,7 @@ class Branch(components.Component):
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 log.warning("Can't delete %s, it's the main branch", str(self))
             else:
-                log.error("%s while deleting %s", util.http_error(e), str(self))
+                log.error("%s while deleting %s", util.error_msg(e), str(self))
             return False
 
     def new_code(self) -> str:
@@ -205,7 +205,7 @@ class Branch(components.Component):
             except (HTTPError, ConnectionError, RequestException) as e:
                 if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.concerned_object.key, f"{str(self.concerned_object)} not found")
-                log.error("%s while getting new code period of %s", util.http_error(e), str(self))
+                log.error("%s while getting new code period of %s", util.error_msg(e), str(self))
                 raise e
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
@@ -268,7 +268,7 @@ class Branch(components.Component):
         except (HTTPError, ConnectionError, RequestException) as e:
             if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
-            log.error("%s while renaming %s", util.http_error(e), str(self))
+            log.error("%s while renaming %s", util.error_msg(e), str(self))
             raise
         _OBJECTS.pop(self.uuid(), None)
         self.name = new_name
@@ -365,7 +365,7 @@ class Branch(components.Component):
             try:
                 return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
             except (HTTPError, RequestException, Exception) as e:
-                log.error("%s while auditing %s, audit skipped", util.http_error(e), str(self))
+                log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
         else:
             log.debug("Branch audit disabled, skipping audit of %s", str(self))
         return []

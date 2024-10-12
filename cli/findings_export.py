@@ -295,7 +295,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
                     component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
                 )
             except (HTTPError, ConnectionError, RequestException) as e:
-                log.critical("%s while exporting findings of %s, skipped", util.http_error(e), str(component))
+                log.critical("%s while exporting findings of %s, skipped", util.error_msg(e), str(component))
                 findings_list = {}
             write_queue.put([findings_list, False])
         else:
@@ -324,7 +324,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
                 try:
                     findings_list = component.get_issues(filters=new_params)
                 except (HTTPError, ConnectionError, RequestException) as e:
-                    log.critical("%s while exporting issues of %s, skipped", util.http_error(e), str(component))
+                    log.critical("%s while exporting issues of %s, skipped", util.error_msg(e), str(component))
                     findings_list = {}
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
@@ -334,7 +334,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
                 try:
                     findings_list.update(component.get_hotspots(filters=new_params))
                 except (HTTPError, ConnectionError, RequestException) as e:
-                    log.error("%s while exporting hotspots of object key %s, skipped", util.http_error(e), str(component))
+                    log.error("%s while exporting hotspots of object key %s, skipped", util.error_msg(e), str(component))
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 log.info("Selected types, severities, resolutions or statuses disables issue search")
@@ -352,7 +352,7 @@ def store_findings(components_list: dict[str, object], params: ConfigSettings) -
             log.debug("Queue %s task %s put", str(my_queue), str(comp))
             my_queue.put((comp, params.copy()))
         except (HTTPError, ConnectionError, RequestException) as e:
-            log.critical("%s while exporting findings of %s, skipped", util.http_error(e), str(comp))
+            log.critical("%s while exporting findings of %s, skipped", util.error_msg(e), str(comp))
 
     threads = params.get(options.NBR_THREADS, 4)
     for i in range(min(threads, len(components_list))):

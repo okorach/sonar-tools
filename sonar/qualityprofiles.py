@@ -263,7 +263,7 @@ class QualityProfile(sq.SqObject):
         try:
             r = self.post("qualityprofiles/activate_rule", params=api_params)
         except (HTTPError, ConnectionError, RequestException) as e:
-            log.error("%s while trying to activate rule %s in %s", util.http_error(e), rule_key, str(self))
+            log.error("%s while trying to activate rule %s in %s", util.error_msg(e), rule_key, str(self))
             return False
         return r.ok
 
@@ -285,7 +285,7 @@ class QualityProfile(sq.SqObject):
                     ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
             except (HTTPError, ConnectionError, RequestException) as e:
                 ok = False
-                log.error("%s while activating rules in '%s'", util.http_error(e), r_key)
+                log.error("%s while activating rules in '%s'", util.error_msg(e), r_key)
         return ok
 
     def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:

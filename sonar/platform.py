@@ -105,7 +105,7 @@ class Platform:
         try:
             self.get("server/version")
         except (HTTPError, ConnectionError, RequestException) as e:
-            log.critical("%s while verifying connection", util.http_error(e))
+            log.critical("%s while verifying connection", util.error_msg(e))
             raise exceptions.ConnectionError(util.sonar_error(e.response))
 
     def version(self) -> tuple[int, int, int]:
@@ -252,7 +252,7 @@ class Platform:
                 log_and_exit(e)
             else:
                 lvl = log.DEBUG if r.status_code in mute else log.ERROR
-                log.log(lvl, "%s (%s request)", util.http_error(e), req_type)
+                log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
                 raise e
         except Timeout as e:
             util.exit_fatal(str(e), errcodes.HTTP_TIMEOUT)
@@ -292,7 +292,7 @@ class Platform:
                         time.sleep(0.5)
                         counter += 1
                     else:
-                        log.error("%s while getting system info", util.http_error(e))
+                        log.error("%s while getting system info", util.error_msg(e))
                         raise e
             self.__sys_info = json.loads(resp.text)
             success = True

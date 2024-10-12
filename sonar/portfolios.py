@@ -264,7 +264,7 @@ class Portfolio(aggregations.Aggregation):
                 self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
         except (HTTPError, ConnectionError, RequestException) as e:
             if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
-                log.error("%s while adding reference subportfolio to %s", util.http_error(e), str(self))
+                log.error("%s while adding reference subportfolio to %s", util.error_msg(e), str(self))
                 raise
         self._sub_portfolios.update({reference.key: ref})
         return ref
@@ -277,7 +277,7 @@ class Portfolio(aggregations.Aggregation):
                 self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
         except (HTTPError, ConnectionError, RequestException) as e:
             if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
-                log.error("%s while adding standard subportfolio to %s", util.http_error(e), str(self))
+                log.error("%s while adding standard subportfolio to %s", util.error_msg(e), str(self))
                 raise
         self._sub_portfolios.update({subp.key: subp})
         return subp
@@ -430,10 +430,10 @@ class Portfolio(aggregations.Aggregation):
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.key, f"Project '{key}' or branch '{branch}' not found, can't be added to {str(self)}")
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                    log.error("%s while adding project branches to %s", util.http_error(e), str(self))
+                    log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
                     raise
             except (ConnectionError, RequestException) as e:
-                log.error("%s while adding project branches to %s", util.http_error(e), str(self))
+                log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
                 raise
         return self
 
@@ -525,9 +525,9 @@ class Portfolio(aggregations.Aggregation):
                 self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
         except (HTTPError, ConnectionError, RequestException) as e:
             if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
-                log.error("%s while adding application branch to %s", util.http_error(e), str(self))
+                log.error("%s while adding application branch to %s", util.error_msg(e), str(self))
                 raise
-            log.warning(util.http_error(e))
+            log.warning(util.error_msg(e))
         if app_key not in self._applications:
             self._applications[app_key] = []
         self._applications[app_key].append(branch)
@@ -584,7 +584,7 @@ class Portfolio(aggregations.Aggregation):
                 nbr_projects = util.nbr_total_elements(data)
                 proj_key_list += [c["refKey"] for c in data["components"]]
             except (HTTPError, ConnectionError, RequestException) as e:
-                log.error("%s while collecting projects from %s, stopping collection", util.http_error(e), str(self))
+                log.error("%s while collecting projects from %s, stopping collection", util.error_msg(e), str(self))
                 break
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of projects: %d - Page: %d/%d", nbr_projects, page, nbr_pages)
@@ -792,7 +792,7 @@ def export(
             else:
                 log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
         except (HTTPError, ConnectionError, RequestException) as e:
-            log.error("%s while exporting %s, export will be empty for this portfolio", util.http_error(e), str(p))
+            log.error("%s while exporting %s, export will be empty for this portfolio", util.error_msg(e), str(p))
             exported_portfolios[k] = {}
         i += 1
         if i % 10 == 0 or i == nb_portfolios:
