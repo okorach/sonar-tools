@@ -391,7 +391,7 @@ class User(sqobject.SqObject):
             json_data.pop("local")
         for key in "sonarQubeLastConnectionDate", "externalLogin", "externalProvider", "id", "managed":
             json_data.pop(key, None)
-        return util.remove_nones(util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings["FULL_EXPORT"]))
+        return util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings["FULL_EXPORT"])
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, User]:
