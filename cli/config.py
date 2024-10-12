@@ -205,6 +205,9 @@ def write_objects(queue: Queue, fd, object_type: str, export_settings: types.Con
         obj_json = queue.get()
         done = obj_json is None
         if not done:
+            obj_json = utilities.sort_lists(obj_json)
+            if not export_settings.get("FULL_EXPORT", False):
+                obj_json = utilities.remove_empties(utilities.remove_nones(obj_json))
             if export_settings.get("INLINE_LISTS", True):
                 obj_json = utilities.inline_lists(obj_json, exceptions=("conditions",))
             if object_type in ("projects", "applications", "portfolios", "users"):

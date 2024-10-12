@@ -185,6 +185,18 @@ def remove_empties(d: dict[str, any]) -> dict[str, any]:
     return new_d
 
 
+def sort_lists(d: dict[str, any]) -> dict[str, any]:
+    """Recursively removes empty lists and dicts and none from a dict"""
+    # log.debug("Cleaning up %s", json_dump(d))
+    new_d = d.copy()
+    for k, v in d.items():
+        if isinstance(v, list) and len(v) > 0 and isinstance(v[0], (str, int, float)):
+            new_d[k] = sorted(v)
+        elif isinstance(v, dict):
+            new_d[k] = sort_lists(v)
+    return new_d
+
+
 def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
     """Returns the subset of dict only with subset_list keys"""
     return {key: d[key] for key in subset_list if key in d}
@@ -653,7 +665,7 @@ def dict_to_list(original_dict: dict[str, any], key_field: str, value_field: Opt
     return [{key_field: key, value_field: elem} if not isinstance(elem, dict) else {key_field: key, **elem} for key, elem in original_dict.items()]
 
 
-def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_none: bool = True):
+def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_none: bool = True) -> None:
     """Sorts a JSON file and optionally remove empty and none values"""
     if file is None:
         log.info("Output is stdout, skipping normalization")
