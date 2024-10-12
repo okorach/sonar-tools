@@ -29,7 +29,7 @@ from http import HTTPStatus
 from queue import Queue
 from threading import Thread
 import requests
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 from sonar.util import types
@@ -116,7 +116,7 @@ def __search_thread(queue: Queue) -> None:
                     objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
                 else:
                     objects[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
-        except HTTPError as e:
+        except (HTTPError, ConnectionError, RequestException) as e:
             log.critical("%s while searching %s, search skipped", utilities.http_error(e), object_class.__name__)
         queue.task_done()
 
@@ -163,8 +163,8 @@ def delete_object(object: SqObject, api: str, params: types.ApiParams, map: dict
         map.pop(object.uuid(), None)
         log.info("Successfully deleted %s", str(object))
         return r.ok
-    except HTTPError as e:
-        if e.response.status_code == HTTPStatus.NOT_FOUND:
+    except (HTTPError, ConnectionError, RequestException) as e:
+        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
             map.pop(object.uuid(), None)
             raise exceptions.ObjectNotFound(object.key, f"{str(object)} not found for delete")
         log.error("%s while deleting object '%s'", utilities.http_error(e), str(object))

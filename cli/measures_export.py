@@ -29,8 +29,7 @@ import csv
 
 from typing import Union
 
-from http import HTTPStatus
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log
@@ -283,7 +282,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, hist: bool) -> Un
             data.update(__get_json_measures_history(obj, wanted_metrics))
         else:
             data.update(__get_object_measures(obj, wanted_metrics))
-    except HTTPError as e:
+    except (HTTPError, ConnectionError, RequestException) as e:
         log.error("%s, measures export skipped for %s", util.http_error(e), str(obj))
         return None
     return data

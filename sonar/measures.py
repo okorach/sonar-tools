@@ -25,7 +25,7 @@ from typing import Union
 import json
 import re
 from http import HTTPStatus
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 from sonar import metrics, exceptions
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 
@@ -124,8 +124,8 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
 
     try:
         data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
-    except HTTPError as e:
-        if e.response.status_code == HTTPStatus.NOT_FOUND:
+    except (HTTPError, ConnectionError, RequestException) as e:
+        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
             raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
         log.error("%s while getting measures %s of %s", util.http_error(e), str(metrics_list), str(concerned_object))
         raise e
@@ -155,8 +155,8 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
 
     try:
         data = json.loads(concerned_object.endpoint.get(Measure.API_HISTORY, params={**kwargs, **params}).text)
-    except HTTPError as e:
-        if e.response.status_code == HTTPStatus.NOT_FOUND:
+    except (HTTPError, ConnectionError, RequestException) as e:
+        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
             raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
         log.error("%s while getting measures %s history of %s", util.http_error(e), str(metrics_list), str(concerned_object))
         raise e

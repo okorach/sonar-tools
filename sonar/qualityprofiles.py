@@ -26,7 +26,7 @@ from datetime import datetime
 from http import HTTPStatus
 from queue import Queue
 from threading import Thread, Lock
-from requests import HTTPError
+from requests import HTTPError, RequestException
 import requests.utils
 
 import sonar.logging as log
@@ -260,11 +260,11 @@ class QualityProfile(sq.SqObject):
         api_params = {"key": self.key, "rule": rule_key, "severity": severity}
         if len(params) > 0:
             api_params["params"] = ";".join([f"{k}={v}" for k, v in params.items()])
-        r = self.post("qualityprofiles/activate_rule", params=api_params)
-        if r.status_code == HTTPStatus.NOT_FOUND:
-            log.error("Rule %s not found, can't activate it in %s", rule_key, str(self))
-        elif r.status_code == HTTPStatus.BAD_REQUEST:
-            log.error("HTTP error %d while trying to activate rule %s in %s", r.status_code, rule_key, str(self))
+        try:
+            r = self.post("qualityprofiles/activate_rule", params=api_params)
+        except (HTTPError, ConnectionError, RequestException) as e:
+            log.error("%s while trying to activate rule %s in %s", util.http_error(e), rule_key, str(self))
+            return False
         return r.ok
 
     def activate_rules(self, ruleset: dict[str, str]) -> bool:
@@ -283,7 +283,7 @@ class QualityProfile(sq.SqObject):
                     ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
                 else:
                     ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
-            except HTTPError as e:
+            except (HTTPError, ConnectionError, RequestException) as e:
                 ok = False
                 log.error("%s while activating rules in '%s'", util.http_error(e), r_key)
         return ok

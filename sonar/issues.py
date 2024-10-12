@@ -29,13 +29,13 @@ from typing import Union, Optional
 from queue import Queue
 from threading import Thread
 import requests.utils
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
-from sonar import users, sqobject, findings, changelog, projects
+from sonar import users, sqobject, findings, changelog, projects, errcodes
 import sonar.utilities as util
 
 API_SET_TAGS = "issues/set_tags"
@@ -732,7 +732,7 @@ def __search_thread(queue: Queue) -> None:
                 i["pullRequest"] = page_params.get("pullRequest", None)
                 issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
             log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
-        except HTTPError as e:
+        except (HTTPError, ConnectionError, RequestException, Exception) as e:
             log.error("%s while searching issues, search may be incomplete", util.http_error(e))
         queue.task_done()
 
@@ -858,8 +858,8 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
                 if d["val"] not in rulecount:
                     rulecount[d["val"]] = 0
                 rulecount[d["val"]] += d["count"]
-        except HTTPError as e:
-            log.warning("%s while counting issues per rule, count may be incomplete", util.http_error(e))
+        except (HTTPError, Exception, RequestException) as e:
+            log.error("%s while counting issues per rule, count may be incomplete", util.http_error(e))
     return rulecount
 
 

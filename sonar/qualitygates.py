@@ -29,7 +29,7 @@ from typing import Union, Optional
 
 from http import HTTPStatus
 import json
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -173,8 +173,8 @@ class QualityGate(sq.SqObject):
             params["p"] = page
             try:
                 resp = self.get(APIS["get_projects"], params=params)
-            except HTTPError as e:
-                if e.response.status_code == HTTPStatus.NOT_FOUND:
+            except (HTTPError, ConnectionError, RequestException) as e:
+                if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
                 log.error("%s while getting %s projects", util.http_error(e), str(self))
                 raise

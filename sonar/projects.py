@@ -34,7 +34,7 @@ from typing import Union, Optional
 from http import HTTPStatus
 from threading import Thread, Lock
 from queue import Queue
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -168,8 +168,8 @@ class Project(components.Component):
                 log.error("Project key '%s' not found", key)
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data["components"][0])
-        except HTTPError as e:
-            if e.response.status_code != HTTPStatus.FORBIDDEN:
+        except (HTTPError, ConnectionError, RequestException) as e:
+            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.FORBIDDEN:
                 log.error("%s while getting project '%s'", util.http_error(e), key)
                 raise
             data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
@@ -208,8 +208,8 @@ class Project(components.Component):
         """
         try:
             endpoint.post(_CREATE_API, params={"project": key, "name": name})
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.BAD_REQUEST:
+        except (HTTPError, ConnectionError, RequestException) as e:
+            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
             log.error("%s while creating project '%s'", util.http_error(e), key)
             raise
@@ -380,8 +380,8 @@ class Project(components.Component):
                 resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
-            except HTTPError as e:
-                if e.response.status_code in (HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST):
+            except (HTTPError, ConnectionError, RequestException) as e:
+                if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST):
                     # Hack: 8.9 returns 404, 9.x returns 400
                     self._binding["has_binding"] = False
                 else:
@@ -559,9 +559,9 @@ class Project(components.Component):
         try:
             _ = self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", str(self))
-        except HTTPError as e:
+        except (HTTPError, ConnectionError, RequestException) as e:
             # Hack: 8.9 returns 404, 9.x returns 400
-            if e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+            if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
             log.error("%s while auditing %s binding, skipped", util.http_error(e), str(self))
         return []
@@ -619,7 +619,7 @@ class Project(components.Component):
                 data = json.loads(self.get("project_analyses/search", params={"project": self.key, "ps": 1}).text)["analyses"]
                 if len(data) > 0:
                     self._ci, self._revision = data[0].get("detectedCI", "unknown"), data[0].get("revision", "unknown")
-            except HTTPError as e:
+            except (HTTPError, ConnectionError, RequestException) as e:
                 log.warning("%s while getting %s CI tool", util.http_error(e), str(self))
             except KeyError:
                 log.warning("KeyError, can't retrieve CI tool and revision")
@@ -666,8 +666,8 @@ class Project(components.Component):
             problems += self._audit_bg_task(audit_settings)
             problems += self.__audit_binding_valid(audit_settings)
             problems += self.__audit_scanner(audit_settings)
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.FORBIDDEN:
+        except (HTTPError, ConnectionError, RequestException) as e:
+            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.FORBIDDEN:
                 log.error("Not enough permission to fully audit %s", str(self))
             else:
                 log.error("%s while auditing %s", util.http_error(e), str(self))
@@ -690,6 +690,8 @@ class Project(components.Component):
             resp = self.post("project_dump/export", params={"key": self.key})
         except HTTPError as e:
             return {"status": f"HTTP_ERROR {e.response.status_code}"}
+        except (ConnectionError, RequestException) as e:
+            return {"status": str(e)}
         data = json.loads(resp.text)
         status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
         if status != tasks.SUCCESS:
@@ -708,7 +710,7 @@ class Project(components.Component):
         log.info("Exporting %s (asynchronously)", str(self))
         try:
             return json.loads(self.post("project_dump/export", params={"key": self.key}).text)["taskId"]
-        except HTTPError as e:
+        except (HTTPError, ConnectionError, RequestException) as e:
             log.error("%s while exporting zip of %s CI", util.http_error(e), str(self))
         return None
 
@@ -1049,19 +1051,13 @@ class Project(components.Component):
                 if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
                     continue
                 json_data.update(s.to_json())
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.FORBIDDEN:
-                log.critical("Insufficient privileges to access %s, export of this project interrupted", str(self))
-                json_data["error"] = "Insufficient permissions while exporting project, export interrupted"
-            else:
-                log.critical("%s while exporting %s, export of this project interrupted", util.http_error(e), str(self))
-                json_data["error"] = f"HTTP error {str(e)} while extracting project"
-        except ConnectionError as e:
-            log.critical("Connecting error %s while exporting %s, export of this project interrupted", str(e), str(self))
-            json_data["error"] = f"Connection error {str(e)} while extracting project, export interrupted"
+        except (HTTPError, ConnectionError, RequestException) as e:
+            errmsg = util.http_error(e)
+            log.error("Exception: %s while exporting %s, export of this project interrupted", errmsg, str(self))
+            json_data["error"] = f"{errmsg} while extracting project"
         except Exception as e:
-            log.critical("Exception %s while exporting %s, export of this project interrupted", str(e), str(self))
-            json_data["error"] = f"Exception {str(e)} while exporting project, export interrupted"
+            log.critical("Exception: %s while exporting %s, export of this project interrupted", errmsg, str(self))
+            json_data["error"] = f"{errmsg} while extracting project"
         log.debug("Exporting %s done", str(self))
         return util.remove_nones(json_data)
 
@@ -1094,11 +1090,10 @@ class Project(components.Component):
         try:
             self.permissions().set(desired_permissions)
             return True
-        except HTTPError as e:
-            if e.response.status_code != HTTPStatus.BAD_REQUEST:
-                log.error("%s while setting permissions of %s", util.http_error(e), str(self))
+        except (HTTPError, ConnectionError, RequestException) as e:
+            log.error("%s while setting permissions of %s", util.http_error(e), str(self))
+            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
                 raise e
-            log.error(util.sonar_error(e.response))
             return False
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
@@ -1433,11 +1428,8 @@ def __audit_thread(queue: Queue[Project], results: list[Problem], audit_settings
                 results.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
             else:
                 bindings[bindkey] = project
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.FORBIDDEN:
-                log.error("Not enough permission to fully audit %s", str(project))
-            else:
-                log.error("%s while auditing %s", util.http_error(e), str(project))
+        except (HTTPError, ConnectionError, RequestException) as e:
+            log.error("%s while auditing %s", util.http_error(e), str(project))
         queue.task_done()
         log.debug("%s audit complete", str(project))
     log.debug("Queue empty, exiting thread")
@@ -1493,6 +1485,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         lvl = log.INFO if nb % 10 == 0 or tot - nb < 10 else log.DEBUG
         log.log(lvl, "%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
         queue.task_done()
+    log.info("Project export queue empty, export complete")
 
 
 def export(

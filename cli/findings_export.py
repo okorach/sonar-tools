@@ -32,7 +32,7 @@ import csv
 from queue import Queue
 import threading
 from threading import Thread
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 from cli import options
 from sonar.util.types import ConfigSettings
@@ -294,7 +294,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
                 findings_list = findings.export_findings(
                     component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
                 )
-            except HTTPError as e:
+            except (HTTPError, ConnectionError, RequestException) as e:
                 log.critical("%s while exporting findings of %s, skipped", util.http_error(e), str(component))
                 findings_list = {}
             write_queue.put([findings_list, False])
@@ -323,7 +323,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
             if (i_statuses or not status_list) and (i_resols or not resol_list) and (i_types or not type_list) and (i_sevs or not sev_list):
                 try:
                     findings_list = component.get_issues(filters=new_params)
-                except HTTPError as e:
+                except (HTTPError, ConnectionError, RequestException) as e:
                     log.critical("%s while exporting issues of %s, skipped", util.http_error(e), str(component))
                     findings_list = {}
             else:
@@ -333,8 +333,8 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
             if (h_statuses or not status_list) and (h_resols or not resol_list) and (h_types or not type_list) and (h_sevs or not sev_list):
                 try:
                     findings_list.update(component.get_hotspots(filters=new_params))
-                except HTTPError as e:
-                    log.critical("%s while exporting hotspots of object key %s, skipped", util.http_error(e), str(component))
+                except (HTTPError, ConnectionError, RequestException) as e:
+                    log.error("%s while exporting hotspots of object key %s, skipped", util.http_error(e), str(component))
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 log.info("Selected types, severities, resolutions or statuses disables issue search")
@@ -351,7 +351,7 @@ def store_findings(components_list: dict[str, object], params: ConfigSettings) -
         try:
             log.debug("Queue %s task %s put", str(my_queue), str(comp))
             my_queue.put((comp, params.copy()))
-        except HTTPError as e:
+        except (HTTPError, ConnectionError, RequestException) as e:
             log.critical("%s while exporting findings of %s, skipped", util.http_error(e), str(comp))
 
     threads = params.get(options.NBR_THREADS, 4)

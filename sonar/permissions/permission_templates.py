@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 import re
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 from sonar.util import types
@@ -141,7 +141,7 @@ class PermissionTemplate(sqobject.SqObject):
                 continue
             try:
                 self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
-            except HTTPError as e:
+            except (HTTPError, ConnectionError, RequestException) as e:
                 log.error("%s while setting %s as default", utilities.http_error(e), str(self))
                 raise
 

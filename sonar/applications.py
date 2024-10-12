@@ -26,7 +26,7 @@ import json
 from datetime import datetime
 from http import HTTPStatus
 from threading import Lock
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -90,10 +90,10 @@ class Application(aggr.Aggregation):
             return _OBJECTS[uu]
         try:
             data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)["application"]
-        except HTTPError as e:
+        except (HTTPError, ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
-            log.critical("%s while getting app key '%s'", util.http_error(e), key)
+            log.error("%s while getting app key '%s'", util.http_error(e), key)
             raise
         return cls.load(endpoint, data)
 
@@ -133,7 +133,7 @@ class Application(aggr.Aggregation):
         check_supported(endpoint)
         try:
             endpoint.post(APIS["create"], params={"key": key, "name": name})
-        except HTTPError as e:
+        except (HTTPError, ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
             log.critical("%s while creating app key '%s'", util.http_error(e), key)
@@ -150,11 +150,11 @@ class Application(aggr.Aggregation):
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
             self.reload(json.loads(self.get(APIS["get"], params=self.search_params()).text)["application"])
-        except HTTPError as e:
+        except (HTTPError, ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 _OBJECTS.pop(self.uuid(), None)
                 raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
-            log.critical("%s while refreshing %s", util.http_error(e), str(self))
+            log.error("%s while refreshing %s", util.http_error(e), str(self))
             raise
 
     def __str__(self) -> str:
@@ -388,12 +388,12 @@ class Application(aggr.Aggregation):
             try:
                 r = self.post("applications/add_project", params={"application": self.key, "project": proj})
                 ok = ok and r.ok
-            except HTTPError as e:
+            except (HTTPError, ConnectionError, RequestException) as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     log.warning("Project '%s' not found, can't be added to %s", proj, self)
                     ok = False
                 else:
-                    log.critical("%s while adding projects to %s", util.http_error(e), str(self))
+                    log.error("%s while adding projects to %s", util.http_error(e), str(self))
                     raise
         return ok
 

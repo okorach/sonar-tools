@@ -26,7 +26,7 @@ from typing import Optional
 import json
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 from sonar import utilities, errcodes
@@ -227,10 +227,10 @@ class Permissions(ABC):
         params = extra_params.copy()
         page, nbr_pages = 1, 1
         counter = 0
-        while page <= nbr_pages:
+        while page <= nbr_pages and counter <= 5:
             params["p"] = page
-            resp = self.endpoint.get(api, params=params)
-            if resp.ok:
+            try:
+                resp = self.endpoint.get(api, params=params)
                 data = json.loads(resp.text)
                 # perms.update({p[ret_field]: p["permissions"] for p in data[perm_type]})
                 for p in data[perm_type]:
@@ -239,12 +239,10 @@ class Permissions(ABC):
                         counter = 0
                     else:
                         counter += 1
-            elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                # Hack: Different versions of SonarQube return different codes (400 or 404)
-                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", errcodes.SONAR_API)
-            page, nbr_pages = page + 1, utilities.nbr_pages(data)
-            if counter > 5 or not resp.ok:
-                break
+                page, nbr_pages = page + 1, utilities.nbr_pages(data)
+            except (HTTPError, ConnectionError, RequestException) as e:
+                log.error("%s while retrieving %s permissions", utilities.http_error(e), str(self))
+                page += 1
         return perms
 
     def _post_api(self, api: str, set_field: str, perms_dict: types.JsonPermissions, **extra_params) -> bool:
@@ -259,7 +257,7 @@ class Permissions(ABC):
                 params["permission"] = p
                 try:
                     r = self.endpoint.post(api, params=params)
-                except HTTPError as e:
+                except (HTTPError, ConnectionError, RequestException) as e:
                     log.error("%s while setting permissions %s", utilities.http_error(e), str(self))
                 result = result and r.ok
         return result

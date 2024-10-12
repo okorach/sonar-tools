@@ -24,11 +24,10 @@
 """
 
 from __future__ import annotations
-from typing import Optional
 import json
 from http import HTTPStatus
 from threading import Lock
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -79,8 +78,8 @@ class Organization(sqobject.SqObject):
             return _OBJECTS[uu]
         try:
             data = json.loads(endpoint.get(Organization.SEARCH_API, params={"organizations": key}).text)
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
+        except (HTTPError, ConnectionError, RequestException) as e:
+            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
             log.error("%s getting organization %s", util.http_error(e), key)
             raise e
