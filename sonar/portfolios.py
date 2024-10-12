@@ -50,7 +50,6 @@ _CLASS_LOCK = Lock()
 _CREATE_API = "views/create"
 _GET_API = "views/show"
 
-MAX_PAGE_SIZE = 500
 _PORTFOLIO_QUALIFIER = "VW"
 _SUBPORTFOLIO_QUALIFIER = "SVW"
 
@@ -89,6 +88,8 @@ class Portfolio(aggregations.Aggregation):
     SEARCH_API = "views/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
+    MAX_PAGE_SIZE = 500
+    MAX_SEARCH = 10000
 
     _OBJECTS = {}
 
@@ -302,7 +303,7 @@ class Portfolio(aggregations.Aggregation):
                     "component": self.key,
                     "metricKeys": "ncloc",
                     "strategy": "children",
-                    "ps": 500,
+                    "ps": Portfolio.MAX_PAGE_SIZE,
                 },
             ).text
         )
@@ -571,7 +572,7 @@ class Portfolio(aggregations.Aggregation):
         log.debug("Search %s projects list", str(self))
         proj_key_list = []
         page = 0
-        params = {"component": self.key, "ps": 500, "qualifiers": "TRK", "strategy": "leaves", "metricKeys": "ncloc"}
+        params = {"component": self.key, "ps": Portfolio.MAX_PAGE_SIZE, "qualifiers": "TRK", "strategy": "leaves", "metricKeys": "ncloc"}
         while True:
             page += 1
             params["p"] = page
@@ -580,13 +581,16 @@ class Portfolio(aggregations.Aggregation):
                 nbr_projects = util.nbr_total_elements(data)
                 proj_key_list += [c["refKey"] for c in data["components"]]
             except HTTPError as e:
-                log.critical("HTTP Error %s while collecting projects from %s, proceeding anyway", str(e), str(self))
-                continue
+                if e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
+                    log.warning("HTTP Error %s while collecting projects from %s, stopping collection", str(e), str(self))
+                else:
+                    log.critical("HTTP Error %s while collecting projects from %s, proceeding anyway", str(e), str(self))
+                break
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of projects: %d - Page: %d/%d", nbr_projects, page, nbr_pages)
-            if nbr_projects > 10000:
-                log.critical("Can't collect more than 10000 projects from %s", str(self))
-            if page >= nbr_pages:
+            if nbr_projects > Portfolio.MAX_SEARCH:
+                log.warning("Can't collect more than %d projects from %s", Portfolio.MAX_SEARCH, str(self))
+            if page >= nbr_pages or page >= Portfolio.MAX_SEARCH / Portfolio.MAX_PAGE_SIZE:
                 break
         log.debug("%s projects list = %s", str(self), str(proj_key_list))
         return proj_key_list
