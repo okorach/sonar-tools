@@ -368,7 +368,6 @@ class Portfolio(aggregations.Aggregation):
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports a portfolio (for sonar-config)"""
         log.info("Exporting %s", str(self))
-        exp = self.to_json(export_settings)
         return util.remove_nones(util.filter_export(self.to_json(export_settings), _IMPORTABLE_PROPERTIES, export_settings["FULL_EXPORT"]))
 
     def permissions(self) -> pperms.PortfolioPermissions:

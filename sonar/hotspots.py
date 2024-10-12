@@ -21,7 +21,6 @@
 
 from __future__ import annotations
 
-import math
 import json
 import re
 from http import HTTPStatus
@@ -414,7 +413,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
             if nbr_hotspots > Hotspot.MAX_SEARCH:
                 raise TooManyHotspotsError(
                     nbr_hotspots,
-                    f"{nbr_hotspots} hotpots returned by api/{Hotspot.SEARCH_API}, " f"this is more than the max {Hotspot.MAX_SEARCH} possible",
+                    f"{nbr_hotspots} hotpots returned by api/{Hotspot.SEARCH_API}, this is more than the max {Hotspot.MAX_SEARCH} possible",
                 )
 
             for i in data["hotspots"]:
