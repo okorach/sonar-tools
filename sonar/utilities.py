@@ -423,8 +423,9 @@ def sonar_error(response: requests.models.Response) -> str:
         return ""
 
 
-def http_error(response: requests.models.Response) -> tuple[str, int]:
+def http_error_and_code(exception: requests.exceptions.HTTPError) -> tuple[int, str]:
     """Returns the Sonar error code of an API HTTP response, or None if no error"""
+    response = exception.response
     if response.ok:
         return None, None
     tool_msg = f"For request URL {response.request.url}\n"
@@ -441,12 +442,10 @@ def http_error(response: requests.models.Response) -> tuple[str, int]:
     return err_code, f"{tool_msg}: {sonar_error(response)}"
 
 
-def log_and_exit(response: requests.models.Response) -> None:
-    """If HTTP response is not OK, display an error log and exit"""
-    err_code, msg = http_error(response)
-    if err_code is None:
-        return
-    exit_fatal(msg, err_code)
+def http_error(exception: requests.exceptions.HTTPError) -> tuple[int, str]:
+    """Returns the Sonar error code of an API HTTP response, or None if no error"""
+    _, errmsg = http_error_and_code(exception)
+    return errmsg
 
 
 def object_key(key_or_obj):

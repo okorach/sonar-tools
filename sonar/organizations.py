@@ -82,6 +82,7 @@ class Organization(sqobject.SqObject):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
+            log.error("%s getting organization %s", util.http_error(e), key)
             raise e
         if len(data["organizations"]) == 0:
             raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")

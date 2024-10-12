@@ -260,7 +260,7 @@ class Permissions(ABC):
                 try:
                     r = self.endpoint.post(api, params=params)
                 except HTTPError as e:
-                    log.error("HTTP Error: %s", utilities.sonar_error(e.response))
+                    log.error("%s while setting permissions %s", utilities.http_error(e), str(self))
                 result = result and r.ok
         return result
 

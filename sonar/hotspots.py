@@ -407,6 +407,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
                     log.warning("No hotspots found with search params %s", str(inline_filters))
                     nbr_hotspots = 0
                     return {}
+                log.error("%s while searching hotspots", util.http_error(e))
                 raise e
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)

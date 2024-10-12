@@ -113,6 +113,7 @@ class DevopsPlatform(sq.SqObject):
             if e.response.status_code == HTTPStatus.BAD_REQUEST and endpoint.edition() in ("community", "developer"):
                 log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
                 raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
+            log.error("%s while creating devops platform %s/%s/%s", util.http_error(e), key, plt_type, url_or_workspace)
             raise
         o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         o.refresh()

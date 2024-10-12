@@ -176,6 +176,8 @@ class QualityGate(sq.SqObject):
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
+                log.error("%s while getting %s projects", util.http_error(e), str(self))
+                raise
             data = json.loads(resp.text)
             for prj in data["results"]:
                 log.info("Proj = %s", str(prj))

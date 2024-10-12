@@ -285,7 +285,7 @@ class QualityProfile(sq.SqObject):
                     ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
             except HTTPError as e:
                 ok = False
-                log.warning("Activation of rule '%s' in %s failed: HTTP Error %d", r_key, str(self), e.response.status_code)
+                log.error("%s while activating rules in '%s'", util.http_error(e), r_key)
         return ok
 
     def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:

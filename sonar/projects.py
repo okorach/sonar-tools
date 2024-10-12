@@ -170,6 +170,7 @@ class Project(components.Component):
             return cls.load(endpoint, data["components"][0])
         except HTTPError as e:
             if e.response.status_code != HTTPStatus.FORBIDDEN:
+                log.error("%s while getting project '%s'", util.http_error(e), key)
                 raise
             data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
             if "errors" in data:
@@ -210,6 +211,8 @@ class Project(components.Component):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
+            log.error("%s while creating project '%s'", util.http_error(e), key)
+            raise
         o = cls(endpoint, key)
         o.name = name
         return o
@@ -382,7 +385,7 @@ class Project(components.Component):
                     # Hack: 8.9 returns 404, 9.x returns 400
                     self._binding["has_binding"] = False
                 else:
-                    log.error("alm_settings/get_binding returning status code %d", e.response.status_code)
+                    log.error("%s while getting '%s' bindinfs", util.http_error(e), str(self))
                     raise e
         log.debug("Binding = %s", util.json_dump(self._binding["binding"]))
         return self._binding["binding"]
@@ -560,8 +563,7 @@ class Project(components.Component):
             # Hack: 8.9 returns 404, 9.x returns 400
             if e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
-            else:
-                util.exit_fatal(f"alm_settings/validate_binding returning status code {e.response.status_code}, exiting", errcodes.SONAR_API)
+            log.error("%s while auditing %s binding, skipped", util.http_error(e), str(self))
         return []
 
     def get_type(self) -> str:
@@ -617,8 +619,8 @@ class Project(components.Component):
                 data = json.loads(self.get("project_analyses/search", params={"project": self.key, "ps": 1}).text)["analyses"]
                 if len(data) > 0:
                     self._ci, self._revision = data[0].get("detectedCI", "unknown"), data[0].get("revision", "unknown")
-            except HTTPError:
-                log.warning("HTTP Error, can't retrieve CI tool and revision")
+            except HTTPError as e:
+                log.warning("%s while getting %s CI tool", util.http_error(e), str(self))
             except KeyError:
                 log.warning("KeyError, can't retrieve CI tool and revision")
         return self._ci
@@ -668,7 +670,7 @@ class Project(components.Component):
             if e.response.status_code == HTTPStatus.FORBIDDEN:
                 log.error("Not enough permission to fully audit %s", str(self))
             else:
-                log.error("HTTP error %s while auditing %s", str(e), str(self))
+                log.error("%s while auditing %s", util.http_error(e), str(self))
         return problems
 
     def export_zip(self, timeout: int = 180) -> dict[str, str]:
@@ -706,8 +708,9 @@ class Project(components.Component):
         log.info("Exporting %s (asynchronously)", str(self))
         try:
             return json.loads(self.post("project_dump/export", params={"key": self.key}).text)["taskId"]
-        except HTTPError:
-            return None
+        except HTTPError as e:
+            log.error("%s while exporting zip of %s CI", util.http_error(e), str(self))
+        return None
 
     def import_zip(self) -> bool:
         """Imports a project zip file in SonarQube
@@ -1051,13 +1054,13 @@ class Project(components.Component):
                 log.critical("Insufficient privileges to access %s, export of this project interrupted", str(self))
                 json_data["error"] = "Insufficient permissions while exporting project, export interrupted"
             else:
-                log.critical("HTTP error %s while exporting %s, export of this project interrupted", str(e), str(self))
+                log.critical("%s while exporting %s, export of this project interrupted", util.http_error(e), str(self))
                 json_data["error"] = f"HTTP error {str(e)} while extracting project"
         except ConnectionError as e:
-            log.critical("Connecting error %s while exporting %s, export of this project interrupted", str(self), str(e))
+            log.critical("Connecting error %s while exporting %s, export of this project interrupted", str(e), str(self))
             json_data["error"] = f"Connection error {str(e)} while extracting project, export interrupted"
         except Exception as e:
-            log.critical("Connecting error %s while exporting %s, export of this project interrupted", str(self), str(e))
+            log.critical("Exception %s while exporting %s, export of this project interrupted", str(e), str(self))
             json_data["error"] = f"Exception {str(e)} while exporting project, export interrupted"
         log.debug("Exporting %s done", str(self))
         return util.remove_nones(json_data)
@@ -1093,6 +1096,7 @@ class Project(components.Component):
             return True
         except HTTPError as e:
             if e.response.status_code != HTTPStatus.BAD_REQUEST:
+                log.error("%s while setting permissions of %s", util.http_error(e), str(self))
                 raise e
             log.error(util.sonar_error(e.response))
             return False
@@ -1433,7 +1437,7 @@ def __audit_thread(queue: Queue[Project], results: list[Problem], audit_settings
             if e.response.status_code == HTTPStatus.FORBIDDEN:
                 log.error("Not enough permission to fully audit %s", str(project))
             else:
-                log.error("HTTP error %s while auditing %s", str(e), str(project))
+                log.error("%s while auditing %s", util.http_error(e), str(project))
         queue.task_done()
         log.debug("%s audit complete", str(project))
     log.debug("Queue empty, exiting thread")

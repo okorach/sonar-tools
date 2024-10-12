@@ -134,6 +134,7 @@ class Rule(sq.SqObject):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
+            log.error("%s while getting rule'%s'", utilities.http_error(e), key)
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod

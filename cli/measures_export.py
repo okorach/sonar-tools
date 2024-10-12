@@ -56,12 +56,7 @@ def __last_analysis(component: object) -> str:
 
 def __get_json_measures_history(obj: object, wanted_metrics: types.KeyList) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
-    data = {}
-    try:
-        data["history"] = obj.get_measures_history(wanted_metrics)
-    except HTTPError as e:
-        log.error("HTTP Error %s, measures history export of %s skipped", str(e), str(obj))
-    return data
+    return {"history": obj.get_measures_history(wanted_metrics)}
 
 
 def __get_object_measures(obj: object, wanted_metrics: types.KeyList) -> dict[str, str]:
@@ -289,10 +284,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, hist: bool) -> Un
         else:
             data.update(__get_object_measures(obj, wanted_metrics))
     except HTTPError as e:
-        if e.response.status_code == HTTPStatus.FORBIDDEN:
-            log.error("Insufficient permission to retrieve measures of %s, export skipped for this object", str(obj))
-        else:
-            log.error("HTTP Error %s while retrieving measures of %s, export skipped for this object", str(e), str(obj))
+        log.error("%s, measures export skipped for %s", util.http_error(e), str(obj))
         return None
     return data
 

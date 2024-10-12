@@ -34,7 +34,7 @@ from sonar.components import Component, KEY_SEPARATOR
 
 from sonar.applications import Application as App
 from sonar.branches import Branch
-from sonar import exceptions, projects
+from sonar import exceptions, projects, utilities
 import sonar.sqobject as sq
 
 _OBJECTS = {}
@@ -112,6 +112,8 @@ class ApplicationBranch(Component):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(f"app.App {app.key} branch '{name}", e.response.text)
+            log.critical("%s while creating branch '%s' of '%s'", utilities.http_error(e), name, str(app))
+            raise
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
     @classmethod
@@ -185,6 +187,9 @@ class ApplicationBranch(Component):
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(str(self), e.response.text)
+            log.critical("%s while updating '%s'", utilities.http_error(e), str(self))
+            raise
+
         self.name = name
         self._project_branches = project_branches
         return ok

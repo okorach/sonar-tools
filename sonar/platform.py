@@ -52,7 +52,6 @@ from sonar.audit.problem import Problem
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
-_HTTP_ERROR = "%s Error: %s HTTP status code %d - %s"
 
 _SONAR_TOOLS_AGENT = f"sonar-tools {version.PACKAGE_VERSION}"
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
@@ -106,6 +105,7 @@ class Platform:
         try:
             self.get("server/version")
         except HTTPError as e:
+            log.critical("%s while verifying connection", util.http_error(e))
             raise exceptions.ConnectionError(util.sonar_error(e.response))
 
     def version(self) -> tuple[int, int, int]:
@@ -247,15 +247,12 @@ class Platform:
                 if retry:
                     self.url = new_url
             r.raise_for_status()
-        except requests.exceptions.HTTPError as e:
+        except HTTPError as e:
             if exit_on_error:  # or (r.status_code not in mute and r.status_code not in _NORMAL_HTTP_ERRORS):
-                util.log_and_exit(r)
+                log_and_exit(e)
             else:
-                _, msg = util.http_error(r)
-                lvl = log.ERROR
-                if r.status_code in mute:
-                    lvl = log.DEBUG
-                log.log(lvl, _HTTP_ERROR, req_type, self.__urlstring(api, params), r.status_code, msg)
+                lvl = log.DEBUG if r.status_code in mute else log.ERROR
+                log.log(lvl, "%s (%s request)", util.http_error(e), req_type)
                 raise e
         except requests.exceptions.Timeout as e:
             util.exit_fatal(str(e), errcodes.HTTP_TIMEOUT)
@@ -292,6 +289,7 @@ class Platform:
                         time.sleep(0.5)
                         counter += 1
                     else:
+                        log.critical("%s while getting system info", util.http_error(e))
                         raise e
             self.__sys_info = json.loads(resp.text)
             success = True
@@ -811,7 +809,7 @@ def __lta_and_latest() -> tuple[tuple[int, int, int], tuple[int, int, int]]:
                 v.append("0")
             LATEST = tuple(int(n) for n in v)
             log.debug("Sonar update center says LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
-        except (EnvironmentError, requests.exceptions.HTTPError):
+        except (EnvironmentError, HTTPError):
             LTA = _HARDCODED_LTA
             LATEST = _HARDCODED_LATEST
             log.debug("Sonar update center read failed, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
@@ -899,3 +897,11 @@ def basics(
         write_q.put(exp)
         write_q.put(None)
     return exp
+
+
+def log_and_exit(exception: requests.exceptions.HTTPError) -> None:
+    """If HTTP response is not OK, display an error log and exit"""
+    err_code, msg = util.http_error_and_code(exception)
+    if err_code is None:
+        return
+    util.exit_fatal(msg, err_code)
