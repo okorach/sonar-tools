@@ -25,11 +25,10 @@ from typing import Optional
 
 import json
 from abc import ABC, abstractmethod
-from http import HTTPStatus
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
-from sonar import utilities, errcodes
+from sonar import utilities
 from sonar.util import types
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem

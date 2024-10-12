@@ -23,7 +23,6 @@ from typing import Union, Optional
 import json
 from datetime import datetime
 
-from http import HTTPStatus
 from queue import Queue
 from threading import Thread, Lock
 from requests import HTTPError, RequestException

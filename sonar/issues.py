@@ -35,7 +35,7 @@ import sonar.logging as log
 import sonar.platform as pf
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
-from sonar import users, sqobject, findings, changelog, projects, errcodes
+from sonar import users, sqobject, findings, changelog, projects
 import sonar.utilities as util
 
 API_SET_TAGS = "issues/set_tags"
@@ -732,7 +732,7 @@ def __search_thread(queue: Queue) -> None:
                 i["pullRequest"] = page_params.get("pullRequest", None)
                 issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
             log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
-        except (HTTPError, ConnectionError, RequestException, Exception) as e:
+        except (HTTPError, RequestException, Exception) as e:
             log.error("%s while searching issues, search may be incomplete", util.error_msg(e))
         queue.task_done()
 
