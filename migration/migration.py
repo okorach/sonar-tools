@@ -181,6 +181,7 @@ def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> N
         # if not kwargs.get("dontInlineLists", False):
         #    sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
         print("\n}", file=fd)
+    utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
     log.info("Exporting migration data from %s completed", kwargs["url"])
 
 
