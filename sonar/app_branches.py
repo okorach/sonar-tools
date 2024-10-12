@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from requests import HTTPError, RequestException
+from requests import RequestException
 from requests.utils import quote
 
 import sonar.logging as log

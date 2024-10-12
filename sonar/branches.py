@@ -364,7 +364,7 @@ class Branch(components.Component):
             log.debug("Auditing %s", str(self))
             try:
                 return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
-            except (HTTPError, RequestException, Exception) as e:
+            except Exception as e:
                 log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
         else:
             log.debug("Branch audit disabled, skipping audit of %s", str(self))

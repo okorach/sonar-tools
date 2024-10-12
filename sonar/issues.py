@@ -29,7 +29,6 @@ from typing import Union, Optional
 from queue import Queue
 from threading import Thread
 import requests.utils
-from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -732,7 +731,7 @@ def __search_thread(queue: Queue) -> None:
                 i["pullRequest"] = page_params.get("pullRequest", None)
                 issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
             log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
-        except (HTTPError, RequestException, Exception) as e:
+        except Exception as e:
             log.error("%s while searching issues, search may be incomplete", util.error_msg(e))
         queue.task_done()
 
@@ -858,7 +857,7 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
                 if d["val"] not in rulecount:
                     rulecount[d["val"]] = 0
                 rulecount[d["val"]] += d["count"]
-        except (HTTPError, Exception, RequestException) as e:
+        except Exception as e:
             log.error("%s while counting issues per rule, count may be incomplete", util.error_msg(e))
     return rulecount
 

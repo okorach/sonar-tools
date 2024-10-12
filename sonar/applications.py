@@ -26,7 +26,7 @@ import json
 from datetime import datetime
 from http import HTTPStatus
 from threading import Lock
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 import sonar.platform as pf

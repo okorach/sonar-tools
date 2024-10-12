@@ -24,7 +24,7 @@
 import sys
 import csv
 import datetime
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 from cli import options
 import sonar.logging as log

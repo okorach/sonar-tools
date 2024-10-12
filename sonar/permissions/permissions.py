@@ -25,7 +25,7 @@ from typing import Optional
 
 import json
 from abc import ABC, abstractmethod
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 from sonar import utilities

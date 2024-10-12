@@ -29,7 +29,7 @@ import csv
 
 from typing import Union
 
-from requests import HTTPError, RequestException
+from requests import RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log

@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 import re
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types

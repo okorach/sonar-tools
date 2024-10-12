@@ -52,7 +52,7 @@ def check_last_version(package_url: str) -> None:
     try:
         r = requests.get(url=package_url, headers={"Accept": "application/vnd.pypi.simple.v1+json"}, timeout=10)
         r.raise_for_status()
-    except (requests.RequestException, requests.HTTPError, requests.Timeout) as e:
+    except Exception as e:
         log.info("Can't access pypi.org, error %s", str(e))
         return
     txt_version = json.loads(r.text)["versions"][-1]

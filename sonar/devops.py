@@ -23,7 +23,7 @@ from typing import Optional
 from http import HTTPStatus
 import json
 
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types

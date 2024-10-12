@@ -25,7 +25,7 @@ from datetime import datetime
 
 from queue import Queue
 from threading import Thread, Lock
-from requests import HTTPError, RequestException
+from requests import RequestException
 import requests.utils
 
 import sonar.logging as log
