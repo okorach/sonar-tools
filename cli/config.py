@@ -136,36 +136,6 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
             print(utilities.json_dump(config), file=fd)
 
 
-def __remove_chars_at_end(file: str, nb_bytes: int) -> None:
-    """Writes the configuration in file"""
-    with open(file, mode="rb+") as fd:
-        fd.seek(-nb_bytes, os.SEEK_END)
-        fd.truncate()
-
-
-def __add_project_header(file: str) -> None:
-    """Writes the configuration in file"""
-    with open(file, mode="a", encoding="utf-8") as fd:
-        print(',\n   "projects": {\n', file=fd)
-
-
-def __add_project_footer(file: str) -> None:
-    """Closes projects section"""
-    __remove_chars_at_end(file, 2)
-    with open(file, mode="a", encoding="utf-8") as fd:
-        print("\n   }\n}", file=fd)
-
-
-def write_project(project_json: dict[str, any], file: str) -> None:
-    """
-    writes a project JSON in a file
-    """
-    key = project_json.pop("key")
-    with _WRITE_LOCK:
-        with utilities.open_file(file, mode="a") as fd:
-            print(f'"{key}": {utilities.json_dump(project_json)},', file=fd)
-
-
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
     if "globalSettings" in json_export:
