@@ -30,7 +30,7 @@ import json
 import datetime
 from http import HTTPStatus
 from threading import Lock
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -262,8 +262,9 @@ class Portfolio(aggregations.Aggregation):
                 self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
             else:
                 self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
-        except HTTPError as e:
-            if e.response.status_code != HTTPStatus.BAD_REQUEST:
+        except (ConnectionError, RequestException) as e:
+            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
+                log.error("%s while adding reference subportfolio to %s", util.error_msg(e), str(self))
                 raise
         self._sub_portfolios.update({reference.key: ref})
         return ref
@@ -274,8 +275,9 @@ class Portfolio(aggregations.Aggregation):
         try:
             if self.endpoint.version() < (9, 3, 0):
                 self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
-        except HTTPError as e:
-            if e.response.status_code != HTTPStatus.BAD_REQUEST:
+        except (ConnectionError, RequestException) as e:
+            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
+                log.error("%s while adding standard subportfolio to %s", util.error_msg(e), str(self))
                 raise
         self._sub_portfolios.update({subp.key: subp})
         return subp
@@ -428,10 +430,11 @@ class Portfolio(aggregations.Aggregation):
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.key, f"Project '{key}' or branch '{branch}' not found, can't be added to {str(self)}")
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                    # Project or branch already in portfolio
-                    pass
-                else:
+                    log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
                     raise
+            except (ConnectionError, RequestException) as e:
+                log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
+                raise
         return self
 
     def set_manual_mode(self) -> Portfolio:
@@ -520,10 +523,11 @@ class Portfolio(aggregations.Aggregation):
                 log.info("%s: Adding %s", str(self), str(app_branch))
                 params = {"key": self.key, "application": app_key, "branch": branch}
                 self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
-        except HTTPError as e:
-            if e.response.status_code != HTTPStatus.BAD_REQUEST:
+        except (ConnectionError, RequestException) as e:
+            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
+                log.error("%s while adding application branch to %s", util.error_msg(e), str(self))
                 raise
-            log.warning(util.sonar_error(e.response))
+            log.warning(util.error_msg(e))
         if app_key not in self._applications:
             self._applications[app_key] = []
         self._applications[app_key].append(branch)
@@ -579,11 +583,8 @@ class Portfolio(aggregations.Aggregation):
                 data = json.loads(self.get("api/measures/component_tree", params=params).text)
                 nbr_projects = util.nbr_total_elements(data)
                 proj_key_list += [c["refKey"] for c in data["components"]]
-            except HTTPError as e:
-                if e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                    log.warning("HTTP Error %s while collecting projects from %s, stopping collection", str(e), str(self))
-                else:
-                    log.critical("HTTP Error %s while collecting projects from %s, proceeding anyway", str(e), str(self))
+            except (ConnectionError, RequestException) as e:
+                log.error("%s while collecting projects from %s, stopping collection", util.error_msg(e), str(self))
                 break
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of projects: %d - Page: %d/%d", nbr_projects, page, nbr_pages)
@@ -790,9 +791,8 @@ def export(
                     exported_portfolios[k] = exp
             else:
                 log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
-        except HTTPError as e:
-            _, msg = util.http_error(e.response)
-            log.error("%s while exporting %s, export will be empty for this portfolio", msg, str(p))
+        except (ConnectionError, RequestException) as e:
+            log.error("%s while exporting %s, export will be empty for this portfolio", util.error_msg(e), str(p))
             exported_portfolios[k] = {}
         i += 1
         if i % 10 == 0 or i == nb_portfolios:

@@ -24,7 +24,7 @@
 import sys
 import csv
 import datetime
-from requests.exceptions import HTTPError
+from requests import RequestException
 
 from cli import options
 import sonar.logging as log
@@ -51,8 +51,8 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
     """Returns CSV row of object"""
     try:
         loc = o.loc()
-    except HTTPError as e:
-        log.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
+    except (ConnectionError, RequestException) as e:
+        log.warning("%s, LoC export of %s skipped", util.error_msg(e), str(o))
         loc = ""
     arr = [o.key, loc]
     obj_type = type(o).__name__.lower()
@@ -113,8 +113,8 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
         d = {parent_type: o.concerned_object.key, "branch": o.name, "ncloc": ""}
     try:
         d["ncloc"] = o.loc()
-    except HTTPError as e:
-        log.warning("HTTP Error %s, LoC export of %s skipped", str(e), str(o))
+    except (ConnectionError, RequestException) as e:
+        log.warning("%s, LoC export of %s skipped", util.error_msg(e), str(o))
     if kwargs[options.WITH_NAME]:
         d[f"{parent_type}Name"] = o.name
         if obj_type in ("branch", "applicationbranch"):

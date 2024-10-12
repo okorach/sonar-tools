@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 import re
 from http import HTTPStatus
-from requests.exceptions import HTTPError
+from requests import RequestException
 import requests.utils
 
 import sonar.logging as log
@@ -402,12 +402,13 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
             try:
                 data = json.loads(endpoint.get(Hotspot.SEARCH_API, params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
                 nbr_hotspots = util.nbr_total_elements(data)
-            except HTTPError as e:
+            except (ConnectionError, RequestException) as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     log.warning("No hotspots found with search params %s", str(inline_filters))
                     nbr_hotspots = 0
                     return {}
-                raise e
+                log.error("%s while searching hotspots", util.error_msg(e))
+                break
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)
             if nbr_hotspots > Hotspot.MAX_SEARCH:
@@ -494,8 +495,10 @@ def post_search_filter(hotspots_dict: dict[str, Hotspot], filters: types.ApiPara
             lang = rules.get_object(endpoint=finding.endpoint, key=finding.rule).language
             if lang not in filters["languages"]:
                 filtered_findings.pop(key, None)
+        # pylint: disable-next=E0606
         if "createdAfter" in filters and finding.creation_date < min_date:
             filtered_findings.pop(key, None)
+        # pylint: disable-next=E0606
         if "createdBefore" in filters and finding.creation_date > max_date:
             filtered_findings.pop(key, None)
 

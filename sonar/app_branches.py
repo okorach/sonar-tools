@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from requests.exceptions import HTTPError
+from requests import RequestException
 from requests.utils import quote
 
 import sonar.logging as log
@@ -34,7 +34,7 @@ from sonar.components import Component, KEY_SEPARATOR
 
 from sonar.applications import Application as App
 from sonar.branches import Branch
-from sonar import exceptions, projects
+from sonar import exceptions, projects, utilities
 import sonar.sqobject as sq
 
 _OBJECTS = {}
@@ -109,9 +109,11 @@ class ApplicationBranch(Component):
             params["projectBranch"].append(br_name)
         try:
             app.endpoint.post(APIS["create"], params=params)
-        except HTTPError as e:
+        except (ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(f"app.App {app.key} branch '{name}", e.response.text)
+            log.critical("%s while creating branch '%s' of '%s'", utilities.error_msg(e), name, str(app))
+            raise
         return ApplicationBranch(app=app, name=name, project_branches=project_branches)
 
     @classmethod
@@ -182,9 +184,12 @@ class ApplicationBranch(Component):
             params["projectBranch"].append(br_name)
         try:
             ok = self.endpoint.post(APIS["update"], params=params).ok
-        except HTTPError as e:
+        except (ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(str(self), e.response.text)
+            log.error("%s while updating '%s'", utilities.error_msg(e), str(self))
+            raise
+
         self.name = name
         self._project_branches = project_branches
         return ok

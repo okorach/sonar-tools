@@ -26,7 +26,7 @@ import re
 import json
 from typing import Union
 from http import HTTPStatus
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -454,10 +454,11 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
             ok = ok and endpoint.post(API_SET, params={"key": "sonar.leak.period", "value": nc_value, "project": project_key}).ok
         else:
             ok = endpoint.post(API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
-    except HTTPError as e:
-        if e.response.status_code == HTTPStatus.BAD_REQUEST:
+    except (ConnectionError, RequestException) as e:
+        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
             raise exceptions.UnsupportedOperation(f"Can't set project new code period: {e.response.text}")
-        raise
+        log.error("%s setting new code period of '%s'", util.error_msg(e), str(project_key))
+        return False
     return ok
 
 
@@ -486,10 +487,11 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
         else:
             log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
             return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
-    except HTTPError as e:
-        if e.response.status_code == HTTPStatus.BAD_REQUEST:
+    except (ConnectionError, RequestException) as e:
+        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
             raise exceptions.UnsupportedOperation(f"Can't set project default visibility: {e.response.text}")
-        raise
+        log.error("%s setting new code period of '%s'", util.error_msg(e), str(component))
+        return False
 
 
 def set_setting(endpoint: pf.Platform, key: str, value: any, component: object = None) -> bool:
@@ -501,8 +503,8 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
     else:
         try:
             s.set(value)
-        except HTTPError as e:
-            log.error("Setting '%s' cannot be set: %s", key, util.sonar_error(e.response))
+        except (ConnectionError, RequestException) as e:
+            log.error("%s while setting setting '%s'", util.error_msg(e), key, str(component))
             return False
         except exceptions.UnsupportedOperation as e:
             log.error("Setting '%s' cannot be set: %s", key, e.message)

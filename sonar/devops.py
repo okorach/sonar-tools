@@ -23,7 +23,7 @@ from typing import Optional
 from http import HTTPStatus
 import json
 
-from requests.exceptions import HTTPError
+from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types
@@ -109,10 +109,11 @@ class DevopsPlatform(sq.SqObject):
             elif plt_type == "bitbucketcloud":
                 params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
                 endpoint.post(_CREATE_API_BBCLOUD, params=params)
-        except HTTPError as e:
+        except (ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST and endpoint.edition() in ("community", "developer"):
                 log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
                 raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
+            log.error("%s while creating devops platform %s/%s/%s", util.error_msg(e), key, plt_type, url_or_workspace)
             raise
         o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         o.refresh()

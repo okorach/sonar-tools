@@ -35,7 +35,7 @@ import json
 import tempfile
 import requests
 import jprops
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException, Timeout
 
 import sonar.logging as log
 import sonar.utilities as util
@@ -52,7 +52,6 @@ from sonar.audit.problem import Problem
 WRONG_CONFIG_MSG = "Audit config property %s has wrong value %s, skipping audit"
 
 _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
-_HTTP_ERROR = "%s Error: %s HTTP status code %d - %s"
 
 _SONAR_TOOLS_AGENT = f"sonar-tools {version.PACKAGE_VERSION}"
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
@@ -105,7 +104,8 @@ class Platform:
     def verify_connection(self) -> None:
         try:
             self.get("server/version")
-        except HTTPError as e:
+        except (ConnectionError, RequestException) as e:
+            log.critical("%s while verifying connection", util.error_msg(e))
             raise exceptions.ConnectionError(util.sonar_error(e.response))
 
     def version(self) -> tuple[int, int, int]:
@@ -247,20 +247,20 @@ class Platform:
                 if retry:
                     self.url = new_url
             r.raise_for_status()
-        except requests.exceptions.HTTPError as e:
+        except HTTPError as e:
             if exit_on_error:  # or (r.status_code not in mute and r.status_code not in _NORMAL_HTTP_ERRORS):
-                util.log_and_exit(r)
+                log_and_exit(e)
             else:
-                _, msg = util.http_error(r)
-                lvl = log.ERROR
-                if r.status_code in mute:
-                    lvl = log.DEBUG
-                log.log(lvl, _HTTP_ERROR, req_type, self.__urlstring(api, params), r.status_code, msg)
+                lvl = log.DEBUG if r.status_code in mute else log.ERROR
+                log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
                 raise e
-        except requests.exceptions.Timeout as e:
+        except Timeout as e:
             util.exit_fatal(str(e), errcodes.HTTP_TIMEOUT)
-        except requests.RequestException as e:
-            util.exit_fatal(str(e), errcodes.SONAR_API)
+        except (ConnectionError, RequestException) as e:
+            if exit_on_error:  # or (r.status_code not in mute and r.status_code not in _NORMAL_HTTP_ERRORS):
+                util.exit_fatal(str(e), errcodes.SONAR_API)
+            log.error(str(e))
+            raise
         return r
 
     def global_permissions(self):
@@ -285,13 +285,14 @@ class Platform:
                 try:
                     resp = self.get("system/info", mute=(HTTPStatus.INTERNAL_SERVER_ERROR,))
                     success = True
-                except HTTPError as e:
+                except (ConnectionError, RequestException) as e:
                     # Hack: SonarQube randomly returns Error 500 on this API, retry up to 10 times
-                    if e.response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR and counter < 10:
+                    if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR and counter < 10:
                         log.error("HTTP Error 500 for api/system/info, retrying...")
                         time.sleep(0.5)
                         counter += 1
                     else:
+                        log.error("%s while getting system info", util.error_msg(e))
                         raise e
             self.__sys_info = json.loads(resp.text)
             success = True
@@ -656,6 +657,7 @@ class Platform:
             v = latest()
         if not v:
             return []
+        # pylint: disable-next=E0606
         return [Problem(rule, self.url, ".".join(sq_vers), ".".join(v))]
 
 
@@ -810,11 +812,11 @@ def __lta_and_latest() -> tuple[tuple[int, int, int], tuple[int, int, int]]:
             if len(v) == 2:
                 v.append("0")
             LATEST = tuple(int(n) for n in v)
-            log.debug("Sonar update center says LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
-        except (EnvironmentError, requests.exceptions.HTTPError):
+            log.info("Sonar update center says LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
+        except (EnvironmentError, HTTPError):
             LTA = _HARDCODED_LTA
             LATEST = _HARDCODED_LATEST
-            log.debug("Sonar update center read failed, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
+            log.info("Sonar update center read failed, hardcoding LTA (ex-LTS) = %s, LATEST = %s", str(LTA), str(LATEST))
         try:
             os.remove(tmpfile)
         except EnvironmentError:
@@ -899,3 +901,11 @@ def basics(
         write_q.put(exp)
         write_q.put(None)
     return exp
+
+
+def log_and_exit(exception: Exception) -> None:
+    """If HTTP response is not OK, display an error log and exit"""
+    err_code, msg = util.http_error_and_code(exception)
+    if err_code is None:
+        return
+    util.exit_fatal(msg, err_code)

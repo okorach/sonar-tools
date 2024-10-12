@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 import re
-from requests.exceptions import HTTPError
+from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types
@@ -141,8 +141,9 @@ class PermissionTemplate(sqobject.SqObject):
                 continue
             try:
                 self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
-            except HTTPError as e:
-                log.error("HTTP Error: %s", utilities.sonar_error(e.response))
+            except (ConnectionError, RequestException) as e:
+                log.error("%s while setting %s as default", utilities.error_msg(e), str(self))
+                raise
 
     def set_pattern(self, pattern: str) -> PermissionTemplate:
         """Sets a permission template pattern"""

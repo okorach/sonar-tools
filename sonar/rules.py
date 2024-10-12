@@ -27,7 +27,7 @@ from queue import Queue
 import json
 from typing import Optional
 from http import HTTPStatus
-from requests.exceptions import HTTPError
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
@@ -131,9 +131,10 @@ class Rule(sq.SqObject):
         log.debug("Reading rule key '%s'", key)
         try:
             r = endpoint.get(_DETAILS_API, params={"key": key})
-        except HTTPError as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
+        except (ConnectionError, RequestException) as e:
+            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
+            log.error("%s while getting rule'%s'", utilities.error_msg(e), key)
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod

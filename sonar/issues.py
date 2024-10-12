@@ -29,7 +29,6 @@ from typing import Union, Optional
 from queue import Queue
 from threading import Thread
 import requests.utils
-from requests.exceptions import HTTPError
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -732,8 +731,8 @@ def __search_thread(queue: Queue) -> None:
                 i["pullRequest"] = page_params.get("pullRequest", None)
                 issue_list[i["key"]] = get_object(endpoint=endpoint, key=i["key"], data=i)
             log.debug("Added %d issues in threaded search page %d", len(data["issues"]), page)
-        except HTTPError as e:
-            log.critical("HTTP Error while searching issues, search may be incomplete: %s", str(e))
+        except Exception as e:
+            log.error("%s while searching issues, search may be incomplete", util.error_msg(e))
         queue.task_done()
 
 
@@ -794,6 +793,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
         worker.setDaemon(True)
         worker.start()
     q.join()
+    log.debug("Issue search for %s completed with %d issues", str(params), len(issue_list))
     return issue_list
 
 
@@ -849,13 +849,16 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
     rulecount = {}
     for i in range(nbr_slices):
         params["rules"] = ",".join(ruleset[i * SLICE_SIZE : min((i + 1) * SLICE_SIZE - 1, len(ruleset))])
-        data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)["facets"][0]["values"]
-        for d in data:
-            if d["val"] not in ruleset:
-                continue
-            if d["val"] not in rulecount:
-                rulecount[d["val"]] = 0
-            rulecount[d["val"]] += d["count"]
+        try:
+            data = json.loads(endpoint.get(Issue.SEARCH_API, params=params).text)["facets"][0]["values"]
+            for d in data:
+                if d["val"] not in ruleset:
+                    continue
+                if d["val"] not in rulecount:
+                    rulecount[d["val"]] = 0
+                rulecount[d["val"]] += d["count"]
+        except Exception as e:
+            log.error("%s while counting issues per rule, count may be incomplete", util.error_msg(e))
     return rulecount
 
 

@@ -24,11 +24,11 @@ from __future__ import annotations
 from typing import Optional
 
 import json
-from http import HTTPStatus
+from requests import RequestException
 
 from sonar.util import types
 import sonar.logging as log
-from sonar import utilities, errcodes
+from sonar import utilities
 from sonar.permissions import permissions
 
 MAX_PERMS = 25
@@ -71,16 +71,14 @@ class QualityPermissions(permissions.Permissions):
         page, nbr_pages = 1, 1
         while page <= nbr_pages:
             params["p"] = page
-            resp = self.endpoint.get(api, params=params)
-            if resp.ok:
+            try:
+                resp = self.endpoint.get(api, params=params)
                 data = json.loads(resp.text)
                 perms += [p[ret_field] for p in data[perm_type]]
-            elif resp.status_code not in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
-                # Hack: Different versions of SonarQube return different codes (400 or 404)
-                utilities.exit_fatal(f"HTTP error {resp.status_code} - Exiting", errcodes.SONAR_API)
-            else:
-                break
-            page, nbr_pages = page + 1, utilities.nbr_pages(data)
+                page, nbr_pages = page + 1, utilities.nbr_pages(data)
+            except (ConnectionError, RequestException) as e:
+                log.error("%s while retrieving %s permissions", utilities.error_msg(e), str(self))
+                page += 1
         return perms
 
     def _set_perms(self, new_perms: types.ObjectJsonRepr, apis: dict[str, dict[str, str]], field: str, diff_func: callable, **kwargs) -> bool:

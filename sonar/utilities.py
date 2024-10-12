@@ -52,7 +52,7 @@ def check_last_version(package_url: str) -> None:
     try:
         r = requests.get(url=package_url, headers={"Accept": "application/vnd.pypi.simple.v1+json"}, timeout=10)
         r.raise_for_status()
-    except (requests.RequestException, requests.exceptions.HTTPError, requests.exceptions.Timeout) as e:
+    except Exception as e:
         log.info("Can't access pypi.org, error %s", str(e))
         return
     txt_version = json.loads(r.text)["versions"][-1]
@@ -423,10 +423,11 @@ def sonar_error(response: requests.models.Response) -> str:
         return ""
 
 
-def http_error(response: requests.models.Response) -> tuple[str, int]:
+def http_error_and_code(exception: requests.HTTPError) -> tuple[int, str]:
     """Returns the Sonar error code of an API HTTP response, or None if no error"""
+    response = exception.response
     if response.ok:
-        return None, None
+        return None, "No error"
     tool_msg = f"For request URL {response.request.url}\n"
     code = response.status_code
     if code == HTTPStatus.UNAUTHORIZED:
@@ -441,12 +442,13 @@ def http_error(response: requests.models.Response) -> tuple[str, int]:
     return err_code, f"{tool_msg}: {sonar_error(response)}"
 
 
-def log_and_exit(response: requests.models.Response) -> None:
-    """If HTTP response is not OK, display an error log and exit"""
-    err_code, msg = http_error(response)
-    if err_code is None:
-        return
-    exit_fatal(msg, err_code)
+def error_msg(exception: Exception) -> str:
+    """Returns the error of an Sonar API HTTP response, or None if no error"""
+    if isinstance(exception, requests.HTTPError):
+        _, errmsg = http_error_and_code(exception)
+        return errmsg
+    else:
+        return str(exception)
 
 
 def object_key(key_or_obj):
