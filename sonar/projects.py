@@ -1490,9 +1490,8 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         with _CLASS_LOCK:
             export_settings["EXPORTED"] += 1
         nb, tot = export_settings["EXPORTED"], export_settings["NBR_PROJECTS"]
-        log.debug("%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
-        if nb % 10 == 0 or tot - nb < 10:
-            log.info("%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
+        lvl = log.INFO if nb % 10 == 0 or tot - nb < 10 else log.DEBUG
+        log.log(lvl, "%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
         queue.task_done()
 
 
