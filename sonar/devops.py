@@ -109,7 +109,7 @@ class DevopsPlatform(sq.SqObject):
             elif plt_type == "bitbucketcloud":
                 params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
                 endpoint.post(_CREATE_API_BBCLOUD, params=params)
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST and endpoint.edition() in ("community", "developer"):
                 log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
                 raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")

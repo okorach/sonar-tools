@@ -89,7 +89,7 @@ class Branch(components.Component):
             return _OBJECTS[uu]
         try:
             data = json.loads(concerned_object.endpoint.get(APIS["list"], params={"project": concerned_object.key}).text)
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(concerned_object.key, f"Project '{concerned_object.key}' not found")
             log.critical("%s while getting branch '%s' of %s", util.error_msg(e), branch_name, str(concerned_object))
@@ -129,7 +129,7 @@ class Branch(components.Component):
         """
         try:
             data = json.loads(self.get(APIS["list"], params={"project": self.concerned_object.key}).text)
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found in SonarQube")
             log.error("%s while refreshing %s", util.error_msg(e), str(self))
@@ -185,7 +185,7 @@ class Branch(components.Component):
         """
         try:
             return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS)
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 log.warning("Can't delete %s, it's the main branch", str(self))
             else:
@@ -202,7 +202,7 @@ class Branch(components.Component):
         elif self._new_code is None:
             try:
                 data = json.loads(self.get(api=APIS["get_new_code"], params={"project": self.concerned_object.key}).text)
-            except (HTTPError, ConnectionError, RequestException) as e:
+            except (ConnectionError, RequestException) as e:
                 if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.concerned_object.key, f"{str(self.concerned_object)} not found")
                 log.error("%s while getting new code period of %s", util.error_msg(e), str(self))
@@ -265,7 +265,7 @@ class Branch(components.Component):
         log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
         try:
             self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name})
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
             log.error("%s while renaming %s", util.error_msg(e), str(self))

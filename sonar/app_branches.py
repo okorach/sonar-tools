@@ -109,7 +109,7 @@ class ApplicationBranch(Component):
             params["projectBranch"].append(br_name)
         try:
             app.endpoint.post(APIS["create"], params=params)
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(f"app.App {app.key} branch '{name}", e.response.text)
             log.critical("%s while creating branch '%s' of '%s'", utilities.error_msg(e), name, str(app))
@@ -184,7 +184,7 @@ class ApplicationBranch(Component):
             params["projectBranch"].append(br_name)
         try:
             ok = self.endpoint.post(APIS["update"], params=params).ok
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(str(self), e.response.text)
             log.error("%s while updating '%s'", utilities.error_msg(e), str(self))

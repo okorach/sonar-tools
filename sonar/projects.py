@@ -168,7 +168,7 @@ class Project(components.Component):
                 log.error("Project key '%s' not found", key)
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data["components"][0])
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.FORBIDDEN:
                 log.error("%s while getting project '%s'", util.error_msg(e), key)
                 raise
@@ -208,7 +208,7 @@ class Project(components.Component):
         """
         try:
             endpoint.post(_CREATE_API, params={"project": key, "name": name})
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise exceptions.ObjectAlreadyExists(key, e.response.text)
             log.error("%s while creating project '%s'", util.error_msg(e), key)
@@ -380,7 +380,7 @@ class Project(components.Component):
                 resp = self.get("alm_settings/get_binding", params={"project": self.key}, mute=(HTTPStatus.NOT_FOUND,))
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
-            except (HTTPError, ConnectionError, RequestException) as e:
+            except (ConnectionError, RequestException) as e:
                 if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST):
                     # Hack: 8.9 returns 404, 9.x returns 400
                     self._binding["has_binding"] = False
@@ -559,7 +559,7 @@ class Project(components.Component):
         try:
             _ = self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", str(self))
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             # Hack: 8.9 returns 404, 9.x returns 400
             if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
@@ -619,7 +619,7 @@ class Project(components.Component):
                 data = json.loads(self.get("project_analyses/search", params={"project": self.key, "ps": 1}).text)["analyses"]
                 if len(data) > 0:
                     self._ci, self._revision = data[0].get("detectedCI", "unknown"), data[0].get("revision", "unknown")
-            except (HTTPError, ConnectionError, RequestException) as e:
+            except (ConnectionError, RequestException) as e:
                 log.warning("%s while getting %s CI tool", util.error_msg(e), str(self))
             except KeyError:
                 log.warning("KeyError, can't retrieve CI tool and revision")
@@ -666,7 +666,7 @@ class Project(components.Component):
             problems += self._audit_bg_task(audit_settings)
             problems += self.__audit_binding_valid(audit_settings)
             problems += self.__audit_scanner(audit_settings)
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.FORBIDDEN:
                 log.error("Not enough permission to fully audit %s", str(self))
             else:
@@ -710,7 +710,7 @@ class Project(components.Component):
         log.info("Exporting %s (asynchronously)", str(self))
         try:
             return json.loads(self.post("project_dump/export", params={"key": self.key}).text)["taskId"]
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             log.error("%s while exporting zip of %s CI", util.error_msg(e), str(self))
         return None
 
@@ -1051,7 +1051,7 @@ class Project(components.Component):
                 if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
                     continue
                 json_data.update(s.to_json())
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             errmsg = util.error_msg(e)
             log.error("Exception: %s while exporting %s, export of this project interrupted", errmsg, str(self))
             json_data["error"] = f"{errmsg} while extracting project"
@@ -1090,7 +1090,7 @@ class Project(components.Component):
         try:
             self.permissions().set(desired_permissions)
             return True
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             log.error("%s while setting permissions of %s", util.error_msg(e), str(self))
             if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
                 raise e
@@ -1428,7 +1428,7 @@ def __audit_thread(queue: Queue[Project], results: list[Problem], audit_settings
                 results.append(Problem(get_rule(RuleId.PROJ_DUPLICATE_BINDING), project, str(project), str(bindings[bindkey])))
             else:
                 bindings[bindkey] = project
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             log.error("%s while auditing %s", util.error_msg(e), str(project))
         queue.task_done()
         log.debug("%s audit complete", str(project))

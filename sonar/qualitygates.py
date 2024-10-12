@@ -173,7 +173,7 @@ class QualityGate(sq.SqObject):
             params["p"] = page
             try:
                 resp = self.get(APIS["get_projects"], params=params)
-            except (HTTPError, ConnectionError, RequestException) as e:
+            except (ConnectionError, RequestException) as e:
                 if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
                 log.error("%s while getting %s projects", util.error_msg(e), str(self))

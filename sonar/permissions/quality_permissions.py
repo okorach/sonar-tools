@@ -76,7 +76,7 @@ class QualityPermissions(permissions.Permissions):
                 data = json.loads(resp.text)
                 perms += [p[ret_field] for p in data[perm_type]]
                 page, nbr_pages = page + 1, utilities.nbr_pages(data)
-            except (HTTPError, ConnectionError, RequestException) as e:
+            except (ConnectionError, RequestException) as e:
                 log.error("%s while retrieving %s permissions", utilities.error_msg(e), str(self))
                 page += 1
         return perms

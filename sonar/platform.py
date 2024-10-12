@@ -104,7 +104,7 @@ class Platform:
     def verify_connection(self) -> None:
         try:
             self.get("server/version")
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             log.critical("%s while verifying connection", util.error_msg(e))
             raise exceptions.ConnectionError(util.sonar_error(e.response))
 
@@ -285,7 +285,7 @@ class Platform:
                 try:
                     resp = self.get("system/info", mute=(HTTPStatus.INTERNAL_SERVER_ERROR,))
                     success = True
-                except (HTTPError, ConnectionError, RequestException) as e:
+                except (ConnectionError, RequestException) as e:
                     # Hack: SonarQube randomly returns Error 500 on this API, retry up to 10 times
                     if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR and counter < 10:
                         log.error("HTTP Error 500 for api/system/info, retrying...")

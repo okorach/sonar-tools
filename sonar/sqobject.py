@@ -116,7 +116,7 @@ def __search_thread(queue: Queue) -> None:
                     objects[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
                 else:
                     objects[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             log.critical("%s while searching %s, search skipped", utilities.error_msg(e), object_class.__name__)
         queue.task_done()
 
@@ -163,7 +163,7 @@ def delete_object(object: SqObject, api: str, params: types.ApiParams, map: dict
         map.pop(object.uuid(), None)
         log.info("Successfully deleted %s", str(object))
         return r.ok
-    except (HTTPError, ConnectionError, RequestException) as e:
+    except (ConnectionError, RequestException) as e:
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
             map.pop(object.uuid(), None)
             raise exceptions.ObjectNotFound(object.key, f"{str(object)} not found for delete")

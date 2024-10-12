@@ -78,7 +78,7 @@ class Organization(sqobject.SqObject):
             return _OBJECTS[uu]
         try:
             data = json.loads(endpoint.get(Organization.SEARCH_API, params={"organizations": key}).text)
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key, f"Organization '{key}' not found")
             log.error("%s getting organization %s", util.error_msg(e), key)

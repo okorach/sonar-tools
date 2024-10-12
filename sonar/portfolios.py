@@ -262,7 +262,7 @@ class Portfolio(aggregations.Aggregation):
                 self.post("views/add_portfolio", params={"portfolio": self.key, "reference": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
             else:
                 self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
                 log.error("%s while adding reference subportfolio to %s", util.error_msg(e), str(self))
                 raise
@@ -275,7 +275,7 @@ class Portfolio(aggregations.Aggregation):
         try:
             if self.endpoint.version() < (9, 3, 0):
                 self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
                 log.error("%s while adding standard subportfolio to %s", util.error_msg(e), str(self))
                 raise
@@ -523,7 +523,7 @@ class Portfolio(aggregations.Aggregation):
                 log.info("%s: Adding %s", str(self), str(app_branch))
                 params = {"key": self.key, "application": app_key, "branch": branch}
                 self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
                 log.error("%s while adding application branch to %s", util.error_msg(e), str(self))
                 raise
@@ -583,7 +583,7 @@ class Portfolio(aggregations.Aggregation):
                 data = json.loads(self.get("api/measures/component_tree", params=params).text)
                 nbr_projects = util.nbr_total_elements(data)
                 proj_key_list += [c["refKey"] for c in data["components"]]
-            except (HTTPError, ConnectionError, RequestException) as e:
+            except (ConnectionError, RequestException) as e:
                 log.error("%s while collecting projects from %s, stopping collection", util.error_msg(e), str(self))
                 break
             nbr_pages = util.nbr_pages(data)
@@ -791,7 +791,7 @@ def export(
                     exported_portfolios[k] = exp
             else:
                 log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             log.error("%s while exporting %s, export will be empty for this portfolio", util.error_msg(e), str(p))
             exported_portfolios[k] = {}
         i += 1

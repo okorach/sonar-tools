@@ -131,7 +131,7 @@ class Rule(sq.SqObject):
         log.debug("Reading rule key '%s'", key)
         try:
             r = endpoint.get(_DETAILS_API, params={"key": key})
-        except (HTTPError, ConnectionError, RequestException) as e:
+        except (ConnectionError, RequestException) as e:
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
                 raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
             log.error("%s while getting rule'%s'", utilities.error_msg(e), key)

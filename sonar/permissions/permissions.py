@@ -239,7 +239,7 @@ class Permissions(ABC):
                     else:
                         counter += 1
                 page, nbr_pages = page + 1, utilities.nbr_pages(data)
-            except (HTTPError, ConnectionError, RequestException) as e:
+            except (ConnectionError, RequestException) as e:
                 log.error("%s while retrieving %s permissions", utilities.error_msg(e), str(self))
                 page += 1
         return perms
@@ -256,7 +256,7 @@ class Permissions(ABC):
                 params["permission"] = p
                 try:
                     r = self.endpoint.post(api, params=params)
-                except (HTTPError, ConnectionError, RequestException) as e:
+                except (ConnectionError, RequestException) as e:
                     log.error("%s while setting permissions %s", utilities.error_msg(e), str(self))
                 result = result and r.ok
         return result

@@ -402,7 +402,7 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
             try:
                 data = json.loads(endpoint.get(Hotspot.SEARCH_API, params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
                 nbr_hotspots = util.nbr_total_elements(data)
-            except (HTTPError, ConnectionError, RequestException) as e:
+            except (ConnectionError, RequestException) as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     log.warning("No hotspots found with search params %s", str(inline_filters))
                     nbr_hotspots = 0

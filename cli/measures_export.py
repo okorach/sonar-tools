@@ -282,7 +282,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, hist: bool) -> Un
             data.update(__get_json_measures_history(obj, wanted_metrics))
         else:
             data.update(__get_object_measures(obj, wanted_metrics))
-    except (HTTPError, ConnectionError, RequestException) as e:
+    except (ConnectionError, RequestException) as e:
         log.error("%s, measures export skipped for %s", util.error_msg(e), str(obj))
         return None
     return data
