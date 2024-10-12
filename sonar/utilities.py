@@ -197,7 +197,7 @@ def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:
 
 def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3) -> str:
     """JSON dump helper"""
-    return json.dumps(remove_nones(jsondata), indent=indent, sort_keys=True, separators=(",", ": "))
+    return json.dumps(jsondata, indent=indent, sort_keys=True, separators=(",", ": "))
 
 
 def csv_to_list(string: str, separator: str = ",") -> list[str]:
@@ -651,3 +651,19 @@ def list_to_dict(original_list: list[dict[str, any]], key_field: str) -> dict[st
 def dict_to_list(original_dict: dict[str, any], key_field: str, value_field: Optional[str] = "value") -> list[str, any]:
     """Converts a dict to list adding dict key in list key_field"""
     return [{key_field: key, value_field: elem} if not isinstance(elem, dict) else {key_field: key, **elem} for key, elem in original_dict.items()]
+
+
+def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_none: bool = True):
+    """Sorts a JSON file and optionally remove empty and none values"""
+    if file is None:
+        log.info("Output is stdout, skipping normalization")
+        return
+    log.info("Normalizing JSON file '%s'", file)
+    with open_file(file, mode="r") as fd:
+        json_data = json.loads(fd.read())
+    if remove_empty:
+        json_data = remove_empties(json_data)
+    if remove_none:
+        json_data = remove_nones(json_data)
+    with open_file(file, mode="w") as fd:
+        print(json_dump(json_data), file=fd)
