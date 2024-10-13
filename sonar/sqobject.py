@@ -133,12 +133,14 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
     new_params["p"] = 1
     objects_list = {}
     data = json.loads(endpoint.get(api, params=new_params).text)
+    nb_pages = utilities.nbr_pages(data)
+    nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data))
+    log.info("%d %s to load", nb_objects, object_class.__name__)
     for obj in data[returned_field]:
         if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
             objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
         else:
             objects_list[obj[key_field]] = object_class(endpoint, obj[key_field], data=obj)
-    nb_pages = utilities.nbr_pages(data)
     if nb_pages == 1:
         # If everything is returned on the 1st page, no multi-threading needed
         return objects_list
