@@ -25,10 +25,13 @@
 """
 import sys
 import json
+import csv
+from typing import TextIO
+from threading import Thread, Lock
+from queue import Queue
 
 from cli import options
 
-from sonar.util.types import ConfigSettings
 from sonar import errcodes, exceptions
 from sonar.util import types
 import sonar.logging as log
@@ -46,6 +49,8 @@ _ALL_AUDITABLE = [
     options.WHAT_APPS,
     options.WHAT_PORTFOLIOS,
 ]
+
+_WRITE_LOCK = Lock()
 
 
 def _audit_sif(sysinfo, audit_settings):
@@ -67,40 +72,86 @@ def _audit_sif(sysinfo, audit_settings):
     return (server_id, sif_obj.audit(audit_settings))
 
 
+def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
+    """
+    Thread to write problems in a CSV file
+    """
+    csvwriter = csv.writer(fd, delimiter=settings.get("CSV_DELIMITER", ","))
+    server_id = settings.get("SERVER_ID", None)
+    with_url = settings.get("WITH_URL", False)
+    while True:
+        problems = queue.get()
+        if problems is None:
+            queue.task_done()
+            break
+        for p in problems:
+            data = []
+            if server_id is not None:
+                data = [server_id]
+            data += list(p.to_json(with_url).values())
+            csvwriter.writerow(data)
+        queue.task_done()
+    log.info("Writing audit probelms complete")
+
+
 def _audit_sq(
-    sq: platform.Platform, settings: ConfigSettings, what_to_audit: list[str] = None, key_list: types.KeyList = None
+    sq: platform.Platform, settings: types.ConfigSettings, what_to_audit: list[str] = None, key_list: types.KeyList = None
 ) -> list[problem.Problem]:
     """Audits a SonarQube/Cloud platform"""
     problems = []
+    q = Queue(maxsize=0)
     everything = False
     if not what_to_audit:
         everything = True
         what_to_audit = options.WHAT_AUDITABLE
-    if options.WHAT_PROJECTS in what_to_audit:
-        problems += projects.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-    if options.WHAT_PROFILES in what_to_audit:
-        problems += qualityprofiles.audit(endpoint=sq, audit_settings=settings)
-    if options.WHAT_GATES in what_to_audit:
-        problems += qualitygates.audit(endpoint=sq, audit_settings=settings)
-    if options.WHAT_SETTINGS in what_to_audit:
-        problems += sq.audit(audit_settings=settings)
-    if options.WHAT_USERS in what_to_audit:
-        problems += users.audit(endpoint=sq, audit_settings=settings)
-    if options.WHAT_GROUPS in what_to_audit:
-        problems += groups.audit(endpoint=sq, audit_settings=settings)
-    if options.WHAT_PORTFOLIOS in what_to_audit:
-        try:
-            problems += portfolios.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-        except exceptions.UnsupportedOperation:
-            if not everything:
-                log.warning("No portfolios in %s edition, audit of portfolios ignored", sq.edition())
-    if options.WHAT_APPS in what_to_audit:
-        try:
-            problems += applications.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-        except exceptions.UnsupportedOperation:
-            if not everything:
-                log.warning("No applications in %s edition, audit of portfolios ignored", sq.edition())
 
+    with util.open_file(settings.get("FILE", None), mode="w") as fd:
+        worker = Thread(target=write_problems, args=(q, fd, settings))
+        worker.daemon = True
+        worker.name = "WriteProblems"
+        worker.start()
+        if options.WHAT_PROJECTS in what_to_audit:
+            pbs = projects.audit(endpoint=sq, audit_settings=settings, key_list=key_list, write_q=q)
+            q.put(pbs)
+            problems += pbs
+        if options.WHAT_PROFILES in what_to_audit:
+            pbs = qualityprofiles.audit(endpoint=sq, audit_settings=settings)
+            q.put(pbs)
+            problems += pbs
+        if options.WHAT_GATES in what_to_audit:
+            pbs = qualitygates.audit(endpoint=sq, audit_settings=settings)
+            q.put(pbs)
+            problems += pbs
+        if options.WHAT_SETTINGS in what_to_audit:
+            pbs = sq.audit(audit_settings=settings)
+            q.put(pbs)
+            problems += pbs
+        if options.WHAT_USERS in what_to_audit:
+            pbs = users.audit(endpoint=sq, audit_settings=settings)
+            q.put(pbs)
+            problems += pbs
+        if options.WHAT_GROUPS in what_to_audit:
+            pbs = groups.audit(endpoint=sq, audit_settings=settings)
+            q.put(pbs)
+            problems += pbs
+        if options.WHAT_PORTFOLIOS in what_to_audit:
+            try:
+                pbs = portfolios.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+                q.put(pbs)
+                problems += pbs
+            except exceptions.UnsupportedOperation:
+                if not everything:
+                    log.warning("No portfolios in %s edition, audit of portfolios ignored", sq.edition())
+        if options.WHAT_APPS in what_to_audit:
+            try:
+                pbs = applications.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
+                q.put(pbs)
+                problems += pbs
+            except exceptions.UnsupportedOperation:
+                if not everything:
+                    log.warning("No applications in %s edition, audit of portfolios ignored", sq.edition())
+        q.put(None)
+        q.join()
     return problems
 
 
@@ -138,16 +189,22 @@ def main():
         config.configure()
         sys.exit(0)
 
+    ofile = kwargs.pop(options.REPORT_FILE)
+    settings["FILE"] = ofile
+    settings["CSV_DELIMITER"] = kwargs[options.CSV_SEPARATOR]
+    settings["WITH_URL"] = kwargs[options.WITH_URL]
+
     if kwargs.get("sif", None) is not None:
         err = errcodes.SIF_AUDIT_ERROR
         try:
             (server_id, problems) = _audit_sif(kwargs["sif"], settings)
+            settings["SERVER_ID"] = server_id
         except json.decoder.JSONDecodeError:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", err)
         except FileNotFoundError:
             util.exit_fatal(f"File {kwargs['sif']} does not exist, aborting...", err)
         except PermissionError:
-            util.exit_fatal(f"No permissiont to open file {kwargs['sif']}, aborting...", err)
+            util.exit_fatal(f"No permission to open file {kwargs['sif']}, aborting...", err)
         except sif.NotSystemInfo:
             util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
     else:
@@ -157,6 +214,7 @@ def main():
         except exceptions.ConnectionError as e:
             util.exit_fatal(e.message, e.errcode)
         server_id = sq.server_id()
+        settings["SERVER_ID"] = server_id
         util.check_token(kwargs[options.TOKEN])
         key_list = kwargs[options.KEYS]
         if key_list is not None and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs[options.WHAT]):
@@ -168,7 +226,6 @@ def main():
         except exceptions.ObjectNotFound as e:
             util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
 
-    ofile = kwargs.pop(options.REPORT_FILE)
     if problems:
         log.warning("%d issues found during audit", len(problems))
     else:
