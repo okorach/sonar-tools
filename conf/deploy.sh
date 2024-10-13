@@ -63,17 +63,17 @@ if [ "$build_docs" == "1" ]; then
     sphinx-build -b html doc/api/source doc/api/build
 fi
 
+version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 # Deploy on pypi.org once released
 if [ "$release" = "1" ]; then
     echo "Confirm release [y/n] ?"
     read -r confirm
     if [ "$confirm" = "y" ]; then
-        python3 -m twine upload $ROOTDIR/dist/sonar_tools-*-py3-*.whl
+        python3 -m twine upload $ROOTDIR/dist/sonar_tools-$version-py3-none-any.whl
     fi
 fi
 
 if [ "$release_docker" = "1" ]; then
-    version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
     docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:$version -t olivierkorach/sonar-tools:latest -f $CONFDIR/release.Dockerfile .
     cd $ROOTDIR && docker pushrm olivierkorach/sonar-tools
 fi
