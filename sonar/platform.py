@@ -537,9 +537,15 @@ class Platform:
             log.info("Logs audit is disabled, skipping logs audit...")
             return []
         log_map = {"app": "sonar.log", "ce": "ce.log", "web": "web.log", "es": "es.log"}
+        if self.edition() == "datacenter":
+            log_map.pop("es")
         problems = []
         for logtype, logfile in log_map.items():
-            logs = self.get("system/logs", params={"name": logtype}).text
+            try:
+                logs = self.get("system/logs", params={"name": logtype}).text
+            except (ConnectionError, RequestException) as e:
+                log.error("%s while retrieving %s logs", util.error_msg(e), logtype)
+                continue
             for line in logs.splitlines():
                 log.debug("Inspection log line %s", line)
                 try:
