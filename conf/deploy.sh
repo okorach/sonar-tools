@@ -74,4 +74,5 @@ fi
 
 if [ "$release_docker" = "1" ]; then
     docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:3.5  -t olivierkorach/sonar-tools:latest -f $ROOTDIR/release.Dockerfile .
+    cd $ROOTDIR && docker pushrm olivierkorach/sonar-tools
 fi
