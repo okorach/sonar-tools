@@ -198,7 +198,6 @@ def write_objects(queue: Queue, fd, object_type: str, export_settings: types.Con
     """
     Thread to write projects in the JSON file
     """
-    done = False
     prefix = ""
     log.info("Waiting %s to write...", object_type)
     print(f'"{object_type}": ' + "{", file=fd)
