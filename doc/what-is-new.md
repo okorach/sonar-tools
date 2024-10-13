@@ -1,6 +1,10 @@
-# Version 3.5
+# Version 3.4.2
 
-- Display HTTP request durations in DEBUG logs
+- Hotfix: Fix crash `sonar-audit` when SonarQube version is neither LTA nor Latest: [Issue #1386](https://github.com/okorach/sonar-tools/issues/1386)
+
+# Version 3.4.1
+
+- Hotfix: Fix systematic crash on `sonar-findings-export`: [Issue #1358](https://github.com/okorach/sonar-tools/issues/1358)
 
 # Version 3.4
 
