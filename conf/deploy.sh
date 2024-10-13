@@ -54,8 +54,10 @@ python3 $ROOTDIR/setup.py bdist_wheel
 # Deploy locally for tests
 pip install --upgrade --force-reinstall $ROOTDIR/dist/sonar_tools-*-py3-*.whl
 
+version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
+
 if [ "$build_image" == "1" ]; then
-    docker build -t olivierkorach/sonar-tools:3.5 -t olivierkorach/sonar-tools:latest -f $CONFDIR/snapshot.Dockerfile $ROOTDIR --load
+    docker build -t olivierkorach/sonar-tools:$version -t olivierkorach/sonar-tools:latest -f $CONFDIR/snapshot.Dockerfile $ROOTDIR --load
 fi
 
 if [ "$build_docs" == "1" ]; then
@@ -68,10 +70,11 @@ if [ "$release" = "1" ]; then
     echo "Confirm release [y/n] ?"
     read -r confirm
     if [ "$confirm" = "y" ]; then
-        python3 -m twine upload $ROOTDIR/dist/sonar_tools-*-py3-*.whl
+        python3 -m twine upload $ROOTDIR/dist/sonar_tools-$version-py3-none-any.whl
     fi
 fi
 
 if [ "$release_docker" = "1" ]; then
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:3.5  -t olivierkorach/sonar-tools:latest -f $ROOTDIR/release.Dockerfile .
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:$version -t olivierkorach/sonar-tools:latest -f $CONFDIR/release.Dockerfile $ROOTDIR
+    cd $ROOTDIR && docker pushrm olivierkorach/sonar-tools
 fi
