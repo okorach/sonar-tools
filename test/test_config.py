@@ -120,6 +120,7 @@ def test_config_inline_commas() -> None:
         # This is a list because there is a comma in one of the branches
         if util.SQ.version() >= (10, 0, 0):
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
+        assert json_config["portfolios"]["All"]["portfolios"]["Banking"]["byReference"]
     util.clean(util.JSON_FILE)
 
 
