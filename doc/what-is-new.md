@@ -1,3 +1,17 @@
+# Version 3.5
+
+* Many performance and robustness improvements
+* `sonar-audit` improvements
+  * Output audit problems on the fly #1395
+  * Several fixes:
+     * #1417 
+     * #1415 
+     * #1411 
+     * #1386
+* `sonar-config` fix #1326
+* Include **dart** and **ipython** as built-in languages since they were introduced in SonarQube 10.7
+* Display HTTP requests durations in logs
+
 # Version 3.4.2
 
 - Hotfix: Fix crash `sonar-audit` when SonarQube version is neither LTA nor Latest: [Issue #1386](https://github.com/okorach/sonar-tools/issues/1386)
