@@ -658,7 +658,7 @@ class Platform:
         if not v:
             return []
         # pylint: disable-next=E0606
-        return [Problem(rule, self.url, ".".join(sq_vers), ".".join(v))]
+        return [Problem(rule, self.url, ".".join([str(n) for n in sq_vers]), ".".join([str(n) for n in v]))]
 
 
 # --------------------- Static methods -----------------
