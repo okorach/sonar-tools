@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
-import os
+from typing import TextIO
 from threading import Thread, Lock
 from queue import Queue
 
@@ -186,15 +186,21 @@ def __export_config_sync(endpoint: platform.Platform, what: list[str], **kwargs)
             log.warning(e.message)
         except exceptions.ObjectNotFound as e:
             log.error(e.message)
-    if not export_settings.get("FULL_EXPORT", False):
-        sq_settings = utilities.remove_empties(utilities.remove_nones(sq_settings))
-    if export_settings.get("INLINE_LISTS", True):
-        sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
+    sq_settings = __prep_json_for_write(sq_settings, export_settings)
     __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
     log.info("Synchronous export of configuration from %s completed", kwargs["url"])
 
 
-def write_objects(queue: Queue, fd, object_type: str, export_settings: types.ConfigSettings) -> None:
+def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    """Cleans up the JSON before writing"""
+    json_data = utilities.sort_lists(json_data)
+    if not export_settings.get("FULL_EXPORT", False):
+        json_data = utilities.remove_empties(utilities.remove_nones(json_data))
+    if export_settings.get("INLINE_LISTS", True):
+        json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
+    return json_data
+
+def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: str, export_settings: types.ConfigSettings) -> None:
     """
     Thread to write projects in the JSON file
     """
@@ -206,11 +212,7 @@ def write_objects(queue: Queue, fd, object_type: str, export_settings: types.Con
         if obj_json is None:
             queue.task_done()
             break
-        obj_json = utilities.sort_lists(obj_json)
-        if not export_settings.get("FULL_EXPORT", False):
-            obj_json = utilities.remove_empties(utilities.remove_nones(obj_json))
-        if export_settings.get("INLINE_LISTS", True):
-            obj_json = utilities.inline_lists(obj_json, exceptions=("conditions",))
+        obj_json = __prep_json_for_write(obj_json, export_settings)
         if object_type in ("projects", "applications", "portfolios", "users"):
             if object_type == "users":
                 key = obj_json.pop("login", None)
