@@ -586,7 +586,7 @@ class Project(components.Component):
                 log.info("%s is a JAVA project", str(self))
                 return "JAVA"
             if re.match(r".*\.(py|rb|cbl|vbs|go|js|ts)$", comp["name"]):
-                log.info("%s is a DOTNET project", str(self))
+                log.info("%s is a CLI project", str(self))
                 return "CLI"
         return "UNKNOWN"
 
