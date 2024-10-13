@@ -1,3 +1,11 @@
+
+# Version 0.4
+
+- Robustness: Handle all types of HTTP errors including SSL errors, which were causing freezes
+- Added export of flat list of projects in each portfolio
+- Fix regression: Export of `platform` section is back
+- Added export of portfolios by reference
+
 # Version 0.3
 
 - Robustness: Handle `connectionError` errors in project extract threads

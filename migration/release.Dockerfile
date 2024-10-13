@@ -31,7 +31,7 @@ COPY ./LICENSE .
 COPY ./sonar/audit sonar/audit
 
 RUN pip install --upgrade pip \
-&& pip install sonar-migration==0.3 --force-reinstall
+&& pip install sonar-migration==0.4 --force-reinstall
 
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}

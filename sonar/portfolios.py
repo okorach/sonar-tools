@@ -103,7 +103,6 @@ class Portfolio(aggregations.Aggregation):
         self._tags = []  #: Portfolio tags when selection mode is TAGS
         self._description = None  #: Portfolio description
         self._visibility = None  #: Portfolio visibility
-        self._ref_portfolios = {}  #: Subportfolios
         self._sub_portfolios = {}  #: Subportfolios
         self._applications = {}  #: applications
         self._permissions = None  #: Permissions
@@ -171,8 +170,7 @@ class Portfolio(aggregations.Aggregation):
             return
         self._sub_portfolios = {}
         for data in self._json["subViews"]:
-            if data["qualifier"] == "SVW":
-                self.load_sub_portfolio(data.copy())
+            self.load_sub_portfolio(data.copy())
 
     def load_selection_mode(self) -> None:
         """Loads the portfolio selection mode"""
@@ -360,11 +358,13 @@ class Portfolio(aggregations.Aggregation):
                 subp_key = subp_json.pop("key")
                 json_data["portfolios"][subp_key] = subp_json
         mode = self.selection_mode().copy()
-        if mode and "none" not in mode:
-            json_data["projects"] = mode
+        if mode:
+            if "none" not in mode or export_settings.get("MODE", "") == "MIGRATION":
+                json_data["projects"] = mode
+            if export_settings.get("MODE", "") == "MIGRATION":
+                json_data["projects"]["keys"] = self.get_project_list()
         json_data["applications"] = self._applications
-        if export_settings.get("MODE", "") == "MIGRATION":
-            json_data["projectsList"] = self.get_project_list()
+
         return json_data
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -554,7 +554,6 @@ class Portfolio(aggregations.Aggregation):
 
     def is_parent_of(self, key: str) -> bool:
         """Returns whether a portfolio is parent of another subportfolio (given by key)"""
-        log.debug("SUBP = %s", str(list(self._sub_portfolios.keys())))
         return key in self._sub_portfolios
 
     def is_subporfolio_of(self, key: str) -> bool:

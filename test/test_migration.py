@@ -133,6 +133,10 @@ def test_migration() -> None:
         assert json_config["projects"]["demo:gitlab-ci-maven"]["detectedCi"] == "Gitlab CI"
         assert json_config["projects"]["demo:github-actions-cli"]["detectedCi"] == "Github Actions"
 
+    for p in json_config["portfolios"].values():
+        assert "projects" in p
+        assert "keys" in p["projects"]
+
     util.clean(util.JSON_FILE)
 
 
