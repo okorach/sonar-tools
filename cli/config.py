@@ -200,6 +200,7 @@ def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: type
         json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
     return json_data
 
+
 def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: str, export_settings: types.ConfigSettings) -> None:
     """
     Thread to write projects in the JSON file
