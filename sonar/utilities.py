@@ -671,8 +671,12 @@ def normalize_json_file(file: Optional[str], remove_empty: bool = True, remove_n
         log.info("Output is stdout, skipping normalization")
         return
     log.info("Normalizing JSON file '%s'", file)
-    with open_file(file, mode="r") as fd:
-        json_data = json.loads(fd.read())
+    try:
+        with open_file(file, mode="r") as fd:
+            json_data = json.loads(fd.read())
+    except json.decoder.JSONDecodeError:
+        log.warning("JSON Decode error while normalizing file '%s', is file complete?", file)
+        return
     if remove_empty:
         json_data = remove_empties(json_data)
     if remove_none:
