@@ -578,17 +578,19 @@ class Project(components.Component):
             if "gradle" in comp["name"]:
                 return "GRADLE"
         data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
+        projtype = "UNKNOWN"
         for comp in data["components"]:
             if re.match(r".*\.(cs|csx|vb)$", comp["name"]):
-                log.info("%s is a DOTNET project", str(self))
-                return "DOTNET"
+                projtype = "DOTNET"
+                break
             if re.match(r".*\.(java)$", comp["name"]):
-                log.info("%s is a JAVA project", str(self))
-                return "JAVA"
+                projtype = "JAVA"
+                break
             if re.match(r".*\.(py|rb|cbl|vbs|go|js|ts)$", comp["name"]):
-                log.info("%s is a CLI project", str(self))
-                return "CLI"
-        return "UNKNOWN"
+                projtype = "CLI"
+                break
+        log.info("%s is a %s project", str(self), projtype)
+        return projtype
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
