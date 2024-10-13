@@ -1,4 +1,6 @@
-# Next version yet unreleased
+# Version 3.4.2
+
+- Hotfix: Fix crash `sonar-audit` when SonarQube version is neither LTA nor Latest: [Issue #1386](https://github.com/okorach/sonar-tools/issues/1386)
 
 # Version 3.4.1
 
