@@ -244,8 +244,25 @@ def get_facet(facet: str, endpoint: platform.Platform) -> dict[str, str]:
 
 
 def search(endpoint: platform.Platform, **params) -> dict[str, Rule]:
-    """Searches ruless with optional filters"""
+    """Searches rules with optional filters"""
     return sq.search_objects(endpoint=endpoint, object_class=Rule, params=params, threads=4)
+
+
+def search_keys(endpoint: platform.Platform, **params) -> list[str]:
+    """Searches ruless with optional filters"""
+    new_params = params.copy() if params else {}
+    new_params["ps"] = 500
+    new_params["p"], nbr_pages = 0, 1
+    rule_list = []
+    try:
+        while new_params["p"] < nbr_pages:
+            new_params["p"] += 1
+            data = json.loads(endpoint.get(Rule.SEARCH_API, params=new_params).text)
+            nbr_pages = utilities.nbr_pages(data)
+            rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
+    except (ConnectionError, RequestException) as e:
+        log.error("%s while getting rules", utilities.error_msg(e))
+    return rule_list
 
 
 def count(endpoint: platform.Platform, **params) -> int:
