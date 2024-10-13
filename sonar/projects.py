@@ -578,21 +578,19 @@ class Project(components.Component):
             if "gradle" in comp["name"]:
                 return "GRADLE"
         data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
+        projtype = "UNKNOWN"
         for comp in data["components"]:
             if re.match(r".*\.(cs|csx|vb)$", comp["name"]):
-                log.info("%s is a DOTNET project", str(self))
-                return "DOTNET"
-        data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
-        for comp in data["components"]:
+                projtype = "DOTNET"
+                break
             if re.match(r".*\.(java)$", comp["name"]):
-                log.info("%s is a JAVA project", str(self))
-                return "JAVA"
-        data = json.loads(self.get(api=_TREE_API, params={"component": self.key, "ps": 500}).text)
-        for comp in data["components"]:
+                projtype = "JAVA"
+                break
             if re.match(r".*\.(py|rb|cbl|vbs|go|js|ts)$", comp["name"]):
-                log.info("%s is a DOTNET project", str(self))
-                return "CLI"
-        return "UNKNOWN"
+                projtype = "CLI"
+                break
+        log.info("%s is a %s project", str(self), projtype)
+        return projtype
 
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
@@ -667,10 +665,7 @@ class Project(components.Component):
             problems += self.__audit_binding_valid(audit_settings)
             problems += self.__audit_scanner(audit_settings)
         except (ConnectionError, RequestException) as e:
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.FORBIDDEN:
-                log.error("Not enough permission to fully audit %s", str(self))
-            else:
-                log.error("%s while auditing %s", util.error_msg(e), str(self))
+            log.error("%s while auditing %s", util.error_msg(e), str(self))
         return problems
 
     def export_zip(self, timeout: int = 180) -> dict[str, str]:
@@ -1430,9 +1425,10 @@ def __audit_thread(queue: Queue[Project], results: list[Problem], audit_settings
                 bindings[bindkey] = project
         except (ConnectionError, RequestException) as e:
             log.error("%s while auditing %s", util.error_msg(e), str(project))
+        __increment_processed(audit_settings)
         queue.task_done()
-        log.debug("%s audit complete", str(project))
-    log.debug("Queue empty, exiting thread")
+
+    log.debug("Audit of projects completed")
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[Problem]:
@@ -1448,6 +1444,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list:
     plist = get_list(endpoint, key_list)
     problems = []
     q = Queue(maxsize=0)
+    audit_settings["NBR_PROJECTS"] = len(plist)
+    audit_settings["PROCESSED"] = 0
     for p in plist.values():
         q.put(p)
     bindings = {}
@@ -1469,6 +1467,15 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list:
     return problems
 
 
+def __increment_processed(counters: dict[str, str]) -> None:
+    """Increments the counter of processed projects and display log"""
+    with _CLASS_LOCK:
+        counters["PROCESSED"] += 1
+    nb, tot = counters["PROCESSED"], counters["NBR_PROJECTS"]
+    lvl = log.INFO if nb % 10 == 0 or tot - nb < 10 else log.DEBUG
+    log.log(lvl, "%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
+
+
 def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: types.ConfigSettings, write_q: Optional[Queue] = None) -> None:
     """Project export callback function for multitheaded export"""
     while not queue.empty():
@@ -1479,11 +1486,7 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
         else:
             results[project.key] = exp_json
             results[project.key].pop("key", None)
-        with _CLASS_LOCK:
-            export_settings["EXPORTED"] += 1
-        nb, tot = export_settings["EXPORTED"], export_settings["NBR_PROJECTS"]
-        lvl = log.INFO if nb % 10 == 0 or tot - nb < 10 else log.DEBUG
-        log.log(lvl, "%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
+        __increment_processed(export_settings)
         queue.task_done()
     log.info("Project export queue empty, export complete")
 

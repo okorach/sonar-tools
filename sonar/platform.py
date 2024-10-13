@@ -35,7 +35,7 @@ import json
 import tempfile
 import requests
 import jprops
-from requests import HTTPError, RequestException, Timeout
+from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.utilities as util
@@ -254,8 +254,6 @@ class Platform:
                 lvl = log.DEBUG if r.status_code in mute else log.ERROR
                 log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
                 raise e
-        except Timeout as e:
-            util.exit_fatal(str(e), errcodes.HTTP_TIMEOUT)
         except (ConnectionError, RequestException) as e:
             if exit_on_error:  # or (r.status_code not in mute and r.status_code not in _NORMAL_HTTP_ERRORS):
                 util.exit_fatal(str(e), errcodes.SONAR_API)
@@ -539,9 +537,15 @@ class Platform:
             log.info("Logs audit is disabled, skipping logs audit...")
             return []
         log_map = {"app": "sonar.log", "ce": "ce.log", "web": "web.log", "es": "es.log"}
+        if self.edition() == "datacenter":
+            log_map.pop("es")
         problems = []
         for logtype, logfile in log_map.items():
-            logs = self.get("system/logs", params={"name": logtype}).text
+            try:
+                logs = self.get("system/logs", params={"name": logtype}).text
+            except (ConnectionError, RequestException) as e:
+                log.error("%s while retrieving %s logs", util.error_msg(e), logtype)
+                continue
             for line in logs.splitlines():
                 log.debug("Inspection log line %s", line)
                 try:
