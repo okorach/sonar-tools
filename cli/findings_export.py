@@ -324,7 +324,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
                 try:
                     findings_list = component.get_issues(filters=new_params)
                 except (ConnectionError, RequestException) as e:
-                    log.critical("%s while exporting issues of %s, skipped", util.error_msg(e), str(component))
+                    log.error("%s while exporting issues of %s, skipped", util.error_msg(e), str(component))
                     findings_list = {}
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
