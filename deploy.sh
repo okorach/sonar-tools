@@ -69,5 +69,5 @@ if [ "$release" = "1" ]; then
 fi
 
 if [ "$release_docker" = "1" ]; then
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:3.4.1  -t olivierkorach/sonar-tools:latest -f release.Dockerfile .
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:3.4.2  -t olivierkorach/sonar-tools:latest -f release.Dockerfile .
 fi
