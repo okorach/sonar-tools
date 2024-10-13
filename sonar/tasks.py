@@ -24,6 +24,8 @@ import datetime
 import json
 import re
 
+from requests import RequestException
+
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
@@ -530,8 +532,12 @@ def search(endpoint: pf.Platform, only_current: bool = False, component_key: str
         params["onlyCurrents"] = "true"
     if component_key is not None:
         params["component"] = component_key
-    data = json.loads(endpoint.get("ce/activity", params=params).text)
-    return [Task(endpoint=endpoint, task_id=t["id"], data=t) for t in data["tasks"]]
+    try:
+        data = json.loads(endpoint.get("ce/activity", params=params).text)
+        return [Task(endpoint=endpoint, task_id=t["id"], data=t) for t in data["tasks"]]
+    except (ConnectionError, RequestException) as e:
+        log.error("%s while getting background tasks of component '%s'", util.error_msg(e), str(component_key))
+    return []
 
 
 def search_all_last(endpoint: pf.Platform) -> list[Task]:
