@@ -440,7 +440,7 @@ def http_error_and_code(exception: requests.HTTPError) -> tuple[int, str]:
     response = exception.response
     if response.ok:
         return None, "No error"
-    tool_msg = f"For request URL {response.request.url}\n"
+    tool_msg = f"URL {response.request.url}: "
     code = response.status_code
     if code == HTTPStatus.UNAUTHORIZED:
         tool_msg += f"HTTP error {code} - Authentication error. Is token valid ?"

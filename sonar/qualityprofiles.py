@@ -242,7 +242,8 @@ class QualityProfile(sq.SqObject):
         if self._rules is not None:
             # Assume nobody changed QP during execution
             return self._rules
-        self._rules = rules.search(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
+        rule_key_list = rules.search_keys(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
+        self._rules = {k: rules.get_object(self.endpoint, k) for k in rule_key_list}
         return self._rules
 
     def activate_rule(self, rule_key: str, severity: str = None, **params) -> bool:
@@ -534,10 +535,10 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) ->
     :rtype: list[Problem]
     """
     log.info("--- Auditing quality profiles ---")
-    get_list(endpoint=endpoint)
+    rules.get_list(endpoint=endpoint)
     problems = []
     langs = {}
-    for qp in search(endpoint).values():
+    for qp in search(endpoint=endpoint).values():
         problems += qp.audit(audit_settings)
         langs[qp.language] = langs.get(qp.language, 0) + 1
     for lang, nb_qp in langs.items():

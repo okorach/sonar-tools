@@ -180,7 +180,7 @@ class PermissionTemplate(sqobject.SqObject):
         return utilities.remove_nones(utilities.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def _audit_pattern(self, audit_settings: types.ConfigSettings) -> list[pb.Problem]:
-        log.debug("Auditing %s projectKeyPattern ('%s')", str(self.project_key_pattern))
+        log.debug("Auditing %s projectKeyPattern ('%s')", str(self), str(self.project_key_pattern))
         if not self.project_key_pattern or self.project_key_pattern == "":
             if not (self.is_applications_default() or self.is_portfolios_default() or self.is_projects_default()):
                 return [pb.Problem(get_rule(RuleId.TEMPLATE_WITH_NO_PATTERN), self, str(self))]
