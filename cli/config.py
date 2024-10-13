@@ -202,26 +202,27 @@ def write_objects(queue: Queue, fd, object_type: str, export_settings: types.Con
     prefix = ""
     log.info("Waiting %s to write...", object_type)
     print(f'"{object_type}": ' + "{", file=fd)
-    while not done:
+    while True:
         obj_json = queue.get()
-        done = obj_json is None
-        if not done:
-            obj_json = utilities.sort_lists(obj_json)
-            if not export_settings.get("FULL_EXPORT", False):
-                obj_json = utilities.remove_empties(utilities.remove_nones(obj_json))
-            if export_settings.get("INLINE_LISTS", True):
-                obj_json = utilities.inline_lists(obj_json, exceptions=("conditions",))
-            if object_type in ("projects", "applications", "portfolios", "users"):
-                if object_type == "users":
-                    key = obj_json.pop("login", None)
-                else:
-                    key = obj_json.pop("key", None)
-                log.debug("Writing %s key '%s'", object_type[:-1], key)
-                print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
+        if obj_json is None:
+            queue.task_done()
+            break
+        obj_json = utilities.sort_lists(obj_json)
+        if not export_settings.get("FULL_EXPORT", False):
+            obj_json = utilities.remove_empties(utilities.remove_nones(obj_json))
+        if export_settings.get("INLINE_LISTS", True):
+            obj_json = utilities.inline_lists(obj_json, exceptions=("conditions",))
+        if object_type in ("projects", "applications", "portfolios", "users"):
+            if object_type == "users":
+                key = obj_json.pop("login", None)
             else:
-                log.debug("Writing %s", object_type)
-                print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
-            prefix = ",\n"
+                key = obj_json.pop("key", None)
+            log.debug("Writing %s key '%s'", object_type[:-1], key)
+            print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
+        else:
+            log.debug("Writing %s", object_type)
+            print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
+        prefix = ",\n"
         queue.task_done()
     print("\n}", file=fd, end="")
     log.info("Writing %s complete", object_type)
