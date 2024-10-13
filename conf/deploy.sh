@@ -74,6 +74,6 @@ fi
 
 if [ "$release_docker" = "1" ]; then
     version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:$version -t olivierkorach/sonar-tools:latest -f $ROOTDIR/release.Dockerfile .
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:$version -t olivierkorach/sonar-tools:latest -f $CONFDIR/release.Dockerfile .
     cd $ROOTDIR && docker pushrm olivierkorach/sonar-tools
 fi
