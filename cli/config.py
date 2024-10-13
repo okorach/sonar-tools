@@ -186,8 +186,9 @@ def __export_config_sync(endpoint: platform.Platform, what: list[str], **kwargs)
             log.warning(e.message)
         except exceptions.ObjectNotFound as e:
             log.error(e.message)
-    sq_settings = utilities.remove_empties(sq_settings)
-    if not kwargs["dontInlineLists"]:
+    if not export_settings.get("FULL_EXPORT", False):
+        sq_settings = utilities.remove_empties(utilities.remove_nones(sq_settings))
+    if export_settings.get("INLINE_LISTS", True):
         sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
     __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
     log.info("Synchronous export of configuration from %s completed", kwargs["url"])
