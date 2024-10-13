@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
-import os
+from typing import TextIO
 from threading import Thread, Lock
 from queue import Queue
 
@@ -78,6 +78,7 @@ _WRITE_LOCK = Lock()
 
 
 _EXPORT_CALLS = {
+    "platform": [__JSON_KEY_PLATFORM, platform.basics],
     options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
     options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
     options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
@@ -135,36 +136,6 @@ def __write_export(config: dict[str, str], file: str, format: str) -> None:
             print(utilities.json_dump(config), file=fd)
 
 
-def __remove_chars_at_end(file: str, nb_bytes: int) -> None:
-    """Writes the configuration in file"""
-    with open(file, mode="rb+") as fd:
-        fd.seek(-nb_bytes, os.SEEK_END)
-        fd.truncate()
-
-
-def __add_project_header(file: str) -> None:
-    """Writes the configuration in file"""
-    with open(file, mode="a", encoding="utf-8") as fd:
-        print(',\n   "projects": {\n', file=fd)
-
-
-def __add_project_footer(file: str) -> None:
-    """Closes projects section"""
-    __remove_chars_at_end(file, 2)
-    with open(file, mode="a", encoding="utf-8") as fd:
-        print("\n   }\n}", file=fd)
-
-
-def write_project(project_json: dict[str, any], file: str) -> None:
-    """
-    writes a project JSON in a file
-    """
-    key = project_json.pop("key")
-    with _WRITE_LOCK:
-        with utilities.open_file(file, mode="a") as fd:
-            print(f'"{key}": {utilities.json_dump(project_json)},', file=fd)
-
-
 def __convert_for_yaml(json_export: dict[str, any]) -> dict[str, any]:
     """Converts the default JSON produced by export to a modified version more suitable for YAML"""
     if "globalSettings" in json_export:
@@ -203,7 +174,8 @@ def __export_config_sync(endpoint: platform.Platform, what: list[str], **kwargs)
             utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
     log.info("Exporting configuration synchronously from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
+    what.append("platform")
+    sq_settings = {}
     for what_item, call_data in _EXPORT_CALLS.items():
         if what_item not in what:
             continue
@@ -214,38 +186,45 @@ def __export_config_sync(endpoint: platform.Platform, what: list[str], **kwargs)
             log.warning(e.message)
         except exceptions.ObjectNotFound as e:
             log.error(e.message)
-    sq_settings = utilities.remove_empties(sq_settings)
-    if not kwargs["dontInlineLists"]:
-        sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
+    sq_settings = __prep_json_for_write(sq_settings, export_settings)
     __write_export(sq_settings, kwargs[options.REPORT_FILE], kwargs[options.FORMAT])
     log.info("Synchronous export of configuration from %s completed", kwargs["url"])
 
 
-def write_objects(queue: Queue, fd, object_type: str, export_settings: types.ConfigSettings) -> None:
+def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
+    """Cleans up the JSON before writing"""
+    json_data = utilities.sort_lists(json_data)
+    if not export_settings.get("FULL_EXPORT", False):
+        json_data = utilities.remove_empties(utilities.remove_nones(json_data))
+    if export_settings.get("INLINE_LISTS", True):
+        json_data = utilities.inline_lists(json_data, exceptions=("conditions",))
+    return json_data
+
+
+def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: str, export_settings: types.ConfigSettings) -> None:
     """
     Thread to write projects in the JSON file
     """
-    done = False
     prefix = ""
     log.info("Waiting %s to write...", object_type)
     print(f'"{object_type}": ' + "{", file=fd)
-    while not done:
+    while True:
         obj_json = queue.get()
-        done = obj_json is None
-        if not done:
-            if export_settings.get("INLINE_LISTS", True):
-                obj_json = utilities.inline_lists(obj_json, exceptions=("conditions",))
-            if object_type in ("projects", "applications", "portfolios", "users"):
-                if object_type == "users":
-                    key = obj_json.pop("login", None)
-                else:
-                    key = obj_json.pop("key", None)
-                log.debug("Writing %s key '%s'", object_type[:-1], key)
-                print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
+        if obj_json is None:
+            queue.task_done()
+            break
+        obj_json = __prep_json_for_write(obj_json, export_settings)
+        if object_type in ("projects", "applications", "portfolios", "users"):
+            if object_type == "users":
+                key = obj_json.pop("login", None)
             else:
-                log.debug("Writing %s", object_type)
-                print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
-            prefix = ",\n"
+                key = obj_json.pop("key", None)
+            log.debug("Writing %s key '%s'", object_type[:-1], key)
+            print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
+        else:
+            log.debug("Writing %s", object_type)
+            print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
+        prefix = ",\n"
         queue.task_done()
     print("\n}", file=fd, end="")
     log.info("Writing %s complete", object_type)
@@ -256,10 +235,9 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
     file = kwargs[options.REPORT_FILE]
     export_settings = {
         "INLINE_LISTS": not kwargs["dontInlineLists"],
-        "EXPORT_DEFAULTS": True,
-        # "FULL_EXPORT": kwargs["fullExport"],
-        "FULL_EXPORT": False,
-        "MODE": "MIGRATION",
+        "EXPORT_DEFAULTS": kwargs["exportDefaults"],
+        "FULL_EXPORT": kwargs["fullExport"],
+        "MODE": "CONFIG",
         "THREADS": kwargs[options.NBR_THREADS],
         "SKIP_ISSUES": True,
     }
@@ -270,7 +248,7 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
 
     log.info("Exporting configuration from %s", kwargs[options.URL])
     key_list = kwargs[options.KEYS]
-    sq_settings = {__JSON_KEY_PLATFORM: endpoint.basics()}
+    what.append("platform")
     is_first = True
     q = Queue(maxsize=0)
     with utilities.open_file(file, mode="w") as fd:
@@ -287,12 +265,12 @@ def __export_config_async(endpoint: platform.Platform, what: list[str], **kwargs
                 worker.daemon = True
                 worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
                 worker.start()
-                sq_settings[ndx] = func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
+                func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
                 q.join()
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
-        sq_settings = utilities.remove_empties(sq_settings)
         print("\n}", file=fd)
+    utilities.normalize_json_file(file, remove_empty=True, remove_none=True)
     log.info("Exporting migration data from %s completed", kwargs["url"])
 
 

@@ -381,7 +381,7 @@ class QualityProfile(sq.SqObject):
                     diff_rules[r_key]["params"].update(parms)
         return diff_rules
 
-    def diff(self, another_qp: QualityProfile, qp_json_data: dict[str:str] = None) -> tuple[dict[str:str], dict[str:str]]:
+    def diff(self, another_qp: QualityProfile, qp_json_data: dict[str:str]) -> tuple[dict[str:str], dict[str:str]]:
         """Returns the list of rules added or modified in self compared to another_qp (for inheritance)
         :param another_qp: The second quality profile to diff
         :type another_qp: QualityProfile
@@ -401,8 +401,6 @@ class QualityProfile(sq.SqObject):
             diff_rules["removedRules"] = {}
 
         log.debug("Returning QP diff %s", str(diff_rules))
-        if qp_json_data is None:
-            return (diff_rules, qp_json_data)
         for index in ("addedRules", "modifiedRules", "removedRules"):
             if index not in diff_rules:
                 continue
@@ -549,7 +547,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) ->
     return problems
 
 
-def hierarchize_language(qp_list: dict[str, str]) -> types.ObjectJsonRepr:
+def hierarchize_language(qp_list: dict[str, str], endpoint: pf.Platform, language: str) -> types.ObjectJsonRepr:
     """Organizes a flat list of quality profiles in inheritance hierarchy"""
     log.debug("Organizing QP list %s in hierarchy", str(qp_list.keys()))
     hierarchy = qp_list.copy()
@@ -559,17 +557,21 @@ def hierarchize_language(qp_list: dict[str, str]) -> types.ObjectJsonRepr:
             if qp_json_data["parentName"] not in hierarchy:
                 log.critical("Can't find parent %s in quality profiles", qp_json_data["parentName"])
                 continue
-            parent_qp = hierarchy[qp_json_data.pop("parentName")]
+            parent_qp_name = qp_json_data.pop("parentName")
+            parent_qp = hierarchy[parent_qp_name]
             if _CHILDREN_KEY not in parent_qp:
                 parent_qp[_CHILDREN_KEY] = {}
-            parent_qp[_CHILDREN_KEY][qp_name] = qp_json_data
+            this_qp = get_object(endpoint=endpoint, name=qp_name, language=language)
+            (_, diff_data) = this_qp.diff(get_object(endpoint=endpoint, name=parent_qp_name, language=language), qp_json_data)
+            diff_data.pop("rules", None)
+            parent_qp[_CHILDREN_KEY][qp_name] = diff_data
             to_remove.append(qp_name)
     for qp_name in to_remove:
         hierarchy.pop(qp_name)
     return hierarchy
 
 
-def hierarchize(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+def hierarchize(qp_list: types.ObjectJsonRepr, endpoint: pf.Platform) -> types.ObjectJsonRepr:
     """Organize a flat list of QP in hierarchical (inheritance) fashion
 
     :param qp_list: List of quality profiles
@@ -580,7 +582,7 @@ def hierarchize(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     log.info("Organizing quality profiles in hierarchy")
     hierarchy = {}
     for lang, lang_qp_list in qp_list.items():
-        hierarchy[lang] = hierarchize_language(lang_qp_list)
+        hierarchy[lang] = hierarchize_language(lang_qp_list, endpoint=endpoint, language=lang)
     return hierarchy
 
 
@@ -604,7 +606,7 @@ def export(
         if lang not in qp_list:
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
-    qp_list = hierarchize(qp_list)
+    qp_list = hierarchize(qp_list, endpoint=endpoint)
     if write_q:
         write_q.put(qp_list)
         write_q.put(None)
