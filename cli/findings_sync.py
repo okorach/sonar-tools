@@ -33,10 +33,10 @@ import datetime
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, syncer, exceptions, projects, branches, errcodes
+from sonar import platform, syncer, exceptions, projects, branches, errcodes, version
 import sonar.utilities as util
 
-_WITH_COMMENTS = {"additionalFields": "comments"}
+TOOL_NAME = "sonar-findings-sync"
 
 
 def __parse_args(desc):
@@ -88,8 +88,7 @@ def __parse_args(desc):
         help="If specified, will not add a link to source issue in the target issue comments",
     )
 
-    args = options.parse_and_check(parser=parser, logger_name="sonar-findings-sync")
-    return args
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def __dump_report(report, file):
@@ -114,6 +113,7 @@ def main() -> int:
         params = util.convert_args(args)
         source_env = platform.Platform(**params)
         source_env.verify_connection()
+        source_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
 
@@ -135,6 +135,7 @@ def main() -> int:
             target_params = util.convert_args(args, second_platform=True)
             target_env = platform.Platform(**target_params)
             target_env.verify_connection()
+            target_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
         except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
             util.exit_fatal(e.message, e.errcode)
 
@@ -159,6 +160,7 @@ def main() -> int:
     }
 
     report = []
+    counters = {}
     try:
         if not projects.exists(source_key, endpoint=source_env):
             raise exceptions.ObjectNotFound(source_key, f"Project key '{source_key}' does not exist")

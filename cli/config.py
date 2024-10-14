@@ -23,14 +23,14 @@
 """
 import sys
 from typing import TextIO
-from threading import Thread, Lock
+from threading import Thread
 from queue import Queue
 
 import json
 import yaml
 
 from cli import options
-from sonar import exceptions, errcodes, utilities
+from sonar import exceptions, errcodes, utilities, version
 from sonar.util import types
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
@@ -50,8 +50,9 @@ _EVERYTHING = [
     options.WHAT_PORTFOLIOS,
 ]
 
-__JSON_KEY_PLATFORM = "platform"
+TOOL_NAME = "sonar-config"
 
+__JSON_KEY_PLATFORM = "platform"
 __JSON_KEY_SETTINGS = "globalSettings"
 __JSON_KEY_USERS = "users"
 __JSON_KEY_GROUPS = "groups"
@@ -73,8 +74,6 @@ __MAP = {
     options.WHAT_APPS: __JSON_KEY_APPS,
     options.WHAT_PORTFOLIOS: __JSON_KEY_PORTFOLIOS,
 }
-
-_WRITE_LOCK = Lock()
 
 
 _EXPORT_CALLS = {
@@ -123,8 +122,7 @@ def __parse_args(desc):
         help="By default, sonar-config exports multi-valued settings as comma separated strings instead of arrays (if there is not comma in values). "
         "Set this flag if you want to force export multi valued settings as arrays",
     )
-    args = options.parse_and_check(parser=parser, logger_name="sonar-config")
-    return args
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def __write_export(config: dict[str, str], file: str, format: str) -> None:
@@ -320,6 +318,7 @@ def main() -> None:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube platform configuration"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
+        endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
     if not kwargs[options.EXPORT] and not kwargs[options.IMPORT]:

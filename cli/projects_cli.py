@@ -29,8 +29,10 @@ import json
 
 from cli import options
 import sonar.logging as log
-from sonar import errcodes, exceptions, utilities
+from sonar import errcodes, exceptions, utilities, version
 from sonar import platform, projects
+
+TOOL_NAME = "sonar-projects"
 
 
 def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
@@ -126,9 +128,10 @@ def main() -> None:
         help="Maximum wait time for export of 1 project",
     )
     try:
-        kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name="sonar-projects"))
+        kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name=TOOL_NAME))
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
+        sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
 

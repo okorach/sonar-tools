@@ -32,16 +32,17 @@ import csv
 from queue import Queue
 import threading
 from threading import Thread
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 from cli import options
 from sonar.util.types import ConfigSettings
 import sonar.logging as log
-from sonar import platform, exceptions, errcodes
+from sonar import platform, exceptions, errcodes, version
 from sonar import issues, hotspots, findings
 from sonar import projects, applications, portfolios
 import sonar.utilities as util
 
+TOOL_NAME = "sonar-findings"
 WRITE_END = object()
 TOTAL_FINDINGS = 0
 IS_FIRST = True
@@ -140,8 +141,7 @@ def parse_args(desc):
     options.add_url_arg(parser)
     options.add_dateformat_arg(parser)
     options.add_language_arg(parser, "findings")
-    args = options.parse_and_check(parser=parser, logger_name="sonar-findings-export")
-    return args
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def __write_header(**kwargs) -> None:
@@ -402,6 +402,7 @@ def main():
         kwargs = util.convert_args(parse_args("Sonar findings export"))
         sqenv = platform.Platform(**kwargs)
         sqenv.verify_connection()
+        sqenv.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
     del kwargs[options.TOKEN]

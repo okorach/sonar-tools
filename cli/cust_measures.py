@@ -29,7 +29,9 @@ import sys
 
 from cli import options
 import sonar.logging as log
-from sonar import custom_measures, platform, utilities, errcodes, exceptions
+from sonar import custom_measures, platform, utilities, errcodes, exceptions, version
+
+TOOL_NAME = "sonar-custom-measures"
 
 
 def parse_args(desc):
@@ -38,7 +40,7 @@ def parse_args(desc):
     parser.add_argument("-m", "--metricKey", required=True, help="What custom metric to work on")
     parser.add_argument("--value", required=False, help="Updates the value of the metric")
     parser.add_argument("--description", required=False, help="Updates the description of the metric")
-    return options.parse_and_check(parser, logger_name="sonar-custom-measures")
+    return options.parse_and_check(parser, logger_name=TOOL_NAME)
 
 
 def main():
@@ -47,6 +49,7 @@ def main():
         kwargs = utilities.convert_args(parse_args("Manipulate custom metrics"))
         sqenv = platform.Platform(**kwargs)
         sqenv.verify_connection()
+        sqenv.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
     if sqenv.version() >= (9, 0, 0):
