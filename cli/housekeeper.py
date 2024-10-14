@@ -31,10 +31,12 @@ import logging
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, tokens, users, projects, branches, pull_requests
+from sonar import platform, tokens, users, projects, branches, pull_requests, version
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import config, problem
+
+TOOL_NAME = "sonar-housekeeper"
 
 
 def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads, endpoint):
@@ -153,8 +155,7 @@ def _parse_arguments():
         default=_DEFAULT_TOKEN_OBSOLESCENCE,
         help=f"Deletes user tokens older than a certain number of days, by default {_DEFAULT_TOKEN_OBSOLESCENCE} days",
     )
-    args = options.parse_and_check(parser=parser, logger_name="sonar-housekeeper")
-    return args
+    return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
 def _delete_objects(problems, mode):
@@ -207,6 +208,7 @@ def main():
         kwargs = util.convert_args(_parse_arguments())
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
+        sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, ex.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
 

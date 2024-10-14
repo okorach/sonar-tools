@@ -33,10 +33,11 @@ from requests import RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log
-from sonar import metrics, platform, exceptions, errcodes
+from sonar import metrics, platform, exceptions, errcodes, version
 from sonar import projects, applications, portfolios
 import sonar.utilities as util
 
+TOOL_NAME = "sonar-measures"
 RATINGS = "letters"
 PERCENTS = "float"
 DATEFMT = "datetime"
@@ -140,7 +141,7 @@ def __parse_args(desc):
     )
     options.add_dateformat_arg(parser)
     options.add_url_arg(parser)
-    args = options.parse_and_check(parser=parser, logger_name="sonar-measures-export")
+    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
     if args.ratingsAsNumbers:
         CONVERT_OPTIONS["ratings"] = "numbers"
     if args.percentsAsString:
@@ -295,6 +296,7 @@ def main() -> None:
         kwargs = util.convert_args(__parse_args("Extract measures of projects"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
+        endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
 

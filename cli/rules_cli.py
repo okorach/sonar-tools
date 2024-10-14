@@ -26,8 +26,10 @@ import csv
 
 from cli import options
 import sonar.logging as log
-from sonar import rules, platform, exceptions, errcodes
+from sonar import rules, platform, exceptions, errcodes, version
 import sonar.utilities as util
+
+TOOL_NAME = "sonar-rules"
 
 
 def __parse_args(desc: str) -> object:
@@ -36,7 +38,7 @@ def __parse_args(desc: str) -> object:
     parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
     parser = options.add_language_arg(parser, "rules")
     parser = options.add_import_export_arg(parser, "rules", import_opt=False)
-    args = options.parse_and_check(parser=parser, logger_name="sonar-rules")
+    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
     return args
 
 
@@ -68,6 +70,7 @@ def main() -> int:
         kwargs = util.convert_args(__parse_args("Extract rules"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
+        endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
     file = kwargs[options.REPORT_FILE]

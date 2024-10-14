@@ -27,12 +27,12 @@ import sys
 import json
 import csv
 from typing import TextIO
-from threading import Thread, Lock
+from threading import Thread
 from queue import Queue
 
 from cli import options
 
-from sonar import errcodes, exceptions
+from sonar import errcodes, exceptions, version
 from sonar.util import types
 import sonar.logging as log
 from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, portfolios, applications, projects
@@ -50,7 +50,7 @@ _ALL_AUDITABLE = [
     options.WHAT_PORTFOLIOS,
 ]
 
-_WRITE_LOCK = Lock()
+TOOL_NAME = "sonar-audit"
 
 
 def _audit_sif(sysinfo, audit_settings):
@@ -170,7 +170,7 @@ def __parser_args(desc):
         action="store_true",
         help="Creates the $HOME/.sonar-audit.properties configuration file, if not already present or outputs to stdout if it already exist",
     )
-    args = options.parse_and_check(parser=parser, logger_name="sonar-audit", verify_token=False)
+    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, verify_token=False)
     if args.sif is None and args.config is None:
         util.check_token(args.token)
     return args
@@ -183,7 +183,7 @@ def main():
     except options.ArgumentsError as e:
         util.exit_fatal(e.message, e.errcode)
 
-    settings = config.load("sonar-audit")
+    settings = config.load(TOOL_NAME)
     settings["threads"] = kwargs[options.NBR_THREADS]
     if kwargs.get("config", False):
         config.configure()
@@ -211,6 +211,7 @@ def main():
         try:
             sq = platform.Platform(**kwargs)
             sq.verify_connection()
+            sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
         except exceptions.ConnectionError as e:
             util.exit_fatal(e.message, e.errcode)
         server_id = sq.server_id()

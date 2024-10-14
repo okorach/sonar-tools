@@ -28,8 +28,10 @@ from requests import RequestException
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, portfolios, applications, projects, errcodes, exceptions
+from sonar import platform, portfolios, applications, projects, errcodes, exceptions, version
 import sonar.utilities as util
+
+TOOL_NAME = "sonar-loc"
 
 
 def __get_csv_header_list(**kwargs) -> list[str]:
@@ -194,7 +196,7 @@ def __parse_args(desc):
         action="store_true",
         help="Extracts only toplevel portfolios LoCs, not sub-portfolios",
     )
-    args = options.parse_and_check(parser=parser, logger_name="sonar-loc")
+    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
     return args
 
 
@@ -220,6 +222,7 @@ def main() -> None:
         )
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
+        endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ConnectionError) as e:
         util.exit_fatal(e.message, e.errcode)
 

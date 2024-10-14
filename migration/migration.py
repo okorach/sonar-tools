@@ -22,7 +22,7 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
-from threading import Thread, Lock
+from threading import Thread
 from queue import Queue
 
 from cli import options
@@ -30,6 +30,8 @@ from sonar import exceptions, errcodes, utilities, version
 import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
+
+TOOL_NAME = "sonar-migration"
 
 _EVERYTHING = [
     options.WHAT_SETTINGS,
@@ -67,8 +69,6 @@ __MAP = {
     options.WHAT_PORTFOLIOS: __JSON_KEY_PORTFOLIOS,
 }
 
-_WRITE_LOCK = Lock()
-
 
 def __parse_args(desc):
     parser = options.set_common_args(desc)
@@ -93,7 +93,7 @@ def __parse_args(desc):
         f"By default the export will show the value as '{utilities.DEFAULT}' "
         "and the setting will not be imported at import time",
     )
-    args = options.parse_and_check(parser=parser, logger_name="sonar-migration", is_migration=True)
+    args = options.parse_and_check(parser=parser, logger_name=TOOL_NAME, is_migration=True)
     return args
 
 
@@ -192,7 +192,7 @@ def main() -> None:
         kwargs = utilities.convert_args(__parse_args("Extract SonarQube to SonarCloud migration data"))
         endpoint = platform.Platform(**kwargs)
         endpoint.verify_connection()
-        endpoint.set_user_agent(f"sonar-migration {version.MIGRATION_TOOL_VERSION}")
+        endpoint.set_user_agent(f"{TOOL_NAME} {version.MIGRATION_TOOL_VERSION}")
     except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
         utilities.exit_fatal(e.message, e.errcode)
 
