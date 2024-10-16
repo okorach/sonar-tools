@@ -189,11 +189,11 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
 def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
     """Exports a platform configuration in a JSON file"""
     file = kwargs[options.REPORT_FILE]
-    mode = kwargs.get("migration", "CONFIG")
+    mode = kwargs.get("mode", "CONFIG")
     export_settings = {
         "INLINE_LISTS": False if mode == "MIGRATION" else not kwargs.get("dontInlineLists", False),
         "EXPORT_DEFAULTS": True,
-        "FULL_EXPORT": False if mode == "MIGRATION" else kwargs["fullExport"],
+        "FULL_EXPORT": False if mode == "MIGRATION" else kwargs.get("fullExport", False),
         "MODE": mode,
         "THREADS": kwargs[options.NBR_THREADS],
         "SKIP_ISSUES": kwargs.get("skipIssues", False),
