@@ -102,7 +102,7 @@ def test_config_non_existing_project() -> None:
     util.clean(util.JSON_FILE)
 
 
-def test_config_inline_commas() -> None:
+def test_config_inline_lists() -> None:
     """test_config_inline_commas"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit):
@@ -124,7 +124,7 @@ def test_config_inline_commas() -> None:
     util.clean(util.JSON_FILE)
 
 
-def test_config_no_inline_commas() -> None:
+def test_config_dont_inline_lists() -> None:
     """test_config_no_inline_commas"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit):

@@ -176,7 +176,7 @@ def __check_file_writeable(file: str) -> None:
         os.remove(file)
 
 
-def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_token: bool = True, is_migration: bool = False) -> ArgumentParser:
+def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_token: bool = True, is_migration: bool = False) -> object:
     """Parses arguments, applies default settings and perform common environment checks"""
     try:
         args = parser.parse_args()

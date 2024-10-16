@@ -22,14 +22,11 @@
     Exports SonarQube platform configuration as JSON
 """
 import sys
-from threading import Thread
-from queue import Queue
 
-from cli import options
+from cli import options, config
 from sonar import exceptions, errcodes, utilities, version
 import sonar.logging as log
-from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
-from sonar import projects, portfolios, applications
+from sonar import platform
 
 TOOL_NAME = "sonar-migration"
 
@@ -97,94 +94,6 @@ def __parse_args(desc):
     return args
 
 
-def write_objects(queue: Queue, fd, object_type: str) -> None:
-    """
-    Thread to write projects in the JSON file
-    """
-    done = False
-    prefix = ""
-    log.info("Waiting %s to write...", object_type)
-    print(f'"{object_type}": ' + "{", file=fd)
-    while not done:
-        obj_json = queue.get()
-        done = obj_json is None
-        if not done:
-            obj_json = utilities.remove_nones(obj_json)
-            if object_type in ("projects", "applications", "portfolios", "users"):
-                if object_type == "users":
-                    key = obj_json.pop("login", None)
-                else:
-                    key = obj_json.pop("key", None)
-                log.debug("Writing %s key '%s'", object_type[:-1], key)
-                print(f'{prefix}"{key}": {utilities.json_dump(obj_json)}', end="", file=fd)
-            else:
-                log.debug("Writing %s", object_type)
-                print(f"{prefix}{utilities.json_dump(obj_json)[2:-1]}", end="", file=fd)
-            prefix = ",\n"
-        queue.task_done()
-    print("\n}", file=fd, end="")
-    log.info("Writing %s complete", object_type)
-
-
-def __export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> None:
-    """Exports a platform configuration in a JSON file"""
-    file = kwargs[options.REPORT_FILE]
-    export_settings = {
-        "INLINE_LISTS": False,
-        "EXPORT_DEFAULTS": True,
-        # "FULL_EXPORT": kwargs["fullExport"],
-        "FULL_EXPORT": False,
-        "MODE": "MIGRATION",
-        "THREADS": kwargs[options.NBR_THREADS],
-        "SKIP_ISSUES": kwargs["skipIssues"],
-    }
-    if "projects" in what and kwargs[options.KEYS]:
-        non_existing_projects = [key for key in kwargs[options.KEYS] if not projects.exists(key, endpoint)]
-        if len(non_existing_projects) > 0:
-            utilities.exit_fatal(f"Project key(s) '{','.join(non_existing_projects)}' do(es) not exist", errcodes.NO_SUCH_KEY)
-
-    calls = {
-        "platform": [__JSON_KEY_PLATFORM, platform.basics],
-        options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
-        options.WHAT_RULES: [__JSON_KEY_RULES, rules.export],
-        options.WHAT_PROFILES: [__JSON_KEY_PROFILES, qualityprofiles.export],
-        options.WHAT_GATES: [__JSON_KEY_GATES, qualitygates.export],
-        options.WHAT_PROJECTS: [__JSON_KEY_PROJECTS, projects.export],
-        options.WHAT_APPS: [__JSON_KEY_APPS, applications.export],
-        options.WHAT_PORTFOLIOS: [__JSON_KEY_PORTFOLIOS, portfolios.export],
-        options.WHAT_USERS: [__JSON_KEY_USERS, users.export],
-        options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
-    }
-    what.append("platform")
-    log.info("Exporting configuration from %s", kwargs[options.URL])
-    key_list = kwargs[options.KEYS]
-    is_first = True
-    q = Queue(maxsize=0)
-    with utilities.open_file(file, mode="w") as fd:
-        print("{", file=fd)
-        for what_item, call_data in calls.items():
-            if what_item not in what:
-                continue
-            ndx, func = call_data
-            try:
-                if not is_first:
-                    print(",", file=fd)
-                is_first = False
-                worker = Thread(target=write_objects, args=(q, fd, ndx))
-                worker.daemon = True
-                worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
-                worker.start()
-                func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
-                q.join()
-            except exceptions.UnsupportedOperation as e:
-                log.warning(e.message)
-        # if not kwargs.get("dontInlineLists", False):
-        #    sq_settings = utilities.inline_lists(sq_settings, exceptions=("conditions",))
-        print("\n}", file=fd)
-    utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
-    log.info("Exporting migration data from %s completed", kwargs["url"])
-
-
 def main() -> None:
     """Main entry point for sonar-config"""
     start_time = utilities.start_clock()
@@ -203,7 +112,7 @@ def main() -> None:
     if kwargs[options.REPORT_FILE] is None:
         kwargs[options.REPORT_FILE] = f"sonar-migration.{endpoint.server_id()}.json"
     try:
-        __export_config(endpoint, what, **kwargs)
+        config.export_config(endpoint, what, mode="MIGRATION", **kwargs)
     except exceptions.ObjectNotFound as e:
         utilities.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     except (PermissionError, FileNotFoundError) as e:
