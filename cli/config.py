@@ -36,19 +36,6 @@ import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
 
-
-_EVERYTHING = [
-    options.WHAT_SETTINGS,
-    options.WHAT_USERS,
-    options.WHAT_GROUPS,
-    options.WHAT_GATES,
-    options.WHAT_RULES,
-    options.WHAT_PROFILES,
-    options.WHAT_PROJECTS,
-    options.WHAT_APPS,
-    options.WHAT_PORTFOLIOS,
-]
-
 TOOL_NAME = "sonar-config"
 
 DONT_INLINE_LISTS = "dontInlineLists"
@@ -65,19 +52,6 @@ __JSON_KEY_PROJECTS = "projects"
 __JSON_KEY_APPS = "applications"
 __JSON_KEY_PORTFOLIOS = "portfolios"
 
-__MAP = {
-    options.WHAT_SETTINGS: __JSON_KEY_SETTINGS,
-    options.WHAT_USERS: __JSON_KEY_USERS,
-    options.WHAT_GROUPS: __JSON_KEY_GROUPS,
-    options.WHAT_GATES: __JSON_KEY_GATES,
-    options.WHAT_RULES: __JSON_KEY_RULES,
-    options.WHAT_PROFILES: __JSON_KEY_PROFILES,
-    options.WHAT_PROJECTS: __JSON_KEY_PROJECTS,
-    options.WHAT_APPS: __JSON_KEY_APPS,
-    options.WHAT_PORTFOLIOS: __JSON_KEY_PORTFOLIOS,
-}
-
-
 _EXPORT_CALLS = {
     __JSON_KEY_PLATFORM: [__JSON_KEY_PLATFORM, platform.basics],
     options.WHAT_SETTINGS: [__JSON_KEY_SETTINGS, platform.export],
@@ -91,8 +65,11 @@ _EXPORT_CALLS = {
     options.WHAT_GROUPS: [__JSON_KEY_GROUPS, groups.export],
 }
 
+_EVERYTHING = list(_EXPORT_CALLS.keys())[1:]
 
-def __parse_args(desc):
+
+def __parse_args(desc: str) -> object:
+    """Sets and parses all sonar-config options"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json", "yaml"))
