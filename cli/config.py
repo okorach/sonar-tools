@@ -234,6 +234,8 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
 def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
     """Cleans up the JSON before writing"""
     json_data = utilities.sort_lists(json_data)
+    if export_settings.get("MODE", "CONFIG") == "MIGRATION":
+        return json_data
     if not export_settings.get("FULL_EXPORT", False):
         json_data = utilities.remove_empties(utilities.remove_nones(json_data))
     if export_settings.get("INLINE_LISTS", True):
