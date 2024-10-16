@@ -36,7 +36,6 @@ import sonar.logging as log
 from sonar import platform, rules, qualityprofiles, qualitygates, users, groups
 from sonar import projects, portfolios, applications
 
-WRITE_FILE = None
 
 _EVERYTHING = [
     options.WHAT_SETTINGS,
@@ -51,6 +50,9 @@ _EVERYTHING = [
 ]
 
 TOOL_NAME = "sonar-config"
+
+DONT_INLINE_LISTS = "dontInlineLists"
+FULL_EXPORT = "fullExport"
 
 __JSON_KEY_PLATFORM = "platform"
 __JSON_KEY_SETTINGS = "globalSettings"
@@ -98,7 +100,7 @@ def __parse_args(desc):
     parser = options.set_what(parser, what_list=_EVERYTHING, operation="export or import")
     parser = options.add_import_export_arg(parser, "configuration")
     parser.add_argument(
-        "--fullExport",
+        f"--{FULL_EXPORT}",
         required=False,
         default=False,
         action="store_true",
@@ -115,7 +117,7 @@ def __parse_args(desc):
         "and the setting will not be imported at import time",
     )
     parser.add_argument(
-        "--dontInlineLists",
+        f"--{DONT_INLINE_LISTS}",
         required=False,
         default=False,
         action="store_true",
@@ -191,9 +193,9 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
     file = kwargs[options.REPORT_FILE]
     mode = kwargs.get("mode", "CONFIG")
     export_settings = {
-        "INLINE_LISTS": False if mode == "MIGRATION" else not kwargs.get("dontInlineLists", False),
+        "INLINE_LISTS": False if mode == "MIGRATION" else not kwargs.get(DONT_INLINE_LISTS, False),
         "EXPORT_DEFAULTS": True,
-        "FULL_EXPORT": False if mode == "MIGRATION" else kwargs.get("fullExport", False),
+        "FULL_EXPORT": False if mode == "MIGRATION" else kwargs.get(FULL_EXPORT, False),
         "MODE": mode,
         "THREADS": kwargs[options.NBR_THREADS],
         "SKIP_ISSUES": kwargs.get("skipIssues", False),
