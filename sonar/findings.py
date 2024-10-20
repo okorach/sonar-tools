@@ -226,12 +226,9 @@ class Finding(sq.SqObject):
         """Returns the finding language"""
         return rules.get_object(endpoint=self.endpoint, key=self.rule).language
 
-    def to_csv(self, separator: str = ",", without_time: bool = False) -> list[str]:
+    def to_csv(self, without_time: bool = False) -> list[str]:
         """
-        :param separator: CSV separator, defaults to ","
-        :type separator: str, optional
-        :return: The finding as CSV
-        :rtype: str
+        :return: The finding attributes as list
         """
         data = self.to_json(without_time)
         data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
