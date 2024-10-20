@@ -271,9 +271,9 @@ def count(endpoint: platform.Platform, **params) -> int:
 
 
 def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
-    """Returns a list of rules corresponding to certain csearch filters"""
+    """Returns a list of rules corresponding to certain search filters"""
     if not use_cache or params or len(_OBJECTS) < 100:
-        return search(endpoint, include_external="false", **params)
+        return search(endpoint, include_external="true", **params)
     return _OBJECTS
 
 
