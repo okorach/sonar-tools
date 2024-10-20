@@ -262,7 +262,7 @@ class Finding(sq.SqObject):
                 if data["status"] == old:
                     data["status"] = new
                     break
-        return {k: v for k, v in data.items() if v is not None and v not in _JSON_FIELDS_PRIVATE}
+        return {k: v for k, v in data.items() if v is not None and k not in _JSON_FIELDS_PRIVATE}
 
     def to_sarif(self, full: bool = True) -> dict[str, str]:
         """
