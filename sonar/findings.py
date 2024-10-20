@@ -56,27 +56,10 @@ _CSV_FIELDS = (
     "key",
     "rule",
     "language",
-    "type",
-    "severity",
-    "status",
-    "creationDate",
-    "updateDate",
-    "projectKey",
-    "projectName",
-    "branch",
-    "pullRequest",
-    "file",
-    "line",
-    "effort",
-    "message",
-    "author",
-)
-
-_CSV_FIELDS_NEW = (
-    "key",
-    "rule",
-    "language",
-    "impacts",
+    "securityImpact",
+    "reliabilityImpact",
+    "maintainabilityImpact",
+    "otherImpact",
     "status",
     "creationDate",
     "updateDate",
@@ -93,6 +76,37 @@ _CSV_FIELDS_NEW = (
 
 FILTERS = ("statuses", "resolutions", "severities", "languages", "pullRequest", "branch", "tags", "types", "createdBefore", "createdAfter")
 
+MQR_SEVERITIES = ("BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO")
+OLD_SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "LOW", "INFO")
+SEVERITY_NONE = "NONE"
+
+TYPE_VULN = "VULNERABILITY"
+TYPE_BUG = "BUG"
+TYPE_CODE_SMELL = "CODE_SMELL"
+TYPE_HOTSPOT = "SECURITY_HOTSPOT"
+TYPE_NONE = "NONE"
+
+TYPES = (TYPE_VULN, TYPE_BUG, TYPE_CODE_SMELL, TYPE_HOTSPOT)
+QUALITY_SECURITY = "SECURITY"
+QUALITY_RELIABILITY = "RELIABILITY"
+QUALITY_MAINTAINABILITY = "MAINTAINABILITY"
+QUALITY_NONE = "NONE"
+QUALITIES = (QUALITY_SECURITY, QUALITY_RELIABILITY, QUALITY_MAINTAINABILITY)
+
+# Mapping between old issues type and new software qualities
+TYPE_QUALITY_MAPPING = {
+    TYPE_CODE_SMELL: QUALITY_MAINTAINABILITY,
+    TYPE_BUG: QUALITY_RELIABILITY,
+    TYPE_VULN: QUALITY_SECURITY,
+    TYPE_HOTSPOT: QUALITY_SECURITY,
+    TYPE_NONE: QUALITY_NONE,
+}
+
+# Mapping between old and new severities
+SEVERITY_MAPPING = {"BLOCKER": "BLOCKER", "CRITICAL": "HIGH", "MAJOR": "MEDIUM", "MINOR": "LOW", "INFO": "INFO", "NONE": "NONE"}
+
+STATUS_MAPPING = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
+
 
 class Finding(sq.SqObject):
     """
@@ -105,6 +119,7 @@ class Finding(sq.SqObject):
         super().__init__(endpoint=endpoint, key=key)
         self.severity = None  #: Severity (str)
         self.type = None  #: Type (str): VULNERABILITY, BUG, CODE_SMELL or SECURITY_HOTSPOT
+        self.impacts = None  #: 10.x MQR mode
         self.author = None  #: Author (str)
         self.assignee = None  #: Assignee (str)
         self.status = None  #: Status (str)
@@ -136,8 +151,14 @@ class Finding(sq.SqObject):
         else:
             self._json.update(jsondata)
         self.author = jsondata.get("author", None)
-        self.type = jsondata.get("type", None)
-        self.severity = jsondata.get("severity", None)
+        if "vulnerabilityProbability" in jsondata:
+            self.impacts = {QUALITY_SECURITY: jsondata["vulnerabilityProbability"] + "(HOTSPOT)"}
+        elif self.endpoint.version() >= (10, 2, 0):
+            self.impacts = {i["softwareQuality"]: i["severity"] for i in jsondata["impacts"]}
+        else:
+            self.impacts = {TYPE_QUALITY_MAPPING[jsondata.get("type", TYPE_NONE)]: SEVERITY_MAPPING[jsondata.get("severity", SEVERITY_NONE)]}
+            self.type = jsondata.get("type", TYPE_NONE)
+            self.severity = jsondata.get("severity", SEVERITY_NONE)
 
         self.message = jsondata.get("message", None)
         self.status = jsondata["status"]
@@ -205,20 +226,17 @@ class Finding(sq.SqObject):
         """Returns the finding language"""
         return rules.get_object(endpoint=self.endpoint, key=self.rule).language
 
-    def to_csv(self, separator: str = ",", without_time: bool = False) -> list[str]:
+    def to_csv(self, without_time: bool = False) -> list[str]:
         """
-        :param separator: CSV separator, defaults to ","
-        :type separator: str, optional
-        :return: The finding as CSV
-        :rtype: str
+        :return: The finding attributes as list
         """
         data = self.to_json(without_time)
         data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
-        if "impacts" in data:
-            data["impacts"] = util.quote(", ".join([f"{k}:{v}" for k, v in data["impacts"].items()]), separator)
-            return [str(data.get(field, "")) for field in _CSV_FIELDS_NEW]
-        else:
-            return [str(data.get(field, "")) for field in _CSV_FIELDS]
+        data["securityImpact"] = self.impacts.get("SECURITY", "")
+        data["reliabilityImpact"] = self.impacts.get("RELIABILITY", "")
+        data["maintainabilityImpact"] = self.impacts.get("MAINTAINABILITY", "")
+        data["otherImpact"] = self.impacts.get("NONE", "")
+        return [str(data.get(field, "")) for field in _CSV_FIELDS]
 
     def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
         """
@@ -231,24 +249,20 @@ class Finding(sq.SqObject):
         data = vars(self).copy()
         for old_name, new_name in _JSON_FIELDS_REMAPPED:
             data[new_name] = data.pop(old_name, None)
+
         data["file"] = self.file()
         data["creationDate"] = self.creation_date.strftime(fmt)
         data["updateDate"] = self.modification_date.strftime(fmt)
         data["language"] = self.language()
         data["url"] = self.url()
-        if data.get("resolution", None):
-            data["status"] = data.pop("resolution")
-        status_conversion = {"WONTFIX": "ACCEPTED", "REOPENED": "OPEN", "REMOVED": "CLOSED", "FIXED": "CLOSED"}
-        for old, new in status_conversion.items():
-            if data["status"] == old:
-                data["status"] = new
-                break
-        for field in _JSON_FIELDS_PRIVATE:
-            data.pop(field, None)
-        for k in data.copy():
-            if data[k] is None or data[k] == "":
-                data.pop(k)
-        return data
+        if self.endpoint.version() < (10, 2, 0):
+            if data.get("resolution", None):
+                data["status"] = data.pop("resolution")
+            for old, new in STATUS_MAPPING.items():
+                if data["status"] == old:
+                    data["status"] = new
+                    break
+        return {k: v for k, v in data.items() if v is not None and v not in _JSON_FIELDS_PRIVATE}
 
     def to_sarif(self, full: bool = True) -> dict[str, str]:
         """
@@ -257,7 +271,7 @@ class Finding(sq.SqObject):
         :rtype: dict
         """
         data = {"level": "warning", "ruleId": self.rule, "message": {"text": self.message}}
-        if self.is_bug() or self.is_vulnerability() or self.severity in ("CRITICAL", "BLOCKER"):
+        if self.is_bug() or self.is_vulnerability() or self.severity in ("CRITICAL", "BLOCKER", "HIGH"):
             data["level"] = "error"
         data["properties"] = {"url": self.url()}
         try:
@@ -285,16 +299,16 @@ class Finding(sq.SqObject):
         return data
 
     def is_vulnerability(self) -> bool:
-        return self.type == "VULNERABILITY"
+        return self.type == "VULNERABILITY" or "SECURITY" in self.impacts
 
     def is_hotspot(self) -> bool:
-        return self.type == "SECURITY_HOTSPOT"
+        return self.type == "SECURITY_HOTSPOT" or "SECURITY" in self.impacts
 
     def is_bug(self) -> bool:
-        return self.type == "BUG"
+        return self.type == "BUG" or "RELIABILITY" in self.impacts
 
     def is_code_smell(self) -> bool:
-        return self.type == "CODE_SMELL"
+        return self.type == "CODE_SMELL" or "MAINTAINABILITY" in self.impacts
 
     def is_security_issue(self) -> bool:
         return self.is_vulnerability() or self.is_hotspot()
@@ -465,7 +479,7 @@ def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None,
 def to_csv_header() -> list[str]:
     """Returns the list of CSV fields provided by an issue CSV export"""
     # return "# " + separator.join(_CSV_FIELDS)
-    return list(_CSV_FIELDS_NEW)
+    return list(_CSV_FIELDS)
 
 
 def __get_changelog(queue: Queue[Finding], added_after: datetime.datetime = None) -> None:
