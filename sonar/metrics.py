@@ -43,6 +43,7 @@ MAIN_METRICS = (
     "coverage",
     "duplicated_lines_density",
     "security_hotspots_reviewed",
+    "new_violations",
     "new_bugs",
     "new_vulnerabilities",
     "new_code_smells",
