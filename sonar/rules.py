@@ -136,7 +136,7 @@ class Rule(sq.SqObject):
         self.language = data.get("lang", None)
         if not self.language:
             log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
-            self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "unknown")
+            self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
         self.custom_desc = data.get("mdNote", None)
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
