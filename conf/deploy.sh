@@ -48,16 +48,16 @@ while [ $# -ne 0 ]; do
 done
 
 black --line-length=150 .
-rm -rf $ROOTDIR/build/lib/sonar $ROOTDIR/build/lib/cli $ROOTDIR/build/scripts*/sonar-tools $ROOTDIR/dist/sonar_tools*
-python3 $ROOTDIR/setup.py bdist_wheel
+rm -rf "$ROOTDIR/build/lib/sonar" "$ROOTDIR/build/lib/cli" "$ROOTDIR"/build/scripts*/sonar-tools "$ROOTDIR"/dist/sonar_tools*
+python3 "$ROOTDIR/setup.py" bdist_wheel
 
 # Deploy locally for tests
 pip install --upgrade --force-reinstall $ROOTDIR/dist/sonar_tools-*-py3-*.whl
 
-version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
+version=$(grep PACKAGE_VERSION "$ROOTDIR"/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
 
 if [ "$build_image" == "1" ]; then
-    docker build -t olivierkorach/sonar-tools:$version -t olivierkorach/sonar-tools:latest -f $CONFDIR/snapshot.Dockerfile $ROOTDIR --load
+    docker build -t "olivierkorach/sonar-tools:$version" -t olivierkorach/sonar-tools:latest -f "$CONFDIR/snapshot.Dockerfile" "$ROOTDIR" --load
 fi
 
 if [ "$build_docs" == "1" ]; then
@@ -70,11 +70,11 @@ if [ "$release" = "1" ]; then
     echo "Confirm release [y/n] ?"
     read -r confirm
     if [ "$confirm" = "y" ]; then
-        python3 -m twine upload $ROOTDIR/dist/sonar_tools-$version-py3-none-any.whl
+        python3 -m twine upload "$ROOTDIR/dist/sonar_tools-$version-py3-none-any.whl"
     fi
 fi
 
 if [ "$release_docker" = "1" ]; then
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t olivierkorach/sonar-tools:$version -t olivierkorach/sonar-tools:latest -f $CONFDIR/release.Dockerfile $ROOTDIR
-    cd $ROOTDIR && docker pushrm olivierkorach/sonar-tools
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t "olivierkorach/sonar-tools:$version" -t olivierkorach/sonar-tools:latest -f "$CONFDIR/release.Dockerfile" "$ROOTDIR"
+    cd "$ROOTDIR" && docker pushrm olivierkorach/sonar-tools
 fi

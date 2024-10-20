@@ -52,7 +52,7 @@ coverageReport="$buildDir/coverage.xml"
 externalIssuesReport="$buildDir/external-issue-report.json"
 
 [ ! -d $buildDir ] && mkdir $buildDir
-rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
+# rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
 if [ "$dotest" == "true" ]; then
   $CONFDIR/run_tests.sh
