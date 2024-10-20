@@ -398,7 +398,10 @@ def test_output_format_sarif() -> None:
             assert k in loc["region"]
         for k in "creationDate", "key", "projectKey", "updateDate":
             assert k in issue["properties"]
-        assert "effort" in issue["properties"] or issue["properties"]["type"] == "SECURITY_HOTSPOT"
+        if util.SQ.version() >= (10, 2, 0):
+            assert "effort" in issue["properties"] or "HOTSPOT" in issue["properties"]["impacts"].get("SECURITY", "")
+        else:
+            assert "effort" in issue["properties"] or issue["properties"]["type"] == "SECURITY_HOTSPOT"
         assert "language" in issue["properties"] or issue["ruleId"].startswith("external")
         assert issue["level"] in ("warning", "error")
     util.clean(SARIF_FILE)
