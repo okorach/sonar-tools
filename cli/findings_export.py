@@ -27,10 +27,9 @@
 
 import sys
 import os
-import time
 import csv
+from typing import TextIO
 from queue import Queue
-import threading
 from threading import Thread
 from requests import RequestException
 
@@ -43,11 +42,8 @@ from sonar import projects, applications, portfolios
 import sonar.utilities as util
 
 TOOL_NAME = "sonar-findings"
-WRITE_END = object()
 TOTAL_FINDINGS = 0
-IS_FIRST = True
-TOTAL_SEM = threading.Semaphore()
-WRITE_SEM = threading.Semaphore()
+WRITE_END = None
 DATES_WITHOUT_TIME = False
 
 SARIF_HEADER = """{
@@ -144,103 +140,88 @@ def parse_args(desc):
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __write_header(**kwargs) -> None:
+def __write_header(fd: TextIO, **kwargs) -> None:
     """Writes the file header"""
-    with util.open_file(kwargs[options.REPORT_FILE], mode="a") as fd:
-        if kwargs[options.FORMAT] == "sarif":
-            print(SARIF_HEADER, file=fd)
-        elif kwargs[options.FORMAT] == "json":
-            print("[\n", file=fd)
-        else:
-            csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
-            row = findings.to_csv_header()
-            if kwargs[options.WITH_URL]:
-                row.append("URL")
-            csvwriter.writerow(row)
+    if kwargs[options.FORMAT] == "sarif":
+        print(SARIF_HEADER, file=fd)
+    elif kwargs[options.FORMAT] == "json":
+        print("[\n", file=fd)
+    else:
+        csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        row = findings.to_csv_header()
+        if kwargs[options.WITH_URL]:
+            row.append("URL")
+        csvwriter.writerow(row)
 
 
-def __write_footer(file: str, format: str) -> None:
+def __write_footer(fd: TextIO, format: str) -> None:
     """Writes the closing characters of export file depending on export format"""
     if format in ("json", "sarif"):
         closing_sequence = "\n]\n}\n]\n}" if format == "sarif" else "\n]"
-        with util.open_file(file, mode="a") as f:
-            print(f"{closing_sequence}", file=f)
+        print(f"{closing_sequence}", file=fd)
 
 
-def __dump_findings(findings_list: dict[str, findings.Finding], **kwargs) -> None:
-    """Dumps a list of findings in a file. The findings are appended at the end of the file
-
-    :param list[Finding] findings_list: List of findings
-    :param str file: Filename to dump the findings
-    :return: Nothing
-    """
-    file = kwargs[options.REPORT_FILE]
-    file_format = kwargs[options.FORMAT]
-    log.info("Writing %d more findings to %s in format %s", len(findings_list), f"file '{file}'" if file else "stdout", file_format)
-    if file_format in ("json", "sarif"):
-        __write_json_findings(findings_list=findings_list, **kwargs)
-    else:
-        __write_csv_findings(findings_list=findings_list, **kwargs)
-    log.debug("File written")
-
-
-def __write_json_findings(findings_list: dict[str, findings.Finding], **kwargs) -> None:
+def __write_json_findings(findings_list: dict[str, findings.Finding], fd: TextIO, **kwargs) -> None:
     """Appends a list of findings in JSON or SARIF format in a file"""
+    log.debug("in write_json_findings")
     i = len(findings_list)
     comma = ","
-    with util.open_file(kwargs[options.REPORT_FILE], mode="a") as fd:
-        for finding in findings_list.values():
-            i -= 1
-            if i == 0:
-                comma = ""
-            if kwargs[options.FORMAT] == "json":
-                json_data = finding.to_json(DATES_WITHOUT_TIME)
-            else:
-                json_data = finding.to_sarif(kwargs.get("full", True))
-            if not kwargs[options.WITH_URL]:
-                json_data.pop("url", None)
-            print(f"{util.json_dump(json_data, indent=1)}{comma}\n", file=fd, end="")
+    for finding in findings_list.values():
+        i -= 1
+        if i == 0:
+            comma = ""
+        if kwargs[options.FORMAT] == "json":
+            json_data = finding.to_json(DATES_WITHOUT_TIME)
+        else:
+            json_data = finding.to_sarif(kwargs.get("full", True))
+        if not kwargs[options.WITH_URL]:
+            json_data.pop("url", None)
+        print(f"{util.json_dump(json_data, indent=1)}{comma}", file=fd)
 
 
-def __write_csv_findings(file: str, findings_list: dict[str, findings.Finding], **kwargs) -> None:
+def __write_csv_findings(findings_list: dict[str, findings.Finding], fd: TextIO, **kwargs) -> None:
     """Appends a list of findings in a CSV file"""
-    with util.open_file(file, mode="a") as fd:
-        csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
-        for finding in findings_list.values():
-            row = finding.to_csv()
-            if kwargs[options.WITH_URL]:
-                row.append(finding.url())
-            csvwriter.writerow(row)
+    csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+    for finding in findings_list.values():
+        row = finding.to_csv()
+        if kwargs[options.WITH_URL]:
+            row.append(finding.url())
+        csvwriter.writerow(row)
 
 
 def __write_findings(queue: Queue[list[findings.Finding]], params: ConfigSettings) -> None:
     """Writes a list of findings in an output file or stdout"""
-    global IS_FIRST
     global TOTAL_FINDINGS
-    while True:
-        while queue.empty():
-            time.sleep(0.5)
-        (data, _) = queue.get()
-        if data == WRITE_END:
-            log.debug("End of write queue reached")
-            queue.task_done()
-            break
+    TOTAL_FINDINGS = 0
+    is_first = True
+    file = params[options.REPORT_FILE]
+    with util.open_file(file=file) as fd:
+        __write_header(fd, **params)
+        while True:
+            findings_list = queue.get()
+            if findings_list == WRITE_END:
+                log.debug("End of write queue reached")
+                queue.task_done()
+                break
 
-        log.debug("Processing write queue for project")
-        if len(data) == 0:
-            queue.task_done()
-            continue
+            log.debug("Processing write queue for project")
+            if len(findings_list) == 0:
+                queue.task_done()
+                continue
 
-        if params[options.FORMAT] in ("sarif", "json") and not IS_FIRST:
-            with WRITE_SEM:
-                with util.open_file(params[options.REPORT_FILE], mode="a") as f:
-                    print(",", file=f)
-        IS_FIRST = False
-        with WRITE_SEM:
-            __dump_findings(data, **params)
-        with TOTAL_SEM:
-            TOTAL_FINDINGS += len(data)
-        queue.task_done()
+            if params[options.FORMAT] in ("sarif", "json") and not is_first:
+                print(",", file=fd)
+            is_first = False
+            log.info(
+                "Writing %d more findings to %s in format %s", len(findings_list), f"file '{file}'" if file else "stdout", params[options.FORMAT]
+            )
+            if params[options.FORMAT] in ("json", "sarif"):
+                __write_json_findings(findings_list=findings_list, fd=fd, **params)
+            else:
+                __write_csv_findings(findings_list=findings_list, fd=fd, **params)
+            TOTAL_FINDINGS += len(findings_list)
+            queue.task_done()
+        __write_footer(fd, params[options.FORMAT])
 
     log.debug("End of write findings")
 
@@ -267,7 +248,7 @@ def __verify_inputs(params):
     return True
 
 
-def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_queue: Queue[dict[str, findings.Finding], bool]) -> None:
+def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_queue: Queue[dict[str, findings.Finding]]) -> None:
     """Gets the findings of a component and puts them in a writing queue"""
     while not queue.empty():
         (component, params) = queue.get()
@@ -288,7 +269,6 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
         if status_list or resol_list or type_list or sev_list or options.LANGUAGES in params:
             search_findings = False
 
-        log.debug("WriteQueue %s task %s put", str(write_queue), component.key)
         if search_findings:
             try:
                 findings_list = findings.export_findings(
@@ -297,7 +277,8 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
             except (ConnectionError, RequestException) as e:
                 log.critical("%s while exporting findings of %s, skipped", util.error_msg(e), str(component))
                 findings_list = {}
-            write_queue.put([findings_list, False])
+            log.debug("WRITE_QUEUE put FINDINGS for %s", str(component))
+            write_queue.put(findings_list)
         else:
             new_params = params.copy()
             for p in (
@@ -338,40 +319,41 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 log.info("Selected types, severities, resolutions or statuses disables issue search")
-            write_queue.put([findings_list, False])
+            log.debug("WRITE_QUEUE put ISSUES and HOTSPOTS for %s", str(component))
+            write_queue.put(findings_list)
+
         log.debug("Queue %s task for %s done", str(queue), str(component))
         queue.task_done()
 
 
 def store_findings(components_list: dict[str, object], params: ConfigSettings) -> None:
     """Export all findings of a given project list"""
-    my_queue = Queue(maxsize=0)
-    write_queue = Queue(maxsize=0)
+    components_queue = Queue(maxsize=0)
     for comp in components_list.values():
         try:
-            log.debug("Queue %s task %s put", str(my_queue), str(comp))
-            my_queue.put((comp, params.copy()))
+            log.debug("Queue %s task %s put", str(components_queue), str(comp))
+            components_queue.put((comp, params.copy()))
         except (ConnectionError, RequestException) as e:
             log.critical("%s while exporting findings of %s, skipped", util.error_msg(e), str(comp))
 
-    threads = params.get(options.NBR_THREADS, 4)
-    for i in range(min(threads, len(components_list))):
-        log.debug("Starting finding search thread 'findingSearch%d'", i)
-        worker = Thread(target=__get_component_findings, args=[my_queue, write_queue])
-        worker.setDaemon(True)
-        worker.setName(f"findingSearch{i}")
-        worker.start()
-
     log.info("Starting finding writer thread 'findingWriter'")
+    write_queue = Queue(maxsize=0)
     write_worker = Thread(target=__write_findings, args=[write_queue, params.copy()])
     write_worker.setDaemon(True)
     write_worker.setName("findingWriter")
     write_worker.start()
 
-    my_queue.join()
+    threads = params.get(options.NBR_THREADS, 4)
+    for i in range(min(threads, len(components_list))):
+        log.debug("Starting finding search thread 'findingSearch%d'", i)
+        worker = Thread(target=__get_component_findings, args=[components_queue, write_queue])
+        worker.setDaemon(True)
+        worker.setName(f"findingSearch{i}")
+        worker.start()
+    components_queue.join()
     # Tell the writer thread that writing is complete
     log.debug("WriteQueue %s task WRITE_END put", str(write_queue))
-    write_queue.put((WRITE_END, True))
+    write_queue.put(WRITE_END)
     write_queue.join()
     log.debug("WriteQueue joined")
 
@@ -395,8 +377,6 @@ def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) 
 
 def main():
     global DATES_WITHOUT_TIME
-    global IS_FIRST
-    IS_FIRST = True
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(parse_args("Sonar findings export"))
@@ -434,9 +414,7 @@ def main():
 
     log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     try:
-        __write_header(**params)
         store_findings(components_list, params=params)
-        __write_footer(fname, params[options.FORMAT])
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while exporting findings: {e}", exit_code=errcodes.OS_ERROR)
     log.info("Returned findings: %d", TOTAL_FINDINGS)
