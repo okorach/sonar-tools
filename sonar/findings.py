@@ -255,13 +255,10 @@ class Finding(sq.SqObject):
         data["updateDate"] = self.modification_date.strftime(fmt)
         data["language"] = self.language()
         data["url"] = self.url()
-        if self.endpoint.version() < (10, 2, 0):
-            if data.get("resolution", None):
-                data["status"] = data.pop("resolution")
-            for old, new in STATUS_MAPPING.items():
-                if data["status"] == old:
-                    data["status"] = new
-                    break
+        if data.get("resolution", None):
+            data["status"] = data.pop("resolution")
+        if self.endpoint.version() >= (10, 2, 0):
+            data["status"] = STATUS_MAPPING.get(data["status"], data["status"])
         return {k: v for k, v in data.items() if v is not None and k not in _JSON_FIELDS_PRIVATE}
 
     def to_sarif(self, full: bool = True) -> dict[str, str]:
