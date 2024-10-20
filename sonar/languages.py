@@ -43,7 +43,7 @@ class Language(sqobject.SqObject):
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.name = name  #: Language name
-        self._nb_rules = {"ALL": None, "BUG": None, "VULNERABILITY": None, "COD_SMELL": None, "SECURITY_HOTSPOT": None}
+        self._nb_rules = {"_ALL": None, "BUG": None, "VULNERABILITY": None, "CODE_SMELL": None, "SECURITY_HOTSPOT": None}
         _OBJECTS[self.uuid()] = self
 
     @classmethod
@@ -69,10 +69,10 @@ class Language(sqobject.SqObject):
         :rtype: int
         """
         if not rule_type or rule_type not in rules.TYPES:
-            r_ndx = "_all"
-        if not self._nb_rules[r_ndx]:
-            self._nb_rules[r_ndx] = rules.search(self.endpoint, languages=self.key, types=rule_type)
-        return self._nb_rules[r_ndx]
+            rule_type = "_ALL"
+        if not self._nb_rules[rule_type]:
+            self._nb_rules[rule_type] = rules.search(self.endpoint, languages=self.key, types=rule_type)
+        return self._nb_rules[rule_type]
 
 
 def read_list(endpoint: pf.Platform) -> dict[str, Language]:
