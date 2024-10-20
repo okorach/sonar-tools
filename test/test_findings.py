@@ -423,9 +423,10 @@ def test_output_format_json() -> None:
             assert k in issue
         if util.SQ.version() >= (10, 2, 0):
             assert "impacts" in issue
+            assert "effort" in issue or "HOTSPOT" in issue["impacts"].get("SECURITY", "")
         else:
             assert "type" in issue
-        assert "effort" in issue or issue.get("type", "") == "SECURITY_HOTSPOT"
+            assert "effort" in issue or issue["type"] == "SECURITY_HOTSPOT"
 
         assert "language" in issue or issue["rule"].startswith("external")
         # Some issues have no author so we cannot expect the below assertion to succeed all the time
