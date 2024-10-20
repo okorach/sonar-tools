@@ -29,6 +29,7 @@ from sonar import sqobject, utilities
 
 #: List of what can be considered the main metrics
 MAIN_METRICS = (
+    "violations",
     "bugs",
     "vulnerabilities",
     "code_smells",
@@ -42,6 +43,7 @@ MAIN_METRICS = (
     "coverage",
     "duplicated_lines_density",
     "security_hotspots_reviewed",
+    "new_violations",
     "new_bugs",
     "new_vulnerabilities",
     "new_code_smells",
