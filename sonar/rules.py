@@ -101,6 +101,7 @@ EXTERNAL_REPOS = {
     "external_eslint_repo": "js",
     "external_tslint_repo": "ts",
     "external_psalm": "php",
+    "external_phpstan": "php",
     "external_govet": "go",
     "external_golint": "go",
     "external_valgrind-cpp": "cpp",
@@ -134,7 +135,7 @@ class Rule(sq.SqObject):
         self.name = data.get("name", None)
         self.language = data.get("lang", None)
         if not self.language:
-            log.info("Setting rule %s language from repo '%s'", self.key, str(data.get("repo", "")))
+            log.debug("Guessing rule '%s' language from repo '%s'", self.key, str(data.get("repo", "")))
             self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
         self.custom_desc = data.get("mdNote", None)
         self.created_at = data["createdAt"]

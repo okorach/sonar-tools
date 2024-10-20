@@ -42,17 +42,20 @@ JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE
 
 RULE_COL = 1
 LANG_COL = 2
-SEVERITY_COL = 3
-STATUS_COL = 4
-DATE_COL = 5
+SECURITY_IMPACT_COL = 3
+RELIABILITY_IMPACT_COL = 4
+MAINTAINABILITY_IMPACT_COL = 5
+OTHER_IMPACT_COL = 6
+STATUS_COL = 7
+DATE_COL = 8
 TYPE_COL = 3
-PROJECT_COL = 7
-PROJECT_NAME_COL = 8
-BRANCH_COL = 9
-PR_COL = 10
+PROJECT_COL = 10
+PROJECT_NAME_COL = 11
+BRANCH_COL = 12
+PR_COL = 13
 
 if util.SQ.version() < (10, 2, 0):
-    SEVERITY_COL += 1
+    SECURITY_IMPACT_COL += 1
     STATUS_COL += 1
     DATE_COL += 1
     PROJECT_COL += 1
@@ -178,12 +181,9 @@ def test_findings_filter_on_type() -> None:
             if first:
                 first = False
                 continue
-            if util.SQ.version() >= (10, 2, 0):
-                # FIXME: Hack because SonarQube returns rule S2310 in the SECURITY or RELIABILITY although it's maintainability
-                assert line[RULE_COL] == "javascript:S2310" or "SECURITY:" in line[TYPE_COL] or "RELIABILITY:" in line[TYPE_COL]
-            else:
-                assert line[TYPE_COL] in ("VULNERABILITY", "BUG")
-        util.clean(util.CSV_FILE)
+            # FIXME: Hack because SonarQube returns rule S2310 in the SECURITY or RELIABILITY although it's maintainability
+            assert line[RULE_COL] == "javascript:S2310" or line[SECURITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
+    util.clean(util.CSV_FILE)
 
 
 def test_findings_filter_on_resolution() -> None:
@@ -214,10 +214,7 @@ def test_findings_filter_on_severity() -> None:
             if first:
                 first = False
                 continue
-            if util.SQ.version() >= (10, 2, 0):
-                assert ":HIGH" in line[SEVERITY_COL] or ":MEDIUM" in line[SEVERITY_COL]
-            else:
-                assert line[SEVERITY_COL] in ("CRITICAL", "MAJOR")
+            assert "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
     util.clean(util.CSV_FILE)
 
 
@@ -235,10 +232,7 @@ def test_findings_filter_on_multiple_criteria() -> None:
                 first = False
                 continue
             assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED")
-            if util.SQ.version() >= (10, 2, 0):
-                assert "MAINTAINABILITY:" in line[TYPE_COL] or "RELIABILITY:" in line[TYPE_COL]
-            else:
-                assert line[TYPE_COL] in ("BUG", "CODE_SMELL")
+            assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
     util.clean(util.CSV_FILE)
 
 
@@ -257,10 +251,7 @@ def test_findings_filter_on_multiple_criteria_2() -> None:
             if first:
                 first = False
                 continue
-            if util.SQ.version() >= (10, 2, 0):
-                assert line[SEVERITY_COL] == "SECURITY:UNDEFINED"
-            else:
-                assert line[TYPE_COL] == "SECURITY_HOTSPOT"
+            assert "HOTSPOT" in line[SECURITY_IMPACT_COL]
             assert line[DATE_COL].split("-")[0] == "2020"
     util.clean(util.CSV_FILE)
 
@@ -425,9 +416,14 @@ def test_output_format_json() -> None:
         json_data = json.loads(fh.read())
     for issue in json_data:
         log.info("ISSUE = %s", json.dumps(issue))
-        for k in "creationDate", "type", "file", "key", "message", "projectKey", "rule", "updateDate":
+        for k in "creationDate", "file", "key", "message", "projectKey", "rule", "updateDate":
             assert k in issue
-        assert "effort" in issue or issue["type"] == "SECURITY_HOTSPOT"
+        if util.SQ.version() >= (10, 2, 0):
+            assert "impacts" in issue
+        else:
+            assert "type" in issue
+        assert "effort" in issue or issue.get("type", "") == "SECURITY_HOTSPOT"
+
         assert "language" in issue or issue["rule"].startswith("external")
         # Some issues have no author so we cannot expect the below assertion to succeed all the time
         # assert issue["status"] in ("FIXED", "CLOSED") or "author" in issue
