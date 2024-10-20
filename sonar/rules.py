@@ -101,6 +101,7 @@ EXTERNAL_REPOS = {
     "external_eslint_repo": "js",
     "external_tslint_repo": "ts",
     "external_psalm": "php",
+    "external_phpstan": "php",
     "external_govet": "go",
     "external_golint": "go",
     "external_valgrind-cpp": "cpp",
