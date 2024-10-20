@@ -90,6 +90,28 @@ SONAR_REPOS = {
     "xml",
 }
 
+EXTERNAL_REPOS = {
+    "external_pylint": "py",
+    "external_bandit": "py",
+    "external_flake8": "py",
+    "external_ruff": "py",
+    "external_shellcheck": "shell",
+    "external_tflint": "terraform",
+    "external_hadolint": "terraform",
+    "external_eslint_repo": "js",
+    "external_tslint_repo": "ts",
+    "external_psalm": "php",
+    "external_govet": "go",
+    "external_golint": "go",
+    "external_valgrind-cpp": "cpp",
+    "external_pmd": "java",
+    "external_checkstyle": "java",
+    "external_spotbugs": "java",
+    "fb-contrib": "java",
+    "findbugs": "java",
+    "external_roslyn": "cs",
+}
+
 
 class Rule(sq.SqObject):
     """
@@ -111,6 +133,9 @@ class Rule(sq.SqObject):
         self.systags = data.get("sysTags", [])
         self.name = data.get("name", None)
         self.language = data.get("lang", None)
+        if not self.language:
+            log.info("Setting rule %s language from repo '%s'", self.key, str(data.get("repo", "")))
+            self.language = EXTERNAL_REPOS.get(data.get("repo", ""), "UNKNOWN")
         self.custom_desc = data.get("mdNote", None)
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
