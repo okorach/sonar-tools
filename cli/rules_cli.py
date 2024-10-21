@@ -46,6 +46,8 @@ def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: st
     """Writes a rule list in a CSV file (or stdout)"""
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=separator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        print("# ", file=fd, end="")
+        csvwriter.writerow(rules.CSV_EXPORT_FIELDS)
         for rule in rule_list.values():
             csvwriter.writerow([str(x) for x in rule.to_csv()])
 

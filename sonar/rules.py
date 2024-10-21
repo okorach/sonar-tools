@@ -113,6 +113,8 @@ EXTERNAL_REPOS = {
     "external_roslyn": "cs",
 }
 
+CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "name", "ruleType", "tags"]
+
 
 class Rule(sq.SqObject):
     """
@@ -213,15 +215,17 @@ class Rule(sq.SqObject):
         return self._json
 
     def to_csv(self) -> list[str]:
+        data = vars(self)
         tags = self.systags
         if self.tags:
             tags += self.tags
-        rule_type = "STANDARD"
+        data["tags"] = ",".join(tags)
+        data["ruleType"] = "STANDARD"
         if self.is_template:
-            rule_type = "TEMPLATE"
+            data["ruleType"] = "TEMPLATE"
         elif self.template_key:
-            rule_type = "INSTANTIATED"
-        return [self.key, self.language, self.repo, self.type, self.name, rule_type, ",".join(tags)]
+            data["ruleType"] = "INSTANTIATED"
+        return [data[key] for key in CSV_EXPORT_FIELDS]
 
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
