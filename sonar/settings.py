@@ -299,8 +299,8 @@ class Setting(sqobject.SqObject):
     def category(self) -> tuple[str, str]:
         """Returns the 2 levels classification of a setting"""
         m = re.match(
-            r"^sonar\.(cpd\.)?(abap|androidLint|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|docker|"
-            r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|rpg|ruby|scala|swift|"
+            r"^sonar\.(cpd\.)?(abap|androidLint|apex|azureresourcemanager|cloudformation|c|cpp|cfamily|cobol|cs|css|dart|docker|"
+            r"eslint|flex|go|html|java|javascript|jcl|json|jsp|kotlin|objc|php|pli|plsql|python|ipynb|rpg|ruby|scala|swift|"
             r"terraform|text|tsql|typescript|vb|vbnet|xml|yaml)\.",
             self.key,
         )
@@ -312,6 +312,8 @@ class Setting(sqobject.SqObject):
                 lang = "kotlin"
             elif lang in ("eslint"):
                 lang = "javascript"
+            elif lang in ("ipynb"):
+                lang = "python"
             return (LANGUAGES_SETTINGS, lang)
         if re.match(
             r"^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$",
