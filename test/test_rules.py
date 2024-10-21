@@ -68,6 +68,7 @@ def test_rules_filter_language() -> None:
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        fh.readline()  # Skip header
         for line in fh:
             (_, lang, _) = line.split(",", maxsplit=2)
             assert lang in ("py", "jcl")
@@ -83,6 +84,11 @@ def test_rules_misspelled_language_1() -> None:
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        line = fh.readline()  # Skip header
+        assert line[0] == "#"
+        fields = line[2:].split(",")
+        assert fields[0] == "key"
+        assert fields[1] == "language"
         for line in fh:
             (_, lang, _) = line.split(",", maxsplit=2)
             assert lang in ("py", "ts")
@@ -98,6 +104,7 @@ def test_rules_misspelled_language_2() -> None:
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        fh.readline()  # Skip header
         for line in fh:
             (_, lang, _) = line.split(",", maxsplit=2)
             assert lang in ("py", "apex")
