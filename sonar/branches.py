@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 from http import HTTPStatus
+from typing import Optional
 import json
 from urllib.parse import unquote
 from requests import HTTPError, RequestException
@@ -29,7 +30,7 @@ from sonar import platform
 from sonar.util import types
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar import components, settings, exceptions
+from sonar import components, settings, exceptions, tasks
 from sonar import projects
 import sonar.utilities as util
 
@@ -360,19 +361,28 @@ class Branch(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
-        if audit_settings.get("audit.project.branches", True):
-            log.debug("Auditing %s", str(self))
-            try:
-                return self.__audit_last_analysis(audit_settings) + self.__audit_zero_loc() + self.__audit_never_analyzed()
-            except Exception as e:
-                log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
-        else:
+        if not audit_settings.get("audit.project.branches", True):
             log.debug("Branch audit disabled, skipping audit of %s", str(self))
+            return []
+        log.debug("Auditing %s", str(self))
+        try:
+            return (
+                self.__audit_last_analysis(audit_settings)
+                + self.__audit_zero_loc()
+                + self.__audit_never_analyzed()
+                + self._audit_bg_task(audit_settings)
+            )
+        except Exception as e:
+            log.error("%s while auditing %s, audit skipped", util.error_msg(e), str(self))
         return []
 
     def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"project": self.concerned_object.key, "branch": self.name}
+
+    def last_task(self) -> Optional[tasks.Task]:
+        """Returns the last analysis background task of a problem, or none if not found"""
+        return tasks.search_last(component_key=self.concerned_object.key, endpoint=self.endpoint, type="REPORT", branch=self.name)
 
 
 def uuid(project_key: str, branch_name: str, url: str) -> str:

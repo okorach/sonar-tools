@@ -547,10 +547,13 @@ def search_all_last(endpoint: pf.Platform) -> list[Task]:
 
 def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional[Task]:
     """Searches for last background task of a component"""
-    bg_tasks = search(endpoint=endpoint, only_current=True, component_key=component_key, **params)
+    branch = params.pop("branch", None)
+    bg_tasks = search(endpoint=endpoint, only_current=branch is None, component_key=component_key, **params)
+    if branch:
+        bg_tasks = [t for t in bg_tasks if t._json.get("branch", "") == branch]
     if len(bg_tasks) == 0:
         # No bgtask was found
-        log.debug("No background task found for %s", component_key)
+        log.debug("No background task found for component key '%s'%s", component_key, f" branch '{branch}'" if branch else "")
         return None
     return bg_tasks[0]
 

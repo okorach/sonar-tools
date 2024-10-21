@@ -23,6 +23,7 @@
 
 """
 from __future__ import annotations
+from typing import Optional
 import math
 import json
 
@@ -264,11 +265,15 @@ class Component(sq.SqObject):
             log.debug("%s: Background task audit disabled, audit skipped", str(self))
             return []
         log.debug("Auditing last background task of %s", str(self))
-        last_task = tasks.search_last(component_key=self.key, endpoint=self.endpoint)
+        last_task = self.last_task()
         if last_task:
             last_task.concerned_object = self
             return last_task.audit(audit_settings)
         return []
+
+    def last_task(self) -> Optional[tasks.Task]:
+        """Returns the last analysis background task of a problem, or none if not found"""
+        return tasks.search_last(component_key=self.key, endpoint=self.endpoint)
 
     def get_measures_history(self, metrics_list: types.KeyList) -> dict[str, str]:
         """Returns the history of a project metrics"""
