@@ -189,7 +189,7 @@ sonar-audit --what projects -f projectsAudit.csv --csvSeparator ';'
     - Above patterns and exceptions are configurable
   - Projects with `sonar.scm.disabled` set to `true`
   - Projects with both a `main` and a `master` branch
-  - Analysis warnings on main branch analysis
+  - Analysis warnings on all branches analysis
   - Last background task with failed SCM detection
   - Last background task on main branch `FAILED`
   - Last analysis with an obsolete scanner version (by default more than 2 years old)
