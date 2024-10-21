@@ -312,11 +312,9 @@ class Setting(sqobject.SqObject):
                 lang = "kotlin"
             elif lang in ("eslint"):
                 lang = "javascript"
-            elif lang in ("ipynb"):
-                lang = "python"
             return (LANGUAGES_SETTINGS, lang)
         if re.match(
-            r"^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$",
+            r"^.*([lL]int|govet|flake8|checkstyle|pmd|spotbugs|findbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat).*$",
             self.key,
         ):
             return (LINTER_SETTINGS, None)
