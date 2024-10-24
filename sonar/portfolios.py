@@ -183,7 +183,7 @@ class Portfolio(aggregations.Aggregation):
             self._selection_mode = {mode: {}}
             for projdata in self._json.get("selectedProjects", {}):
                 branch_list = projdata.get("selectedBranches", [settings.DEFAULT_BRANCH])
-                self._selection_mode[mode].update({projdata["projectKey"]: branch_list})
+                self._selection_mode[mode].update({projdata["projectKey"]: set(branch_list)})
         elif mode == _SELECTION_MODE_REGEXP:
             self._selection_mode = {mode: self._json["regexp"], "branch": branch}
         elif mode == _SELECTION_MODE_TAGS:
@@ -397,46 +397,50 @@ class Portfolio(aggregations.Aggregation):
         return _SELECTION_MODE_MANUAL in self._selection_mode and key in self._selection_mode[_SELECTION_MODE_MANUAL]
 
     def has_project_branch(self, key: str, branch: str) -> bool:
-        return self.has_project(key) and branch == self._selection_mode[_SELECTION_MODE_MANUAL][key]
+        return self.has_project(key) and branch in self._selection_mode[_SELECTION_MODE_MANUAL][key]
 
-    def add_projects(self, project_list: list[Union[str, object]]) -> Portfolio:
+    def add_projects(self, projects: set[str]) -> Portfolio:
         """Adds projects main branch to a portfolio"""
-        if not project_list or len(project_list) == 0:
-            return self
-        self.set_manual_mode()
-        branch_dict = {}
-        for p in project_list:
-            key = p if isinstance(p, str) else p.key
-            branch_dict[key] = None
-        return self.add_project_branches(branch_dict)
-
-    def add_project_branches(self, branch_dict: dict[str, Union[str, object]]) -> Portfolio:
-        """Adds projects branches to a portfolio"""
-        if not branch_dict:
-            return self
-        self.set_manual_mode()
-        proj_dict = {}
-        for proj, branch in branch_dict.items():
-            key = proj if isinstance(proj, str) else proj.key
+        for key in projects:
             try:
-                if not self.has_project(key):
-                    self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
-                    self._selection_mode[_SELECTION_MODE_MANUAL][key] = settings.DEFAULT_BRANCH
-                if not self.has_project_branch(key, branch):
-                    self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch}, mute=(HTTPStatus.BAD_REQUEST,))
-                    self._selection_mode[_SELECTION_MODE_MANUAL][key] = branch
-                proj_dict[key] = branch
-                self._selection_mode[_SELECTION_MODE_MANUAL] = proj_dict
+                self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
+                self._selection_mode[_SELECTION_MODE_MANUAL][key] = {settings.DEFAULT_BRANCH}
             except HTTPError as e:
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(self.key, f"Project '{key}' or branch '{branch}' not found, can't be added to {str(self)}")
+                    raise exceptions.ObjectNotFound(self.key, f"Project '{key}' not found, can't be added to {str(self)}")
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                    log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
-                    raise
+                    log.warning("%s: Project '%s' already in %s", util.error_msg(e), key, str(self))
             except (ConnectionError, RequestException) as e:
                 log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
                 raise
         return self
+
+    def add_project_branches(self, project_key: str, branches: set[str]) -> Portfolio:
+        """Adds projects branches to a portfolio"""
+        log.debug("Adding all project branches %s to %s", str(branches), str(self))
+        for branch in branches:
+            if branch == settings.DEFAULT_BRANCH:
+                continue
+            self.add_project_branch(project_key, branch)
+        return self
+
+    def add_project_branch(self, project_key: str, branch: str) -> bool:
+        try:
+            r = self.post("views/add_project_branch", params={"key": self.key, "project": project_key, "branch": branch})
+        except HTTPError as e:
+            if e.response.status_code == HTTPStatus.NOT_FOUND:
+                raise exceptions.ObjectNotFound(self.key, f"Project '{project_key}' or branch '{branch}' not found, can't be added to {str(self)}")
+            if e.response.status_code == HTTPStatus.BAD_REQUEST:
+                log.warning("%s: Project '%s' branch '%s', already in %s", util.error_msg(e), project_key, branch, str(self))
+        except (ConnectionError, RequestException) as e:
+            log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
+            raise
+        if project_key in self._selection_mode[_SELECTION_MODE_MANUAL]:
+            self._selection_mode[_SELECTION_MODE_MANUAL][project_key].discard(settings.DEFAULT_BRANCH)
+            self._selection_mode[_SELECTION_MODE_MANUAL][project_key].add(branch)
+        else:
+            self._selection_mode[_SELECTION_MODE_MANUAL][project_key] = {branch}
+        return r.ok
 
     def set_manual_mode(self) -> Portfolio:
         """Sets a portfolio to manual mode"""
@@ -487,7 +491,11 @@ class Portfolio(aggregations.Aggregation):
         log.info("Setting %s selection mode params %s", str(self), str(params))
         branch = params.get("branch", None)
         if _SELECTION_MODE_MANUAL.lower() in params:
-            self.set_manual_mode().add_projects(params[_SELECTION_MODE_MANUAL.lower()])
+            projs = params[_SELECTION_MODE_MANUAL.lower()]
+            self.set_manual_mode()
+            self.add_projects(set(projs.keys()))
+            for p, b in projs.items():
+                self.add_project_branches(p, set(util.csv_to_list(b)))
         elif _SELECTION_MODE_TAGS.lower() in params:
             self.set_tags_mode(params[_SELECTION_MODE_TAGS.lower()], branch)
         elif _SELECTION_MODE_REGEXP.lower() in params:
