@@ -1138,7 +1138,10 @@ class Project(components.Component):
             log.warning("Quality gate '%s' not found, can't set it for %s", quality_gate, str(self))
             return False
         log.debug("Setting quality gate '%s' for %s", quality_gate, str(self))
-        r = self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
+        try:
+            r = self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
+        except (ConnectionError, RequestException):
+            return False
         return r.ok
 
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
