@@ -248,9 +248,7 @@ class User(sqobject.SqObject):
         params = {"login": self.login}
         my_data = vars(self)
         if self.is_local:
-            for p in ("name", "email"):
-                if p in kwargs and kwargs[p] != my_data[p]:
-                    params[p] = kwargs[p]
+            params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
             if len(params) > 1:
                 self.post(UPDATE_API, params=params)
             if "scmAccounts" in kwargs:
@@ -262,7 +260,7 @@ class User(sqobject.SqObject):
                     _OBJECTS.pop(self.uuid(), None)
                     self.login = new_login
                     _OBJECTS[self.uuid()] = self
-        self.set_groups(kwargs.get("groups", ""))
+        self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
         return self
 
     def add_to_group(self, group_name: str) -> bool:
