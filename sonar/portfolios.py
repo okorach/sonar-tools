@@ -403,26 +403,22 @@ class Portfolio(aggregations.Aggregation):
         """Adds projects main branch to a portfolio"""
         if not project_list or len(project_list) == 0:
             return self
-        self.set_manual_mode()
-        branch_dict = {}
-        for p in project_list:
-            key = p if isinstance(p, str) else p.key
-            branch_dict[key] = None
+        branch_dict = {p if isinstance(p, str) else p.key: None for p in project_list}
         return self.add_project_branches(branch_dict)
 
     def add_project_branches(self, branch_dict: dict[str, Union[str, object]]) -> Portfolio:
         """Adds projects branches to a portfolio"""
         if not branch_dict:
             return self
-        self.set_manual_mode()
         proj_dict = {}
-        for proj, branch in branch_dict.items():
-            key = proj if isinstance(proj, str) else proj.key
+        for key, branch in branch_dict.items():
             try:
                 if not self.has_project(key):
                     self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
                     self._selection_mode[_SELECTION_MODE_MANUAL][key] = settings.DEFAULT_BRANCH
-                if not self.has_project_branch(key, branch):
+
+                # TODO: Manage multiple project branches in same portfolio
+                if branch and branch != settings.DEFAULT_BRANCH and not self.has_project_branch(key, branch):
                     self.post("views/add_project_branch", params={"key": self.key, "project": key, "branch": branch}, mute=(HTTPStatus.BAD_REQUEST,))
                     self._selection_mode[_SELECTION_MODE_MANUAL][key] = branch
                 proj_dict[key] = branch
@@ -431,8 +427,7 @@ class Portfolio(aggregations.Aggregation):
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.key, f"Project '{key}' or branch '{branch}' not found, can't be added to {str(self)}")
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                    log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
-                    raise
+                    log.warning("%s: Project '%s' already in %s", util.error_msg(e), key, str(self))
             except (ConnectionError, RequestException) as e:
                 log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
                 raise
