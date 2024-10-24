@@ -19,6 +19,7 @@
 #
 
 from __future__ import annotations
+import json
 from queue import Queue
 from typing import Optional
 import sonar.logging as log
@@ -37,6 +38,7 @@ _CREATE_API = "user_groups/create"
 _UPDATE_API = "user_groups/update"
 ADD_USER_API = "user_groups/add_user"
 REMOVE_USER_API = "user_groups/remove_user"
+_UPDATE_API_V2 = "v2/authorizations/groups"
 
 _OBJECTS = {}
 
@@ -212,7 +214,11 @@ class Group(sq.SqObject):
             log.debug("No description to update for %s", str(self))
             return True
         log.debug("Updating %s with description = %s", str(self), description)
-        r = self.post(_UPDATE_API, params={"id": self.key, "description": description})
+        if self.endpoint.version() >= (10, 4, 0):
+            data = json.dumps({"description": description})
+            r = self.patch(f"{_UPDATE_API_V2}/{self._id}", data=data, headers={"content-type": "application/merge-patch+json"})
+        else:
+            r = self.post(_UPDATE_API, params={"currentName": self.key, "description": description})
         if r.ok:
             self.description = description
         return r.ok
@@ -228,7 +234,10 @@ class Group(sq.SqObject):
             log.debug("No name to update for %s", str(self))
             return True
         log.debug("Updating %s with name = %s", str(self), name)
-        r = self.post(_UPDATE_API, params={"id": self.key, "name": name})
+        if self.endpoint.version() >= (10, 4, 0):
+            r = self.patch(f"{_UPDATE_API_V2}/{self.key}", params={"name": name})
+        else:
+            r = self.post(_UPDATE_API, params={"currentName": self.key, "name": name})
         if r.ok:
             _OBJECTS.pop(self.uuid(), None)
             self.name = name

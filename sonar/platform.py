@@ -176,7 +176,15 @@ class Platform:
 
         return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id(), "plugins": self.plugins()}
 
-    def get(self, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
+    def get(
+        self,
+        api: str,
+        params: types.ApiParams = None,
+        data: str = None,
+        exit_on_error: bool = False,
+        mute: tuple[HTTPStatus] = (),
+        **kwargs,
+    ) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -186,9 +194,17 @@ class Platform:
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.get, api, params, exit_on_error, mute, **kwargs)
+        return self.__run_request(requests.get, api, params, data, exit_on_error, mute, **kwargs)
 
-    def post(self, api, params=None, exit_on_error=False, mute: tuple[HTTPStatus] = (), **kwargs):
+    def post(
+        self,
+        api: str,
+        params: types.ApiParams = None,
+        data: str = None,
+        exit_on_error: bool = False,
+        mute: tuple[HTTPStatus] = (),
+        **kwargs,
+    ) -> requests.Response:
         """Makes an HTTP POST request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -198,9 +214,37 @@ class Platform:
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.post, api, params, exit_on_error, mute, **kwargs)
+        return self.__run_request(requests.post, api, params, data, exit_on_error, mute, **kwargs)
 
-    def delete(self, api, params=None, exit_on_error=False, mute: tuple[HTTPStatus] = (), **kwargs):
+    def patch(
+        self,
+        api: str,
+        params: types.ApiParams = None,
+        data: str = None,
+        exit_on_error: bool = False,
+        mute: tuple[HTTPStatus] = (),
+        **kwargs,
+    ) -> requests.Response:
+        """Makes an HTTP PATCH request to SonarQube
+
+        :param api: API to invoke (without the platform base URL)
+        :param params: params to pass in the HTTP request, defaults to None
+        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
+        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
+                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
+        :return: the HTTP response
+        """
+        return self.__run_request(requests.patch, api, params, data, exit_on_error, mute, **kwargs)
+
+    def delete(
+        self,
+        api: str,
+        params: types.ApiParams = None,
+        data: str = None,
+        exit_on_error: bool = False,
+        mute: tuple[HTTPStatus] = (),
+        **kwargs,
+    ) -> requests.Response:
         """Makes an HTTP DELETE request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -210,14 +254,21 @@ class Platform:
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.delete, api, params, exit_on_error, mute, **kwargs)
+        return self.__run_request(requests.delete, api, params, data, exit_on_error, mute, **kwargs)
 
     def __run_request(
-        self, request: callable, api: str, params: types.ApiParams = None, exit_on_error: bool = False, mute: tuple[HTTPStatus] = (), **kwargs
+        self,
+        request: callable,
+        api: str,
+        params: types.ApiParams = None,
+        data: str = None,
+        exit_on_error: bool = False,
+        mute: tuple[HTTPStatus] = (),
+        **kwargs,
     ) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
         api = _normalize_api(api)
-        headers = {"user-agent": self._user_agent}
+        headers = {"user-agent": self._user_agent, **kwargs.get("headers", {})}
         if params is None:
             params = {}
         if self.is_sonarcloud():
@@ -239,6 +290,7 @@ class Platform:
                     auth=self.__credentials(),
                     verify=self.__cert_file,
                     headers=headers,
+                    data=data,
                     params=params,
                     timeout=self.http_timeout,
                 )
