@@ -198,7 +198,6 @@ class Setting(sqobject.SqObject):
                     self.value = util.convert_string(data[key])
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
-        log.debug("%s MULTI VALUED = %s", str(self), str(self.multi_valued))
         if "inherited" in data:
             self.inherited = data["inherited"]
         elif self.key == NEW_CODE_PERIOD:
@@ -509,7 +508,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
         try:
             s.set(value)
         except (ConnectionError, RequestException) as e:
-            log.error("%s while setting setting '%s'", util.error_msg(e), key, str(component))
+            log.error("%s while setting setting '%s' for %s", util.error_msg(e), key, str(component))
             return False
         except exceptions.UnsupportedOperation as e:
             log.error("Setting '%s' cannot be set: %s", key, e.message)
