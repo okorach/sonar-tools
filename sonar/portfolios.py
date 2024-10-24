@@ -236,7 +236,10 @@ class Portfolio(aggregations.Aggregation):
         return self._selection_mode[_SELECTION_MODE_MANUAL]
 
     def applications(self) -> Optional[dict[str, str]]:
-        log.debug("Collecting portfolios applications")
+        log.debug("Collecting portfolios applications from %s", util.json_dump(self._json))
+        if "subViews" not in self._json:
+            self._applications = {}
+            return self._applications
         apps = [data for data in self._json["subViews"] if data["qualifier"] == "APP"]
         for app_data in apps:
             app_o = applications.Application.get_object(self.endpoint, app_data["originalKey"])
