@@ -248,12 +248,11 @@ class User(sqobject.SqObject):
         params = {"login": self.login}
         my_data = vars(self)
         if self.is_local:
-            for p in ("name", "email"):
-                if p in kwargs and kwargs[p] != my_data[p]:
-                    params[p] = kwargs[p]
+            params.update({k: kwargs[k] for k in ("name", "email") if k in kwargs and kwargs[k] != my_data[k]})
             if len(params) > 1:
                 self.post(UPDATE_API, params=params)
-            self.set_scm_accounts(kwargs.get("scmAccounts", None))
+            if "scmAccounts" in kwargs:
+                self.set_scm_accounts(kwargs["scmAccounts"])
             if "login" in kwargs:
                 new_login = kwargs["login"]
                 if new_login not in _OBJECTS:
@@ -261,7 +260,7 @@ class User(sqobject.SqObject):
                     _OBJECTS.pop(self.uuid(), None)
                     self.login = new_login
                     _OBJECTS[self.uuid()] = self
-        self.set_groups(kwargs.get("groups", ""))
+        self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
         return self
 
     def add_to_group(self, group_name: str) -> bool:
@@ -479,7 +478,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         raise exceptions.UnsupportedOperation("Can't import users in SonarCloud")
     log.info("Importing users")
     for login, data in config_data["users"].items():
-        data["scm_accounts"] = util.csv_to_list(data.pop("scmAccounts", ""))
+        data["scmAccounts"] = util.csv_to_list(data.pop("scmAccounts", ""))
         data["groups"] = util.csv_to_list(data.pop("groups", ""))
         data.pop("login", None)
         try:
