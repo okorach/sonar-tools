@@ -81,7 +81,6 @@ class SqObject:
         api: str,
         params: types.ApiParams = None,
         data: str = None,
-        exit_on_error: bool = False,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -89,19 +88,17 @@ class SqObject:
 
         :param api: API to invoke (eg api/issues/search)
         :param params: List of parameters to pass to the API
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: The request response
         """
-        return self.endpoint.get(api=api, params=params, data=data, exit_on_error=exit_on_error, mute=mute, **kwargs)
+        return self.endpoint.get(api=api, params=params, data=data, mute=mute, **kwargs)
 
     def post(
         self,
         api: str,
         params: types.ApiParams = None,
         data: str = None,
-        exit_on_error: bool = False,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -109,20 +106,18 @@ class SqObject:
 
         :param str api: API to invoke (eg api/issues/search)
         :param ApiParams params: List of parameters to pass to the API
-        :param bool exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :type mute: tuple, optional
         :return: The request response
         """
-        return self.endpoint.post(api=api, params=params, data=data, exit_on_error=exit_on_error, mute=mute, **kwargs)
+        return self.endpoint.post(api=api, params=params, data=data, mute=mute, **kwargs)
 
     def patch(
         self,
         api: str,
         params: types.ApiParams = None,
         data: str = None,
-        exit_on_error: bool = False,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -130,13 +125,12 @@ class SqObject:
 
         :param str api: API to invoke (eg api/issues/search)
         :param ApiParams params: List of parameters to pass to the API
-        :param bool exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :type mute: tuple, optional
         :return: The request response
         """
-        return self.endpoint.patch(api=api, params=params, data=data, exit_on_error=exit_on_error, mute=mute, **kwargs)
+        return self.endpoint.patch(api=api, params=params, data=data, mute=mute, **kwargs)
 
 
 def __search_thread(queue: Queue) -> None:

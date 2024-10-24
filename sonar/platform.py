@@ -181,7 +181,6 @@ class Platform:
         api: str,
         params: types.ApiParams = None,
         data: str = None,
-        exit_on_error: bool = False,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -189,19 +188,17 @@ class Platform:
 
         :param api: API to invoke (without the platform base URL)
         :param params: params to pass in the HTTP request, defaults to None
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.get, api, params, data, exit_on_error, mute, **kwargs)
+        return self.__run_request(requests.get, api, params, data, mute, **kwargs)
 
     def post(
         self,
         api: str,
         params: types.ApiParams = None,
         data: str = None,
-        exit_on_error: bool = False,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -209,19 +206,17 @@ class Platform:
 
         :param api: API to invoke (without the platform base URL)
         :param params: params to pass in the HTTP request, defaults to None
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.post, api, params, data, exit_on_error, mute, **kwargs)
+        return self.__run_request(requests.post, api, params, data, mute, **kwargs)
 
     def patch(
         self,
         api: str,
         params: types.ApiParams = None,
         data: str = None,
-        exit_on_error: bool = False,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -229,19 +224,17 @@ class Platform:
 
         :param api: API to invoke (without the platform base URL)
         :param params: params to pass in the HTTP request, defaults to None
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.patch, api, params, data, exit_on_error, mute, **kwargs)
+        return self.__run_request(requests.patch, api, params, data, mute, **kwargs)
 
     def delete(
         self,
         api: str,
         params: types.ApiParams = None,
         data: str = None,
-        exit_on_error: bool = False,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -249,12 +242,11 @@ class Platform:
 
         :param api: API to invoke (without the platform base URL)
         :param params: params to pass in the HTTP request, defaults to None
-        :param exit_on_error: When to fail fast and exit if the HTTP status code is not 2XX, defaults to True
         :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
                      Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.delete, api, params, data, exit_on_error, mute, **kwargs)
+        return self.__run_request(requests.delete, api, params, data, mute, **kwargs)
 
     def __run_request(
         self,
@@ -262,7 +254,6 @@ class Platform:
         api: str,
         params: types.ApiParams = None,
         data: str = None,
-        exit_on_error: bool = False,
         mute: tuple[HTTPStatus] = (),
         **kwargs,
     ) -> requests.Response:
@@ -300,15 +291,10 @@ class Platform:
                     self.url = new_url
             r.raise_for_status()
         except HTTPError as e:
-            if exit_on_error:  # or (r.status_code not in mute and r.status_code not in _NORMAL_HTTP_ERRORS):
-                log_and_exit(e)
-            else:
-                lvl = log.DEBUG if r.status_code in mute else log.ERROR
-                log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
-                raise e
+            lvl = log.DEBUG if r.status_code in mute else log.ERROR
+            log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
+            raise e
         except (ConnectionError, RequestException) as e:
-            if exit_on_error:  # or (r.status_code not in mute and r.status_code not in _NORMAL_HTTP_ERRORS):
-                util.exit_fatal(str(e), errcodes.SONAR_API)
             log.error(str(e))
             raise
         return r
