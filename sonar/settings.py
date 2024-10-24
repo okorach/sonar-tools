@@ -135,6 +135,7 @@ class Setting(sqobject.SqObject):
         super().__init__(endpoint=endpoint, key=key)
         self.component = component
         self.value = None
+        self.multi_valued = None
         self.inherited = None
         self.reload(data)
         log.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
@@ -185,6 +186,7 @@ class Setting(sqobject.SqObject):
         """Reloads a Setting with JSON returned from Sonar API"""
         if not data:
             return
+        self.multi_valued = data.get("multiValues", False)
         if self.key == NEW_CODE_PERIOD:
             self.value = new_code_to_string(data)
         elif self.key == COMPONENT_VISIBILITY:
@@ -196,7 +198,7 @@ class Setting(sqobject.SqObject):
                     self.value = util.convert_string(data[key])
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
-
+        log.debug("%s MULTI VALUED = %s", str(self), str(self.multi_valued))
         if "inherited" in data:
             self.inherited = data["inherited"]
         elif self.key == NEW_CODE_PERIOD:
@@ -252,7 +254,10 @@ class Setting(sqobject.SqObject):
         else:
             if isinstance(value, bool):
                 value = "true" if value else "false"
-            params["value"] = value
+            if self.multi_valued:
+                params["values"] = value
+            else:
+                params["value"] = value
         return self.post(API_SET, params=params).ok
 
     def to_json(self, list_as_csv: bool = True) -> types.ObjectJsonRepr:
