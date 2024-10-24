@@ -1044,10 +1044,14 @@ class Project(components.Component):
 
             settings_dict = settings.get_bulk(endpoint=self.endpoint, component=self, settings_list=settings_list, include_not_set=False)
             # json_data.update({s.to_json() for s in settings_dict.values() if include_inherited or not s.inherited})
+            ai = self.get_ai_code_assurance()
+            if ai:
+                json_data["aiCodeAssurance"] = ai
             for s in settings_dict.values():
                 if not export_settings.get("INCLUDE_INHERITED", False) and s.inherited:
                     continue
                 json_data.update(s.to_json())
+
         except (ConnectionError, RequestException) as e:
             errmsg = util.error_msg(e)
             log.error("Exception: %s while exporting %s, export of this project interrupted", errmsg, str(self))
@@ -1143,6 +1147,24 @@ class Project(components.Component):
         except (ConnectionError, RequestException):
             return False
         return r.ok
+
+    def set_ai_code_assurance(self, enabled: bool) -> bool:
+        """Sets whether a project has AI code assurance enabled or not"""
+        if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
+            try:
+                return self.post("projects/set_ai_code_assurance", params={"project": self.key, "contains_ai_code": enabled}).ok
+            except (ConnectionError, RequestException):
+                pass
+        return False
+
+    def get_ai_code_assurance(self) -> Optional[bool]:
+        """Returns whether project AI code assurance flag is enabled or not"""
+        if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
+            try:
+                return json.loads(self.get("projects/get_ai_code_assurance", params={"project": self.key}).text)["aiCodeAssurance"]
+            except (ConnectionError, RequestException):
+                pass
+        return None
 
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
         """Sets project quality profile for a given language
@@ -1360,6 +1382,7 @@ class Project(components.Component):
         settings_to_apply = {
             k: v for k, v in data.items() if k not in ("permissions", "tags", "links", "qualityGate", "qualityProfiles", "binding", "name")
         }
+        self.set_ai_code_assurance(data.get("aiCodeAssurance", False))
         # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 
