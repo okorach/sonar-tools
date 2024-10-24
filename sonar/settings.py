@@ -250,7 +250,7 @@ class Setting(sqobject.SqObject):
             if isinstance(value[0], str):
                 params["values"] = value
             else:
-                params["fieldValues"] = [util.json.dumps(v) for v in value]
+                params["fieldValues"] = [json.dumps(v) for v in value]
         else:
             if isinstance(value, bool):
                 value = "true" if value else "false"
