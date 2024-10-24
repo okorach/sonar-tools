@@ -198,7 +198,6 @@ class Setting(sqobject.SqObject):
                     self.value = util.convert_string(data[key])
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
-        log.debug("%s MULTI VALUED = %s", str(self), str(self.multi_valued))
         if "inherited" in data:
             self.inherited = data["inherited"]
         elif self.key == NEW_CODE_PERIOD:
