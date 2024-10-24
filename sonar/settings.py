@@ -509,7 +509,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
         try:
             s.set(value)
         except (ConnectionError, RequestException) as e:
-            log.error("%s while setting setting '%s'", util.error_msg(e), key, str(component))
+            log.error("%s while setting setting '%s' for %s", util.error_msg(e), key, str(component))
             return False
         except exceptions.UnsupportedOperation as e:
             log.error("Setting '%s' cannot be set: %s", key, e.message)
