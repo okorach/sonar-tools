@@ -430,9 +430,14 @@ def search_by_key(endpoint, key, api, returned_field, extra_params=None):
 def sonar_error(response: requests.models.Response) -> str:
     """Formats the error returned in a Sonar HTTP response"""
     try:
-        return " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
+        json_res = json.loads(response.text)
+        if "errors" in json_res:
+            return " | ".join([e["msg"] for e in json.loads(response.text)["errors"]])
+        else:
+            log.debug("No error found in Response %s", json_dump(json_res))
     except json.decoder.JSONDecodeError:
-        return ""
+        pass
+    return ""
 
 
 def http_error_and_code(exception: requests.HTTPError) -> tuple[int, str]:
