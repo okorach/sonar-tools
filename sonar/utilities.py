@@ -188,20 +188,17 @@ def sort_lists(data: any) -> any:
     """Recursively removes empty lists and dicts and none from a dict"""
     if isinstance(data, list):
         if len(data) > 0 and isinstance(data[0], (str, int, float)):
-            data = sorted(data)
-            return data
+            return sorted(data)
         else:
             return [sort_lists(elem) for elem in data]
     elif isinstance(data, dict):
-        new_d = data.copy()
         for k, v in data.items():
             if isinstance(v, set):
                 v = list(v)
             if isinstance(v, list) and len(v) > 0 and isinstance(v[0], (str, int, float)):
-                new_d[k] = sorted(v)
+                data[k] = sorted(v)
             elif isinstance(v, dict):
-                new_d[k] = sort_lists(v)
-        return new_d
+                data[k] = sort_lists(v)
     return data
 
 
