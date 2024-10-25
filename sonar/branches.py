@@ -270,7 +270,7 @@ class Branch(components.Component):
             if isinstance(e, HTTPError):
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
-                elif e.response.status_code == HTTPStatus.BAD_REQUEST:
+                if e.response.status_code == HTTPStatus.BAD_REQUEST:
                     return False
             log.error("%s while renaming %s", util.error_msg(e), str(self))
             raise
