@@ -32,7 +32,6 @@ import re
 import json
 import datetime
 from datetime import timezone
-
 import requests
 
 import sonar.logging as log
@@ -185,16 +184,22 @@ def remove_empties(d: dict[str, any]) -> dict[str, any]:
     return new_d
 
 
-def sort_lists(d: dict[str, any]) -> dict[str, any]:
+def sort_lists(data: any) -> any:
     """Recursively removes empty lists and dicts and none from a dict"""
-    # log.debug("Cleaning up %s", json_dump(d))
-    new_d = d.copy()
-    for k, v in d.items():
-        if isinstance(v, list) and len(v) > 0 and isinstance(v[0], (str, int, float)):
-            new_d[k] = sorted(v)
-        elif isinstance(v, dict):
-            new_d[k] = sort_lists(v)
-    return new_d
+    if isinstance(data, (list, set, tuple)):
+        data = list(data)
+        if len(data) > 0 and isinstance(data[0], (str, int, float)):
+            return sorted(data)
+        return [sort_lists(elem) for elem in data]
+    elif isinstance(data, dict):
+        for k, v in data.items():
+            if isinstance(v, set):
+                v = list(v)
+            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], (str, int, float)):
+                data[k] = sorted(v)
+            elif isinstance(v, dict):
+                data[k] = sort_lists(v)
+    return data
 
 
 def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
@@ -209,7 +214,7 @@ def allowed_values_string(original_str: str, allowed_values: list[str]) -> str:
 
 def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3) -> str:
     """JSON dump helper"""
-    return json.dumps(jsondata, indent=indent, sort_keys=True, separators=(",", ": "))
+    return json.dumps(sort_lists(jsondata), indent=indent, sort_keys=True, separators=(",", ": "))
 
 
 def csv_to_list(string: str, separator: str = ",") -> list[str]:

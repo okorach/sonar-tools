@@ -24,7 +24,7 @@
 from __future__ import annotations
 import re
 import json
-from typing import Union
+from typing import Union, Optional
 from http import HTTPStatus
 from requests import HTTPError, RequestException
 
@@ -137,6 +137,8 @@ class Setting(sqobject.SqObject):
         self.value = None
         self.multi_valued = None
         self.inherited = None
+        self._definition = None
+        self._is_global = None
         self.reload(data)
         log.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
         _OBJECTS[self.uuid()] = self
@@ -198,7 +200,6 @@ class Setting(sqobject.SqObject):
                     self.value = util.convert_string(data[key])
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
-        log.debug("%s MULTI VALUED = %s", str(self), str(self.multi_valued))
         if "inherited" in data:
             self.inherited = data["inherited"]
         elif self.key == NEW_CODE_PERIOD:
@@ -274,9 +275,19 @@ class Setting(sqobject.SqObject):
         log.debug("to_json(%s: %s) = %s", self.key, str(self.value), str(val))
         return {self.key: val}
 
+    def definition(self) -> Optional[dict[str, str]]:
+        """Returns the setting global definition"""
+        if self._definition is None:
+            self._definition = next((s for s in self.endpoint.global_settings_definitions() if s["key"] == self.key), None)
+        return self._definition
+
     def is_global(self) -> bool:
         """Returns whether a setting global or specific for one component (project, branch, application, portfolio)"""
-        return self.component is None
+        if self.component:
+            return False
+        if self._is_global is None:
+            self._is_global = self.definition() is not None
+        return self._is_global
 
     def is_internal(self) -> bool:
         """Returns whether a setting is internal to the platform and is useless to expose externally"""
@@ -509,7 +520,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
         try:
             s.set(value)
         except (ConnectionError, RequestException) as e:
-            log.error("%s while setting setting '%s'", util.error_msg(e), key, str(component))
+            log.error("%s while setting setting '%s' for %s", util.error_msg(e), key, str(component))
             return False
         except exceptions.UnsupportedOperation as e:
             log.error("Setting '%s' cannot be set: %s", key, e.message)

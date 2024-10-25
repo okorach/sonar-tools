@@ -267,8 +267,11 @@ class Branch(components.Component):
         try:
             self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name})
         except (ConnectionError, RequestException) as e:
-            if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
+            if isinstance(e, HTTPError):
+                if e.response.status_code == HTTPStatus.NOT_FOUND:
+                    raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
+                if e.response.status_code == HTTPStatus.BAD_REQUEST:
+                    return False
             log.error("%s while renaming %s", util.error_msg(e), str(self))
             raise
         _OBJECTS.pop(self.uuid(), None)

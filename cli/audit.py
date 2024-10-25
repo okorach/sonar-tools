@@ -91,7 +91,7 @@ def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: ty
             data += list(p.to_json(with_url).values())
             csvwriter.writerow(data)
         queue.task_done()
-    log.info("Writing audit probelms complete")
+    log.info("Writing audit problems complete")
 
 
 def _audit_sq(

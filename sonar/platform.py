@@ -91,6 +91,7 @@ class Platform:
         self.organization = org
         self.__is_sonarcloud = util.is_sonarcloud_url(self.url)
         self._user_agent = _SONAR_TOOLS_AGENT
+        self._global_settings_definitions = None
 
     def __str__(self) -> str:
         """
@@ -309,6 +310,15 @@ class Platform:
             self._permissions = global_permissions.GlobalPermissions(self)
         return self._permissions
 
+    def global_settings_definitions(self) -> list[dict[str, str]]:
+        """Returns the platform global settings definitions"""
+        if not self._global_settings_definitions:
+            try:
+                self._global_settings_definitions = json.loads(self.get("settings/list_definitions").text)["definitions"]
+            except (ConnectionError, RequestException):
+                return []
+        return self._global_settings_definitions
+
     def sys_info(self) -> dict[str, any]:
         """
         :return: the SonarQube platform system info file
@@ -454,6 +464,8 @@ class Platform:
             (categ, subcateg) = s.category()
             if self.is_sonarcloud() and categ == settings.THIRD_PARTY_SETTINGS:
                 # What is reported as 3rd part are SonarCloud internal settings
+                continue
+            if not s.is_global():
                 continue
             util.update_json(json_data, categ, subcateg, s.to_json(export_settings["INLINE_LISTS"]))
 
