@@ -180,7 +180,6 @@ class QualityGate(sq.SqObject):
                 raise
             data = json.loads(resp.text)
             for prj in data["results"]:
-                log.info("Proj = %s", str(prj))
                 key = prj["key"] if "key" in prj else prj["id"]
                 self._projects[key] = projects.Project.get_object(self.endpoint, key)
             nb_pages = util.nbr_pages(data)
