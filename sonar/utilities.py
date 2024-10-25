@@ -184,20 +184,28 @@ def remove_empties(d: dict[str, any]) -> dict[str, any]:
     return new_d
 
 
-def sort_lists(d: dict[str, any]) -> dict[str, any]:
+def sort_lists(data: any) -> any:
     """Recursively removes empty lists and dicts and none from a dict"""
-    # log.debug("Cleaning up %s", json_dump(d))
-    if not d:
-        return d
-    new_d = d.copy()
-    for k, v in d.items():
-        if isinstance(v, set):
-            v = list(v)
-        if isinstance(v, list) and len(v) > 0 and isinstance(v[0], (str, int, float)):
-            new_d[k] = sorted(v)
-        elif isinstance(v, dict):
-            new_d[k] = sort_lists(v)
-    return new_d
+    if not data:
+        return data
+    if isinstance(data, list):
+        if len(data) > 0 and isinstance(data[0], (str, int, float)):
+            data = sorted(data)
+            return data
+        else:
+            return [sort_lists(elem) for elem in data]
+    elif isinstance(data, dict):
+        new_d = data.copy()
+        for k, v in data.items():
+            if isinstance(v, set):
+                v = list(v)
+            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], (str, int, float)):
+                new_d[k] = sorted(v)
+            elif isinstance(v, dict):
+                new_d[k] = sort_lists(v)
+        return new_d
+    else:
+        return data
 
 
 def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
