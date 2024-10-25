@@ -186,8 +186,6 @@ def remove_empties(d: dict[str, any]) -> dict[str, any]:
 
 def sort_lists(data: any) -> any:
     """Recursively removes empty lists and dicts and none from a dict"""
-    if not data:
-        return data
     if isinstance(data, list):
         if len(data) > 0 and isinstance(data[0], (str, int, float)):
             data = sorted(data)
@@ -204,8 +202,7 @@ def sort_lists(data: any) -> any:
             elif isinstance(v, dict):
                 new_d[k] = sort_lists(v)
         return new_d
-    else:
-        return data
+    return data
 
 
 def dict_subset(d: dict[str, str], subset_list: list[str]) -> dict[str, str]:
