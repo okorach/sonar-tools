@@ -3,5 +3,8 @@
         "connectionId": "LATEST",
         "projectKey": "okorach_sonar-tools"
     },
-    "sonarlint.focusOnNewCode": true
+    "sonarlint.focusOnNewCode": true,
+    "pylint.args": [
+        "[\"--rcfile=conf/pylintrc\"]"
+    ]
 }
