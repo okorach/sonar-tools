@@ -159,7 +159,7 @@ def test_config_import_portfolios() -> None:
     # delete all portfolios in test
     logging.set_debug_level("DEBUG")
     logging.info("Deleting all portfolios")
-    portfolios.Portfolio.empty_cache()
+    portfolios.Portfolio.clear_cache()
     for p in portfolios.get_list(util.TEST_SQ).values():
         if p.is_toplevel():
             p.delete()
