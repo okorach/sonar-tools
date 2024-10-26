@@ -62,7 +62,6 @@ PROJECT_DEFAULT_VISIBILITY = "projects.default.visibility"
 
 DEFAULT_BRANCH = "-DEFAULT_BRANCH-"
 
-_OBJECTS = {}
 
 _SQ_INTERNAL_SETTINGS = (
     "sonaranalyzer",
@@ -130,6 +129,8 @@ class Setting(sqobject.SqObject):
     Abstraction of the Sonar setting concept
     """
 
+    _OBJECTS = {}
+
     def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
@@ -141,15 +142,15 @@ class Setting(sqobject.SqObject):
         self._is_global = None
         self.reload(data)
         log.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
-        _OBJECTS[self.uuid()] = self
+        Setting._OBJECTS[self.uuid()] = self
 
     @classmethod
     def read(cls, key: str, endpoint: pf.Platform, component: object = None) -> Setting:
         """Reads a setting from the platform"""
         log.debug("Reading setting '%s' for %s", key, str(component))
         uid = uuid(key, component, endpoint.url)
-        if uid in _OBJECTS:
-            return _OBJECTS[uid]
+        if uid in Setting._OBJECTS:
+            return Setting._OBJECTS[uid]
         if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
             params = get_component_params(component, name="project")
             data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)
@@ -180,7 +181,7 @@ class Setting(sqobject.SqObject):
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
         uid = uuid(key, component, endpoint.url)
-        o = _OBJECTS[uid] if uid in _OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
+        o = Setting._OBJECTS[uid] if uid in Setting._OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
         return o
 
@@ -362,9 +363,9 @@ class Setting(sqobject.SqObject):
 def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Setting:
     """Returns a Setting object from its key and, optionally, component"""
     uid = uuid(key, component, endpoint.url)
-    if uid not in _OBJECTS:
+    if uid not in Setting._OBJECTS:
         get_all(endpoint, component)
-    return _OBJECTS.get(uid, None)
+    return Setting._OBJECTS.get(uid, None)
 
 
 def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> dict[str, Setting]:
@@ -482,8 +483,8 @@ def get_visibility(endpoint: pf.Platform, component: object) -> str:
     """Returns the platform global or component visibility"""
     key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
     uid = uuid(key, component, endpoint.url)
-    if uid in _OBJECTS:
-        return _OBJECTS[uid]
+    if uid in Setting._OBJECTS:
+        return Setting._OBJECTS[uid]
     if component:
         data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
         return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])

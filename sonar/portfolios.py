@@ -403,6 +403,7 @@ class Portfolio(aggregations.Aggregation):
 
     def add_projects(self, projects: set[str]) -> Portfolio:
         """Adds projects main branch to a portfolio"""
+        self.set_manual_mode()
         for key in projects:
             try:
                 self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
@@ -870,3 +871,8 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
         if "permissions" in p_json:
             p_json["permissions"] = perms.convert_for_yaml(p_json["permissions"])
     return new_json
+
+
+def clear_cache(endpoint: pf.Platform) -> None:
+    """Clears the cache of an endpoint"""
+    Portfolio.clear_cache(endpoint)

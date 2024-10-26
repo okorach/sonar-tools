@@ -37,8 +37,6 @@ from sonar.branches import Branch
 from sonar import exceptions, projects, utilities
 import sonar.sqobject as sq
 
-_OBJECTS = {}
-
 APIS = {
     "search": "api/components/search_projects",
     "get": "api/applications/show",
@@ -55,6 +53,8 @@ class ApplicationBranch(Component):
     Abstraction of the SonarQube "application branch" concept
     """
 
+    _OBJECTS = {}
+
     def __init__(self, app: App, name: str, project_branches: list[Branch], is_main: bool = False) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
         super().__init__(endpoint=app.endpoint, key=f"{app.key} BRANCH {name}")
@@ -64,7 +64,7 @@ class ApplicationBranch(Component):
         self._project_branches = project_branches
         self._last_analysis = None
         log.debug("Created object %s with uuid %s id %x", str(self), self.uuid(), id(self))
-        _OBJECTS[self.uuid()] = self
+        ApplicationBranch._OBJECTS[self.uuid()] = self
 
     @classmethod
     def get_object(cls, app: App, branch_name: str) -> ApplicationBranch:
@@ -80,13 +80,13 @@ class ApplicationBranch(Component):
         if app.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
         uu = uuid(app.key, branch_name, app.endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        if uu in ApplicationBranch._OBJECTS:
+            return ApplicationBranch._OBJECTS[uu]
         app.refresh()
         app.branches()
         uu = uuid(app.key, branch_name, app.endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        if uu in ApplicationBranch._OBJECTS:
+            return ApplicationBranch._OBJECTS[uu]
         raise exceptions.ObjectNotFound(app.key, f"Application key '{app.key}' branch '{branch_name}' not found")
 
     @classmethod
@@ -147,7 +147,7 @@ class ApplicationBranch(Component):
         if self.is_main():
             log.warning("Can't delete main %s, simply delete the application for that", str(self))
             return False
-        return sq.delete_object(self, APIS["delete"], self.search_params(), _OBJECTS)
+        return sq.delete_object(self, APIS["delete"], self.search_params(), ApplicationBranch._OBJECTS)
 
     def reload(self, data: types.ApiPayload) -> None:
         """Reloads an App Branch from JSON data coming from Sonar"""

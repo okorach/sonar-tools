@@ -35,9 +35,6 @@ import sonar.utilities as util
 #: DevOps platform types in SonarQube
 DEVOPS_PLATFORM_TYPES = ("github", "azure", "bitbucket", "bitbucketcloud", "gitlab")
 
-
-_OBJECTS = {}
-
 _CREATE_API_GITHUB = "alm_settings/create_github"
 _CREATE_API_GITLAB = "alm_settings/create_gitlab"
 _CREATE_API_AZURE = "alm_settings/create_azure"
@@ -54,21 +51,23 @@ class DevopsPlatform(sq.SqObject):
     Abstraction of the SonarQube ALM/DevOps Platform concept
     """
 
+    _OBJECTS = {}
+
     def __init__(self, endpoint: platform.Platform, key: str, platform_type: str) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.type = platform_type  #: DevOps platform type
         self.url = None  #: DevOps platform URL
         self._specific = None  #: DevOps platform specific settings
-        _OBJECTS[self.uuid()] = self
+        DevopsPlatform._OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
     @classmethod
     def read(cls, endpoint: platform.Platform, key: str) -> DevopsPlatform:
         """Reads a devops platform object in Sonar instance"""
         uu = sq.uuid(key, endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        if uu in DevopsPlatform._OBJECTS:
+            return DevopsPlatform._OBJECTS[uu]
         data = json.loads(endpoint.get(APIS["list"]).text)
         for plt_type, platforms in data.items():
             for p in platforms:
@@ -81,8 +80,8 @@ class DevopsPlatform(sq.SqObject):
         """Finds a devops platform object and loads it with data"""
         key = data["key"]
         uu = sq.uuid(key, endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        if uu in DevopsPlatform._OBJECTS:
+            return DevopsPlatform._OBJECTS[uu]
         o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         return o._load(data)
 
@@ -198,9 +197,9 @@ def count(platf_type: str = None) -> int:
     :rtype: int
     """
     if platf_type is None:
-        return len(_OBJECTS)
+        return len(DevopsPlatform._OBJECTS)
     # Hack: check first 5 chars to that bitbucket cloud and bitbucket server match
-    return sum(1 for o in _OBJECTS.values() if o.type[0:4] == platf_type[0:4])
+    return sum(1 for o in DevopsPlatform._OBJECTS.values() if o.type[0:4] == platf_type[0:4])
 
 
 def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
@@ -213,12 +212,12 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarCloud")
     if endpoint.edition() == "community":
-        return _OBJECTS
+        return DevopsPlatform._OBJECTS
     data = json.loads(endpoint.get(APIS["list"]).text)
     for alm_type in DEVOPS_PLATFORM_TYPES:
         for alm_data in data.get(alm_type, {}):
             DevopsPlatform.load(endpoint, alm_type, alm_data)
-    return _OBJECTS
+    return DevopsPlatform._OBJECTS
 
 
 def get_object(devops_platform_key: str, endpoint: platform.Platform) -> DevopsPlatform:
@@ -228,7 +227,7 @@ def get_object(devops_platform_key: str, endpoint: platform.Platform) -> DevopsP
     :return: The DevOps platforms corresponding to key, or None if not found
     :rtype: DevopsPlatform
     """
-    if len(_OBJECTS) == 0:
+    if len(DevopsPlatform._OBJECTS) == 0:
         get_list(endpoint)
     return DevopsPlatform.read(endpoint, devops_platform_key)
 
@@ -265,7 +264,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't get import DevOps platforms in SonarCloud")
     log.info("Importing DevOps config %s", util.json_dump(devops_settings))
-    if len(_OBJECTS) == 0:
+    if len(DevopsPlatform._OBJECTS) == 0:
         get_list(endpoint)
     for name, data in devops_settings.items():
         try:

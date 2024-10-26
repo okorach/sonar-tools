@@ -34,13 +34,13 @@ from sonar.util import types
 from sonar import exceptions, utilities
 import sonar.sqobject as sq
 
-_OBJECTS = {}
-
 
 class PortfolioReference(sq.SqObject):
     """
     Abstraction of the Sonar portfolio reference concept
     """
+
+    _OBJECTS = {}
 
     def __init__(self, reference: object, parent: object) -> None:
         """Constructor, don't use - use class methods instead"""
@@ -49,7 +49,7 @@ class PortfolioReference(sq.SqObject):
         self.reference = reference
         self.parent = parent
         uid = self.uuid()
-        _OBJECTS[uid] = self
+        PortfolioReference._OBJECTS[uid] = self
         log.debug("Created subportfolio by reference key '%s'", self.key)
 
     @classmethod
@@ -58,9 +58,9 @@ class PortfolioReference(sq.SqObject):
         check_supported(endpoint)
         log.info("Getting subportfolio by ref key '%s:%s'", parent_key, key)
         uid = sq.uuid(f"{parent_key}:{key}", endpoint.url)
-        if uid not in _OBJECTS:
+        if uid not in PortfolioReference._OBJECTS:
             raise exceptions.ObjectNotFound
-        return _OBJECTS[uid]
+        return PortfolioReference._OBJECTS[uid]
 
     @classmethod
     def load(cls, reference: object, parent: object) -> PortfolioReference:

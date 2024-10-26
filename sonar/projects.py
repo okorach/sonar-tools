@@ -52,7 +52,6 @@ from sonar.audit import severities
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-_OBJECTS = {}
 _CLASS_LOCK = Lock()
 
 MAX_PAGE_SIZE = 500
@@ -126,6 +125,7 @@ class Project(components.Component):
     Abstraction of the SonarQube project concept
     """
 
+    _OBJECTS = {}
     SEARCH_API = "projects/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
@@ -146,7 +146,7 @@ class Project(components.Component):
         self._new_code = None
         self._ci = None
         self._revision = None
-        _OBJECTS[self.uuid()] = self
+        Project._OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
     @classmethod
@@ -160,8 +160,8 @@ class Project(components.Component):
         :rtype: Project
         """
         uu = sqobject.uuid(key, endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        if uu in Project._OBJECTS:
+            return Project._OBJECTS[uu]
         try:
             data = json.loads(endpoint.get(Project.SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             if len(data["components"]) == 0:
@@ -189,8 +189,8 @@ class Project(components.Component):
         """
         key = data["key"]
         uu = sqobject.uuid(key, endpoint.url)
-        if uu in _OBJECTS:
-            o = _OBJECTS[uu]
+        if uu in Project._OBJECTS:
+            o = Project._OBJECTS[uu]
         else:
             o = cls(endpoint, key)
         o.reload(data)
@@ -233,7 +233,7 @@ class Project(components.Component):
         """
         data = json.loads(self.get(Project.SEARCH_API, params={"projects": self.key}).text)
         if len(data["components"]) == 0:
-            _OBJECTS.pop(self.uuid(), None)
+            Project._OBJECTS.pop(self.uuid(), None)
             raise exceptions.ObjectNotFound(self.key, f"Project key {self.key} not found")
         return self.reload(data["components"][0])
 
@@ -358,7 +358,7 @@ class Project(components.Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, _OBJECTS)
+        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, Project._OBJECTS)
         log.info("Successfully deleted %s - %d LoCs", str(self), loc)
         return ok
 

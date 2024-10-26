@@ -43,8 +43,6 @@ from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
 
-_OBJECTS = {}
-
 #: Quality gates APIs
 APIS = {
     "create": "qualitygates/create",
@@ -81,6 +79,8 @@ class QualityGate(sq.SqObject):
     Abstraction of the Sonar Quality Gate concept
     """
 
+    _OBJECTS = {}
+
     def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload) -> None:
         """Constructor, don't use directly, use class methods instead"""
         super().__init__(endpoint=endpoint, key=name)
@@ -97,7 +97,7 @@ class QualityGate(sq.SqObject):
         self.is_built_in = data.get("isBuiltIn", False)
         self.conditions()
         self.permissions()
-        _OBJECTS[self.uuid()] = self
+        QualityGate._OBJECTS[self.uuid()] = self
 
     @classmethod
     def get_object(cls, endpoint: pf.Platform, name: str) -> QualityGate:
@@ -109,8 +109,8 @@ class QualityGate(sq.SqObject):
         :rtype: QualityGate or None
         """
         uid = sq.uuid(name, endpoint.url)
-        if uid in _OBJECTS:
-            return _OBJECTS[uid]
+        if uid in QualityGate._OBJECTS:
+            return QualityGate._OBJECTS[uid]
         data = search_by_name(endpoint, name)
         if not data:
             raise exceptions.ObjectNotFound(name, f"Quality gate '{name}' not found")
@@ -123,7 +123,7 @@ class QualityGate(sq.SqObject):
         :rtype: QualityGate or None
         """
         # SonarQube 10 compatibility: "id" field dropped, replaced by "name"
-        o = _OBJECTS.get(sq.uuid(data["name"], endpoint.url), None)
+        o = QualityGate._OBJECTS.get(sq.uuid(data["name"], endpoint.url), None)
         if not o:
             o = cls(endpoint, data["name"], data=data)
         o._json = data
@@ -288,9 +288,9 @@ class QualityGate(sq.SqObject):
         if "name" in data and data["name"] != self.name:
             log.info("Renaming %s with %s", str(self), data["name"])
             self.post(APIS["rename"], params={"id": self.key, "name": data["name"]})
-            _OBJECTS.pop(self.uuid(), None)
+            QualityGate._OBJECTS.pop(self.uuid(), None)
             self.name = data["name"]
-            _OBJECTS[self.uuid()] = self
+            QualityGate._OBJECTS[self.uuid()] = self
         ok = self.set_conditions(data.get("conditions", []))
         ok = ok and self.set_permissions(data.get("permissions", []))
         if data.get("isDefault", False):

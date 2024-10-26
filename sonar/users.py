@@ -32,10 +32,6 @@ import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-
-_OBJECTS = {}
-
-
 CREATE_API = "users/create"
 UPDATE_API = "users/update"
 DEACTIVATE_API = "users/deactivate"
@@ -52,6 +48,7 @@ class User(sqobject.SqObject):
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
 
+    _OBJECTS = {}
     SEARCH_API = "users/search"
     SEARCH_API_V2 = "v2/users-management/users"
     SEARCH_KEY_FIELD = "login"
@@ -74,7 +71,7 @@ class User(sqobject.SqObject):
         self.__tokens = None
         self.__load(data)
         log.debug("Created %s", str(self))
-        _OBJECTS[self.uuid()] = self
+        User._OBJECTS[self.uuid()] = self
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> User:
@@ -123,8 +120,8 @@ class User(sqobject.SqObject):
         :rtype: User
         """
         uid = sqobject.uuid(login, endpoint.url)
-        if uid in _OBJECTS:
-            return _OBJECTS[uid]
+        if uid in User._OBJECTS:
+            return User._OBJECTS[uid]
         log.debug("Getting user '%s'", login)
         for k, o in search(endpoint, params={"q": login}).items():
             if k == login:
@@ -255,11 +252,11 @@ class User(sqobject.SqObject):
                 self.set_scm_accounts(kwargs["scmAccounts"])
             if "login" in kwargs:
                 new_login = kwargs["login"]
-                if new_login not in _OBJECTS:
+                if new_login not in User._OBJECTS:
                     self.post(UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
-                    _OBJECTS.pop(self.uuid(), None)
+                    User._OBJECTS.pop(self.uuid(), None)
                     self.login = new_login
-                    _OBJECTS[self.uuid()] = self
+                    User._OBJECTS[self.uuid()] = self
         self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
         return self
 

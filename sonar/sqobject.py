@@ -36,10 +36,11 @@ from sonar.util import types
 from sonar import utilities, exceptions
 
 
-class SqObject:
+class SqObject(object):
     """Abstraction of Sonar objects"""
 
     SEARCH_API = None
+    _OBJECTS = {}
 
     def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)
@@ -57,11 +58,17 @@ class SqObject:
         return api
 
     @classmethod
-    def empty_cache(cls) -> None:
-        """Empties the cache of objects of the given class"""
+    def clear_cache(cls, endpoint: Optional[object] = None) -> None:
+        """
+        Clear the cache of a given class
+        :param endpoint Platform: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
+        """
         log.info("Emptying cache of %s", str(cls))
         try:
-            cls._OBJECTS = {}
+            if not endpoint:
+                cls._OBJECTS = {}
+            else:
+                cls._OBJECTS = {k: o for k, o in cls._OBJECTS if o.endpoint.url != endpoint.url}
         except AttributeError:
             pass
 
@@ -207,3 +214,8 @@ def delete_object(object: SqObject, api: str, params: types.ApiParams, map: dict
 def uuid(key: str, url: str) -> str:
     """Returns a SonarQube object uuid"""
     return f"{key}@{url}"
+
+
+def clear_cache(endpoint: object, cache: dict[str, SqObject]) -> None:
+    """Clears the cache of an endpoint"""
+    cache = {k: o for k, o in cache if o.endpoint.url != endpoint.url}

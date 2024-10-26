@@ -31,14 +31,13 @@ from sonar.audit import rules, problem
 
 _IMPORTABLE_PROPERTIES = ("name", "url", "secret")
 
-_OBJECTS = {}
-
 
 class WebHook(sq.SqObject):
     """
     Abstraction of the SonarQube "webhook" concept
     """
 
+    _OBJECTS = {}
     SEARCH_API = "webhooks/list"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "webhooks"
@@ -58,7 +57,7 @@ class WebHook(sq.SqObject):
         self.secret = data.get("secret", None)  #: Webhook secret
         self.project = project  #: Webhook project if project specific webhook
         self.last_delivery = data.get("latestDelivery", None)
-        _OBJECTS[self.uuid()] = self
+        WebHook._OBJECTS[self.uuid()] = self
 
     def __str__(self) -> str:
         return f"webhook '{self.name}'"
@@ -140,7 +139,7 @@ def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
     """Updates a webhook with data in kwargs"""
     project_key = kwargs.pop("project", None)
     get_list(endpoint, project_key)
-    if uuid(name, project_key, endpoint.url) not in _OBJECTS:
+    if uuid(name, project_key, endpoint.url) not in WebHook._OBJECTS:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
         get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
@@ -150,9 +149,9 @@ def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: 
     """Gets a WebHook object from name a project key"""
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
     uid = uuid(name, project_key, endpoint.url)
-    if uid not in _OBJECTS:
+    if uid not in WebHook._OBJECTS:
         _ = WebHook(endpoint=endpoint, name=name, project=project_key, data=data)
-    return _OBJECTS[uid]
+    return WebHook._OBJECTS[uid]
 
 
 def uuid(name: str, project_key: str, url: str) -> str:

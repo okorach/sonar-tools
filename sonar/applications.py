@@ -39,7 +39,6 @@ import sonar.aggregations as aggr
 import sonar.utilities as util
 from sonar.audit import rules, problem
 
-_OBJECTS = {}
 _CLASS_LOCK = Lock()
 
 APIS = {
@@ -59,6 +58,8 @@ class Application(aggr.Aggregation):
     Abstraction of the SonarQube "application" concept
     """
 
+    _OBJECTS = {}
+
     SEARCH_API = "api/components/search_projects"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
@@ -71,7 +72,7 @@ class Application(aggr.Aggregation):
         self._description = None
         self.name = name
         log.debug("Created object %s with uuid %s id %x", str(self), self.uuid(), id(self))
-        _OBJECTS[self.uuid()] = self
+        Application._OBJECTS[self.uuid()] = self
 
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Application:
@@ -86,8 +87,8 @@ class Application(aggr.Aggregation):
         """
         check_supported(endpoint)
         uu = sq.uuid(key=key, url=endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        if uu in Application._OBJECTS:
+            return Application._OBJECTS[uu]
         try:
             data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)["application"]
         except (ConnectionError, RequestException) as e:
@@ -111,8 +112,8 @@ class Application(aggr.Aggregation):
         """
         check_supported(endpoint)
         uu = sq.uuid(key=data["key"], url=endpoint.url)
-        if uu in _OBJECTS:
-            o = _OBJECTS[uu]
+        if uu in Application._OBJECTS:
+            o = Application._OBJECTS[uu]
         else:
             o = cls(endpoint, data["key"], data["name"])
         o.reload(data)
@@ -152,7 +153,7 @@ class Application(aggr.Aggregation):
             self.reload(json.loads(self.get(APIS["get"], params=self.search_params()).text)["application"])
         except (ConnectionError, RequestException) as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
-                _OBJECTS.pop(self.uuid(), None)
+                Application._OBJECTS.pop(self.uuid(), None)
                 raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
             log.error("%s while refreshing %s", util.error_msg(e), str(self))
             raise
@@ -261,7 +262,7 @@ class Application(aggr.Aggregation):
             for branch in self.branches().values():
                 if not branch.is_main:
                     ok = ok and branch.delete()
-        return ok and sq.delete_object(self, "applications/delete", {"application": self.key}, _OBJECTS)
+        return ok and sq.delete_object(self, "applications/delete", {"application": self.key}, Application._OBJECTS)
 
     def get_filtered_branches(self, filters: dict[str, str]) -> Union[None, dict[str, object]]:
         """Get lists of branches according to the filter"""
@@ -588,11 +589,11 @@ def search_by_name(endpoint: pf.Platform, name: str) -> dict[str, Application]:
     """Searches applications by name. Several apps may match as name does not have to be unique"""
     get_list(endpoint=endpoint, use_cache=False)
     data = {}
-    for app in _OBJECTS.values():
+    for app in Application._OBJECTS.values():
         if app.name == name:
             log.debug("Found APP %s id %x", app.key, id(app))
             data[app.key] = app
-    # return {app.key: app for app in _OBJECTS.values() if app.name == name}
+    # return {app.key: app for app in Application._OBJECTS.values() if app.name == name}
     return data
 
 

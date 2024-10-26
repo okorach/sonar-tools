@@ -40,8 +40,6 @@ ADD_USER_API = "user_groups/add_user"
 REMOVE_USER_API = "user_groups/remove_user"
 _UPDATE_API_V2 = "v2/authorizations/groups"
 
-_OBJECTS = {}
-
 
 class Group(sq.SqObject):
     """
@@ -49,6 +47,7 @@ class Group(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
+    _OBJECTS = {}
     SEARCH_API = "user_groups/search"
     SEARCH_API_V2 = "v2/authorizations/groups"
     SEARCH_KEY_FIELD = "name"
@@ -63,7 +62,7 @@ class Group(sq.SqObject):
         self.__is_default = data.get("default", None)
         self._id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self._json = data
-        _OBJECTS[self.uuid()] = self
+        Group._OBJECTS[self.uuid()] = self
         log.debug("Created %s object", str(self))
 
     @classmethod
@@ -76,15 +75,15 @@ class Group(sq.SqObject):
         """
         log.debug("Reading group '%s'", name)
         uid = sq.uuid(name, endpoint.url)
-        if uid in _OBJECTS:
-            return _OBJECTS[uid]
+        if uid in Group._OBJECTS:
+            return Group._OBJECTS[uid]
         data = util.search_by_name(endpoint, name, Group.SEARCH_API, "groups")
         if data is None:
             raise exceptions.UnsupportedOperation(f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
         uid = sq.uuid(data.get("id", data["name"]), endpoint.url)
-        if uid in _OBJECTS:
-            return _OBJECTS[uid]
+        if uid in Group._OBJECTS:
+            return Group._OBJECTS[uid]
         return cls(endpoint, name, data=data)
 
     @classmethod
@@ -239,9 +238,9 @@ class Group(sq.SqObject):
         else:
             r = self.post(_UPDATE_API, params={"currentName": self.key, "name": name})
         if r.ok:
-            _OBJECTS.pop(self.uuid(), None)
+            Group._OBJECTS.pop(self.uuid(), None)
             self.name = name
-            _OBJECTS[self.uuid()] = self
+            Group._OBJECTS[self.uuid()] = self
         return r.ok
 
 
@@ -316,20 +315,20 @@ def get_object(endpoint: pf.Platform, name: str) -> Group:
     :return: The group
     """
     uid = sq.uuid(name, endpoint.url)
-    if len(_OBJECTS) == 0 or uid not in _OBJECTS:
+    if len(Group._OBJECTS) == 0 or uid not in Group._OBJECTS:
         get_list(endpoint)
-    if uid not in _OBJECTS:
+    if uid not in Group._OBJECTS:
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
-    return _OBJECTS[uid]
+    return Group._OBJECTS[uid]
 
 
 def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
     if endpoint.version() < (10, 4, 0):
         raise exceptions.UnsupportedOperation
-    if len(_OBJECTS) == 0:
+    if len(Group._OBJECTS) == 0:
         get_list(endpoint)
-    for o in _OBJECTS.values():
+    for o in Group._OBJECTS.values():
         if o._id == id:
             return o
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")
