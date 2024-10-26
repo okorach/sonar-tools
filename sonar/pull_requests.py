@@ -36,7 +36,6 @@ import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-_OBJECTS = {}
 
 _UNSUPPORTED_IN_CE = "Pull requests not available in Community Edition"
 
@@ -46,13 +45,15 @@ class PullRequest(components.Component):
     Abstraction of the Sonar pull request concept
     """
 
+    _OBJECTS = {}
+
     def __init__(self, project: object, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
         self.project = project
         self.json = data
         self._last_analysis = None
-        _OBJECTS[self.uuid()] = self
+        PullRequest._OBJECTS[self.uuid()] = self
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:
@@ -74,7 +75,7 @@ class PullRequest(components.Component):
 
     def delete(self) -> bool:
         """Deletes a PR and returns whether the operation succeeded"""
-        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), _OBJECTS)
+        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), PullRequest._OBJECTS)
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         age = util.age(self.last_analysis())
@@ -104,9 +105,9 @@ def get_object(pull_request_key: str, project: object, data: types.ApiPayload = 
         log.debug("Pull requests not available in Community Edition")
         return None
     uid = uuid(project.key, pull_request_key, project.endpoint.url)
-    if uid not in _OBJECTS:
+    if uid not in PullRequest._OBJECTS:
         _ = PullRequest(project, pull_request_key, data=data)
-    return _OBJECTS[uid]
+    return PullRequest._OBJECTS[uid]
 
 
 def get_list(project: object) -> dict[str, PullRequest]:

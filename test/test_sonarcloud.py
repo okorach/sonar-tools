@@ -28,6 +28,8 @@ import pytest
 import utilities as util
 from sonar import errcodes, exceptions
 from sonar import organizations
+from sonar.util import cache
+
 import cli.options as opt
 from cli import config
 
@@ -37,6 +39,11 @@ SC_OPTS = [f"-{opt.URL_SHORT}", "https://sonarcloud.io", f"-{opt.TOKEN_SHORT}", 
 OPTS = [CMD] + SC_OPTS + [f"-{opt.EXPORT_SHORT}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
 MY_ORG_1 = "okorach"
 MY_ORG_2 = "okorach-github"
+
+
+def test_clear_cache() -> None:
+    """Clears the SonarQube caches before running tests on SC"""
+    cache.clear()
 
 
 def test_sc_config_export() -> None:

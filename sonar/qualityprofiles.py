@@ -42,7 +42,6 @@ from sonar.audit.problem import Problem
 
 _CREATE_API = "qualityprofiles/create"
 _DETAILS_API = "qualityprofiles/show"
-_OBJECTS = {}
 
 _KEY_PARENT = "parent"
 _CHILDREN_KEY = "children"
@@ -58,6 +57,7 @@ class QualityProfile(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
+    _OBJECTS = {}
     SEARCH_API = "qualityprofiles/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
@@ -88,7 +88,7 @@ class QualityProfile(sq.SqObject):
         self.__last_update = util.string_to_date(data.get("rulesUpdatedAt", None))
 
         log.debug("Created %s", str(self))
-        _OBJECTS[self.uuid()] = self
+        QualityProfile._OBJECTS[self.uuid()] = self
 
     @classmethod
     def read(cls, endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:
@@ -105,8 +105,8 @@ class QualityProfile(sq.SqObject):
             return None
         log.debug("Reading quality profile '%s' of language '%s'", name, language)
         uid = uuid(name, language, endpoint.url)
-        if uid in _OBJECTS:
-            return _OBJECTS[uid]
+        if uid in QualityProfile._OBJECTS:
+            return QualityProfile._OBJECTS[uid]
         data = util.search_by_name(endpoint, name, QualityProfile.SEARCH_API, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
@@ -297,9 +297,9 @@ class QualityProfile(sq.SqObject):
             if "name" in data and data["name"] != self.name:
                 log.info("Renaming %s with %s", str(self), data["name"])
                 self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
-                _OBJECTS.pop(self.uuid(), None)
+                QualityProfile._OBJECTS.pop(self.uuid(), None)
                 self.name = data["name"]
-                _OBJECTS[self.uuid()] = self
+                QualityProfile._OBJECTS[self.uuid()] = self
             self.activate_rules(data.get("rules", []))
             self.set_permissions(data.get("permissions", []))
             self.set_parent(data.pop(_KEY_PARENT, None))
@@ -521,9 +521,9 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
     """
 
     with _CLASS_LOCK:
-        if len(_OBJECTS) == 0 or not use_cache:
+        if len(QualityProfile._OBJECTS) == 0 or not use_cache:
             search(endpoint=endpoint)
-    return _OBJECTS
+    return QualityProfile._OBJECTS
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) -> list[Problem]:
@@ -626,9 +626,9 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Union[Quality
     """
     get_list(endpoint)
     uid = uuid(name, language, endpoint.url)
-    if uid not in _OBJECTS:
+    if uid not in QualityProfile._OBJECTS:
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
-    return _OBJECTS[uid]
+    return QualityProfile._OBJECTS[uid]
 
 
 def _create_or_update_children(name: str, language: str, endpoint: pf.Platform, children: dict[str, StopAsyncIteration], queue: Queue) -> None:

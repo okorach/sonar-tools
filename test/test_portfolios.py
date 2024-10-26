@@ -104,15 +104,12 @@ def test_add_project() -> None:
         assert "none" in p.selection_mode()
 
         project = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
-        p.add_projects(None)
         assert "none" in p.selection_mode()
-        p.add_projects([])
-        assert "none" in p.selection_mode()
-        p.add_projects([project])
+        p.add_projects({project.key})
         mode = p.selection_mode()
         assert "manual" in mode
-        assert mode["manual"] == {"okorach_sonar-tools": settings.DEFAULT_BRANCH}
-        assert p.projects() == {"okorach_sonar-tools": settings.DEFAULT_BRANCH}
+        assert mode["manual"] == {"okorach_sonar-tools": {settings.DEFAULT_BRANCH}}
+        assert p.projects() == {"okorach_sonar-tools": {settings.DEFAULT_BRANCH}}
         p.delete()
         assert not portfolios.exists(endpoint=util.SQ, key=TEST_KEY)
 

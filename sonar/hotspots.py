@@ -73,8 +73,6 @@ SEVERITIES = ()
 # Filters for search of hotspots are different than for issues :-(
 _FILTERS_HOTSPOTS_REMAPPING = {"resolutions": "resolution", "statuses": "status", "componentsKey": PROJECT_FILTER, "components": PROJECT_FILTER}
 
-_OBJECTS = {}
-
 
 class TooManyHotspotsError(Exception):
     def __init__(self, nbr_issues, message):
@@ -86,6 +84,7 @@ class TooManyHotspotsError(Exception):
 class Hotspot(findings.Finding):
     """Abstraction of the Sonar hotspot concept"""
 
+    _OBJECTS = {}
     SEARCH_API = "hotspots/search"
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
@@ -109,7 +108,7 @@ class Hotspot(findings.Finding):
         if m:
             self.projectKey = m.group(1)
             self.branch = m.group(2)
-        _OBJECTS[self.uuid()] = self
+        Hotspot._OBJECTS[self.uuid()] = self
         if self.rule is None and self.refresh():
             self.rule = self.__details["rule"]["key"]
 
@@ -437,9 +436,9 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
 def get_object(endpoint: pf.Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
     uid = uuid(key, endpoint.url)
-    if uid not in _OBJECTS:
+    if uid not in Hotspot._OBJECTS:
         _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
-    return _OBJECTS[uid]
+    return Hotspot._OBJECTS[uid]
 
 
 def sanitize_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> types.ApiParams:
