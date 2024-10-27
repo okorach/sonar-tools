@@ -218,9 +218,9 @@ class Project(components.Component):
         """
         return f"project '{self.key}'"
 
-    def project_key(self) -> str:
-        """Returns the project key"""
-        return self.key
+    def project(self) -> Project:
+        """Returns the project"""
+        return self
 
     def refresh(self) -> Project:
         """Refresh a project from SonarQube
