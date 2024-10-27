@@ -169,8 +169,8 @@ def main() -> int:
         if source_branch is not None and target_branch is not None:
             log.info("Syncing findings between 2 branches")
             if source_url != target_url or source_branch != target_branch:
-                src_branch = branches.Branch.get_object(projects.Project.get_object(source_key, source_env), source_branch)
-                tgt_branch = branches.Branch.get_object(projects.Project.get_object(source_key, source_env), target_branch)
+                src_branch = branches.Branch.get_object(projects.Project.get_object(source_env, source_key), source_branch)
+                tgt_branch = branches.Branch.get_object(projects.Project.get_object(target_env, target_key), target_branch)
                 (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
             else:
                 log.critical("Can't sync same source and target branch or a same project, aborting...")
@@ -184,22 +184,10 @@ def main() -> int:
         __dump_report(report, args.file)
         log.info("%d issues needed to be synchronized", counters.get("nb_to_sync", 0))
         log.info("%d issues were synchronized successfully", counters.get("nb_applies", 0))
-        log.info(
-            "%d issues could not be synchronized because no match was found in target",
-            counters.get("nb_no_match", 0),
-        )
-        log.info(
-            "%d issues could not be synchronized because there were multiple matches",
-            counters.get("nb_multiple_matches", 0),
-        )
-        log.info(
-            "%d issues could not be synchronized because the match was approximate",
-            counters.get("nb_approx_match", 0),
-        )
-        log.info(
-            "%d issues could not be synchronized because target issue already had a changelog",
-            counters.get("nb_tgt_has_changelog", 0),
-        )
+        log.info("%d issues could not be synchronized because no match was found in target", counters.get("nb_no_match", 0))
+        log.info("%d issues could not be synchronized because there were multiple matches", counters.get("nb_multiple_matches", 0))
+        log.info("%d issues could not be synchronized because the match was approximate", counters.get("nb_approx_match", 0))
+        log.info("%d issues could not be synchronized because target issue already had a changelog", counters.get("nb_tgt_has_changelog", 0))
 
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
