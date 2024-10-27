@@ -437,10 +437,10 @@ class Finding(sq.SqObject):
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
-                    log.info("%s and %s are strictly identical and can be synced", str(self), str(finding))
+                    log.info("%s and %s are exact match and can be synced", str(self), str(finding))
                     exact_matches.append(finding)
                 else:
-                    log.info("%s and %s are strictly identical but target already has changes, cannot be synced", str(self), str(finding))
+                    log.info("%s and %s are exact match but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
                 return exact_matches, approx_matches, match_but_modified
             else:
@@ -450,13 +450,13 @@ class Finding(sq.SqObject):
         for finding in findings_list:
             if finding.almost_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
-                    log.info("%s and %s are almost identical and could be synced", str(self), str(finding))
+                    log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
                     approx_matches.append(finding)
                 else:
-                    log.info("%s and %s are almost identical but target already has changes, cannot be synced", str(self), str(finding))
+                    log.info("%s and %s are approximate match but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
             else:
-                log.debug("%s and %s are not siblings", str(self), str(finding))
+                log.debug("%s and %s do not match at all", str(self), str(finding))
         if len(approx_matches) + len(match_but_modified) == 0:
             log.info("No approximate match found for %s", str(self))
         return exact_matches, approx_matches, match_but_modified
