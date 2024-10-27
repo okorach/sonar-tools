@@ -19,11 +19,10 @@
 #
 
 import json
-from typing import Union
 
 import sonar.logging as log
 from sonar import platform as pf
-from sonar.util import types
+from sonar.util import types, cache
 import sonar.utilities as util
 import sonar.sqobject as sq
 
@@ -37,7 +36,7 @@ class WebHook(sq.SqObject):
     Abstraction of the SonarQube "webhook" concept
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
     SEARCH_API = "webhooks/list"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "webhooks"
@@ -57,20 +56,21 @@ class WebHook(sq.SqObject):
         self.secret = data.get("secret", None)  #: Webhook secret
         self.project = project  #: Webhook project if project specific webhook
         self.last_delivery = data.get("latestDelivery", None)
-        WebHook._OBJECTS[self.uuid()] = self
+        WebHook.CACHE.put(self)
 
     def __str__(self) -> str:
         return f"webhook '{self.name}'"
 
+    def __hash__(self) -> int:
+        """
+        Returns an object unique Id
+        :meta private:
+        """
+        return hash((self.name, self.project if self.project else "", self.endpoint.url))
+
     def url(self) -> str:
         """Returns the object permalink"""
         return f"{self.endpoint.url}/admin/webhooks"
-
-    def uuid(self) -> str:
-        """
-        :meta private:
-        """
-        return uuid(self.name, self.project, self.endpoint.url)
 
     def update(self, **kwargs):
         """Updates a webhook with new properties (name, url, secret)
@@ -139,7 +139,8 @@ def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
     """Updates a webhook with data in kwargs"""
     project_key = kwargs.pop("project", None)
     get_list(endpoint, project_key)
-    if uuid(name, project_key, endpoint.url) not in WebHook._OBJECTS:
+    o = WebHook.CACHE.get(name, project_key, endpoint.url)
+    if not o:
         create(endpoint, name, kwargs["url"], kwargs["secret"], project=project_key)
     else:
         get_object(endpoint, name, project_key=project_key, data=kwargs).update(**kwargs)
@@ -148,19 +149,10 @@ def update(endpoint: pf.Platform, name: str, **kwargs) -> None:
 def get_object(endpoint: pf.Platform, name: str, project_key: str = None, data: types.ApiPayload = None) -> WebHook:
     """Gets a WebHook object from name a project key"""
     log.debug("Getting webhook name %s project key %s data = %s", name, str(project_key), str(data))
-    uid = uuid(name, project_key, endpoint.url)
-    if uid not in WebHook._OBJECTS:
-        _ = WebHook(endpoint=endpoint, name=name, project=project_key, data=data)
-    return WebHook._OBJECTS[uid]
-
-
-def uuid(name: str, project_key: str, url: str) -> str:
-    """Returns object unique id"""
-    # FIXME: Make uuid really unique between global and project
-    if not project_key:
-        return f"{name}@{url}"
-    else:
-        return f"{name}#{project_key}@{url}"
+    o = WebHook.CACHE.get(name, project_key, endpoint.url)
+    if not o:
+        o = WebHook(endpoint=endpoint, name=name, project=project_key, data=data)
+    return o
 
 
 def audit(endpoint: pf.Platform) -> list[problem.Problem]:

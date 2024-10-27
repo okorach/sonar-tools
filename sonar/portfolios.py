@@ -25,7 +25,7 @@
 
 from __future__ import annotations
 from queue import Queue
-from typing import Union, Optional
+from typing import Optional
 import json
 import datetime
 from http import HTTPStatus
@@ -34,7 +34,7 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types
+from sonar.util import types, cache
 
 from sonar import aggregations, exceptions, settings, applications, app_branches
 import sonar.permissions.permissions as perms
@@ -91,7 +91,7 @@ class Portfolio(aggregations.Aggregation):
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
 
     def __init__(self, endpoint: pf.Platform, name: str, key: str = None) -> None:
         """Constructor, don't use - use class methods instead"""
@@ -109,7 +109,7 @@ class Portfolio(aggregations.Aggregation):
         self.is_sub_portfolio = None
         self.parent = None  #: Ref to parent portfolio object, if any
         self._root_portfolio = None  #: Ref to root portfolio, if any
-        Portfolio._OBJECTS[self.uuid()] = self
+        Portfolio.CACHE.put(self)
         log.debug("Created portfolio object name '%s'", name)
 
     @classmethod
@@ -117,9 +117,9 @@ class Portfolio(aggregations.Aggregation):
         """Gets a portfolio object from its key"""
         check_supported(endpoint)
         log.debug("Getting portfolio object key '%s'", key)
-        uid = sq.uuid(key, endpoint.url)
-        if uid in Portfolio._OBJECTS:
-            return Portfolio._OBJECTS[uid]
+        o = Portfolio.CACHE.get(key, endpoint.url)
+        if o:
+            return o
         data = search_by_key(endpoint, key)
         if data is None:
             raise exceptions.ObjectNotFound(key, f"Portfolio key '{key}' not found")
@@ -318,7 +318,7 @@ class Portfolio(aggregations.Aggregation):
 
     def delete(self) -> bool:
         """Deletes a portfolio, returns whether the operation succeeded"""
-        return sq.delete_object(self, "views/delete", {"key": self.key}, Portfolio._OBJECTS)
+        return sq.delete_object(self, "views/delete", {"key": self.key}, Portfolio.CACHE)
 
     def _audit_empty(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
         """Audits if a portfolio is empty (no projects)"""

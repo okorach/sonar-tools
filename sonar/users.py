@@ -26,7 +26,7 @@ import json
 
 import sonar.logging as log
 from sonar import platform as pf
-from sonar.util import types
+from sonar.util import types, cache
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
@@ -48,7 +48,7 @@ class User(sqobject.SqObject):
     Objects of this class must be created with one of the 3 available class constructor methods. Don't use __init__
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
     SEARCH_API = "users/search"
     SEARCH_API_V2 = "v2/users-management/users"
     SEARCH_KEY_FIELD = "login"
@@ -71,7 +71,7 @@ class User(sqobject.SqObject):
         self.__tokens = None
         self.__load(data)
         log.debug("Created %s", str(self))
-        User._OBJECTS[self.uuid()] = self
+        User.CACHE.put(self)
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> User:
@@ -119,9 +119,9 @@ class User(sqobject.SqObject):
         :return: The user object
         :rtype: User
         """
-        uid = sqobject.uuid(login, endpoint.url)
-        if uid in User._OBJECTS:
-            return User._OBJECTS[uid]
+        o = User.CACHE.get(login, endpoint.url)
+        if o:
+            return o
         log.debug("Getting user '%s'", login)
         for k, o in search(endpoint, params={"q": login}).items():
             if k == login:
@@ -252,11 +252,12 @@ class User(sqobject.SqObject):
                 self.set_scm_accounts(kwargs["scmAccounts"])
             if "login" in kwargs:
                 new_login = kwargs["login"]
-                if new_login not in User._OBJECTS:
+                o = User.CACHE.get(new_login, self.endpoint.url)
+                if not o:
                     self.post(UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
-                    User._OBJECTS.pop(self.uuid(), None)
+                    User.CACHE.pop(self)
                     self.login = new_login
-                    User._OBJECTS[self.uuid()] = self
+                    User.CACHE.put(self)
         self.set_groups(util.csv_to_list(kwargs.get("groups", "")))
         return self
 

@@ -39,7 +39,7 @@ from requests import HTTPError, RequestException
 import sonar.logging as log
 import sonar.platform as pf
 
-from sonar.util import types
+from sonar.util import types, cache
 
 from sonar import exceptions, errcodes
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
@@ -125,7 +125,7 @@ class Project(components.Component):
     Abstraction of the SonarQube project concept
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
     SEARCH_API = "projects/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
@@ -146,7 +146,7 @@ class Project(components.Component):
         self._new_code = None
         self._ci = None
         self._revision = None
-        Project._OBJECTS[self.uuid()] = self
+        Project.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     @classmethod
@@ -159,9 +159,9 @@ class Project(components.Component):
         :return: The Project
         :rtype: Project
         """
-        uu = sqobject.uuid(key, endpoint.url)
-        if uu in Project._OBJECTS:
-            return Project._OBJECTS[uu]
+        o = Project.CACHE.get(key, endpoint.url)
+        if o:
+            return o
         try:
             data = json.loads(endpoint.get(Project.SEARCH_API, params={"projects": key}, mute=(HTTPStatus.FORBIDDEN,)).text)
             if len(data["components"]) == 0:
@@ -188,10 +188,8 @@ class Project(components.Component):
         :rtype: Project
         """
         key = data["key"]
-        uu = sqobject.uuid(key, endpoint.url)
-        if uu in Project._OBJECTS:
-            o = Project._OBJECTS[uu]
-        else:
+        o = Project.CACHE.get(key, endpoint.url)
+        if not o:
             o = cls(endpoint, key)
         o.reload(data)
         return o
@@ -233,8 +231,8 @@ class Project(components.Component):
         """
         data = json.loads(self.get(Project.SEARCH_API, params={"projects": self.key}).text)
         if len(data["components"]) == 0:
-            Project._OBJECTS.pop(self.uuid(), None)
-            raise exceptions.ObjectNotFound(self.key, f"Project key {self.key} not found")
+            Project.CACHE.pop(self)
+            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
         return self.reload(data["components"][0])
 
     def reload(self, data: types.ApiPayload) -> Project:
@@ -358,7 +356,7 @@ class Project(components.Component):
         """
         loc = int(self.get_measure("ncloc", fallback="0"))
         log.info("Deleting %s, name '%s' with %d LoCs", str(self), self.name, loc)
-        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, Project._OBJECTS)
+        ok = sqobject.delete_object(self, "projects/delete", {"project": self.key}, Project.CACHE)
         log.info("Successfully deleted %s - %d LoCs", str(self), loc)
         return ok
 

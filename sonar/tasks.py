@@ -33,7 +33,7 @@ import sonar.platform as pf
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
-from sonar.util import types
+from sonar.util import types, cache
 
 SUCCESS = "SUCCESS"
 PENDING = "PENDING"
@@ -175,6 +175,8 @@ class Task(sq.SqObject):
     """
     Abstraction of the SonarQube "background task" concept
     """
+
+    CACHE = cache.Cache()
 
     def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: object = None, data: types.ApiPayload = None) -> None:
         """Constructor"""

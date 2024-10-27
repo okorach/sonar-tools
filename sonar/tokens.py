@@ -24,7 +24,7 @@ import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 import sonar.utilities as util
-from sonar.util import types
+from sonar.util import types, cache
 
 
 class UserToken(sq.SqObject):
@@ -32,6 +32,7 @@ class UserToken(sq.SqObject):
     Abstraction of the SonarQube "user token" concept
     """
 
+    CACHE = cache.Cache()
     API_ROOT = "user_tokens"
     API_REVOKE = API_ROOT + "/revoke"
     API_SEARCH = API_ROOT + "/search"

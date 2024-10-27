@@ -28,7 +28,7 @@ import pytest
 import utilities as util
 from sonar import errcodes, exceptions
 from sonar import organizations
-from sonar.util import cache
+from sonar.util import sonar_cache
 
 import cli.options as opt
 from cli import config
@@ -43,7 +43,7 @@ MY_ORG_2 = "okorach-github"
 
 def test_clear_cache() -> None:
     """Clears the SonarQube caches before running tests on SC"""
-    cache.clear()
+    sonar_cache.clear()
 
 
 def test_sc_config_export() -> None:

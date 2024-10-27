@@ -21,36 +21,42 @@
 """ Cache manager """
 
 from typing import Optional
-from sonar import platform, projects, branches, pull_requests
-from sonar import applications, app_branches, portfolios
-from sonar import rules, issues, hotspots, metrics, measures
-from sonar import qualitygates, qualityprofiles
-from sonar import devops, settings, tasks, tokens, webhooks
 
 
-def clear(endpoint: Optional[platform.Platform] = None) -> None:
-    """
-    Clear the cache of a given class
-    :param endpoint Platform: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
-    """
-    for obj_class in (
-        projects.Project,
-        branches.Branch,
-        pull_requests.PullRequest,
-        applications.Application,
-        app_branches.ApplicationBranch,
-        portfolios.Portfolio,
-        issues.Issue,
-        hotspots.Hotspot,
-        metrics.Metric,
-        measures.Measure,
-        rules.Rule,
-        qualitygates.QualityGate,
-        qualityprofiles.QualityProfile,
-        devops.DevopsPlatform,
-        settings.Setting,
-        tasks.Task,
-        tokens.UserToken,
-        webhooks.WebHook,
-    ):
-        obj_class.clear_cache(endpoint)
+class Cache(object):
+    """Abstract cache implementation"""
+
+    def __init__(self) -> None:
+        self.objects = {}
+
+    def __len__(self) -> int:
+        """Returns size of cache"""
+        return len(self.objects)
+
+    def __str__(self) -> str:
+        return ", ".join([str(o) for o in self.objects.values()])
+
+    def put(self, obj: object) -> object:
+        """Add an object in cache if not already present"""
+        h = hash(obj)
+        if h not in self.objects:
+            self.objects[h] = obj
+        return self.objects[h]
+
+    def get(self, *args) -> Optional[object]:
+        return self.objects.get(hash(args), None)
+
+    def pop(self, obj: object) -> Optional[object]:
+        return self.objects.pop(hash(obj), None)
+
+    def values(self) -> list[object]:
+        return list(self.objects.values())
+
+    def keys(self) -> list[int]:
+        return list(self.objects.keys())
+
+    def items(self) -> dict[int, object]:
+        return self.objects.items()
+
+    def clear(self) -> None:
+        self.objects = {}

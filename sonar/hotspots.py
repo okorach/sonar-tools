@@ -31,9 +31,8 @@ import sonar.logging as log
 import sonar.platform as pf
 
 import sonar.utilities as util
-from sonar.util import types
+from sonar.util import types, cache
 
-from sonar.sqobject import uuid
 from sonar import syncer, users
 from sonar import findings, rules, changelog
 
@@ -84,7 +83,7 @@ class TooManyHotspotsError(Exception):
 class Hotspot(findings.Finding):
     """Abstraction of the Sonar hotspot concept"""
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
     SEARCH_API = "hotspots/search"
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
@@ -108,7 +107,7 @@ class Hotspot(findings.Finding):
         if m:
             self.projectKey = m.group(1)
             self.branch = m.group(2)
-        Hotspot._OBJECTS[self.uuid()] = self
+        Hotspot.CACHE.put(self)
         if self.rule is None and self.refresh():
             self.rule = self.__details["rule"]["key"]
 
@@ -435,10 +434,10 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
 
 def get_object(endpoint: pf.Platform, key: str, data: dict[str] = None, from_export: bool = False) -> Hotspot:
     """Returns a hotspot from its key"""
-    uid = uuid(key, endpoint.url)
-    if uid not in Hotspot._OBJECTS:
-        _ = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
-    return Hotspot._OBJECTS[uid]
+    o = Hotspot.CACHE.get(key, endpoint.url)
+    if not o:
+        o = Hotspot(key=key, data=data, endpoint=endpoint, from_export=from_export)
+    return o
 
 
 def sanitize_search_filters(endpoint: pf.Platform, params: types.ApiParams) -> types.ApiParams:

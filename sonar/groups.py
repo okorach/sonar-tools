@@ -30,7 +30,7 @@ from sonar import exceptions
 
 from sonar.audit import rules
 from sonar.audit.problem import Problem
-from sonar.util import types
+from sonar.util import types, cache
 
 SONAR_USERS = "sonar-users"
 
@@ -47,7 +47,7 @@ class Group(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
     SEARCH_API = "user_groups/search"
     SEARCH_API_V2 = "v2/authorizations/groups"
     SEARCH_KEY_FIELD = "name"
@@ -62,7 +62,7 @@ class Group(sq.SqObject):
         self.__is_default = data.get("default", None)
         self._id = data.get("id", None)  #: SonarQube 10.4+ Group id
         self._json = data
-        Group._OBJECTS[self.uuid()] = self
+        Group.CACHE.put(self)
         log.debug("Created %s object", str(self))
 
     @classmethod
@@ -74,16 +74,16 @@ class Group(sq.SqObject):
         :return: The group object
         """
         log.debug("Reading group '%s'", name)
-        uid = sq.uuid(name, endpoint.url)
-        if uid in Group._OBJECTS:
-            return Group._OBJECTS[uid]
+        o = Group.CACHE.get(name, endpoint.url)
+        if o:
+            return o
         data = util.search_by_name(endpoint, name, Group.SEARCH_API, "groups")
         if data is None:
             raise exceptions.UnsupportedOperation(f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
-        uid = sq.uuid(data.get("id", data["name"]), endpoint.url)
-        if uid in Group._OBJECTS:
-            return Group._OBJECTS[uid]
+        o = Group.CACHE.get(data.get("id", data["name"]), endpoint.url)
+        if o:
+            return o
         return cls(endpoint, name, data=data)
 
     @classmethod
@@ -125,10 +125,6 @@ class Group(sq.SqObject):
         :rtype: str
         """
         return f"group '{self.name}'"
-
-    def uuid(self) -> str:
-        """Returns object unique ID in its class"""
-        return sq.uuid(self.name, self.endpoint.url)
 
     def is_default(self) -> bool:
         """
@@ -238,9 +234,10 @@ class Group(sq.SqObject):
         else:
             r = self.post(_UPDATE_API, params={"currentName": self.key, "name": name})
         if r.ok:
-            Group._OBJECTS.pop(self.uuid(), None)
+            Group.CACHE.pop(self)
             self.name = name
-            Group._OBJECTS[self.uuid()] = self
+            self.key = name
+            Group.CACHE.put(self)
         return r.ok
 
 
@@ -314,21 +311,22 @@ def get_object(endpoint: pf.Platform, name: str) -> Group:
     :param str name: group name
     :return: The group
     """
-    uid = sq.uuid(name, endpoint.url)
-    if len(Group._OBJECTS) == 0 or uid not in Group._OBJECTS:
+    o = Group.CACHE.get(name, endpoint.url)
+    if not o:
         get_list(endpoint)
-    if uid not in Group._OBJECTS:
+    o = Group.CACHE.get(name, endpoint.url)
+    if not o:
         raise exceptions.ObjectNotFound(name, message=f"Group '{name}' not found")
-    return Group._OBJECTS[uid]
+    return o
 
 
 def get_object_from_id(endpoint: pf.Platform, id: str) -> Group:
     """Searches a Group object from its id - SonarQube 10.4+"""
     if endpoint.version() < (10, 4, 0):
         raise exceptions.UnsupportedOperation
-    if len(Group._OBJECTS) == 0:
+    if len(Group.CACHE) == 0:
         get_list(endpoint)
-    for o in Group._OBJECTS.values():
+    for o in Group.CACHE.values():
         if o._id == id:
             return o
     raise exceptions.ObjectNotFound(id, message=f"Group '{id}' not found")

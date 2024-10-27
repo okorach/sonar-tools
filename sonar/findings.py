@@ -428,30 +428,30 @@ class Finding(sq.SqObject):
         exact_matches = []
         approx_matches = []
         match_but_modified = []
-        log.debug("Searching for an exact match of %s", self.uuid())
+        log.debug("Searching for an exact match of %d", hash(self))
         for finding in findings_list:
-            if self.uuid() == finding.uuid():
+            if self is finding:
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
-                    log.info("Issues %s and %s are strictly identical and can be synced", self.uuid(), finding.uuid())
+                    log.info("Issues %s and %s are strictly identical and can be synced", str(self), str(finding))
                     exact_matches.append(finding)
                 else:
-                    log.info("Issues %s and %s are strictly identical but target already has changes, cannot be synced", self.uuid(), finding.uuid())
+                    log.info("Issues %s and %s are strictly identical but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
                 return exact_matches, approx_matches, match_but_modified
 
-        log.debug("No exact match, searching for an approximate match of %s", self.uuid())
+        log.debug("No exact match, searching for an approximate match of %s", str(self))
         for finding in findings_list:
             if finding.almost_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
-                    log.info("Issues %s and %s are almost identical and could be synced", self.uuid(), finding.uuid())
+                    log.info("Issues %s and %s are almost identical and could be synced", str(self), str(finding))
                     approx_matches.append(finding)
                 else:
-                    log.info("Issues %s and %s are almost identical but target already has changes, cannot be synced", self.uuid(), finding.uuid())
+                    log.info("Issues %s and %s are almost identical but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
             else:
-                log.debug("Issues %s and %s are not siblings", self.uuid(), finding.uuid())
+                log.debug("Issues %s and %s are not siblings", str(self), str(finding))
         return exact_matches, approx_matches, match_but_modified
 
     def do_transition(self, transition: str) -> bool:

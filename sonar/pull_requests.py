@@ -30,7 +30,7 @@ from typing import Optional
 import requests.utils
 
 import sonar.logging as log
-from sonar.util import types
+from sonar.util import types, cache
 from sonar import components, sqobject, exceptions
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
@@ -45,7 +45,7 @@ class PullRequest(components.Component):
     Abstraction of the Sonar pull request concept
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
 
     def __init__(self, project: object, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
@@ -53,20 +53,20 @@ class PullRequest(components.Component):
         self.project = project
         self.json = data
         self._last_analysis = None
-        PullRequest._OBJECTS[self.uuid()] = self
+        PullRequest.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     def __str__(self) -> str:
         """Returns string representation of the PR"""
         return f"pull request key '{self.key}' of {str(self.project)}"
 
+    def __hash__(self) -> int:
+        """Returns a PR unique ID"""
+        return hash((self.project.key, self.key, self.endpoint.url))
+
     def url(self) -> str:
         """Returns the PR permalink (until PR is purged)"""
         return f"{self.endpoint.url}/dashboard?id={self.project.key}&pullRequest={requests.utils.quote(self.key)}"
-
-    def uuid(self) -> str:
-        """Returns a PR unique ID"""
-        return uuid(self.project.key, self.key, self.endpoint.url)
 
     def last_analysis(self) -> datetime:
         if self._last_analysis is None and "analysisDate" in self.json:
@@ -75,7 +75,7 @@ class PullRequest(components.Component):
 
     def delete(self) -> bool:
         """Deletes a PR and returns whether the operation succeeded"""
-        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), PullRequest._OBJECTS)
+        return sqobject.delete_object(self, "project_pull_requests/delete", self.search_params(), PullRequest.CACHE)
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         age = util.age(self.last_analysis())
@@ -94,20 +94,15 @@ class PullRequest(components.Component):
         return {"project": self.project.key, "pullRequest": self.key}
 
 
-def uuid(project_key: str, pull_request_key: str, url: str) -> str:
-    """UUID for pull request objects"""
-    return f"{project_key}{components.KEY_SEPARATOR}{pull_request_key}@{url}"
-
-
 def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:
     """Returns a PR object from a PR key and a project"""
     if project.endpoint.edition() == "community":
         log.debug("Pull requests not available in Community Edition")
         return None
-    uid = uuid(project.key, pull_request_key, project.endpoint.url)
-    if uid not in PullRequest._OBJECTS:
-        _ = PullRequest(project, pull_request_key, data=data)
-    return PullRequest._OBJECTS[uid]
+    o = PullRequest.CACHE.get(project.key, pull_request_key, project.endpoint.url)
+    if not o:
+        o = PullRequest(project, pull_request_key, data=data)
+    return o
 
 
 def get_list(project: object) -> dict[str, PullRequest]:

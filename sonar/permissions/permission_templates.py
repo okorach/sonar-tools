@@ -25,14 +25,13 @@ import re
 from requests import RequestException
 
 import sonar.logging as log
-from sonar.util import types
+from sonar.util import types, cache
 from sonar import sqobject, utilities
 from sonar.permissions import template_permissions
 import sonar.platform as pf
 from sonar.audit.rules import get_rule, RuleId
 import sonar.audit.problem as pb
 
-_OBJECTS = {}
 _MAP = {}
 _DEFAULT_TEMPLATES = {}
 _QUALIFIER_REVERSE_MAP = {"projects": "TRK", "applications": "APP", "portfolios": "VW"}
@@ -44,6 +43,10 @@ _IMPORTABLE_PROPERTIES = ("name", "description", "pattern", "permissions", "defa
 
 
 class PermissionTemplate(sqobject.SqObject):
+    """Abstraction of the Sonar permission template concept"""
+
+    CACHE = cache.Cache()
+
     def __init__(self, endpoint: pf.Platform, name: str, data: types.ApiPayload = None, create_data: types.ObjectJsonRepr = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=name)
@@ -75,15 +78,15 @@ class PermissionTemplate(sqobject.SqObject):
         self.last_update = data.get("lastUpdate", None)
         self.project_key_pattern = data.pop("projectKeyPattern", "")
         self.creation_date = utilities.string_to_date(data.pop("createdAt", None))
-        _OBJECTS[self.uuid()] = self
+        PermissionTemplate.CACHE.put(self)
 
     def __str__(self) -> str:
         """Returns the string representation of the object"""
         return f"permission template '{self.name}'"
 
-    def uuid(self) -> str:
+    def __hash__(self) -> int:
         """Returns object unique id"""
-        return sqobject.uuid(self.name.lower(), self.endpoint.url)
+        return hash((self.name.lower(), self.endpoint.url))
 
     def is_default_for(self, qualifier: str) -> bool:
         """Returns whether a template is the default for a type of qualifier"""
@@ -200,9 +203,9 @@ class PermissionTemplate(sqobject.SqObject):
 
 def get_object(endpoint: pf.Platform, name: str) -> PermissionTemplate:
     """Returns Perm Template object corresponding to name"""
-    if len(_OBJECTS) == 0:
+    if len(PermissionTemplate.CACHE) == 0:
         get_list(endpoint)
-    return _OBJECTS.get(sqobject.uuid(name.lower(), endpoint.url), None)
+    return PermissionTemplate.CACHE.get(name.lower(), endpoint.url)
 
 
 def create_or_update(endpoint: pf.Platform, name: str, data: types.ObjectJsonRepr) -> PermissionTemplate:

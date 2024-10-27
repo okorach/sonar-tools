@@ -29,7 +29,7 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types
+from sonar.util import types, cache
 
 from sonar import exceptions, utilities
 import sonar.sqobject as sq
@@ -40,7 +40,7 @@ class PortfolioReference(sq.SqObject):
     Abstraction of the Sonar portfolio reference concept
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
 
     def __init__(self, reference: object, parent: object) -> None:
         """Constructor, don't use - use class methods instead"""
@@ -48,8 +48,7 @@ class PortfolioReference(sq.SqObject):
         super().__init__(endpoint=parent.endpoint, key=self.key)
         self.reference = reference
         self.parent = parent
-        uid = self.uuid()
-        PortfolioReference._OBJECTS[uid] = self
+        PortfolioReference.CACHE.put(self)
         log.debug("Created subportfolio by reference key '%s'", self.key)
 
     @classmethod
@@ -57,10 +56,10 @@ class PortfolioReference(sq.SqObject):
         """Gets a subportfolio by reference object from its key and parent"""
         check_supported(endpoint)
         log.info("Getting subportfolio by ref key '%s:%s'", parent_key, key)
-        uid = sq.uuid(f"{parent_key}:{key}", endpoint.url)
-        if uid not in PortfolioReference._OBJECTS:
+        o = PortfolioReference.CACHE.get(f"{parent_key}:{key}", endpoint.url)
+        if not o:
             raise exceptions.ObjectNotFound
-        return PortfolioReference._OBJECTS[uid]
+        return o
 
     @classmethod
     def load(cls, reference: object, parent: object) -> PortfolioReference:
@@ -82,10 +81,6 @@ class PortfolioReference(sq.SqObject):
 
     def __str__(self) -> str:
         return f"Portfolio reference '{self.key}'"
-
-    def uuid(self) -> str:
-        """Returns the object unique id in its class"""
-        return f"{self.key}@{self.endpoint.url}"
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns the object JSON representation for sonar-config"""

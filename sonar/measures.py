@@ -28,7 +28,7 @@ from http import HTTPStatus
 from requests import HTTPError, RequestException
 from sonar import metrics, exceptions
 from sonar.util.types import ApiPayload, ApiParams, KeyList
-
+from sonar.util import cache
 import sonar.logging as log
 import sonar.utilities as util
 import sonar.sqobject as sq
@@ -43,6 +43,7 @@ class Measure(sq.SqObject):
     Abstraction of the SonarQube "measure" concept
     """
 
+    CACHE = cache.Cache()
     API_READ = "measures/component"
     API_HISTORY = "measures/search_history"
 

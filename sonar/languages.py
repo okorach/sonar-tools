@@ -26,11 +26,12 @@ from threading import Lock
 from sonar import sqobject, rules
 import sonar.platform as pf
 from sonar.util.types import ApiPayload
+from sonar.util import cache
 
 #: List of language APIs
 APIS = {"list": "languages/list"}
 
-_OBJECTS = {}
+
 _CLASS_LOCK = Lock()
 
 
@@ -39,17 +40,21 @@ class Language(sqobject.SqObject):
     Abstraction of the Sonar language concept
     """
 
+    CACHE = cache.Cache()
+
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key)
         self.name = name  #: Language name
         self._nb_rules = {"_ALL": None, "BUG": None, "VULNERABILITY": None, "CODE_SMELL": None, "SECURITY_HOTSPOT": None}
-        _OBJECTS[self.uuid()] = self
+        Language.CACHE.put(self)
 
     @classmethod
     def load(cls, endpoint: pf.Platform, data: ApiPayload) -> Language:
-        uu = sqobject.uuid(data["key"], endpoint.url)
-        return _OBJECTS.get(uu, cls(endpoint=endpoint, key=data["key"], name=data["name"]))
+        o = Language.CACHE.get(data["key"], endpoint.url)
+        if not o:
+            o = cls(endpoint=endpoint, key=data["key"], name=data["name"])
+        return o
 
     @classmethod
     def read(cls, endpoint: pf.Platform, key: str) -> Language:
@@ -58,7 +63,7 @@ class Language(sqobject.SqObject):
         :rtype: Language or None if not found
         """
         get_list(endpoint)
-        return _OBJECTS.get(sqobject.uuid(key, endpoint.url), None)
+        return Language.CACHE.get(key, endpoint.url)
 
     def number_of_rules(self, rule_type: str = None) -> int:
         """Count rules in the language, optionally filtering on rule type
@@ -84,7 +89,7 @@ def read_list(endpoint: pf.Platform) -> dict[str, Language]:
     data = json.loads(endpoint.get(APIS["list"]).text)
     for lang in data["languages"]:
         _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
-    return _OBJECTS
+    return Language.CACHE
 
 
 def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Language]:
@@ -96,9 +101,9 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Languag
     :rtype: dict{<language_key>: <language_name>}
     """
     with _CLASS_LOCK:
-        if len(_OBJECTS) == 0 or not use_cache:
+        if len(Language.CACHE) == 0 or not use_cache:
             read_list(endpoint)
-    return _OBJECTS
+    return Language.CACHE
 
 
 def exists(endpoint: pf.Platform, language: str) -> bool:
