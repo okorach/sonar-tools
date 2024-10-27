@@ -101,11 +101,7 @@ def __process_multiple_exact_siblings(finding, siblings):
 
 
 def __process_approx_siblings(finding, siblings):
-    log.info(
-        "Found %d approximate siblings for %s, cannot automatically apply changelog",
-        len(siblings),
-        str(finding),
-    )
+    log.info("Found %d approximate matches for %s, cannot automatically apply changelog", len(siblings), str(finding))
     return {
         SRC_KEY: finding.key,
         SRC_URL: finding.url(),
@@ -116,11 +112,7 @@ def __process_approx_siblings(finding, siblings):
 
 
 def __process_modified_siblings(finding, siblings):
-    log.info(
-        "Found %d siblings for %s, but they already have a changelog, cannot automatically apply changelog",
-        len(siblings),
-        str(finding),
-    )
+    log.info("Found %d match(es) for %s, but they already have a changelog, cannot automatically apply changelog", len(siblings), str(finding))
     return {
         SRC_KEY: finding.key,
         SRC_URL: finding.url(),
