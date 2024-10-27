@@ -186,15 +186,8 @@ def sync_lists(
         log.info("source or target list of findings to sync empty, skipping...")
         return ([], counters)
     name = util.class_name(src_findings[0]).lower()
-    log.info(
-        "Syncing %d %ss from %s into %d %ss from %s",
-        len(src_findings),
-        name,
-        str(src_object),
-        len(tgt_findings),
-        name,
-        str(tgt_object),
-    )
+    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project().key != tgt_object.project().key
+    log.info("Syncing %d %ss from %s into %d %ss from %s", len(src_findings), name, str(src_object), len(tgt_findings), name, str(tgt_object))
     for finding in src_findings:
         if finding.is_closed():
             log.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))
