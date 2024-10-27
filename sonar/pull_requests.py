@@ -50,7 +50,7 @@ class PullRequest(components.Component):
     def __init__(self, project: object, key: str, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=project.endpoint, key=key)
-        self.project = project
+        self.concerned_object = project
         self.json = data
         self._last_analysis = None
         PullRequest.CACHE.put(self)
@@ -58,15 +58,19 @@ class PullRequest(components.Component):
 
     def __str__(self) -> str:
         """Returns string representation of the PR"""
-        return f"pull request key '{self.key}' of {str(self.project)}"
+        return f"pull request key '{self.key}' of {str(self.project())}"
 
     def __hash__(self) -> int:
         """Returns a PR unique ID"""
-        return hash((self.project.key, self.key, self.endpoint.url))
+        return hash((self.project().key, self.key, self.endpoint.url))
 
     def url(self) -> str:
         """Returns the PR permalink (until PR is purged)"""
-        return f"{self.endpoint.url}/dashboard?id={self.project.key}&pullRequest={requests.utils.quote(self.key)}"
+        return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&pullRequest={requests.utils.quote(self.key)}"
+
+    def project(self) -> object:
+        """Returns the project"""
+        return self.concerned_object
 
     def last_analysis(self) -> datetime:
         if self._last_analysis is None and "analysisDate" in self.json:
@@ -91,7 +95,7 @@ class PullRequest(components.Component):
 
     def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        return {"project": self.project.key, "pullRequest": self.key}
+        return {"project": self.concerned_object.key, "pullRequest": self.key}
 
 
 def get_object(pull_request_key: str, project: object, data: types.ApiPayload = None) -> Optional[PullRequest]:

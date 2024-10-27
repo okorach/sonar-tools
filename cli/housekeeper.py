@@ -178,18 +178,16 @@ def _delete_objects(problems, mode):
                 if mode != "delete" or obj.delete():
                     deleted_projects[obj.key] = obj
                     deleted_loc += loc
-            if isinstance(obj, branches.Branch):
-                if obj.concerned_object.key in deleted_projects:
-                    log.info("%s deleted, so no need to delete %s", str(obj.concerned_object), str(obj))
-                elif mode != "delete" or obj.delete():
-                    deleted_branch_count += 1
-            if isinstance(obj, pull_requests.PullRequest):
-                if obj.project.key in deleted_projects:
-                    log.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
-                elif mode != "delete" or obj.delete():
-                    deleted_pr_count += 1
             if isinstance(obj, tokens.UserToken) and (mode != "delete" or obj.revoke()):
                 revoked_token_count += 1
+            elif obj.project().key in deleted_projects:
+                log.info("%s deleted, so no need to delete %s", str(obj.project()), str(obj))
+            elif mode != "delete" or obj.delete():
+                if isinstance(obj, branches.Branch):
+                    deleted_branch_count += 1
+                else:
+                    deleted_pr_count += 1
+
         except ex.ObjectNotFound:
             log.warning("%s does not exist, deletion skipped...", str(obj))
 
