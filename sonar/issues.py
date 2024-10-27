@@ -35,7 +35,7 @@ import sonar.platform as pf
 from sonar.util import cache
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
-from sonar import users, sqobject, findings, changelog, projects
+from sonar import users, findings, changelog, projects, rules
 import sonar.utilities as util
 
 API_SET_TAGS = "issues/set_tags"
@@ -392,8 +392,10 @@ class Issue(findings.Finding):
         """
         :meta private:
         """
+        rule_debt_calc = rules.Rule.get_object(self.endpoint, self.rule)._json.get("remFnType", "CONSTANT_ISSUE")
+        # Rule that have linear remediation function may have slightly different debt
         return super().almost_identical_to(another_finding, ignore_component, **kwargs) and (
-            self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False)
+            self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False) or rule_debt_calc != "CONSTANT_ISSUE"
         )
 
     def reopen(self) -> bool:
