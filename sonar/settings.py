@@ -89,7 +89,6 @@ _SC_INTERNAL_SETTINGS = (
     "sonar.lf",
     "sonar.notifications",
     "sonar.plugins.loadAll",
-    "sonar.plugins.loadAll",
     "sonar.qualityProfiles.allowDisableInheritedRules",
     "sonar.scm.disabled",
     "sonar.technicalDebt",

@@ -35,7 +35,7 @@ import sonar.platform as pf
 from sonar.util import cache
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
-from sonar import users, sqobject, findings, changelog, projects
+from sonar import users, findings, changelog, projects, rules
 import sonar.utilities as util
 
 API_SET_TAGS = "issues/set_tags"
@@ -264,7 +264,11 @@ class Issue(findings.Finding):
         :rtype: bool
         """
         log.debug("Adding comment '%s' to %s", comment, str(self))
-        r = self.post("issues/add_comment", {"issue": self.key, "text": comment})
+        try:
+            r = self.post("issues/add_comment", {"issue": self.key, "text": comment})
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "adding comment", catch_all=True)
+            return False
         return r.ok
 
     def set_severity(self, severity: str) -> bool:
@@ -274,10 +278,15 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        if severity != self.severity:
+        try:
             log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, severity)
-            return self.post("issues/set_severity", {"issue": self.key, "severity": severity}).ok
-        return False
+            r = self.post("issues/set_severity", {"issue": self.key, "severity": severity}).ok
+            if r.ok:
+                self.severity = severity
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "changing issue severity", catch_all=True)
+            return False
+        return r.ok
 
     def assign(self, assignee: str) -> bool:
         """Assigns an issue to a user
@@ -286,10 +295,15 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        if assignee != self.assignee:
+        try:
             log.debug("Assigning %s to '%s'", str(self), assignee)
-            return self.post("issues/assign", {"issue": self.key, "assignee": assignee}).ok
-        return False
+            r = self.post("issues/assign", {"issue": self.key, "assignee": assignee})
+            if r.ok:
+                self.assignee = assignee
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "assigning issue", catch_all=True)
+            return False
+        return r.ok
 
     def set_tags(self, tags: list[str]) -> bool:
         """Sets tags to an issue (Replacing all previous tags)
@@ -298,10 +312,14 @@ class Issue(findings.Finding):
         :rtype: bool
         """
         log.debug("Setting tags %s to %s", tags, str(self))
-        if not self.post(API_SET_TAGS, {"issue": self.key, "tags": util.list_to_csv(tags)}).ok:
+        try:
+            r = self.post(API_SET_TAGS, {"issue": self.key, "tags": util.list_to_csv(tags)})
+            if r.ok:
+                self.tags = tags
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "setting issue tags", catch_all=True)
             return False
-        self.tags = tags
-        return True
+        return r.ok
 
     def add_tag(self, tag: str) -> bool:
         """Adds a tag to an issue
@@ -334,7 +352,14 @@ class Issue(findings.Finding):
         :rtype: bool
         """
         log.debug("Changing type of issue %s from %s to %s", self.key, self.type, new_type)
-        return self.post(API_SET_TYPE, {"issue": self.key, "type": new_type}).ok
+        try:
+            r = self.post(API_SET_TYPE, {"issue": self.key, "type": new_type})
+            if r.ok:
+                self.type = new_type
+        except (ConnectionError, requests.RequestException) as e:
+            util.handle_error(e, "setting issue type", catch_all=True)
+            return False
+        return r.ok
 
     def is_wont_fix(self) -> bool:
         """
@@ -367,8 +392,10 @@ class Issue(findings.Finding):
         """
         :meta private:
         """
+        rule_debt_calc = rules.Rule.get_object(self.endpoint, self.rule)._json.get("remFnType", "CONSTANT_ISSUE")
+        # Rule that have linear remediation function may have slightly different debt
         return super().almost_identical_to(another_finding, ignore_component, **kwargs) and (
-            self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False)
+            self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False) or rule_debt_calc != "CONSTANT_ISSUE"
         )
 
     def reopen(self) -> bool:
@@ -422,8 +449,11 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        log.warning("Marking %s as won't fix - Warning: Won't fix is deprecated, Accept will be teh replacement", str(self))
-        return self.do_transition("wontfix")
+        if self.endpoint.version() >= (10, 4, 0) or self.endpoint.is_sonarcloud():
+            log.warning("Marking %s as won't fix is deprecated, using Accept instead", str(self))
+            return self.do_transition("accept")
+        else:
+            return self.do_transition("wontfix")
 
     def accept(self) -> bool:
         """Marks an issue as resolved as won't fix
@@ -481,10 +511,7 @@ class Issue(findings.Finding):
             self.resolve_as_fixed()
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "CLOSED":
-            log.info(
-                "Changelog event is a CLOSE issue, it cannot be applied... %s",
-                str(event),
-            )
+            log.info("Changelog event is a CLOSE issue, it cannot be applied... %s", str(event))
             # self.add_comment(f"Change of issue type {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "INTERNAL":
             log.info("Changelog %s is internal, it will not be applied...", str(event))
@@ -507,12 +534,7 @@ class Issue(findings.Finding):
 
         change_nbr = 0
         start_change = len(self.changelog()) + 1
-        log.info(
-            "Applying changelog of issue %s to issue %s, from change %d",
-            source_issue.key,
-            self.key,
-            start_change,
-        )
+        log.info("Applying changelog of %s to %s, from change %d", str(source_issue), str(self), start_change)
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:

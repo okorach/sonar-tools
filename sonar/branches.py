@@ -121,11 +121,15 @@ class Branch(components.Component):
         return o
 
     def __str__(self) -> str:
-        return f"branch '{self.name}' of {str(self.concerned_object)}"
+        return f"branch '{self.name}' of {str(self.project())}"
 
     def __hash__(self) -> int:
         """Computes a uuid for the branch that can serve as index"""
         return hash((self.concerned_object.key, self.name, self.endpoint.url))
+
+    def project(self) -> projects.Project:
+        """Returns the project key"""
+        return self.concerned_object
 
     def refresh(self) -> Branch:
         """Reads a branch in SonarQube (refresh with latest data)

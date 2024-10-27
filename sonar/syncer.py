@@ -101,11 +101,7 @@ def __process_multiple_exact_siblings(finding, siblings):
 
 
 def __process_approx_siblings(finding, siblings):
-    log.info(
-        "Found %d approximate siblings for %s, cannot automatically apply changelog",
-        len(siblings),
-        str(finding),
-    )
+    log.info("Found %d approximate matches for %s, cannot automatically apply changelog", len(siblings), str(finding))
     return {
         SRC_KEY: finding.key,
         SRC_URL: finding.url(),
@@ -116,11 +112,7 @@ def __process_approx_siblings(finding, siblings):
 
 
 def __process_modified_siblings(finding, siblings):
-    log.info(
-        "Found %d siblings for %s, but they already have a changelog, cannot automatically apply changelog",
-        len(siblings),
-        str(finding),
-    )
+    log.info("Found %d match(es) for %s, but they already have a changelog, cannot automatically apply changelog", len(siblings), str(finding))
     return {
         SRC_KEY: finding.key,
         SRC_URL: finding.url(),
@@ -186,15 +178,8 @@ def sync_lists(
         log.info("source or target list of findings to sync empty, skipping...")
         return ([], counters)
     name = util.class_name(src_findings[0]).lower()
-    log.info(
-        "Syncing %d %ss from %s into %d %ss from %s",
-        len(src_findings),
-        name,
-        str(src_object),
-        len(tgt_findings),
-        name,
-        str(tgt_object),
-    )
+    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project().key != tgt_object.project().key
+    log.info("Syncing %d %ss from %s into %d %ss from %s", len(src_findings), name, str(src_object), len(tgt_findings), name, str(tgt_object))
     for finding in src_findings:
         if finding.is_closed():
             log.debug("%s is closed, so it will not be synchronized despite having a changelog", str(finding))

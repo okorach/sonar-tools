@@ -26,7 +26,7 @@ from typing import Union
 
 from queue import Queue
 from threading import Thread
-
+from requests import RequestException
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
@@ -386,6 +386,9 @@ class Finding(sq.SqObject):
                 prelim_check = col1 == col2
             except KeyError:
                 pass
+        if self.key == "444f6f46-9571-42e1-8ee4-d1171d8b497e":
+            log.info("Source: %s / %s / %s / %s ", self.rule, self.hash, self.file(), self.message)
+            log.info("Target: %s / %s / %s / %s ", another_finding.rule, another_finding.hash, another_finding.file(), another_finding.message)
         return (
             self.rule == another_finding.rule
             and self.hash == another_finding.hash
@@ -428,34 +431,42 @@ class Finding(sq.SqObject):
         exact_matches = []
         approx_matches = []
         match_but_modified = []
-        log.debug("Searching for an exact match of %d", hash(self))
+        log.info("Searching for an exact match of %s", str(self))
         for finding in findings_list:
             if self is finding:
                 continue
             if finding.strictly_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
-                    log.info("Issues %s and %s are strictly identical and can be synced", str(self), str(finding))
+                    log.info("%s and %s are exact match and can be synced", str(self), str(finding))
                     exact_matches.append(finding)
                 else:
-                    log.info("Issues %s and %s are strictly identical but target already has changes, cannot be synced", str(self), str(finding))
+                    log.info("%s and %s are exact match but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
                 return exact_matches, approx_matches, match_but_modified
+            else:
+                log.debug("%s and %s are not identical", str(self), str(finding))
 
-        log.debug("No exact match, searching for an approximate match of %s", str(self))
+        log.info("No exact match, searching for an approximate match of %s", str(self))
         for finding in findings_list:
             if finding.almost_identical_to(self, ignore_component, **kwargs):
                 if finding.can_be_synced(allowed_users):
-                    log.info("Issues %s and %s are almost identical and could be synced", str(self), str(finding))
+                    log.info("%s and %s are approximate match and could be synced", str(self), str(finding))
                     approx_matches.append(finding)
                 else:
-                    log.info("Issues %s and %s are almost identical but target already has changes, cannot be synced", str(self), str(finding))
+                    log.info("%s and %s are approximate match but target already has changes, cannot be synced", str(self), str(finding))
                     match_but_modified.append(finding)
             else:
-                log.debug("Issues %s and %s are not siblings", str(self), str(finding))
+                log.debug("%s and %s do not match at all", str(self), str(finding))
+        if len(approx_matches) + len(match_but_modified) == 0:
+            log.info("No approximate match found for %s", str(self))
         return exact_matches, approx_matches, match_but_modified
 
     def do_transition(self, transition: str) -> bool:
-        return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
+        try:
+            return self.post("issues/do_transition", {"issue": self.key, "transition": transition}).ok
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"applying transition {transition}")
+        return False
 
 
 def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None, pull_request: str = None) -> dict[str, Finding]:
