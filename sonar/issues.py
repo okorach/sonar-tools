@@ -32,6 +32,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
+from sonar.util import cache
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 from sonar import users, sqobject, findings, changelog, projects
@@ -112,8 +113,6 @@ FILTERS_MAP = {
 
 _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 
-_OBJECTS = {}
-
 
 class TooManyIssuesError(Exception):
     """When a call to api/issues/search returns too many issues."""
@@ -129,6 +128,7 @@ class Issue(findings.Finding):
     Abstraction of the SonarQube 'issue' concept
     """
 
+    CACHE = cache.Cache()
     SEARCH_API = "issues/search"
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
@@ -138,7 +138,7 @@ class Issue(findings.Finding):
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self._debt = None
         self.tags = []  #: Issue tags
-        _OBJECTS[self.uuid()] = self
+        Issue.CACHE.put(self)
 
     def __str__(self) -> str:
         """
@@ -864,10 +864,10 @@ def count_by_rule(endpoint: pf.Platform, **kwargs) -> dict[str, int]:
 
 def get_object(endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> Issue:
     """Returns an issue from its key"""
-    uu = sqobject.uuid(key, endpoint.url)
-    if uu not in _OBJECTS:
-        _ = Issue(endpoint=endpoint, key=key, data=data, from_export=from_export)
-    return _OBJECTS[uu]
+    o = Issue.CACHE.get(key, endpoint.url)
+    if not o:
+        o = Issue(endpoint=endpoint, key=key, data=data, from_export=from_export)
+    return o
 
 
 def pre_search_filters(endpoint: pf.Platform, params: ApiParams) -> ApiParams:

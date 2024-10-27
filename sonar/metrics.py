@@ -24,6 +24,7 @@ from threading import Lock
 import sonar.logging as log
 import sonar.platform as pf
 from sonar.util.types import ApiPayload
+from sonar.util import cache
 
 from sonar import sqobject, utilities
 
@@ -68,16 +69,15 @@ APIS = {
 }
 
 __MAX_PAGE_SIZE = 500
-
-_OBJECTS = {}
 _CLASS_LOCK = Lock()
-_VISIBLE_OBJECTS = {}
 
 
 class Metric(sqobject.SqObject):
     """
     Abstraction of the SonarQube "metric" concept
     """
+
+    CACHE = cache.Cache()
 
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None) -> None:
         """Constructor"""
@@ -91,7 +91,7 @@ class Metric(sqobject.SqObject):
         self.hidden = None  #: Hidden
         self.custom = None  #: Custom
         self.__load(data)
-        _OBJECTS[self.uuid()] = self
+        Metric.CACHE.put(self)
 
     def __load(self, data: ApiPayload) -> bool:
         log.debug("Loading metric %s", str(data))
@@ -102,8 +102,6 @@ class Metric(sqobject.SqObject):
         self.qualitative = data["qualitative"]
         self.hidden = data["hidden"]
         self.custom = data.get("custom", None)
-        if not self.hidden:
-            _VISIBLE_OBJECTS[self.uuid()] = self
         if self.type not in METRICS_BY_TYPE:
             METRICS_BY_TYPE[self.type] = set()
         METRICS_BY_TYPE[self.type].add(self.key)
@@ -158,7 +156,7 @@ def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: 
     :rtype: dict of Metric
     """
     with _CLASS_LOCK:
-        if len(_OBJECTS) == 0 or not use_cache:
+        if len(Metric.CACHE) == 0 or not use_cache:
             page, nb_pages = 1, 1
             while page <= nb_pages:
                 data = json.loads(endpoint.get(APIS["search"], params={"ps": __MAX_PAGE_SIZE, "p": page}).text)
@@ -166,7 +164,7 @@ def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: 
                     _ = Metric(endpoint=endpoint, key=m["key"], data=m)
                 nb_pages = utilities.nbr_pages(data)
                 page += 1
-    m_list = _OBJECTS if show_hidden_metrics else _VISIBLE_OBJECTS
+    m_list = {k: v for k, v in Metric.CACHE.items() if not v.hidden or show_hidden_metrics}
     return {m.key: m for m in m_list.values()}
 
 
@@ -207,6 +205,6 @@ def count(endpoint: pf.Platform, use_cache: bool = True) -> int:
     :rtype: int
     """
     with _CLASS_LOCK:
-        if len(_OBJECTS) == 0 or not use_cache:
+        if len(Metric.CACHE) == 0 or not use_cache:
             search(endpoint, True)
-    return len(_VISIBLE_OBJECTS)
+    return len([v for v in Metric.CACHE.values() if not v.hidden])

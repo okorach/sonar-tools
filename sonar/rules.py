@@ -31,7 +31,7 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
-from sonar.util import types
+from sonar.util import types, cache
 from sonar import platform, utilities, exceptions
 
 _DETAILS_API = "rules/show"
@@ -129,7 +129,7 @@ class Rule(sq.SqObject):
     Abstraction of the Sonar Rule concept
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
     SEARCH_API = "rules/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "rules"
@@ -157,14 +157,14 @@ class Rule(sq.SqObject):
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
         }
-        Rule._OBJECTS[self.uuid()] = self
+        Rule.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: platform.Platform, key: str) -> Rule:
         """Returns a rule object from the cache or from the platform itself"""
-        uid = sq.uuid(key, endpoint.url)
-        if uid in Rule._OBJECTS:
-            return Rule._OBJECTS[uid]
+        o = Rule.CACHE.get(key, endpoint.url)
+        if o:
+            return o
         log.debug("Reading rule key '%s'", key)
         try:
             r = endpoint.get(_DETAILS_API, params={"key": key})
@@ -189,10 +189,10 @@ class Rule(sq.SqObject):
     @classmethod
     def load(cls, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> Rule:
         """Loads a rule object"""
-        uid = sq.uuid(key, endpoint.url)
-        if uid in Rule._OBJECTS:
-            Rule._OBJECTS[uid]._json.update(data)
-            return Rule._OBJECTS[uid]
+        o = Rule.CACHE.get(key, endpoint.url)
+        if o:
+            o._json.update(data)
+            return o
         return cls(key=key, endpoint=endpoint, data=data)
 
     @classmethod
@@ -311,9 +311,9 @@ def count(endpoint: platform.Platform, **params) -> int:
 
 def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
     """Returns a list of rules corresponding to certain search filters"""
-    if not use_cache or params or len(Rule._OBJECTS) < 100:
+    if not use_cache or params or len(Rule.CACHE.objects) < 100:
         return search(endpoint, include_external="true", **params)
-    return Rule._OBJECTS
+    return Rule.CACHE.objects
 
 
 def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
@@ -322,9 +322,9 @@ def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
     :param str key: The rule key
     :rtype: Rule or None
     """
-    uid = sq.uuid(key, endpoint)
-    if uid in Rule._OBJECTS:
-        return Rule._OBJECTS[uid]
+    o = Rule.CACHE.get(key, endpoint.url)
+    if o:
+        return o
     try:
         return Rule.get_object(key=key, endpoint=endpoint)
     except exceptions.ObjectNotFound:

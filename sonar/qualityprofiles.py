@@ -30,7 +30,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types
+from sonar.util import types, cache
 from sonar import exceptions
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
@@ -57,7 +57,7 @@ class QualityProfile(sq.SqObject):
     Objects of this class must be created with one of the 3 available class methods. Don't use __init__
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
     SEARCH_API = "qualityprofiles/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
@@ -88,7 +88,7 @@ class QualityProfile(sq.SqObject):
         self.__last_update = util.string_to_date(data.get("rulesUpdatedAt", None))
 
         log.debug("Created %s", str(self))
-        QualityProfile._OBJECTS[self.uuid()] = self
+        QualityProfile.CACHE.put(self)
 
     @classmethod
     def read(cls, endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:
@@ -104,9 +104,9 @@ class QualityProfile(sq.SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Reading quality profile '%s' of language '%s'", name, language)
-        uid = uuid(name, language, endpoint.url)
-        if uid in QualityProfile._OBJECTS:
-            return QualityProfile._OBJECTS[uid]
+        o = QualityProfile.CACHE.get(name, language, endpoint.url)
+        if o:
+            return o
         data = util.search_by_name(endpoint, name, QualityProfile.SEARCH_API, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
@@ -143,14 +143,11 @@ class QualityProfile(sq.SqObject):
         return cls(endpoint=endpoint, key=data["key"], data=data)
 
     def __str__(self) -> str:
-        """String formatting of the object
-
-        :rtype: str
-        """
+        """String formatting of the object"""
         return f"quality profile '{self.name}' of language '{self.language}'"
 
-    def uuid(self) -> str:
-        return uuid(self.name, self.language, self.endpoint.url)
+    def __hash__(self) -> int:
+        return hash((self.name, self.language, self.endpoint.url))
 
     def url(self) -> str:
         """
@@ -297,9 +294,9 @@ class QualityProfile(sq.SqObject):
             if "name" in data and data["name"] != self.name:
                 log.info("Renaming %s with %s", str(self), data["name"])
                 self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
-                QualityProfile._OBJECTS.pop(self.uuid(), None)
+                QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
-                QualityProfile._OBJECTS[self.uuid()] = self
+                QualityProfile.CACHE.put(self)
             self.activate_rules(data.get("rules", []))
             self.set_permissions(data.get("permissions", []))
             self.set_parent(data.pop(_KEY_PARENT, None))
@@ -521,9 +518,9 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
     """
 
     with _CLASS_LOCK:
-        if len(QualityProfile._OBJECTS) == 0 or not use_cache:
+        if len(QualityProfile.CACHE) == 0 or not use_cache:
             search(endpoint=endpoint)
-    return QualityProfile._OBJECTS
+    return QualityProfile.CACHE.objects
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) -> list[Problem]:
@@ -625,10 +622,10 @@ def get_object(endpoint: pf.Platform, name: str, language: str) -> Union[Quality
     :rtype: QualityProfile or None
     """
     get_list(endpoint)
-    uid = uuid(name, language, endpoint.url)
-    if uid not in QualityProfile._OBJECTS:
+    o = QualityProfile.CACHE.get(name, language, endpoint.url)
+    if not o:
         raise exceptions.ObjectNotFound(name, message=f"Quality Profile '{language}:{name}' not found")
-    return QualityProfile._OBJECTS[uid]
+    return o
 
 
 def _create_or_update_children(name: str, language: str, endpoint: pf.Platform, children: dict[str, StopAsyncIteration], queue: Queue) -> None:
@@ -686,17 +683,6 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         worker.setDaemon(True)
         worker.start()
     q.join()
-
-
-def uuid(name: str, lang: str, url: str) -> str:
-    """Returns the UUID of a quality profile
-
-    :param str name: Quality profile name
-    :param str language: Quality profile language
-    :param str url: URL of the platform where is QP is
-    :return: The quality profile UUID
-    """
-    return f"{lang}:{name}@{url}"
 
 
 def exists(endpoint: pf.Platform, name: str, language: str) -> bool:

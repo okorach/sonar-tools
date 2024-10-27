@@ -27,7 +27,7 @@ from requests import HTTPError, RequestException
 import requests.utils
 
 from sonar import platform
-from sonar.util import types
+from sonar.util import types, cache
 import sonar.logging as log
 import sonar.sqobject as sq
 from sonar import components, settings, exceptions, tasks
@@ -37,7 +37,6 @@ import sonar.utilities as util
 from sonar.audit.problem import Problem
 from sonar.audit.rules import get_rule, RuleId
 
-_OBJECTS = {}
 
 #: APIs used for branch management
 APIS = {
@@ -55,6 +54,8 @@ class Branch(components.Component):
     Abstraction of the SonarQube "project branch" concept
     """
 
+    CACHE = cache.Cache()
+
     def __init__(self, project: projects.Project, name: str) -> None:
         """Don't use this, use class methods to create Branch objects
 
@@ -70,7 +71,7 @@ class Branch(components.Component):
         self._new_code = None
         self._last_analysis = None
         self._keep_when_inactive = None
-        _OBJECTS[self.uuid()] = self
+        Branch.CACHE.put(self)
         log.debug("Created object %s", str(self))
 
     @classmethod
@@ -85,9 +86,9 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        uu = uuid(concerned_object.key, branch_name, concerned_object.endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.endpoint.url)
+        if o:
+            return o
         try:
             data = json.loads(concerned_object.endpoint.get(APIS["list"], params={"project": concerned_object.key}).text)
         except (ConnectionError, RequestException) as e:
@@ -113,13 +114,18 @@ class Branch(components.Component):
         :rtype: Branch
         """
         branch_name = unquote(branch_name)
-        uu = uuid(concerned_object.key, branch_name, concerned_object.endpoint.url)
-        o = _OBJECTS[uu] if uu in _OBJECTS else cls(concerned_object, branch_name)
+        o = Branch.CACHE.get(concerned_object.key, branch_name, concerned_object.endpoint.url)
+        if not o:
+            o = cls(concerned_object, branch_name)
         o._load(data)
         return o
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"branch '{self.name}' of {str(self.concerned_object)}"
+
+    def __hash__(self) -> int:
+        """Computes a uuid for the branch that can serve as index"""
+        return hash((self.concerned_object.key, self.name, self.endpoint.url))
 
     def refresh(self) -> Branch:
         """Reads a branch in SonarQube (refresh with latest data)
@@ -152,13 +158,6 @@ class Branch(components.Component):
         self._keep_when_inactive = self._json.get("excludedFromPurge", False)
         self._is_main = self._json.get("isMain", False)
 
-    def uuid(self):
-        """Computes a uuid for the branch that can serve as index
-        :return: the UUID
-        :rtype: str
-        """
-        return uuid(self.concerned_object.key, self.name, self.endpoint.url)
-
     def is_kept_when_inactive(self):
         """
         :return: Whether the branch is kept when inactive
@@ -185,7 +184,7 @@ class Branch(components.Component):
         :rtype: bool
         """
         try:
-            return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, _OBJECTS)
+            return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, Branch.CACHE)
         except (ConnectionError, RequestException) as e:
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 log.warning("Can't delete %s, it's the main branch", str(self))
@@ -274,9 +273,9 @@ class Branch(components.Component):
                     return False
             log.error("%s while renaming %s", util.error_msg(e), str(self))
             raise
-        _OBJECTS.pop(self.uuid(), None)
+        Branch.CACHE.pop(self)
         self.name = new_name
-        _OBJECTS[self.uuid()] = self
+        Branch.CACHE.put(self)
         return True
 
     def __audit_zero_loc(self) -> list[Problem]:
@@ -386,17 +385,6 @@ class Branch(components.Component):
     def last_task(self) -> Optional[tasks.Task]:
         """Returns the last analysis background task of a problem, or none if not found"""
         return tasks.search_last(component_key=self.concerned_object.key, endpoint=self.endpoint, type="REPORT", branch=self.name)
-
-
-def uuid(project_key: str, branch_name: str, url: str) -> str:
-    """Computes a uuid for the branch that can serve as index
-
-    :param str project_key: The project key
-    :param str branch_name: The branch name
-    :return: the UUID
-    :rtype: str
-    """
-    return f"{project_key}{components.KEY_SEPARATOR}{branch_name}@{url}"
 
 
 def get_list(project: projects.Project) -> dict[str, Branch]:

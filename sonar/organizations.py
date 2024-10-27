@@ -31,12 +31,11 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types
+from sonar.util import types, cache
 
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
-_OBJECTS = {}
 _CLASS_LOCK = Lock()
 
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "url", "avatar", "newCodePeriod")
@@ -48,6 +47,7 @@ class Organization(sqobject.SqObject):
     Abstraction of the SonarCloud "organization" concept
     """
 
+    CACHE = cache.Cache()
     SEARCH_API = "api/organizations/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "organizations"
@@ -58,7 +58,7 @@ class Organization(sqobject.SqObject):
         self.description = None
         self.name = name
         log.debug("Created object %s", str(self))
-        _OBJECTS[self.uuid()] = self
+        Organization.CACHE.put(self)
 
     @classmethod
     def get_object(cls, endpoint: pf.Platform, key: str) -> Organization:
@@ -73,9 +73,9 @@ class Organization(sqobject.SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        uu = sqobject.uuid(key, endpoint.url)
-        if uu in _OBJECTS:
-            return _OBJECTS[uu]
+        o = Organization.CACHE.get(key, endpoint.url)
+        if o:
+            return o
         try:
             data = json.loads(endpoint.get(Organization.SEARCH_API, params={"organizations": key}).text)
         except (ConnectionError, RequestException) as e:
@@ -100,8 +100,9 @@ class Organization(sqobject.SqObject):
         """
         if not endpoint.is_sonarcloud():
             raise exceptions.UnsupportedOperation(_NOT_SUPPORTED)
-        uu = sqobject.uuid(data["key"], endpoint.url)
-        o = _OBJECTS.get(uu, cls(endpoint, data["key"], data["name"]))
+        o = Organization.CACHE.get(data["key"], endpoint.url)
+        if not o:
+            o = cls(endpoint, data["key"], data["name"])
         o._json = data
         o.name = data["name"]
         o.description = data["description"]

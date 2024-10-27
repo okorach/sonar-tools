@@ -30,7 +30,7 @@ from requests import HTTPError, RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types
+from sonar.util import types, cache
 from sonar import sqobject, exceptions
 import sonar.utilities as util
 
@@ -129,7 +129,7 @@ class Setting(sqobject.SqObject):
     Abstraction of the Sonar setting concept
     """
 
-    _OBJECTS = {}
+    CACHE = cache.Cache()
 
     def __init__(self, endpoint: pf.Platform, key: str, component: object = None, data: types.ApiPayload = None) -> None:
         """Constructor"""
@@ -141,16 +141,16 @@ class Setting(sqobject.SqObject):
         self._definition = None
         self._is_global = None
         self.reload(data)
-        log.debug("Created %s uuid %s value %s", str(self), self.uuid(), str(self.value))
-        Setting._OBJECTS[self.uuid()] = self
+        log.debug("Created %s uuid %d value %s", str(self), hash(self), str(self.value))
+        Setting.CACHE.put(self)
 
     @classmethod
     def read(cls, key: str, endpoint: pf.Platform, component: object = None) -> Setting:
         """Reads a setting from the platform"""
         log.debug("Reading setting '%s' for %s", key, str(component))
-        uid = uuid(key, component, endpoint.url)
-        if uid in Setting._OBJECTS:
-            return Setting._OBJECTS[uid]
+        o = Setting.CACHE.get(key, component, endpoint.url)
+        if o:
+            return o
         if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
             params = get_component_params(component, name="project")
             data = json.loads(endpoint.get(API_NEW_CODE_GET, params=params).text)
@@ -180,8 +180,9 @@ class Setting(sqobject.SqObject):
     def load(cls, key: str, endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> Setting:
         """Loads a setting with  JSON data"""
         log.debug("Loading setting '%s' of component '%s' with data %s", key, str(component), str(data))
-        uid = uuid(key, component, endpoint.url)
-        o = Setting._OBJECTS[uid] if uid in Setting._OBJECTS else cls(key=key, endpoint=endpoint, data=data, component=component)
+        o = Setting.CACHE.get(key, component, endpoint.url)
+        if not o:
+            o = cls(key=key, endpoint=endpoint, data=data, component=component)
         o.reload(data)
         return o
 
@@ -216,9 +217,9 @@ class Setting(sqobject.SqObject):
         if self.component is None:
             self.inherited = True
 
-    def uuid(self) -> str:
+    def __hash__(self) -> int:
         """Returns object unique ID"""
-        return uuid(self.key, self.component, self.endpoint.url)
+        return hash((self.key, self.component.key if self.component else "", self.endpoint.url))
 
     def __str__(self) -> str:
         if self.component is None:
@@ -362,10 +363,10 @@ class Setting(sqobject.SqObject):
 
 def get_object(endpoint: pf.Platform, key: str, component: object = None) -> Setting:
     """Returns a Setting object from its key and, optionally, component"""
-    uid = uuid(key, component, endpoint.url)
-    if uid not in Setting._OBJECTS:
+    o = Setting.CACHE.get(key, component, endpoint.url)
+    if not o:
         get_all(endpoint, component)
-    return Setting._OBJECTS.get(uid, None)
+    return Setting.CACHE.get(key, component, endpoint.url)
 
 
 def __get_settings(endpoint: pf.Platform, data: types.ApiPayload, component: object = None) -> dict[str, Setting]:
@@ -430,14 +431,6 @@ def get_all(endpoint: pf.Platform, project: object = None) -> dict[str, Setting]
     return get_bulk(endpoint, component=project, include_not_set=True)
 
 
-def uuid(key: str, component: object, url: str) -> str:
-    """Computes uuid for a setting"""
-    if not component:
-        return f"{key}@{url}"
-    else:
-        return f"{key}#{component.key}@{url}"
-
-
 def new_code_to_string(data: any) -> Union[int, str, None]:
     """Converts a new code period from anything to int str"""
     if isinstance(data, (int, str)):
@@ -482,9 +475,9 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
 def get_visibility(endpoint: pf.Platform, component: object) -> str:
     """Returns the platform global or component visibility"""
     key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
-    uid = uuid(key, component, endpoint.url)
-    if uid in Setting._OBJECTS:
-        return Setting._OBJECTS[uid]
+    o = Setting.CACHE.get(key, component, endpoint.url)
+    if o:
+        return o
     if component:
         data = json.loads(endpoint.get("components/show", params={"component": component.key}).text)
         return Setting.load(key=COMPONENT_VISIBILITY, endpoint=endpoint, component=component, data=data["component"])

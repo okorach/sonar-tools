@@ -32,7 +32,7 @@ import requests
 from requests import HTTPError, RequestException
 
 import sonar.logging as log
-from sonar.util import types
+from sonar.util import types, cache
 from sonar import utilities, exceptions
 
 
@@ -40,12 +40,21 @@ class SqObject(object):
     """Abstraction of Sonar objects"""
 
     SEARCH_API = None
-    _OBJECTS = {}
+    CACHE = cache.Cache
 
     def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
         self._json = None
+
+    def __hash__(self) -> int:
+        """Default UUID for SQ objects"""
+        return hash((self.key, self.endpoint.url))
+
+    def __eq__(self, another: object) -> bool:
+        if type(self) == type(another):
+            return hash(self) == hash(another)
+        return NotImplemented
 
     @classmethod
     def get_search_api(cls, endpoint: object) -> Optional[str]:
@@ -66,15 +75,13 @@ class SqObject(object):
         log.info("Emptying cache of %s", str(cls))
         try:
             if not endpoint:
-                cls._OBJECTS = {}
+                cls.CACHE.clear()
             else:
-                cls._OBJECTS = {k: o for k, o in cls._OBJECTS if o.endpoint.url != endpoint.url}
+                for o in cls.CACHE.values().copy():
+                    if o.endpoint.url != endpoint.url:
+                        cls.CACHE.pop(o)
         except AttributeError:
             pass
-
-    def uuid(self) -> str:
-        """Returns object unique ID in its class"""
-        return uuid(self.key, self.endpoint.url)
 
     def reload(self, data: types.ObjectJsonRepr) -> None:
         """Reload a Sonar object with its JSON representation"""
@@ -195,27 +202,17 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
     return objects_list
 
 
-def delete_object(object: SqObject, api: str, params: types.ApiParams, map: dict[str, SqObject]) -> bool:
+def delete_object(object: SqObject, api: str, params: types.ApiParams, cache: object) -> bool:
     """Deletes a Sonar object"""
     try:
         log.info("Deleting %s", str(object))
         r = object.post(api, params=params, mute=(HTTPStatus.NOT_FOUND,))
-        map.pop(object.uuid(), None)
+        cache.pop(object)
         log.info("Successfully deleted %s", str(object))
         return r.ok
     except (ConnectionError, RequestException) as e:
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-            map.pop(object.uuid(), None)
+            cache.pop(object)
             raise exceptions.ObjectNotFound(object.key, f"{str(object)} not found for delete")
         log.error("%s while deleting object '%s'", utilities.error_msg(e), str(object))
         raise
-
-
-def uuid(key: str, url: str) -> str:
-    """Returns a SonarQube object uuid"""
-    return f"{key}@{url}"
-
-
-def clear_cache(endpoint: object, cache: dict[str, SqObject]) -> None:
-    """Clears the cache of an endpoint"""
-    cache = {k: o for k, o in cache if o.endpoint.url != endpoint.url}
