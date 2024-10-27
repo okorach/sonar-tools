@@ -473,6 +473,19 @@ def error_msg(exception: Exception) -> str:
         return str(exception)
 
 
+def handle_error(e: Exception, context: str, **kwargs) -> None:
+    """General handler for errors"""
+    log.error("%s while %s", error_msg(e), context)
+    if kwargs.get("catch_all", False):
+        return
+    catch_http = kwargs.get("catch_http_errors", True)
+    catch_statuses = kwargs.get("catch_http_status", None)
+    if isinstance(e, requests.HTTPError) and (catch_http and (catch_statuses is None or e.response.status_code in catch_statuses)):
+        return
+
+    raise e
+
+
 def object_key(key_or_obj):
     if isinstance(key_or_obj, str):
         return key_or_obj
