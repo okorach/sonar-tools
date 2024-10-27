@@ -457,6 +457,8 @@ class Finding(sq.SqObject):
                     match_but_modified.append(finding)
             else:
                 log.debug("%s and %s are not siblings", str(self), str(finding))
+        if len(approx_matches) + len(match_but_modified) == 0:
+            log.info("No approximate match found for %s", str(self))
         return exact_matches, approx_matches, match_but_modified
 
     def do_transition(self, transition: str) -> bool:
