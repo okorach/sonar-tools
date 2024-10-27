@@ -265,9 +265,7 @@ class Portfolio(aggregations.Aggregation):
             else:
                 self.post("views/add_local_view", params={"key": self.key, "ref_key": reference.key}, mute=(HTTPStatus.BAD_REQUEST,))
         except (ConnectionError, RequestException) as e:
-            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
-                log.error("%s while adding reference subportfolio to %s", util.error_msg(e), str(self))
-                raise
+            util.handle_error(e, f"adding reference subportfolio to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
         self._sub_portfolios.update({reference.key: ref})
         return ref
 
@@ -278,9 +276,7 @@ class Portfolio(aggregations.Aggregation):
             if self.endpoint.version() < (9, 3, 0):
                 self.post("views/add_sub_view", params={"key": self.key, "name": name, "subKey": key}, mute=(HTTPStatus.BAD_REQUEST,))
         except (ConnectionError, RequestException) as e:
-            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
-                log.error("%s while adding standard subportfolio to %s", util.error_msg(e), str(self))
-                raise
+            util.handle_error(e, f"adding standard subportfolio to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
         self._sub_portfolios.update({subp.key: subp})
         return subp
 
@@ -408,14 +404,12 @@ class Portfolio(aggregations.Aggregation):
             try:
                 self.post("views/add_project", params={"key": self.key, "project": key}, mute=(HTTPStatus.BAD_REQUEST,))
                 self._selection_mode[_SELECTION_MODE_MANUAL][key] = {settings.DEFAULT_BRANCH}
-            except HTTPError as e:
-                if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(self.key, f"Project '{key}' not found, can't be added to {str(self)}")
+            except (ConnectionError, RequestException) as e:
+                util.handle_error(e, f"adding projects to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
                     log.warning("%s: Project '%s' already in %s", util.error_msg(e), key, str(self))
-            except (ConnectionError, RequestException) as e:
-                log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
-                raise
+                else:
+                    raise exceptions.ObjectNotFound(self.key, f"Project '{key}' not found, can't be added to {str(self)}")
         return self
 
     def add_project_branches(self, project_key: str, branches: set[str]) -> Portfolio:
@@ -436,8 +430,7 @@ class Portfolio(aggregations.Aggregation):
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 log.warning("%s: Project '%s' branch '%s', already in %s", util.error_msg(e), project_key, branch, str(self))
         except (ConnectionError, RequestException) as e:
-            log.error("%s while adding project branches to %s", util.error_msg(e), str(self))
-            raise
+            util.handle_error(e, f"adding projects to {str(self)}")
         if project_key in self._selection_mode[_SELECTION_MODE_MANUAL]:
             self._selection_mode[_SELECTION_MODE_MANUAL][project_key].discard(settings.DEFAULT_BRANCH)
             self._selection_mode[_SELECTION_MODE_MANUAL][project_key].add(branch)
@@ -536,10 +529,7 @@ class Portfolio(aggregations.Aggregation):
                 params = {"key": self.key, "application": app_key, "branch": branch}
                 self.post("views/add_application_branch", params=params, mute=(HTTPStatus.BAD_REQUEST,))
         except (ConnectionError, RequestException) as e:
-            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
-                log.error("%s while adding application branch to %s", util.error_msg(e), str(self))
-                raise
-            log.warning(util.error_msg(e))
+            util.handle_error(e, f"adding app branch to {str(self)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
         if app_key not in self._applications:
             self._applications[app_key] = []
         self._applications[app_key].append(branch)
@@ -595,7 +585,7 @@ class Portfolio(aggregations.Aggregation):
                 nbr_projects = util.nbr_total_elements(data)
                 proj_key_list += [c["refKey"] for c in data["components"]]
             except (ConnectionError, RequestException) as e:
-                log.error("%s while collecting projects from %s, stopping collection", util.error_msg(e), str(self))
+                util.handle_error(e, f"getting projects list of {str(self)}", catch_all=True)
                 break
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of projects: %d - Page: %d/%d", nbr_projects, page, nbr_pages)
@@ -803,7 +793,7 @@ def export(
             else:
                 log.debug("Skipping export of %s, it's a standard sub-portfolio", str(p))
         except (ConnectionError, RequestException) as e:
-            log.error("%s while exporting %s, export will be empty for this portfolio", util.error_msg(e), str(p))
+            util.handle_error(e, f"exporting {str(p)}, export will be empty for this portfolio", catch_all=True)
             exported_portfolios[k] = {}
         i += 1
         if i % 10 == 0 or i == nb_portfolios:

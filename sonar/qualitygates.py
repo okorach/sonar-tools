@@ -170,10 +170,8 @@ class QualityGate(sq.SqObject):
             try:
                 resp = self.get(APIS["get_projects"], params=params)
             except (ConnectionError, RequestException) as e:
-                if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
-                log.error("%s while getting %s projects", util.error_msg(e), str(self))
-                raise
+                util.handle_error(e, f"getting projects of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+                raise exceptions.ObjectNotFound(self.name, f"{str(self)} not found")
             data = json.loads(resp.text)
             for prj in data["results"]:
                 key = prj["key"] if "key" in prj else prj["id"]

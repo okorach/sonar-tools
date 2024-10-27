@@ -145,8 +145,7 @@ class PermissionTemplate(sqobject.SqObject):
             try:
                 self.post("permissions/set_default_template", params={"templateId": self.key, "qualifier": qual})
             except (ConnectionError, RequestException) as e:
-                log.error("%s while setting %s as default", utilities.error_msg(e), str(self))
-                raise
+                utilities.handle_error(e, f"setting {str(self)} as default")
 
     def set_pattern(self, pattern: str) -> PermissionTemplate:
         """Sets a permission template pattern"""

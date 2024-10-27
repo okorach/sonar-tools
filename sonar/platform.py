@@ -106,7 +106,7 @@ class Platform:
         try:
             self.get("server/version")
         except (ConnectionError, RequestException) as e:
-            log.critical("%s while verifying connection", util.error_msg(e))
+            util.handle_error(e, "verifying connection", catch_all=True)
             raise exceptions.ConnectionError(util.sonar_error(e.response))
 
     def version(self) -> tuple[int, int, int]:
@@ -296,8 +296,7 @@ class Platform:
             log.log(lvl, "%s (%s request)", util.error_msg(e), req_type)
             raise e
         except (ConnectionError, RequestException) as e:
-            log.error(str(e))
-            raise
+            util.handle_error(e, "")
         return r
 
     def global_permissions(self):
@@ -594,7 +593,7 @@ class Platform:
             try:
                 logs = self.get("system/logs", params={"name": logtype}).text
             except (ConnectionError, RequestException) as e:
-                log.error("%s while retrieving %s logs", util.error_msg(e), logtype)
+                util.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
                 continue
             for line in logs.splitlines():
                 log.debug("Inspection log line %s", line)

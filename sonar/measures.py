@@ -126,10 +126,8 @@ def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, 
     try:
         data = json.loads(concerned_object.endpoint.get(Measure.API_READ, params={**kwargs, **params}).text)
     except (ConnectionError, RequestException) as e:
-        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-            raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
-        log.error("%s while getting measures %s of %s", util.error_msg(e), str(metrics_list), str(concerned_object))
-        raise e
+        util.handle_error(e, f"getting measures {str(metrics_list)} of {str(concerned_object)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
     m_dict = {m: None for m in metrics_list}
     for m in data["component"]["measures"]:
         m_dict[m["metric"]] = Measure.load(data=m, concerned_object=concerned_object)
@@ -157,10 +155,8 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
     try:
         data = json.loads(concerned_object.endpoint.get(Measure.API_HISTORY, params={**kwargs, **params}).text)
     except (ConnectionError, RequestException) as e:
-        if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-            raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
-        log.error("%s while getting measures %s history of %s", util.error_msg(e), str(metrics_list), str(concerned_object))
-        raise e
+        util.handle_error(e, f"getting measures {str(metrics_list)} history of {str(concerned_object)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+        raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
     res_list = []
     # last_metric, last_date = "", ""
     for m in reversed(data["measures"]):

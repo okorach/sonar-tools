@@ -169,9 +169,8 @@ class Rule(sq.SqObject):
         try:
             r = endpoint.get(_DETAILS_API, params={"key": key})
         except (ConnectionError, RequestException) as e:
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
-            log.error("%s while getting rule'%s'", utilities.error_msg(e), key)
+            utilities.handle_error(e, f"getting rule {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(key=key, message=f"Rule key '{key}' does not exist")
         return Rule(endpoint=endpoint, key=key, data=json.loads(r.text)["rule"])
 
     @classmethod
@@ -288,7 +287,7 @@ def search(endpoint: platform.Platform, **params) -> dict[str, Rule]:
 
 
 def search_keys(endpoint: platform.Platform, **params) -> list[str]:
-    """Searches ruless with optional filters"""
+    """Searches rules with optional filters"""
     new_params = params.copy() if params else {}
     new_params["ps"] = 500
     new_params["p"], nbr_pages = 0, 1
@@ -300,7 +299,7 @@ def search_keys(endpoint: platform.Platform, **params) -> list[str]:
             nbr_pages = utilities.nbr_pages(data)
             rule_list += [r[Rule.SEARCH_KEY_FIELD] for r in data[Rule.SEARCH_RETURN_FIELD]]
     except (ConnectionError, RequestException) as e:
-        log.error("%s while getting rules", utilities.error_msg(e))
+        utilities.handle_error(e, "searching rules", catch_all=True)
     return rule_list
 
 

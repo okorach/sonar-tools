@@ -275,9 +275,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
                     component.endpoint, component.key, branch=params.get("branch", None), pull_request=params.get("pullRequest", None)
                 )
             except (ConnectionError, RequestException) as e:
-                log.critical("%s while exporting findings of %s, skipped", util.error_msg(e), str(component))
-                findings_list = {}
-            log.debug("WRITE_QUEUE put FINDINGS for %s", str(component))
+                util.handle_error(e, f"exporting findings of {str(component)}, skipped", catch_all=True)
             write_queue.put(findings_list)
         else:
             new_params = params.copy()
@@ -305,8 +303,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
                 try:
                     findings_list = component.get_issues(filters=new_params)
                 except (ConnectionError, RequestException) as e:
-                    log.error("%s while exporting issues of %s, skipped", util.error_msg(e), str(component))
-                    findings_list = {}
+                    util.handle_error(e, f"exporting issues of {str(component)}", catch_all=True)
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(i_statuses), str(i_types), str(i_resols), str(i_sevs))
                 log.info("Selected types, severities, resolutions or statuses disables issue search")
@@ -315,7 +312,7 @@ def __get_component_findings(queue: Queue[tuple[object, ConfigSettings]], write_
                 try:
                     findings_list.update(component.get_hotspots(filters=new_params))
                 except (ConnectionError, RequestException) as e:
-                    log.error("%s while exporting hotspots of object key %s, skipped", util.error_msg(e), str(component))
+                    util.handle_error(e, f"exporting hotspots of {str(component)}", catch_all=True)
             else:
                 log.debug("Status = %s, Types = %s, Resol = %s, Sev = %s", str(h_statuses), str(h_types), str(h_resols), str(h_sevs))
                 log.info("Selected types, severities, resolutions or statuses disables issue search")
@@ -334,7 +331,7 @@ def store_findings(components_list: dict[str, object], params: ConfigSettings) -
             log.debug("Queue %s task %s put", str(components_queue), str(comp))
             components_queue.put((comp, params.copy()))
         except (ConnectionError, RequestException) as e:
-            log.critical("%s while exporting findings of %s, skipped", util.error_msg(e), str(comp))
+            util.handle_error(e, f"exporting issues of {str(comp)}", catch_all=True)
 
     log.info("Starting finding writer thread 'findingWriter'")
     write_queue = Queue(maxsize=0)

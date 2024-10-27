@@ -260,7 +260,7 @@ class QualityProfile(sq.SqObject):
         try:
             r = self.post("qualityprofiles/activate_rule", params=api_params)
         except (ConnectionError, RequestException) as e:
-            log.error("%s while trying to activate rule %s in %s", util.error_msg(e), rule_key, str(self))
+            util.handle_error(e, f"activating rule {rule_key} in {str(self)}", catch_all=True)
             return False
         return r.ok
 
@@ -274,15 +274,11 @@ class QualityProfile(sq.SqObject):
         ok = True
         for r_key, r_data in ruleset.items():
             log.debug("Activating rule %s in QG %s data %s", r_key, str(self), str(r_data))
-            try:
-                sev = r_data if isinstance(r_data, str) else r_data.get("severity", None)
-                if "params" in r_data:
-                    ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
-                else:
-                    ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
-            except (ConnectionError, RequestException) as e:
-                ok = False
-                log.error("%s while activating rules in '%s'", util.error_msg(e), r_key)
+            sev = r_data if isinstance(r_data, str) else r_data.get("severity", None)
+            if "params" in r_data:
+                ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
+            else:
+                ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
         return ok
 
     def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:
