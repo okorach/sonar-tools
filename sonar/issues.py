@@ -422,8 +422,11 @@ class Issue(findings.Finding):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        log.warning("Marking %s as won't fix - Warning: Won't fix is deprecated, Accept will be teh replacement", str(self))
-        return self.do_transition("wontfix")
+        if self.endpoint.version() >= (10, 4, 0) or self.endpoint.is_sonarcloud():
+            log.warning("Marking %s as won't fix is deprecated, using Accept instead", str(self))
+            return self.do_transition("accept")
+        else:
+            return self.do_transition("wontfix")
 
     def accept(self) -> bool:
         """Marks an issue as resolved as won't fix
@@ -507,12 +510,7 @@ class Issue(findings.Finding):
 
         change_nbr = 0
         start_change = len(self.changelog()) + 1
-        log.info(
-            "Applying changelog of issue %s to issue %s, from change %d",
-            source_issue.key,
-            self.key,
-            start_change,
-        )
+        log.info("Applying changelog of %s to %s, from change %d", str(source_issue), str(self), start_change)
         for key in sorted(events.keys()):
             change_nbr += 1
             if change_nbr < start_change:
