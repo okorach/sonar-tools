@@ -252,7 +252,8 @@ class User(sqobject.SqObject):
                 self.set_scm_accounts(kwargs["scmAccounts"])
             if "login" in kwargs:
                 new_login = kwargs["login"]
-                if new_login not in User.CACHE:
+                o = User.CACHE.get(new_login, self.endpoint.url)
+                if not o:
                     self.post(UPDATE_LOGIN_API, params={"login": self.login, "newLogin": new_login})
                     User.CACHE.pop(self)
                     self.login = new_login

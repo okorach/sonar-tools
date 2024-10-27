@@ -202,17 +202,17 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
     return objects_list
 
 
-def delete_object(object: SqObject, api: str, params: types.ApiParams, cache: object) -> bool:
+def delete_object(object: SqObject, api: str, params: types.ApiParams, class_cache: object) -> bool:
     """Deletes a Sonar object"""
     try:
         log.info("Deleting %s", str(object))
         r = object.post(api, params=params, mute=(HTTPStatus.NOT_FOUND,))
-        cache.pop(object)
+        class_cache.pop(object)
         log.info("Successfully deleted %s", str(object))
         return r.ok
     except (ConnectionError, RequestException) as e:
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-            cache.pop(object)
+            class_cache.pop(object)
             raise exceptions.ObjectNotFound(object.key, f"{str(object)} not found for delete")
         log.error("%s while deleting object '%s'", utilities.error_msg(e), str(object))
         raise
