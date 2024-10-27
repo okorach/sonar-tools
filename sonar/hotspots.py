@@ -406,12 +406,9 @@ def search(endpoint: pf.Platform, filters: types.ApiParams = None) -> dict[str, 
                 data = json.loads(endpoint.get(Hotspot.SEARCH_API, params=inline_filters, mute=(HTTPStatus.NOT_FOUND,)).text)
                 nbr_hotspots = util.nbr_total_elements(data)
             except (ConnectionError, RequestException) as e:
-                if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    log.warning("No hotspots found with search params %s", str(inline_filters))
-                    nbr_hotspots = 0
-                    return {}
-                log.error("%s while searching hotspots", util.error_msg(e))
-                break
+                util.handle_error(e, "searching hotspots", catch_all=True)
+                nbr_hotspots = 0
+                return {}
             nbr_pages = util.nbr_pages(data)
             log.debug("Number of hotspots: %d - Page: %d/%d", nbr_hotspots, inline_filters["p"], nbr_pages)
             if nbr_hotspots > Hotspot.MAX_SEARCH:

@@ -464,9 +464,9 @@ def set_new_code_period(endpoint: pf.Platform, nc_type: str, nc_value: str, proj
         else:
             ok = endpoint.post(API_NEW_CODE_SET, params={"type": nc_type, "value": nc_value, "project": project_key, "branch": branch}).ok
     except (ConnectionError, RequestException) as e:
+        util.handle_error(e, f"setting new code period of {project_key}", catch_all=True)
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
             raise exceptions.UnsupportedOperation(f"Can't set project new code period: {e.response.text}")
-        log.error("%s setting new code period of '%s'", util.error_msg(e), str(project_key))
         return False
     return ok
 
@@ -497,9 +497,9 @@ def set_visibility(endpoint: pf.Platform, visibility: str, component: object = N
             log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
             return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
     except (ConnectionError, RequestException) as e:
+        util.handle_error(e, f"setting comp or global visibility of {str(component)}", catch_all=True)
         if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
-            raise exceptions.UnsupportedOperation(f"Can't set project default visibility: {e.response.text}")
-        log.error("%s setting new code period of '%s'", util.error_msg(e), str(component))
+            raise exceptions.UnsupportedOperation(f"Can't set comp or global visibility of {str(component)}: {e.response.text}")
         return False
 
 
@@ -513,7 +513,7 @@ def set_setting(endpoint: pf.Platform, key: str, value: any, component: object =
         try:
             s.set(value)
         except (ConnectionError, RequestException) as e:
-            log.error("%s while setting setting '%s' for %s", util.error_msg(e), key, str(component))
+            util.handle_error(e, f"setting setting '{key}' of {str(component)}", catch_all=True)
             return False
         except exceptions.UnsupportedOperation as e:
             log.error("Setting '%s' cannot be set: %s", key, e.message)

@@ -92,10 +92,8 @@ class Application(aggr.Aggregation):
         try:
             data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)["application"]
         except (ConnectionError, RequestException) as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
-            log.error("%s while getting app key '%s'", util.error_msg(e), key)
-            raise
+            util.handle_error(e, f"searching application {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
         return cls.load(endpoint, data)
 
     @classmethod
@@ -133,10 +131,8 @@ class Application(aggr.Aggregation):
         try:
             endpoint.post(APIS["create"], params={"key": key, "name": name})
         except (ConnectionError, RequestException) as e:
-            if e.response.status_code == HTTPStatus.BAD_REQUEST:
-                raise exceptions.ObjectAlreadyExists(key, e.response.text)
-            log.critical("%s while creating app key '%s'", util.error_msg(e), key)
-            raise
+            util.handle_error(e, f"creating application {key}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(key, e.response.text)
         return Application(endpoint, key, name)
 
     def refresh(self) -> None:
@@ -150,11 +146,9 @@ class Application(aggr.Aggregation):
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
             self.reload(json.loads(self.get(APIS["get"], params=self.search_params()).text)["application"])
         except (ConnectionError, RequestException) as e:
-            if e.response.status_code == HTTPStatus.NOT_FOUND:
-                Application.CACHE.pop(self)
-                raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
-            log.error("%s while refreshing %s", util.error_msg(e), str(self))
-            raise
+            util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            Application.CACHE.pop(self)
+            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
 
     def __str__(self) -> str:
         """String name of object"""
@@ -388,12 +382,8 @@ class Application(aggr.Aggregation):
                 r = self.post("applications/add_project", params={"application": self.key, "project": proj})
                 ok = ok and r.ok
             except (ConnectionError, RequestException) as e:
-                if e.response.status_code == HTTPStatus.NOT_FOUND:
-                    log.warning("Project '%s' not found, can't be added to %s", proj, self)
-                    ok = False
-                else:
-                    log.error("%s while adding projects to %s", util.error_msg(e), str(self))
-                    raise
+                util.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+                ok = False
         return ok
 
     def last_analysis(self) -> datetime:

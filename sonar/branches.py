@@ -92,10 +92,9 @@ class Branch(components.Component):
         try:
             data = json.loads(concerned_object.endpoint.get(APIS["list"], params={"project": concerned_object.key}).text)
         except (ConnectionError, RequestException) as e:
-            if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(concerned_object.key, f"Project '{concerned_object.key}' not found")
-            log.critical("%s while getting branch '%s' of %s", util.error_msg(e), branch_name, str(concerned_object))
-            raise
+            util.handle_error(e, f"searching {str(concerned_object)} for branch '{branch_name}'", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(concerned_object.key, f"Project '{concerned_object.key}' not found")
+
         for br in data.get("branches", []):
             if br["name"] == branch_name:
                 return cls.load(concerned_object, branch_name, br)
@@ -141,9 +140,8 @@ class Branch(components.Component):
         try:
             data = json.loads(self.get(APIS["list"], params={"project": self.concerned_object.key}).text)
         except (ConnectionError, RequestException) as e:
-            if isinstance(HTTPError, e) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found in SonarQube")
-            log.error("%s while refreshing %s", util.error_msg(e), str(self))
+            util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found in SonarQube")
         for br in data.get("branches", []):
             if br["name"] == self.name:
                 self._load(br)
@@ -190,10 +188,9 @@ class Branch(components.Component):
         try:
             return sq.delete_object(self, APIS["delete"], {"branch": self.name, "project": self.concerned_object.key}, Branch.CACHE)
         except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"deleting {str(self)}", catch_all=True)
             if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 log.warning("Can't delete %s, it's the main branch", str(self))
-            else:
-                log.error("%s while deleting %s", util.error_msg(e), str(self))
             return False
 
     def new_code(self) -> str:
@@ -207,10 +204,9 @@ class Branch(components.Component):
             try:
                 data = json.loads(self.get(api=APIS["get_new_code"], params={"project": self.concerned_object.key}).text)
             except (ConnectionError, RequestException) as e:
-                if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.NOT_FOUND:
-                    raise exceptions.ObjectNotFound(self.concerned_object.key, f"{str(self.concerned_object)} not found")
-                log.error("%s while getting new code period of %s", util.error_msg(e), str(self))
-                raise e
+                util.handle_error(e, f"getting new code period of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+                raise exceptions.ObjectNotFound(self.concerned_object.key, f"{str(self.concerned_object)} not found")
+
             for b in data["newCodePeriods"]:
                 new_code = settings.new_code_to_string(b)
                 if b["branchKey"] == self.name:
@@ -250,11 +246,10 @@ class Branch(components.Component):
         """
         return f"{self.endpoint.url}/dashboard?id={self.concerned_object.key}&branch={requests.utils.quote(self.name)}"
 
-    def rename(self, new_name):
+    def rename(self, new_name: str) -> bool:
         """Renames a branch
 
-        :param new_name: New branch name
-        :type new_name: str
+        :param str new_name: New branch name
         :raises UnsupportedOperation: If trying to rename anything than the main branch
         :raises ObjectNotFound: Concerned object (project) not found
         :return: Whether the branch was renamed
@@ -270,13 +265,12 @@ class Branch(components.Component):
         try:
             self.post(APIS["rename"], params={"project": self.concerned_object.key, "name": new_name})
         except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"Renaming {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
             if isinstance(e, HTTPError):
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
                     return False
-            log.error("%s while renaming %s", util.error_msg(e), str(self))
-            raise
         Branch.CACHE.pop(self)
         self.name = new_name
         Branch.CACHE.put(self)

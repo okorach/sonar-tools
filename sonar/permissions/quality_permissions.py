@@ -77,7 +77,7 @@ class QualityPermissions(permissions.Permissions):
                 perms += [p[ret_field] for p in data[perm_type]]
                 page, nbr_pages = page + 1, utilities.nbr_pages(data)
             except (ConnectionError, RequestException) as e:
-                log.error("%s while retrieving %s permissions", utilities.error_msg(e), str(self))
+                utilities.handle_error(e, f"getting permissions of {str(self)}", catch_all=True)
                 page += 1
         return perms
 

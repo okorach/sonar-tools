@@ -73,10 +73,10 @@ class PortfolioReference(sq.SqObject):
         try:
             parent.endpoint.post("views/add_portfolio", params={"portfolio": parent.key, "reference": reference.key})
         except (ConnectionError, RequestException) as e:
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
-                raise exceptions.ObjectAlreadyExists
-            log.critical("%s while creating portfolio reference to %s in %s", utilities.error_msg(e), str(reference), str(parent))
-            raise e
+            utilities.handle_error(
+                e, f"creating portfolio reference to {str(reference)} in {str(parent)}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,)
+            )
+            raise exceptions.ObjectAlreadyExists
         return PortfolioReference(reference=reference, parent=parent)
 
     def __str__(self) -> str:

@@ -169,9 +169,7 @@ class Project(components.Component):
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
             return cls.load(endpoint, data["components"][0])
         except (ConnectionError, RequestException) as e:
-            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.FORBIDDEN:
-                log.error("%s while getting project '%s'", util.error_msg(e), key)
-                raise
+            util.handle_error(e, f"getting project '{key}'", catch_http_errors=(HTTPStatus.FORBIDDEN,))
             data = json.loads(endpoint.get(_NAV_API, params={"component": key}).text)
             if "errors" in data:
                 raise exceptions.ObjectNotFound(key, f"Project key '{key}' not found")
@@ -207,10 +205,8 @@ class Project(components.Component):
         try:
             endpoint.post(_CREATE_API, params={"project": key, "name": name})
         except (ConnectionError, RequestException) as e:
-            if isinstance(e, HTTPError) and e.response.status_code == HTTPStatus.BAD_REQUEST:
-                raise exceptions.ObjectAlreadyExists(key, e.response.text)
-            log.error("%s while creating project '%s'", util.error_msg(e), key)
-            raise
+            util.handle_error(e, f"creating project '{key}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(key, e.response.text)
         o = cls(endpoint, key)
         o.name = name
         return o
@@ -383,12 +379,10 @@ class Project(components.Component):
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
             except (ConnectionError, RequestException) as e:
-                if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST):
-                    # Hack: 8.9 returns 404, 9.x returns 400
-                    self._binding["has_binding"] = False
-                else:
-                    log.error("%s while getting '%s' bindinfs", util.error_msg(e), str(self))
-                    raise e
+                util.handle_error(e, f"getting binding of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
+                # Hack: 8.9 returns 404, 9.x returns 400
+                self._binding["has_binding"] = False
+
         log.debug("Binding = %s", util.json_dump(self._binding["binding"]))
         return self._binding["binding"]
 
@@ -548,24 +542,18 @@ class Project(components.Component):
             log.info("Community edition, skipping binding validation...")
             return []
         elif not audit_settings.get("audit.projects.bindings", True):
-            log.info(
-                "%s binding validation disabled, skipped",
-                str(self),
-            )
+            log.info("%s binding validation disabled, skipped", str(self))
         elif not self.has_binding():
-            log.info(
-                "%s has no binding, skipping binding validation...",
-                str(self),
-            )
+            log.info("%s has no binding, skipping binding validation...", str(self))
             return []
         try:
             _ = self.get("alm_settings/validate_binding", params={"project": self.key})
             log.debug("%s binding is valid", str(self))
         except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"auditing binding of {str(self)}", catch_all=True)
             # Hack: 8.9 returns 404, 9.x returns 400
             if isinstance(e, HTTPError) and e.response.status_code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND):
                 return [Problem(get_rule(RuleId.PROJ_INVALID_BINDING), self, str(self))]
-            log.error("%s while auditing %s binding, skipped", util.error_msg(e), str(self))
         return []
 
     def get_type(self) -> str:
@@ -620,7 +608,7 @@ class Project(components.Component):
                 if len(data) > 0:
                     self._ci, self._revision = data[0].get("detectedCI", "unknown"), data[0].get("revision", "unknown")
             except (ConnectionError, RequestException) as e:
-                log.warning("%s while getting %s CI tool", util.error_msg(e), str(self))
+                util.handle_error(e, f"getting CI tool of {str(self)}", catch_all=True)
             except KeyError:
                 log.warning("KeyError, can't retrieve CI tool and revision")
         return self._ci
@@ -667,7 +655,8 @@ class Project(components.Component):
             problems += self.__audit_binding_valid(audit_settings)
             problems += self.__audit_scanner(audit_settings)
         except (ConnectionError, RequestException) as e:
-            log.error("%s while auditing %s", util.error_msg(e), str(self))
+            util.handle_error(e, f"auditing {str(self)}", catch_all=True)
+
         if write_q:
             write_q.put(problems)
         return problems
@@ -690,6 +679,7 @@ class Project(components.Component):
         except HTTPError as e:
             return {"status": f"HTTP_ERROR {e.response.status_code}"}
         except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"exporting zip of {str(self)}", catch_all=True)
             return {"status": str(e)}
         data = json.loads(resp.text)
         status = tasks.Task(endpoint=self.endpoint, task_id=data["taskId"], concerned_object=self, data=data).wait_for_completion(timeout=timeout)
@@ -710,7 +700,7 @@ class Project(components.Component):
         try:
             return json.loads(self.post("project_dump/export", params={"key": self.key}).text)["taskId"]
         except (ConnectionError, RequestException) as e:
-            log.error("%s while exporting zip of %s CI", util.error_msg(e), str(self))
+            util.handle_error(e, f"exporting zip of {str(self)} asynchronously", catch_all=True)
         return None
 
     def import_zip(self) -> bool:
@@ -1054,13 +1044,9 @@ class Project(components.Component):
                     continue
                 json_data.update(s.to_json())
 
-        except (ConnectionError, RequestException) as e:
-            errmsg = util.error_msg(e)
-            log.error("Exception: %s while exporting %s, export of this project interrupted", errmsg, str(self))
-            json_data["error"] = f"{errmsg} while extracting project"
         except Exception as e:
-            log.critical("Exception: %s while exporting %s, export of this project interrupted", errmsg, str(self))
-            json_data["error"] = f"{errmsg} while extracting project"
+            util.handle_error(e, f"exporting {str(self)}, export of this project interrupted", catch_all=True)
+            json_data["error"] = f"{util.error_msg(e)} while exporting project"
         log.debug("Exporting %s done", str(self))
         return util.remove_nones(json_data)
 
@@ -1094,9 +1080,7 @@ class Project(components.Component):
             self.permissions().set(desired_permissions)
             return True
         except (ConnectionError, RequestException) as e:
-            log.error("%s while setting permissions of %s", util.error_msg(e), str(self))
-            if not isinstance(e, HTTPError) or e.response.status_code != HTTPStatus.BAD_REQUEST:
-                raise e
+            util.handle_error(e, f"setting permissions of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
             return False
 
     def set_links(self, desired_links: types.ObjectJsonRepr) -> bool:
@@ -1146,7 +1130,8 @@ class Project(components.Component):
         log.debug("Setting quality gate '%s' for %s", quality_gate, str(self))
         try:
             r = self.post("qualitygates/select", params={"projectKey": self.key, "gateName": quality_gate})
-        except (ConnectionError, RequestException):
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"setting permissions of {str(self)}", catch_all=True)
             return False
         return r.ok
 
@@ -1155,7 +1140,8 @@ class Project(components.Component):
         if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
             try:
                 return self.post("projects/set_ai_code_assurance", params={"project": self.key, "contains_ai_code": enabled}).ok
-            except (ConnectionError, RequestException):
+            except (ConnectionError, RequestException) as e:
+                util.handle_error(e, f"setting AI code assurance of {str(self)}", catch_all=True)
                 pass
         return False
 
@@ -1164,7 +1150,8 @@ class Project(components.Component):
         if self.endpoint.version() >= (10, 7, 0) and self.endpoint.edition() != "community":
             try:
                 return json.loads(self.get("projects/get_ai_code_assurance", params={"project": self.key}).text)["aiCodeAssurance"]
-            except (ConnectionError, RequestException):
+            except (ConnectionError, RequestException) as e:
+                util.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
                 pass
         return None
 
@@ -1460,7 +1447,7 @@ def __audit_thread(
             else:
                 bindings[bindkey] = project
         except (ConnectionError, RequestException) as e:
-            log.error("%s while auditing %s", util.error_msg(e), str(project))
+            util.handle_error(e, f"auditing {str(project)}", catch_all=True)
         __increment_processed(audit_settings)
         if write_q:
             write_q.put(problems)

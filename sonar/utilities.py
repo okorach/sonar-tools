@@ -479,8 +479,8 @@ def handle_error(e: Exception, context: str, **kwargs) -> None:
     if kwargs.get("catch_all", False):
         return
     catch_http = kwargs.get("catch_http_errors", True)
-    catch_statuses = kwargs.get("catch_http_status", None)
-    if isinstance(e, requests.HTTPError) and (catch_http and (catch_statuses is None or e.response.status_code in catch_statuses)):
+    catch_statuses = kwargs.get("catch_http_statuses", ())
+    if isinstance(e, requests.HTTPError) and (catch_http or e.response.status_code in catch_statuses):
         return
 
     raise e

@@ -108,11 +108,10 @@ class DevopsPlatform(sq.SqObject):
                 params.update({"clientSecret": _TO_BE_SET, "clientId": _TO_BE_SET, "workspace": url_or_workspace})
                 endpoint.post(_CREATE_API_BBCLOUD, params=params)
         except (ConnectionError, RequestException) as e:
-            if e.response.status_code == HTTPStatus.BAD_REQUEST and endpoint.edition() in ("community", "developer"):
+            util.handle_error(e, f"creating devops platform {key}/{plt_type}/{url_or_workspace}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+            if endpoint.edition() in ("community", "developer"):
                 log.warning("Can't set DevOps platform '%s', don't you have more that 1 of that type?", key)
-                raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
-            log.error("%s while creating devops platform %s/%s/%s", util.error_msg(e), key, plt_type, url_or_workspace)
-            raise
+            raise exceptions.UnsupportedOperation(f"Can't set DevOps platform '{key}', don't you have more that 1 of that type?")
         o = DevopsPlatform(endpoint=endpoint, key=key, platform_type=plt_type)
         o.refresh()
         return o

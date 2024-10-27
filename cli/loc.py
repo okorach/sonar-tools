@@ -54,7 +54,7 @@ def __get_csv_row(o: object, **kwargs) -> tuple[list[str], str]:
     try:
         loc = o.loc()
     except (ConnectionError, RequestException) as e:
-        log.warning("%s, LoC export of %s skipped", util.error_msg(e), str(o))
+        util.handle_error(e, f"LoC export of {str(o)}, skipped", catch_all=True)
         loc = ""
     arr = [o.key, loc]
     obj_type = type(o).__name__.lower()
@@ -116,7 +116,7 @@ def __get_object_json_data(o: object, **kwargs) -> dict[str, str]:
     try:
         d["ncloc"] = o.loc()
     except (ConnectionError, RequestException) as e:
-        log.warning("%s, LoC export of %s skipped", util.error_msg(e), str(o))
+        util.handle_error(e, f"LoC export of {str(o)}, skipped", catch_all=True)
     if kwargs[options.WITH_NAME]:
         d[f"{parent_type}Name"] = o.name
         if obj_type in ("branch", "applicationbranch"):
