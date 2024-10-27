@@ -1142,7 +1142,6 @@ class Project(components.Component):
                 return self.post("projects/set_ai_code_assurance", params={"project": self.key, "contains_ai_code": enabled}).ok
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"setting AI code assurance of {str(self)}", catch_all=True)
-                pass
         return False
 
     def get_ai_code_assurance(self) -> Optional[bool]:
@@ -1152,7 +1151,6 @@ class Project(components.Component):
                 return json.loads(self.get("projects/get_ai_code_assurance", params={"project": self.key}).text)["aiCodeAssurance"]
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"getting AI code assurance of {str(self)}", catch_all=True)
-                pass
         return None
 
     def set_quality_profile(self, language: str, quality_profile: str) -> bool:
