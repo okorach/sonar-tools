@@ -311,7 +311,10 @@ def count(endpoint: platform.Platform, **params) -> int:
 def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
     """Returns a list of rules corresponding to certain search filters"""
     if not use_cache or params or len(Rule.CACHE.objects) < 100:
-        return search(endpoint, include_external="true", **params)
+        # TODO: Slice search to not exceed 10000 rules, see https://github.com/okorach/sonar-tools/issues/1466
+        all_rules = search(endpoint, include_external="false", **params)
+        all_rules.update(search(endpoint, include_external="true", **params))
+        return all_rules
     return Rule.CACHE.objects
 
 
