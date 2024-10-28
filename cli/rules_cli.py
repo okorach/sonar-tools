@@ -78,8 +78,8 @@ def main() -> int:
     file = kwargs[options.REPORT_FILE]
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
 
-    params = {}
-    if options.LANGUAGES in kwargs:
+    params = {"include_external": "false"}
+    if kwargs.get(options.LANGUAGES, None):
         params = {"languages": util.list_to_csv(kwargs[options.LANGUAGES])}
     rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
 
