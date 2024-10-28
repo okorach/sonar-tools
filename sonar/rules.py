@@ -227,7 +227,7 @@ class Rule(sq.SqObject):
         tags = self.systags
         if self.tags:
             tags += self.tags
-        data["tags"] = ",".join(tags)
+        data["tags"] = ",".join(sorted(tags))
         data["ruleType"] = "STANDARD"
         if self.is_template:
             data["ruleType"] = "TEMPLATE"
