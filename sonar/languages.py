@@ -89,7 +89,7 @@ def read_list(endpoint: pf.Platform) -> dict[str, Language]:
     data = json.loads(endpoint.get(APIS["list"]).text)
     for lang in data["languages"]:
         _ = Language(endpoint=endpoint, key=lang["key"], name=lang["name"])
-    return Language.CACHE
+    return {o.key: o for o in Language.CACHE.objects.values()}
 
 
 def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Language]:
@@ -103,7 +103,7 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Languag
     with _CLASS_LOCK:
         if len(Language.CACHE) == 0 or not use_cache:
             read_list(endpoint)
-    return Language.CACHE
+    return {o.key: o for o in Language.CACHE.objects.values()}
 
 
 def exists(endpoint: pf.Platform, language: str) -> bool:
@@ -112,4 +112,4 @@ def exists(endpoint: pf.Platform, language: str) -> bool:
     :param str language: The language key
     :return: Whether the language exists
     """
-    return language in [l.key for l in get_list(endpoint).values()]
+    return language in get_list(endpoint)

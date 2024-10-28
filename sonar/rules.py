@@ -27,12 +27,12 @@ from queue import Queue
 import json
 from typing import Optional
 from http import HTTPStatus
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq
 from sonar.util import types, cache
-from sonar import platform, utilities, exceptions
+from sonar import platform, utilities, exceptions, languages
 
 _DETAILS_API = "rules/show"
 _UPDATE_API = "rules/update"
@@ -310,11 +310,18 @@ def count(endpoint: platform.Platform, **params) -> int:
 
 def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> dict[str, Rule]:
     """Returns a list of rules corresponding to certain search filters"""
-    if not use_cache or params or len(Rule.CACHE.objects) < 100:
-        # TODO: Slice search to not exceed 10000 rules, see https://github.com/okorach/sonar-tools/issues/1466
-        all_rules = search(endpoint, include_external="false", **params)
-        all_rules.update(search(endpoint, include_external="true", **params))
-        return all_rules
+    if not use_cache or params or len(Rule.CACHE.objects) < 1000:
+        rule_list = {}
+        lang_list = params.pop("languages", None)
+        if not lang_list:
+            lang_list = languages.get_list(endpoint).keys()
+        incl_ext = params.pop("include_external", None)
+        incl_ext = [incl_ext] if incl_ext else ["false", "true"]
+        for lang_key in lang_list:
+            for inc in incl_ext:
+                rule_list.update(search(endpoint, include_external=inc, **params, languages=lang_key))
+        log.info("Returning a list of %d rules", len(rule_list))
+        return rule_list
     return Rule.CACHE.objects
 
 
