@@ -38,7 +38,20 @@ _DETAILS_API = "rules/show"
 _UPDATE_API = "rules/update"
 _CREATE_API = "rules/create"
 
-TYPES = ("BUG", "VULNERABILITY", "CODE_SMELL", "SECURITY_HOTSPOT")
+_BUG = "BUG"
+_VULN = "VULNERABILITY"
+_CODE_SMELL = "CODE_SMELL"
+_HOTSPOT = "SECURITY_HOTSPOT"
+
+TYPES = (_BUG, _VULN, _CODE_SMELL, _HOTSPOT)
+
+_QUAL_SECURITY = "SECURITY"
+_QUAL_RELIABILITY = "RELIABILITY"
+_QUAL_MAINT = "MAINTAINABILITY"
+
+QUALITIES = (_QUAL_SECURITY, _QUAL_RELIABILITY, _QUAL_MAINT)
+
+TYPE_TO_QUALITY = {_BUG: _QUAL_RELIABILITY, _VULN: _QUAL_SECURITY, _HOTSPOT: _QUAL_SECURITY, _CODE_SMELL: _QUAL_MAINT}
 
 SONAR_REPOS = {
     "abap",
@@ -121,7 +134,21 @@ EXTERNAL_REPOS = {
     "external_stylelint": "css",
 }
 
-CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "name", "ruleType", "tags"]
+CSV_EXPORT_FIELDS = [
+    "key",
+    "language",
+    "repo",
+    "type",
+    "legacySeverity",
+    "securityImpact",
+    "reliabilityImpact",
+    "maintainabilityImpact",
+    "name",
+    "ruleType",
+    "tags",
+]
+
+LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
 
 
 class Rule(sq.SqObject):
@@ -141,6 +168,12 @@ class Rule(sq.SqObject):
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
         self.type = data.get("type", None)
+        if "impacts" in data:
+            self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
+        else:
+            if self.type in TYPES:
+                self._impacts = {TYPE_TO_QUALITY(self.type): self.severity}
+
         self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
         self.systags = data.get("sysTags", [])
         self.name = data.get("name", None)
@@ -152,7 +185,6 @@ class Rule(sq.SqObject):
         self.created_at = data["createdAt"]
         self.is_template = data.get("isTemplate", False)
         self.template_key = data.get("templateKey", None)
-        self._impacts = data.get("impacts", None)
         self._clean_code_attribute = {
             "attribute": data.get("cleanCodeAttribute", None),
             "attribute_category": data.get("cleanCodeAttributeCategory", None),
@@ -233,7 +265,14 @@ class Rule(sq.SqObject):
             data["ruleType"] = "TEMPLATE"
         elif self.template_key:
             data["ruleType"] = "INSTANTIATED"
-        return [data[key] for key in CSV_EXPORT_FIELDS]
+        if self.endpoint.version() > (10, 4, 0):
+            data["legacySeverity"] = data.pop("severity", "")
+            for qual in QUALITIES:
+                data[qual.lower() + "Impact"] = self._impacts.get(qual, "")
+            data = [data[key] for key in CSV_EXPORT_FIELDS]
+        else:
+            data = [data[key] for key in LEGACY_CSV_EXPORT_FIELDS]
+        return data
 
     def export(self, full: bool = False) -> types.ObjectJsonRepr:
         """Returns the JSON corresponding to a rule export"""
@@ -317,8 +356,10 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
             lang_list = languages.get_list(endpoint).keys()
         incl_ext = params.pop("include_external", None)
         incl_ext = [incl_ext] if incl_ext else ["false", "true"]
+        log.info("Getting rules for %d languages", len(lang_list))
         for lang_key in lang_list:
             for inc in incl_ext:
+                log.debug("Getting rules for lang %s with external rules = %s", lang_key, inc)
                 rule_list.update(search(endpoint, include_external=inc, **params, languages=lang_key))
         log.info("Returning a list of %d rules", len(rule_list))
         return rule_list
