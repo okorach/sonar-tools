@@ -236,7 +236,10 @@ def test_findings_filter_on_multiple_criteria() -> None:
         next(csvreader)
         for line in csvreader:
             assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED")
-            assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
+            if util.SQ.version() >= (10, 2, 0):
+                assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
+            else:
+                assert line[TYPE_COL] in ("BUG", "CODE_SMELL")
     util.clean(util.CSV_FILE)
 
 
