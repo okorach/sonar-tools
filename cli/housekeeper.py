@@ -178,7 +178,7 @@ def _delete_objects(problems, mode):
                 if mode != "delete" or obj.delete():
                     deleted_projects[obj.key] = obj
                     deleted_loc += loc
-            if isinstance(obj, tokens.UserToken) and (mode != "delete" or obj.revoke()):
+            if isinstance(obj, (tokens.UserToken, users.User)) and (mode != "delete" or obj.revoke()):
                 revoked_token_count += 1
             elif obj.project().key in deleted_projects:
                 log.info("%s deleted, so no need to delete %s", str(obj.project()), str(obj))
