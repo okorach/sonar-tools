@@ -43,7 +43,10 @@ _VULN = "VULNERABILITY"
 _CODE_SMELL = "CODE_SMELL"
 _HOTSPOT = "SECURITY_HOTSPOT"
 
-TYPES = (_BUG, _VULN, _CODE_SMELL, _HOTSPOT)
+LEGACY_TYPES = (_BUG, _VULN, _CODE_SMELL, _HOTSPOT)
+
+LEGACY_SEVERITIES = ("BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO")
+SEVERITIES = ("BLOCKER", "HIGH", "MEDIUM", "LOW", "INFO")
 
 _QUAL_SECURITY = "SECURITY"
 _QUAL_RELIABILITY = "RELIABILITY"
@@ -171,7 +174,7 @@ class Rule(sq.SqObject):
         if "impacts" in data:
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
         else:
-            if self.type in TYPES:
+            if self.type in LEGACY_TYPES:
                 self._impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
         self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
@@ -243,7 +246,7 @@ class Rule(sq.SqObject):
             endpoint=endpoint,
             templateKey=template_key,
             name=data.get("name", key),
-            severity=data.get("severity", "MAJOR"),
+            severity=data.get("severity", "MEDIUM"),
             params=rule_params,
             markdownDescription=data.get("description", "NO DESCRIPTION"),
         )
