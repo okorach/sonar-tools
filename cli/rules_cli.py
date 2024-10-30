@@ -47,7 +47,10 @@ def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: st
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=separator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
         print("# ", file=fd, end="")
-        csvwriter.writerow(rules.CSV_EXPORT_FIELDS)
+        if list(rule_list.values())[0].endpoint.version() >= (10, 2, 0):
+            csvwriter.writerow(rules.CSV_EXPORT_FIELDS)
+        else:
+            csvwriter.writerow(rules.LEGACY_CSV_EXPORT_FIELDS)
         for rule in rule_list.values():
             csvwriter.writerow([str(x) for x in rule.to_csv()])
 
@@ -79,8 +82,8 @@ def main() -> int:
     fmt = util.deduct_format(kwargs[options.FORMAT], file)
 
     params = {"include_external": "false"}
-    if kwargs.get(options.LANGUAGES, None):
-        params = {"languages": util.list_to_csv(kwargs[options.LANGUAGES])}
+    if options.LANGUAGES in kwargs:
+        params["languages"] = util.list_to_csv(kwargs[options.LANGUAGES])
     rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
 
     try:
@@ -91,7 +94,7 @@ def main() -> int:
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
 
-    log.info("%d rules exported", len(rule_list))
+    log.info("%d rules exported from %s", len(rule_list), endpoint.url)
     util.stop_clock(start_time)
     sys.exit(0)
 
