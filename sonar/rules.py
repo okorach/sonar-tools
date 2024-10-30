@@ -359,7 +359,6 @@ def get_list(endpoint: platform.Platform, use_cache: bool = True, **params) -> d
         log.info("Getting rules for %d languages", len(lang_list))
         for lang_key in lang_list:
             for inc in incl_ext:
-                log.debug("Getting rules for lang %s with external rules = %s", lang_key, inc)
                 rule_list.update(search(endpoint, include_external=inc, **params, languages=lang_key))
         log.info("Returning a list of %d rules", len(rule_list))
         return rule_list
