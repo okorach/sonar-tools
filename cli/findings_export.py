@@ -148,7 +148,8 @@ def __write_header(fd: TextIO, **kwargs) -> None:
         print("[\n", file=fd)
     else:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
-        row = findings.to_csv_header()
+        row = findings.to_csv_header(kwargs["sonar"])
+        row[0] = "# " + row[0]
         if kwargs[options.WITH_URL]:
             row.append("URL")
         csvwriter.writerow(row)
@@ -411,10 +412,11 @@ def main():
 
     log.info("Exporting findings for %d projects with params %s", len(components_list), str(params))
     try:
+        params["sonar"] = sqenv
         store_findings(components_list, params=params)
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while exporting findings: {e}", exit_code=errcodes.OS_ERROR)
-    log.info("Returned findings: %d", TOTAL_FINDINGS)
+    log.info("%d returned findings from %s", TOTAL_FINDINGS, sqenv.url)
     util.stop_clock(start_time)
     sys.exit(0)
 

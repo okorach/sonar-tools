@@ -225,6 +225,9 @@ def main() -> None:
         endpoint.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
     except (options.ArgumentsError, exceptions.ConnectionError) as e:
         util.exit_fatal(e.message, e.errcode)
+    portfolios.Portfolio.CACHE.clear()
+    applications.Application.CACHE.clear()
+    projects.Project.CACHE.clear()
 
     kwargs = __check_options(endpoint.edition(), kwargs)
 

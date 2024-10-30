@@ -25,6 +25,7 @@
 """
 
 import sys
+import csv
 from unittest.mock import patch
 import pytest
 import utilities as util
@@ -35,6 +36,8 @@ from sonar import rules, exceptions, errcodes
 CMD = "rules_cli.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
 JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+
+LANGUAGE_COL = 1
 
 
 def test_rules() -> None:
@@ -68,10 +71,16 @@ def test_rules_filter_language() -> None:
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        fh.readline()  # Skip header
-        for line in fh:
-            (_, lang, _) = line.split(",", maxsplit=2)
-            assert lang in ("py", "jcl")
+        csvreader = csv.reader(fh)
+        line = next(csvreader)
+        assert line[0].startswith("# ")
+        line[0] = line[0][2:]
+        if util.SQ.version() >= (10, 2, 0):
+            assert line == rules.CSV_EXPORT_FIELDS
+        else:
+            assert line == rules.LEGACY_CSV_EXPORT_FIELDS
+        for line in csvreader:
+            assert line[LANGUAGE_COL] in ("py", "jcl")
     util.clean(util.CSV_FILE)
 
 
@@ -84,14 +93,16 @@ def test_rules_misspelled_language_1() -> None:
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        line = fh.readline()  # Skip header
-        assert line[0] == "#"
-        fields = line[2:].split(",")
-        assert fields[0] == "key"
-        assert fields[1] == "language"
-        for line in fh:
-            (_, lang, _) = line.split(",", maxsplit=2)
-            assert lang in ("py", "ts")
+        csvreader = csv.reader(fh)
+        line = next(csvreader)
+        assert line[0].startswith("# ")
+        line[0] = line[0][2:]
+        if util.SQ.version() >= (10, 2, 0):
+            assert line == rules.CSV_EXPORT_FIELDS
+        else:
+            assert line == rules.LEGACY_CSV_EXPORT_FIELDS
+        for line in csvreader:
+            assert line[LANGUAGE_COL] in ("py", "ts")
     util.clean(util.CSV_FILE)
 
 
@@ -155,7 +166,7 @@ def test_get_rule_cache() -> None:
     my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
     assert str(my_rule) == "rule key 'java:S127'"
     new_rule = rules.Rule.get_object(endpoint=util.SQ, key="java:S127")
-    assert my_rule == new_rule
+    assert my_rule is new_rule
 
 
 def test_export_not_full() -> None:
@@ -188,9 +199,12 @@ def test_new_taxo() -> None:
     """test_new_taxo"""
     my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
     if util.SQ.version() >= (10, 2, 0):
-        for i in my_rule.impacts():
-            assert "softwareQuality" in i
-            assert "severity" in i
+        for qual, sev in my_rule.impacts().items():
+            assert qual in rules.QUALITIES
+            assert sev in rules.SEVERITIES
         attr = my_rule.clean_code_attribute()
         assert "attribute" in attr
         assert "attribute_category" in attr
+    else:
+        assert my_rule.severity in rules.LEGACY_SEVERITIES
+        assert my_rule.type in rules.LEGACY_TYPES

@@ -83,7 +83,7 @@ def main() -> int:
 
     params = {"include_external": "false"}
     if options.LANGUAGES in kwargs:
-        params["languages"] = util.list_to_csv(kwargs[options.LANGUAGES])
+        params["languages"] = kwargs[options.LANGUAGES]
     rule_list = rules.get_list(endpoint=endpoint, use_cache=False, **params)
 
     try:
