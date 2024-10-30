@@ -141,14 +141,14 @@ CSV_EXPORT_FIELDS = [
     "key",
     "language",
     "repo",
-    "type",
-    "legacySeverity",
     "securityImpact",
     "reliabilityImpact",
     "maintainabilityImpact",
     "name",
     "ruleType",
     "tags",
+    "legacySeverity",
+    "legacyType",
 ]
 
 LEGACY_CSV_EXPORT_FIELDS = ["key", "language", "repo", "type", "severity", "name", "ruleType", "tags"]
@@ -270,6 +270,7 @@ class Rule(sq.SqObject):
             data["ruleType"] = "INSTANTIATED"
         if self.endpoint.version() > (10, 4, 0):
             data["legacySeverity"] = data.pop("severity", "")
+            data["legacyType"] = data.pop("type", "")
             for qual in QUALITIES:
                 data[qual.lower() + "Impact"] = self._impacts.get(qual, "")
             data = [data[key] for key in CSV_EXPORT_FIELDS]
