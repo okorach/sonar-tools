@@ -73,7 +73,7 @@ class Language(sqobject.SqObject):
         :returns: Nbr of rules for that language (and optional type)
         :rtype: int
         """
-        if not rule_type or rule_type not in rules.TYPES:
+        if not rule_type or rule_type not in rules.LEGACY_TYPES:
             rule_type = "_ALL"
         if not self._nb_rules[rule_type]:
             self._nb_rules[rule_type] = rules.search(self.endpoint, languages=self.key, types=rule_type)
