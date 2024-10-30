@@ -47,8 +47,7 @@ def __write_rules_csv(file: str, rule_list: dict[str, rules.Rule], separator: st
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=separator, quotechar='"', quoting=csv.QUOTE_MINIMAL)
         print("# ", file=fd, end="")
-        version = list(rule_list.values())[0].endpoint.version()
-        if version >= (10, 4, 0):
+        if list(rule_list.values())[0].endpoint.version() >= (10, 2, 0):
             csvwriter.writerow(rules.CSV_EXPORT_FIELDS)
         else:
             csvwriter.writerow(rules.LEGACY_CSV_EXPORT_FIELDS)

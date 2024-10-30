@@ -172,7 +172,7 @@ class Rule(sq.SqObject):
             self._impacts = {imp["softwareQuality"]: imp["severity"] for imp in data["impacts"]}
         else:
             if self.type in TYPES:
-                self._impacts = {TYPE_TO_QUALITY(self.type): self.severity}
+                self._impacts = {TYPE_TO_QUALITY[self.type]: self.severity}
 
         self.tags = None if len(data.get("tags", [])) == 0 else data["tags"]
         self.systags = data.get("sysTags", [])
