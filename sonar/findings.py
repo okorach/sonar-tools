@@ -52,7 +52,27 @@ _JSON_FIELDS_PRIVATE = (
     "_Hotspot__details",
 )
 
-_CSV_FIELDS = (
+LEGACY_CSV_EXPORT_FIELDS = [
+    "key",
+    "rule",
+    "language",
+    "type",
+    "severity",
+    "status",
+    "creationDate",
+    "updateDate",
+    "projectKey",
+    "projectName",
+    "branch",
+    "pullRequest",
+    "file",
+    "line",
+    "effort",
+    "message",
+    "author",
+]
+
+CSV_EXPORT_FIELDS = (
     "key",
     "rule",
     "language",
@@ -72,6 +92,8 @@ _CSV_FIELDS = (
     "effort",
     "message",
     "author",
+    "legacyType",
+    "legacySeverity",
 )
 
 FILTERS = ("statuses", "resolutions", "severities", "languages", "pullRequest", "branch", "tags", "types", "createdBefore", "createdAfter")
@@ -232,11 +254,16 @@ class Finding(sq.SqObject):
         """
         data = self.to_json(without_time)
         data["projectName"] = projects.Project.get_object(endpoint=self.endpoint, key=self.projectKey).name
-        data["securityImpact"] = self.impacts.get("SECURITY", "")
-        data["reliabilityImpact"] = self.impacts.get("RELIABILITY", "")
-        data["maintainabilityImpact"] = self.impacts.get("MAINTAINABILITY", "")
-        data["otherImpact"] = self.impacts.get("NONE", "")
-        return [str(data.get(field, "")) for field in _CSV_FIELDS]
+        if self.endpoint.version() >= (10, 2, 0):
+            data["securityImpact"] = self.impacts.get("SECURITY", "")
+            data["reliabilityImpact"] = self.impacts.get("RELIABILITY", "")
+            data["maintainabilityImpact"] = self.impacts.get("MAINTAINABILITY", "")
+            data["otherImpact"] = self.impacts.get("NONE", "")
+            data["legacyType"] = data.pop("type", "")
+            data["legacySeverity"] = data.pop("severity", "")
+            return [str(data.get(field, "")) for field in CSV_EXPORT_FIELDS]
+        else:
+            return [str(data.get(field, "")) for field in LEGACY_CSV_EXPORT_FIELDS]
 
     def to_json(self, without_time: bool = False) -> types.ObjectJsonRepr:
         """
@@ -484,10 +511,12 @@ def export_findings(endpoint: pf.Platform, project_key: str, branch: str = None,
     return projects.Project(key=project_key, endpoint=endpoint).get_findings(branch, pull_request)
 
 
-def to_csv_header() -> list[str]:
+def to_csv_header(endpoint: pf.Platform) -> list[str]:
     """Returns the list of CSV fields provided by an issue CSV export"""
-    # return "# " + separator.join(_CSV_FIELDS)
-    return list(_CSV_FIELDS)
+    if endpoint.version() >= (10, 2, 0):
+        return list(CSV_EXPORT_FIELDS)
+    else:
+        return list(LEGACY_CSV_EXPORT_FIELDS)
 
 
 def __get_changelog(queue: Queue[Finding], added_after: datetime.datetime = None) -> None:
