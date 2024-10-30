@@ -104,6 +104,7 @@ class Platform:
 
     def verify_connection(self) -> None:
         try:
+            log.info("Connecting to %s", self.url)
             self.get("server/version")
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, "verifying connection", catch_all=True)
