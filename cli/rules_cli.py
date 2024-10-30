@@ -95,7 +95,7 @@ def main() -> int:
     except (PermissionError, FileNotFoundError) as e:
         util.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
 
-    log.info("%d rules exported", len(rule_list))
+    log.info("%d rules exported from %s", len(rule_list), endpoint.url)
     util.stop_clock(start_time)
     sys.exit(0)
 
