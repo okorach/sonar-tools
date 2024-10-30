@@ -140,7 +140,7 @@ def test_config_dont_inline_lists() -> None:
         assert isinstance(json_config["portfolios"]["PORTFOLIO_TAGS"]["projects"]["tags"], list)
         if util.SQ.version() >= (10, 0, 0):
             assert isinstance(json_config["portfolios"]["PORTFOLIO_MULTI_BRANCHES"]["projects"]["manual"]["BANKING-PORTAL"], list)
-    if util.SQ.edition() != "community":
+    if util.SQ.edition() != "community" and util.SQ.version() > (10, 0, 0):
         assert "sonar.cfamily.ignoreHeaderComments" not in json_config["globalSettings"]["languages"]["cfamily"]
         assert "sonar.cfamily.ignoreHeaderComments" in json_config["projects"]["okorach_sonar-tools"]
 

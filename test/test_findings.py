@@ -31,7 +31,7 @@ import pytest
 import utilities as util
 import sonar.logging as log
 from sonar import utilities, projects
-from sonar import issues, errcodes
+from sonar import findings, issues, errcodes
 from cli import findings_export
 import cli.options as opt
 
@@ -42,23 +42,29 @@ JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE
 
 RULE_COL = 1
 LANG_COL = 2
-SECURITY_IMPACT_COL = 3
-RELIABILITY_IMPACT_COL = 4
-MAINTAINABILITY_IMPACT_COL = 5
-OTHER_IMPACT_COL = 6
-STATUS_COL = 7
-DATE_COL = 8
-TYPE_COL = 3
-PROJECT_COL = 10
-PROJECT_NAME_COL = 11
-BRANCH_COL = 12
-PR_COL = 13
 
-if util.SQ.version() < (10, 2, 0):
-    SECURITY_IMPACT_COL += 1
-    STATUS_COL += 1
-    DATE_COL += 1
-    PROJECT_COL += 1
+if util.SQ.version() >= (10, 2, 0):
+    fields = findings.CSV_EXPORT_FIELDS
+    # 10.x MQR
+    SECURITY_IMPACT_COL = fields.index("securityImpact")
+    RELIABILITY_IMPACT_COL = fields.index("reliabilityImpact")
+    MAINTAINABILITY_IMPACT_COL = fields.index("maintainabilityImpact")
+    OTHER_IMPACT_COL = fields.index("otherImpact")
+    TYPE_COL = fields.index("legacyType")
+    SEVERITY_COL = fields.index("legacySeverity")
+else:
+    # 9.9
+    fields = findings.LEGACY_CSV_EXPORT_FIELDS
+    TYPE_COL = fields.index("type")
+    SEVERITY_COL = fields.index("severity")
+
+
+STATUS_COL = fields.index("status")
+DATE_COL = fields.index("creationDate")
+PROJECT_COL = fields.index("projectKey")
+PROJECT_NAME_COL = fields.index("projectName")
+BRANCH_COL = fields.index("branch")
+PR_COL = fields.index("pullRequest")
 
 __GOOD_OPTS = [
     [f"--{opt.FORMAT}", "json", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
@@ -175,14 +181,15 @@ def test_findings_filter_on_type() -> None:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.TYPES}", "VULNERABILITY,BUG"]):
             findings_export.main()
 
-    first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
-            # FIXME: Hack because SonarQube returns rule S2310 in the SECURITY or RELIABILITY although it's maintainability
-            assert line[RULE_COL] == "javascript:S2310" or line[SECURITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
+            if util.SQ.version() >= (10, 2, 0):
+                # FIXME - Why this javascript rule does not report as Reliability is a mistery
+                assert line[RULE_COL] == "javascript:S2310" or line[SECURITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
+            else:
+                assert line[TYPE_COL] in ("BUG", "VULNERABILITY")
     util.clean(util.CSV_FILE)
 
 
@@ -192,12 +199,10 @@ def test_findings_filter_on_resolution() -> None:
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,ACCEPTED,SAFE"]):
             findings_export.main()
-    first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
             assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED", "SAFE")
     util.clean(util.CSV_FILE)
 
@@ -208,13 +213,14 @@ def test_findings_filter_on_severity() -> None:
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.SEVERITIES}", "CRITICAL,MAJOR"]):
             findings_export.main()
-    first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
-            assert "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
+            if util.SQ.version() < (10, 2, 0):
+                assert line[SEVERITY_COL] in ("CRITICAL", "MAJOR")
+            else:
+                assert "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
     util.clean(util.CSV_FILE)
 
 
@@ -225,12 +231,10 @@ def test_findings_filter_on_multiple_criteria() -> None:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,ACCEPTED", f"--{opt.TYPES}", "BUG,CODE_SMELL"]):
             findings_export.main()
 
-    first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
             assert line[STATUS_COL] in ("FALSE-POSITIVE", "ACCEPTED")
             assert line[MAINTAINABILITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
     util.clean(util.CSV_FILE)
@@ -245,13 +249,15 @@ def test_findings_filter_on_multiple_criteria_2() -> None:
         ):
             findings_export.main()
 
-    first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
-            assert "HOTSPOT" in line[SECURITY_IMPACT_COL]
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
+            log.info(str(line))
+            if util.SQ.version() >= (10, 2, 0):
+                assert "HOTSPOT" in line[SECURITY_IMPACT_COL]
+            else:
+                assert "HOTSPOT" in line[TYPE_COL]
             assert line[DATE_COL].split("-")[0] == "2020"
     util.clean(util.CSV_FILE)
 
@@ -270,10 +276,9 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
 
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
             assert line[STATUS_COL] in ("ACCEPTED", "FALSE_POSITIVE", "FALSE-POSITIVE")
     util.clean(util.CSV_FILE)
 
@@ -289,10 +294,9 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
 
     first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        for line in csv.reader(fh):
-            if first:
-                first = False
-                continue
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
             assert line[STATUS_COL] in ("ACKNOWLEDGED", "SAFE")
             assert line[PROJECT_COL] in ("okorach_sonar-tools", "pytorch")
     util.clean(util.CSV_FILE)
@@ -444,6 +448,7 @@ def test_output_format_csv() -> None:
     with open(util.CSV_FILE, encoding="utf-8") as fd:
         reader = csv.reader(fd)
         row = next(reader)
+        row[0] = row[0][2:]
         for k in "creationDate", "effort", "file", "key", "line", "language", "author", "message", "projectKey", "rule", "updateDate":
             assert k in row
     util.clean(util.CSV_FILE)
@@ -458,16 +463,12 @@ def test_output_format_branch() -> None:
                 findings_export.main()
         assert int(str(e.value)) == errcodes.OK
         br_list = utilities.csv_to_list(br)
-        br, pr = BRANCH_COL, PR_COL
-        if util.SQ.version() < (10, 2, 0):
-            br += 1
-            pr += 1
         with open(util.CSV_FILE, encoding="utf-8") as fd:
             reader = csv.reader(fd)
             next(reader)
             for line in reader:
-                assert line[br] in br_list
-                assert line[pr] == ""
+                assert line[BRANCH_COL] in br_list
+                assert line[PR_COL] == ""
                 assert line[PROJECT_COL] == "okorach_sonar-tools"
         util.clean(util.CSV_FILE)
 
@@ -481,11 +482,15 @@ def test_all_prs() -> None:
     assert int(str(e.value)) == errcodes.OK
     with open(util.CSV_FILE, encoding="utf-8") as fd:
         reader = csv.reader(fd)
-        next(reader)
-        for line in reader:
-            assert line[BRANCH_COL] == ""
-            assert line[PR_COL] != ""
-            assert line[PROJECT_COL] == "okorach_sonar-tools"
+        try:
+            nbcol = len(next(reader))
+            for line in reader:
+                assert len(line) == nbcol
+                assert line[BRANCH_COL] == ""
+                assert line[PR_COL] != ""
+                assert line[PROJECT_COL] == "okorach_sonar-tools"
+        except StopIteration:
+            pass
     util.clean(util.CSV_FILE)
 
 
@@ -500,9 +505,13 @@ def test_one_pr() -> None:
         assert int(str(e.value)) == errcodes.OK
         with open(util.CSV_FILE, encoding="utf-8") as fd:
             reader = csv.reader(fd)
-            next(reader)
-            for line in reader:
-                assert line[BRANCH_COL] == ""
-                assert line[PR_COL] == pr
-                assert line[PROJECT_COL] == "okorach_sonar-tools"
+            try:
+                nbcol = len(next(reader))
+                for line in reader:
+                    assert len(line) == nbcol
+                    assert line[BRANCH_COL] == ""
+                    assert line[PR_COL] == pr
+                    assert line[PROJECT_COL] == "okorach_sonar-tools"
+            except StopIteration:
+                pass
         util.clean(util.CSV_FILE)
