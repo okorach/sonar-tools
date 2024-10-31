@@ -370,14 +370,14 @@ class Finding(sq.SqObject):
         :return: the set of users that modified the finding
         :rtype: set(str)
         """
-        return set([c.author() for c in self.changelog().values()])
+        return {c.author() for c in self.changelog().values()}
 
     def commenters(self) -> set[str]:
         """
         :return: the set of users that commented the finding
         :rtype: set(str)
         """
-        return set([v["user"] for v in self.comments() if "user" in v])
+        return {v["user"] for v in self.comments() if "user" in v}
 
     def can_be_synced(self, user_list: list[str]) -> bool:
         """
