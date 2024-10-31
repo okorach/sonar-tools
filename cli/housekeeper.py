@@ -31,7 +31,7 @@ import logging
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, tokens, users, projects, branches, pull_requests, version
+from sonar import platform, tokens, users, projects, branches, version
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import config, problem
@@ -83,7 +83,8 @@ def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads
     return problems
 
 
-def get_user_problems(max_days, endpoint):
+def get_user_problems(max_days: int, endpoint: platform.Platform):
+    """Collects problems related to user accounts"""
     settings = {
         "audit.tokens.maxAge": max_days,
         "audit.tokens.maxUnusedAge": 90,
@@ -91,22 +92,18 @@ def get_user_problems(max_days, endpoint):
     }
     settings = config.load(config_name="sonar-audit", settings=settings)
     user_problems = users.audit(endpoint=endpoint, audit_settings=settings)
-    nb_problems = len(user_problems)
-    loglevel = logging.WARNING
-    if nb_problems == 0:
-        loglevel = logging.INFO
-    log.log(loglevel, "%d user tokens older than %d days, or unused since 90 days, found during audit", nb_problems, max_days)
+    loglevel = log.WARNING if len(user_problems) > 0 else log.INFO
+    log.log(loglevel, "%d user tokens older than %d days, or unused since 90 days, found during audit", len(user_problems), max_days)
     # group_problems = groups.audit(endpoint=endpoint, audit_settings=settings)
     # user_problems += group_problems
     # nb_problems = len(group_problems)
-    # loglevel = logging.WARNING
-    # if nb_problems == 0:
-    #     loglevel = logging.INFO
+    # loglevel = log.WARNING if nb_problems > 0 else log.INFO
     # log.log(loglevel, "%d empty groups found during audit", nb_problems)
     return user_problems
 
 
 def _parse_arguments():
+    """Parses CLI arguments"""
     _DEFAULT_PROJECT_OBSOLESCENCE = 365
     _DEFAULT_BRANCH_OBSOLESCENCE = 90
     _DEFAULT_PR_OBSOLESCENCE = 30
@@ -158,7 +155,8 @@ def _parse_arguments():
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def _delete_objects(problems, mode):
+def _delete_objects(problems: problem.Problem, mode: str):
+    """Deletes objects (that should be housekept)"""
     revoked_token_count = 0
     deleted_projects = {}
     deleted_branch_count = 0
