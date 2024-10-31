@@ -304,7 +304,7 @@ class Project(components.Component):
         if self.endpoint.edition() == "community":
             self._ncloc_with_branches = super().loc()
         else:
-            self._ncloc_with_branches = max([b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values())])
+            self._ncloc_with_branches = max(b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values()))
         return self._ncloc_with_branches
 
     def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
@@ -730,20 +730,17 @@ class Project(components.Component):
                 objects = self.branches()
             else:
                 try:
-                    for b in br:
-                        objects[b] = branches.Branch.get_object(concerned_object=self, branch_name=b)
+                    objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
                 except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
                     log.error(e.message)
         if pr:
             if "*" in pr:
-                pr = self.pull_requests()
-                objects = {**objects, **pr}
+                objects.update(self.pull_requests())
             else:
-                for p in pr:
-                    try:
-                        objects[p] = pull_requests.get_object(project=self, pull_request_key=p)
-                    except exceptions.ObjectNotFound as e:
-                        log.error(e.message)
+                try:
+                    objects.update({p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr})
+                except exceptions.ObjectNotFound as e:
+                    log.error(e.message)
         return objects
 
     def get_findings(self, branch: str = None, pr: str = None) -> dict[str, object]:

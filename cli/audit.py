@@ -53,7 +53,8 @@ _ALL_AUDITABLE = [
 TOOL_NAME = "sonar-audit"
 
 
-def _audit_sif(sysinfo, audit_settings):
+def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str, list[problem.Problem]]:
+    """Audits a SIF and return found problems"""
     log.info("Auditing SIF file '%s'", sysinfo)
     try:
         with open(sysinfo, "r", encoding="utf-8") as f:
@@ -68,8 +69,7 @@ def _audit_sif(sysinfo, audit_settings):
         log.critical("No permission to open file %s", sysinfo)
         raise
     sif_obj = sif.Sif(sysinfo)
-    server_id = sif_obj.server_id()
-    return (server_id, sif_obj.audit(audit_settings))
+    return sif_obj.server_id(), sif_obj.audit(audit_settings)
 
 
 def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
@@ -155,7 +155,8 @@ def _audit_sq(
     return problems
 
 
-def __parser_args(desc):
+def __parser_args(desc: str) -> object:
+    """Adds all sonar-audit CLI arguments and parse them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("csv", "json"))
@@ -176,67 +177,64 @@ def __parser_args(desc):
     return args
 
 
-def main():
+def __check_keys_exist(key_list: list[str], sq: platform.Platform, what: list[str]) -> None:
+    """Checks if project keys exist"""
+    if key_list and len(key_list) > 0 and "projects" in what:
+        missing_proj = [key for key in key_list if not projects.exists(key, sq)]
+        if len(missing_proj) > 0:
+            raise exceptions.ObjectNotFound(missing_proj[0], f"Projects key {', '.join(missing_proj)} do(es) not exist")
+
+
+def main() -> None:
+    """Main entry point"""
     start_time = util.start_clock()
+    errcode = errcodes.OS_ERROR
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
-    except options.ArgumentsError as e:
-        util.exit_fatal(e.message, e.errcode)
+        settings = config.load(TOOL_NAME)
+        file = ofile = kwargs.pop(options.REPORT_FILE)
+        settings.update(
+            {
+                "FILE": file,
+                "CSV_DELIMITER": kwargs[options.CSV_SEPARATOR],
+                "WITH_URL": kwargs[options.WITH_URL],
+                "threads": kwargs[options.NBR_THREADS],
+            }
+        )
+        if kwargs.get("config", False):
+            config.configure()
+            sys.exit(errcodes.OK)
 
-    settings = config.load(TOOL_NAME)
-    settings["threads"] = kwargs[options.NBR_THREADS]
-    if kwargs.get("config", False):
-        config.configure()
-        sys.exit(0)
-
-    ofile = kwargs.pop(options.REPORT_FILE)
-    settings["FILE"] = ofile
-    settings["CSV_DELIMITER"] = kwargs[options.CSV_SEPARATOR]
-    settings["WITH_URL"] = kwargs[options.WITH_URL]
-
-    if kwargs.get("sif", None) is not None:
-        err = errcodes.SIF_AUDIT_ERROR
-        try:
-            (server_id, problems) = _audit_sif(kwargs["sif"], settings)
-            settings["SERVER_ID"] = server_id
-        except json.decoder.JSONDecodeError:
-            util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", err)
-        except FileNotFoundError:
-            util.exit_fatal(f"File {kwargs['sif']} does not exist, aborting...", err)
-        except PermissionError:
-            util.exit_fatal(f"No permission to open file {kwargs['sif']}, aborting...", err)
-        except sif.NotSystemInfo:
-            util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", err)
-    else:
-        try:
+        if "sif" in kwargs:
+            file = kwargs["sif"]
+            errcode = errcodes.SIF_AUDIT_ERROR
+            (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
+        else:
             sq = platform.Platform(**kwargs)
             sq.verify_connection()
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        except exceptions.ConnectionError as e:
-            util.exit_fatal(e.message, e.errcode)
-        server_id = sq.server_id()
-        settings["SERVER_ID"] = server_id
-        util.check_token(kwargs[options.TOKEN])
-        key_list = kwargs[options.KEYS]
-        if key_list is not None and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs[options.WHAT]):
-            for key in key_list:
-                if not projects.exists(key, sq):
-                    util.exit_fatal(f"Project key '{key}' does not exist", errcodes.NO_SUCH_KEY)
-        try:
-            problems = _audit_sq(sq, settings, what_to_audit=util.check_what(kwargs[options.WHAT], _ALL_AUDITABLE, "audited"), key_list=key_list)
-        except exceptions.ObjectNotFound as e:
-            util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
-
-    if problems:
-        log.warning("%d issues found during audit", len(problems))
-    else:
-        log.info("%d issues found during audit", len(problems))
-    try:
-        problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs[options.FORMAT], ofile))
+            settings["SERVER_ID"] = sq.server_id()
+            __check_keys_exist(kwargs[options.KEYS], sq, kwargs[options.WHAT])
+            problems = _audit_sq(
+                sq, settings, what_to_audit=util.check_what(kwargs[options.WHAT], _ALL_AUDITABLE, "audited"), key_list=kwargs[options.KEYS]
+            )
+            loglevel = log.WARNING if len(problems) > 0 else log.INFO
+            log.log(loglevel, "%d issues found during audit", len(problems))
+            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], file))
+    except exceptions.ConnectionError as e:
+        util.exit_fatal(e.message, e.errcode)
+    except exceptions.ObjectNotFound as e:
+        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
     except (PermissionError, FileNotFoundError) as e:
-        util.exit_fatal(f"OS error while writing file '{ofile}': {e}", exit_code=errcodes.OS_ERROR)
+        util.exit_fatal(f"OS error while writing file '{file}': {e}", errcode)
+    except options.ArgumentsError as e:
+        util.exit_fatal(e.message, e.errcode)
+    except json.decoder.JSONDecodeError:
+        util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", errcodes.SIF_AUDIT_ERROR)
+    except sif.NotSystemInfo:
+        util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", errcodes.SIF_AUDIT_ERROR)
     util.stop_clock(start_time)
-    sys.exit(0)
+    sys.exit(errcodes.OK)
 
 
 if __name__ == "__main__":

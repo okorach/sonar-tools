@@ -138,7 +138,7 @@ WHAT_APPS = "applications"
 WHAT_PORTFOLIOS = "portfolios"
 WHAT_AUDITABLE = [WHAT_SETTINGS, WHAT_USERS, WHAT_GROUPS, WHAT_GATES, WHAT_PROFILES, WHAT_PROJECTS, WHAT_APPS, WHAT_PORTFOLIOS]
 
-MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS)
+MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS, WHAT)
 
 COMPONENT_TYPE = "compType"
 COMPONENT_TYPES = ("projects", "apps", "portfolios")
@@ -187,10 +187,8 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
     log.set_debug_level(kwargs[VERBOSE])
     del kwargs[VERBOSE]
-    if is_migration:
-        log.info("sonar-migration version %s", version.MIGRATION_TOOL_VERSION)
-    else:
-        log.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    tool = "sonar-migration" if is_migration else "sonar-tools"
+    log.info("%s version %s", tool, version.MIGRATION_TOOL_VERSION)
     if os.getenv("IN_DOCKER", "No") == "Yes":
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
     if log.get_level() <= log.DEBUG:
@@ -204,10 +202,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
         __check_file_writeable(kwargs.get(REPORT_FILE, None))
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
-        if is_migration:
-            utilities.check_last_version("https://pypi.org/simple/sonar-migration")
-        else:
-            utilities.check_last_version("https://pypi.org/simple/sonar-tools")
+        utilities.check_last_version(f"https://pypi.org/simple/{tool}")
     kwargs.pop(SKIP_VERSION_CHECK, None)
     if utilities.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
         raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarCloud")
@@ -261,17 +256,6 @@ def add_url_arg(parser: ArgumentParser) -> ArgumentParser:
         default=False,
         action="store_true",
         help="Also list the URL of the objects",
-    )
-    return parser
-
-
-def add_what_arg(parser: ArgumentParser, allowed_list: tuple[str], default_value: str) -> ArgumentParser:
-    """Adds the option to export URL of objects"""
-    parser.add_argument(
-        f"--{WHAT}",
-        required=False,
-        default=default_value,
-        help=f"List of things to process among {','.join(allowed_list)}",
     )
     return parser
 
@@ -424,10 +408,10 @@ def set_output_file_args(parser: ArgumentParser, help_str: str = None, allowed_f
 
 
 def set_what(parser: ArgumentParser, what_list: list[str], operation: str) -> ArgumentParser:
-    """Sets the argumant to select what to audit or to export as config"""
+    """Sets the argument to select what to audit or to export as config"""
     parser.add_argument(
         "-w",
-        "--what",
+        f"--{WHAT}",
         required=False,
         default="",
         help=f"What to {operation} {','.join(what_list)}",

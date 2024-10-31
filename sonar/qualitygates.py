@@ -29,7 +29,7 @@ from typing import Union, Optional
 
 from http import HTTPStatus
 import json
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 import sonar.sqobject as sq

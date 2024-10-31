@@ -173,18 +173,19 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
         csvwriter.writerow(row)
-        for component_data in data:
-            key = component_data["key"]
-            name = component_data["name"]
-            branch = component_data.get("branch", "")
-            url = component_data.get("url", "")
+        for obj_data in data:
             hist_data = {}
-            if "history" not in component_data:
+            if "history" not in obj_data:
                 continue
-            for h in component_data["history"]:
+            for h in obj_data["history"]:
                 ts = __get_ts(h[0], **kwargs)
                 if ts not in hist_data:
-                    hist_data[ts] = {"key": key, "name": name, "branch": branch, "url": url}
+                    hist_data[ts] = {
+                        "key": obj_data["key"],
+                        "name": obj_data["name"],
+                        "branch": obj_data.get("branch", ""),
+                        "url": obj_data.get("url", ""),
+                    }
                 hist_data[ts].update({h[1]: h[2]})
 
             for ts, row_data in hist_data.items():

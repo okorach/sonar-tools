@@ -30,16 +30,19 @@
 
 import sys
 import datetime
+from typing import Optional
 
 from cli import options
 import sonar.logging as log
-from sonar import platform, syncer, exceptions, projects, branches, errcodes, version
+import sonar.platform as pf
+from sonar import syncer, exceptions, projects, branches, version
 import sonar.utilities as util
 
 TOOL_NAME = "sonar-findings-sync"
 
 
-def __parse_args(desc):
+def __parse_args(desc: str) -> object:
+    """Defines CLI arguments and parses them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json,"))
@@ -102,6 +105,46 @@ def __dump_report(report, file):
             print(txt, file=fh)
 
 
+def __since_date(**kwargs) -> Optional[datetime.datetime]:
+    """Returns the CLI since date if present None otherwise"""
+    since = None
+    if kwargs["sinceDate"] is not None:
+        try:
+            since = datetime.datetime.strptime(kwargs["sinceDate"], util.SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
+        except (ValueError, TypeError):
+            log.warning("sinceDate value '%s' is not in the expected YYYY-MM-DD date format, ignored", kwargs["sinceDate"])
+    return since
+
+
+def __check_comparison_params(source_env: pf.Platform, target_env: pf.Platform, **kwargs) -> tuple[str, str, Optional[str], Optional[str]]:
+    """Check input parameters and verfiy they are correct for the desired comparison"""
+    source_key = kwargs[options.KEYS][0]
+    target_key = kwargs.get("targetProjectKey", source_key)
+    source_url = kwargs[options.URL]
+    source_branch = kwargs.get("sourceBranch", None)
+    target_branch = kwargs.get("targetBranch", None)
+
+    if source_url == kwargs.get("urlTarget", source_url):
+        if source_key == target_key:
+            if source_branch is None or target_branch is None:
+                raise options.ArgumentsError("Branches must be specified when sync'ing within a same project")
+            if source_branch == target_branch:
+                raise options.ArgumentsError("Specified branches must different when sync'ing within a same project")
+        else:
+            if source_branch and not target_branch or not source_branch and target_branch:
+                raise options.ArgumentsError("One branch or no branch should be specified for each source and target project, aborting...")
+    else:
+        if source_branch and not target_branch or not source_branch and target_branch:
+            raise options.ArgumentsError("One branch or no branch should be specified for each source and target project, aborting...")
+
+    if not projects.exists(source_key, endpoint=source_env):
+        raise exceptions.ObjectNotFound(source_key, f"Project key '{source_key}' does not exist")
+    if not projects.exists(target_key, endpoint=target_env):
+        raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
+
+    return source_key, target_key, source_branch, target_branch
+
+
 def main() -> int:
     """Main entry point"""
     start_time = util.start_clock()
@@ -111,69 +154,41 @@ def main() -> int:
             "see: https://pypi.org/project/sonar-tools/#sonar-issues-sync"
         )
         params = util.convert_args(args)
-        source_env = platform.Platform(**params)
+        source_env = pf.Platform(**params)
         source_env.verify_connection()
         source_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-        util.exit_fatal(e.message, e.errcode)
 
-    source_key = params[options.KEYS][0]
-    target_key = params.get("targetProjectKey", None)
-    if target_key is None:
-        target_key = source_key
-    source_url = params[options.URL]
-    source_branch = params.get("sourceBranch", None)
-    target_branch = params.get("targetBranch", None)
-    target_url = params.get("urlTarget", None)
-    if target_url is None:
-        if source_key == target_key and source_branch is None or target_branch is None:
-            util.exit_fatal("Branches must be specified when sync'ing within a same project", errcodes.ARGS_ERROR)
-        target_env, target_url = source_env, source_url
-    else:
         util.check_token(args.tokenTarget)
-        try:
-            target_params = util.convert_args(args, second_platform=True)
-            target_env = platform.Platform(**target_params)
-            target_env.verify_connection()
-            target_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-        except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
-            util.exit_fatal(e.message, e.errcode)
 
-    params["login"] = target_env.user()
-    if params["login"] == "admin":
-        util.exit_fatal("sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync", errcodes.ARGS_ERROR)
+        target_params = util.convert_args(args, second_platform=True)
+        target_env = pf.Platform(**target_params)
+        target_env.verify_connection()
+        target_env.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
 
-    since = None
-    if params["sinceDate"] is not None:
-        try:
-            since = datetime.datetime.strptime(params["sinceDate"], util.SQ_DATE_FORMAT).replace(tzinfo=datetime.timezone.utc)
-        except (ValueError, TypeError):
-            log.warning("sinceDate value '%s' is not in the expected YYYY-MM-DD date format, ignored", params["sinceDate"])
-    settings = {
-        syncer.SYNC_ADD_COMMENTS: not params["nocomment"],
-        syncer.SYNC_ADD_LINK: not params["nolink"],
-        syncer.SYNC_ASSIGN: True,
-        syncer.SYNC_IGNORE_COMPONENTS: False,
-        syncer.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(params["login"]),
-        syncer.SYNC_SINCE_DATE: since,
-        syncer.SYNC_THREADS: params["threads"],
-    }
+        source_key, target_key, source_branch, target_branch = __check_comparison_params(source_env, target_env, **params)
 
-    report = []
-    counters = {}
-    try:
-        if not projects.exists(source_key, endpoint=source_env):
-            raise exceptions.ObjectNotFound(source_key, f"Project key '{source_key}' does not exist")
-        if not projects.exists(target_key, endpoint=target_env):
-            raise exceptions.ObjectNotFound(source_key, f"Project key '{target_key}' does not exist")
-        if source_branch is not None and target_branch is not None:
+        params["login"] = target_env.user()
+        if params["login"] == "admin":
+            raise options.ArgumentsError("sonar-findings-sync should not be run with 'admin' user token, but with an account dedicated to sync")
+
+        settings = {
+            syncer.SYNC_ADD_COMMENTS: not params["nocomment"],
+            syncer.SYNC_ADD_LINK: not params["nolink"],
+            syncer.SYNC_ASSIGN: True,
+            syncer.SYNC_IGNORE_COMPONENTS: False,
+            syncer.SYNC_SERVICE_ACCOUNTS: util.csv_to_list(params["login"]),
+            syncer.SYNC_SINCE_DATE: __since_date(**params),
+            syncer.SYNC_THREADS: params["threads"],
+        }
+
+        report = []
+        counters = {}
+
+        if source_branch and target_branch:
             log.info("Syncing findings between 2 branches")
-            if source_url != target_url or source_branch != target_branch:
-                src_branch = branches.Branch.get_object(projects.Project.get_object(source_env, source_key), source_branch)
-                tgt_branch = branches.Branch.get_object(projects.Project.get_object(target_env, target_key), target_branch)
-                (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
-            else:
-                log.critical("Can't sync same source and target branch or a same project, aborting...")
+            src_branch = branches.Branch.get_object(projects.Project.get_object(source_env, source_key), source_branch)
+            tgt_branch = branches.Branch.get_object(projects.Project.get_object(target_env, target_key), target_branch)
+            (report, counters) = src_branch.sync(tgt_branch, sync_settings=settings)
         else:
             log.info("Syncing findings between 2 projects (branch by branch)")
             settings[syncer.SYNC_IGNORE_COMPONENTS] = target_key != source_key
@@ -189,10 +204,9 @@ def main() -> int:
         log.info("%d issues could not be synchronized because the match was approximate", counters.get("nb_approx_match", 0))
         log.info("%d issues could not be synchronized because target issue already had a changelog", counters.get("nb_tgt_has_changelog", 0))
 
-    except exceptions.ObjectNotFound as e:
-        util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
-    except exceptions.UnsupportedOperation as e:
-        util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
+    except (exceptions.SonarException, options.ArgumentsError) as e:
+        util.exit_fatal(e.message, e.errcode)
+
     util.stop_clock(start_time)
     sys.exit(0)
 

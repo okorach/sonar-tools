@@ -30,7 +30,7 @@ from requests.utils import quote
 import sonar.logging as log
 from sonar.util import types, cache
 
-from sonar.components import Component, KEY_SEPARATOR
+from sonar.components import Component
 
 from sonar.applications import Application as App
 from sonar.branches import Branch

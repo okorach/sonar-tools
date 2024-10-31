@@ -179,8 +179,8 @@ class Finding(sq.SqObject):
             self.impacts = {i["softwareQuality"]: i["severity"] for i in jsondata["impacts"]}
         else:
             self.impacts = {TYPE_QUALITY_MAPPING[jsondata.get("type", TYPE_NONE)]: SEVERITY_MAPPING[jsondata.get("severity", SEVERITY_NONE)]}
-            self.type = jsondata.get("type", TYPE_NONE)
-            self.severity = jsondata.get("severity", SEVERITY_NONE)
+        self.type = jsondata.get("type", TYPE_NONE)
+        self.severity = jsondata.get("severity", SEVERITY_NONE)
 
         self.message = jsondata.get("message", None)
         self.status = jsondata["status"]
@@ -370,14 +370,14 @@ class Finding(sq.SqObject):
         :return: the set of users that modified the finding
         :rtype: set(str)
         """
-        return set([c.author() for c in self.changelog().values()])
+        return {c.author() for c in self.changelog().values()}
 
     def commenters(self) -> set[str]:
         """
         :return: the set of users that commented the finding
         :rtype: set(str)
         """
-        return set([v["user"] for v in self.comments() if "user" in v])
+        return {v["user"] for v in self.comments() if "user" in v}
 
     def can_be_synced(self, user_list: list[str]) -> bool:
         """

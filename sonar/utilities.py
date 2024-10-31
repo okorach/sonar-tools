@@ -62,6 +62,7 @@ def check_last_version(package_url: str) -> None:
 
 
 def token_type(token: str) -> str:
+    """Returns the type of token"""
     if token[0:4] == "sqa_":
         return "global-analysis"
     elif token[0:4] == "sqp_":
@@ -70,7 +71,7 @@ def token_type(token: str) -> str:
         return "user"
 
 
-def check_token(token: str, is_sonarcloud: bool = False) -> None:
+def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     """Verifies if a proper user token has been provided"""
     if token is None:
         exit_fatal(
@@ -106,8 +107,11 @@ def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str]:
             return string
 
 
-def date_to_string(date: datetime.datetime, with_time=True) -> str:
-    return "" if date is None else date.strftime(SQ_DATETIME_FORMAT if with_time else SQ_DATE_FORMAT)
+def date_to_string(date: Optional[datetime.datetime], with_time: bool = True) -> str:
+    """Converts a date to a string"""
+    if not date:
+        return ""
+    return date.strftime(SQ_DATETIME_FORMAT if with_time else SQ_DATE_FORMAT)
 
 
 def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[datetime.datetime] = None) -> Union[int, datetime.timedelta]:

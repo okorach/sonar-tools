@@ -25,7 +25,7 @@
 
 import datetime
 import re
-from typing import Union, Optional
+from typing import Optional
 from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
@@ -38,10 +38,6 @@ import sonar.sif_node as sifn
 import sonar.dce.app_nodes as appnodes
 import sonar.dce.search_nodes as searchnodes
 
-_RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
-_RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
-_RELEASE_DATE_8_9 = datetime.datetime(2021, 5, 4) + relativedelta(months=+6)
-
 _APP_NODES = "Application Nodes"
 _ES_NODES = "Search Nodes"
 _SYSTEM = "System"
@@ -50,19 +46,21 @@ _STATS = "Statistics"
 _STORE_SIZE = "Store Size"
 _SEARCH_STATE = "Search State"
 
-_JVM_OPTS = ("sonar.{}.javaOpts", "sonar.{}.javaAdditionalOpts")
-
 _MIN_DATE_LOG4SHELL = datetime.datetime(2021, 12, 1)
 
 
 class NotSystemInfo(Exception):
-    def __init__(self, message):
+    """Exception for JSON not being a SIF"""
+
+    def __init__(self, message: str) -> None:
         super().__init__()
         self.message = message
 
 
-class Sif:
-    def __init__(self, json_sif, concerned_object=None):
+class Sif(object):
+    """Abstraction of SIF file"""
+
+    def __init__(self, json_sif: dict[str, str], concerned_object: object = None) -> None:
         if not is_sysinfo(json_sif):
             log.critical("Provided JSON does not seem to be a system info")
             raise NotSystemInfo("JSON is not a system info nor a support info")
@@ -71,9 +69,11 @@ class Sif:
         self._url = None
 
     def __str__(self) -> str:
+        """str() implementation"""
         return str(self.concerned_object)
 
-    def url(self):
+    def url(self) -> str:
+        """Returns the SQ URL of the SQ instance represented by the SIF"""
         if not self._url:
             if self.concerned_object:
                 self._url = self.concerned_object.url
@@ -81,7 +81,8 @@ class Sif:
                 self._url = self.json.get("Settings", {}).get("sonar.core.serverBaseURL", "")
         return self._url
 
-    def edition(self) -> Union[str, None]:
+    def edition(self) -> Optional[str]:
+        """Returns the edition of the SQ instance represented by the SIF"""
         ed = None
         for section in (_STATS, _SYSTEM, "License"):
             for subsection in ("edition", "Edition"):
@@ -99,35 +100,41 @@ class Sif:
         # Old SIFs could return "Enterprise Edition"
         return util.edition_normalize(ed)
 
-    def database(self):
+    def database(self) -> str:
+        """Returns the databse engine of the SQ instance represented by the SIF"""
         if self.version() < (9, 7, 0):
             return self.json[_STATS]["database"]["name"]
         else:
             return self.json["Database"]["Database"]
 
-    def plugins(self):
+    def plugins(self) -> dict[str, str]:
+        """Returns plugins installed on the SQ instance represented by the SIF"""
         if self.version() < (9, 7, 0):
             return self.json[_STATS]["plugins"]
         else:
             return self.json["Plugins"]
 
-    def license_type(self):
+    def license_type(self) -> Optional[str]:
+        """Returns the SIF SQ license type (prod or test)"""
         if "License" not in self.json:
             return None
         elif "type" in self.json["License"]:
             return self.json["License"]["type"]
         return None
 
-    def version(self, digits=3, as_string=False):
+    def version(self) -> Optional[tuple[int, ...]]:
+        """Returns the version of the SQ instance represented by the SIF"""
         try:
-            return util.string_to_version(self.json["System"]["Version"], digits=digits, as_string=as_string)
+            return util.string_to_version(self.json["System"]["Version"], digits=3, as_string=False)
         except KeyError:
             return None
 
-    def server_id(self):
+    def server_id(self) -> Optional[str]:
+        """Returns the Server ID of teh SQ instance represented by the SIF"""
         return self.__get_field("Server ID")
 
-    def start_time(self):
+    def start_time(self) -> Optional[datetime.datetime]:
+        """Returns the last start time of the SQ instance represented by the SIF"""
         try:
             return util.string_to_date(self.json[_SETTINGS]["sonar.core.startTime"]).replace(tzinfo=None)
         except KeyError:
@@ -137,7 +144,8 @@ class Sif:
         except KeyError:
             return None
 
-    def store_size(self):
+    def store_size(self) -> Optional[int]:
+        """Returns the store size (ES index size) of the SQ instance represented by the SIF"""
         setting = None
         try:
             setting = self.json[_SEARCH_STATE][_STORE_SIZE]
@@ -172,7 +180,8 @@ class Sif:
             )
         return problems
 
-    def __audit_branch_use(self):
+    def __audit_branch_use(self) -> list[Problem]:
+        """Audits whether branch analysis is used or not"""
         if self.edition() == "community":
             return []
         log.info("Auditing usage of branch analysis")
@@ -185,22 +194,19 @@ class Sif:
             log.info("Branch usage information not in SIF, ignoring audit...")
             return []
 
-    def __audit_undetected_scm(self):
+    def __audit_undetected_scm(self) -> list[Problem]:
+        """Audits a SIF for presence of projects with undetected SCM"""
         log.info("Auditing SCM integration")
         try:
-            scm_count, undetected_scm_count = 0, 0
-            for scm in self.json[_STATS]["projectCountByScm"]:
-                scm_count += scm["count"]
-                if scm["scm"] == "undetected":
-                    undetected_scm_count = scm["count"]
-            if undetected_scm_count == 0:
-                return []
-            return [Problem(get_rule(RuleId.SIF_UNDETECTED_SCM), self, undetected_scm_count)]
+            undetected_scm_count = sum([scm["count"] for scm in self.json[_STATS]["projectCountByScm"] if scm["scm"] == "undetected"])
+            if undetected_scm_count > 0:
+                return [Problem(get_rule(RuleId.SIF_UNDETECTED_SCM), self, undetected_scm_count)]
         except KeyError:
             log.info("SCM information not in SIF, ignoring audit...")
-            return []
+        return []
 
-    def __get_field(self, name, node_type=_APP_NODES):
+    def __get_field(self, name: str, node_type: str = _APP_NODES) -> Optional[str]:
+        """Returns a particular field of the JSON"""
         if _SYSTEM in self.json and name in self.json[_SYSTEM]:
             return self.json[_SYSTEM][name]
         elif "SonarQube" in self.json and name in self.json["SonarQube"]:
@@ -213,42 +219,41 @@ class Sif:
                     pass
         return None
 
-    def __process_cmdline(self, process):
-        opts = [x.format(process) for x in _JVM_OPTS]
+    def __process_cmdline(self, sq_process_name: str) -> Optional[str]:
+        opts = [x.format(sq_process_name) for x in ("sonar.{}.javaOpts", "sonar.{}.javaAdditionalOpts")]
         if _SETTINGS in self.json:
             return f"{self.json[_SETTINGS][opts[1]].strip()} {self.json[_SETTINGS][opts[0]].strip()}".strip()
         return None
 
-    def web_jvm_cmdline(self):
+    def web_jvm_cmdline(self) -> Optional[str]:
+        """Returns the web JVM cmd line"""
         return self.__process_cmdline("web")
 
-    def ce_jvm_cmdline(self):
+    def ce_jvm_cmdline(self) -> Optional[str]:
+        """Returns the CE JVM cmd line"""
         return self.__process_cmdline("ce")
 
-    def search_jvm_cmdline(self):
+    def search_jvm_cmdline(self) -> Optional[str]:
+        """Returns the search JVM cmd line"""
         return self.__process_cmdline("search")
 
-    def __eligible_to_log4shell_check(self):
-        st_time = self.start_time()
-        if st_time is None:
-            return False
-        return st_time > _MIN_DATE_LOG4SHELL
-
-    def __audit_log4shell(self, jvm_settings, broken_rule):
+    def __audit_log4shell(self, jvm_settings: str, broken_rule: RuleId) -> list[Problem]:
+        """Audits for the log4shell vulnerability"""
         # If SIF is older than 2022 don't audit for log4shell to avoid noise
-        if not self.__eligible_to_log4shell_check():
+        st_time = self.start_time()
+        if not st_time or st_time > _MIN_DATE_LOG4SHELL:
             return []
-
         log.info("Auditing log4shell vulnerability fix")
         sq_version = self.version()
         if sq_version < (8, 9, 6) or ((9, 0, 0) <= sq_version < (9, 2, 4)):
-            for s in jvm_settings.split(" "):
-                if s == "-Dlog4j2.formatMsgNoLookups=true":
-                    return []
-            return [Problem(get_rule(broken_rule), self)]
+            try:
+                _ = jvm_settings.split(" ").index("-Dlog4j2.formatMsgNoLookups=true")
+            except ValueError:
+                return [Problem(get_rule(broken_rule), self)]
         return []
 
     def __audit_jdbc_url(self) -> list[Problem]:
+        """Audits if JDBC URL points on another machine than localhost"""
         log.info("Auditing JDBC settings")
         stats = self.json.get(_SETTINGS)
         if stats is None:
@@ -257,15 +262,11 @@ class Sif:
         jdbc_url = stats.get("sonar.jdbc.url", None)
         if jdbc_url is None:
             return [Problem(get_rule(RuleId.SETTING_JDBC_URL_NOT_SET), self)]
-        if re.search(
-            r":(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]",
-            jdbc_url,
-        ):
+        if re.search(r":(postgresql://|sqlserver://|oracle:thin:@)(localhost|127\.0+\.0+\.1)[:;/]", jdbc_url):
             lic = self.license_type()
             if lic == "PRODUCTION":
                 return [Problem(get_rule(RuleId.DB_ON_SAME_HOST), self, jdbc_url)]
-            else:
-                log.info("JDBC URL %s is on localhost but this is not a production license. So be it!", jdbc_url)
+            log.info("JDBC URL %s is on localhost but this is not a production license. So be it!", jdbc_url)
         else:
             log.info("JDBC URL %s does not use localhost, all good!", jdbc_url)
         return []
@@ -292,7 +293,8 @@ class Sif:
             log.info("Sys Info too old (pre-8.9), can't check plugins")
         return problems
 
-    def __audit_es_settings(self):
+    def __audit_es_settings(self) -> list[Problem]:
+        """Audits ES settings"""
         log.info("Auditing Search Server settings")
         problems = []
         jvm_cmdline = self.search_jvm_cmdline()
@@ -311,18 +313,11 @@ class Sif:
         elif es_ram > 32 * 1024:
             problems.append(Problem(get_rule(RuleId.ES_HEAP_TOO_HIGH), self, "ES", es_ram, 32 * 1024))
         else:
-            log.debug(
-                "Search server memory %d MB is correct wrt to index size of %d MB",
-                es_ram,
-                index_size,
-            )
+            log.debug("Search server memory %d MB is correct wrt to index size of %d MB", es_ram, index_size)
         problems += self.__audit_log4shell(jvm_cmdline, RuleId.LOG4SHELL_ES)
         return problems
 
 
-def is_sysinfo(sysinfo):
-    counter = 0
-    for key in (_SETTINGS, _SYSTEM, "Database", "License"):
-        if key in sysinfo:
-            counter += 1
-    return counter >= 2
+def is_sysinfo(sysinfo: dict[str, str]) -> bool:
+    """Returns whether a JSON is a system info file or support info file"""
+    return sum(1 for key in (_SETTINGS, _SYSTEM, "Database", "License") if key in sysinfo) >= 2

@@ -83,18 +83,16 @@ class Component(sq.SqObject):
 
     def tags(self) -> list[str]:
         """Returns object tags"""
-        if self._tags is not None:
-            pass
-        elif self._json is not None and "tags" in self._json:
-            self._tags = self._json["tags"]
-        else:
-            data = json.loads(self.get(_DETAILS_API, params={"component": self.key}).text)
-            if self._json is None:
-                self._json = data["component"]
+        if self._tags is None:
+            if self._json is not None and "tags" in self._json:
+                self._tags = self._json["tags"]
             else:
+                data = json.loads(self.get(_DETAILS_API, params={"component": self.key}).text)
+                if self._json is None:
+                    self._json = {}
                 self._json.update(data["component"])
-            self._tags = self._json["tags"]
-            settings.Setting.load(key=settings.COMPONENT_VISIBILITY, endpoint=self.endpoint, component=self, data=data["component"])
+                self._tags = self._json["tags"]
+                settings.Setting.load(key=settings.COMPONENT_VISIBILITY, endpoint=self.endpoint, component=self, data=data["component"])
         return self._tags if len(self._tags) > 0 else None
 
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
