@@ -185,20 +185,16 @@ class Sif:
             log.info("Branch usage information not in SIF, ignoring audit...")
             return []
 
-    def __audit_undetected_scm(self):
+    def __audit_undetected_scm(self) -> list[Problem]:
+        """Audits a SIF for presence of projects with undetected SCM"""
         log.info("Auditing SCM integration")
         try:
-            scm_count, undetected_scm_count = 0, 0
-            for scm in self.json[_STATS]["projectCountByScm"]:
-                scm_count += scm["count"]
-                if scm["scm"] == "undetected":
-                    undetected_scm_count = scm["count"]
+            undetected_scm_count = sum([scm["count"] for scm in self.json[_STATS]["projectCountByScm"] if scm["scm"] == "undetected"])
             if undetected_scm_count == 0:
-                return []
-            return [Problem(get_rule(RuleId.SIF_UNDETECTED_SCM), self, undetected_scm_count)]
+                return [Problem(get_rule(RuleId.SIF_UNDETECTED_SCM), self, undetected_scm_count)]
         except KeyError:
             log.info("SCM information not in SIF, ignoring audit...")
-            return []
+        return []
 
     def __get_field(self, name, node_type=_APP_NODES):
         if _SYSTEM in self.json and name in self.json[_SYSTEM]:
