@@ -446,8 +446,7 @@ class Task(sq.SqObject):
             return [Problem(get_rule(RuleId.ANT_SCANNER_DEPRECATED), self.concerned_object, str(self.concerned_object))]
 
         if scanner_type in ("ScannerGradle", "ScannerMaven"):
-            (scanner_version, build_tool_version) = scanner_version.split("/")
-            scanner_version = scanner_version.replace("-SNAPSHOT", "")
+            scanner_version = scanner_version.split("/")[0].replace("-SNAPSHOT", "")
         scanner_version = [int(n) for n in scanner_version.split(".")]
         if len(scanner_version) == 2:
             scanner_version.append(0)
@@ -467,27 +466,20 @@ class Task(sq.SqObject):
             )
             return []
 
-        tuple_version_list = []
-        for v in versions_list:
-            tuple_version_list.append(tuple([int(n) for n in v.split(".")]))
+        tuple_version_list = [tuple(int(n) for n in v.split(".")) for v in versions_list]
         tuple_version_list.sort(reverse=True)
 
         delta_days = (datetime.datetime.today() - release_date).days
         index = tuple_version_list.index(scanner_version)
         log.debug("Scanner used is %d versions old", index)
-        if delta_days > audit_settings.get("audit.projects.scannerMaxAge", 730):
-            rule = get_rule(RuleId.OBSOLETE_SCANNER) if index >= 3 else get_rule(RuleId.NOT_LATEST_SCANNER)
-            return [
-                Problem(
-                    rule,
-                    self.concerned_object,
-                    str(self.concerned_object),
-                    scanner_type,
-                    str_version,
-                    util.date_to_string(release_date, with_time=False),
-                )
-            ]
-        return []
+        if delta_days <= audit_settings.get("audit.projects.scannerMaxAge", 730):
+            return []
+        rule = get_rule(RuleId.OBSOLETE_SCANNER) if index >= 3 else get_rule(RuleId.NOT_LATEST_SCANNER)
+        return [
+            Problem(
+                rule, self.concerned_object, str(self.concerned_object), scanner_type, str_version, util.date_to_string(release_date, with_time=False)
+            )
+        ]
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a background task and returns the list of found problems"""
