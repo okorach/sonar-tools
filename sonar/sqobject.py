@@ -29,7 +29,7 @@ from http import HTTPStatus
 from queue import Queue
 from threading import Thread
 import requests
-from requests import HTTPError, RequestException
+from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types, cache
