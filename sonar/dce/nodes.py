@@ -31,6 +31,7 @@ HEALTH_RED = "RED"
 
 
 class DceNode:
+    """Abstraction of a DCE platform node"""
     def __init__(self, data: dict[str, any], sif: object) -> None:
         """Constructor"""
         self.json = data
