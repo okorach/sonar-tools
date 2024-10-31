@@ -185,6 +185,24 @@ class Setting(sqobject.SqObject):
         o.reload(data)
         return o
 
+    def __reload_inheritance(self, data: types.ApiPayload) -> bool:
+        """Verifies if a setting is inherited from the data returned by SQ"""
+        if "inherited" in data:
+            self.inherited = data["inherited"]
+        elif self.key == NEW_CODE_PERIOD:
+            self.inherited = False
+        elif "parentValues" in data or "parentValue" in data or "parentFieldValues" in data:
+            self.inherited = False
+        elif "category" in data:
+            self.inherited = True
+        elif self.component is not None:
+            self.inherited = False
+        else:
+            self.inherited = True
+        if self.component is None:
+            self.inherited = True
+        return self.inherited
+
     def reload(self, data: types.ApiPayload) -> None:
         """Reloads a Setting with JSON returned from Sonar API"""
         if not data:
@@ -201,20 +219,7 @@ class Setting(sqobject.SqObject):
                     self.value = util.convert_string(data[key])
             if not self.value and "defaultValue" in data:
                 self.value = util.DEFAULT
-        if "inherited" in data:
-            self.inherited = data["inherited"]
-        elif self.key == NEW_CODE_PERIOD:
-            self.inherited = False
-        elif "parentValues" in data or "parentValue" in data or "parentFieldValues" in data:
-            self.inherited = False
-        elif "category" in data:
-            self.inherited = True
-        elif self.component is not None:
-            self.inherited = False
-        else:
-            self.inherited = True
-        if self.component is None:
-            self.inherited = True
+        self.__reload_inheritance(data)
 
     def __hash__(self) -> int:
         """Returns object unique ID"""
