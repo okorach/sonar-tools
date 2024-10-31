@@ -177,9 +177,18 @@ def __parser_args(desc: str) -> object:
     return args
 
 
+def __check_keys_exist(key_list: list[str], sq: platform.Platform, what: list[str]) -> None:
+    """Checks if project keys exist"""
+    if key_list and len(key_list) > 0 and "projects" in what:
+        missing_proj = [key for key in key_list if not projects.exists(key, sq)]
+        if len(missing_proj) > 0:
+            raise exceptions.ObjectNotFound(missing_proj[0], f"Projects key {', '.join(missing_proj)} do(es) not exist")
+
+
 def main() -> None:
     """Main entry point"""
     start_time = util.start_clock()
+    errcode = errcodes.OS_ERROR
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
         settings = config.load(TOOL_NAME)
@@ -196,7 +205,6 @@ def main() -> None:
             sys.exit(errcodes.OK)
 
         file = ofile = kwargs.pop(options.REPORT_FILE)
-        errcode = errcodes.OS_ERROR
 
         if "sif" in kwargs:
             file = kwargs["sif"]
@@ -207,13 +215,10 @@ def main() -> None:
             sq.verify_connection()
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
             settings["SERVER_ID"] = sq.server_id()
-            key_list = kwargs[options.KEYS]
-            if key_list and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs[options.WHAT]):
-                missing_proj = [key for key in key_list if not projects.exists(key, sq)]
-                if len(missing_proj) > 0:
-                    raise exceptions.ObjectNotFound(missing_proj[0], f"Projects key {', '.join(missing_proj)} do(es) not exist")
-
-            problems = _audit_sq(sq, settings, what_to_audit=util.check_what(kwargs[options.WHAT], _ALL_AUDITABLE, "audited"), key_list=key_list)
+            __check_keys_exist(kwargs[options.KEYS], sq, kwargs[options.WHAT])
+            problems = _audit_sq(
+                sq, settings, what_to_audit=util.check_what(kwargs[options.WHAT], _ALL_AUDITABLE, "audited"), key_list=kwargs[options.KEYS]
+            )
             loglevel = log.WARNING if len(problems) > 0 else log.INFO
             log.log(loglevel, "%d issues found during audit", len(problems))
             problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], file))
