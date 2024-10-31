@@ -199,7 +199,7 @@ class Sif(object):
         log.info("Auditing SCM integration")
         try:
             undetected_scm_count = sum([scm["count"] for scm in self.json[_STATS]["projectCountByScm"] if scm["scm"] == "undetected"])
-            if undetected_scm_count == 0:
+            if undetected_scm_count > 0:
                 return [Problem(get_rule(RuleId.SIF_UNDETECTED_SCM), self, undetected_scm_count)]
         except KeyError:
             log.info("SCM information not in SIF, ignoring audit...")
