@@ -62,6 +62,7 @@ def check_last_version(package_url: str) -> None:
 
 
 def token_type(token: str) -> str:
+    """Returns the type of token"""""
     if token[0:4] == "sqa_":
         return "global-analysis"
     elif token[0:4] == "sqp_":
@@ -70,7 +71,7 @@ def token_type(token: str) -> str:
         return "user"
 
 
-def check_token(token: str, is_sonarcloud: bool = False) -> None:
+def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
     """Verifies if a proper user token has been provided"""
     if token is None:
         exit_fatal(
