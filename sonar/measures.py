@@ -158,16 +158,8 @@ def get_history(concerned_object: object, metrics_list: KeyList, **kwargs) -> li
         util.handle_error(e, f"getting measures {str(metrics_list)} history of {str(concerned_object)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
         raise exceptions.ObjectNotFound(concerned_object.key, f"{str(concerned_object)} not found")
     res_list = []
-    # last_metric, last_date = "", ""
     for m in reversed(data["measures"]):
-        m_key = m["metric"]
-        for dt in m["history"]:
-            if "value" in dt:
-                # cur_date = dt["date"].split("T")[0]
-                # if cur_date != last_date or last_metric != m_key:
-                res_list.append([dt["date"], m_key, dt["value"]])
-                # last_date = cur_date
-                # last_metric = m_key
+        res_list += [[dt["date"], m["metric"], dt["value"]] for dt in m["history"] if "value" in dt]
     return res_list
 
 
