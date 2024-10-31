@@ -459,12 +459,9 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
     """Converts rule data for export"""
     d = {"severity": rule.get("severity", "")}
     if len(rule.get("params", {})) > 0:
+        d["params"] = rule["params"]
         if not full:
-            d["params"] = {}
-            for p in rule["params"]:
-                d["params"][p["key"]] = p.get("defaultValue", "")
-        else:
-            d["params"] = rule["params"]
+            d["params"] = {p["key"]: p.get("defaultValue", "") for p in rule["params"]}
     if rule["isTemplate"]:
         d["isTemplate"] = True
     if "tags" in rule and len(rule["tags"]) > 0:
@@ -476,9 +473,7 @@ def convert_for_export(rule: types.ObjectJsonRepr, qp_lang: str, with_template_k
     if "lang" in rule and rule["lang"] != qp_lang:
         d["language"] = rule["lang"]
     if full:
-        for k, v in rule.items():
-            if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "templateKey", "lang"):
-                d[f"_{k}"] = v
+        d.update({f"_{k}": v for k, v in rule.items() if k not in ("severity", "params", "isTemplate", "tags", "mdNote", "templateKey", "lang")})
         d.pop("_key", None)
     if len(d) == 1:
         return d["severity"]
