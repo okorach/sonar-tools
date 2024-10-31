@@ -40,6 +40,11 @@ _RELEASE_DATE_9_9 = datetime.datetime(2023, 2, 1) + relativedelta(months=+6)
 _CE_TASKS = "Compute Engine Tasks"
 _WORKER_COUNT = "Worker Count"
 
+JAVA_COMPAT = {
+    17: [(9, 6, 0), (12, 0, 0)],
+    11: [(7, 9, 0), (9, 8, 0)],
+    8: [(7, 9, 0), (8, 9, 0)]
+}
 
 def __audit_background_tasks(obj: object, obj_name: str) -> list[Problem]:
     """Audits the SIF for the health of background tasks stats, namely the failure rate
@@ -146,10 +151,12 @@ def __audit_jvm_version(obj: object, obj_name: str, jvm_props: dict[str, str]) -
     except KeyError:
         log.warning("%s: Can't find SonarQube version in SIF, auditing this part is skipped", obj_name)
         return []
+    if java_version not in JAVA_COMPAT:
+        log.warning("%s: Java version %d not listed in compatibility matrix, skipping JVM version audit", obj_name, java_version)
+        return []
+    min_v, max_v = JAVA_COMPAT[java_version]
     sq_v_str = ".".join([str(i) for i in sq_version])
-    if (java_version == 17 and sq_version >= (9, 6, 0)) or (
-        java_version == 11 and (7, 9, 0) <= sq_version <= (9, 8, 0) or (java_version == 8 and (7, 9, 0) <= sq_version < (8, 9, 0))
-    ):
+    if min_v <= sq_version <= max_v:
         log.info("%s: SonarQube %s running on a supported java version (java %d)", obj_name, sq_v_str, java_version)
         return []
     return [Problem(get_rule(RuleId.SETTING_WEB_WRONG_JAVA_VERSION), obj, obj_name, sq_v_str, java_version)]
