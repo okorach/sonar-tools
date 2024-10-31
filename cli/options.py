@@ -187,10 +187,8 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
     log.set_debug_level(kwargs[VERBOSE])
     del kwargs[VERBOSE]
-    if is_migration:
-        log.info("sonar-migration version %s", version.MIGRATION_TOOL_VERSION)
-    else:
-        log.info("sonar-tools version %s", version.PACKAGE_VERSION)
+    tool = "sonar-migration" if is_migration else "sonar-tools"
+    log.info("%s version %s", tool, version.MIGRATION_TOOL_VERSION)
     if os.getenv("IN_DOCKER", "No") == "Yes":
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
     if log.get_level() <= log.DEBUG:
@@ -204,10 +202,7 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
         __check_file_writeable(kwargs.get(REPORT_FILE, None))
     # Verify version randomly once every 10 runs
     if not kwargs[SKIP_VERSION_CHECK] and random.randrange(10) == 0:
-        if is_migration:
-            utilities.check_last_version("https://pypi.org/simple/sonar-migration")
-        else:
-            utilities.check_last_version("https://pypi.org/simple/sonar-tools")
+        utilities.check_last_version(f"https://pypi.org/simple/{tool}")
     kwargs.pop(SKIP_VERSION_CHECK, None)
     if utilities.is_sonarcloud_url(kwargs[URL]) and kwargs[ORG] is None:
         raise ArgumentsError(f"Organization (-{ORG_SHORT}) option is mandatory for SonarCloud")
