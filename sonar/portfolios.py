@@ -539,9 +539,6 @@ class Portfolio(aggregations.Aggregation):
 
     def add_subportfolio(self, key: str, name: str = None, by_ref: bool = False) -> object:
         """Adds a subportfolio to a portfolio, defined by key, name and by reference option"""
-        # if not exists(key, self.endpoint):
-        #    log.warning("Can't add in %s the subportfolio key '%s' by reference, it does not exists", str(self), key)
-        #    return False
 
         log.info("Adding sub-portfolios to %s", str(self))
         if self.is_parent_of(key):
