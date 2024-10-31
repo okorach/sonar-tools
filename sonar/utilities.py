@@ -62,7 +62,7 @@ def check_last_version(package_url: str) -> None:
 
 
 def token_type(token: str) -> str:
-    """Returns the type of token"""""
+    """Returns the type of token"""
     if token[0:4] == "sqa_":
         return "global-analysis"
     elif token[0:4] == "sqp_":

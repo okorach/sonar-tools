@@ -180,7 +180,12 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
             for h in obj_data["history"]:
                 ts = __get_ts(h[0], **kwargs)
                 if ts not in hist_data:
-                    hist_data[ts] = {"key": obj_data["key"], "name": obj_data["name"], "branch": obj_data.get("branch", ""), "url": obj_data.get("url", "")}
+                    hist_data[ts] = {
+                        "key": obj_data["key"],
+                        "name": obj_data["name"],
+                        "branch": obj_data.get("branch", ""),
+                        "url": obj_data.get("url", ""),
+                    }
                 hist_data[ts].update({h[1]: h[2]})
 
             for ts, row_data in hist_data.items():
