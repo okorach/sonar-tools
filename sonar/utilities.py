@@ -106,8 +106,11 @@ def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str]:
             return string
 
 
-def date_to_string(date: datetime.datetime, with_time=True) -> str:
-    return "" if date is None else date.strftime(SQ_DATETIME_FORMAT if with_time else SQ_DATE_FORMAT)
+def date_to_string(date: Optional[datetime.datetime], with_time: bool = True) -> str:
+    """Converts a date to a string"""
+    if not date:
+        return ""
+    return date.strftime(SQ_DATETIME_FORMAT if with_time else SQ_DATE_FORMAT)
 
 
 def age(some_date: datetime.datetime, rounded: bool = True, now: Optional[datetime.datetime] = None) -> Union[int, datetime.timedelta]:
