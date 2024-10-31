@@ -182,33 +182,33 @@ def main() -> None:
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
-
         settings = config.load(TOOL_NAME)
-        settings["threads"] = kwargs[options.NBR_THREADS]
+        settings.update(
+            {
+                "FILE": file,
+                "CSV_DELIMITER": kwargs[options.CSV_SEPARATOR],
+                "WITH_URL": kwargs[options.WITH_URL],
+                "threads": kwargs[options.NBR_THREADS],
+            }
+        )
         if kwargs.get("config", False):
             config.configure()
-            sys.exit(0)
+            sys.exit(errcodes.OK)
 
-        ofile = kwargs.pop(options.REPORT_FILE)
+        file = ofile = kwargs.pop(options.REPORT_FILE)
         errcode = errcodes.OS_ERROR
-        file = ofile
-        settings["FILE"] = file
-        settings["CSV_DELIMITER"] = kwargs[options.CSV_SEPARATOR]
-        settings["WITH_URL"] = kwargs[options.WITH_URL]
 
-        if kwargs.get("sif", None) is not None:
+        if "sif" in kwargs:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
-            (server_id, problems) = _audit_sif(file, settings)
-            settings["SERVER_ID"] = server_id
+            (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
         else:
             sq = platform.Platform(**kwargs)
             sq.verify_connection()
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-            server_id = sq.server_id()
-            settings["SERVER_ID"] = server_id
+            settings["SERVER_ID"] = sq.server_id()
             key_list = kwargs[options.KEYS]
-            if key_list is not None and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs[options.WHAT]):
+            if key_list and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs[options.WHAT]):
                 missing_proj = [key for key in key_list if not projects.exists(key, sq)]
                 if len(missing_proj) > 0:
                     raise exceptions.ObjectNotFound(missing_proj[0], f"Projects key {', '.join(missing_proj)} do(es) not exist")
@@ -216,7 +216,7 @@ def main() -> None:
             problems = _audit_sq(sq, settings, what_to_audit=util.check_what(kwargs[options.WHAT], _ALL_AUDITABLE, "audited"), key_list=key_list)
             loglevel = log.WARNING if len(problems) > 0 else log.INFO
             log.log(loglevel, "%d issues found during audit", len(problems))
-            problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs[options.FORMAT], file))
+            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], file))
     except exceptions.ConnectionError as e:
         util.exit_fatal(e.message, e.errcode)
     except exceptions.ObjectNotFound as e:
@@ -230,7 +230,7 @@ def main() -> None:
     except sif.NotSystemInfo:
         util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", errcodes.SIF_AUDIT_ERROR)
     util.stop_clock(start_time)
-    sys.exit(0)
+    sys.exit(errcodes.OK)
 
 
 if __name__ == "__main__":
