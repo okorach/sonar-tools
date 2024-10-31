@@ -179,8 +179,8 @@ class Finding(sq.SqObject):
             self.impacts = {i["softwareQuality"]: i["severity"] for i in jsondata["impacts"]}
         else:
             self.impacts = {TYPE_QUALITY_MAPPING[jsondata.get("type", TYPE_NONE)]: SEVERITY_MAPPING[jsondata.get("severity", SEVERITY_NONE)]}
-            self.type = jsondata.get("type", TYPE_NONE)
-            self.severity = jsondata.get("severity", SEVERITY_NONE)
+        self.type = jsondata.get("type", TYPE_NONE)
+        self.severity = jsondata.get("severity", SEVERITY_NONE)
 
         self.message = jsondata.get("message", None)
         self.status = jsondata["status"]
