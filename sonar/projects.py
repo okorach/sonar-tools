@@ -304,7 +304,7 @@ class Project(components.Component):
         if self.endpoint.edition() == "community":
             self._ncloc_with_branches = super().loc()
         else:
-            self._ncloc_with_branches = max([b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values())])
+            self._ncloc_with_branches = max(b.loc() for b in list(self.branches().values()) + list(self.pull_requests().values()))
         return self._ncloc_with_branches
 
     def branches(self, use_cache: bool = True) -> dict[str, branches.Branch]:
