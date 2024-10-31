@@ -118,9 +118,9 @@ class Sif:
             return self.json["License"]["type"]
         return None
 
-    def version(self, digits=3, as_string=False):
+    def version(self) -> Union[tuple[int, ...], None]:
         try:
-            return util.string_to_version(self.json["System"]["Version"], digits=digits, as_string=as_string)
+            return util.string_to_version(self.json["System"]["Version"], digits=3, as_string=False)
         except KeyError:
             return None
 
