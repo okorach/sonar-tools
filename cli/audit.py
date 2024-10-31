@@ -53,7 +53,8 @@ _ALL_AUDITABLE = [
 TOOL_NAME = "sonar-audit"
 
 
-def _audit_sif(sysinfo, audit_settings):
+def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str, list[problem.Problem]]:
+    """Audits a SIF and return found problems"""
     log.info("Auditing SIF file '%s'", sysinfo)
     try:
         with open(sysinfo, "r", encoding="utf-8") as f:
@@ -68,8 +69,7 @@ def _audit_sif(sysinfo, audit_settings):
         log.critical("No permission to open file %s", sysinfo)
         raise
     sif_obj = sif.Sif(sysinfo)
-    server_id = sif_obj.server_id()
-    return (server_id, sif_obj.audit(audit_settings))
+    return sif_obj.server_id(), sif_obj.audit(audit_settings)
 
 
 def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: types.ConfigSettings) -> None:
@@ -155,7 +155,8 @@ def _audit_sq(
     return problems
 
 
-def __parser_args(desc):
+def __parser_args(desc: str) -> object:
+    """Adds all sonar-audit CLI arguments and parse them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("csv", "json"))
@@ -176,7 +177,8 @@ def __parser_args(desc):
     return args
 
 
-def main():
+def main() -> None:
+    """Main entry point"""
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
@@ -216,21 +218,18 @@ def main():
             util.exit_fatal(e.message, e.errcode)
         server_id = sq.server_id()
         settings["SERVER_ID"] = server_id
-        util.check_token(kwargs[options.TOKEN])
         key_list = kwargs[options.KEYS]
         if key_list is not None and len(key_list) > 0 and "projects" in util.csv_to_list(kwargs[options.WHAT]):
-            for key in key_list:
-                if not projects.exists(key, sq):
-                    util.exit_fatal(f"Project key '{key}' does not exist", errcodes.NO_SUCH_KEY)
+            missing_proj = [key for key in key_list if not projects.exists(key, sq)]
+            if len(missing_proj) > 0:
+                util.exit_fatal(f"Projects key {', '.join(missing_proj)} do(es) not exist", errcodes.NO_SUCH_KEY)
+
         try:
             problems = _audit_sq(sq, settings, what_to_audit=util.check_what(kwargs[options.WHAT], _ALL_AUDITABLE, "audited"), key_list=key_list)
         except exceptions.ObjectNotFound as e:
             util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
-
-    if problems:
-        log.warning("%d issues found during audit", len(problems))
-    else:
-        log.info("%d issues found during audit", len(problems))
+    loglevel = log.WARNING if len(problems) > 0 else log.INFO
+    log.log(loglevel, "%d issues found during audit", len(problems))
     try:
         problem.dump_report(problems, file=ofile, server_id=server_id, format=util.deduct_format(kwargs[options.FORMAT], ofile))
     except (PermissionError, FileNotFoundError) as e:
