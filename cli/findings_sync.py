@@ -115,6 +115,7 @@ def __since_date(**kwargs) -> Optional[datetime.datetime]:
             log.warning("sinceDate value '%s' is not in the expected YYYY-MM-DD date format, ignored", kwargs["sinceDate"])
     return since
 
+
 def __check_comparison_params(source_env: pf.Platform, target_env: pf.Platform, **kwargs) -> tuple[str, str, Optional[str], Optional[str]]:
     """Check input parameters and verfiy they are correct for the desired comparison"""
     source_key = kwargs[options.KEYS][0]
@@ -142,6 +143,7 @@ def __check_comparison_params(source_env: pf.Platform, target_env: pf.Platform, 
         raise exceptions.ObjectNotFound(target_key, f"Project key '{target_key}' does not exist")
 
     return source_key, target_key, source_branch, target_branch
+
 
 def main() -> int:
     """Main entry point"""
