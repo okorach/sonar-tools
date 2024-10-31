@@ -56,8 +56,6 @@ _NON_EXISTING_SETTING_SKIPPED = "Setting %s does not exist, skipping..."
 _SONAR_TOOLS_AGENT = f"sonar-tools {version.PACKAGE_VERSION}"
 _UPDATE_CENTER = "https://raw.githubusercontent.com/SonarSource/sonar-update-center-properties/master/update-center-source.properties"
 
-_NORMAL_HTTP_ERRORS = (HTTPStatus.UNAUTHORIZED, HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST)
-
 LTA = None
 LATEST = None
 _HARDCODED_LTA = (9, 9, 6)

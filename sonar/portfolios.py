@@ -409,6 +409,7 @@ class Portfolio(aggregations.Aggregation):
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
                     log.warning("%s: Project '%s' already in %s", util.error_msg(e), key, str(self))
                 else:
+                    Portfolio.CACHE.pop(self)
                     raise exceptions.ObjectNotFound(self.key, f"Project '{key}' not found, can't be added to {str(self)}")
         return self
 
@@ -426,6 +427,7 @@ class Portfolio(aggregations.Aggregation):
             r = self.post("views/add_project_branch", params={"key": self.key, "project": project_key, "branch": branch})
         except HTTPError as e:
             if e.response.status_code == HTTPStatus.NOT_FOUND:
+                Portfolio.CACHE.pop(self)
                 raise exceptions.ObjectNotFound(self.key, f"Project '{project_key}' or branch '{branch}' not found, can't be added to {str(self)}")
             if e.response.status_code == HTTPStatus.BAD_REQUEST:
                 log.warning("%s: Project '%s' branch '%s', already in %s", util.error_msg(e), project_key, branch, str(self))

@@ -141,6 +141,7 @@ class Branch(components.Component):
             data = json.loads(self.get(APIS["list"], params={"project": self.concerned_object.key}).text)
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            Branch.CACHE.pop(self)
             raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found in SonarQube")
         for br in data.get("branches", []):
             if br["name"] == self.name:
@@ -205,6 +206,7 @@ class Branch(components.Component):
                 data = json.loads(self.get(api=APIS["get_new_code"], params={"project": self.concerned_object.key}).text)
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"getting new code period of {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+                Branch.CACHE.pop(self)
                 raise exceptions.ObjectNotFound(self.concerned_object.key, f"{str(self.concerned_object)} not found")
 
             for b in data["newCodePeriods"]:
@@ -268,6 +270,7 @@ class Branch(components.Component):
             util.handle_error(e, f"Renaming {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
             if isinstance(e, HTTPError):
                 if e.response.status_code == HTTPStatus.NOT_FOUND:
+                    Branch.CACHE.pop(self)
                     raise exceptions.ObjectNotFound(self.concerned_object.key, f"str{self.concerned_object} not found")
                 if e.response.status_code == HTTPStatus.BAD_REQUEST:
                     return False

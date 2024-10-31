@@ -188,6 +188,7 @@ class ApplicationBranch(Component):
             ok = self.endpoint.post(APIS["update"], params=params).ok
         except (ConnectionError, RequestException) as e:
             utilities.handle_error(e, f"uptdating {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+            ApplicationBranch.CACHE.pop(self)
             raise exceptions.ObjectNotFound(str(self), e.response.text)
 
         self.name = name
