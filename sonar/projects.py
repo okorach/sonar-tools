@@ -724,27 +724,23 @@ class Project(components.Component):
         pr = f.pop("pullRequest", None)
         if not br and not pr:
             return None
-        objects = {}
         if br:
             if "*" in br:
-                objects = self.branches()
+                br_objects = self.branches()
             else:
                 try:
-                    for b in br:
-                        objects[b] = branches.Branch.get_object(concerned_object=self, branch_name=b)
+                    br_objects = {b: branches.Branch.get_object(concerned_object=self, branch_name=b) for b in br}
                 except (exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
                     log.error(e.message)
         if pr:
             if "*" in pr:
-                pr = self.pull_requests()
-                objects = {**objects, **pr}
+                pr_objects = self.pull_requests()
             else:
-                for p in pr:
-                    try:
-                        objects[p] = pull_requests.get_object(project=self, pull_request_key=p)
-                    except exceptions.ObjectNotFound as e:
-                        log.error(e.message)
-        return objects
+                try:
+                    pr_objects = {p: pull_requests.get_object(project=self, pull_request_key=p) for p in pr}
+                except exceptions.ObjectNotFound as e:
+                    log.error(e.message)
+        return {**br_objects, **pr_objects}
 
     def get_findings(self, branch: str = None, pr: str = None) -> dict[str, object]:
         """Returns a project list of findings (issues and hotspots)
