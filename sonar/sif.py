@@ -38,10 +38,6 @@ import sonar.sif_node as sifn
 import sonar.dce.app_nodes as appnodes
 import sonar.dce.search_nodes as searchnodes
 
-_RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
-_RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
-_RELEASE_DATE_8_9 = datetime.datetime(2021, 5, 4) + relativedelta(months=+6)
-
 _APP_NODES = "Application Nodes"
 _ES_NODES = "Search Nodes"
 _SYSTEM = "System"
@@ -81,7 +77,7 @@ class Sif:
                 self._url = self.json.get("Settings", {}).get("sonar.core.serverBaseURL", "")
         return self._url
 
-    def edition(self) -> Union[str, None]:
+    def edition(self) -> Optional[str]:
         ed = None
         for section in (_STATS, _SYSTEM, "License"):
             for subsection in ("edition", "Edition"):
