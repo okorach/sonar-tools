@@ -23,8 +23,8 @@
 
 """
 
+from typing import Optional, Union
 import datetime
-from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
 import sonar.utilities as util
@@ -34,42 +34,48 @@ import sonar.sif_node as sifn
 from sonar.audit.problem import Problem
 import sonar.dce.nodes as dce_nodes
 
-_RELEASE_DATE_6_7 = datetime.datetime(2017, 11, 8) + relativedelta(months=+6)
-_RELEASE_DATE_7_9 = datetime.datetime(2019, 7, 1) + relativedelta(months=+6)
-_RELEASE_DATE_8_9 = datetime.datetime(2021, 5, 4) + relativedelta(months=+6)
-
 _SYSTEM = "System"
 
 
 class AppNode(dce_nodes.DceNode):
-    def __str__(self):
+    """Application Node abstraction class"""
+
+    def __str__(self) -> str:
+        """str() implementation"""
         return f"App Node '{self.name()}'"
 
-    def plugins(self):
+    def plugins(self) -> Optional[dict[str, str]]:
+        """Returns 3rd party plugins installed on the app node"""
         self.json.get("Plugins", None)
 
-    def health(self):
-        return self.json.get("Health", "RED")
+    def health(self) -> str:
+        """Returns app node health, RED by default if heLTH NOT AVAILABLE"""
+        return self.json.get("Health", dce_nodes.HEALTH_RED)
 
-    def node_type(self):
+    def node_type(self) -> str:
+        """Returns the node type"""
         return "APPLICATION"
 
     def start_time(self) -> datetime.datetime:
+        """Returns app node last start time"""
         return self.sif.start_time()
 
-    def version(self, digits=3, as_string=False):
+    def version(self) -> Union[tuple[int, ...], None]:
+        """Returns the App Node SonarQube version"""
         try:
-            return util.string_to_version(self.json[_SYSTEM]["Version"], digits, as_string)
+            return util.string_to_version(self.json[_SYSTEM]["Version"], 3, False)
         except KeyError:
             return None
 
     def edition(self) -> str:
-        self.sif.edition()
+        return self.sif.edition()
 
-    def name(self):
+    def name(self) -> str:
+        """Returns the App Node name"""
         return self.json["Name"]
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        """Audits and app node (from a SIF)"""
         log.info("Auditing %s", str(self))
         return (
             self.__audit_official()
@@ -79,7 +85,8 @@ class AppNode(dce_nodes.DceNode):
             + sifn.audit_plugins(self, f"{str(self)} WebApp", audit_settings)
         )
 
-    def __audit_health(self):
+    def __audit_health(self) -> list[Problem]:
+        """Audits the App node health"""
         log.info("%s: Auditing node health", str(self))
         if self.health() != dce_nodes.HEALTH_GREEN:
             return [Problem(get_rule(RuleId.DCE_APP_NODE_NOT_GREEN), self, str(self), self.health())]
@@ -87,17 +94,15 @@ class AppNode(dce_nodes.DceNode):
         log.info("%s: Node health is %s", str(self), dce_nodes.HEALTH_GREEN)
         return []
 
-    def __audit_official(self):
+    def __audit_official(self) -> list[Problem]:
+        """Audits whether the installed package is official"""
         if _SYSTEM not in self.json:
-            log.warning(
-                "%s: Official distribution information missing, audit skipped...",
-                str(self),
-            )
+            log.warning("%s: Official distribution information missing, audit skipped...", str(self))
             return []
         elif not self.json[_SYSTEM]["Official Distribution"]:
             return [Problem(get_rule(RuleId.DCE_APP_NODE_UNOFFICIAL_DISTRO), self, str(self))]
         else:
-            log.debug("%s: Node is official distribution", str(self))
+            log.info("%s: Node is official distribution", str(self))
             return []
 
 
