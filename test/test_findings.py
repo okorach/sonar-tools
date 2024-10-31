@@ -186,8 +186,7 @@ def test_findings_filter_on_type() -> None:
         next(csvreader)
         for line in csvreader:
             if util.SQ.version() >= (10, 2, 0):
-                # FIXME - Why this javascript rule does not report as Reliability is a mistery
-                assert line[RULE_COL] == "javascript:S2310" or line[SECURITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
+                assert line[SECURITY_IMPACT_COL] != "" or line[RELIABILITY_IMPACT_COL] != ""
             else:
                 assert line[TYPE_COL] in ("BUG", "VULNERABILITY")
     util.clean(util.CSV_FILE)
