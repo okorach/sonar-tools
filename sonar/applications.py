@@ -383,6 +383,7 @@ class Application(aggr.Aggregation):
                 ok = ok and r.ok
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"adding project '{proj}' to {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
+                Application.CACHE.pop(self)
                 ok = False
         return ok
 
