@@ -25,7 +25,7 @@
 
 import datetime
 import re
-from typing import Union, Optional
+from typing import Optional
 from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
@@ -111,14 +111,15 @@ class Sif:
         else:
             return self.json["Plugins"]
 
-    def license_type(self):
+    def license_type(self) -> Optional[str]:
+        """Returns the SIF SQ license type (prod or test)"""
         if "License" not in self.json:
             return None
         elif "type" in self.json["License"]:
             return self.json["License"]["type"]
         return None
 
-    def version(self) -> Union[tuple[int, ...], None]:
+    def version(self) -> Optional[tuple[int, ...]]:
         try:
             return util.string_to_version(self.json["System"]["Version"], digits=3, as_string=False)
         except KeyError:
@@ -137,7 +138,7 @@ class Sif:
         except KeyError:
             return None
 
-    def store_size(self):
+    def store_size(self) -> Optional[int]:
         setting = None
         try:
             setting = self.json[_SEARCH_STATE][_STORE_SIZE]
