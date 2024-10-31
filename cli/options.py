@@ -138,7 +138,7 @@ WHAT_APPS = "applications"
 WHAT_PORTFOLIOS = "portfolios"
 WHAT_AUDITABLE = [WHAT_SETTINGS, WHAT_USERS, WHAT_GROUPS, WHAT_GATES, WHAT_PROFILES, WHAT_PROJECTS, WHAT_APPS, WHAT_PORTFOLIOS]
 
-MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS)
+MULTI_VALUED_OPTS = (KEYS, METRIC_KEYS, RESOLUTIONS, SEVERITIES, STATUSES, TYPES, TAGS, BRANCHES, PULL_REQUESTS, WHAT)
 
 COMPONENT_TYPE = "compType"
 COMPONENT_TYPES = ("projects", "apps", "portfolios")
@@ -256,17 +256,6 @@ def add_url_arg(parser: ArgumentParser) -> ArgumentParser:
         default=False,
         action="store_true",
         help="Also list the URL of the objects",
-    )
-    return parser
-
-
-def add_what_arg(parser: ArgumentParser, allowed_list: tuple[str], default_value: str) -> ArgumentParser:
-    """Adds the option to export URL of objects"""
-    parser.add_argument(
-        f"--{WHAT}",
-        required=False,
-        default=default_value,
-        help=f"List of things to process among {','.join(allowed_list)}",
     )
     return parser
 
@@ -419,10 +408,10 @@ def set_output_file_args(parser: ArgumentParser, help_str: str = None, allowed_f
 
 
 def set_what(parser: ArgumentParser, what_list: list[str], operation: str) -> ArgumentParser:
-    """Sets the argumant to select what to audit or to export as config"""
+    """Sets the argument to select what to audit or to export as config"""
     parser.add_argument(
         "-w",
-        "--what",
+        f"--{WHAT}",
         required=False,
         default="",
         help=f"What to {operation} {','.join(what_list)}",
