@@ -192,6 +192,7 @@ def main() -> None:
     try:
         kwargs = util.convert_args(__parser_args("Audits a SonarQube platform or a SIF (Support Info File or System Info File)"))
         settings = config.load(TOOL_NAME)
+        file = ofile = kwargs.pop(options.REPORT_FILE)
         settings.update(
             {
                 "FILE": file,
@@ -203,8 +204,6 @@ def main() -> None:
         if kwargs.get("config", False):
             config.configure()
             sys.exit(errcodes.OK)
-
-        file = ofile = kwargs.pop(options.REPORT_FILE)
 
         if "sif" in kwargs:
             file = kwargs["sif"]
