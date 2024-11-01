@@ -171,9 +171,9 @@ class Application(aggr.Aggregation):
         if self._projects is not None:
             return self._projects
         self._projects = {}
-        if self._json is None or "projects" not in self._json:
+        if self.sq_json is None or "projects" not in self.sq_json:
             self.refresh()
-        for p in self._json["projects"]:
+        for p in self.sq_json["projects"]:
             # TODO: Support several branches of same project in the Application
             # TODO: Return projects in an application branch
             self._projects[p["key"]] = p["branch"]
@@ -238,9 +238,9 @@ class Application(aggr.Aggregation):
 
         if self._branches is not None:
             return self._branches
-        if not self._json or "branches" not in self._json:
+        if not self.sq_json or "branches" not in self.sq_json:
             self.refresh()
-        self._branches = list_from(app=self, data=self._json)
+        self._branches = list_from(app=self, data=self.sq_json)
         return self._branches
 
     def delete(self) -> bool:
@@ -335,7 +335,7 @@ class Application(aggr.Aggregation):
         """
         log.info("Exporting %s", str(self))
         self.refresh()
-        json_data = self._json.copy()
+        json_data = self.sq_json.copy()
         json_data.update(
             {
                 "key": self.key,
@@ -391,8 +391,8 @@ class Application(aggr.Aggregation):
         """Returns the last analysis date of an app"""
         if self._last_analysis is None:
             self.refresh()
-        if "analysisDate" in self._json:
-            self._last_analysis = util.string_to_date(self._json["analysisDate"])
+        if "analysisDate" in self.sq_json:
+            self._last_analysis = util.string_to_date(self.sq_json["analysisDate"])
         return self._last_analysis
 
     def update(self, data: types.ObjectJsonRepr) -> None:

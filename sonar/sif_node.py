@@ -233,7 +233,7 @@ def audit_version(obj: object, obj_name: str) -> list[Problem]:
         log.warning("%s: Version information is missing, audit on node version is skipped...", obj_name)
         return []
     st_time = obj.start_time()
-    log.debug("%s: version %s, start time = %s", obj_name, obj.version(as_string=True), str(st_time))
+    log.debug("%s: version %s, start time = %s", obj_name, util.version_to_string(obj.version()), str(st_time))
     if st_time > _RELEASE_DATE_9_9:
         current_lta = (9, 9, 0)
     elif st_time > _RELEASE_DATE_8_9:
@@ -246,7 +246,7 @@ def audit_version(obj: object, obj_name: str) -> list[Problem]:
         current_lta = (5, 9, 0)
     lta_str = util.version_to_string(current_lta[:2])
     if sq_version >= current_lta:
-        log.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, obj.version(as_string=True), lta_str)
+        log.info("%s: Version %s is correct wrt LTA (ex-LTS) %s", obj_name, util.version_to_string(obj.version()), lta_str)
         return []
 
     return [Problem(get_rule(RuleId.BELOW_LTA), "", util.version_to_string(obj.version()), lta_str)]

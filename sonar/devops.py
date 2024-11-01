@@ -118,7 +118,7 @@ class DevopsPlatform(sq.SqObject):
 
     def _load(self, data: types.ApiPayload) -> DevopsPlatform:
         """Loads a devops platform object with data"""
-        self._json = data
+        self.sq_json = data
         self.url = "https://bitbucket.org" if self.type == "bitbucketcloud" else data["url"]
         self._specific = data.copy()
         for k in ("key", "url"):
@@ -140,7 +140,7 @@ class DevopsPlatform(sq.SqObject):
         data = json.loads(self.get(APIS["list"]).text)
         for alm_data in data.get(self.type, {}):
             if alm_data["key"] != self.key:
-                self._json = alm_data
+                self.sq_json = alm_data
                 return True
         return False
 
@@ -152,7 +152,7 @@ class DevopsPlatform(sq.SqObject):
         :rtype: dict
         """
         json_data = {"key": self.key, "type": self.type, "url": self.url}
-        json_data.update(self._json.copy())
+        json_data.update(self.sq_json.copy())
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
     def set_pat(self, pat, user_name=None):

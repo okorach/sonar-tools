@@ -171,9 +171,9 @@ class Issue(findings.Finding):
         """
         if self._debt is not None:
             return self._debt
-        if "debt" in self._json:
+        if "debt" in self.sq_json:
             kdays, days, hours, minutes = 0, 0, 0, 0
-            debt = self._json["debt"]
+            debt = self.sq_json["debt"]
             m = re.search(r"(\d+)kd", debt)
             if m:
                 kdays = int(m.group(1))
@@ -187,10 +187,10 @@ class Issue(findings.Finding):
             if m:
                 minutes = int(m.group(1))
             self._debt = ((kdays * 1000 + days) * 24 + hours) * 60 + minutes
-        elif "effort" in self._json:
+        elif "effort" in self.sq_json:
             self._debt = 0
-            if self._json["effort"] != "null":
-                self._debt = int(self._json["effort"])
+            if self.sq_json["effort"] != "null":
+                self._debt = int(self.sq_json["effort"])
         return self._debt
 
     def to_json(self, without_time: bool = False) -> ObjectJsonRepr:
@@ -200,7 +200,7 @@ class Issue(findings.Finding):
         """
         data = super().to_json(without_time)
         if self.endpoint.version() >= (10, 2, 0):
-            data["impacts"] = {elem["softwareQuality"]: elem["severity"] for elem in self._json["impacts"]}
+            data["impacts"] = {elem["softwareQuality"]: elem["severity"] for elem in self.sq_json["impacts"]}
         data["effort"] = self.debt()
         return data
 
@@ -240,12 +240,12 @@ class Issue(findings.Finding):
         :return: The issue comments
         :rtype: dict{"<date>_<sequence_nbr>": <comment>}
         """
-        if "comments" not in self._json:
+        if "comments" not in self.sq_json:
             self._comments = {}
         elif self._comments is None:
             self._comments = {}
             seq = 0
-            for c in self._json["comments"]:
+            for c in self.sq_json["comments"]:
                 seq += 1
                 self._comments[f"{c['createdAt']}_{seq:03}"] = {
                     "date": c["createdAt"],
@@ -392,7 +392,7 @@ class Issue(findings.Finding):
         """
         :meta private:
         """
-        rule_debt_calc = rules.Rule.get_object(self.endpoint, self.rule)._json.get("remFnType", "CONSTANT_ISSUE")
+        rule_debt_calc = rules.Rule.get_object(self.endpoint, self.rule).sq_json.get("remFnType", "CONSTANT_ISSUE")
         # Rule that have linear remediation function may have slightly different debt
         return super().almost_identical_to(another_finding, ignore_component, **kwargs) and (
             self.debt() == another_finding.debt() or kwargs.get("ignore_debt", False) or rule_debt_calc != "CONSTANT_ISSUE"

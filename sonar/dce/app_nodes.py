@@ -63,7 +63,7 @@ class AppNode(dce_nodes.DceNode):
     def version(self) -> Union[tuple[int, ...], None]:
         """Returns the App Node SonarQube version"""
         try:
-            return util.string_to_version(self.json[_SYSTEM]["Version"], 3, False)
+            return util.string_to_version(self.json[_SYSTEM]["Version"])
         except KeyError:
             return None
 

@@ -550,25 +550,16 @@ def edition_normalize(edition: str) -> Union[str, None]:
     return edition.lower().replace("edition", "").replace(" ", "")
 
 
-def string_to_version(sif_v: str, digits: int = 3, as_string: bool = False) -> Union[str, tuple[int], None]:
-    """Returns the normalized SQ version as string or tuple
-
-    :param str edition: The original non normalized edition string
-    :return: The normalized edition string
-    :rtype: str
-    """
+def string_to_version(sif_v: Optional[str], digits: int = 3) -> Optional[tuple[int, ...]]:
+    """Returns the normalized SQ version as tuple"""
     if sif_v is None:
         return None
-
     try:
         split_version = sif_v.split(".")
     except KeyError:
         return None
     try:
-        if as_string:
-            return ".".join(split_version[0:digits])
-        else:
-            return tuple(int(n) for n in split_version[0:digits])
+        return tuple(int(n) for n in split_version[0:digits])
     except ValueError:
         return None
 

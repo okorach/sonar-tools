@@ -49,6 +49,28 @@ def test_audit_sif() -> None:
     util.clean(util.CSV_FILE)
 
 
+def test_sif_1() -> None:
+    """test_sif_1"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + ["--sif", "test/sif1.json"]):
+            audit.main()
+    assert int(str(e.value)) == errcodes.OK
+    assert util.file_not_empty(util.CSV_FILE)
+    util.clean(util.CSV_FILE)
+
+
+def test_sif_2() -> None:
+    """test_sif_2"""
+    util.clean(util.JSON_FILE)
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif2.json"]):
+            audit.main()
+    assert int(str(e.value)) == errcodes.OK
+    assert util.file_not_empty(util.JSON_FILE)
+    util.clean(util.JSON_FILE)
+
+
 def test_audit_sif_ut() -> None:
     """test_audit_sif_ut"""
     with open("test/sif1.json", "r", encoding="utf-8") as f:

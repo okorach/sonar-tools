@@ -168,10 +168,10 @@ class Finding(sq.SqObject):
                 self._load_from_search(data)
 
     def _load_common(self, jsondata: types.ApiPayload) -> None:
-        if self._json is None:
-            self._json = jsondata
+        if self.sq_json is None:
+            self.sq_json = jsondata
         else:
-            self._json.update(jsondata)
+            self.sq_json.update(jsondata)
         self.author = jsondata.get("author", None)
         if "vulnerabilityProbability" in jsondata:
             self.impacts = {QUALITY_SECURITY: jsondata["vulnerabilityProbability"] + "(HOTSPOT)"}
@@ -227,8 +227,8 @@ class Finding(sq.SqObject):
         :return: The finding full file path, relative to the rpoject root directory
         :rtype: str or None if not found
         """
-        if "component" in self._json:
-            comp = self._json["component"]
+        if "component" in self.sq_json:
+            comp = self.sq_json["component"]
             # Hack: Fix to adapt to the ugly component structure on branches and PR
             # "component": "src:sonar/hot.py:BRANCH:somebranch"
             m = re.search("(^.*):BRANCH:", comp)
@@ -238,8 +238,8 @@ class Finding(sq.SqObject):
             if m:
                 comp = m.group(1)
             return comp.split(":")[-1]
-        elif "path" in self._json:
-            return self._json["path"]
+        elif "path" in self.sq_json:
+            return self.sq_json["path"]
         else:
             log.warning("Can't find file name for %s", str(self))
             return None
@@ -299,7 +299,7 @@ class Finding(sq.SqObject):
             data["level"] = "error"
         data["properties"] = {"url": self.url()}
         try:
-            rg = self._json["textRange"]
+            rg = self.sq_json["textRange"]
         except KeyError:
             rg = {"startLine": 1, "startOffset": 1, "endLine": 1, "endOffset": 1}
         data["locations"] = [
@@ -408,8 +408,8 @@ class Finding(sq.SqObject):
         prelim_check = True
         if self.rule in ("python:S6540"):
             try:
-                col1 = self._json["textRange"]["startOffset"]
-                col2 = another_finding._json["textRange"]["startOffset"]
+                col1 = self.sq_json["textRange"]["startOffset"]
+                col2 = another_finding.sq_json["textRange"]["startOffset"]
                 prelim_check = col1 == col2
             except KeyError:
                 pass

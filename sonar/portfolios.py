@@ -160,34 +160,34 @@ class Portfolio(aggregations.Aggregation):
         log.debug("Reloading %s with %s", str(self), util.json_dump(data))
         super().reload(data)
         self.name = data.get("name", self.name)
-        self.is_sub_portfolio = self._json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
-        self._visibility = self._json.get("visibility", self._visibility)
+        self.is_sub_portfolio = self.sq_json.get("qualifier", _PORTFOLIO_QUALIFIER) == _SUBPORTFOLIO_QUALIFIER
+        self._visibility = self.sq_json.get("visibility", self._visibility)
         self.load_selection_mode()
         self.reload_sub_portfolios()
 
     def reload_sub_portfolios(self) -> None:
-        if "subViews" not in self._json:
+        if "subViews" not in self.sq_json:
             return
         self._sub_portfolios = {}
-        for data in self._json["subViews"]:
+        for data in self.sq_json["subViews"]:
             if data["qualifier"] in ("VW", "SVW"):
                 self.load_sub_portfolio(data.copy())
 
     def load_selection_mode(self) -> None:
         """Loads the portfolio selection mode"""
-        mode = self._json.get(_API_SELECTION_MODE_FIELD, None)
+        mode = self.sq_json.get(_API_SELECTION_MODE_FIELD, None)
         if mode is None:
             return
-        branch = self._json.get("branch", settings.DEFAULT_BRANCH)
+        branch = self.sq_json.get("branch", settings.DEFAULT_BRANCH)
         if mode == _SELECTION_MODE_MANUAL:
             self._selection_mode = {mode: {}}
-            for projdata in self._json.get("selectedProjects", {}):
+            for projdata in self.sq_json.get("selectedProjects", {}):
                 branch_list = projdata.get("selectedBranches", [settings.DEFAULT_BRANCH])
                 self._selection_mode[mode].update({projdata["projectKey"]: set(branch_list)})
         elif mode == _SELECTION_MODE_REGEXP:
-            self._selection_mode = {mode: self._json["regexp"], "branch": branch}
+            self._selection_mode = {mode: self.sq_json["regexp"], "branch": branch}
         elif mode == _SELECTION_MODE_TAGS:
-            self._selection_mode = {mode: self._json["tags"], "branch": branch}
+            self._selection_mode = {mode: self.sq_json["tags"], "branch": branch}
         elif mode == _SELECTION_MODE_REST:
             self._selection_mode = {mode: True, "branch": branch}
         else:
@@ -236,11 +236,11 @@ class Portfolio(aggregations.Aggregation):
         return self._selection_mode[_SELECTION_MODE_MANUAL]
 
     def applications(self) -> Optional[dict[str, str]]:
-        log.debug("Collecting portfolios applications from %s", util.json_dump(self._json))
-        if "subViews" not in self._json:
+        log.debug("Collecting portfolios applications from %s", util.json_dump(self.sq_json))
+        if "subViews" not in self.sq_json:
             self._applications = {}
             return self._applications
-        apps = [data for data in self._json["subViews"] if data["qualifier"] == "APP"]
+        apps = [data for data in self.sq_json["subViews"] if data["qualifier"] == "APP"]
         for app_data in apps:
             app_o = applications.Application.get_object(self.endpoint, app_data["originalKey"])
             for branch in app_data["selectedBranches"]:
@@ -253,7 +253,7 @@ class Portfolio(aggregations.Aggregation):
     def sub_portfolios(self, full: bool = False) -> dict[str, Portfolio]:
         """Returns the list of sub portfolios as dict"""
         self.refresh()
-        # self._sub_portfolios = _sub_portfolios(self._json, self.endpoint.version(), full=full)
+        # self._sub_portfolios = _sub_portfolios(self.sq_json, self.endpoint.version(), full=full)
         self.reload_sub_portfolios()
         return self._sub_portfolios
 

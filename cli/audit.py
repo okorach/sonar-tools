@@ -205,7 +205,7 @@ def main() -> None:
             config.configure()
             sys.exit(errcodes.OK)
 
-        if "sif" in kwargs:
+        if kwargs["sif"]:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
             (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
@@ -220,7 +220,9 @@ def main() -> None:
             )
             loglevel = log.WARNING if len(problems) > 0 else log.INFO
             log.log(loglevel, "%d issues found during audit", len(problems))
-            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], file))
+
+        problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
+
     except exceptions.ConnectionError as e:
         util.exit_fatal(e.message, e.errcode)
     except exceptions.ObjectNotFound as e:

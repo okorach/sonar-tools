@@ -167,7 +167,7 @@ class Rule(sq.SqObject):
     def __init__(self, endpoint: platform.Platform, key: str, data: types.ApiPayload) -> None:
         super().__init__(endpoint=endpoint, key=key)
         log.debug("Creating rule object '%s'", key)  # utilities.json_dump(data))
-        self._json = data
+        self.sq_json = data
         self.severity = data.get("severity", None)
         self.repo = data.get("repo", None)
         self.type = data.get("type", None)
@@ -225,7 +225,7 @@ class Rule(sq.SqObject):
         """Loads a rule object"""
         o = Rule.CACHE.get(key, endpoint.url)
         if o:
-            o._json.update(data)
+            o.sq_json.update(data)
             return o
         return cls(key=key, endpoint=endpoint, data=data)
 
@@ -255,7 +255,7 @@ class Rule(sq.SqObject):
         return f"rule key '{self.key}'"
 
     def to_json(self) -> types.ObjectJsonRepr:
-        return self._json
+        return self.sq_json
 
     def to_csv(self) -> list[str]:
         data = vars(self)

@@ -25,7 +25,7 @@ from typing import Union
 import json
 import re
 from http import HTTPStatus
-from requests import HTTPError, RequestException
+from requests import RequestException
 from sonar import metrics, exceptions
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache

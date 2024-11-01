@@ -49,7 +49,7 @@ class WebHook(sq.SqObject):
         if data is None:
             params = util.remove_nones({"name": name, "url": url, "secret": secret, "project": project})
             data = json.loads(self.post("webhooks/create", params=params).text)["webhook"]
-        self._json = data
+        self.sq_json = data
         self.name = data["name"]  #: Webhook name
         self.key = data["key"]  #: Webhook key
         self.webhook_url = data["url"]  #: Webhook URL
@@ -86,7 +86,7 @@ class WebHook(sq.SqObject):
         """
         :meta private:
         """
-        if self._json["latestDelivery"]["success"]:
+        if self.sq_json["latestDelivery"]["success"]:
             return []
         return [problem.Problem(rules.get_rule(rules.RuleId.FAILED_WEBHOOK), self, str(self))]
 
@@ -98,7 +98,7 @@ class WebHook(sq.SqObject):
         :return: The configuration of the DevOps platform (except secrets)
         :rtype: dict
         """
-        return util.filter_export(self._json, _IMPORTABLE_PROPERTIES, full)
+        return util.filter_export(self.sq_json, _IMPORTABLE_PROPERTIES, full)
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, WebHook]:

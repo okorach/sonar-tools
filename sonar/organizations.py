@@ -102,7 +102,7 @@ class Organization(sqobject.SqObject):
         o = Organization.CACHE.get(data["key"], endpoint.url)
         if not o:
             o = cls(endpoint, data["key"], data["name"])
-        o._json = data
+        o.sq_json = data
         o.name = data["name"]
         o.description = data["description"]
         return o
@@ -113,7 +113,7 @@ class Organization(sqobject.SqObject):
     def export(self) -> types.ObjectJsonRepr:
         """Exports an organization"""
         log.info("Exporting %s", str(self))
-        json_data = self._json.copy()
+        json_data = self.sq_json.copy()
         json_data.pop("defaultLeakPeriod", None)
         json_data.pop("defaultLeakPeriodType", None)
         (nctype, ncval) = self.new_code_period()
@@ -127,15 +127,15 @@ class Organization(sqobject.SqObject):
         return {"organizations": self.key}
 
     def new_code_period(self) -> tuple[str, str]:
-        if "defaultLeakPeriodType" in self._json and self._json["defaultLeakPeriodType"] == "days":
-            return "DAYS", self._json["defaultLeakPeriod"]
+        if "defaultLeakPeriodType" in self.sq_json and self.sq_json["defaultLeakPeriodType"] == "days":
+            return "DAYS", self.sq_json["defaultLeakPeriod"]
         return "PREVIOUS_VERSION", None
 
     def subscription(self) -> str:
-        return self._json.get("subscription", "UNKNOWN")
+        return self.sq_json.get("subscription", "UNKNOWN")
 
     def alm(self) -> types.ApiPayload:
-        return self._json.get("alm", None)
+        return self.sq_json.get("alm", None)
 
 
 def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: bool = True) -> dict[str, Organization]:
