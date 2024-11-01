@@ -43,7 +43,6 @@ import sonar.utilities as util
 
 TOOL_NAME = "sonar-findings"
 TOTAL_FINDINGS = 0
-WRITE_END = None
 DATES_WITHOUT_TIME = False
 
 SARIF_HEADER = """{
@@ -200,7 +199,7 @@ def __write_findings(queue: Queue[list[findings.Finding]], params: ConfigSetting
         __write_header(fd, **params)
         while True:
             findings_list = queue.get()
-            if findings_list == WRITE_END:
+            if findings_list == util.WRITE_END:
                 log.debug("End of write queue reached")
                 queue.task_done()
                 break
@@ -351,7 +350,7 @@ def store_findings(components_list: dict[str, object], params: ConfigSettings) -
     components_queue.join()
     # Tell the writer thread that writing is complete
     log.debug("WriteQueue %s task WRITE_END put", str(write_queue))
-    write_queue.put(WRITE_END)
+    write_queue.put(util.WRITE_END)
     write_queue.join()
     log.debug("WriteQueue joined")
 

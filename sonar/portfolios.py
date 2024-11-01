@@ -330,15 +330,18 @@ class Portfolio(aggregations.Aggregation):
             return []
         return self._audit_singleton_aggregation(broken_rule=rules.RuleId.PORTFOLIO_SINGLETON)
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
         """Audits a portfolio"""
         log.info("Auditing %s", str(self))
-        return (
+        problems = (
             super().audit(audit_settings)
             + self._audit_empty(audit_settings)
             + self._audit_singleton(audit_settings)
             + self._audit_bg_task(audit_settings)
         )
+        if "write_q" in kwargs:
+            kwargs["write_q"].put(problems)
+        return problems
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns the portfolio representation as JSON"""
@@ -684,15 +687,15 @@ def check_supported(endpoint: pf.Platform) -> None:
         raise exceptions.UnsupportedOperation(errmsg)
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: list[str, str] = None) -> list[object]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[object]:
     """Audits all portfolios"""
     if not audit_settings.get("audit.portfolios", True):
         log.debug("Auditing portfolios is disabled, skipping...")
         return []
     log.info("--- Auditing portfolios ---")
     problems = []
-    for p in get_list(endpoint=endpoint, key_list=key_list).values():
-        problems += p.audit(audit_settings)
+    for p in get_list(endpoint=endpoint, key_list=kwargs.get("key_list", None)).values():
+        problems += p.audit(audit_settings, **kwargs)
     return problems
 
 
@@ -798,7 +801,7 @@ def export(
         if i % 10 == 0 or i == nb_portfolios:
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
     if write_q:
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return exported_portfolios
 
 

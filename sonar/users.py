@@ -423,11 +423,11 @@ def export(
         else:
             u_list[u_login].pop("login", None)
     if write_q:
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return u_list
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings) -> list[Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all users for last login date and too old tokens
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -440,8 +440,10 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings) -> list[P
         return []
     log.info("--- Auditing users ---")
     problems = []
-    for _, u in search(endpoint=endpoint).items():
+    for u in search(endpoint=endpoint).values():
         problems += u.audit(audit_settings)
+    if "write_q" in kwargs:
+        kwargs["write_q"].put(problems)
     return problems
 
 

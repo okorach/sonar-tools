@@ -519,7 +519,7 @@ def get_list(endpoint: pf.Platform, use_cache: bool = True) -> dict[str, Quality
     return QualityProfile.CACHE.objects
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits all quality profiles and return list of problems found
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -538,6 +538,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None) ->
         if nb_qp > 5:
             rule = get_rule(RuleId.QP_TOO_MANY_QP)
             problems.append(Problem(rule, f"{endpoint.url}/profiles?language={lang}", nb_qp, lang, 5))
+    if "write_q" in kwargs:
+        kwargs["write_q"].put(problems)
     return problems
 
 
@@ -603,7 +605,7 @@ def export(
     qp_list = hierarchize(qp_list, endpoint=endpoint)
     if write_q:
         write_q.put(qp_list)
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return dict(sorted(qp_list.items()))
 
 

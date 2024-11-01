@@ -35,6 +35,7 @@ from http import HTTPStatus
 from threading import Thread, Lock
 from queue import Queue
 from requests import HTTPError, RequestException
+import Levenshtein
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -1444,51 +1445,65 @@ def __audit_thread(
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing {str(project)}", catch_all=True)
         __increment_processed(audit_settings)
-        if write_q:
-            write_q.put(problems)
         results += problems
         queue.task_done()
 
     log.debug("Audit of projects completed")
 
 
-def audit(
-    endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None, write_q: Optional[Queue[list[Problem]]] = None
-) -> list[Problem]:
-    """Audits all or a list of projects
+def __similar_keys(key1: str, key2: str) -> bool:
+    """Returns whether 2 project keys are similar"""
+    if key1 == key2:
+        return False
+    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= 5
 
-    :param Platform endpoint: reference to the SonarQube platform
-    :param ConfigSettings audit_settings: Configuration of audit
-    :param KeyList key_list: List of project keys to audit, defaults to None (all projects)
-    :return: list of problems found
-    :rtype: list[Problem]
-    """
-    log.info("--- Auditing projects ---")
-    plist = get_list(endpoint, key_list)
-    problems = []
-    q = Queue(maxsize=0)
-    audit_settings["NBR_PROJECTS"] = len(plist)
-    audit_settings["PROCESSED"] = 0
-    for p in plist.values():
-        q.put(p)
-    bindings = {}
-    for i in range(audit_settings.get("threads", 1)):
-        log.debug("Starting project audit thread %d", i)
-        worker = Thread(target=__audit_thread, args=(q, problems, audit_settings, bindings, write_q))
-        worker.setDaemon(True)
-        worker.setName(f"ProjectAudit{i}")
-        worker.start()
-    q.join()
+
+def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
+    """Audits for suspected duplicate projects"""
     if not audit_settings.get("audit.projects.duplicates", True):
         log.info("Project duplicates auditing was disabled by configuration")
     else:
         log.info("Auditing for potential duplicate projects")
-        for key, p in plist.items():
-            for key2 in plist:
-                if key2 != key and re.match(key2, key):
-                    problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
-    if write_q:
-        write_q.put(problems)
+        duplicates = []
+        pair_set = set()
+        for key1, p in projects_list.items():
+            for key2 in projects_list:
+                pair = " ".join(sorted([key1, key2]))
+                if __similar_keys(key1, key2) and pair not in pair_set:
+                    duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
+                    pair_set.add(pair)
+        return duplicates
+    return []
+
+
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
+    """Audits all or a list of projects
+
+    :param Platform endpoint: reference to the SonarQube platform
+    :param ConfigSettings audit_settings: Configuration of audit
+    ::return: list of problems found
+    :rtype: list[Problem]
+    """
+    log.info("--- Auditing projects ---")
+    plist = get_list(endpoint, kwargs.get("key_list", None))
+    write_q = kwargs.get("write_q", None)
+    problems = []
+    audit_q = Queue(maxsize=0)
+    audit_settings["NBR_PROJECTS"] = len(plist)
+    audit_settings["PROCESSED"] = 0
+    map(lambda p: audit_q.put(p), plist.values())
+    bindings = {}
+    for i in range(audit_settings.get("threads", 1)):
+        log.debug("Starting project audit thread %d", i)
+        worker = Thread(target=__audit_thread, args=(audit_q, problems, audit_settings, bindings, write_q))
+        worker.setDaemon(True)
+        worker.setName(f"ProjectAudit{i}")
+        worker.start()
+    audit_q.join()
+    duplicates = __audit_duplicates(plist, audit_settings)
+    if "write_q" in kwargs:
+        kwargs["write_q"].put(duplicates)
+    problems += duplicates
     return problems
 
 
@@ -1546,7 +1561,7 @@ def export(
         worker.start()
     q.join()
     if write_q:
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return dict(sorted(project_settings.items()))
 
 

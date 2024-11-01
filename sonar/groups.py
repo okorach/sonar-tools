@@ -286,7 +286,7 @@ def export(
     return g_list
 
 
-def audit(audit_settings: types.ConfigSettings, endpoint: pf.Platform) -> list[Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all groups
 
     :param dict audit_settings: Configuration of audit
@@ -299,8 +299,10 @@ def audit(audit_settings: types.ConfigSettings, endpoint: pf.Platform) -> list[P
         return []
     log.info("--- Auditing groups ---")
     problems = []
-    for _, g in search(endpoint=endpoint).items():
+    for g in search(endpoint=endpoint).values():
         problems += g.audit(audit_settings)
+    if "write_q" in kwargs:
+        kwargs["write_q"].put(problems)
     return problems
 
 

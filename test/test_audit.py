@@ -43,6 +43,14 @@ def test_audit() -> None:
             audit.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_not_empty(util.CSV_FILE)
+
+    # Ensure no duplicate alarms #1478
+    lines = []
+    with open(util.CSV_FILE, mode="r", encoding="utf-8") as fd:
+        line = fd.readline()
+        assert line not in lines
+        lines.append(line)
+
     util.clean(util.CSV_FILE)
 
 
