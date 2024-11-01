@@ -200,7 +200,6 @@ class Rule(sq.SqObject):
         o = Rule.CACHE.get(key, endpoint.url)
         if o:
             return o
-        log.debug("Reading rule key '%s'", key)
         try:
             r = endpoint.get(_DETAILS_API, params={"key": key})
         except (ConnectionError, RequestException) as e:
