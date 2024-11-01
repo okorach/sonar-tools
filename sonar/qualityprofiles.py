@@ -19,7 +19,7 @@
 #
 
 from __future__ import annotations
-from typing import Union, Optional
+from typing import Optional
 import json
 from datetime import datetime
 
@@ -76,7 +76,7 @@ class QualityProfile(sq.SqObject):
         self.__last_use = None
         self.__last_update = None
 
-        self._rules = self.rules()
+        # self._rules = self.rules()
         self.nbr_rules = int(data["activeRuleCount"])  #: Number of rules in the quality profile
         self.nbr_deprecated_rules = int(data["activeDeprecatedRuleCount"])  #: Number of deprecated rules in the quality profile
 
@@ -91,7 +91,7 @@ class QualityProfile(sq.SqObject):
         QualityProfile.CACHE.put(self)
 
     @classmethod
-    def read(cls, endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:
+    def read(cls, endpoint: pf.Platform, name: str, language: str) -> Optional[QualityProfile]:
         """Creates a QualityProfile object corresponding to quality profile with same name and language in SonarQube
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -111,7 +111,7 @@ class QualityProfile(sq.SqObject):
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
-    def create(cls, endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:
+    def create(cls, endpoint: pf.Platform, name: str, language: str) -> Optional[QualityProfile]:
         """Creates a new quality profile in SonarQube and returns the corresponding QualityProfile object
 
         :param Platform endpoint: Reference to the SonarQube platform
@@ -219,7 +219,7 @@ class QualityProfile(sq.SqObject):
         """
         return self.built_in_parent() is not None
 
-    def built_in_parent(self) -> Union[QualityProfile, None]:
+    def built_in_parent(self) -> Optional[QualityProfile]:
         """
         :return: The built-in parent profile of the profile, or None
         :rtype: QualityProfile or None if profile does not inherit from a built-in profile
@@ -607,7 +607,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     return dict(sorted(qp_list.items()))
 
 
-def get_object(endpoint: pf.Platform, name: str, language: str) -> Union[QualityProfile, None]:
+def get_object(endpoint: pf.Platform, name: str, language: str) -> Optional[QualityProfile]:
     """Returns a quality profile Object from its name and language
 
     :param Platform endpoint: Reference to the SonarQube platform
