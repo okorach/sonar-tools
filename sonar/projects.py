@@ -1491,7 +1491,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     audit_q = Queue(maxsize=0)
     audit_settings["NBR_PROJECTS"] = len(plist)
     audit_settings["PROCESSED"] = 0
-    [audit_q.put(p) for p in plist.values()]
+    map(lambda p: audit_q.put(p), plist.values())
     bindings = {}
     for i in range(audit_settings.get("threads", 1)):
         log.debug("Starting project audit thread %d", i)
