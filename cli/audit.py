@@ -80,13 +80,11 @@ def write_problems(queue: Queue[list[problem.Problem]], fd: TextIO, settings: ty
     with_url = settings.get("WITH_URL", False)
     while True:
         problems = queue.get()
-        if problems is None:
+        if problems is util.WRITE_END:
             queue.task_done()
             break
         for p in problems:
-            data = []
-            if server_id is not None:
-                data = [server_id]
+            data = [] if not server_id else [server_id]
             data += list(p.to_json(with_url).values())
             csvwriter.writerow(data)
         queue.task_done()
