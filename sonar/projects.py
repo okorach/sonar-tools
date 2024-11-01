@@ -1491,7 +1491,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     audit_settings["NBR_PROJECTS"] = len(plist)
     audit_settings["PROCESSED"] = 0
     audit_q = Queue(maxsize=0)
-    map(lambda p: audit_q.put(p), plist.values())
+    _ = [audit_q.put(p) for p in plist.values()]
+    log.info("%d projects to audit, %d in queue", len(plist), audit_q.qsize())
     bindings = {}
     for i in range(audit_settings.get("threads", 1)):
         log.debug("Starting project audit thread %d", i)
@@ -1536,7 +1537,6 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :param KeyList key_list: List of project keys to export, defaults to None (all projects)
     :return: list of projects settings
     :rtype: ObjectJsonRepr
     """
@@ -1551,7 +1551,8 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])
 
     export_q = Queue(maxsize=0)
-    map(lambda p: export_q.put(p), proj_list.values())
+    _ = [export_q.put(p) for p in proj_list.values()]
+    log.info("%d projects to export, %d in queue", len(proj_list), export_q.qsize())
     project_settings = {}
     for i in range(export_settings.get("THREADS", 8)):
         log.debug("Starting project export thread %d", i)
