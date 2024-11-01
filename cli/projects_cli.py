@@ -58,7 +58,7 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
 
 def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, str]) -> None:
     """Checks if export and import environments are compatibles"""
-    imp_version = import_sq.version(digits=2, as_string=True)
+    imp_version = utilities.version_to_string(import_sq.version(digits=2))
     if imp_version != export_sq["version"]:
         utilities.exit_fatal("Export was not performed with same SonarQube version, aborting...", errcodes.UNSUPPORTED_OPERATION)
     for export_plugin in export_sq["plugins"]:
