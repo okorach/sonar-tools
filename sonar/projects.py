@@ -1450,6 +1450,11 @@ def __audit_thread(
     log.debug("Audit of projects completed")
 
 
+def __similar_keys(key1: str, key2: str) -> bool:
+    """Returns whether 2 project keys are similar"""
+    return key1 != key2 and re.match(key2, key1)
+
+
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all or a list of projects
 
@@ -1462,28 +1467,25 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     plist = get_list(endpoint, kwargs.get("key_list", None))
     write_q = kwargs.get("write_q", None)
     problems = []
-    q = Queue(maxsize=0)
+    audit_q = Queue(maxsize=0)
     audit_settings["NBR_PROJECTS"] = len(plist)
     audit_settings["PROCESSED"] = 0
-    for p in plist.values():
-        q.put(p)
+    [audit_q.put(p) for p in plist.values()]
     bindings = {}
     for i in range(audit_settings.get("threads", 1)):
         log.debug("Starting project audit thread %d", i)
-        worker = Thread(target=__audit_thread, args=(q, problems, audit_settings, bindings, write_q))
+        worker = Thread(target=__audit_thread, args=(audit_q, problems, audit_settings, bindings, write_q))
         worker.setDaemon(True)
         worker.setName(f"ProjectAudit{i}")
         worker.start()
-    q.join()
+    audit_q.join()
     if not audit_settings.get("audit.projects.duplicates", True):
         log.info("Project duplicates auditing was disabled by configuration")
     else:
         log.info("Auditing for potential duplicate projects")
         duplicates = []
         for key, p in plist.items():
-            for key2 in plist:
-                if key2 != key and re.match(key2, key):
-                    duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
+            [duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2)) for key2 in plist if __similar_keys(key, key2)]
         if "write_q" in kwargs:
             kwargs["write_q"].put(duplicates)
         problems += duplicates
