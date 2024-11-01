@@ -205,7 +205,7 @@ def main() -> None:
             config.configure()
             sys.exit(errcodes.OK)
 
-        if "sif" in kwargs:
+        if kwargs["sif"]:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
             (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
