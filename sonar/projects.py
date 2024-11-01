@@ -35,6 +35,7 @@ from http import HTTPStatus
 from threading import Thread, Lock
 from queue import Queue
 from requests import HTTPError, RequestException
+import Levenshtein
 
 import sonar.logging as log
 import sonar.platform as pf
@@ -1452,7 +1453,27 @@ def __audit_thread(
 
 def __similar_keys(key1: str, key2: str) -> bool:
     """Returns whether 2 project keys are similar"""
-    return key1 != key2 and re.match(key2, key1)
+    if key1 == key2:
+        return False
+    return len(key2) >= 7 and (re.match(key2, key1)) or Levenshtein.distance(key1, key2, score_cutoff=6) <= 5
+
+
+def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
+    """Audits for suspected duplicate projects"""
+    if not audit_settings.get("audit.projects.duplicates", True):
+        log.info("Project duplicates auditing was disabled by configuration")
+    else:
+        log.info("Auditing for potential duplicate projects")
+        duplicates = []
+        pair_set = set()
+        for key1, p in projects_list.items():
+            for key2 in projects_list:
+                pair = " ".join(sorted([key1, key2]))
+                if __similar_keys(key1, key2) and pair not in pair_set:
+                    duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
+                    pair_set.add(pair)
+        return duplicates
+    return []
 
 
 def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
@@ -1479,16 +1500,10 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         worker.setName(f"ProjectAudit{i}")
         worker.start()
     audit_q.join()
-    if not audit_settings.get("audit.projects.duplicates", True):
-        log.info("Project duplicates auditing was disabled by configuration")
-    else:
-        log.info("Auditing for potential duplicate projects")
-        duplicates = []
-        for key, p in plist.items():
-            [duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2)) for key2 in plist if __similar_keys(key, key2)]
-        if "write_q" in kwargs:
-            kwargs["write_q"].put(duplicates)
-        problems += duplicates
+    duplicates = __audit_duplicates(plist, audit_settings)
+    if "write_q" in kwargs:
+        kwargs["write_q"].put(duplicates)
+    problems += duplicates
     return problems
 
 

@@ -324,7 +324,7 @@
         "severity": "MEDIUM",
         "type": "PERFORMANCE",
         "object": "Project",
-        "message": "{} is likely to be a duplicate of project '{}', it could be deleted"
+        "message": "{} and project '{}' are potential duplicates, one could be deleted if confirmed"
     },
     "PROJ_PERM_MAX_USERS": {
         "severity": "MEDIUM",

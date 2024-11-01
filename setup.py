@@ -52,6 +52,7 @@ setuptools.setup(
         "python-dateutil",
         "requests",
         "jprops",
+        "levenshtein",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
