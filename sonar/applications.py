@@ -312,7 +312,7 @@ class Application(aggr.Aggregation):
             return []
         return super()._audit_singleton_aggregation(broken_rule=rules.RuleId.APPLICATION_SINGLETON)
 
-    def audit(self, audit_settings: types.ConfigSettings) -> list[problem.Problem]:
+    def audit(self, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
         """Audits an application and returns list of problems found
 
         :param dict audit_settings: Audit configuration settings from sonar-audit properties config file
@@ -320,12 +320,15 @@ class Application(aggr.Aggregation):
         :rtype: list [Problem]
         """
         log.info("Auditing %s", str(self))
-        return (
+        problems = (
             super().audit(audit_settings)
             + self._audit_empty(audit_settings)
             + self._audit_singleton(audit_settings)
             + self._audit_bg_task(audit_settings)
         )
+        if "write_q" in kwargs:
+            kwargs["write_q"].put(problems)
+        return problems
 
     def export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Exports an application
@@ -519,11 +522,11 @@ def export(
             app_json.pop("key")
             apps_settings[k] = app_json
     if write_q:
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return apps_settings
 
 
-def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None) -> list[problem.Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[problem.Problem]:
     """Audits applications and return list of problems found
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -539,8 +542,8 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list:
         return []
     log.info("--- Auditing applications ---")
     problems = []
-    for obj in get_list(endpoint, key_list=key_list).values():
-        problems += obj.audit(audit_settings)
+    for obj in get_list(endpoint, key_list=kwargs.get("key_list", None)).values():
+        problems += obj.audit(audit_settings, **kwargs)
     return problems
 
 

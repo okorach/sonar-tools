@@ -539,7 +539,7 @@ class Platform:
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits a global platform configuration and returns the list of problems found
 
-        :param audit_settings: Options of what to audit and thresholds to raise problems
+        :param audit_settings: Audit options and thresholds to raise problems
         :return: List of problems found, or empty list
         """
         log.info("--- Auditing global settings ---")
@@ -940,7 +940,7 @@ def export(
     exp = endpoint.export(export_settings)
     if write_q:
         write_q.put(exp)
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return exp
 
 
@@ -951,8 +951,16 @@ def basics(
     exp = endpoint.basics()
     if write_q:
         write_q.put(exp)
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return exp
+
+
+def audit(endpoint: Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
+    """Audits a platform"""
+    pbs = endpoint.audit(audit_settings)
+    if "write_q" in kwargs:
+        kwargs["write_q"].put(pbs)
+    return pbs
 
 
 def log_and_exit(exception: Exception) -> None:

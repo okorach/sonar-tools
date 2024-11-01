@@ -1444,27 +1444,23 @@ def __audit_thread(
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"auditing {str(project)}", catch_all=True)
         __increment_processed(audit_settings)
-        if write_q:
-            write_q.put(problems)
         results += problems
         queue.task_done()
 
     log.debug("Audit of projects completed")
 
 
-def audit(
-    endpoint: pf.Platform, audit_settings: types.ConfigSettings, key_list: types.KeyList = None, write_q: Optional[Queue[list[Problem]]] = None
-) -> list[Problem]:
+def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs) -> list[Problem]:
     """Audits all or a list of projects
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings audit_settings: Configuration of audit
-    :param KeyList key_list: List of project keys to audit, defaults to None (all projects)
-    :return: list of problems found
+    ::return: list of problems found
     :rtype: list[Problem]
     """
     log.info("--- Auditing projects ---")
-    plist = get_list(endpoint, key_list)
+    plist = get_list(endpoint, kwargs.get("key_list", None))
+    write_q = kwargs.get("write_q", None)
     problems = []
     q = Queue(maxsize=0)
     audit_settings["NBR_PROJECTS"] = len(plist)
@@ -1483,12 +1479,14 @@ def audit(
         log.info("Project duplicates auditing was disabled by configuration")
     else:
         log.info("Auditing for potential duplicate projects")
+        duplicates = []
         for key, p in plist.items():
             for key2 in plist:
                 if key2 != key and re.match(key2, key):
-                    problems.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
-    if write_q:
-        write_q.put(problems)
+                    duplicates.append(Problem(get_rule(RuleId.PROJ_DUPLICATE), p, str(p), key2))
+        if "write_q" in kwargs:
+            kwargs["write_q"].put(duplicates)
+        problems += duplicates
     return problems
 
 
@@ -1546,7 +1544,7 @@ def export(
         worker.start()
     q.join()
     if write_q:
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return dict(sorted(project_settings.items()))
 
 

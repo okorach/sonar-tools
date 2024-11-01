@@ -43,6 +43,7 @@ SQ_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 SQ_DATE_FORMAT = "%Y-%m-%d"
 SQ_TIME_FORMAT = "%H:%M:%S"
 DEFAULT = "__default__"
+WRITE_END = None
 
 
 def check_last_version(package_url: str) -> None:

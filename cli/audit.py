@@ -39,18 +39,17 @@ from sonar import platform, users, groups, qualityprofiles, qualitygates, sif, p
 import sonar.utilities as util
 from sonar.audit import problem, config
 
-_ALL_AUDITABLE = [
-    options.WHAT_SETTINGS,
-    options.WHAT_USERS,
-    options.WHAT_GROUPS,
-    options.WHAT_GATES,
-    options.WHAT_PROFILES,
-    options.WHAT_PROJECTS,
-    options.WHAT_APPS,
-    options.WHAT_PORTFOLIOS,
-]
-
 TOOL_NAME = "sonar-audit"
+WHAT_AUDITABLE = {
+    options.WHAT_SETTINGS: platform.audit,
+    options.WHAT_USERS: users.audit,
+    options.WHAT_GROUPS: groups.audit,
+    options.WHAT_GATES: qualitygates.audit,
+    options.WHAT_PROFILES: qualityprofiles.audit,
+    options.WHAT_PROJECTS: projects.audit,
+    options.WHAT_APPS: applications.audit,
+    options.WHAT_PORTFOLIOS: portfolios.audit,
+}
 
 
 def _audit_sif(sysinfo: str, audit_settings: types.ConfigSettings) -> tuple[str, list[problem.Problem]]:
@@ -98,60 +97,28 @@ def _audit_sq(
     sq: platform.Platform, settings: types.ConfigSettings, what_to_audit: list[str] = None, key_list: types.KeyList = None
 ) -> list[problem.Problem]:
     """Audits a SonarQube/Cloud platform"""
+    everything = what_to_audit is None
+    if everything:
+        what_to_audit = list(WHAT_AUDITABLE.keys())
+
     problems = []
-    q = Queue(maxsize=0)
-    everything = False
-    if not what_to_audit:
-        everything = True
-        what_to_audit = options.WHAT_AUDITABLE
+    write_q = Queue(maxsize=0)
 
     with util.open_file(settings.get("FILE", None), mode="w") as fd:
-        worker = Thread(target=write_problems, args=(q, fd, settings))
+        worker = Thread(target=write_problems, args=(write_q, fd, settings))
         worker.daemon = True
-        worker.name = "WriteProblems"
+        worker.name = "AuditWriter"
         worker.start()
-        if options.WHAT_PROJECTS in what_to_audit:
-            pbs = projects.audit(endpoint=sq, audit_settings=settings, key_list=key_list, write_q=q)
-            q.put(pbs)
-            problems += pbs
-        if options.WHAT_PROFILES in what_to_audit:
-            pbs = qualityprofiles.audit(endpoint=sq, audit_settings=settings)
-            q.put(pbs)
-            problems += pbs
-        if options.WHAT_GATES in what_to_audit:
-            pbs = qualitygates.audit(endpoint=sq, audit_settings=settings)
-            q.put(pbs)
-            problems += pbs
-        if options.WHAT_SETTINGS in what_to_audit:
-            pbs = sq.audit(audit_settings=settings)
-            q.put(pbs)
-            problems += pbs
-        if options.WHAT_USERS in what_to_audit:
-            pbs = users.audit(endpoint=sq, audit_settings=settings)
-            q.put(pbs)
-            problems += pbs
-        if options.WHAT_GROUPS in what_to_audit:
-            pbs = groups.audit(endpoint=sq, audit_settings=settings)
-            q.put(pbs)
-            problems += pbs
-        if options.WHAT_PORTFOLIOS in what_to_audit:
-            try:
-                pbs = portfolios.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-                q.put(pbs)
-                problems += pbs
-            except exceptions.UnsupportedOperation:
-                if not everything:
-                    log.warning("No portfolios in %s edition, audit of portfolios ignored", sq.edition())
-        if options.WHAT_APPS in what_to_audit:
-            try:
-                pbs = applications.audit(endpoint=sq, audit_settings=settings, key_list=key_list)
-                q.put(pbs)
-                problems += pbs
-            except exceptions.UnsupportedOperation:
-                if not everything:
-                    log.warning("No applications in %s edition, audit of portfolios ignored", sq.edition())
-        q.put(None)
-        q.join()
+        for element, func in WHAT_AUDITABLE.items():
+            if element in what_to_audit:
+                try:
+                    pbs = func(endpoint=sq, audit_settings=settings, write_q=write_q, key_list=key_list)
+                    problems += pbs
+                except exceptions.UnsupportedOperation as e:
+                    if not everything:
+                        log.warning(e.message)
+        write_q.put(None)
+        write_q.join()
     return problems
 
 
@@ -162,7 +129,7 @@ def __parser_args(desc: str) -> object:
     parser = options.set_output_file_args(parser, allowed_formats=("csv", "json"))
     parser = options.set_url_arg(parser)
     parser = options.add_thread_arg(parser, "project audit")
-    parser = options.set_what(parser, what_list=_ALL_AUDITABLE, operation="audit")
+    parser = options.set_what(parser, what_list=WHAT_AUDITABLE, operation="audit")
     parser.add_argument("--sif", required=False, help="SIF file to audit when auditing SIF")
     parser.add_argument(
         "--config",
@@ -209,19 +176,20 @@ def main() -> None:
             file = kwargs["sif"]
             errcode = errcodes.SIF_AUDIT_ERROR
             (settings["SERVER_ID"], problems) = _audit_sif(file, settings)
+            problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
+
         else:
             sq = platform.Platform(**kwargs)
             sq.verify_connection()
             sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
             settings["SERVER_ID"] = sq.server_id()
             __check_keys_exist(kwargs[options.KEYS], sq, kwargs[options.WHAT])
-            problems = _audit_sq(
-                sq, settings, what_to_audit=util.check_what(kwargs[options.WHAT], _ALL_AUDITABLE, "audited"), key_list=kwargs[options.KEYS]
-            )
+            what = util.check_what(kwargs[options.WHAT], WHAT_AUDITABLE, "audited")
+            problems = _audit_sq(sq, settings, what_to_audit=what, key_list=kwargs[options.KEYS])
             loglevel = log.WARNING if len(problems) > 0 else log.INFO
             log.log(loglevel, "%d issues found during audit", len(problems))
 
-        problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
+        # problem.dump_report(problems, file=ofile, server_id=settings["SERVER_ID"], format=util.deduct_format(kwargs[options.FORMAT], ofile))
 
     except exceptions.ConnectionError as e:
         util.exit_fatal(e.message, e.errcode)

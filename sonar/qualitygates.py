@@ -345,7 +345,7 @@ class QualityGate(sq.SqObject):
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, full))
 
 
-def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None) -> list[Problem]:
+def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = None, **kwargs) -> list[Problem]:
     """Audits Sonar platform quality gates, returns found problems"""
     log.info("--- Auditing quality gates ---")
     problems = []
@@ -357,6 +357,8 @@ def audit(endpoint: pf.Platform = None, audit_settings: types.ConfigSettings = N
         problems.append(Problem(get_rule(RuleId.QG_TOO_MANY_GATES), f"{endpoint.url}/quality_gates", nb_qg, 5))
     for qg in quality_gates_list.values():
         problems += qg.audit(audit_settings)
+    if "write_q" in kwargs:
+        kwargs["write_q"].put(problems)
     return problems
 
 
@@ -392,7 +394,7 @@ def export(
     qg_list = {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
     if write_q:
         write_q.put(qg_list)
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return qg_list
 
 
