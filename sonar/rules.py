@@ -388,7 +388,7 @@ def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, *
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
-    for rule_key, rule in get_list(endpoint=endpoint, use_cache=False).items():
+    for rule_key, rule in get_list(endpoint=endpoint, use_cache=False, include_external=False).items():
         rule_export = rule.export(full)
         if rule.template_key is not None:
             instantiated_rules[rule_key] = rule_export
