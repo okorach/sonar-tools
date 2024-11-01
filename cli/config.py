@@ -191,7 +191,6 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
         print("{", file=fd)
         for what_item, call_data in _EXPORT_CALLS.items():
             if what_item not in what:
-                log.info("Skipping %s", what_item)
                 continue
             ndx, func = call_data
             try:
