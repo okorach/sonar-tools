@@ -379,9 +379,7 @@ def get_list(endpoint: pf.Platform) -> dict[str, QualityGate]:
     return qg_list
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports quality gates as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -392,6 +390,7 @@ def export(
     """
     log.info("Exporting quality gates")
     qg_list = {k: qg.to_json(export_settings) for k, qg in sorted(get_list(endpoint).items())}
+    write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(qg_list)
         write_q.put(util.WRITE_END)

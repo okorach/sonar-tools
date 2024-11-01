@@ -403,18 +403,16 @@ def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, U
     return sqobject.search_objects(endpoint=endpoint, object_class=User, params=params)
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all users in JSON representation
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :param KeyList key_list: Unused
     :return: list of users JSON representation
     :rtype: ObjectJsonRepr
     """
     log.info("Exporting users")
+    write_q = kwargs.get("write_q", None)
     u_list = {}
     for u_login, u_obj in sorted(search(endpoint=endpoint).items()):
         u_list[u_login] = u_obj.to_json(export_settings)

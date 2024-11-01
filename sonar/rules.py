@@ -384,9 +384,7 @@ def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
         return None
 
 
-def export(
-    endpoint: platform.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
@@ -414,9 +412,10 @@ def export(
         rule_list["standard"] = other_rules
     if export_settings.get("MODE", "") == "MIGRATION":
         rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
+    write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(rule_list)
-        write_q.put(None)
+        write_q.put(utilities.WRITE_END)
     return rule_list
 
 

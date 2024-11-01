@@ -582,13 +582,10 @@ def hierarchize(qp_list: types.ObjectJsonRepr, endpoint: pf.Platform) -> types.O
     return hierarchy
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
     :param ConfigSettings export_settings: Export parameters
-    :param KeyList key_list: Unused
     :return: Dict of quality profiles JSON representation
     :rtype: ObjectJsonRepr
     """
@@ -603,6 +600,7 @@ def export(
             qp_list[lang] = {}
         qp_list[lang][name] = json_data
     qp_list = hierarchize(qp_list, endpoint=endpoint)
+    write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(qp_list)
         write_q.put(util.WRITE_END)

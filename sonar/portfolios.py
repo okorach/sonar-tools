@@ -763,24 +763,20 @@ def search_by_key(endpoint: pf.Platform, key: str) -> types.ApiPayload:
     return util.search_by_key(endpoint, key, Portfolio.SEARCH_API, "components")
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
     :param ConfigSetting export_settings: Options to use for export
-    :param KeyList key_list: list of portfoliios keys to export as csv or list, defaults to all if None
     :return: Dict of portfolio settings
     :rtype: ObjectJsonRepr
     """
+    write_q = kwargs.get("write_q", None)
+    key_list = kwargs.get("key_list", None)
     check_supported(endpoint)
 
     log.info("Exporting portfolios")
-    if key_list:
-        nb_portfolios = len(key_list)
-    else:
-        nb_portfolios = count(endpoint=endpoint)
+    nb_portfolios = len(key_list) if key_list else count(endpoint=endpoint)
     i = 0
     exported_portfolios = {}
     for k, p in sorted(get_list(endpoint=endpoint, key_list=key_list).items()):

@@ -498,9 +498,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None, write_q: Queue = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -509,6 +507,8 @@ def export(
     :return: Dict of applications settings
     :rtype: ObjectJsonRepr
     """
+    write_q = kwargs.get("write_q", None)
+    key_list = kwargs.get("key_list", None)
     if endpoint.is_sonarcloud():
         # log.info("Applications do not exist in SonarCloud, export skipped")
         raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
