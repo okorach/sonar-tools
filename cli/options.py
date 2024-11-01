@@ -184,10 +184,12 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
 
     kwargs = vars(args)
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
-    log.set_debug_level(kwargs[VERBOSE])
-    del kwargs[VERBOSE]
+    log.set_debug_level(kwargs.pop(VERBOSE))
+
     tool = "sonar-migration" if is_migration else "sonar-tools"
-    log.info("%s version %s", tool, version.MIGRATION_TOOL_VERSION)
+    vers = version.MIGRATION_TOOL_VERSION if is_migration else version.PACKAGE_VERSION
+    log.info("%s version %s", tool, vers)
+
     if os.getenv("IN_DOCKER", "No") == "Yes":
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
     if log.get_level() <= log.DEBUG:
