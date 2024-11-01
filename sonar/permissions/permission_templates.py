@@ -70,7 +70,7 @@ class PermissionTemplate(sqobject.SqObject):
             self.permissions().read()
             log.info("Creating permission template '%s'", name)
             log.debug("from sync data %s", utilities.json_dump(data))
-        self._json = data
+        self.sq_json = data
         self.name = name
         data.pop("name")
         self.key = data.pop("id", None)
@@ -155,7 +155,7 @@ class PermissionTemplate(sqobject.SqObject):
 
     def to_json(self, export_settings: types.ConfigSettings = None) -> types.ObjectJsonRepr:
         """Returns JSON representation of a permission template"""
-        json_data = self._json.copy()
+        json_data = self.sq_json.copy()
         json_data.update(
             {
                 "key": self.key,

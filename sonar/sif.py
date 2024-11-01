@@ -125,7 +125,7 @@ class Sif(object):
     def version(self) -> Optional[tuple[int, ...]]:
         """Returns the version of the SQ instance represented by the SIF"""
         try:
-            return util.string_to_version(self.json["System"]["Version"], digits=3, as_string=False)
+            return util.string_to_version(self.json["System"]["Version"])
         except KeyError:
             return None
 
@@ -273,7 +273,7 @@ class Sif(object):
 
     def __audit_dce_settings(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits DCE settings"""
-        log.info("Auditing DCE settings for version %s", str(self.version()))
+        log.info("Auditing DCE settings for version %s", util.version_to_string(self.version()))
         problems = []
         sq_edition = self.edition()
         if sq_edition is None:

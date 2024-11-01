@@ -166,7 +166,7 @@ class User(sqobject.SqObject):
             self._id = data["id"]
         self.__tokens = None
         self._groups = self.groups(data)  #: User groups
-        self._json = data
+        self.sq_json = data
 
     def groups(self, data: types.ApiPayload = None) -> types.KeyList:
         """Returns the list of groups of a user"""
@@ -376,7 +376,7 @@ class User(sqobject.SqObject):
         :return: User data
         :rtype: dict
         """
-        json_data = self._json.copy()
+        json_data = self.sq_json.copy()
         json_data["scmAccounts"] = self.scm_accounts
         json_data["groups"] = self.groups().copy()
         if export_settings.get("MODE", "") == "MIGRATION":

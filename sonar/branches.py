@@ -152,21 +152,21 @@ class Branch(components.Component):
         return self
 
     def _load(self, data):
-        if self._json is None:
-            self._json = data
+        if self.sq_json is None:
+            self.sq_json = data
         else:
-            self._json.update(data)
-        self._is_main = self._json["isMain"]
-        self._last_analysis = util.string_to_date(self._json.get("analysisDate", None))
-        self._keep_when_inactive = self._json.get("excludedFromPurge", False)
-        self._is_main = self._json.get("isMain", False)
+            self.sq_json.update(data)
+        self._is_main = self.sq_json["isMain"]
+        self._last_analysis = util.string_to_date(self.sq_json.get("analysisDate", None))
+        self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
+        self._is_main = self.sq_json.get("isMain", False)
 
     def is_kept_when_inactive(self):
         """
         :return: Whether the branch is kept when inactive
         :rtype: bool
         """
-        if self._keep_when_inactive is None or self._json is None:
+        if self._keep_when_inactive is None or self.sq_json is None:
             self.refresh()
         return self._keep_when_inactive
 
@@ -175,7 +175,7 @@ class Branch(components.Component):
         :return: Whether the branch is the project main branch
         :rtype: bool
         """
-        if self._is_main is None or self._json is None:
+        if self._is_main is None or self.sq_json is None:
             self.refresh()
         return self._is_main
 

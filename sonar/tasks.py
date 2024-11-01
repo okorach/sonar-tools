@@ -181,7 +181,7 @@ class Task(sq.SqObject):
     def __init__(self, endpoint: pf.Platform, task_id: str, concerned_object: object = None, data: types.ApiPayload = None) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=task_id)
-        self._json = data
+        self.sq_json = data
         self.concerned_object = concerned_object
         self._context = None
         self._error = None
@@ -205,17 +205,17 @@ class Task(sq.SqObject):
 
     def __load(self) -> None:
         """Loads a task context"""
-        if self._json is not None:
+        if self.sq_json is not None:
             return
         self.__load_context()
 
     def __load_context(self, force: bool = False) -> None:
         """Loads a task context"""
-        if not force and self._json is not None and ("scannerContext" in self._json or not self.has_scanner_context()):
+        if not force and self.sq_json is not None and ("scannerContext" in self.sq_json or not self.has_scanner_context()):
             # Context already retrieved or not available
             return
         params = {"id": self.key, "additionalFields": "scannerContext,stacktrace"}
-        self._json.update(json.loads(self.get("ce/task", params=params).text)["task"])
+        self.sq_json.update(json.loads(self.get("ce/task", params=params).text)["task"])
 
     def id(self) -> str:
         """
@@ -227,9 +227,9 @@ class Task(sq.SqObject):
     def __json_field(self, field: str) -> str:
         """Returns a background task scanner context field"""
         self.__load()
-        if field not in self._json:
+        if field not in self.sq_json:
             self.__load_context(force=True)
-        return self._json[field]
+        return self.sq_json[field]
 
     def type(self) -> str:
         """
@@ -265,7 +265,7 @@ class Task(sq.SqObject):
         :rtype: str
         """
         self.__load()
-        return self._json.get("submitterLogin", "anonymous")
+        return self.sq_json.get("submitterLogin", "anonymous")
 
     def has_scanner_context(self) -> bool:
         """
@@ -273,18 +273,18 @@ class Task(sq.SqObject):
         :rtype: bool
         """
         self.__load()
-        return self._json.get("hasScannerContext", False)
+        return self.sq_json.get("hasScannerContext", False)
 
     def warnings(self) -> list[str]:
         """
         :return: the background task warnings, if any
         :rtype: list
         """
-        if not self._json.get("warnings", None):
+        if not self.sq_json.get("warnings", None):
             data = json.loads(self.get("ce/task", params={"id": self.key, "additionalFields": "warnings"}).text)
-            self._json["warnings"] = []
-            self._json.update(data["task"])
-        return self._json["warnings"]
+            self.sq_json["warnings"] = []
+            self.sq_json.update(data["task"])
+        return self.sq_json["warnings"]
 
     def warning_count(self) -> int:
         """
@@ -331,7 +331,7 @@ class Task(sq.SqObject):
         if not self.has_scanner_context():
             return None
         self.__load_context()
-        context_line = self._json.get("scannerContext", None)
+        context_line = self.sq_json.get("scannerContext", None)
         if context_line is None:
             return None
         context = {}
@@ -355,7 +355,7 @@ class Task(sq.SqObject):
         :rtype: tuple (errorMsg (str), stackTrace (str)
         """
         self.__load_context()
-        return (self._json.get("errorMessage", None), self._json.get("errorStacktrace", None))
+        return (self.sq_json.get("errorMessage", None), self.sq_json.get("errorStacktrace", None))
 
     def error_message(self) -> Optional[str]:
         """
@@ -363,7 +363,7 @@ class Task(sq.SqObject):
         :rtype: str
         """
         self.__load_context()
-        return self._json.get("errorMessage", None)
+        return self.sq_json.get("errorMessage", None)
 
     def __audit_exclusions(self, exclusion_pattern: str, susp_exclusions: str, susp_exceptions: str) -> list[Problem]:
         """Audits a task exclusion patterns are returns found problems"""
@@ -415,8 +415,8 @@ class Task(sq.SqObject):
         if not audit_settings.get("audit.projects.failedTasks", True):
             log.debug("Project failed background tasks auditing disabled, skipping...")
             return []
-        if self._json["status"] != "FAILED":
-            log.debug("Last bg task of %s has status %s...", str(self.concerned_object), self._json["status"])
+        if self.sq_json["status"] != "FAILED":
+            log.debug("Last bg task of %s has status %s...", str(self.concerned_object), self.sq_json["status"])
             return []
         return [Problem(get_rule(RuleId.BG_TASK_FAILED), self, str(self.concerned_object))]
 
@@ -544,7 +544,7 @@ def search_last(endpoint: pf.Platform, component_key: str, **params) -> Optional
     branch = params.pop("branch", None)
     bg_tasks = search(endpoint=endpoint, only_current=branch is None, component_key=component_key, **params)
     if branch:
-        bg_tasks = [t for t in bg_tasks if t._json.get("branch", "") == branch]
+        bg_tasks = [t for t in bg_tasks if t.sq_json.get("branch", "") == branch]
     if len(bg_tasks) == 0:
         # No bgtask was found
         log.debug("No background task found for component key '%s'%s", component_key, f" branch '{branch}'" if branch else "")

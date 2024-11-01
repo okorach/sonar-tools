@@ -65,10 +65,10 @@ class Component(sq.SqObject):
             self.reload(data)
 
     def reload(self, data: types.ApiPayload) -> Component:
-        if self._json:
-            self._json.update(data)
+        if self.sq_json:
+            self.sq_json.update(data)
         else:
-            self._json = data
+            self.sq_json = data
         if "name" in data:
             self.name = data["name"]
         if "visibility" in data:
@@ -84,14 +84,14 @@ class Component(sq.SqObject):
     def tags(self) -> list[str]:
         """Returns object tags"""
         if self._tags is None:
-            if self._json is not None and "tags" in self._json:
-                self._tags = self._json["tags"]
+            if self.sq_json is not None and "tags" in self.sq_json:
+                self._tags = self.sq_json["tags"]
             else:
                 data = json.loads(self.get(_DETAILS_API, params={"component": self.key}).text)
-                if self._json is None:
-                    self._json = {}
-                self._json.update(data["component"])
-                self._tags = self._json["tags"]
+                if self.sq_json is None:
+                    self.sq_json = {}
+                self.sq_json.update(data["component"])
+                self._tags = self.sq_json["tags"]
                 settings.Setting.load(key=settings.COMPONENT_VISIBILITY, endpoint=self.endpoint, component=self, data=data["component"])
         return self._tags if len(self._tags) > 0 else None
 

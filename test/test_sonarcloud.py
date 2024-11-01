@@ -112,7 +112,7 @@ def test_org_attr() -> None:
     org = organizations.Organization.get_object(endpoint=util.SC, key=MY_ORG_1)
     assert org.key == MY_ORG_1
     assert org.name == "Olivier Korach"
-    assert org._json["url"] == "https://github.com/okorach"
+    assert org.sq_json["url"] == "https://github.com/okorach"
     (nc_type, nc_val) = org.new_code_period()
     assert nc_type == "PREVIOUS_VERSION"
     assert org.subscription() == "FREE"

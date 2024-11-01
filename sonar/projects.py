@@ -243,10 +243,10 @@ class Project(components.Component):
         :rtype: Project
         """
         """Loads a project object with contents of an api/projects/search call"""
-        if self._json is None:
-            self._json = data
+        if self.sq_json is None:
+            self.sq_json = data
         else:
-            self._json.update(data)
+            self.sq_json.update(data)
         self.name = data["name"]
         self._visibility = data["visibility"]
         if "lastAnalysisDate" in data:
@@ -991,7 +991,7 @@ class Project(components.Component):
                 ctxt = {k: v for k, v in ctxt.items() if k not in _UNNEEDED_CONTEXT_DATA}
             t_hist = []
             for t in self.task_history():
-                t_hist.append({k: v for k, v in t._json.items() if k not in _UNNEEDED_TASK_DATA})
+                t_hist.append({k: v for k, v in t.sq_json.items() if k not in _UNNEEDED_TASK_DATA})
             json_data["backgroundTasks"] = {
                 "lastTaskScannerContext": ctxt,
                 # "lastTaskWarnings": last_task.warnings(),
@@ -1006,7 +1006,7 @@ class Project(components.Component):
         :rtype: dict
         """
         log.info("Exporting %s", str(self))
-        json_data = self._json.copy()
+        json_data = self.sq_json.copy()
         json_data.update({"key": self.key, "name": self.name})
         try:
             json_data["binding"] = self.__export_get_binding()

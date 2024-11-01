@@ -45,7 +45,7 @@ class SqObject(object):
     def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
-        self._json = None
+        self.sq_json = None
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
@@ -85,10 +85,10 @@ class SqObject(object):
 
     def reload(self, data: types.ObjectJsonRepr) -> None:
         """Reload a Sonar object with its JSON representation"""
-        if self._json is None:
-            self._json = data
+        if self.sq_json is None:
+            self.sq_json = data
         else:
-            self._json.update(data)
+            self.sq_json.update(data)
 
     def get(
         self,

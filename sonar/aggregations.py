@@ -53,7 +53,7 @@ class Aggregation(comp.Component):
         super().reload(data)
         for d in ("description", "desc"):
             if d in data:
-                self._description = self._json[d]
+                self._description = self.sq_json[d]
 
     def nbr_projects(self) -> int:
         """Returns the number of projects of an Aggregation (Application or Portfolio)

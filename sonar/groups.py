@@ -61,7 +61,7 @@ class Group(sq.SqObject):
         self.__members_count = data.get("membersCount", None)
         self.__is_default = data.get("default", None)
         self._id = data.get("id", None)  #: SonarQube 10.4+ Group id
-        self._json = data
+        self.sq_json = data
         Group.CACHE.put(self)
         log.debug("Created %s object", str(self))
 
@@ -190,7 +190,7 @@ class Group(sq.SqObject):
         :rtype: dict
         """
         if full_specs:
-            json_data = {self.name: self._json}
+            json_data = {self.name: self.sq_json}
         else:
             json_data = {"name": self.name}
             json_data["description"] = self.description if self.description and self.description != "" else None

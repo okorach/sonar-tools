@@ -136,8 +136,8 @@ class Hotspot(findings.Finding):
         :rtype: dict
         """
         if self.endpoint.version() >= (10, 2, 0):
-            if "vulnerabilityProbability" in self._json:
-                self.impacts = {findings.QUALITY_SECURITY: self._json["vulnerabilityProbability"] + "(HOTSPOT)"}
+            if "vulnerabilityProbability" in self.sq_json:
+                self.impacts = {findings.QUALITY_SECURITY: self.sq_json["vulnerabilityProbability"] + "(HOTSPOT)"}
             else:
                 self.impacts = {findings.QUALITY_SECURITY: "UNDEFINED(HOTSPOT)"}
         data = super().to_json(without_time)

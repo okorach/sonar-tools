@@ -90,7 +90,7 @@ class QualityGate(sq.SqObject):
         self._conditions = None  #: Quality gate conditions
         self._permissions = None  #: Quality gate permissions
         self._projects = None  #: Projects using this quality profile
-        self._json = data
+        self.sq_json = data
         self.name = data.pop("name")
         self.key = data.pop("id", self.name)
         self.is_default = data.get("isDefault", False)
@@ -126,7 +126,7 @@ class QualityGate(sq.SqObject):
         o = QualityGate.CACHE.get(data["name"], endpoint.url)
         if not o:
             o = cls(endpoint, data["name"], data=data)
-        o._json = data
+        o.sq_json = data
         return o
 
     @classmethod
@@ -330,7 +330,7 @@ class QualityGate(sq.SqObject):
 
     def to_json(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Returns JSON representation of object"""
-        json_data = self._json
+        json_data = self.sq_json
         full = export_settings.get("FULL_EXPORT", False)
         if not self.is_default and not full:
             json_data.pop("isDefault")

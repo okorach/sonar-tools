@@ -70,7 +70,7 @@ class QualityProfile(sq.SqObject):
         self.language = data["language"]  #: Quality profile language
         self.is_default = data["isDefault"]  #: Quality profile is default
         self.is_built_in = data["isBuiltIn"]  #: Quality profile is built-in - read-only
-        self._json = data
+        self.sq_json = data
         self._permissions = None
         self._rules = None
         self.__last_use = None
@@ -224,7 +224,7 @@ class QualityProfile(sq.SqObject):
         :return: The built-in parent profile of the profile, or None
         :rtype: QualityProfile or None if profile does not inherit from a built-in profile
         """
-        self.is_built_in = self._json.get("isBuiltIn", False)
+        self.is_built_in = self.sq_json.get("isBuiltIn", False)
         if self.is_built_in:
             return self
         if self.parent_name is None:
@@ -310,7 +310,7 @@ class QualityProfile(sq.SqObject):
         :return: the quality profile properties as JSON dict
         :rtype: dict
         """
-        json_data = self._json.copy()
+        json_data = self.sq_json.copy()
         json_data.update({"name": self.name, "language": self.language, "parentName": self.parent_name})
         full = export_settings.get("FULL_EXPORT", False)
         if not self.is_default:
