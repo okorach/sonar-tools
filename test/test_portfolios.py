@@ -67,14 +67,13 @@ def test_exists() -> None:
 
 def test_get_list() -> None:
     """Test portfolio get_list"""
+    k_list = ["PORT_FAV_PROJECTS", "PORTFOLIO_ALL"]
     if util.SQ.edition() in ("community", "developer"):
         with pytest.raises(exceptions.UnsupportedOperation):
-            _ = portfolios.get_list(endpoint=util.SQ, key_list="PORT_FAV_PROJECTS,PORTFOLIO_ALL")
+            _ = portfolios.get_list(endpoint=util.SQ, key_list=k_list)
     else:
-        p_dict = portfolios.get_list(endpoint=util.SQ, key_list="PORT_FAV_PROJECTS,PORTFOLIO_ALL")
-        assert "PORT_FAV_PROJECTS" in p_dict
-        assert "PORTFOLIO_ALL" in p_dict
-        assert len(p_dict) == 2
+        p_dict = portfolios.get_list(endpoint=util.SQ, key_list=k_list)
+        assert sorted(k_list) == sorted(list(p_dict.keys()))
 
 
 def test_create_delete() -> None:
