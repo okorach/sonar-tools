@@ -77,9 +77,7 @@ class SqObject(object):
             if not endpoint:
                 cls.CACHE.clear()
             else:
-                for o in cls.CACHE.values().copy():
-                    if o.endpoint.url != endpoint.url:
-                        cls.CACHE.pop(o)
+                _ = [cls.CACHE.pop(o) for o in cls.CACHE.values().copy() if o.endpoint.url != endpoint.url]
         except AttributeError:
             pass
 
@@ -180,7 +178,7 @@ def search_objects(endpoint: object, object_class: any, params: types.ApiParams,
     data = json.loads(endpoint.get(api, params=new_params).text)
     nb_pages = utilities.nbr_pages(data)
     nb_objects = max(len(data[returned_field]), utilities.nbr_total_elements(data))
-    log.debug("Loading %d %ss...", nb_objects, object_class.__name__)
+    log.debug("Loading %d %ss... from %s", nb_objects, object_class.__name__, data)
     for obj in data[returned_field]:
         if object_class.__name__ in ("Portfolio", "Group", "QualityProfile", "User", "Application", "Project", "Organization"):
             objects_list[obj[key_field]] = object_class.load(endpoint=endpoint, data=obj)
