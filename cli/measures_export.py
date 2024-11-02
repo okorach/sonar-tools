@@ -330,7 +330,7 @@ def main() -> None:
 
         if file:
             log.info("File '%s' created", file)
-        log.info("%d %s, %d branches", nb_proj, kwargs[options.COMPONENT_TYPE], nb_branches)
+        log.info("%d %s, %d branches exported from %s", nb_proj, kwargs[options.COMPONENT_TYPE], nb_branches, kwargs[options.URL])
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
     except (PermissionError, FileNotFoundError) as e:
