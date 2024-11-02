@@ -19,6 +19,7 @@
 ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SONAR_TOOLS_RELEASE="$ROOTDIR/sonar/version.py"
 
 build_docs=0
 build_docker=0
