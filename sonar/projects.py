@@ -1545,7 +1545,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     key_list = kwargs.get("key_list", None)
 
     _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
-    proj_list = get_list(endpoint=endpoint, key_list=key_list).items()
+    proj_list = get_list(endpoint=endpoint, key_list=key_list)
     export_settings["NBR_PROJECTS"] = len(proj_list)
     export_settings["PROCESSED"] = 0
     log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])

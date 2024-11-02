@@ -160,9 +160,7 @@ def test_config_import_portfolios() -> None:
     logging.set_debug_level("DEBUG")
     logging.info("Deleting all portfolios")
     portfolios.Portfolio.clear_cache()
-    for p in portfolios.get_list(util.TEST_SQ).values():
-        if p.is_toplevel():
-            p.delete()
+    _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ).values() if p.is_toplevel()]
     # Import config
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", [CMD] + util.TEST_OPTS + ["-i", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE, "-l", "test.log"]):

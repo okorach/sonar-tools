@@ -775,7 +775,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     nb_portfolios = len(key_list) if key_list else count(endpoint=endpoint)
     i = 0
     exported_portfolios = {}
-    for k, p in get_list(endpoint=endpoint, key_list=key_list):
+    for k, p in get_list(endpoint=endpoint, key_list=key_list).items():
         try:
             if not p.is_sub_portfolio:
                 exp = p.export(export_settings)
