@@ -237,6 +237,7 @@ def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[st
         header_list.append("url")
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        print("# ", file=fd, end="")
         csvwriter.writerow(header_list)
         for comp_data in data:
             row = [comp_data.get(m, "") for m in header_list]
