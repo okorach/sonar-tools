@@ -30,7 +30,7 @@ coverageReport="$buildDir/coverage.xml"
 echo "Running tests"
 unreadableSif=$ROOTDIR/test/sif_not_readable.json
 chmod u-rw $unreadableSif
-export SONAR_HOST_URL=${1:-${SONAR_HOST_URL_TEST}}
+export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
 coverage run --source=$ROOTDIR -m pytest $ROOTDIR/test/
 coverage xml -o $coverageReport
 chmod u+rw $unreadableSif
