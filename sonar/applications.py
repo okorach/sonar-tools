@@ -512,7 +512,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
         raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
 
     apps_settings = {}
-    for k, app in get_list(endpoint, key_list):
+    for k, app in get_list(endpoint, key_list).items():
         app_json = app.export(export_settings)
         if write_q:
             write_q.put(app_json)

@@ -389,7 +389,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     :rtype: ObjectJsonRepr
     """
     log.info("Exporting quality gates")
-    qg_list = {k: qg.to_json(export_settings) for k, qg in get_list(endpoint)}
+    qg_list = {k: qg.to_json(export_settings) for k, qg in get_list(endpoint).items()}
     write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(qg_list)
