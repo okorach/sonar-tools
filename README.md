@@ -24,6 +24,7 @@ deletes tokens created since more than a certain number of days
 - [sonar-findings-sync](#sonar-findings-sync): Synchronizes issues and hotspots changelog between branches, projects or even SonarQube instances (formerly **sonar-issues-sync**, now deprecated)
 - [sonar-projects](#sonar-projects): Exports or imports projects from/to a SonarQube instance (EE and higher required for import)
 - [sonar-config](#sonar-config): Exports or Imports a SonarQube platform configuration to/from configuration as code file (JSON file).
+- [sonar-rules](#sonar-rules): Exports SonarQube Server or SonarQube Cloud rules.
 
 :information_source: Although they are likely to work with many versions, the offered tools are **only tested against SonarQube LTA (Long Term Active, currently 9.9.x) and LATEST versions**
 
@@ -296,21 +297,29 @@ See [sonar-config complete doc](https://github.com/okorach/sonar-tools/blob/mast
 To export and import configuration, `sonar-config` needs elevated permissions.
 See [sonar-config complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md) for details
 
+# <a name="sonar-rules"></a>sonar-rules
+
+Exports rules from a SonarQube Server or Cloud platform configuration.
+
+Basic Usage: `sonar-rules -e -f <file>`
+- `-f`: Define the output file, if not specified `stdout` is used
+- `-e` or `--export`: Specify the export operation
+- `-h`: Display help with teh full list of options
+
+## Required Permissions
+
+`sonar-rules` needs simple browse permissions
+
 ## Examples
 ```
 export SONAR_HOST_URL=https://sonar.acme-corp.com
 export SONAR_TOKEN=squ_83356c9b2db891d45da2a119a29cdc4d03fe654e
 
-# Exports all platform configuration from https://sonar.acme-corp.com
-sonar-config -e >config.json
-# Exports QG, portfolios, users and groups from platform configuration https://sonar.foobar-corp.com
-sonar-config -u https://sonar.foobar-corp.com -t 15ee09df11fb9b8237b7a13333c5fce2e4e93d999 --export --what "qualitygates,portfolios,users,groups" -f partial_export.json
-
-# Imports customized rules and quality profiles found in config.json (using $SONAR_HOST_URL as target)
-sonar-config --import --what "rules,qualityprofiles" -f config.json
+# Exports all rules from https://sonar.acme-corp.com, in CSV or in JSON
+sonar-rules -f rules.csv
+sonar-rules -f rules.json
+sonar-rules  >rules.csv
 ```
-
-For more about what is exported and imported by `sonar-config` please see the [sonar-config complete documentation](https://github.com/okorach/sonar-tools/blob/master/doc/sonar-config.md)
 
 # <a name="docker"></a>Using sonar-tools in Docker
 
