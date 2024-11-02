@@ -96,14 +96,13 @@ def test_exists() -> None:
 
 def test_get_list() -> None:
     """Test portfolio get_list"""
+    k_list = [EXISTING_KEY, EXISTING_KEY_2]
     if util.SQ.edition() == "community":
         with pytest.raises(exceptions.UnsupportedOperation):
-            _ = applications.get_list(endpoint=util.SQ, key_list=[EXISTING_KEY, EXISTING_KEY_2])
+            _ = applications.get_list(endpoint=util.SQ, key_list=k_list)
     else:
-        p_dict = applications.get_list(endpoint=util.SQ, key_list=[EXISTING_KEY, EXISTING_KEY_2])
-        assert EXISTING_KEY in p_dict
-        assert EXISTING_KEY_2 in p_dict
-        assert len(p_dict) == 2
+        p_dict = applications.get_list(endpoint=util.SQ, key_list=k_list)
+        assert sorted(k_list) == sorted(list(p_dict.keys()))
 
 
 def test_create_delete() -> None:
