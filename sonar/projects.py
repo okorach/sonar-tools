@@ -1416,7 +1416,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing projects")
             return dict(sorted(search(endpoint=endpoint).items()))
-    return {key: Project.get_object(endpoint, key) for key in util.csv_to_list(key_list).sort()}
+    return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
 def __audit_thread(

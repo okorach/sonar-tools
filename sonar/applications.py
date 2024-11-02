@@ -483,7 +483,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing applications")
             return dict(sorted(search(endpoint=endpoint).items()))
-        object_list = {key: Application.get_object(endpoint, key) for key in key_list.sorted()}
+        object_list = {key: Application.get_object(endpoint, key) for key in sorted(key_list)}
     return object_list
 
 

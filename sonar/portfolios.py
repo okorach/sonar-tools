@@ -662,7 +662,7 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.debug("Listing portfolios")
             return dict(sorted(search(endpoint=endpoint).items()))
-        return {key: Portfolio.get_object(endpoint, key) for key in key_list.sorted()}
+        return {key: Portfolio.get_object(endpoint, key) for key in sorted(key_list)}
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Portfolio]:
