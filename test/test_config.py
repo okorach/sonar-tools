@@ -153,6 +153,8 @@ def test_config_import_portfolios() -> None:
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", [CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE, f"--{opt.WHAT}", "portfolios"]):
             config.main()
+    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+        json_config = json.loads(fh.read())
 
     # delete all portfolios in test
     logging.set_debug_level("DEBUG")
