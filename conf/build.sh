@@ -1,7 +1,4 @@
-#!/bin/bash
-#
-# sonar-tools
-# Copyright (C) 2019-2024 Olivier Korach
+# Copyright (C) 2024 Olivier Korach
 # mailto:olivier.korach AT gmail DOT com
 #
 # This program is free software; you can redistribute it and/or
@@ -23,13 +20,16 @@ ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-deps=0
-$CONFDIR/build.sh $*
+build_docs=0
+build_docker=0
 
 while [ $# -ne 0 ]; do
     case $1 in
-        deps)
-            deps=1
+        docs|doc)
+            build_docs=1
+            ;;
+        docker)
+            build_docker=1
             ;;
         *)
             ;;
@@ -37,9 +37,20 @@ while [ $# -ne 0 ]; do
     shift
 done
 
-# Deploy locally for tests
-if [ "$deps" == "1" ]; then
-    pip install --upgrade --force-reinstall $ROOTDIR/dist/sonar_tools-*-py3-*.whl
-else
-    pip install --no-deps --force-reinstall $ROOTDIR/dist/sonar_tools-*-py3-*.whl
+echo "======= FORMATTING CODE ========="
+black --line-length=150 .
+echo "======= BUILDING PACKAGE ========="
+rm -rf "$ROOTDIR/build/lib/sonar" "$ROOTDIR/build/lib/cli" "$ROOTDIR"/build/scripts*/sonar-tools "$ROOTDIR"/dist/sonar_tools*
+python3 "$ROOTDIR/setup.py" bdist_wheel
+
+if [ "$build_docs" == "1" ]; then
+    echo "======= BUILDING DOCS ========="
+    rm -rf doc/api/build
+    sphinx-build -b html doc/api/source doc/api/build
+fi
+
+if [ "$build_docker" == "1" ]; then
+    echo "======= BUILDING DOCKER IMAGE WITH SNAPSHOT ========="
+    version=$(grep PACKAGE_VERSION "$SONAR_TOOLS_RELEASE" | cut -d "=" -f 2 | cut -d '"' -f 2)
+    docker build -t "olivierkorach/sonar-tools:$version-snapshot" -t olivierkorach/sonar-tools:latest -f "$CONFDIR/snapshot.Dockerfile" "$ROOTDIR" --load
 fi
