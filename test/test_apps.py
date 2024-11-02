@@ -98,9 +98,9 @@ def test_get_list() -> None:
     """Test portfolio get_list"""
     if util.SQ.edition() == "community":
         with pytest.raises(exceptions.UnsupportedOperation):
-            _ = applications.get_list(endpoint=util.SQ, key_list=f"{EXISTING_KEY},{EXISTING_KEY_2}")
+            _ = applications.get_list(endpoint=util.SQ, key_list=[EXISTING_KEY, EXISTING_KEY_2])
     else:
-        p_dict = applications.get_list(endpoint=util.SQ, key_list=f"{EXISTING_KEY},{EXISTING_KEY_2}")
+        p_dict = applications.get_list(endpoint=util.SQ, key_list=[EXISTING_KEY, EXISTING_KEY_2])
         assert EXISTING_KEY in p_dict
         assert EXISTING_KEY_2 in p_dict
         assert len(p_dict) == 2
