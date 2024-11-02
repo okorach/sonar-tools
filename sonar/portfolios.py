@@ -661,12 +661,8 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.debug("Listing portfolios")
-            object_list = search(endpoint=endpoint)
-            return object_list
-        object_list = {}
-        for key in util.csv_to_list(key_list):
-            object_list[key] = Portfolio.get_object(endpoint, key)
-    return object_list
+            return dict(sorted(search(endpoint=endpoint).items()))
+        return {key: Portfolio.get_object(endpoint, key) for key in sorted(key_list)}
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Portfolio]:
@@ -763,27 +759,23 @@ def search_by_key(endpoint: pf.Platform, key: str) -> types.ApiPayload:
     return util.search_by_key(endpoint, key, Portfolio.SEARCH_API, "components")
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports portfolios as JSON
 
     :param Platform endpoint: Reference to the SonarQube platform
     :param ConfigSetting export_settings: Options to use for export
-    :param KeyList key_list: list of portfoliios keys to export as csv or list, defaults to all if None
     :return: Dict of portfolio settings
     :rtype: ObjectJsonRepr
     """
+    write_q = kwargs.get("write_q", None)
+    key_list = kwargs.get("key_list", None)
     check_supported(endpoint)
 
     log.info("Exporting portfolios")
-    if key_list:
-        nb_portfolios = len(key_list)
-    else:
-        nb_portfolios = count(endpoint=endpoint)
+    nb_portfolios = len(key_list) if key_list else count(endpoint=endpoint)
     i = 0
     exported_portfolios = {}
-    for k, p in sorted(get_list(endpoint=endpoint, key_list=key_list).items()):
+    for k, p in get_list(endpoint=endpoint, key_list=key_list):
         try:
             if not p.is_sub_portfolio:
                 exp = p.export(export_settings)
@@ -802,7 +794,7 @@ def export(
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
     if write_q:
         write_q.put(util.WRITE_END)
-    return exported_portfolios
+    return dict(sorted(exported_portfolios.items()))
 
 
 def recompute(endpoint: pf.Platform) -> None:

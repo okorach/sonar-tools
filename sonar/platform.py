@@ -926,29 +926,26 @@ def convert_for_yaml(original_json: types.ObjectJsonRepr) -> types.ObjectJsonRep
     return original_json
 
 
-def export(
-    endpoint: Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :param KeyList key_list: Unused
     :return: Platform settings
     :rtype: ObjectJsonRepr
     """
     exp = endpoint.export(export_settings)
+    write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(exp)
         write_q.put(util.WRITE_END)
     return exp
 
 
-def basics(
-    endpoint: Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def basics(endpoint: Platform, **kwargs) -> types.ObjectJsonRepr:
     """Returns an endpooint basic info (license, edition, version etc..)"""
     exp = endpoint.basics()
+    write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(exp)
         write_q.put(util.WRITE_END)

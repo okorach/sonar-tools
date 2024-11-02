@@ -89,7 +89,8 @@ def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyL
     return wanted_metrics
 
 
-def __parse_args(desc):
+def __parse_args(desc: str) -> object:
+    """Set and parses CLI arguments"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json", "csv"))
@@ -237,6 +238,7 @@ def __write_measures_csv(file: str, wanted_metrics: types.KeyList, data: dict[st
         header_list.append("url")
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        print("# ", file=fd, end="")
         csvwriter.writerow(header_list)
         for comp_data in data:
             row = [comp_data.get(m, "") for m in header_list]
@@ -255,6 +257,7 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
             object_list = projects.get_list(endpoint=endpoint, key_list=kwargs[options.KEYS])
     except exceptions.ObjectNotFound as e:
         util.exit_fatal(e.message, errcodes.NO_SUCH_KEY)
+    nb_comp = len(object_list)
     obj_list = []
     log.info("Collecting %s branches", comp_type)
     if kwargs[options.WITH_BRANCHES] and comp_type in ("projects", "apps"):
@@ -262,7 +265,7 @@ def __get_concerned_objects(endpoint: platform.Platform, **kwargs) -> list[proje
             obj_list += project.branches().values()
     else:
         obj_list = object_list.values()
-    return obj_list
+    return obj_list, nb_comp
 
 
 def __check_options_vs_edition(edition: str, params: dict[str, str]) -> dict[str, str]:
@@ -308,7 +311,7 @@ def main() -> None:
     kwargs[options.WITH_NAME] = True
 
     try:
-        obj_list = __get_concerned_objects(endpoint=endpoint, **kwargs)
+        obj_list, nb_proj = __get_concerned_objects(endpoint=endpoint, **kwargs)
         nb_branches = len(obj_list)
 
         measure_list = []
@@ -327,7 +330,7 @@ def main() -> None:
 
         if file:
             log.info("File '%s' created", file)
-        log.info("%d %s, %d branches", len(obj_list), kwargs[options.COMPONENT_TYPE], nb_branches)
+        log.info("%d %s, %d branches exported from %s", nb_proj, kwargs[options.COMPONENT_TYPE], nb_branches, kwargs[options.URL])
     except exceptions.UnsupportedOperation as e:
         util.exit_fatal(e.message, errcodes.UNSUPPORTED_OPERATION)
     except (PermissionError, FileNotFoundError) as e:

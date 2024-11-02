@@ -184,19 +184,21 @@ def parse_and_check(parser: ArgumentParser, logger_name: str = None, verify_toke
 
     kwargs = vars(args)
     log.set_logger(filename=kwargs[LOGFILE], logger_name=logger_name)
-    log.set_debug_level(kwargs[VERBOSE])
-    del kwargs[VERBOSE]
+    log.set_debug_level(kwargs.pop(VERBOSE))
+
     tool = "sonar-migration" if is_migration else "sonar-tools"
-    log.info("%s version %s", tool, version.MIGRATION_TOOL_VERSION)
+    vers = version.MIGRATION_TOOL_VERSION if is_migration else version.PACKAGE_VERSION
+    log.info("%s version %s", tool, vers)
+
     if os.getenv("IN_DOCKER", "No") == "Yes":
         kwargs[URL] = kwargs[URL].replace("http://localhost", "http://host.docker.internal")
+    kwargs = __convert_args_to_lists(kwargs=kwargs)
     if log.get_level() <= log.DEBUG:
         sanitized_args = kwargs.copy()
         sanitized_args[TOKEN] = utilities.redacted_token(sanitized_args[TOKEN])
         if "tokenTarget" in sanitized_args:
             sanitized_args["tokenTarget"] = utilities.redacted_token(sanitized_args["tokenTarget"])
         log.debug("CLI arguments = %s", utilities.json_dump(sanitized_args))
-    kwargs = __convert_args_to_lists(kwargs=kwargs)
     if not kwargs.get(IMPORT, False):
         __check_file_writeable(kwargs.get(REPORT_FILE, None))
     # Verify version randomly once every 10 runs

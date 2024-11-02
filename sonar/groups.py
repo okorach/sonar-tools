@@ -259,30 +259,27 @@ def get_list(endpoint: pf.Platform) -> dict[str, Group]:
     :rtype: dict
     """
     log.info("Listing groups")
-    return search(endpoint)
+    return dict(sorted(search(endpoint).items()))
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports groups representation in JSON
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :param KeyList key_list: List of project keys to export, defaults to None (all projects)
-    :return: list of groups settings
     :rtype: ObjectJsonRepr
     """
 
     log.info("Exporting groups")
+    write_q = kwargs.get("write_q", None)
     g_list = {}
-    for g_name, g_obj in sorted(search(endpoint=endpoint).items()):
+    for g_name, g_obj in get_list(endpoint=endpoint):
         if not export_settings["FULL_EXPORT"] and g_obj.is_default():
             continue
         g_list[g_name] = "" if g_obj.description is None else g_obj.description
     if write_q:
         write_q.put(g_list)
-        write_q.put(None)
+        write_q.put(util.WRITE_END)
     return g_list
 
 

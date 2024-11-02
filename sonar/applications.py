@@ -482,10 +482,8 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing applications")
-            return search(endpoint=endpoint)
-        object_list = {}
-        for key in util.csv_to_list(key_list):
-            object_list[key] = Application.get_object(endpoint, key)
+            return dict(sorted(search(endpoint=endpoint).items()))
+        object_list = {key: Application.get_object(endpoint, key) for key in sorted(key_list)}
     return object_list
 
 
@@ -498,9 +496,7 @@ def exists(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: types.KeyList = None, write_q: Queue = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports applications as JSON
 
     :param Platform endpoint: Reference to the Sonar platform
@@ -509,12 +505,14 @@ def export(
     :return: Dict of applications settings
     :rtype: ObjectJsonRepr
     """
+    write_q = kwargs.get("write_q", None)
+    key_list = kwargs.get("key_list", None)
     if endpoint.is_sonarcloud():
         # log.info("Applications do not exist in SonarCloud, export skipped")
         raise exceptions.UnsupportedOperation("Applications do not exist in SonarCloud, export skipped")
 
     apps_settings = {}
-    for k, app in sorted(get_list(endpoint, key_list).items()):
+    for k, app in get_list(endpoint, key_list):
         app_json = app.export(export_settings)
         if write_q:
             write_q.put(app_json)

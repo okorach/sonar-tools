@@ -200,7 +200,6 @@ class Rule(sq.SqObject):
         o = Rule.CACHE.get(key, endpoint.url)
         if o:
             return o
-        log.debug("Reading rule key '%s'", key)
         try:
             r = endpoint.get(_DETAILS_API, params={"key": key})
         except (ConnectionError, RequestException) as e:
@@ -384,14 +383,12 @@ def get_object(endpoint: platform.Platform, key: str) -> Optional[Rule]:
         return None
 
 
-def export(
-    endpoint: platform.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: platform.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Returns a JSON export of all rules"""
     log.info("Exporting rules")
     full = export_settings.get("FULL_EXPORT", False)
     rule_list, other_rules, instantiated_rules, extended_rules = {}, {}, {}, {}
-    for rule_key, rule in get_list(endpoint=endpoint, use_cache=False).items():
+    for rule_key, rule in get_list(endpoint=endpoint, use_cache=False, include_external=False).items():
         rule_export = rule.export(full)
         if rule.template_key is not None:
             instantiated_rules[rule_key] = rule_export
@@ -414,9 +411,10 @@ def export(
         rule_list["standard"] = other_rules
     if export_settings.get("MODE", "") == "MIGRATION":
         rule_list["thirdParty"] = {r.key: r.export() for r in third_party(endpoint=endpoint)}
+    write_q = kwargs.get("write_q", None)
     if write_q:
         write_q.put(rule_list)
-        write_q.put(None)
+        write_q.put(utilities.WRITE_END)
     return rule_list
 
 

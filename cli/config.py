@@ -146,7 +146,7 @@ def write_objects(queue: Queue[types.ObjectJsonRepr], fd: TextIO, object_type: s
     print(f'"{object_type}": ' + "{", file=fd)
     while not done:
         obj_json = queue.get()
-        done = obj_json is None
+        done = obj_json is utilities.WRITE_END
         if not done:
             obj_json = __prep_json_for_write(obj_json, export_settings)
             if object_type in ("projects", "applications", "portfolios", "users"):
@@ -184,9 +184,9 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
 
     what.append(__JSON_KEY_PLATFORM)
     log.info("Exporting configuration from %s", kwargs[options.URL])
-    key_list = kwargs[options.KEYS]
+
     is_first = True
-    q = Queue(maxsize=0)
+    write_q = Queue(maxsize=0)
     with utilities.open_file(file, mode="w") as fd:
         print("{", file=fd)
         for what_item, call_data in _EXPORT_CALLS.items():
@@ -197,17 +197,17 @@ def export_config(endpoint: platform.Platform, what: list[str], **kwargs) -> Non
                 if not is_first:
                     print(",", file=fd)
                 is_first = False
-                worker = Thread(target=write_objects, args=(q, fd, ndx, export_settings))
+                worker = Thread(target=write_objects, args=(write_q, fd, ndx, export_settings))
                 worker.daemon = True
                 worker.name = f"Write{ndx[:1].upper()}{ndx[1:10]}"
                 worker.start()
-                func(endpoint, export_settings=export_settings, key_list=key_list, write_q=q)
-                q.join()
+                func(endpoint, export_settings=export_settings, key_list=kwargs[options.KEYS], write_q=write_q)
+                write_q.join()
             except exceptions.UnsupportedOperation as e:
                 log.warning(e.message)
         print("\n}", file=fd)
     utilities.normalize_json_file(file, remove_empty=False, remove_none=True)
-    log.info("Exporting migration data from %s completed", kwargs["url"])
+    log.info("Exporting %s data from %s completed", mode.lower(), kwargs[options.URL])
 
 
 def __prep_json_for_write(json_data: types.ObjectJsonRepr, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:

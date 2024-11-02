@@ -203,6 +203,24 @@ def test_non_existing_project() -> None:
     util.clean(util.CSV_FILE)
 
 
+def test_specific_project_keys() -> None:
+    """test_non_existing_project"""
+    util.clean(util.CSV_FILE)
+    projects = ["okorach_sonar-tools", "project1", "project4"]
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", ", ".join(projects)]):
+            measures_export.main()
+    assert int(str(e.value)) == errcodes.OK
+    assert util.file_not_empty(util.CSV_FILE)
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        reader = csv.reader(fh)
+        next(reader)
+        for line in reader:
+            assert line[0] in projects
+            assert line[TYPE_COL] == "PROJECT"
+    util.clean(util.CSV_FILE)
+
+
 def test_apps_measures() -> None:
     """test_apps_measures"""
     EXISTING_KEY = "APP_TEST"

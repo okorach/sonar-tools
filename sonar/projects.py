@@ -1415,8 +1415,8 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.info("Listing projects")
-            return search(endpoint=endpoint)
-    return {key: Project.get_object(endpoint, key) for key in util.csv_to_list(key_list)}
+            return dict(sorted(search(endpoint=endpoint).items()))
+    return {key: Project.get_object(endpoint, key) for key in sorted(key_list)}
 
 
 def __audit_thread(
@@ -1488,10 +1488,11 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
     plist = get_list(endpoint, kwargs.get("key_list", None))
     write_q = kwargs.get("write_q", None)
     problems = []
-    audit_q = Queue(maxsize=0)
     audit_settings["NBR_PROJECTS"] = len(plist)
     audit_settings["PROCESSED"] = 0
-    map(lambda p: audit_q.put(p), plist.values())
+    audit_q = Queue(maxsize=0)
+    _ = [audit_q.put(p) for p in plist.values()]
+    log.info("%d projects to audit, %d in queue", len(plist), audit_q.qsize())
     bindings = {}
     for i in range(audit_settings.get("threads", 1)):
         log.debug("Starting project audit thread %d", i)
@@ -1531,35 +1532,35 @@ def __export_thread(queue: Queue[Project], results: dict[str, str], export_setti
     log.info("Project export queue empty, export complete")
 
 
-def export(
-    endpoint: pf.Platform, export_settings: types.ConfigSettings, key_list: Optional[types.KeyList] = None, write_q: Optional[Queue] = None
-) -> types.ObjectJsonRepr:
+def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of projects configuration as dict
 
     :param Platform endpoint: reference to the SonarQube platform
     :param ConfigSettings export_settings: Export parameters
-    :param KeyList key_list: List of project keys to export, defaults to None (all projects)
     :return: list of projects settings
     :rtype: ObjectJsonRepr
     """
-    for qp in qualityprofiles.get_list(endpoint).values():
-        qp.projects()
 
-    q = Queue(maxsize=0)
-    proj_list = get_list(endpoint=endpoint, key_list=key_list)
+    write_q = kwargs.get("write_q", None)
+    key_list = kwargs.get("key_list", None)
+
+    _ = [qp.projects() for qp in qualityprofiles.get_list(endpoint).values()]
+    proj_list = get_list(endpoint=endpoint, key_list=key_list).items()
     export_settings["NBR_PROJECTS"] = len(proj_list)
     export_settings["PROCESSED"] = 0
     log.info("Exporting %d projects", export_settings["NBR_PROJECTS"])
-    for p in proj_list.values():
-        q.put(p)
+
+    export_q = Queue(maxsize=0)
+    _ = [export_q.put(p) for p in proj_list.values()]
+    log.info("%d projects to export, %d in queue", len(proj_list), export_q.qsize())
     project_settings = {}
     for i in range(export_settings.get("THREADS", 8)):
         log.debug("Starting project export thread %d", i)
-        worker = Thread(target=__export_thread, args=(q, project_settings, export_settings, write_q))
+        worker = Thread(target=__export_thread, args=(export_q, project_settings, export_settings, write_q))
         worker.daemon = True
         worker.name = f"ProjectExport{i}"
         worker.start()
-    q.join()
+    export_q.join()
     if write_q:
         write_q.put(util.WRITE_END)
     return dict(sorted(project_settings.items()))
