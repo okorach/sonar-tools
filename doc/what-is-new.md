@@ -1,3 +1,9 @@
+# Version 3.6
+
+* Numerous hardening and improvemenst on `sonar-audit`, `sonar-measures-export`, `sonar-findings-sync`, `sonar-config`
+  See https://github.com/okorach/sonar-tools/milestone/40?closed=1
+* Added documentation of `sonar-rules`
+
 # Version 3.5
 
 * Many performance and robustness improvements
