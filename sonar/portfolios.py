@@ -661,12 +661,8 @@ def get_list(endpoint: pf.Platform, key_list: types.KeyList = None, use_cache: b
     with _CLASS_LOCK:
         if key_list is None or len(key_list) == 0 or not use_cache:
             log.debug("Listing portfolios")
-            object_list = search(endpoint=endpoint)
-            return object_list
-        object_list = {}
-        for key in util.csv_to_list(key_list):
-            object_list[key] = Portfolio.get_object(endpoint, key)
-    return object_list
+            return dict(sorted(search(endpoint=endpoint).items()))
+        return {key: Portfolio.get_object(endpoint, key) for key in key_list.sorted()}
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Portfolio]:
@@ -779,7 +775,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
     nb_portfolios = len(key_list) if key_list else count(endpoint=endpoint)
     i = 0
     exported_portfolios = {}
-    for k, p in sorted(get_list(endpoint=endpoint, key_list=key_list).items()):
+    for k, p in get_list(endpoint=endpoint, key_list=key_list):
         try:
             if not p.is_sub_portfolio:
                 exp = p.export(export_settings)
@@ -798,7 +794,7 @@ def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwarg
             log.info("Exported %d/%d portfolios (%d%%)", i, nb_portfolios, (i * 100) // nb_portfolios)
     if write_q:
         write_q.put(util.WRITE_END)
-    return exported_portfolios
+    return dict(sorted(exported_portfolios.items()))
 
 
 def recompute(endpoint: pf.Platform) -> None:
