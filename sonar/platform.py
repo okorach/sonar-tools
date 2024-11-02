@@ -942,7 +942,7 @@ def export(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) 
     return exp
 
 
-def basics(endpoint: Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
+def basics(endpoint: Platform, **kwargs) -> types.ObjectJsonRepr:
     """Returns an endpooint basic info (license, edition, version etc..)"""
     exp = endpoint.basics()
     write_q = kwargs.get("write_q", None)
