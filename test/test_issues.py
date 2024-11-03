@@ -28,9 +28,29 @@ import utilities as tutil
 
 LIVE_PROJECT = "okorach_sonar-tools"
 ISSUE_WITH_CHANGELOG = "402452b7-fd3a-4487-97cc-1c996697b397"
+ISSUE_2 = "a1fddba4-9e70-46c6-ac95-e815104ead59"
+
+def test_issue() -> None:
+    """Test issues"""
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=LIVE_PROJECT)
+    assert ISSUE_WITH_CHANGELOG in issues_d
+    issue = issues_d[ISSUE_WITH_CHANGELOG]
+    assert not issue.is_security_issue()
+    assert not issue.is_hotspot()
+    assert not issue.is_accepted()
+    assert issue.is_code_smell()
+    assert not issue.is_bug()
+    assert not issue.is_closed()
+    assert not issue.is_vulnerability()
+    assert not issue.is_wont_fix()
+    assert issue.is_false_positive()
+    assert issue.refresh()
+    assert ISSUE_2 in issues_d
+    issue2 = issues_d[ISSUE_2]
+    assert not issue.almost_identical_to(issue2)
 
 
-def test_fp_changelog() -> None:
+def test_changelog() -> None:
     """Test issues"""
     issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=LIVE_PROJECT)
     assert ISSUE_WITH_CHANGELOG in issues_d
