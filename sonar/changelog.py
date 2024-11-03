@@ -135,10 +135,14 @@ class Changelog:
         return d.get("key", "") == "assignee"
 
     def new_assignee(self):
+        if not self.is_assignment():
+            return None
         d = self.sq_json["diffs"][0]
         return d.get("newValue", None)
 
     def old_assignee(self):
+        if not self.is_assignment():
+            return None
         d = self.sq_json["diffs"][0]
         return d.get("oldValue", None)
 
