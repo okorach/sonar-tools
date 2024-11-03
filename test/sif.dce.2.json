@@ -1,0 +1,998 @@
+{
+   "Health": "GREEN",
+   "Health Causes": [],
+   "System": {
+      "Server ID": "AAAAAAAA-BBBBBBBBBBBBBB-CCCCC",
+      "Edition": "Data Center",
+      "Lines of Code": 118000000,
+      "Container": false,
+      "High Availability": true,
+      "Accepted external identity providers": "Acme SSO",
+      "External identity providers whose users are allowed to sign themselves up": "Acme SSO",
+      "Force authentication": true
+   },
+   "Database": {
+      "Database": "Microsoft SQL Server",
+      "Database Version": "12.00.5409",
+      "Username": "sonarqube",
+      "URL": "jdbc:sqlserver://sonarqubeproductiondatabase.database.windows.net:1433;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=false;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;hostNameInCertificate=*.tr49760.westeurope1-a.worker.database.windows.net;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=SonarQube_ProdDB;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite;",
+      "Driver": "Microsoft JDBC Driver 12.4 for SQL Server",
+      "Driver Version": "12.4.2.0",
+      "Default transaction isolation": "TRANSACTION_READ_COMMITTED"
+   },
+   "Compute Engine Tasks": {
+      "Total Pending": 8,
+      "Total In Progress": 7,
+      "Max Workers per Node": 6,
+      "Workers Paused": false
+   },
+   "Search State": {
+      "State": "GREEN",
+      "Nodes": 3
+   },
+   "Search Indexes": {
+      "Index components - Docs": 21345,
+      "Index components - Shards": 5,
+      "Index components - Store Size": "31.7 MB",
+      "Index projectmeasures - Docs": 88251,
+      "Index projectmeasures - Shards": 5,
+      "Index projectmeasures - Store Size": "24.4 MB",
+      "Index metadatas - Docs": 15,
+      "Index metadatas - Shards": 1,
+      "Index metadatas - Store Size": "10.4 kB",
+      "Index rules - Docs": 43085,
+      "Index rules - Shards": 2,
+      "Index rules - Store Size": "18.8 MB",
+      "Index issues - Docs": 123987695,
+      "Index issues - Shards": 5,
+      "Index issues - Store Size": "8.1 GB",
+      "Index views - Docs": 469,
+      "Index views - Shards": 5,
+      "Index views - Store Size": "380.4 kB"
+   },
+   "Settings": {
+      "analyzer.api.file.suffixes": ".raml",
+      "analyzer.api.license.business.group": "XXXXXXXXXXXX",
+      "analyzer.api.license.email.id": "developers@acme.com",
+      "http.nonProxyHosts": "localhost|127.*|[::1]",
+      "process.gracefulStopTimeout": "270000",
+      "process.index": "2",
+      "process.key": "web",
+      "process.sharedDir": "C:\\sonarqube-10.4.1\\temp",
+      "projects.default.visibility": "private",
+      "qualitygate.default": "AWtN2beqRpiI7mWWVWVWV",
+      "sonar.announcement.displayMessage": "false",
+      "sonar.auth.github.apiUrl": "https://api.github.com/",
+      "sonar.auth.github.clientId.secured": "xxxxxxxx",
+      "sonar.auth.github.clientSecret.secured": "xxxxxxxx",
+      "sonar.auth.github.organizations": "acme1,acme2,acme3 ,acme4",
+      "sonar.auth.jwtBase64Hs256Secret": "xxxxxxxx",
+      "sonar.auth.saml.certificate.secured": "xxxxxxxx",
+      "sonar.auth.saml.enabled": "true",
+      "sonar.auth.saml.loginUrl": "https://sso.acme.com/idp/SSO.saml2",
+      "sonar.auth.saml.providerId": "sso.acme.com",
+      "sonar.auth.saml.providerName": "Acme SSO",
+      "sonar.auth.saml.user.email": "Email",
+      "sonar.auth.saml.user.login": "Email",
+      "sonar.auth.saml.user.name": "Name",
+      "sonar.authenticator.ignoreStartupFailure": "false",
+      "sonar.autoDatabaseUpgrade": "false",
+      "sonar.ce.gracefulStopTimeOutInMs": "21600000",
+      "sonar.cfamily.build-wrapper-output": "",
+      "sonar.cluster.enabled": "true",
+      "sonar.cluster.hosts": "172.168.1.2,172.168.1.3",
+      "sonar.cluster.kubernetes": "false",
+      "sonar.cluster.name": "sonarqube",
+      "sonar.cluster.node.ce.port": "9004",
+      "sonar.cluster.node.host": "172.168.1.4",
+      "sonar.cluster.node.name": "sonarqube-app1",
+      "sonar.cluster.node.port": "9003",
+      "sonar.cluster.node.type": "application",
+      "sonar.cluster.node.web.port": "9005",
+      "sonar.cluster.search.hosts": "172.168.1.10:9001,172.168.1.11:9001,172.168.1.12:9001",
+      "sonar.cluster.web.startupLeader": "false",
+      "sonar.cobol.dialect": "hp-tandem-cobol",
+      "sonar.core.id": "AAAAAAAA-BBBBBBBBBBBBBB-CCCCC",
+      "sonar.core.serverBaseURL": "https://sonarqube.acme.com",
+      "sonar.core.startTime": "2024-04-07T18:06:44+0000",
+      "sonar.dbcleaner.auditHousekeeping": "Yearly",
+      "sonar.dbcleaner.branchesToKeepWhenInactive": "(branch|release|develop).*",
+      "sonar.forceAuthentication": "true",
+      "sonar.iz.mule.file.suffixes": ".properties,.dwl,.izmule",
+      "sonar.iz.mule.license.business.group": "XXXX",
+      "sonar.iz.mule.license.email.id": "developers@acme.com",
+      "sonar.jdbc.driverPath": "C:\\sonarqube-10.4.1\\lib\\jdbc\\mssql\\mssql-jdbc-12.4.2.jre11.jar",
+      "sonar.jdbc.idleTimeout": "600000",
+      "sonar.jdbc.keepaliveTime": "180000",
+      "sonar.jdbc.maxActive": "60",
+      "sonar.jdbc.maxLifetime": "1800000",
+      "sonar.jdbc.maxWait": "8000",
+      "sonar.jdbc.minIdle": "10",
+      "sonar.jdbc.password": "xxxxxxxx",
+      "sonar.jdbc.url": "jdbc:sqlserver://sonarqubeproductiondatabase.database.windows.net:1433;database=SonarQube_ProdDB;user=sonarqube@sonarqubeproductiondatabase;password=FooBar;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;",
+      "sonar.jdbc.username": "sonarqube",
+      "sonar.jdbc.validationTimeout": "5000",
+      "sonar.log.jsonOutput": "false",
+      "sonar.log.level.app": "INFO",
+      "sonar.log.level.ce": "INFO",
+      "sonar.log.level.es": "INFO",
+      "sonar.log.level.web": "INFO",
+      "sonar.log.maxFiles": "7",
+      "sonar.log.rollingPolicy": "time:yyyy-MM-dd",
+      "sonar.path.data": "C:\\sonarqube-10.4.1\\data",
+      "sonar.path.home": "C:\\sonarqube-10.4.1",
+      "sonar.path.logs": "C:\\sonarqube-10.4.1\\logs",
+      "sonar.path.temp": "C:\\sonarqube-10.4.1\\temp",
+      "sonar.path.web": "C:\\sonarqube-10.4.1\\web",
+      "sonar.plugins.downloadOnlyRequired": "true",
+      "sonar.plugins.risk.consent": "ACCEPTED",
+      "sonar.qualityProfiles.allowDisableInheritedRules": "false",
+      "sonar.telemetry.compression": "true",
+      "sonar.telemetry.enable": "true",
+      "sonar.telemetry.frequencyInSeconds": "10800",
+      "sonar.telemetry.url": "https://telemetry.sonarsource.com/sonarqube",
+      "sonar.updatecenter.activate": "true",
+      "sonar.vb.file.suffixes": ".bas,.frm,.cls,.ctl,.BAS,.FRM,.CLS,.CTL",
+      "sonar.vbnet.file.suffixes": ".vb",
+      "sonar.web.accessLogs.enable": "true",
+      "sonar.web.gracefulStopTimeOutInMs": "240000",
+      "sonar.web.sso.emailHeader": "X-Forwarded-Email",
+      "sonar.web.sso.enable": "true",
+      "sonar.web.sso.groupsHeader": "X-Forwarded-Groups",
+      "sonar.web.sso.loginHeader": "X-Forwarded-Login",
+      "sonar.web.sso.nameHeader": "X-Forwarded-Name",
+      "sonar.web.sso.refreshIntervalInMinutes": "5",
+      "Default New Code Definition": "PREVIOUS_VERSION"
+   },
+   "Application Nodes": [
+      {
+         "Name": "sonarqube-app2",
+         "Host": "172.168.1.3",
+         "Health": "GREEN",
+         "Health Causes": [],
+         "System": {
+            "Version": "10.4.1.88267",
+            "Official Distribution": true,
+            "Home Dir": "C:\\sonarqube-10.4.1",
+            "Data Dir": "C:\\sonarqube-10.4.1\\data",
+            "Temp Dir": "C:\\sonarqube-10.4.1\\temp",
+            "Processors": 16
+         },
+         "Bundled": {
+            "cayc": "2.3.0.1782 [Clean as You Code]",
+            "iac": "1.26.0.8471 [IaC Code Quality and Security]",
+            "plsql": "3.12.0.6513 [PL/SQL Code Quality and Security]",
+            "sonarscala": "1.15.0.4655 [Scala Code Quality and Security]",
+            "csharp": "9.19.0.84025 [C# Code Quality and Security]",
+            "security": "10.4.0.30099 [Vulnerability Analysis]",
+            "java": "7.30.0.34429 [Java Code Quality and Security]",
+            "web": "3.13.0.4821 [HTML Code Quality and Security]",
+            "flex": "2.12.0.4568 [Flex Code Quality and Security]",
+            "xml": "2.10.0.4108 [XML Code Quality and Security]",
+            "text": "2.8.0.1635 [Text Code Quality and Security]",
+            "vbnet": "9.19.0.84025 [VB.NET Code Quality and Security]",
+            "swift": "4.12.0.7262 [Swift Code Quality and Security]",
+            "cpp": "6.52.1.66618 [CFamily Code Quality and Security]",
+            "python": "4.14.0.14263 [Python Code Quality and Security]",
+            "dbdpythonfrontend": "1.22.0.7341 [Dataflow Bug Detection Rules for Python]",
+            "dbd": "1.22.0.7341 [Dataflow Bug Detection]",
+            "go": "1.15.0.4655 [Go Code Quality and Security]",
+            "jacoco": "1.3.0.1538 [JaCoCo]",
+            "kotlin": "2.20.0.4382 [Kotlin Code Quality and Security]",
+            "rpg": "3.8.0.4662 [RPG Code Quality]",
+            "dbdjavafrontend": "1.22.0.7341 [Dataflow Bug Detection Rules for Java]",
+            "pli": "1.15.0.4810 [PL/I Code Quality and Security]",
+            "tsql": "1.12.0.7020 [T-SQL Code Quality and Security]",
+            "vb": "2.12.0.4860 [VB6 Code Quality and Security]",
+            "sonarapex": "1.15.0.4655 [Apex Code Quality and Security]",
+            "javascript": "10.11.1.25225 [JavaScript/TypeScript/CSS Code Quality and Security]",
+            "ruby": "1.15.0.4655 [Ruby Code Quality and Security]",
+            "securitycsharpfrontend": "10.4.0.30099 [Vulnerability Rules for C#]",
+            "securityjavafrontend": "10.4.0.30099 [Vulnerability Rules for Java]",
+            "textenterprise": "2.8.0.1635 [Text Code Quality and Security]",
+            "securityjsfrontend": "10.4.0.30099 [Vulnerability Rules for JS]",
+            "cobol": "5.6.0.7604 [COBOL Code Quality]",
+            "securitypythonfrontend": "10.4.0.30099 [Vulnerability Rules for Python]",
+            "php": "3.33.0.11274 [PHP Code Quality and Security]",
+            "abap": "3.14.0.5470 [ABAP Code Quality and Security]",
+            "securityphpfrontend": "10.4.0.30099 [Vulnerability Rules for PHP]"
+         },
+         "Plugins": {
+            "IZAnalyzer": "2.6 [Plugin for IZ Analyzer Mule Scanner]"
+         },
+         "Web JVM State": {
+            "Max Memory (MB)": 6144,
+            "Free Memory (MB)": 1539,
+            "Heap Committed (MB)": 3072,
+            "Heap Init (MB)": 3072,
+            "Heap Max (MB)": 6144,
+            "Heap Used (MB)": 1530,
+            "Non Heap Committed (MB)": 337,
+            "Non Heap Init (MB)": 7,
+            "Non Heap Used (MB)": 329,
+            "System Load Average": "-100.0% (last minute)",
+            "Threads": 157
+         },
+         "Web Database Connection": {
+            "Pool Total Connections": 34,
+            "Pool Active Connections": 0,
+            "Pool Idle Connections": 34,
+            "Pool Max Connections": 60,
+            "Pool Min Idle Connections": 10,
+            "Pool Max Wait (ms)": 8000,
+            "Pool Max Lifetime (ms)": 1800000
+         },
+         "Web Logging": {
+            "Logs Level": "INFO",
+            "Logs Dir": "C:\\sonarqube-10.4.1\\logs"
+         },
+         "Web JVM Properties": {
+            "catalina.base": "C:\\sonarqube-10.4.1\\temp\\tc",
+            "catalina.home": "C:\\sonarqube-10.4.1\\temp\\tc",
+            "catalina.useNaming": "false",
+            "com.redhat.fips": "false",
+            "com.zaxxer.hikari.pool_number": "1",
+            "file.encoding": "UTF-8",
+            "file.separator": "\\",
+            "http.nonProxyHosts": "localhost|127.*|[::1]",
+            "java.awt.headless": "true",
+            "java.class.path": "./lib/sonar-application-10.4.1.88267.jar;C:\\sonarqube-10.4.1\\lib\\jdbc\\mssql\\mssql-jdbc-12.4.2.jre11.jar",
+            "java.class.version": "61.0",
+            "java.home": "C:\\Program Files\\Java\\jdk-17",
+            "java.io.tmpdir": "C:\\sonarqube-10.4.1\\temp",
+            "java.library.path": "C:\\Program Files\\Java\\jdk-17\\bin;C:\\windows\\Sun\\Java\\bin;C:\\windows\\system32;C:\\windows;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Java\\jdk-17\\bin;C:\\windows\\system32\\config\\systemprofile\\AppData\\Local\\Microsoft\\WindowsApps;.",
+            "java.runtime.name": "Java(TM) SE Runtime Environment",
+            "java.runtime.version": "17.0.6+9-LTS-190",
+            "java.specification.name": "Java Platform API Specification",
+            "java.specification.vendor": "Oracle Corporation",
+            "java.specification.version": "17",
+            "java.vendor": "Oracle Corporation",
+            "java.vendor.url": "https://java.oracle.com/",
+            "java.vendor.url.bug": "https://bugreport.java.com/bugreport/",
+            "java.version": "17.0.6",
+            "java.version.date": "2023-01-17",
+            "java.vm.compressedOopsMode": "Zero based",
+            "java.vm.info": "mixed mode, sharing",
+            "java.vm.name": "Java HotSpot(TM) 64-Bit Server VM",
+            "java.vm.specification.name": "Java Virtual Machine Specification",
+            "java.vm.specification.vendor": "Oracle Corporation",
+            "java.vm.specification.version": "17",
+            "java.vm.vendor": "Oracle Corporation",
+            "java.vm.version": "17.0.6+9-LTS-190",
+            "jdk.debug": "release",
+            "line.separator": "\r\n",
+            "logbackDisableServletContainerInitializer": "true",
+            "native.encoding": "Cp1252",
+            "org.apache.catalina.startup.EXIT_ON_INIT_FAILURE": "true",
+            "org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH": "true",
+            "org.apache.xml.security.ignoreLineBreaks": "true",
+            "os.arch": "amd64",
+            "os.name": "Windows Server 2016",
+            "os.version": "10.0",
+            "path.separator": ";",
+            "sun.arch.data.model": "64",
+            "sun.awt.enableExtraMouseButtons": "true",
+            "sun.boot.library.path": "C:\\Program Files\\Java\\jdk-17\\bin",
+            "sun.cpu.endian": "little",
+            "sun.cpu.isalist": "amd64",
+            "sun.io.unicode.encoding": "UnicodeLittle",
+            "sun.java.command": "org.sonar.server.app.WebServer C:\\sonarqube-10.4.1\\temp\\sq-process432075749848872402properties",
+            "sun.java.launcher": "SUN_STANDARD",
+            "sun.jnu.encoding": "Cp1252",
+            "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+            "sun.os.patch.level": "",
+            "user.country": "US",
+            "user.dir": "C:\\sonarqube-10.4.1",
+            "user.home": "C:\\windows\\system32\\config\\systemprofile",
+            "user.language": "en",
+            "user.name": "sonaruser",
+            "user.script": "",
+            "user.timezone": "Etc/UTC",
+            "user.variant": ""
+         },
+         "Compute Engine Tasks": {
+            "Pending": 9,
+            "Longest Time Pending (ms)": 17192969,
+            "In Progress": 4,
+            "Processed With Error": 109,
+            "Processed With Success": 4059,
+            "Processing Time (ms)": 423124454,
+            "Worker Count": 6,
+            "Max Worker Count": 10,
+            "Workers Paused": false
+         },
+         "Compute Engine JVM State": {
+            "Max Memory (MB)": 12288,
+            "Free Memory (MB)": 4229,
+            "Heap Committed (MB)": 12288,
+            "Heap Init (MB)": 12288,
+            "Heap Max (MB)": 12288,
+            "Heap Used (MB)": 8054,
+            "Non Heap Committed (MB)": 236,
+            "Non Heap Init (MB)": 7,
+            "Non Heap Used (MB)": 225,
+            "System Load Average": "-100.0% (last minute)",
+            "Threads": 102
+         },
+         "Compute Engine Database Connection": {
+            "Pool Total Connections": 13,
+            "Pool Active Connections": 4,
+            "Pool Idle Connections": 9,
+            "Pool Max Connections": 60,
+            "Pool Min Idle Connections": 10,
+            "Pool Max Wait (ms)": 8000,
+            "Pool Max Lifetime (ms)": 1800000
+         },
+         "Compute Engine Logging": {
+            "Logs Level": "INFO",
+            "Logs Dir": "C:\\sonarqube-10.4.1\\logs"
+         },
+         "Compute Engine JVM Properties": {
+            "com.redhat.fips": "false",
+            "com.zaxxer.hikari.pool_number": "1",
+            "file.encoding": "UTF-8",
+            "file.separator": "\\",
+            "http.nonProxyHosts": "localhost|127.*|[::1]",
+            "java.awt.headless": "true",
+            "java.class.path": "./lib/sonar-application-10.4.1.88267.jar;C:\\sonarqube-10.4.1\\lib\\jdbc\\mssql\\mssql-jdbc-12.4.2.jre11.jar",
+            "java.class.version": "61.0",
+            "java.home": "C:\\Program Files\\Java\\jdk-17",
+            "java.io.tmpdir": "C:\\sonarqube-10.4.1\\temp",
+            "java.library.path": "C:\\Program Files\\Java\\jdk-17\\bin;C:\\windows\\Sun\\Java\\bin;C:\\windows\\system32;C:\\windows;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Java\\jdk-17\\bin;C:\\windows\\system32\\config\\systemprofile\\AppData\\Local\\Microsoft\\WindowsApps;.",
+            "java.runtime.name": "Java(TM) SE Runtime Environment",
+            "java.runtime.version": "17.0.6+9-LTS-190",
+            "java.specification.name": "Java Platform API Specification",
+            "java.specification.vendor": "Oracle Corporation",
+            "java.specification.version": "17",
+            "java.vendor": "Oracle Corporation",
+            "java.vendor.url": "https://java.oracle.com/",
+            "java.vendor.url.bug": "https://bugreport.java.com/bugreport/",
+            "java.version": "17.0.6",
+            "java.version.date": "2023-01-17",
+            "java.vm.compressedOopsMode": "Zero based",
+            "java.vm.info": "mixed mode, sharing",
+            "java.vm.name": "Java HotSpot(TM) 64-Bit Server VM",
+            "java.vm.specification.name": "Java Virtual Machine Specification",
+            "java.vm.specification.vendor": "Oracle Corporation",
+            "java.vm.specification.version": "17",
+            "java.vm.vendor": "Oracle Corporation",
+            "java.vm.version": "17.0.6+9-LTS-190",
+            "jdk.debug": "release",
+            "line.separator": "\r\n",
+            "native.encoding": "Cp1252",
+            "os.arch": "amd64",
+            "os.name": "Windows Server 2016",
+            "os.version": "10.0",
+            "path.separator": ";",
+            "sun.arch.data.model": "64",
+            "sun.boot.library.path": "C:\\Program Files\\Java\\jdk-17\\bin",
+            "sun.cpu.endian": "little",
+            "sun.cpu.isalist": "amd64",
+            "sun.io.unicode.encoding": "UnicodeLittle",
+            "sun.java.command": "org.sonar.ce.app.CeServer C:\\sonarqube-10.4.1\\temp\\sq-process1584109414078367730properties",
+            "sun.java.launcher": "SUN_STANDARD",
+            "sun.jnu.encoding": "Cp1252",
+            "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+            "sun.os.patch.level": "",
+            "user.country": "US",
+            "user.dir": "C:\\sonarqube-10.4.1",
+            "user.home": "C:\\windows\\system32\\config\\systemprofile",
+            "user.language": "en",
+            "user.name": "sonaruser",
+            "user.script": "",
+            "user.timezone": "Etc/UTC",
+            "user.variant": ""
+         },
+         "ALMs": {
+            "azure1": "Alm:azure_devops, Url:https://acme1.visualstudio.com/",
+            "GitHub-App-Integration": "Alm:github, Url:https://api.github.com, App Id:707, Client Id:Iv1.XXXX",
+            "azure2": "Alm:azure_devops, Url:https://acme2.visualstudio.com/",
+            "azure3": "Alm:azure_devops, Url:https://acme3.visualstudio.com/",
+            "azure4": "Alm:azure_devops, Url:https://acme4.visualstudio.com/",
+            "azure5": "Alm:azure_devops, Url:https://acme5.visualstudio.com/"
+         },
+         "Server Push Connections": {
+            "SonarLint Connected Clients": 29
+         }
+      },
+      {
+         "Name": "sonarqube-app1",
+         "Host": "172.20.4.4",
+         "Health": "GREEN",
+         "Health Causes": [],
+         "System": {
+            "Version": "10.4.1.88267",
+            "Official Distribution": true,
+            "Home Dir": "C:\\sonarqube-10.4.1",
+            "Data Dir": "C:\\sonarqube-10.4.1\\data",
+            "Temp Dir": "C:\\sonarqube-10.4.1\\temp",
+            "Processors": 16
+         },
+         "Bundled": {
+            "cayc": "2.3.0.1782 [Clean as You Code]",
+            "iac": "1.26.0.8471 [IaC Code Quality and Security]",
+            "plsql": "3.12.0.6513 [PL/SQL Code Quality and Security]",
+            "sonarscala": "1.15.0.4655 [Scala Code Quality and Security]",
+            "csharp": "9.19.0.84025 [C# Code Quality and Security]",
+            "security": "10.4.0.30099 [Vulnerability Analysis]",
+            "java": "7.30.0.34429 [Java Code Quality and Security]",
+            "web": "3.13.0.4821 [HTML Code Quality and Security]",
+            "flex": "2.12.0.4568 [Flex Code Quality and Security]",
+            "xml": "2.10.0.4108 [XML Code Quality and Security]",
+            "text": "2.8.0.1635 [Text Code Quality and Security]",
+            "vbnet": "9.19.0.84025 [VB.NET Code Quality and Security]",
+            "swift": "4.12.0.7262 [Swift Code Quality and Security]",
+            "cpp": "6.52.1.66618 [CFamily Code Quality and Security]",
+            "python": "4.14.0.14263 [Python Code Quality and Security]",
+            "dbdpythonfrontend": "1.22.0.7341 [Dataflow Bug Detection Rules for Python]",
+            "dbd": "1.22.0.7341 [Dataflow Bug Detection]",
+            "go": "1.15.0.4655 [Go Code Quality and Security]",
+            "jacoco": "1.3.0.1538 [JaCoCo]",
+            "kotlin": "2.20.0.4382 [Kotlin Code Quality and Security]",
+            "rpg": "3.8.0.4662 [RPG Code Quality]",
+            "dbdjavafrontend": "1.22.0.7341 [Dataflow Bug Detection Rules for Java]",
+            "pli": "1.15.0.4810 [PL/I Code Quality and Security]",
+            "tsql": "1.12.0.7020 [T-SQL Code Quality and Security]",
+            "vb": "2.12.0.4860 [VB6 Code Quality and Security]",
+            "sonarapex": "1.15.0.4655 [Apex Code Quality and Security]",
+            "javascript": "10.11.1.25225 [JavaScript/TypeScript/CSS Code Quality and Security]",
+            "ruby": "1.15.0.4655 [Ruby Code Quality and Security]",
+            "securitycsharpfrontend": "10.4.0.30099 [Vulnerability Rules for C#]",
+            "securityjavafrontend": "10.4.0.30099 [Vulnerability Rules for Java]",
+            "textenterprise": "2.8.0.1635 [Text Code Quality and Security]",
+            "securityjsfrontend": "10.4.0.30099 [Vulnerability Rules for JS]",
+            "cobol": "5.6.0.7604 [COBOL Code Quality]",
+            "securitypythonfrontend": "10.4.0.30099 [Vulnerability Rules for Python]",
+            "php": "3.33.0.11274 [PHP Code Quality and Security]",
+            "abap": "3.14.0.5470 [ABAP Code Quality and Security]",
+            "securityphpfrontend": "10.4.0.30099 [Vulnerability Rules for PHP]"
+         },
+         "Plugins": {
+            "IZAnalyzer": "2.6 [Plugin for IZ Analyzer Mule Scanner]"
+         },
+         "Web JVM State": {
+            "Max Memory (MB)": 6144,
+            "Free Memory (MB)": 1197,
+            "Heap Committed (MB)": 3072,
+            "Heap Init (MB)": 3072,
+            "Heap Max (MB)": 6144,
+            "Heap Used (MB)": 1868,
+            "Non Heap Committed (MB)": 336,
+            "Non Heap Init (MB)": 7,
+            "Non Heap Used (MB)": 328,
+            "System Load Average": "-100.0% (last minute)",
+            "Threads": 156
+         },
+         "Web Database Connection": {
+            "Pool Total Connections": 35,
+            "Pool Active Connections": 1,
+            "Pool Idle Connections": 34,
+            "Pool Max Connections": 60,
+            "Pool Min Idle Connections": 10,
+            "Pool Max Wait (ms)": 8000,
+            "Pool Max Lifetime (ms)": 1800000
+         },
+         "Web Logging": {
+            "Logs Level": "INFO",
+            "Logs Dir": "C:\\sonarqube-10.4.1\\logs"
+         },
+         "Web JVM Properties": {
+            "catalina.base": "C:\\sonarqube-10.4.1\\temp\\tc",
+            "catalina.home": "C:\\sonarqube-10.4.1\\temp\\tc",
+            "catalina.useNaming": "false",
+            "com.redhat.fips": "false",
+            "com.zaxxer.hikari.pool_number": "1",
+            "file.encoding": "UTF-8",
+            "file.separator": "\\",
+            "http.nonProxyHosts": "localhost|127.*|[::1]",
+            "java.awt.headless": "true",
+            "java.class.path": "./lib/sonar-application-10.4.1.88267.jar;C:\\sonarqube-10.4.1\\lib\\jdbc\\mssql\\mssql-jdbc-12.4.2.jre11.jar",
+            "java.class.version": "61.0",
+            "java.home": "C:\\Program Files\\Java\\jdk-17",
+            "java.io.tmpdir": "C:\\sonarqube-10.4.1\\temp",
+            "java.library.path": "C:\\Program Files\\Java\\jdk-17\\bin;C:\\windows\\Sun\\Java\\bin;C:\\windows\\system32;C:\\windows;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\WindowsPowerShell\\Scripts;C:\\Program Files\\Java\\jdk-17\\bin;C:\\windows\\system32\\config\\systemprofile\\AppData\\Local\\Microsoft\\WindowsApps;.",
+            "java.runtime.name": "Java(TM) SE Runtime Environment",
+            "java.runtime.version": "17.0.6+9-LTS-190",
+            "java.specification.name": "Java Platform API Specification",
+            "java.specification.vendor": "Oracle Corporation",
+            "java.specification.version": "17",
+            "java.vendor": "Oracle Corporation",
+            "java.vendor.url": "https://java.oracle.com/",
+            "java.vendor.url.bug": "https://bugreport.java.com/bugreport/",
+            "java.version": "17.0.6",
+            "java.version.date": "2023-01-17",
+            "java.vm.compressedOopsMode": "Zero based",
+            "java.vm.info": "mixed mode, sharing",
+            "java.vm.name": "Java HotSpot(TM) 64-Bit Server VM",
+            "java.vm.specification.name": "Java Virtual Machine Specification",
+            "java.vm.specification.vendor": "Oracle Corporation",
+            "java.vm.specification.version": "17",
+            "java.vm.vendor": "Oracle Corporation",
+            "java.vm.version": "17.0.6+9-LTS-190",
+            "jdk.debug": "release",
+            "line.separator": "\r\n",
+            "logbackDisableServletContainerInitializer": "true",
+            "native.encoding": "Cp1252",
+            "org.apache.catalina.startup.EXIT_ON_INIT_FAILURE": "true",
+            "org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH": "true",
+            "org.apache.xml.security.ignoreLineBreaks": "true",
+            "os.arch": "amd64",
+            "os.name": "Windows Server 2016",
+            "os.version": "10.0",
+            "path.separator": ";",
+            "sun.arch.data.model": "64",
+            "sun.awt.enableExtraMouseButtons": "true",
+            "sun.boot.library.path": "C:\\Program Files\\Java\\jdk-17\\bin",
+            "sun.cpu.endian": "little",
+            "sun.cpu.isalist": "amd64",
+            "sun.io.unicode.encoding": "UnicodeLittle",
+            "sun.java.command": "org.sonar.server.app.WebServer C:\\sonarqube-10.4.1\\temp\\sq-process9070339065730141736properties",
+            "sun.java.launcher": "SUN_STANDARD",
+            "sun.jnu.encoding": "Cp1252",
+            "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+            "sun.os.patch.level": "",
+            "user.country": "US",
+            "user.dir": "C:\\sonarqube-10.4.1",
+            "user.home": "C:\\windows\\system32\\config\\systemprofile",
+            "user.language": "en",
+            "user.name": "sonaruser",
+            "user.script": "",
+            "user.timezone": "Etc/UTC",
+            "user.variant": ""
+         },
+         "Compute Engine Tasks": {
+            "Pending": 9,
+            "Longest Time Pending (ms)": 17192977,
+            "In Progress": 3,
+            "Processed With Error": 89,
+            "Processed With Success": 4087,
+            "Processing Time (ms)": 305272874,
+            "Worker Count": 6,
+            "Max Worker Count": 10,
+            "Workers Paused": false
+         },
+         "Compute Engine JVM State": {
+            "Max Memory (MB)": 12288,
+            "Free Memory (MB)": 1813,
+            "Heap Committed (MB)": 12288,
+            "Heap Init (MB)": 12288,
+            "Heap Max (MB)": 12288,
+            "Heap Used (MB)": 10474,
+            "Non Heap Committed (MB)": 238,
+            "Non Heap Init (MB)": 7,
+            "Non Heap Used (MB)": 227,
+            "System Load Average": "-100.0% (last minute)",
+            "Threads": 99
+         },
+         "Compute Engine Database Connection": {
+            "Pool Total Connections": 14,
+            "Pool Active Connections": 3,
+            "Pool Idle Connections": 11,
+            "Pool Max Connections": 60,
+            "Pool Min Idle Connections": 10,
+            "Pool Max Wait (ms)": 8000,
+            "Pool Max Lifetime (ms)": 1800000
+         },
+         "Compute Engine Logging": {
+            "Logs Level": "INFO",
+            "Logs Dir": "C:\\sonarqube-10.4.1\\logs"
+         },
+         "Compute Engine JVM Properties": {
+            "com.redhat.fips": "false",
+            "com.zaxxer.hikari.pool_number": "1",
+            "file.encoding": "UTF-8",
+            "file.separator": "\\",
+            "http.nonProxyHosts": "localhost|127.*|[::1]",
+            "java.awt.headless": "true",
+            "java.class.path": "./lib/sonar-application-10.4.1.88267.jar;C:\\sonarqube-10.4.1\\lib\\jdbc\\mssql\\mssql-jdbc-12.4.2.jre11.jar",
+            "java.class.version": "61.0",
+            "java.home": "C:\\Program Files\\Java\\jdk-17",
+            "java.io.tmpdir": "C:\\sonarqube-10.4.1\\temp",
+            "java.library.path": "C:\\Program Files\\Java\\jdk-17\\bin;C:\\windows\\Sun\\Java\\bin;C:\\windows\\system32;C:\\windows;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\WindowsPowerShell\\Scripts;C:\\Program Files\\Java\\jdk-17\\bin;C:\\windows\\system32\\config\\systemprofile\\AppData\\Local\\Microsoft\\WindowsApps;.",
+            "java.runtime.name": "Java(TM) SE Runtime Environment",
+            "java.runtime.version": "17.0.6+9-LTS-190",
+            "java.specification.name": "Java Platform API Specification",
+            "java.specification.vendor": "Oracle Corporation",
+            "java.specification.version": "17",
+            "java.vendor": "Oracle Corporation",
+            "java.vendor.url": "https://java.oracle.com/",
+            "java.vendor.url.bug": "https://bugreport.java.com/bugreport/",
+            "java.version": "17.0.6",
+            "java.version.date": "2023-01-17",
+            "java.vm.compressedOopsMode": "Zero based",
+            "java.vm.info": "mixed mode, sharing",
+            "java.vm.name": "Java HotSpot(TM) 64-Bit Server VM",
+            "java.vm.specification.name": "Java Virtual Machine Specification",
+            "java.vm.specification.vendor": "Oracle Corporation",
+            "java.vm.specification.version": "17",
+            "java.vm.vendor": "Oracle Corporation",
+            "java.vm.version": "17.0.6+9-LTS-190",
+            "jdk.debug": "release",
+            "line.separator": "\r\n",
+            "native.encoding": "Cp1252",
+            "os.arch": "amd64",
+            "os.name": "Windows Server 2016",
+            "os.version": "10.0",
+            "path.separator": ";",
+            "sun.arch.data.model": "64",
+            "sun.boot.library.path": "C:\\Program Files\\Java\\jdk-17\\bin",
+            "sun.cpu.endian": "little",
+            "sun.cpu.isalist": "amd64",
+            "sun.io.unicode.encoding": "UnicodeLittle",
+            "sun.java.command": "org.sonar.ce.app.CeServer C:\\sonarqube-10.4.1\\temp\\sq-process7211519379447716418properties",
+            "sun.java.launcher": "SUN_STANDARD",
+            "sun.jnu.encoding": "Cp1252",
+            "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+            "sun.os.patch.level": "",
+            "user.country": "US",
+            "user.dir": "C:\\sonarqube-10.4.1",
+            "user.home": "C:\\windows\\system32\\config\\systemprofile",
+            "user.language": "en",
+            "user.name": "sonaruser",
+            "user.script": "",
+            "user.timezone": "Etc/UTC",
+            "user.variant": ""
+         },
+         "ALMs": {
+            "azure1": "Alm:azure_devops, Url:https://acme1.visualstudio.com/",
+            "GitHub-App-Integration": "Alm:github, Url:https://api.github.com, App Id:707, Client Id:Iv1.XXXX",
+            "azure2": "Alm:azure_devops, Url:https://acme2.visualstudio.com/",
+            "azure3": "Alm:azure_devops, Url:https://acme3.visualstudio.com/",
+            "azure4": "Alm:azure_devops, Url:https://acme4.visualstudio.com/",
+            "azure5": "Alm:azure_devops, Url:https://acme5.visualstudio.com/"
+         },
+         "Server Push Connections": {
+            "SonarLint Connected Clients": 16
+         }
+      }
+   ],
+   "Search Nodes": [
+      {
+         "Name": "sonarqube-search3",
+         "Host": "172.168.1.12",
+         "Search State": {
+            "CPU Usage (%)": 0,
+            "Disk Available": "222.7 GB",
+            "Store Size": "5.6 GB",
+            "Translog Size": "21.4 kB",
+            "Open File Descriptors": -1,
+            "Max File Descriptors": -1,
+            "JVM Heap Usage": "54.0%",
+            "JVM Heap Used": "3.5 GB",
+            "JVM Heap Max": "6.4 GB",
+            "JVM Non Heap Used": "189.9 MB",
+            "JVM Threads": 280,
+            "Field Data Memory": "1.4 MB",
+            "Field Data Circuit Breaker Limit": "2.6 GB",
+            "Field Data Circuit Breaker Estimation": "1.4 MB",
+            "Request Circuit Breaker Limit": "3.9 GB",
+            "Request Circuit Breaker Estimation": "0 bytes",
+            "Query Cache Memory": "43.0 MB",
+            "Request Cache Memory": "524.6 kB"
+         }
+      },
+      {
+         "Name": "sonarqube-search2",
+         "Host": "172.168.1.11",
+         "Search State": {
+            "CPU Usage (%)": 0,
+            "Disk Available": "194.4 GB",
+            "Store Size": "5.8 GB",
+            "Translog Size": "12.8 kB",
+            "Open File Descriptors": -1,
+            "Max File Descriptors": -1,
+            "JVM Heap Usage": "47.0%",
+            "JVM Heap Used": "3.0 GB",
+            "JVM Heap Max": "6.4 GB",
+            "JVM Non Heap Used": "195.6 MB",
+            "JVM Threads": 283,
+            "Field Data Memory": "1.4 MB",
+            "Field Data Circuit Breaker Limit": "2.6 GB",
+            "Field Data Circuit Breaker Estimation": "1.4 MB",
+            "Request Circuit Breaker Limit": "3.9 GB",
+            "Request Circuit Breaker Estimation": "0 bytes",
+            "Query Cache Memory": "39.5 MB",
+            "Request Cache Memory": "418.2 kB"
+         }
+      },
+      {
+         "Name": "sonarqube-search1",
+         "Host": "172.168.1.10",
+         "Search State": {
+            "CPU Usage (%)": 0,
+            "Disk Available": "196.4 GB",
+            "Store Size": "4.9 GB",
+            "Translog Size": "29.6 kB",
+            "Open File Descriptors": -1,
+            "Max File Descriptors": -1,
+            "JVM Heap Usage": "75.0%",
+            "JVM Heap Used": "4.8 GB",
+            "JVM Heap Max": "6.4 GB",
+            "JVM Non Heap Used": "189.4 MB",
+            "JVM Threads": 279,
+            "Field Data Memory": "2.0 MB",
+            "Field Data Circuit Breaker Limit": "2.6 GB",
+            "Field Data Circuit Breaker Estimation": "2.0 MB",
+            "Request Circuit Breaker Limit": "3.9 GB",
+            "Request Circuit Breaker Estimation": "0 bytes",
+            "Query Cache Memory": "34.9 MB",
+            "Request Cache Memory": "405.8 kB"
+         }
+      }
+   ],
+   "License": {
+      "edition": "Data Center Edition",
+      "type": "PRODUCTION",
+      "isSupported": true,
+      "isValidServerId": true,
+      "expiresAt": "2024-12-28",
+      "maxLoc": 250000000
+   },
+   "statistics": {
+      "userCount": 6868,
+      "ncloc": 158192797,
+      "sonarlintWeeklyUsers": 219,
+      "installationDate": "2019-06-07T13:23:08+0000",
+      "projectCount": 10416,
+      "projectCountByLanguage": [
+         {
+            "language": "py",
+            "count": 1359
+         },
+         {
+            "language": "js",
+            "count": 1173
+         },
+         {
+            "language": "xml",
+            "count": 1169
+         },
+         {
+            "language": "cs",
+            "count": 871
+         },
+         {
+            "language": "<null>",
+            "count": 857
+         },
+         {
+            "language": "ts",
+            "count": 835
+         },
+         {
+            "language": "css",
+            "count": 779
+         },
+         {
+            "language": "web",
+            "count": 752
+         },
+         {
+            "language": "yaml",
+            "count": 460
+         },
+         {
+            "language": "terraform",
+            "count": 324
+         },
+         {
+            "language": "plsql",
+            "count": 322
+         },
+         {
+            "language": "java",
+            "count": 308
+         },
+         {
+            "language": "go",
+            "count": 260
+         },
+         {
+            "language": "cpp",
+            "count": 141
+         },
+         {
+            "language": "c",
+            "count": 139
+         },
+         {
+            "language": "docker",
+            "count": 93
+         },
+         {
+            "language": "json",
+            "count": 57
+         },
+         {
+            "language": "tsql",
+            "count": 51
+         },
+         {
+            "language": "apex",
+            "count": 46
+         },
+         {
+            "language": "php",
+            "count": 34
+         },
+         {
+            "language": "scala",
+            "count": 22
+         },
+         {
+            "language": "swift",
+            "count": 18
+         },
+         {
+            "language": "jsp",
+            "count": 16
+         },
+         {
+            "language": "kotlin",
+            "count": 14
+         },
+         {
+            "language": "ruby",
+            "count": 13
+         },
+         {
+            "language": "vbnet",
+            "count": 12
+         },
+         {
+            "language": "objc",
+            "count": 6
+         },
+         {
+            "language": "grvy",
+            "count": 3
+         },
+         {
+            "language": "vb",
+            "count": 3
+         },
+         {
+            "language": "abap",
+            "count": 2
+         },
+         {
+            "language": "azureresourcemanager",
+            "count": 2
+         },
+         {
+            "language": "mule",
+            "count": 2
+         }
+      ],
+      "nclocByLanguage": [
+         {
+            "language": "css",
+            "ncloc": 6170945
+         },
+         {
+            "language": "scala",
+            "ncloc": 174399
+         },
+         {
+            "language": "jsp",
+            "ncloc": 84683
+         },
+         {
+            "language": "py",
+            "ncloc": 7044560
+         },
+         {
+            "language": "js",
+            "ncloc": 10192075
+         },
+         {
+            "language": "plsql",
+            "ncloc": 3639671
+         },
+         {
+            "language": "docker",
+            "ncloc": 2900
+         },
+         {
+            "language": "apex",
+            "ncloc": 2467401
+         },
+         {
+            "language": "mule",
+            "ncloc": 1265
+         },
+         {
+            "language": "java",
+            "ncloc": 14880331
+         },
+         {
+            "language": "web",
+            "ncloc": 6306174
+         },
+         {
+            "language": "xml",
+            "ncloc": 54367981
+         },
+         {
+            "language": "json",
+            "ncloc": 97053
+         },
+         {
+            "language": "vbnet",
+            "ncloc": 213788
+         },
+         {
+            "language": "grvy",
+            "ncloc": 735
+         },
+         {
+            "language": "yaml",
+            "ncloc": 811959
+         },
+         {
+            "language": "swift",
+            "ncloc": 401124
+         },
+         {
+            "language": "cpp",
+            "ncloc": 11667651
+         },
+         {
+            "language": "c",
+            "ncloc": 5672286
+         },
+         {
+            "language": "go",
+            "ncloc": 2397945
+         },
+         {
+            "language": "kotlin",
+            "ncloc": 466878
+         },
+         {
+            "language": "tsql",
+            "ncloc": 802403
+         },
+         {
+            "language": "vb",
+            "ncloc": 92309
+         },
+         {
+            "language": "ruby",
+            "ncloc": 170111
+         },
+         {
+            "language": "cs",
+            "ncloc": 17936552
+         },
+         {
+            "language": "php",
+            "ncloc": 1456637
+         },
+         {
+            "language": "terraform",
+            "ncloc": 533538
+         },
+         {
+            "language": "azureresourcemanager",
+            "ncloc": 144
+         },
+         {
+            "language": "<null>",
+            "ncloc": 25353
+         },
+         {
+            "language": "abap",
+            "ncloc": 171
+         },
+         {
+            "language": "ts",
+            "ncloc": 9747779
+         },
+         {
+            "language": "objc",
+            "ncloc": 256720
+         }
+      ]
+   }
+}
