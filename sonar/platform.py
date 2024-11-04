@@ -175,60 +175,46 @@ class Platform(object):
 
         return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id(), "plugins": self.plugins()}
 
-    def get(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
+    def get(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
         :param params: params to pass in the HTTP request, defaults to None
-        :param mute: Tuple of HTTP Error codes to mute (ie not write an error log for), defaults to None.
-                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.get, api, params, data, mute, **kwargs)
+        return self.__run_request(requests.get, api, params, **kwargs)
 
-    def post(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
+    def post(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP POST request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
         :param params: params to pass in the HTTP request, defaults to None
-        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
-                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.post, api, params, data, mute, **kwargs)
+        return self.__run_request(requests.post, api, params, **kwargs)
 
-    def patch(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
+    def patch(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP PATCH request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
         :param params: params to pass in the HTTP request, defaults to None
-        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
-                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
         return self.__run_request(requests.patch, api, params, data, mute, **kwargs)
 
-    def delete(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
+    def delete(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP DELETE request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
         :param params: params to pass in the HTTP request, defaults to None
-        :param mute: HTTP Error codes to mute (ie not write an error log for), defaults to None
-                     Typically, Error 404 Not found may be expected sometimes so this can avoid logging an error for 404
         :return: the HTTP response
         """
-        return self.__run_request(requests.delete, api, params, data, mute, **kwargs)
+        return self.__run_request(requests.delete, api, params, **kwargs)
 
-    def __run_request(
-        self,
-        request: callable,
-        api: str,
-        params: types.ApiParams = None,
-        data: str = None,
-        mute: tuple[HTTPStatus] = (),
-        **kwargs,
-    ) -> requests.Response:
+    def __run_request(self, request: callable, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
+        data = kwargs.get("data", None)
+        mute = kwargs.get("mute", ())
         api = _normalize_api(api)
         headers = {"user-agent": self._user_agent, **kwargs.get("headers", {})}
         if params is None:
@@ -248,13 +234,7 @@ class Platform(object):
             while retry:
                 start = time.perf_counter_ns()
                 r = request(
-                    url=self.url + api,
-                    auth=self.__credentials(),
-                    verify=self.__cert_file,
-                    headers=headers,
-                    data=data,
-                    params=params,
-                    timeout=self.http_timeout,
+                    url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=headers, timeout=self.http_timeout, data=data
                 )
                 (retry, new_url) = _check_for_retry(r)
                 log.debug("%s: %s took %d ms", req_type, url, (time.perf_counter_ns() - start) // 1000000)
