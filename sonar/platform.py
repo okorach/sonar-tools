@@ -234,7 +234,13 @@ class Platform(object):
             while retry:
                 start = time.perf_counter_ns()
                 r = request(
-                    url=self.url + api, auth=self.__credentials(), verify=self.__cert_file, headers=headers, timeout=self.http_timeout, data=data
+                    url=self.url + api,
+                    auth=self.__credentials(),
+                    verify=self.__cert_file,
+                    params=params,
+                    headers=headers,
+                    timeout=self.http_timeout,
+                    data=data,
                 )
                 (retry, new_url) = _check_for_retry(r)
                 log.debug("%s: %s took %d ms", req_type, url, (time.perf_counter_ns() - start) // 1000000)
