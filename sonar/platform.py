@@ -27,7 +27,6 @@
 from http import HTTPStatus
 import sys
 import os
-from queue import Queue
 from typing import Optional
 import time
 import datetime
@@ -64,7 +63,7 @@ _HARDCODED_LATEST = (10, 6, 0)
 _SERVER_ID_KEY = "Server ID"
 
 
-class Platform:
+class Platform(object):
     """Abstraction of the SonarQube "platform" concept"""
 
     def __init__(self, url: str, token: str, org: str = None, cert_file: Optional[str] = None, http_timeout: int = 10, **kwargs) -> None:
@@ -98,7 +97,7 @@ class Platform:
         return f"{util.redacted_token(self.__token)}@{self.url}"
 
     def __credentials(self) -> tuple[str, str]:
-        return (self.__token, "")
+        return self.__token, ""
 
     def verify_connection(self) -> None:
         try:
@@ -176,14 +175,7 @@ class Platform:
 
         return {**data, "version": util.version_to_string(self.version()[:3]), "serverId": self.server_id(), "plugins": self.plugins()}
 
-    def get(
-        self,
-        api: str,
-        params: types.ApiParams = None,
-        data: str = None,
-        mute: tuple[HTTPStatus] = (),
-        **kwargs,
-    ) -> requests.Response:
+    def get(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
         """Makes an HTTP GET request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -194,14 +186,7 @@ class Platform:
         """
         return self.__run_request(requests.get, api, params, data, mute, **kwargs)
 
-    def post(
-        self,
-        api: str,
-        params: types.ApiParams = None,
-        data: str = None,
-        mute: tuple[HTTPStatus] = (),
-        **kwargs,
-    ) -> requests.Response:
+    def post(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
         """Makes an HTTP POST request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -212,14 +197,7 @@ class Platform:
         """
         return self.__run_request(requests.post, api, params, data, mute, **kwargs)
 
-    def patch(
-        self,
-        api: str,
-        params: types.ApiParams = None,
-        data: str = None,
-        mute: tuple[HTTPStatus] = (),
-        **kwargs,
-    ) -> requests.Response:
+    def patch(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
         """Makes an HTTP PATCH request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
@@ -230,14 +208,7 @@ class Platform:
         """
         return self.__run_request(requests.patch, api, params, data, mute, **kwargs)
 
-    def delete(
-        self,
-        api: str,
-        params: types.ApiParams = None,
-        data: str = None,
-        mute: tuple[HTTPStatus] = (),
-        **kwargs,
-    ) -> requests.Response:
+    def delete(self, api: str, params: types.ApiParams = None, data: str = None, mute: tuple[HTTPStatus] = (), **kwargs) -> requests.Response:
         """Makes an HTTP DELETE request to SonarQube
 
         :param api: API to invoke (without the platform base URL)
