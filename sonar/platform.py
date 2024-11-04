@@ -86,7 +86,6 @@ class Platform(object):
         self._permissions = None
         self.http_timeout = int(http_timeout)
         self.organization = org
-        self.__is_sonarcloud = util.is_sonarcloud_url(self.url)
         self._user_agent = _SONAR_TOOLS_AGENT
         self._global_settings_definitions = None
 
@@ -158,7 +157,7 @@ class Platform(object):
         """
         Returns whether the target platform is SonarCloud
         """
-        return self.__is_sonarcloud
+        return util.is_sonarcloud_url(self.url)
 
     def basics(self) -> dict[str, str]:
         """
@@ -213,8 +212,7 @@ class Platform(object):
 
     def __run_request(self, request: callable, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP request to SonarQube"""
-        data = kwargs.get("data", None)
-        mute = kwargs.get("mute", ())
+        mute = kwargs.pop("mute", ())
         api = _normalize_api(api)
         headers = {"user-agent": self._user_agent, **kwargs.get("headers", {})}
         if params is None:
@@ -240,7 +238,7 @@ class Platform(object):
                     params=params,
                     headers=headers,
                     timeout=self.http_timeout,
-                    data=data,
+                    **kwargs
                 )
                 (retry, new_url) = _check_for_retry(r)
                 log.debug("%s: %s took %d ms", req_type, url, (time.perf_counter_ns() - start) // 1000000)
