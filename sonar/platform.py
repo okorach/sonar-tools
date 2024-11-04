@@ -377,22 +377,18 @@ class Platform(object):
 
     def __urlstring(self, api: str, params: types.ApiParams) -> str:
         """Returns a string corresponding to the URL and parameters"""
-        first = True
-        url_prefix = f"{str(self)}{api}"
+        url = f"{str(self)}{api}"
         if params is None:
-            return url_prefix
-        temp_params = params.copy()
-        for p in params:
-            if params[p] is None:
-                continue
-            sep = "?" if first else "&"
-            first = False
-            if isinstance(temp_params[p], datetime.date):
-                temp_params[p] = util.format_date(temp_params[p])
-            elif isinstance(temp_params[p], (list, tuple, set)):
-                temp_params[p] = ",".join(temp_params[p])
-            url_prefix += f"{sep}{p}={requests.utils.quote(str(temp_params[p]))}"
-        return url_prefix
+            return url
+        good_params = {k: v for k, v in params.items() if v is not None}
+        if len(good_params) == 0:
+            return url
+        for k, v in good_params.items():
+            if isinstance(v, datetime.date):
+                good_params[k] = util.format_date(v)
+            elif isinstance(v, (list, tuple, set)):
+                good_params[k] = ",".join(str(v))
+        return url + "?" + "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in good_params.items()])
 
     def webhooks(self) -> dict[str, object]:
         """
