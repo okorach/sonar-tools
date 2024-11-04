@@ -22,9 +22,10 @@
 """ Test of the issues module and class, as well as changelog """
 
 from datetime import datetime
+import utilities as tutil
 from sonar import issues
 from sonar import utilities as util
-import utilities as tutil
+
 
 LIVE_PROJECT = "okorach_sonar-tools"
 ISSUE_WITH_CHANGELOG = "402452b7-fd3a-4487-97cc-1c996697b397"
