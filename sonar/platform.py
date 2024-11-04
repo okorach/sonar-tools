@@ -200,7 +200,7 @@ class Platform(object):
         :param params: params to pass in the HTTP request, defaults to None
         :return: the HTTP response
         """
-        return self.__run_request(requests.patch, api, params, data, mute, **kwargs)
+        return self.__run_request(requests.patch, api, params, **kwargs)
 
     def delete(self, api: str, params: types.ApiParams = None, **kwargs) -> requests.Response:
         """Makes an HTTP DELETE request to SonarQube
