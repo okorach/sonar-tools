@@ -26,7 +26,6 @@
 import datetime
 import re
 from typing import Optional
-from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
 import sonar.utilities as util
