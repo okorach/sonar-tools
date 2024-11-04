@@ -211,7 +211,7 @@ class Issue(findings.Finding):
         """
         resp = self.get(Issue.SEARCH_API, params={"issues": self.key, "additionalFields": "_all"})
         if resp.ok:
-            self._load(resp.issues[0])
+            self._load(json.loads(resp.text)["issues"][0])
         return resp.ok
 
     def changelog(self) -> dict[str, str]:
