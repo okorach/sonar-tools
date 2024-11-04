@@ -31,6 +31,7 @@ LIVE_PROJECT = "okorach_sonar-tools"
 ISSUE_WITH_CHANGELOG = "402452b7-fd3a-4487-97cc-1c996697b397"
 ISSUE_2 = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 
+
 def test_issue() -> None:
     """Test issues"""
     issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=LIVE_PROJECT)
