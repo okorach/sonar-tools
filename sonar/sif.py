@@ -26,7 +26,6 @@
 import datetime
 import re
 from typing import Optional
-from dateutil.relativedelta import relativedelta
 
 import sonar.logging as log
 import sonar.utilities as util
@@ -273,7 +272,7 @@ class Sif(object):
 
     def __audit_dce_settings(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits DCE settings"""
-        log.info("Auditing DCE settings for version %s", util.version_to_string(self.version()))
+        log.info("Auditing DCE settings")
         problems = []
         sq_edition = self.edition()
         if sq_edition is None:

@@ -90,11 +90,13 @@ def json_dump_debug(json_data: Union[list[str], dict[str, str]], pre_string: str
     log.debug("%s%s", pre_string, json_dump(json_data))
 
 
-def format_date_ymd(year: int, month: int, day: int):
+def format_date_ymd(year: int, month: int, day: int) -> str:
+    """Returns a date as an ISO string"""
     return ISO_DATE_FORMAT % (year, month, day)
 
 
 def format_date(somedate: datetime.datetime) -> str:
+    """Returns a date as an ISO string"""
     return ISO_DATE_FORMAT % (somedate.year, somedate.month, somedate.day)
 
 

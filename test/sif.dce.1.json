@@ -1,0 +1,952 @@
+{
+   "Health": "GREEN",
+   "Health Causes": [],
+   "System": {
+      "Server ID": "AAAAAAAA-BBBBBBBB-CCCCC_CCCCC",
+      "Edition": "Data Center",
+      "Lines of Code": 167000000,
+      "Docker": false,
+      "High Availability": true,
+      "Force authentication": true
+   },
+   "Database": {
+      "Database": "Oracle",
+      "Database Version": "Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production",
+      "Username": "oracleuser",
+      "URL": "jdbc:oracle:thin:@acme.com:3203/prod",
+      "Driver": "Oracle JDBC driver",
+      "Driver Version": "12.2.0.1.0",
+      "Default transaction isolation": "TRANSACTION_READ_COMMITTED"
+   },
+   "Compute Engine Tasks": {
+      "Total Pending": 0,
+      "Total In Progress": 0,
+      "Max Workers per Node": 10,
+      "Workers Paused": false
+   },
+   "Search State": {
+      "State": "GREEN",
+      "Nodes": 3
+   },
+   "Search Indexes": {
+      "Index components - Docs": 132357,
+      "Index components - Shards": 5,
+      "Index components - Store Size": "60.1 MB",
+      "Index metadatas - Docs": 17,
+      "Index metadatas - Shards": 1,
+      "Index metadatas - Store Size": "34.3 kB",
+      "Index projectmeasures - Docs": 281421,
+      "Index projectmeasures - Shards": 5,
+      "Index projectmeasures - Store Size": "49.5 MB",
+      "Index rules - Docs": 34247,
+      "Index rules - Shards": 2,
+      "Index rules - Store Size": "20.0 MB",
+      "Index issues - Docs": 255304506,
+      "Index issues - Shards": 5,
+      "Index issues - Store Size": "32.8 GB",
+      "Index users - Docs": 16180,
+      "Index users - Shards": 1,
+      "Index users - Store Size": "34.0 MB",
+      "Index views - Docs": 1301,
+      "Index views - Shards": 5,
+      "Index views - Store Size": "1.8 MB"
+   },
+   "Settings": {
+      "email.smtp_secure_connection.secured": "xxxxxxxx",
+      "http.nonProxyHosts": "localhost|127.*|[::1]",
+      "ldap.authentication": "simple",
+      "ldap.bindDn": "cn=sonar,OU=Service Accounts,OU=CAO,OU=ENT,DC=ent,DC=acme,DC=corp",
+      "ldap.bindPassword": "xxxxxxxx",
+      "ldap.group.baseDn": "OU=ENT,DC=ent,DC=acme,DC=corp",
+      "ldap.group.idAttribute": "sAMAccountName",
+      "ldap.group.request": "(&(objectClass=group)(member={dn}))",
+      "ldap.url": "ldaps://ldap.acme.corp:636",
+      "ldap.user.baseDn": "OU=ENT,DC=ent,DC=acme,DC=corp",
+      "ldap.user.realNameAttribute": "cn",
+      "ldap.user.request": "(&(objectClass=user)(sAMAccountName={login}))",
+      "process.gracefulStopTimeout": "270000",
+      "process.index": "2",
+      "process.key": "web",
+      "process.sharedDir": "/apps/sonarqube-9.9.0.65466/temp",
+      "projects.default.visibility": "public",
+      "qualitygate.default": "AXzc3pDDDDDkwEXzit",
+      "sonar.auth.jwtBase64Hs256Secret": "xxxxxxxx",
+      "sonar.authenticator.downcase": "true",
+      "sonar.authenticator.ignoreStartupFailure": "false",
+      "sonar.autoDatabaseUpgrade": "false",
+      "sonar.blueGreenEnabled": "false",
+      "sonar.ce.gracefulStopTimeOutInMs": "21600000",
+      "sonar.ce.javaAdditionalOpts": "",
+      "sonar.ce.javaOpts": "-Xmx24g -Xms4g -XX:+HeapDumpOnOutOfMemoryError -Djava.net.preferIPv4Stack=true -Dlog4j2.formatMsgNoLookups=true -javaagent:/apps/appdynamics/appsrv/javaagent.jar -Dappdynamics.agent.applicationName=sonarqube -Dappdynamics.agent.tierName=Tomcat-appnode-1-ce -Dappdynamics.agent.nodeName=CPVRA90A1093_SHV_Tomcat-appnode-1-ce -Dappdynamics.agent.log4j2.disabled=true",
+      "sonar.cluster.enabled": "true",
+      "sonar.cluster.hosts": "15.54.51.126,15.54.51.131",
+      "sonar.cluster.kubernetes": "false",
+      "sonar.cluster.name": "sonarProd_SV",
+      "sonar.cluster.node.host": "15.54.51.126",
+      "sonar.cluster.node.name": "sonarqube-cluster",
+      "sonar.cluster.node.port": "9003",
+      "sonar.cluster.node.type": "application",
+      "sonar.cluster.search.hosts": "15.54.51.136,15.54.51.186,15.54.51.215",
+      "sonar.cluster.web.startupLeader": "false",
+      "sonar.core.id": "AAAAAAAA-BBBBBBBB-CCCCC_CCCCC",
+      "sonar.core.serverBaseURL": "https://sonarqube.acme.net",
+      "sonar.core.startTime": "2024-02-22T22:04:30-0600",
+      "sonar.coverage.jacoco.xmlReportPaths": "target/site/jacoco/jacoco.xml,build/reports/jacoco/jacoco.xml,build/reports/jacoco.xml,build/reports/jacoco/test/jacoco.xml,build/jacoco/jacoco.xml,target/site/jacoco/jacocoTestReport.xml,build/reports/jacoco/jacocoTestReport.xml,build/reports/jacocoTestReport.xml,build/reports/jacoco/test/jacocoTestReport.xml,build/jacoco/jacocoTestReport.xml",
+      "sonar.cs.roslyn.ignoreIssues": "true",
+      "sonar.dbcleaner.branchesToKeepWhenInactive": "(?i)(master|develop|main)(?-i).*",
+      "sonar.forceAuthentication": "true",
+      "sonar.jdbc.driverClassName": "oracle.jdbc.driver.OracleDriver",
+      "sonar.jdbc.driverPath": "/apps/sonarqube-9.9.0.65466/extensions/jdbc-driver/oracle/ojdbc8.jar",
+      "sonar.jdbc.idleTimeout": "600000",
+      "sonar.jdbc.keepaliveTime": "180000",
+      "sonar.jdbc.maxActive": "60",
+      "sonar.jdbc.maxIdle": "20",
+      "sonar.jdbc.maxLifetime": "1800000",
+      "sonar.jdbc.maxWait": "5000",
+      "sonar.jdbc.minEvictableIdleTimeMillis": "600000",
+      "sonar.jdbc.minIdle": "8",
+      "sonar.jdbc.password": "xxxxxxxx",
+      "sonar.jdbc.timeBetweenEvictionRunsMillis": "30000",
+      "sonar.jdbc.url": "jdbc:oracle:thin:@acme.com:3203/prod",
+      "sonar.jdbc.username": "sonaruser",
+      "sonar.jdbc.validationTimeout": "5000",
+      "sonar.jsp.file.suffixes": ".jsp,.jspf,.jspx",
+      "sonar.log.jsonOutput": "false",
+      "sonar.log.level": "INFO",
+      "sonar.log.maxFiles": "7",
+      "sonar.log.rollingPolicy": "time:yyyy-MM-dd",
+      "sonar.mule.file.suffixes": " .678678678678",
+      "sonar.path.data": "/apps/sonarqube-9.9.0.65466/data",
+      "sonar.path.home": "/apps/sonarqube-9.9.0.65466",
+      "sonar.path.logs": "/apps/sonarqube-9.9.0.65466/logs",
+      "sonar.path.temp": "/apps/sonarqube-9.9.0.65466/temp",
+      "sonar.path.web": "/apps/sonarqube-9.9.0.65466/web",
+      "sonar.plugins.risk.consent": "ACCEPTED",
+      "sonar.qualitygate.ignoreSmallChanges": "false",
+      "sonar.search.javaAdditionalOpts": "",
+      "sonar.search.javaOpts": "-Xmx2G -Xms2G -XX:+HeapDumpOnOutOfMemoryError",
+      "sonar.security.realm": "LDAP",
+      "sonar.telemetry.compression": "true",
+      "sonar.telemetry.enable": "true",
+      "sonar.telemetry.frequencyInSeconds": "10800",
+      "sonar.telemetry.url": "https://telemetry.sonarsource.com/sonarqube",
+      "sonar.updatecenter.activate": "false",
+      "sonar.web.accessLogs.enable": "true",
+      "sonar.web.accessLogs.pattern": "%h %l %u [%t] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\" \"%reqAttribute{ID}\" \"%reqAttribute{LOGIN}\"",
+      "sonar.web.gracefulStopTimeOutInMs": "240000",
+      "sonar.web.host": "15.54.51.126",
+      "sonar.web.javaAdditionalOpts": "",
+      "sonar.web.javaOpts": "-Xmx6g -Xms2g -XX:+HeapDumpOnOutOfMemoryError -Djava.net.preferIPv4Stack=true -Dlog4j2.formatMsgNoLookups=true  -javaagent:/apps/appdynamics/appsrv/javaagent.jar -Dappdynamics.agent.applicationName=sonarqube -Dappdynamics.agent.tierName=Tomcat-appnode-1-web -Dappdynamics.agent.nodeName=CPVRA90A1093_SHV_Tomcat-appnode-1-web -Dappdynamics.agent.log4j2.disabled=true",
+      "sonar.web.port": "9000",
+      "sonar.web.sessionTimeoutInMinutes": "4320",
+      "sonar.web.sso.emailHeader": "X-Forwarded-Email",
+      "sonar.web.sso.enable": "false",
+      "sonar.web.sso.groupsHeader": "X-Forwarded-Groups",
+      "sonar.web.sso.loginHeader": "X-Forwarded-Login",
+      "sonar.web.sso.nameHeader": "X-Forwarded-Name",
+      "sonar.web.sso.refreshIntervalInMinutes": "5",
+      "values": "can:",
+      "Default New Code Definition": "NUMBER_OF_DAYS: 30"
+   },
+   "Application Nodes": [
+      {
+         "Name": "app-node-1",
+         "Host": "15.54.51.131",
+         "Health": "GREEN",
+         "Health Causes": [],
+         "System": {
+            "Version": "9.9.0.65466",
+            "Official Distribution": true,
+            "Home Dir": "/apps/sonarqube-9.9.0.65466",
+            "Data Dir": "/apps/sonarqube-9.9.0.65466/data",
+            "Temp Dir": "/apps/sonarqube-9.9.0.65466/temp",
+            "Processors": 8
+         },
+         "Bundled": {
+            "iac": "1.11.0.2847 [IaC Code Quality and Security]",
+            "plsql": "3.8.0.4948 [PL/SQL Code Quality and Security]",
+            "sonarscala": "1.11.0.3905 [Scala Code Quality and Security]",
+            "security": "9.9.0.19083 [Vulnerability Analysis]",
+            "csharp": "8.51.0.59060 [C# Code Quality and Security]",
+            "java": "7.16.0.30901 [Java Code Quality and Security]",
+            "web": "3.7.1.3306 [HTML Code Quality and Security]",
+            "xml": "2.7.0.3820 [XML Code Quality and Security]",
+            "flex": "2.8.0.3166 [Flex Code Quality and Security]",
+            "text": "2.0.1.611 [Text Code Quality and Security]",
+            "vbnet": "8.51.0.59060 [VB.NET Code Quality and Security]",
+            "swift": "4.8.0.5759 [Swift Code Quality and Security]",
+            "cpp": "6.41.0.60884 [CFamily Code Quality and Security]",
+            "python": "3.24.0.10784 [Python Code Quality and Security]",
+            "dbdpythonfrontend": "1.10.0.3046 [Dataflow Bug Detection Rules for Python]",
+            "dbd": "1.10.0.3046 [Dataflow Bug Detection]",
+            "rpg": "3.3.0.3147 [RPG Code Quality]",
+            "go": "1.11.0.3905 [Go Code Quality and Security]",
+            "jacoco": "1.3.0.1538 [JaCoCo]",
+            "kotlin": "2.12.0.1956 [Kotlin Code Quality and Security]",
+            "vb": "2.9.0.3341 [VB6 Code Quality and Security]",
+            "dbdjavafrontend": "1.10.0.3046 [Dataflow Bug Detection Rules for Java]",
+            "pli": "1.12.0.3443 [PL/I Code Quality and Security]",
+            "tsql": "1.7.0.5449 [T-SQL Code Quality and Security]",
+            "sonarapex": "1.11.0.3905 [Apex Code Quality and Security]",
+            "javascript": "9.13.0.20537 [JavaScript/TypeScript/CSS Code Quality and Security]",
+            "ruby": "1.11.0.3905 [Ruby Code Quality and Security]",
+            "securitycsharpfrontend": "9.9.0.19083 [Vulnerability Rules for C#]",
+            "securityjavafrontend": "9.9.0.19083 [Vulnerability Rules for Java]",
+            "securityjsfrontend": "9.9.0.19083 [Vulnerability Rules for JS]",
+            "securitypythonfrontend": "9.9.0.19083 [Vulnerability Rules for Python]",
+            "cobol": "5.2.0.5949 [COBOL Code Quality]",
+            "php": "3.27.1.9352 [PHP Code Quality and Security]",
+            "abap": "3.11.0.4030 [ABAP Code Quality and Security]",
+            "securityphpfrontend": "9.9.0.19083 [Vulnerability Rules for PHP]",
+            "config": "1.2.0.267 [Configuration detection fot Code Quality and Security]"
+         },
+         "Plugins": {
+            "mutationanalysis": "1.7 [Mutation Analysis]",
+            "apigee": "3.0.2 [Apigee]",
+            "mulevalidationsonarqubepluginmule": "1.0.6 [MulePlugin]",
+            "checkstyle": "10.8.1 [Checkstyle]",
+            "findbugs": "4.2.2 [Findbugs]",
+            "groovy": "1.8 [Groovy]"
+         },
+         "Web JVM State": {
+            "Max Memory (MB)": 6144,
+            "Free Memory (MB)": 773,
+            "Heap Committed (MB)": 2048,
+            "Heap Init (MB)": 2048,
+            "Heap Max (MB)": 6144,
+            "Heap Used (MB)": 1267,
+            "Non Heap Committed (MB)": 357,
+            "Non Heap Init (MB)": 7,
+            "Non Heap Used (MB)": 349,
+            "System Load Average": "121.0% (last minute)",
+            "Threads": 125
+         },
+         "Web Database Connection": {
+            "Pool Total Connections": 9,
+            "Pool Active Connections": 2,
+            "Pool Idle Connections": 7,
+            "Pool Max Connections": 60,
+            "Pool Min Idle Connections": 8,
+            "Pool Max Wait (ms)": 5000,
+            "Pool Max Lifetime (ms)": 1800000
+         },
+         "Web Logging": {
+            "Logs Level": "INFO",
+            "Logs Dir": "/apps/sonarqube-9.9.0.65466/logs"
+         },
+         "Web JVM Properties": {
+            "appdynamics.agent.applicationName": "sonarqube",
+            "appdynamics.agent.log4j2.disabled": "true",
+            "appdynamics.agent.nodeName": "App-node-1-web",
+            "appdynamics.agent.tierName": "Tomcat-appnode-1-web",
+            "catalina.base": "/apps/sonarqube-9.9.0.65466/temp/tc",
+            "catalina.home": "/apps/sonarqube-9.9.0.65466/temp/tc",
+            "catalina.useNaming": "false",
+            "com.redhat.fips": "false",
+            "com.zaxxer.hikari.pool_number": "1",
+            "file.encoding": "UTF-8",
+            "file.separator": "/",
+            "http.agent": "SonarQube 9.9.0.65466 #ACME",
+            "http.nonProxyHosts": "localhost|127.*|[::1]",
+            "java.awt.headless": "true",
+            "java.class.path": "./lib/sonar-application-9.9.0.65466.jar:/apps/sonarqube-9.9.0.65466/extensions/jdbc-driver/oracle/ojdbc8.jar",
+            "java.class.version": "61.0",
+            "java.home": "/apps/mwauto/java/jdk-17.0.10",
+            "java.io.tmpdir": "/apps/sonarqube-9.9.0.65466/temp",
+            "java.library.path": "/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib",
+            "java.net.preferIPv4Stack": "true",
+            "java.runtime.name": "Java(TM) SE Runtime Environment",
+            "java.runtime.version": "17.0.10+11-LTS-240",
+            "java.specification.name": "Java Platform API Specification",
+            "java.specification.vendor": "Oracle Corporation",
+            "java.specification.version": "17",
+            "java.vendor": "Oracle Corporation",
+            "java.vendor.url": "https://java.oracle.com/",
+            "java.vendor.url.bug": "https://bugreport.java.com/bugreport/",
+            "java.version": "17.0.10",
+            "java.version.date": "2024-01-16",
+            "java.vm.compressedOopsMode": "Zero based",
+            "java.vm.info": "mixed mode, sharing",
+            "java.vm.name": "Java HotSpot(TM) 64-Bit Server VM",
+            "java.vm.specification.name": "Java Virtual Machine Specification",
+            "java.vm.specification.vendor": "Oracle Corporation",
+            "java.vm.specification.version": "17",
+            "java.vm.vendor": "Oracle Corporation",
+            "java.vm.version": "17.0.10+11-LTS-240",
+            "jdk.debug": "release",
+            "line.separator": "\n",
+            "log4j2.formatMsgNoLookups": "true",
+            "logbackDisableServletContainerInitializer": "true",
+            "native.encoding": "ANSI_X3.4-1968",
+            "org.apache.catalina.startup.EXIT_ON_INIT_FAILURE": "true",
+            "org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH": "true",
+            "os.arch": "amd64",
+            "os.name": "Linux",
+            "os.version": "3.10.0-1160.114.2.el7.x86_64",
+            "path.separator": ":",
+            "sun.arch.data.model": "64",
+            "sun.boot.library.path": "/apps/mwauto/java/jdk-17.0.10/lib",
+            "sun.cpu.endian": "little",
+            "sun.font.fontmanager": "sun.awt.X11FontManager",
+            "sun.io.unicode.encoding": "UnicodeLittle",
+            "sun.java.command": "org.sonar.server.app.WebServer /apps/sonarqube-9.9.0.65466/temp/sq-process5292888694439836957properties",
+            "sun.java.launcher": "SUN_STANDARD",
+            "sun.jnu.encoding": "ANSI_X3.4-1968",
+            "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+            "user.country": "US",
+            "user.dir": "/apps/sonarqube-9.9.0.65466",
+            "user.home": "/opt/apps/users/app",
+            "user.language": "en",
+            "user.name": "app",
+            "user.timezone": "US/Central"
+         },
+         "Compute Engine Tasks": {
+            "Pending": 0,
+            "Longest Time Pending (ms)": 0,
+            "In Progress": 0,
+            "Processed With Error": 272,
+            "Processed With Success": 18739,
+            "Processing Time (ms)": 391540639,
+            "Worker Count": 10,
+            "Max Worker Count": 10,
+            "Workers Paused": false
+         },
+         "Compute Engine JVM State": {
+            "Max Memory (MB)": 24576,
+            "Free Memory (MB)": 1380,
+            "Heap Committed (MB)": 7120,
+            "Heap Init (MB)": 4096,
+            "Heap Max (MB)": 24576,
+            "Heap Used (MB)": 5731,
+            "Non Heap Committed (MB)": 301,
+            "Non Heap Init (MB)": 7,
+            "Non Heap Used (MB)": 287,
+            "System Load Average": "121.0% (last minute)",
+            "Threads": 102
+         },
+         "Compute Engine Database Connection": {
+            "Pool Total Connections": 9,
+            "Pool Active Connections": 0,
+            "Pool Idle Connections": 9,
+            "Pool Max Connections": 60,
+            "Pool Min Idle Connections": 8,
+            "Pool Max Wait (ms)": 5000,
+            "Pool Max Lifetime (ms)": 1800000
+         },
+         "Compute Engine Logging": {
+            "Logs Level": "INFO",
+            "Logs Dir": "/apps/sonarqube-9.9.0.65466/logs"
+         },
+         "Compute Engine JVM Properties": {
+            "appdynamics.agent.applicationName": "sonarqube",
+            "appdynamics.agent.log4j2.disabled": "true",
+            "appdynamics.agent.nodeName": "Tomcat-appnode-1-ce",
+            "appdynamics.agent.tierName": "Tomcat-appnode-1-ce",
+            "com.redhat.fips": "false",
+            "com.zaxxer.hikari.pool_number": "1",
+            "file.encoding": "UTF-8",
+            "file.separator": "/",
+            "http.nonProxyHosts": "localhost|127.*|[::1]",
+            "java.awt.headless": "true",
+            "java.class.path": "./lib/sonar-application-9.9.0.65466.jar:/apps/sonarqube-9.9.0.65466/extensions/jdbc-driver/oracle/ojdbc8.jar",
+            "java.class.version": "61.0",
+            "java.home": "/apps/mwauto/java/jdk-17.0.10",
+            "java.io.tmpdir": "/apps/sonarqube-9.9.0.65466/temp",
+            "java.library.path": "/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib",
+            "java.net.preferIPv4Stack": "true",
+            "java.runtime.name": "Java(TM) SE Runtime Environment",
+            "java.runtime.version": "17.0.10+11-LTS-240",
+            "java.specification.name": "Java Platform API Specification",
+            "java.specification.vendor": "Oracle Corporation",
+            "java.specification.version": "17",
+            "java.vendor": "Oracle Corporation",
+            "java.vendor.url": "https://java.oracle.com/",
+            "java.vendor.url.bug": "https://bugreport.java.com/bugreport/",
+            "java.version": "17.0.10",
+            "java.version.date": "2024-01-16",
+            "java.vm.compressedOopsMode": "Zero based",
+            "java.vm.info": "mixed mode, sharing",
+            "java.vm.name": "Java HotSpot(TM) 64-Bit Server VM",
+            "java.vm.specification.name": "Java Virtual Machine Specification",
+            "java.vm.specification.vendor": "Oracle Corporation",
+            "java.vm.specification.version": "17",
+            "java.vm.vendor": "Oracle Corporation",
+            "java.vm.version": "17.0.10+11-LTS-240",
+            "jdk.debug": "release",
+            "line.separator": "\n",
+            "log4j2.formatMsgNoLookups": "true",
+            "native.encoding": "ANSI_X3.4-1968",
+            "os.arch": "amd64",
+            "os.name": "Linux",
+            "os.version": "3.10.0-1160.114.2.el7.x86_64",
+            "path.separator": ":",
+            "sun.arch.data.model": "64",
+            "sun.boot.library.path": "/apps/mwauto/java/jdk-17.0.10/lib",
+            "sun.cpu.endian": "little",
+            "sun.font.fontmanager": "sun.awt.X11FontManager",
+            "sun.io.unicode.encoding": "UnicodeLittle",
+            "sun.java.command": "org.sonar.ce.app.CeServer /apps/sonarqube-9.9.0.65466/temp/sq-process17314405118447300968properties",
+            "sun.java.launcher": "SUN_STANDARD",
+            "sun.jnu.encoding": "ANSI_X3.4-1968",
+            "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+            "user.country": "US",
+            "user.dir": "/apps/sonarqube-9.9.0.65466",
+            "user.home": "/opt/apps/users/app",
+            "user.language": "en",
+            "user.name": "app",
+            "user.timezone": "US/Central"
+         },
+         "ALMs": {
+            "EnterpriseGitHub": "Alm:github, Url:https://github.acme.com/api/v3, App Id:414, Client Id:XXXX",
+            "Azure DevOps": "Alm:azure_devops",
+            "AcmeGitHub": "Alm:github, Url:https://github2.acme.com/api/v3, App Id:511, Client Id:Iv1.XXXX",
+            "GitHub3": "Alm:github, Url:https://github3.acme.com/api/v3, App Id:55, Client Id:Iv1.XXXX"
+         },
+         "Server Push Connections": {
+            "SonarLint Connected Clients": 45
+         }
+      },
+      {
+         "Name": "sonarqube-5a0fcf11-2a1f-43d4-bd5f-90123390dc74",
+         "Host": "15.54.51.126",
+         "Health": "GREEN",
+         "Health Causes": [],
+         "System": {
+            "Version": "9.9.0.65466",
+            "Official Distribution": true,
+            "Home Dir": "/apps/sonarqube-9.9.0.65466",
+            "Data Dir": "/apps/sonarqube-9.9.0.65466/data",
+            "Temp Dir": "/apps/sonarqube-9.9.0.65466/temp",
+            "Processors": 8
+         },
+         "Bundled": {
+            "iac": "1.11.0.2847 [IaC Code Quality and Security]",
+            "plsql": "3.8.0.4948 [PL/SQL Code Quality and Security]",
+            "sonarscala": "1.11.0.3905 [Scala Code Quality and Security]",
+            "security": "9.9.0.19083 [Vulnerability Analysis]",
+            "csharp": "8.51.0.59060 [C# Code Quality and Security]",
+            "java": "7.16.0.30901 [Java Code Quality and Security]",
+            "web": "3.7.1.3306 [HTML Code Quality and Security]",
+            "xml": "2.7.0.3820 [XML Code Quality and Security]",
+            "flex": "2.8.0.3166 [Flex Code Quality and Security]",
+            "text": "2.0.1.611 [Text Code Quality and Security]",
+            "vbnet": "8.51.0.59060 [VB.NET Code Quality and Security]",
+            "swift": "4.8.0.5759 [Swift Code Quality and Security]",
+            "cpp": "6.41.0.60884 [CFamily Code Quality and Security]",
+            "python": "3.24.0.10784 [Python Code Quality and Security]",
+            "dbdpythonfrontend": "1.10.0.3046 [Dataflow Bug Detection Rules for Python]",
+            "dbd": "1.10.0.3046 [Dataflow Bug Detection]",
+            "rpg": "3.3.0.3147 [RPG Code Quality]",
+            "go": "1.11.0.3905 [Go Code Quality and Security]",
+            "jacoco": "1.3.0.1538 [JaCoCo]",
+            "kotlin": "2.12.0.1956 [Kotlin Code Quality and Security]",
+            "vb": "2.9.0.3341 [VB6 Code Quality and Security]",
+            "dbdjavafrontend": "1.10.0.3046 [Dataflow Bug Detection Rules for Java]",
+            "tsql": "1.7.0.5449 [T-SQL Code Quality and Security]",
+            "pli": "1.12.0.3443 [PL/I Code Quality and Security]",
+            "sonarapex": "1.11.0.3905 [Apex Code Quality and Security]",
+            "javascript": "9.13.0.20537 [JavaScript/TypeScript/CSS Code Quality and Security]",
+            "ruby": "1.11.0.3905 [Ruby Code Quality and Security]",
+            "securitycsharpfrontend": "9.9.0.19083 [Vulnerability Rules for C#]",
+            "securityjavafrontend": "9.9.0.19083 [Vulnerability Rules for Java]",
+            "securityjsfrontend": "9.9.0.19083 [Vulnerability Rules for JS]",
+            "cobol": "5.2.0.5949 [COBOL Code Quality]",
+            "securitypythonfrontend": "9.9.0.19083 [Vulnerability Rules for Python]",
+            "php": "3.27.1.9352 [PHP Code Quality and Security]",
+            "abap": "3.11.0.4030 [ABAP Code Quality and Security]",
+            "securityphpfrontend": "9.9.0.19083 [Vulnerability Rules for PHP]",
+            "config": "1.2.0.267 [Configuration detection fot Code Quality and Security]"
+         },
+         "Plugins": {
+            "mutationanalysis": "1.7 [Mutation Analysis]",
+            "apigee": "3.0.2 [Apigee]",
+            "mulevalidationsonarqubepluginmule": "1.0.6 [MulePlugin]",
+            "checkstyle": "10.8.1 [Checkstyle]",
+            "findbugs": "4.2.2 [Findbugs]",
+            "groovy": "1.8 [Groovy]"
+         },
+         "Web JVM State": {
+            "Max Memory (MB)": 6144,
+            "Free Memory (MB)": 442,
+            "Heap Committed (MB)": 2048,
+            "Heap Init (MB)": 2048,
+            "Heap Max (MB)": 6144,
+            "Heap Used (MB)": 1602,
+            "Non Heap Committed (MB)": 356,
+            "Non Heap Init (MB)": 7,
+            "Non Heap Used (MB)": 350,
+            "System Load Average": "24.0% (last minute)",
+            "Threads": 127
+         },
+         "Web Database Connection": {
+            "Pool Total Connections": 10,
+            "Pool Active Connections": 3,
+            "Pool Idle Connections": 7,
+            "Pool Max Connections": 60,
+            "Pool Min Idle Connections": 8,
+            "Pool Max Wait (ms)": 5000,
+            "Pool Max Lifetime (ms)": 1800000
+         },
+         "Web Logging": {
+            "Logs Level": "INFO",
+            "Logs Dir": "/apps/sonarqube-9.9.0.65466/logs"
+         },
+         "Web JVM Properties": {
+            "appdynamics.agent.applicationName": "sonarqube",
+            "appdynamics.agent.log4j2.disabled": "true",
+            "appdynamics.agent.nodeName": "CPVRA90A1093_SHV_Tomcat-appnode-1-web",
+            "appdynamics.agent.tierName": "Tomcat-appnode-1-web",
+            "catalina.base": "/apps/sonarqube-9.9.0.65466/temp/tc",
+            "catalina.home": "/apps/sonarqube-9.9.0.65466/temp/tc",
+            "catalina.useNaming": "false",
+            "com.redhat.fips": "false",
+            "com.zaxxer.hikari.pool_number": "1",
+            "file.encoding": "UTF-8",
+            "file.separator": "/",
+            "http.agent": "SonarQube 9.9.0.65466 # 31D9BAB2-AWwltVJ8-sFqbB_qflDb",
+            "http.nonProxyHosts": "localhost|127.*|[::1]",
+            "java.awt.headless": "true",
+            "java.class.path": "./lib/sonar-application-9.9.0.65466.jar:/apps/sonarqube-9.9.0.65466/extensions/jdbc-driver/oracle/ojdbc8.jar",
+            "java.class.version": "61.0",
+            "java.home": "/apps/mwauto/java/jdk-17.0.10",
+            "java.io.tmpdir": "/apps/sonarqube-9.9.0.65466/temp",
+            "java.library.path": "/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib",
+            "java.net.preferIPv4Stack": "true",
+            "java.runtime.name": "Java(TM) SE Runtime Environment",
+            "java.runtime.version": "17.0.10+11-LTS-240",
+            "java.specification.name": "Java Platform API Specification",
+            "java.specification.vendor": "Oracle Corporation",
+            "java.specification.version": "17",
+            "java.vendor": "Oracle Corporation",
+            "java.vendor.url": "https://java.oracle.com/",
+            "java.vendor.url.bug": "https://bugreport.java.com/bugreport/",
+            "java.version": "17.0.10",
+            "java.version.date": "2024-01-16",
+            "java.vm.compressedOopsMode": "Zero based",
+            "java.vm.info": "mixed mode, sharing",
+            "java.vm.name": "Java HotSpot(TM) 64-Bit Server VM",
+            "java.vm.specification.name": "Java Virtual Machine Specification",
+            "java.vm.specification.vendor": "Oracle Corporation",
+            "java.vm.specification.version": "17",
+            "java.vm.vendor": "Oracle Corporation",
+            "java.vm.version": "17.0.10+11-LTS-240",
+            "jdk.debug": "release",
+            "line.separator": "\n",
+            "log4j2.formatMsgNoLookups": "true",
+            "logbackDisableServletContainerInitializer": "true",
+            "native.encoding": "ANSI_X3.4-1968",
+            "org.apache.catalina.startup.EXIT_ON_INIT_FAILURE": "true",
+            "org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH": "true",
+            "os.arch": "amd64",
+            "os.name": "Linux",
+            "os.version": "3.10.0-1160.114.2.el7.x86_64",
+            "path.separator": ":",
+            "sun.arch.data.model": "64",
+            "sun.boot.library.path": "/apps/mwauto/java/jdk-17.0.10/lib",
+            "sun.cpu.endian": "little",
+            "sun.font.fontmanager": "sun.awt.X11FontManager",
+            "sun.io.unicode.encoding": "UnicodeLittle",
+            "sun.java.command": "org.sonar.server.app.WebServer /apps/sonarqube-9.9.0.65466/temp/sq-process6151294947308022989properties",
+            "sun.java.launcher": "SUN_STANDARD",
+            "sun.jnu.encoding": "ANSI_X3.4-1968",
+            "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+            "user.country": "US",
+            "user.dir": "/apps/sonarqube-9.9.0.65466",
+            "user.home": "/opt/apps/users/app",
+            "user.language": "en",
+            "user.name": "app",
+            "user.timezone": "US/Central"
+         },
+         "Compute Engine Tasks": {
+            "Pending": 0,
+            "Longest Time Pending (ms)": 0,
+            "In Progress": 0,
+            "Processed With Error": 233,
+            "Processed With Success": 18932,
+            "Processing Time (ms)": 398662145,
+            "Worker Count": 10,
+            "Max Worker Count": 10,
+            "Workers Paused": false
+         },
+         "Compute Engine JVM State": {
+            "Max Memory (MB)": 24576,
+            "Free Memory (MB)": 4239,
+            "Heap Committed (MB)": 8832,
+            "Heap Init (MB)": 4096,
+            "Heap Max (MB)": 24576,
+            "Heap Used (MB)": 4589,
+            "Non Heap Committed (MB)": 302,
+            "Non Heap Init (MB)": 7,
+            "Non Heap Used (MB)": 289,
+            "System Load Average": "24.0% (last minute)",
+            "Threads": 103
+         },
+         "Compute Engine Database Connection": {
+            "Pool Total Connections": 12,
+            "Pool Active Connections": 0,
+            "Pool Idle Connections": 12,
+            "Pool Max Connections": 60,
+            "Pool Min Idle Connections": 8,
+            "Pool Max Wait (ms)": 5000,
+            "Pool Max Lifetime (ms)": 1800000
+         },
+         "Compute Engine Logging": {
+            "Logs Level": "INFO",
+            "Logs Dir": "/apps/sonarqube-9.9.0.65466/logs"
+         },
+         "Compute Engine JVM Properties": {
+            "appdynamics.agent.applicationName": "sonarqube",
+            "appdynamics.agent.log4j2.disabled": "true",
+            "appdynamics.agent.nodeName": "CPVRA90A1093_SHV_Tomcat-appnode-1-ce",
+            "appdynamics.agent.tierName": "Tomcat-appnode-1-ce",
+            "com.redhat.fips": "false",
+            "com.zaxxer.hikari.pool_number": "1",
+            "file.encoding": "UTF-8",
+            "file.separator": "/",
+            "http.nonProxyHosts": "localhost|127.*|[::1]",
+            "java.awt.headless": "true",
+            "java.class.path": "./lib/sonar-application-9.9.0.65466.jar:/apps/sonarqube-9.9.0.65466/extensions/jdbc-driver/oracle/ojdbc8.jar",
+            "java.class.version": "61.0",
+            "java.home": "/apps/mwauto/java/jdk-17.0.10",
+            "java.io.tmpdir": "/apps/sonarqube-9.9.0.65466/temp",
+            "java.library.path": "/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib",
+            "java.net.preferIPv4Stack": "true",
+            "java.runtime.name": "Java(TM) SE Runtime Environment",
+            "java.runtime.version": "17.0.10+11-LTS-240",
+            "java.specification.name": "Java Platform API Specification",
+            "java.specification.vendor": "Oracle Corporation",
+            "java.specification.version": "17",
+            "java.vendor": "Oracle Corporation",
+            "java.vendor.url": "https://java.oracle.com/",
+            "java.vendor.url.bug": "https://bugreport.java.com/bugreport/",
+            "java.version": "17.0.10",
+            "java.version.date": "2024-01-16",
+            "java.vm.compressedOopsMode": "Zero based",
+            "java.vm.info": "mixed mode, sharing",
+            "java.vm.name": "Java HotSpot(TM) 64-Bit Server VM",
+            "java.vm.specification.name": "Java Virtual Machine Specification",
+            "java.vm.specification.vendor": "Oracle Corporation",
+            "java.vm.specification.version": "17",
+            "java.vm.vendor": "Oracle Corporation",
+            "java.vm.version": "17.0.10+11-LTS-240",
+            "jdk.debug": "release",
+            "line.separator": "\n",
+            "log4j2.formatMsgNoLookups": "true",
+            "native.encoding": "ANSI_X3.4-1968",
+            "os.arch": "amd64",
+            "os.name": "Linux",
+            "os.version": "3.10.0-1160.114.2.el7.x86_64",
+            "path.separator": ":",
+            "sun.arch.data.model": "64",
+            "sun.boot.library.path": "/apps/mwauto/java/jdk-17.0.10/lib",
+            "sun.cpu.endian": "little",
+            "sun.font.fontmanager": "sun.awt.X11FontManager",
+            "sun.io.unicode.encoding": "UnicodeLittle",
+            "sun.java.command": "org.sonar.ce.app.CeServer /apps/sonarqube-9.9.0.65466/temp/sq-process510625475072544653properties",
+            "sun.java.launcher": "SUN_STANDARD",
+            "sun.jnu.encoding": "ANSI_X3.4-1968",
+            "sun.management.compiler": "HotSpot 64-Bit Tiered Compilers",
+            "user.country": "US",
+            "user.dir": "/apps/sonarqube-9.9.0.65466",
+            "user.home": "/opt/apps/users/app",
+            "user.language": "en",
+            "user.name": "app",
+            "user.timezone": "US/Central"
+         },
+         "ALMs": {
+            "EnterpriseGitHub": "Alm:github, Url:https://github.acme.com/api/v3, App Id:414, Client Id:XXXX",
+            "Azure DevOps": "Alm:azure_devops",
+            "AcmeGitHub": "Alm:github, Url:https://github2.acme.com/api/v3, App Id:511, Client Id:Iv1.XXXX",
+            "GitHub3": "Alm:github, Url:https://github3.acme.com/api/v3, App Id:55, Client Id:Iv1.XXXX"
+         },
+         "Server Push Connections": {
+            "SonarLint Connected Clients": 42
+         }
+      }
+   ],
+   "Search Nodes": [
+      {
+         "Name": "sonarqube-1c23f531-2c4f-404a-a998-dc7ea6ba9e22",
+         "Host": "15.54.51.186",
+         "Search State": {
+            "CPU Usage (%)": 0,
+            "Disk Available": "276.4 GB",
+            "Store Size": "21.2 GB",
+            "Translog Size": "202.7 MB",
+            "Open File Descriptors": 421,
+            "Max File Descriptors": 393216,
+            "JVM Heap Usage": "61.0%",
+            "JVM Heap Used": "6.6 GB",
+            "JVM Heap Max": "10.7 GB",
+            "JVM Non Heap Used": "241.9 MB",
+            "JVM Threads": 86,
+            "Field Data Memory": "2.3 MB",
+            "Field Data Circuit Breaker Limit": "4.3 GB",
+            "Field Data Circuit Breaker Estimation": "2.3 MB",
+            "Request Circuit Breaker Limit": "6.4 GB",
+            "Request Circuit Breaker Estimation": "0 bytes",
+            "Query Cache Memory": "26.3 kB",
+            "Request Cache Memory": "30.1 kB"
+         }
+      },
+      {
+         "Name": "sonarqube-33bf35eb-4363-4203-a384-a7c515583c9b",
+         "Host": "15.54.51.136",
+         "Search State": {
+            "CPU Usage (%)": 0,
+            "Disk Available": "273.6 GB",
+            "Store Size": "23.8 GB",
+            "Translog Size": "387.7 MB",
+            "Open File Descriptors": 434,
+            "Max File Descriptors": 393216,
+            "JVM Heap Usage": "64.0%",
+            "JVM Heap Used": "6.9 GB",
+            "JVM Heap Max": "10.7 GB",
+            "JVM Non Heap Used": "242.7 MB",
+            "JVM Threads": 89,
+            "Field Data Memory": "1.8 MB",
+            "Field Data Circuit Breaker Limit": "4.3 GB",
+            "Field Data Circuit Breaker Estimation": "1.8 MB",
+            "Request Circuit Breaker Limit": "6.4 GB",
+            "Request Circuit Breaker Estimation": "0 bytes",
+            "Query Cache Memory": "17.8 kB",
+            "Request Cache Memory": "59.5 kB"
+         }
+      },
+      {
+         "Name": "sonarqube-e6637599-4329-459f-b2eb-eb838b8a1b2f",
+         "Host": "15.54.51.215",
+         "Search State": {
+            "CPU Usage (%)": 0,
+            "Disk Available": "276.9 GB",
+            "Store Size": "20.8 GB",
+            "Translog Size": "86.8 MB",
+            "Open File Descriptors": 431,
+            "Max File Descriptors": 393216,
+            "JVM Heap Usage": "54.0%",
+            "JVM Heap Used": "5.8 GB",
+            "JVM Heap Max": "10.7 GB",
+            "JVM Non Heap Used": "249.8 MB",
+            "JVM Threads": 88,
+            "Field Data Memory": "2.0 MB",
+            "Field Data Circuit Breaker Limit": "4.3 GB",
+            "Field Data Circuit Breaker Estimation": "2.0 MB",
+            "Request Circuit Breaker Limit": "6.4 GB",
+            "Request Circuit Breaker Estimation": "0 bytes",
+            "Query Cache Memory": "31.2 kB",
+            "Request Cache Memory": "48.3 kB"
+         }
+      }
+   ],
+   "License": {
+      "edition": "Data Center Edition",
+      "type": "PRODUCTION",
+      "isSupported": true,
+      "isValidServerId": true,
+      "expiresAt": "2025-03-07",
+      "maxLoc": 250000000
+   },
+   "statistics": {
+      "userCount": 10000,
+      "ncloc": 190761937,
+      "sonarlintWeeklyUsers": 287,
+      "installationDate": "2019-07-24T15:38:44-0500",
+      "projectCount": 12649,
+      "projectCountByLanguage": [
+         {
+            "language": "java",
+            "count": 6256
+         },
+         {
+            "language": "xml",
+            "count": 3874
+         },
+         {
+            "language": "cs",
+            "count": 2249
+         },
+         {
+            "language": "css",
+            "count": 1323
+         },
+         {
+            "language": "web",
+            "count": 1154
+         },
+         {
+            "language": "js",
+            "count": 1103
+         },
+         {
+            "language": "ts",
+            "count": 419
+         },
+         {
+            "language": "py",
+            "count": 353
+         },
+         {
+            "language": "jsp",
+            "count": 259
+         },
+         {
+            "language": "plsql",
+            "count": 208
+         },
+         {
+            "language": "vbnet",
+            "count": 190
+         },
+         {
+            "language": "go",
+            "count": 54
+         },
+         {
+            "language": "grvy",
+            "count": 23
+         },
+         {
+            "language": "kotlin",
+            "count": 23
+         },
+         {
+            "language": "terraform",
+            "count": 20
+         },
+         {
+            "language": "scala",
+            "count": 16
+         },
+         {
+            "language": "swift",
+            "count": 12
+         },
+         {
+            "language": "php",
+            "count": 10
+         },
+         {
+            "language": "<null>",
+            "count": 9
+         },
+         {
+            "language": "ruby",
+            "count": 7
+         },
+         {
+            "language": "tsql",
+            "count": 7
+         },
+         {
+            "language": "cpp",
+            "count": 4
+         },
+         {
+            "language": "c",
+            "count": 1
+         },
+         {
+            "language": "flex",
+            "count": 1
+         }
+      ],
+      "nclocByLanguage": [
+         {
+            "language": "css",
+            "ncloc": 31596358
+         },
+         {
+            "language": "cpp",
+            "ncloc": 3434972
+         },
+         {
+            "language": "c",
+            "ncloc": 7904
+         },
+         {
+            "language": "scala",
+            "ncloc": 78295
+         },
+         {
+            "language": "jsp",
+            "ncloc": 611316
+         },
+         {
+            "language": "go",
+            "ncloc": 118666
+         },
+         {
+            "language": "kotlin",
+            "ncloc": 815867
+         },
+         {
+            "language": "js",
+            "ncloc": 14510517
+         },
+         {
+            "language": "py",
+            "ncloc": 1082507
+         },
+         {
+            "language": "tsql",
+            "ncloc": 231386
+         },
+         {
+            "language": "plsql",
+            "ncloc": 3868348
+         },
+         {
+            "language": "ruby",
+            "ncloc": 33656
+         },
+         {
+            "language": "cs",
+            "ncloc": 39874665
+         },
+         {
+            "language": "java",
+            "ncloc": 65293926
+         },
+         {
+            "language": "web",
+            "ncloc": 6413533
+         },
+         {
+            "language": "xml",
+            "ncloc": 15033223
+         },
+         {
+            "language": "flex",
+            "ncloc": 373
+         },
+         {
+            "language": "php",
+            "ncloc": 2615
+         },
+         {
+            "language": "terraform",
+            "ncloc": 8986
+         },
+         {
+            "language": "vbnet",
+            "ncloc": 1642817
+         },
+         {
+            "language": "<null>",
+            "ncloc": 3282
+         },
+         {
+            "language": "grvy",
+            "ncloc": 152980
+         },
+         {
+            "language": "ts",
+            "ncloc": 3585785
+         },
+         {
+            "language": "swift",
+            "ncloc": 212763
+         }
+      ]
+   }
+}
