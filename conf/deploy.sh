@@ -19,12 +19,11 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 deps=0
-$CONFDIR/build.sh $*
+$CONFDIR/build.sh "$@"
 
 while [ $# -ne 0 ]; do
     case $1 in
@@ -39,7 +38,8 @@ done
 
 # Deploy locally for tests
 if [ "$deps" == "1" ]; then
-    pip install --upgrade --force-reinstall $ROOTDIR/dist/sonar_tools-*-py3-*.whl
+    pipopts="--upgrade"
 else
-    pip install --no-deps --force-reinstall $ROOTDIR/dist/sonar_tools-*-py3-*.whl
+    pipopts="--no-deps"
 fi
+pip install "$pipopts" --force-reinstall "$ROOTDIR"/dist/sonar_tools-*-py3-*.whl
