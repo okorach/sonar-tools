@@ -36,6 +36,7 @@ import requests
 
 import sonar.logging as log
 from sonar import version, errcodes
+from sonar.util import types
 
 
 ISO_DATE_FORMAT = "%04d-%02d-%02d"
@@ -87,6 +88,7 @@ def check_token(token: Optional[str], is_sonarcloud: bool = False) -> None:
 
 
 def json_dump_debug(json_data: Union[list[str], dict[str, str]], pre_string: str = "") -> None:
+    """Dumps a dict as JSON in logs"""
     log.debug("%s%s", pre_string, json_dump(json_data))
 
 
@@ -101,6 +103,7 @@ def format_date(somedate: datetime.datetime) -> str:
 
 
 def string_to_date(string: str) -> Union[datetime.datetime, datetime.date, str]:
+    """Converts a string date to a date"""
     try:
         return datetime.datetime.strptime(string, SQ_DATETIME_FORMAT)
     except (ValueError, TypeError):
@@ -224,7 +227,7 @@ def json_dump(jsondata: Union[list[str], dict[str, str]], indent: int = 3) -> st
     return json.dumps(sort_lists(jsondata), indent=indent, sort_keys=True, separators=(",", ": "))
 
 
-def csv_to_list(string: str, separator: str = ",") -> list[str]:
+def csv_to_list(string: Optional[str], separator: str = ",") -> list[str]:
     """Converts a csv string to a list"""
     if isinstance(string, list):
         return string
@@ -428,7 +431,8 @@ def search_by_name(endpoint: object, name: str, api: str, returned_field: str, e
     return None
 
 
-def search_by_key(endpoint, key, api, returned_field, extra_params=None):
+def search_by_key(endpoint: object, key: str, api: str, returned_field: str, extra_params: Optional[dict[str, str]] = None) -> types.ApiPayload:
+    """Search an object by its key"""
     params = {"q": key}
     if extra_params is not None:
         params.update(extra_params)
@@ -493,14 +497,16 @@ def handle_error(e: Exception, context: str, **kwargs) -> None:
     raise e
 
 
-def object_key(key_or_obj):
+def object_key(key_or_obj: Union[str, object]) -> str:
+    """Returns the key of an object of an object key"""
     if isinstance(key_or_obj, str):
         return key_or_obj
     else:
         return key_or_obj.key
 
 
-def check_what(what, allowed_values, operation="processed"):
+def check_what(what: Union[str, list[str]], allowed_values: list[str], operation: str = "processed") -> list[str]:
+    """Check if what is requested is in allowed values"""
     if what == "":
         return allowed_values
     what = csv_to_list(what)
@@ -514,7 +520,8 @@ def check_what(what, allowed_values, operation="processed"):
     return what
 
 
-def __prefix(value):
+def __prefix(value: any) -> any:
+    """Recursively places all keys in a dict or list by a prefixed version"""
     if isinstance(value, dict):
         return {f"_{k}": __prefix(v) for k, v in value.items()}
     elif isinstance(value, list):
@@ -523,7 +530,8 @@ def __prefix(value):
         return value
 
 
-def filter_export(json_data, key_properties, full):
+def filter_export(json_data: dict[str, any], key_properties: list[str], full: bool) -> dict[str, any]:
+    """Filters dict for export removing or prefixing non-key properties"""
     new_json_data = json_data.copy()
     for k in json_data:
         if k not in key_properties:
@@ -534,14 +542,15 @@ def filter_export(json_data, key_properties, full):
     return new_json_data
 
 
-def replace_keys(key_list, new_key, data):
+def replace_keys(key_list: list[str], new_key: str, data: dict[str, any]) -> dict[str, any]:
+    """Replace a list of old keys by a new key in a dict"""
     for k in key_list:
         if k in data:
             data[new_key] = data.pop(k)
     return data
 
 
-def edition_normalize(edition: str) -> Union[str, None]:
+def edition_normalize(edition: str) -> Optional[str]:
     """Returns the SQ edition in a normalized way (community, developer, enterprise or datacenter)
 
     :param str edition: The original non normalized edition string

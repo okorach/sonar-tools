@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of the SonarQube permission template concept"""
 from __future__ import annotations
 
 import json
@@ -110,7 +111,7 @@ class PermissionTemplate(sqobject.SqObject):
             return self
         return self.permissions().set(perms)
 
-    def update(self, **pt_data):
+    def update(self, **pt_data) -> PermissionTemplate:
         """Updates a permission template"""
         params = {"id": self.key}
         # Hack: On SQ 8.9 if you pass all params otherwise SQ does NPE

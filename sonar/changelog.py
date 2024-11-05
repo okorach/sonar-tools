@@ -18,18 +18,26 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of SonarQube finding (issue or hotspot) changelog"""
+
+from typing import Optional
+
 import sonar.logging as log
+from sonar.util import types
 
 
-class Changelog:
-    def __init__(self, jsonlog):
+class Changelog(object):
+    """Abstraction of SonarQube finding (issue or hotspot) changelog"""
+
+    def __init__(self, jsonlog: types.ApiPayload) -> None:
         self.sq_json = jsonlog
         self._change_type = None
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """str() implementation"""
         return str(self.sq_json)
 
-    def __is_resolve_as(self, resolve_reason):
+    def __is_resolve_as(self, resolve_reason: str) -> bool:
         cond1 = False
         cond2 = False
         for diff in self.sq_json["diffs"]:
@@ -39,16 +47,19 @@ class Changelog:
                 cond2 = True
         return cond1 and cond2
 
-    def is_resolve_as_fixed(self):
+    def is_resolve_as_fixed(self) -> bool:
+        """Returns whether the changelog item is an issue resolved as fixed"""
         return self.__is_resolve_as("FIXED")
 
-    def is_resolve_as_fp(self):
+    def is_resolve_as_fp(self) -> bool:
+        """Returns whether the changelog item is an issue resolved as false positive"""
         return self.__is_resolve_as("FALSE-POSITIVE")
 
-    def is_resolve_as_wf(self):
+    def is_resolve_as_wf(self) -> bool:
+        """Returns whether the changelog item is an issue resolved as won't fix"""
         return self.__is_resolve_as("WONTFIX")
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         """{'creationDate': '2022-02-01T19:15:24+0100', 'diffs': [
         {'key': 'resolution', 'newValue': 'FIXED'},
         {'key': 'status', 'newValue': 'CLOSED', 'oldValue': 'OPEN'}]}"""
@@ -57,13 +68,14 @@ class Changelog:
                 return True
         return False
 
-    def __is_status(self, status):
+    def __is_status(self, status: str) -> bool:
         for d in self.sq_json["diffs"]:
             if d.get("key", "") == "status" and d.get("newValue", "") == status:
                 return True
         return False
 
-    def is_reopen(self):
+    def is_reopen(self) -> bool:
+        """Returns whether the changelog item is an issue re-open"""
         for d in self.sq_json["diffs"]:
             if d.get("key", "") == "status" and (
                 (d.get("newValue", "") == "REOPENED" and d.get("oldValue", "") != "CONFIRMED")
@@ -72,103 +84,122 @@ class Changelog:
                 return True
         return False
 
-    def is_confirm(self):
+    def is_confirm(self) -> bool:
+        """Returns whether the changelog item is an issue confirm"""
         return self.__is_status("CONFIRMED")
 
-    def is_unconfirm(self):
+    def is_unconfirm(self) -> bool:
+        """Returns whether the changelog item is an issue unconfirm"""
         for d in self.sq_json["diffs"]:
             if d.get("key", "") == "status" and d.get("newValue", "") == "REOPENED" and d.get("oldValue", "") == "CONFIRMED":
                 return True
         return False
 
-    def is_mark_as_safe(self):
+    def is_mark_as_safe(self) -> bool:
+        """Returns whether the changelog item is a hotspot marked as safe"""
         for d in self.sq_json["diffs"]:
             if d.get("key", "") == "resolution" and d.get("newValue", "") == "SAFE":
                 return True
         return False
 
-    def is_mark_as_to_review(self):
+    def is_mark_as_to_review(self) -> bool:
+        """Returns whether the changelog item is a hotspot to review"""
         for d in self.sq_json["diffs"]:
             if d.get("key", "") == "status" and d.get("newValue", "") == "TO_REVIEW":
                 return True
         return False
 
-    def is_mark_as_fixed(self):
+    def is_mark_as_fixed(self) -> bool:
+        """Returns whether the changelog item is an issue marked as fixed"""
         for d in self.sq_json["diffs"]:
             if d.get("key", "") == "resolution" and d.get("newValue", "") == "FIXED":
                 return True
         return False
 
-    def is_mark_as_acknowledged(self):
+    def is_mark_as_acknowledged(self) -> bool:
+        """Returns whether the changelog item is a hotspot acknowledge"""
         for d in self.sq_json["diffs"]:
             if d.get("key", "") == "resolution" and d.get("newValue", "") == "ACKNOWLEDGED":
                 return True
         return False
 
-    def is_change_severity(self):
+    def is_change_severity(self) -> bool:
+        """Returns whether the changelog item is a change of issue severity"""
         d = self.sq_json["diffs"][0]
         return d.get("key", "") == "severity"
 
-    def new_severity(self):
+    def new_severity(self) -> Optional[str]:
+        """Returns the new severity of a change issue severity changelog"""
         if self.is_change_severity():
             d = self.sq_json["diffs"][0]
             return d.get("newValue", None)
         return None
 
-    def is_change_type(self):
+    def is_change_type(self) -> bool:
+        """Returns whether the changelog item is a change of issue type"""
         d = self.sq_json["diffs"][0]
         return d.get("key", "") == "type"
 
-    def new_type(self):
+    def new_type(self) -> Optional[str]:
+        """Returns the new type of a change issue type changelog"""
         if self.is_change_type():
             d = self.sq_json["diffs"][0]
             return d.get("newValue", None)
         return None
 
-    def is_technical_change(self):
+    def is_technical_change(self) -> bool:
+        """Returns whether the changelog item is a technical change"""
         d = self.sq_json["diffs"][0]
         key = d.get("key", "")
         return key in ("from_short_branch", "from_branch", "effort")
 
-    def is_assignment(self):
+    def is_assignment(self) -> bool:
+        """Returns whether the changelog item is an assignment"""
         d = self.sq_json["diffs"][0]
         return d.get("key", "") == "assignee"
 
-    def new_assignee(self):
+    def new_assignee(self) -> Optional[str]:
+        """Returns the new assignee of a change assignment changelog"""
         if not self.is_assignment():
             return None
         d = self.sq_json["diffs"][0]
         return d.get("newValue", None)
 
-    def old_assignee(self):
+    def old_assignee(self) -> Optional[str]:
+        """Returns the old assignee of a change assignment changelog"""
         if not self.is_assignment():
             return None
         d = self.sq_json["diffs"][0]
         return d.get("oldValue", None)
 
-    def previous_state(self):
+    def previous_state(self) -> str:
+        """Returns the previous state of a state change changelog"""
         for d in self.sq_json["diffs"]:
             if d.get("key", "") == "status":
                 return d.get("oldValue", "")
         return ""
 
-    def date(self):
+    def date(self) -> str:
+        """Returns the changelog item date"""
         return self.sq_json["creationDate"]
 
-    def author(self):
+    def author(self) -> Optional[str]:
+        """Returns the changelog item author"""
         return self.sq_json.get("user", None)
 
-    def is_tag(self):
+    def is_tag(self) -> bool:
+        """Returns whether the changelog item is an issue tagging"""
         d = self.sq_json["diffs"][0]
         return d.get("key", "") == "tag"
 
-    def tags(self):
+    def tags(self) -> Optional[str]:
+        """Returns the changelog tags for issue tagging items"""
         if not self.is_tag():
             return None
         d = self.sq_json["diffs"][0]
         return d.get("newValue", "").replace(" ", ",")
 
-    def changelog_type(self):
+    def changelog_type(self) -> tuple[str, Optional[str]]:
         ctype = (None, None)
         if self.is_assignment():
             ctype = ("ASSIGN", self.new_assignee())

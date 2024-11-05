@@ -536,7 +536,7 @@ def decode(setting_key: str, setting_value: any) -> any:
         return string_to_new_code(setting_value)
     if not isinstance(setting_value, str):
         return setting_value
-    # TODO: Handle all comma separated settings
+    # TODO(okorach): Handle all comma separated settings
     for reg in _INLINE_SETTINGS:
         if re.match(reg, setting_key):
             setting_value = util.csv_to_list(setting_value)

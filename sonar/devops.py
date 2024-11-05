@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of the SonarQube DevOps platform concept"""
 from __future__ import annotations
 from typing import Optional
 from http import HTTPStatus
@@ -120,12 +121,11 @@ class DevopsPlatform(sq.SqObject):
         """Loads a devops platform object with data"""
         self.sq_json = data
         self.url = "https://bitbucket.org" if self.type == "bitbucketcloud" else data["url"]
-        self._specific = data.copy()
-        for k in ("key", "url"):
-            self._specific.pop(k, None)
+        self._specific = {k: v for k, v in data.items() if k not in ("key", "url")}
         return self
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """str() implementation"""
         string = f"devops platform '{self.key}'"
         if self.type == "bitbucketcloud" and self._specific:
             string += f" workspace '{self._specific['workspace']}'"
@@ -155,13 +155,14 @@ class DevopsPlatform(sq.SqObject):
         json_data.update(self.sq_json.copy())
         return util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
-    def set_pat(self, pat, user_name=None):
+    def set_pat(self, pat: str, user_name: Optional[str] = None) -> bool:
+        """Sets the PAT for GitLab, BitBucket and Azure DevOps"""
         if self.type == "github":
             log.warning("Can't set PAT for GitHub devops platform")
             return False
         return self.post("alm_integrations/set_pat", params={"almSettings": self.key, "pat": pat, "username": user_name}).ok
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> bool:
         """Updates a DevOps platform with information from data
 
         :param dict data: data to update the DevOps platform configuration
@@ -180,12 +181,10 @@ class DevopsPlatform(sq.SqObject):
         elif alm_type == "github":
             params.update({"clientId": kwargs["clientId"], "appId": kwargs["appId"]})
 
-        self.post(f"alm_settings/update_{alm_type}", params=params)
+        ok = self.post(f"alm_settings/update_{alm_type}", params=params).ok
         self.url = kwargs["url"]
-        for k in ("key", "url"):
-            params.pop(k)
-        self._specific = params
-        return self
+        self._specific = {k: v for k, v in params.items() if k not in ("key", "url")}
+        return ok
 
 
 def count(platf_type: Optional[str] = None) -> int:

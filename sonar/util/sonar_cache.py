@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Cache module"""
 from typing import Optional
 from sonar import platform, projects, branches, pull_requests
 from sonar import applications, app_branches, portfolios
@@ -29,7 +30,7 @@ from sonar import devops, settings, tasks, tokens, webhooks
 def clear(endpoint: Optional[platform.Platform] = None) -> None:
     """
     Clear the cache of a given class
-    :param endpoint Platform: Optional, clears only the cache fo rthis platfiorm if specified, clear all if not
+    :param Platform endpoint: Optional, clears only the cache for this platform if specified, clear all if not
     """
     for obj_class in (
         projects.Project,

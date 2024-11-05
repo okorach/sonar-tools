@@ -39,6 +39,7 @@ import sonar.logging as log
 from sonar import platform, exceptions, errcodes, version
 from sonar import issues, hotspots, findings
 from sonar import projects, applications, portfolios
+from sonar.util import types
 import sonar.utilities as util
 
 TOOL_NAME = "sonar-findings"
@@ -71,7 +72,8 @@ _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS = (
 )
 
 
-def parse_args(desc):
+def parse_args(desc: str) -> object:
+    """Sets CLI parameters and parses them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("csv", "json", "sarif"))
@@ -226,7 +228,8 @@ def __write_findings(queue: Queue[list[findings.Finding]], params: ConfigSetting
     log.debug("End of write findings")
 
 
-def __verify_inputs(params):
+def __verify_inputs(params: types.ApiParams) -> bool:
+    """Verifies if findings-export inputs are correct"""
     diff = util.difference(util.csv_to_list(params.get(options.RESOLUTIONS, None)), issues.RESOLUTIONS + hotspots.RESOLUTIONS)
     if diff:
         util.exit_fatal(f"Resolutions {str(diff)} are not legit resolutions", errcodes.WRONG_SEARCH_CRITERIA)
@@ -372,7 +375,8 @@ def __turn_off_use_findings_if_needed(endpoint: object, params: dict[str, str]) 
     return params
 
 
-def main():
+def main() -> None:
+    """Main entry point"""
     global DATES_WITHOUT_TIME
     start_time = util.start_clock()
     try:

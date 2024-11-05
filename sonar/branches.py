@@ -18,6 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of the SonarQube project branch concept"""
+
 from __future__ import annotations
 from http import HTTPStatus
 from typing import Optional
@@ -151,7 +153,7 @@ class Branch(components.Component):
                 Branch.load(self.concerned_object, br["name"], data)
         return self
 
-    def _load(self, data):
+    def _load(self, data: types.ApiPayload) -> None:
         if self.sq_json is None:
             self.sq_json = data
         else:
@@ -161,7 +163,7 @@ class Branch(components.Component):
         self._keep_when_inactive = self.sq_json.get("excludedFromPurge", False)
         self._is_main = self.sq_json.get("isMain", False)
 
-    def is_kept_when_inactive(self):
+    def is_kept_when_inactive(self) -> bool:
         """
         :return: Whether the branch is kept when inactive
         :rtype: bool
@@ -170,7 +172,7 @@ class Branch(components.Component):
             self.refresh()
         return self._keep_when_inactive
 
-    def is_main(self):
+    def is_main(self) -> bool:
         """
         :return: Whether the branch is the project main branch
         :rtype: bool
@@ -241,7 +243,7 @@ class Branch(components.Component):
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
-    def url(self):
+    def url(self) -> str:
         """
         :return: The branch URL in SonarQube as permalink
         :rtype: str
@@ -291,13 +293,15 @@ class Branch(components.Component):
             return [Problem(get_rule(RuleId.BRANCH_NEVER_ANALYZED), self, str(self))]
         return []
 
-    def get_findings(self):
+    def get_findings(self) -> dict[str, object]:
         """Returns a branch list of findings
 
         :return: dict of Findings, with finding key as key
         :rtype: dict{key: Finding}
         """
-        return self.get_issues() + self.get_hotspots()
+        findings = self.get_issues()
+        findings.update(self.get_hotspots())
+        return findings
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

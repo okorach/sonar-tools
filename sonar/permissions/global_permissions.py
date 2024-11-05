@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of SonarQube global permissions"""
 from __future__ import annotations
 
 import sonar.logging as log
@@ -68,7 +69,7 @@ class GlobalPermissions(permissions.Permissions):
         return self.read()
 
 
-def import_config(endpoint: object, config_data: types.ObjectJsonRepr):
+def import_config(endpoint: object, config_data: types.ObjectJsonRepr) -> None:
     """Imports global permissions in a SonarQube platform"""
     my_permissions = config_data.get("permissions", {})
     if len(my_permissions) == 0:

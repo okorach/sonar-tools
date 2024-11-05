@@ -17,10 +17,16 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+"""SonarQube commodity types"""
+
 import enum
+from typing import Optional
 
 
 class Type(enum.Enum):
+    """Audit problem type"""
+
     SECURITY = 1
     GOVERNANCE = 2
     CONFIGURATION = 3
@@ -28,11 +34,13 @@ class Type(enum.Enum):
     BAD_PRACTICE = 5
     OPERATIONS = 6
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """str() implementation"""
         return repr(self.name)[1:-1]
 
 
-def to_type(val):
+def to_type(val: str) -> Optional[Type]:
+    """Converts a string to corresponding Type enum"""
     for enum_val in Type:
         if repr(enum_val.name)[1:-1] == val:
             return enum_val

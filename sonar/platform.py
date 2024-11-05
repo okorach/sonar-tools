@@ -217,9 +217,10 @@ class Platform(object):
         headers = {"user-agent": self._user_agent, **kwargs.get("headers", {})}
         if params is None:
             params = {}
+        with_org = kwargs.pop("with_organization", True)
         if self.is_sonarcloud():
             headers["Authorization"] = f"Bearer {self.__token}"
-            if kwargs.get("with_organization", True):
+            if with_org:
                 params["organization"] = self.organization
         req_type, url = "", ""
         if log.get_level() <= log.DEBUG:
@@ -238,7 +239,7 @@ class Platform(object):
                     params=params,
                     headers=headers,
                     timeout=self.http_timeout,
-                    **kwargs
+                    **kwargs,
                 )
                 (retry, new_url) = _check_for_retry(r)
                 log.debug("%s: %s took %d ms", req_type, url, (time.perf_counter_ns() - start) // 1000000)
@@ -253,7 +254,7 @@ class Platform(object):
             util.handle_error(e, "")
         return r
 
-    def global_permissions(self):
+    def global_permissions(self) -> dict[str, any]:
         """Returns the SonarQube platform global permissions
 
         :return: dict{"users": {<login>: <permissions comma separated>, ...}, "groups"; {<name>: <permissions comma separated>, ...}}}
@@ -568,7 +569,8 @@ class Platform(object):
             problems.append(Problem(rule, f"{self.url}/admin/system", nb_deprecation))
         return problems
 
-    def _audit_project_default_visibility(self):
+    def _audit_project_default_visibility(self) -> list[Problem]:
+        """Audits whether project default visibility is public"""
         log.info("Auditing project default visibility")
         problems = []
         if self.version() < (8, 7, 0):
@@ -790,7 +792,7 @@ def _get_multiple_values(n: int, setting: str, severity: sev.Severity, domain: t
         values.append(domain)
     values[n - 2] = sev.to_severity(values[n - 2])
     values[n - 1] = typ.to_type(values[n - 1])
-    # TODO Handle case of too many values
+    # TODO(okorach) Handle case of too many values
     return values
 
 

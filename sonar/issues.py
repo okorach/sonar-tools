@@ -18,6 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of the SonarQube issue concept"""
+
 from __future__ import annotations
 
 import math
@@ -117,7 +119,7 @@ _TOO_MANY_ISSUES_MSG = "Too many issues, recursing..."
 class TooManyIssuesError(Exception):
     """When a call to api/issues/search returns too many issues."""
 
-    def __init__(self, nbr_issues: int, message: str):
+    def __init__(self, nbr_issues: int, message: str) -> None:
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message

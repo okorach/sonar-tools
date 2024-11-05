@@ -18,9 +18,9 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of the SonarQube group concept"""
 from __future__ import annotations
 import json
-from queue import Queue
 from typing import Optional
 import sonar.logging as log
 import sonar.platform as pf

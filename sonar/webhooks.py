@@ -18,6 +18,7 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of the SonarQube webhook concept"""
 import json
 
 import sonar.logging as log
@@ -72,7 +73,7 @@ class WebHook(sq.SqObject):
         """Returns the object permalink"""
         return f"{self.endpoint.url}/admin/webhooks"
 
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> None:
         """Updates a webhook with new properties (name, url, secret)
 
         :param kwargs: dict - "url", "name", "secret" are the looked up keys
@@ -82,7 +83,7 @@ class WebHook(sq.SqObject):
         params.update({"webhook": self.key})
         self.post("webhooks/update", params=params)
 
-    def audit(self):
+    def audit(self) -> list[problem.Problem]:
         """
         :meta private:
         """
@@ -90,7 +91,7 @@ class WebHook(sq.SqObject):
             return []
         return [problem.Problem(rules.get_rule(rules.RuleId.FAILED_WEBHOOK), self, str(self))]
 
-    def to_json(self, full=False):
+    def to_json(self, full: bool = False) -> dict[str, any]:
         """Exports a Webhook configuration in JSON format
 
         :param full: Whether to export all properties, including those that can't be set, or not, defaults to False

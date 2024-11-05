@@ -39,7 +39,8 @@ from sonar.audit import config, problem
 TOOL_NAME = "sonar-housekeeper"
 
 
-def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads, endpoint):
+def get_project_problems(max_days_proj: int, max_days_branch: int, max_days_pr: int, nb_threads: int, endpoint: object) -> list[problem.Problem]:
+    """Returns the list of problems that would require housekeeping for a given project"""
     problems = []
     if max_days_proj < 90:
         log.error("As a safety measure, can't delete projects more recent than 90 days")
@@ -83,7 +84,7 @@ def get_project_problems(max_days_proj, max_days_branch, max_days_pr, nb_threads
     return problems
 
 
-def get_user_problems(max_days: int, endpoint: platform.Platform):
+def get_user_problems(max_days: int, endpoint: platform.Platform) -> list[problem.Problem]:
     """Collects problems related to user accounts"""
     settings = {
         "audit.tokens.maxAge": max_days,
@@ -102,7 +103,7 @@ def get_user_problems(max_days: int, endpoint: platform.Platform):
     return user_problems
 
 
-def _parse_arguments():
+def _parse_arguments() -> object:
     """Parses CLI arguments"""
     _DEFAULT_PROJECT_OBSOLESCENCE = 365
     _DEFAULT_BRANCH_OBSOLESCENCE = 90
@@ -155,7 +156,7 @@ def _parse_arguments():
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def _delete_objects(problems: problem.Problem, mode: str):
+def _delete_objects(problems: problem.Problem, mode: str) -> tuple[int, int, int, int, int]:
     """Deletes objects (that should be housekept)"""
     revoked_token_count = 0
     deleted_projects = {}
@@ -198,7 +199,8 @@ def _delete_objects(problems: problem.Problem, mode: str):
     )
 
 
-def main():
+def main() -> None:
+    """Main entry point"""
     start_time = util.start_clock()
     try:
         kwargs = util.convert_args(_parse_arguments())

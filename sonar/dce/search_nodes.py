@@ -38,16 +38,22 @@ _ES_STATE = "Search State"
 
 
 class SearchNode(nodes.DceNode):
-    def __str__(self):
+    """Abstraction of SonarQube DCE Search Node concept"""
+
+    def __str__(self) -> str:
+        """str() implementation"""
         return f"Search Node '{self.name()}'"
 
-    def store_size(self):
+    def store_size(self) -> int:
+        """Returns the store size in MB"""
         return util.int_memory(self.json[_ES_STATE][_STORE_SIZE])
 
-    def name(self):
+    def name(self) -> str:
+        """Returns the node name"""
         return self.json["Name"]
 
-    def node_type(self):
+    def node_type(self) -> str:
+        """Returns the node type"""
         return "SEARCH"
 
     def audit(self, audit_settings: types.ConfigSettings) -> list[Problem]:
@@ -65,7 +71,8 @@ class SearchNode(nodes.DceNode):
             return None
         return int(float(sz.split(" ")[0]) * 1024)
 
-    def __audit_store_size(self):
+    def __audit_store_size(self) -> list[Problem]:
+        """Auditing the search node store size vs heap allocated to ES"""
         log.info("%s: Auditing store size", str(self))
         es_heap = self.max_heap()
         if es_heap is None:
@@ -111,7 +118,8 @@ class SearchNode(nodes.DceNode):
         return []
 
 
-def __audit_index_balance(searchnodes):
+def __audit_index_balance(searchnodes: list[SearchNode]) -> list[Problem]:
+    """Audits whether ES index is decently balanced acros search nodes"""
     log.info("Auditing search nodes store size balance")
     nbr_search_nodes = len(searchnodes)
     for i in range(nbr_search_nodes):
@@ -131,6 +139,7 @@ def __audit_index_balance(searchnodes):
 
 
 def audit(sub_sif: dict[str, any], sif: dict[str, any], audit_settings: types.ConfigSettings) -> list[Problem]:
+    """Audits search nodes of a DCE"""
     log.info("Auditing search node(s)")
     searchnodes = []
     problems = []

@@ -44,14 +44,13 @@ SYNC_SINCE_DATE = "syncSinceDate"
 SYNC_THREADS = "threads"
 
 
-def __get_findings(findings_list):
-    find_list = []
-    for finding in findings_list:
-        find_list.append({SRC_KEY: finding.key, SRC_URL: finding.url()})
-    return find_list
+def __get_findings(findings_list: list[findings.Finding]) -> list[dict[str, str]]:
+    """Returns a list of finding keys and their URLS"""
+    return [{SRC_KEY: f.key, SRC_URL: f.url()} for f in findings_list]
 
 
-def __process_exact_sibling(finding, sibling, settings):
+def __process_exact_sibling(finding: findings.Finding, sibling: findings.Finding, settings: types.ConfigSettings) -> dict[str, str]:
+    """Returns data about an exact finding match"""
     if finding.has_changelog() or finding.has_comments():
         sibling.apply_changelog(finding, settings)
         msg = f"Source {util.class_name(finding).lower()} changelog applied successfully"
@@ -67,7 +66,8 @@ def __process_exact_sibling(finding, sibling, settings):
     }
 
 
-def __process_no_match(finding):
+def __process_no_match(finding: findings.Finding) -> dict[str, str]:
+    """Returns data about no finding match"""
     return {
         SRC_KEY: finding.key,
         SRC_URL: finding.url(),
@@ -76,7 +76,8 @@ def __process_no_match(finding):
     }
 
 
-def __process_multiple_exact_siblings(finding, siblings):
+def __process_multiple_exact_siblings(finding: findings.Finding, siblings: list[findings.Finding]) -> dict[str, str]:
+    """Returns data about multiple finding match"""
     log.info("Multiple matches for %s, cannot automatically apply changelog", str(finding))
     name = util.class_name(finding).lower()
     for sib in siblings:
@@ -100,7 +101,8 @@ def __process_multiple_exact_siblings(finding, siblings):
     }
 
 
-def __process_approx_siblings(finding, siblings):
+def __process_approx_siblings(finding: findings.Finding, siblings: list[findings.Finding]) -> dict[str, str]:
+    """Returns data about unsync finding because of multiple approximate matches"""
     log.info("Found %d approximate matches for %s, cannot automatically apply changelog", len(siblings), str(finding))
     return {
         SRC_KEY: finding.key,
@@ -111,7 +113,8 @@ def __process_approx_siblings(finding, siblings):
     }
 
 
-def __process_modified_siblings(finding, siblings):
+def __process_modified_siblings(finding: findings.Finding, siblings: list[findings.Finding]) -> dict[str, str]:
+    """Returns data about unsync finding because match already has a change log"""
     log.info("Found %d match(es) for %s, but they already have a changelog, cannot automatically apply changelog", len(siblings), str(finding))
     return {
         SRC_KEY: finding.key,
@@ -126,7 +129,7 @@ def __process_modified_siblings(finding, siblings):
 def __sync_curated_list(
     src_findings: list[findings.Finding], tgt_findings: list[findings.Finding], settings: types.ConfigSettings
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
-    """Syncs 2 list of findingss"""
+    """Syncs 2 list of findings"""
     counters = {k: 0 for k in ("nb_applies", "nb_approx_match", "nb_tgt_has_changelog", "nb_multiple_matches")}
     counters["nb_to_sync"] = len(src_findings)
     name = "finding" if len(src_findings) == 0 else util.class_name(src_findings[0]).lower()
