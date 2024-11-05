@@ -213,5 +213,4 @@ def test_search_by_name() -> None:
 
         assert len(other_apps) == 1
         first_app = list(other_apps.values())[0]
-        # FIXME this test fails
         assert app == first_app
