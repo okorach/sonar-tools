@@ -30,9 +30,9 @@ from unittest.mock import patch
 import pytest
 import utilities as util
 from sonar import sif, errcodes
+from sonar.dce import app_nodes, search_nodes
 from cli import audit
 import cli.options as opt
-from sonar.dce import app_nodes, search_nodes
 
 CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
