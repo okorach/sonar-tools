@@ -23,7 +23,7 @@ ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 deps=0
-$CONFDIR/build.sh "$@"
+"$CONFDIR"/build.sh "$@"
 
 while [ $# -ne 0 ]; do
     case $1 in

@@ -28,12 +28,12 @@ pylintReport="$buildDir/pylint-report.out"
 # banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
 externalIssueReport="$buildDir/external-issue-report.json"
-[ ! -d $buildDir ] && mkdir $buildDir
+[ ! -d "$buildDir" ] && mkdir "$buildDir"
 # rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  tests/__pycache__
 
 echo "Running pylint"
-rm -f $pylintReport
-pylint --rcfile $CONFDIR/pylintrc $ROOTDIR/*.py $ROOTDIR/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee $pylintReport
+rm -f "$pylintReport"
+pylint --rcfile "$CONFDIR"/pylintrc "$ROOTDIR"/*.py "$ROOTDIR"/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee "$pylintReport"
 re=$?
 if [ "$re" == "32" ]; then
     >&2 echo "ERROR: pylint execution failed, errcode $re, aborting..."
@@ -41,13 +41,9 @@ if [ "$re" == "32" ]; then
 fi
 
 echo "Running flake8"
-rm -f $flake8Report
+rm -f "$flake8Report"
 # See .flake8 file for settings
-flake8 --config "$CONFIG/.flake8" "$ROOTDIR" >$flake8Report
-
-# echo "Running bandit"
-# rm -f $banditReport
-# bandit --exit-zero -f json --skip B311,B303,B101 -r . -x .vscode,./tests >$banditReport
+flake8 --config "$CONFIG/.flake8" "$ROOTDIR" >"$flake8Report"
 
 echo "Running shellcheck"
-shellcheck $ROOTDIR/*.sh $ROOTDIR/*/*.sh -s bash -f json | $CONFDIR/shellcheck2sonar.py >$externalIssueReport
+shellcheck "$ROOTDIR"/*.sh "$ROOTDIR"/*/*.sh -s bash -f json | "$CONFDIR"/shellcheck2sonar.py >"$externalIssueReport"
