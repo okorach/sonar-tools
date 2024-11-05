@@ -32,6 +32,7 @@ import utilities as util
 from sonar import sif, errcodes
 from cli import audit
 import cli.options as opt
+from sonar.dce import app_nodes, search_nodes
 
 CMD = "sonar-audit.py"
 CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
@@ -138,3 +139,32 @@ def test_json_not_sif() -> None:
             json_sif = json.loads(f.read())
             _ = sif.Sif(json_sif)
     assert e.type == sif.NotSystemInfo
+
+
+def test_dce_sif_ut() -> None:
+    """test_audit_sif_ut"""
+    with open("test/sif.dce.1.json", "r", encoding="utf-8") as f:
+        json_sif = json.loads(f.read())
+
+    sysinfo = sif.Sif(json_sif)
+    app_nodes.audit(json_sif["Application Nodes"], sysinfo, {})
+    for appnode in json_sif["Application Nodes"]:
+        node = app_nodes.AppNode(appnode, json_sif)
+        assert str(node).startswith("App Node")
+        assert len(node.plugins()) == 5
+        assert node.health() == "GREEN"
+        assert node.node_type() == "APPLICATION"
+        assert node.start_time() == "2024-02-22T22:04:30-0600"
+        assert node.version() == (9, 9, 0)
+        assert node.edition() == "datacenter"
+        assert node.name().startswith("app-node")
+        _ = node.audit()
+
+    app_nodes.audit(json_sif["Search Nodes"], sysinfo, {})
+    for searchnode in json_sif["Search Nodes"]:
+        node = search_nodes.SearchNode(searchnode, json_sif)
+        assert str(node).startswith("Search Node")
+        assert node.node_type() == "SEARCH"
+        assert node.name().startswith("search-node")
+        assert node.store_size().startswith("search-node")
+        _ = node.audit()
