@@ -407,7 +407,7 @@
          }
       },
       {
-         "Name": "sonarqube-5a0fcf11-2a1f-43d4-bd5f-90123390dc74",
+         "Name": "app-node-2",
          "Host": "15.54.51.126",
          "Health": "GREEN",
          "Health Causes": [],
@@ -666,7 +666,7 @@
    ],
    "Search Nodes": [
       {
-         "Name": "sonarqube-1c23f531-2c4f-404a-a998-dc7ea6ba9e22",
+         "Name": "search-node-1",
          "Host": "15.54.51.186",
          "Search State": {
             "CPU Usage (%)": 0,
@@ -690,7 +690,7 @@
          }
       },
       {
-         "Name": "sonarqube-33bf35eb-4363-4203-a384-a7c515583c9b",
+         "Name": "search-node-2",
          "Host": "15.54.51.136",
          "Search State": {
             "CPU Usage (%)": 0,
@@ -714,7 +714,7 @@
          }
       },
       {
-         "Name": "sonarqube-e6637599-4329-459f-b2eb-eb838b8a1b2f",
+         "Name": "search-node-3",
          "Host": "15.54.51.215",
          "Search State": {
             "CPU Usage (%)": 0,
