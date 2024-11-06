@@ -546,8 +546,11 @@ class Platform(object):
             except (ConnectionError, RequestException) as e:
                 util.handle_error(e, f"retrieving {logtype} logs", catch_all=True)
                 continue
+            i = 0
             for line in logs.splitlines():
-                log.debug("Inspection log line %s", line)
+                if i % 1000 == 0:
+                    log.debug("Inspecting log line (%d) %s", i, line)
+                i += 1
                 try:
                     (_, level, _) = line.split(" ", maxsplit=2)
                 except ValueError:
