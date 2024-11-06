@@ -18,8 +18,11 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""
+Abstraction of the SonarQube "application" concept
+"""
+
 from __future__ import annotations
-from queue import Queue
 from typing import Union
 
 import json
@@ -362,15 +365,11 @@ class Application(aggr.Aggregation):
         """
         return self.permissions().set(data)
 
-    def set_tags(self, tags):
+    def set_tags(self, tags: list[str]) -> None:
         if tags is None or len(tags) == 0:
             return
-        if isinstance(tags, list):
-            my_tags = util.list_to_csv(tags)
-        else:
-            my_tags = util.csv_normalize(tags)
-        self.post("applications/set_tags", params={"application": self.key, "tags": my_tags})
-        self._tags = util.csv_to_list(my_tags)
+        self.post("applications/set_tags", params={"application": self.key, "tags": util.list_to_csv(tags)})
+        self._tags = tags
 
     def add_projects(self, project_list: list[str]) -> bool:
         """Add projects to an application"""
@@ -413,16 +412,17 @@ class Application(aggr.Aggregation):
             # perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
             # self.set_permissions(util.csv_to_list(perms))
         self.add_projects(_project_list(data))
-        self.set_tags(data.get("tags", None))
+        self.set_tags(util.csv_to_list(data.get("tags", None)))
         for name, branch_data in data.get("branches", {}).items():
             self.set_branch(name, branch_data)
 
-    def search_params(self):
+    def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
         return {"application": self.key}
 
 
-def _project_list(data):
+def _project_list(data: types.ObjectJsonRepr) -> types.KeyList:
+    """Returns the list of project keys of an application"""
     plist = {}
     for b in data.get("branches", {}).values():
         if "projects" not in b:
@@ -430,9 +430,8 @@ def _project_list(data):
         if isinstance(b["projects"], dict):
             plist.update(b["projects"])
         else:
-            for p in b["projects"]:
-                plist[p["projectKey"]] = ""
-    return plist.keys()
+            plist.update({p["projectKey"]: "" for p in b["projects"]})
+    return list(plist.keys())
 
 
 def count(endpoint: pf.Platform) -> int:

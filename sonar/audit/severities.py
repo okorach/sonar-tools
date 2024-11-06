@@ -17,20 +17,27 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+"""Sonar Audit severities"""
 import enum
+from typing import Optional
 
 
 class Severity(enum.Enum):
+    """Abstraction of severity"""
+
     CRITICAL = 1
     HIGH = 2
     MEDIUM = 3
     LOW = 4
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """str() implementation"""
         return repr(self.name)[1:-1]
 
 
-def to_severity(val):
+def to_severity(val: str) -> Optional[Severity]:
+    """Converts a string to a Severity enum"""
     for enum_val in Severity:
         if repr(enum_val.name)[1:-1] == val:
             return enum_val

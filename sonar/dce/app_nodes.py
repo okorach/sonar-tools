@@ -46,7 +46,7 @@ class AppNode(dce_nodes.DceNode):
 
     def plugins(self) -> Optional[dict[str, str]]:
         """Returns 3rd party plugins installed on the app node"""
-        self.json.get("Plugins", None)
+        return self.json.get("Plugins", None)
 
     def health(self) -> str:
         """Returns app node health, RED by default if heLTH NOT AVAILABLE"""

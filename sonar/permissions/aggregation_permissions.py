@@ -18,6 +18,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+"""Abstraction of aggregations (portfolios or apps) permissions"""
+
 from __future__ import annotations
 from sonar.util import types
 from sonar.permissions import permissions, project_permissions

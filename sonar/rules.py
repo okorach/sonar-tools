@@ -23,7 +23,6 @@
 
 """
 from __future__ import annotations
-from queue import Queue
 import json
 from typing import Optional
 from http import HTTPStatus

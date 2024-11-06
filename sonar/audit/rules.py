@@ -17,9 +17,11 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+"""Abstraction of the audit rule concept"""
 import enum
 import json
-
+from typing import Optional
 import sonar.logging as log
 from sonar.audit import severities, types
 
@@ -27,6 +29,8 @@ __RULES = {}
 
 
 class RuleId(enum.Enum):
+    """Rule Ids"""
+
     DEFAULT_ADMIN_PASSWORD = 1
     BELOW_LTA = 2
     LOG4SHELL_WEB = 3
@@ -170,18 +174,23 @@ class RuleId(enum.Enum):
     WARNING_IN_LOGS = 6001
     DEPRECATION_WARNINGS = 6002
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """str() implementatio"""
         return repr(self.name)[1:-1]
 
 
 class RuleConfigError(Exception):
-    def __init__(self, message):
+    """Rule configuration error (at startup time)"""
+
+    def __init__(self, message: str) -> None:
         super().__init__()
         self.message = message
 
 
-class Rule:
-    def __init__(self, rule_id, severity, rule_type, concerned_object, message):
+class Rule(object):
+    """Abstraction of the audit rule concept"""
+
+    def __init__(self, rule_id: str, severity: str, rule_type: str, concerned_object: object, message: str) -> None:
         self.id = to_id(rule_id)
         self.severity = severities.to_severity(severity)
         self.type = types.to_type(rule_type)
@@ -189,14 +198,16 @@ class Rule:
         self.msg = message
 
 
-def to_id(val):
+def to_id(val: str) -> Optional[RuleId]:
+    """Converts a rule id str to its corresponding enum"""
     for enum_val in RuleId:
         if repr(enum_val.name)[1:-1] == val:
             return enum_val
     return None
 
 
-def load():
+def load() -> None:
+    """Load audit rules"""
     global __RULES
     import pathlib
 
@@ -229,5 +240,6 @@ def load():
             raise RuleConfigError(f"Rule {rule} has no configuration defined in 'rules.json'")
 
 
-def get_rule(rule_id):
+def get_rule(rule_id: RuleId) -> Rule:
+    """Returns the audit rule corresponding to a particular id"""
     return __RULES[rule_id]

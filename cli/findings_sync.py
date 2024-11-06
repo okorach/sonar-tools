@@ -94,7 +94,8 @@ def __parse_args(desc: str) -> object:
     return options.parse_and_check(parser=parser, logger_name=TOOL_NAME)
 
 
-def __dump_report(report, file):
+def __dump_report(report: dict[str, any], file: Optional[str]) -> None:
+    """Dumps a problem report in a file or stdout"""
     txt = util.json_dump(report)
     if file is None:
         log.info("Dumping report to stdout")
@@ -145,7 +146,7 @@ def __check_comparison_params(source_env: pf.Platform, target_env: pf.Platform, 
     return source_key, target_key, source_branch, target_branch
 
 
-def main() -> int:
+def main() -> None:
     """Main entry point"""
     start_time = util.start_clock()
     try:

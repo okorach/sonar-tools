@@ -53,7 +53,7 @@ def test_issue() -> None:
 
 
 def test_changelog() -> None:
-    """Test issues"""
+    """Test changelog"""
     issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key=LIVE_PROJECT)
     assert ISSUE_WITH_CHANGELOG in issues_d
     issue = issues_d[ISSUE_WITH_CHANGELOG]

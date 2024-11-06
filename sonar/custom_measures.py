@@ -31,21 +31,15 @@ class CustomMeasure(sq.SqObject):
     API_ROOT = "api/custom_measures/"
 
     def __init__(
-        self,
-        key=None,
-        endpoint: pf.Platform = None,
-        uuid=None,
-        project_key=None,
-        value=None,
-        description=None,
-    ):
+        self, key: str, endpoint: pf.Platform, uuid: str = None, project_key: str = None, value: any = None, description: str = None
+    ) -> None:
         super().__init__(endpoint=endpoint, key=key)
         self.uuid = uuid
         self.projectKey = project_key
         self.value = value
         self.description = description
 
-    def create(self, project_key, metric_key, value, description=None):
+    def create(self, project_key: str, metric_key: str, value: any, description: str = None) -> bool:
         return self.post(
             CustomMeasure.API_ROOT + "create",
             {
@@ -54,16 +48,18 @@ class CustomMeasure(sq.SqObject):
                 "value": value,
                 "description": description,
             },
-        )
+        ).ok
 
-    def update(self, value, description=None):
+    def update(self, value: any, description: str = None) -> bool:
+        """Updates a custom measure"""
         return self.post(
             CustomMeasure.API_ROOT + "update",
             {"id": self.uuid, "value": value, "description": description},
-        )
+        ).ok
 
-    def delete(self):
-        return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid})
+    def delete(self) -> bool:
+        """Deletes a custom measure"""
+        return self.post(CustomMeasure.API_ROOT + "delete", {"id": self.uuid}).ok
 
 
 def search(endpoint: pf.Platform, project_key):

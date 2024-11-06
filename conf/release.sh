@@ -16,11 +16,10 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ME="$( basename "${BASH_SOURCE[0]}" )"
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CONFDIR/build.sh
+"$CONFDIR"/build.sh
 
 SONAR_TOOLS_RELEASE="$ROOTDIR/sonar/version.py"
 DOCKERFILE_RELEASE="$CONFDIR/release.Dockerfile"
@@ -47,5 +46,5 @@ if [ "$confirm" = "y" ]; then
     cd "$ROOTDIR" && docker pushrm olivierkorach/sonar-tools
 
     echo "Running scan"
-    $CONFDIR/scan.sh -test
+    "$CONFDIR/scan.sh" -test
 fi

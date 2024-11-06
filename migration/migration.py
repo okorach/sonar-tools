@@ -67,7 +67,8 @@ __MAP = {
 }
 
 
-def __parse_args(desc):
+def __parse_args(desc: str) -> object:
+    """Defines CLI arguments and parses them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
     parser = options.set_output_file_args(parser, allowed_formats=("json",))

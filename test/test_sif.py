@@ -30,6 +30,7 @@ from unittest.mock import patch
 import pytest
 import utilities as util
 from sonar import sif, errcodes
+from sonar.dce import app_nodes, search_nodes
 from cli import audit
 import cli.options as opt
 
@@ -138,3 +139,32 @@ def test_json_not_sif() -> None:
             json_sif = json.loads(f.read())
             _ = sif.Sif(json_sif)
     assert e.type == sif.NotSystemInfo
+
+
+def test_dce_sif_ut() -> None:
+    """test_audit_sif_ut"""
+    with open("test/sif.dce.1.json", "r", encoding="utf-8") as f:
+        json_sif = json.loads(f.read())
+
+    sysinfo = sif.Sif(json_sif)
+    app_nodes.audit(sub_sif=json_sif["Application Nodes"], sif_object=sysinfo, audit_settings={})
+    for appnode in json_sif["Application Nodes"]:
+        node = app_nodes.AppNode(appnode, sysinfo)
+        assert str(node).startswith("App Node")
+        assert len(node.plugins()) == 6
+        assert node.health() == "GREEN"
+        assert node.node_type() == "APPLICATION"
+        assert node.start_time() == datetime.datetime(2024, 2, 22, 22, 4, 30)
+        assert node.version() == (9, 9, 0)
+        assert node.edition() == "datacenter"
+        assert node.name().startswith("app-node")
+        _ = node.audit(audit_settings={})
+
+    search_nodes.audit(sub_sif=json_sif["Search Nodes"], sif=sysinfo, audit_settings={})
+    for searchnode in json_sif["Search Nodes"]:
+        node = search_nodes.SearchNode(searchnode, sysinfo)
+        assert str(node).startswith("Search Node")
+        assert node.node_type() == "SEARCH"
+        assert node.name().startswith("search-node")
+        assert 20000 < node.store_size() < 25000
+        _ = node.audit(audit_settings={})

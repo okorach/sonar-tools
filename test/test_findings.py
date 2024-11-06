@@ -276,7 +276,6 @@ def test_findings_filter_on_multiple_criteria_3() -> None:
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.STATUSES}", "ACCEPTED", f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE"]):
             findings_export.main()
 
-    first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -294,7 +293,6 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
         ):
             findings_export.main()
 
-    first = True
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
@@ -310,7 +308,6 @@ def test_findings_filter_hotspot_on_lang() -> None:
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.LANGUAGES}", "java,js"]):
             findings_export.main()
-    # TODO Add Language column on findings export
     util.clean(util.CSV_FILE)
 
 

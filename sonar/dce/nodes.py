@@ -30,7 +30,7 @@ HEALTH_YELLOW = "YELLOW"
 HEALTH_RED = "RED"
 
 
-class DceNode:
+class DceNode(object):
     """Abstraction of a DCE platform node"""
 
     def __init__(self, data: dict[str, any], sif: object) -> None:

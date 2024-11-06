@@ -74,7 +74,9 @@ _FILTERS_HOTSPOTS_REMAPPING = {"resolutions": "resolution", "statuses": "status"
 
 
 class TooManyHotspotsError(Exception):
-    def __init__(self, nbr_issues, message):
+    """Too many hotspots found during a search"""
+
+    def __init__(self, nbr_issues: int, message: str) -> None:
         super().__init__()
         self.nbr_issues = nbr_issues
         self.message = message
@@ -161,7 +163,7 @@ class Hotspot(findings.Finding):
             params["comment"] = comment
         return self.post("hotspots/change_status", params=params).ok
 
-    def mark_as_safe(self):
+    def mark_as_safe(self) -> bool:
         """Marks a hotspot as safe
 
         :return: Whether the operation succeeded

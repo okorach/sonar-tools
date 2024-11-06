@@ -17,17 +17,21 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+"""sonar-config CLI"""
 import os
 import pathlib
 import jprops
-
+from typing import Optional
 import sonar.logging as log
+from sonar.util import types
 import sonar.utilities as util
 
 _CONFIG_SETTINGS = None
 
 
-def _load_properties_file(file):
+def _load_properties_file(file: str) -> types.ConfigSettings:
+    """Loads a properties file"""
     settings = {}
     try:
         with open(file, "r", encoding="utf-8") as fp:
@@ -43,7 +47,8 @@ def _load_properties_file(file):
     return settings
 
 
-def load(config_name=None, settings=None):
+def load(config_name: Optional[str] = None, settings: types.ConfigSettings = None) -> types.ConfigSettings:
+    """Loads a particular configuration file"""
     global _CONFIG_SETTINGS
 
     if settings is None:
@@ -62,23 +67,22 @@ def load(config_name=None, settings=None):
     return _CONFIG_SETTINGS
 
 
-def get_property(name, settings=None):
+def get_property(name: str, settings: Optional[types.ConfigSettings] = None) -> str:
+    """Returns the value of a given property"""
     if settings is None:
         settings = _CONFIG_SETTINGS
     return settings.get(name, "")
 
 
-def configure():
+def configure() -> None:
+    """Configures a default sonar-audit.properties"""
     template_file = pathlib.Path(__file__).parent / "sonar-audit.properties"
     with open(template_file, "r", encoding="utf-8") as fh:
         text = fh.read()
 
     config_file = f"{os.path.expanduser('~')}{os.sep}.sonar-audit.properties"
     if os.path.isfile(config_file):
-        log.info(
-            "Config file '%s' already exists, sending configuration to stdout",
-            config_file,
-        )
+        log.info("Config file '%s' already exists, sending configuration to stdout", config_file)
         print(text)
     else:
         log.info("Creating file '%s'", config_file)

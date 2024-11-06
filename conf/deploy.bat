@@ -27,18 +27,4 @@ rmdir /S /Q dist
 python setup.py bdist_wheel
 
 :: Deploy locally for tests
-pip install pip install --upgrade --force-reinstall dist\*-py3-*.whl
-
-:: sphinx-build -b html api-doc/source api-doc/build
-
-set SONAR_HOST_URL=http://localhost:9999
-set SONAR_TOKEN=squ_0172c821af007e813159d6f051f9a726cd3dbdaf
-
-:: Deploy on pypi.org once released
-::if [ "$release" = "1" ]; then
-::    echo "Confirm release [y/n] ?"
-::    read confirm
-::    if [ "$confirm" = "y" ]; then
-::        python3 -m twine upload dist/*
-::    fi
-::fi
+pip install pip install --no-deps --force-reinstall dist\*-py3-*.whl

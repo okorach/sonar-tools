@@ -295,7 +295,7 @@ class Project(components.Component):
                 self._branches_last_analysis = b_ana_date
         return self._branches_last_analysis
 
-    def loc(self):
+    def loc(self) -> int:
         """
         :return: Number of LoCs of the project, taking into account branches and pull requests, if any
         :rtype: int
@@ -322,7 +322,7 @@ class Project(components.Component):
                 self._branches = {}
         return self._branches
 
-    def main_branch(self):
+    def main_branch(self) -> Optional[branches.Branch]:
         """
         :return: Main branch of the project
         :rtype: Branch
@@ -348,7 +348,7 @@ class Project(components.Component):
                 self._pull_requests = {}
         return self._pull_requests
 
-    def delete(self):
+    def delete(self) -> bool:
         """Deletes a project in SonarQube
 
         :raises ObjectNotFound: If object to delete was not found in SonarQube
@@ -776,7 +776,7 @@ class Project(components.Component):
             if key in findings_list:
                 log.warning("Finding %s (%s) already in past findings", i["key"], i["type"])
                 findings_conflicts[i["type"]] += 1
-            # FIXME - Hack for wrong projectKey returned in PR
+            # FIXME(okorach) - Hack for wrong projectKey returned in PR
             # m = re.search(r"(\w+):PULL_REQUEST:(\w+)", i['projectKey'])
             i["projectKey"] = self.key
             i["branch"] = branch
@@ -1615,6 +1615,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
 
 
 def __export_zip_thread(queue: Queue[Project], results: list[dict[str, str]], statuses: dict[str, int], export_timeout: int) -> None:
+    """Thread callable for project zip export"""
     while not queue.empty():
         project = queue.get()
         try:
