@@ -808,7 +808,7 @@ def search(endpoint: pf.Platform, params: ApiParams = None, raise_error: bool = 
     if nbr_pages == 1:
         return issue_list
     q = Queue(maxsize=0)
-    prepared_params = pre_search_filters(endpoint=endpoint, params=params)
+    prepared_params = pre_search_filters(endpoint=endpoint, params=filters)
     for page in range(2, nbr_pages + 1):
         q.put((endpoint, Issue.SEARCH_API, issue_list, prepared_params, page))
     for i in range(threads):
