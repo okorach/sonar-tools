@@ -387,7 +387,7 @@ class Project(components.Component):
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding["has_binding"] = False
 
-        log.debug("Binding = %s", util.json_dump(self._binding["binding"]))
+        log.debug("%s binding = %s", str(self), str(self._binding["binding"]))
         return self._binding["binding"]
 
     def is_part_of_monorepo(self) -> bool:
@@ -1453,8 +1453,7 @@ def __audit_thread(
         __increment_processed(audit_settings)
         results += problems
         queue.task_done()
-
-    log.debug("Audit of projects completed")
+    log.debug("Project audit queue empty, ending thread")
 
 
 def __similar_keys(key1: str, key2: str) -> bool:
@@ -1507,6 +1506,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         worker.setName(f"ProjectAudit{i}")
         worker.start()
     audit_q.join()
+    log.debug("Projects audit complete")
     duplicates = __audit_duplicates(plist, audit_settings)
     if "write_q" in kwargs:
         kwargs["write_q"].put(duplicates)
