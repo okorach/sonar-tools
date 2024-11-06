@@ -234,7 +234,7 @@ def main() -> None:
     log.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, proj_age, deleted_loc, op)
     log.info("%d branches older than %d days %s", deleted_branches, branch_age, op)
     log.info("%d pull requests older than %d days %s", deleted_prs, pr_age, op)
-    log.info("%d tokens older than %d days revoked", revoked_tokens, token_age)
+    log.info("%d tokens older than %d days %s", revoked_tokens, token_age, "revoked" if mode == "deleted" else "to revoke")
     util.stop_clock(start_time)
     sys.exit(0)
 
