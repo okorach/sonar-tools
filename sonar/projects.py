@@ -64,6 +64,7 @@ APP_QUALIFIER = "APP"
 
 _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
+AUDIT_MODE_PARAM = "audit.mode"
 
 _IMPORTABLE_PROPERTIES = (
     "key",
@@ -470,6 +471,8 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         if max_age == 0:
             log.debug("Auditing of pull request last analysis age is disabled, skipping...")
@@ -487,6 +490,8 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         if not audit_settings.get("audit.projects.visibility", True):
             log.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
@@ -505,6 +510,8 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         if not audit_settings.get("audit.projects.utilityLocs", False):
             log.debug("Utility LoCs audit disabled by configuration, skipping")
             return []
@@ -542,6 +549,8 @@ class Project(components.Component):
         return []
 
     def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         if self.endpoint.edition() == "community":
             log.info("Community edition, skipping binding validation...")
             return []
@@ -625,6 +634,8 @@ class Project(components.Component):
         return self._revision
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         if not audit_settings.get("audit.projects.scanner", True):
             log.debug("%s: Background task audit disabled, audit skipped", str(self))
             return []
@@ -1465,6 +1476,8 @@ def __similar_keys(key1: str, key2: str) -> bool:
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits for suspected duplicate projects"""
+    if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        return []
     if not audit_settings.get("audit.projects.duplicates", True):
         log.info("Project duplicates auditing was disabled by configuration")
     else:
