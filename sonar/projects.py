@@ -128,7 +128,7 @@ class Project(components.Component):
 
     CACHE = cache.Cache()
     SEARCH_API = "projects/search"
-    #    SEARCH_API = "components/search_projects"
+    # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
 
@@ -370,7 +370,7 @@ class Project(components.Component):
         _ = self.binding()
         return self._binding.get("has_binding", False)
 
-    def binding(self):
+    def binding(self) -> Optional[dict[str, str]]:
         """
         :return: The project DevOps platform binding
         :rtype: dict
@@ -381,7 +381,9 @@ class Project(components.Component):
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
             except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting binding of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
+                util.handle_error(
+                    e, f"getting binding of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST), log_level=log.DEBUG
+                )
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding["has_binding"] = False
 
