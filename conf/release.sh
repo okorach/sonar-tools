@@ -46,5 +46,5 @@ if [ "$confirm" = "y" ]; then
     cd "$ROOTDIR" && docker pushrm olivierkorach/sonar-tools
 
     echo "Running scan"
-    $CONFDIR/scan.sh -test
+    "$CONFDIR/scan.sh" -test
 fi
