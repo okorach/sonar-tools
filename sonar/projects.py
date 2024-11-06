@@ -1514,7 +1514,7 @@ def __increment_processed(counters: dict[str, str]) -> None:
         counters["PROCESSED"] += 1
     nb, tot = counters["PROCESSED"], counters["NBR_PROJECTS"]
     lvl = log.INFO if nb % 10 == 0 or tot - nb < 10 else log.DEBUG
-    log.log(lvl, "%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
+    log.log(lvl, "%d/%d projects processed (%d%%)", nb, tot, (nb * 100) // tot)
 
 
 def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: types.ConfigSettings, write_q: Optional[Queue] = None) -> None:
