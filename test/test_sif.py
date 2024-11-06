@@ -147,24 +147,24 @@ def test_dce_sif_ut() -> None:
         json_sif = json.loads(f.read())
 
     sysinfo = sif.Sif(json_sif)
-    app_nodes.audit(json_sif["Application Nodes"], sysinfo, {})
+    app_nodes.audit(sub_sif=json_sif["Application Nodes"], sif_object=sysinfo, audit_settings={})
     for appnode in json_sif["Application Nodes"]:
-        node = app_nodes.AppNode(appnode, json_sif)
+        node = app_nodes.AppNode(appnode, sysinfo)
         assert str(node).startswith("App Node")
-        assert len(node.plugins()) == 5
+        assert len(node.plugins()) == 6
         assert node.health() == "GREEN"
         assert node.node_type() == "APPLICATION"
-        assert node.start_time() == "2024-02-22T22:04:30-0600"
+        assert node.start_time() == datetime.datetime(2024, 2, 22, 22, 4, 30)
         assert node.version() == (9, 9, 0)
         assert node.edition() == "datacenter"
         assert node.name().startswith("app-node")
-        _ = node.audit()
+        _ = node.audit(audit_settings={})
 
-    app_nodes.audit(json_sif["Search Nodes"], sysinfo, {})
+    search_nodes.audit(sub_sif=json_sif["Search Nodes"], sif=sysinfo, audit_settings={})
     for searchnode in json_sif["Search Nodes"]:
-        node = search_nodes.SearchNode(searchnode, json_sif)
+        node = search_nodes.SearchNode(searchnode, sysinfo)
         assert str(node).startswith("Search Node")
         assert node.node_type() == "SEARCH"
         assert node.name().startswith("search-node")
-        assert node.store_size().startswith("search-node")
-        _ = node.audit()
+        assert 20000 < node.store_size() < 25000
+        _ = node.audit(audit_settings={})
