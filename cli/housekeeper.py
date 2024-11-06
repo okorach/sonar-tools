@@ -27,11 +27,11 @@
 
 """
 import sys
-import logging
 
+from requests import RequestException
 from cli import options
 import sonar.logging as log
-from sonar import platform, tokens, users, projects, branches, version
+from sonar import platform, tokens, users, projects, branches, version, errcodes
 import sonar.utilities as util
 import sonar.exceptions as ex
 from sonar.audit import config, problem
@@ -58,7 +58,7 @@ def get_project_problems(max_days_proj: int, max_days_branch: int, max_days_pr: 
         "audit.projects.exclusions": False,
         "audit.project.scm.disabled": False,
         "audit.projects.analysisWarnings": False,
-        "audit.projects.scanner": False
+        "audit.projects.scanner": False,
     }
     settings = config.load(config_name="sonar-audit", settings=settings)
     settings["threads"] = nb_threads
@@ -208,35 +208,40 @@ def main() -> None:
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, ex.ObjectNotFound) as e:
+
+        mode, proj_age, branch_age, pr_age, token_age = (
+            kwargs["mode"],
+            kwargs["projectsMaxAge"],
+            kwargs["branchesMaxAge"],
+            kwargs["pullrequestsMaxAge"],
+            kwargs["tokensMaxAge"],
+        )
+        problems = []
+        if proj_age > 0 or branch_age > 0 or pr_age > 0:
+            problems = get_project_problems(proj_age, branch_age, pr_age, kwargs[options.NBR_THREADS], sq)
+
+        if token_age:
+            problems += get_user_problems(token_age, sq)
+
+        problem.dump_report(problems, file=None, format="csv")
+
+        op = "to delete"
+        if mode == "delete":
+            op = "deleted"
+        (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
+
+        log.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, proj_age, deleted_loc, op)
+        log.info("%d branches older than %d days %s", deleted_branches, branch_age, op)
+        log.info("%d pull requests older than %d days %s", deleted_prs, pr_age, op)
+        log.info("%d tokens older than %d days %s", revoked_tokens, token_age, "revoked" if mode == "deleted" else "to revoke")
+        util.stop_clock(start_time)
+
+    except (PermissionError, FileNotFoundError) as e:
+        util.exit_fatal(f"OS error while housekeeping: {str(e)}", errcodes.OS_ERROR)
+    except (ex.ConnectionError, options.ArgumentsError, ex.ObjectNotFound) as e:
         util.exit_fatal(e.message, e.errcode)
-
-    mode, proj_age, branch_age, pr_age, token_age = (
-        kwargs["mode"],
-        kwargs["projectsMaxAge"],
-        kwargs["branchesMaxAge"],
-        kwargs["pullrequestsMaxAge"],
-        kwargs["tokensMaxAge"],
-    )
-    problems = []
-    if proj_age > 0 or branch_age > 0 or pr_age > 0:
-        problems = get_project_problems(proj_age, branch_age, pr_age, kwargs[options.NBR_THREADS], sq)
-
-    if token_age:
-        problems += get_user_problems(token_age, sq)
-
-    problem.dump_report(problems, file=None, format="csv")
-
-    op = "to delete"
-    if mode == "delete":
-        op = "deleted"
-    (deleted_proj, deleted_loc, deleted_branches, deleted_prs, revoked_tokens) = _delete_objects(problems, mode)
-
-    log.info("%d projects older than %d days (%d LoCs) %s", deleted_proj, proj_age, deleted_loc, op)
-    log.info("%d branches older than %d days %s", deleted_branches, branch_age, op)
-    log.info("%d pull requests older than %d days %s", deleted_prs, pr_age, op)
-    log.info("%d tokens older than %d days %s", revoked_tokens, token_age, "revoked" if mode == "deleted" else "to revoke")
-    util.stop_clock(start_time)
+    except RequestException as e:
+        util.exit_fatal(f"HTTP error while housekeeping: {str(e)}", errcodes.SONAR_API)
     sys.exit(0)
 
 
