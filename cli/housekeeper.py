@@ -50,15 +50,7 @@ def get_project_problems(max_days_proj: int, max_days_branch: int, max_days_pr: 
         "audit.projects.maxLastAnalysisAge": max_days_proj,
         "audit.projects.branches.maxLastAnalysisAge": max_days_branch,
         "audit.projects.pullRequests.maxLastAnalysisAge": max_days_pr,
-        "audit.projects.neverAnalyzed": False,
-        "audit.projects.duplicates": False,
-        "audit.projects.visibility": False,
-        "audit.projects.permissions": False,
-        "audit.projects.failedTasks": False,
-        "audit.projects.exclusions": False,
-        "audit.project.scm.disabled": False,
-        "audit.projects.analysisWarnings": False,
-        "audit.projects.scanner": False,
+        projects.AUDIT_MODE_PARAM: "housekeeper",
     }
     settings = config.load(config_name="sonar-audit", settings=settings)
     settings["threads"] = nb_threads
