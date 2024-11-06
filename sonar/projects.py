@@ -622,6 +622,9 @@ class Project(components.Component):
         return self._revision
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        if not audit_settings.get("audit.projects.scanner", True):
+            log.debug("%s: Background task audit disabled, audit skipped", str(self))
+            return []
         proj_type, scanner = self.get_type(), self.scanner()
         log.debug("%s is of type %s and uses scanner %s", str(self), proj_type, scanner)
         if proj_type == "UNKNOWN":
