@@ -128,6 +128,7 @@ class Project(components.Component):
 
     CACHE = cache.Cache()
     SEARCH_API = "projects/search"
+    #    SEARCH_API = "components/search_projects"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
 
