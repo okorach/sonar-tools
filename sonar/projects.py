@@ -322,7 +322,7 @@ class Project(components.Component):
                 self._branches = {}
         return self._branches
 
-    def main_branch(self) -> Optional[objects]:
+    def main_branch(self) -> Optional[branches.Branch]:
         """
         :return: Main branch of the project
         :rtype: Branch
