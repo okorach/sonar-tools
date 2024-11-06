@@ -29,7 +29,7 @@ import csv
 from typing import TextIO
 from threading import Thread
 from queue import Queue
-
+from requests import RequestException
 from cli import options
 
 from sonar import errcodes, exceptions, version
@@ -201,6 +201,8 @@ def main() -> None:
         util.exit_fatal(f"File {kwargs['sif']} does not seem to be a legit JSON file, aborting...", errcodes.SIF_AUDIT_ERROR)
     except sif.NotSystemInfo:
         util.exit_fatal(f"File {kwargs['sif']} does not seem to be a system info or support info file, aborting...", errcodes.SIF_AUDIT_ERROR)
+    except RequestException as e:
+        util.exit_fatal(f"HTTP error while auditing: {str(e)}", errcodes.SONAR_API)
     util.stop_clock(start_time)
     sys.exit(errcodes.OK)
 
