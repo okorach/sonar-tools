@@ -488,12 +488,12 @@ def handle_error(e: Exception, context: str, **kwargs) -> None:
     """General handler for errors"""
     LOG_FORMAT = "%s while %s"
     if kwargs.get("catch_all", False):
-        log.log(kwargs.get("log_level", log.error), LOG_FORMAT, error_msg(e), context)
+        log.log(kwargs.get("log_level", log.ERROR), LOG_FORMAT, error_msg(e), context)
         return
     catch_http = kwargs.get("catch_http_errors", True)
     catch_statuses = kwargs.get("catch_http_statuses", ())
     if isinstance(e, requests.HTTPError) and (catch_http or e.response.status_code in catch_statuses):
-        log.log(kwargs.get("log_level", log.error), LOG_FORMAT, error_msg(e), context)
+        log.log(kwargs.get("log_level", log.ERROR), LOG_FORMAT, error_msg(e), context)
         return
     log.error(LOG_FORMAT, error_msg(e), context)
     raise e
