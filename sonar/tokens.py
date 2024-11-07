@@ -19,13 +19,18 @@
 #
 
 """Abstraction of the SonarQube User Token concept"""
+
+from typing import Optional
 import json
 
+import datetime
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
 import sonar.utilities as util
 from sonar.util import types, cache
+from sonar.audit.problem import Problem
+from sonar.audit.rules import get_rule, RuleId
 
 
 class UserToken(sq.SqObject):
@@ -68,6 +73,23 @@ class UserToken(sq.SqObject):
             return False
         log.info("Revoking token '%s' of user login '%s'", self.name, self.login)
         return self.post(UserToken.API_REVOKE, {"name": self.name, "login": self.login}).ok
+
+    def audit(self, settings: types.ConfigSettings, today: Optional[datetime.datetime] = None) -> list[Problem]:
+        problems = []
+        if not today:
+            today = datetime.datetime.now(datetime.timezone.utc).astimezone()
+        age = util.age(self.created_at, now=today)
+        if not self.expiration_date:
+            problems.append(Problem(get_rule(RuleId.TOKEN_WITHOUT_EXPIRATION), self, str(self), age))
+        if age > settings.get("audit.tokens.maxAge", 90):
+            problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), self, str(self), age))
+        if self.last_connection_date:
+            last_cnx_age = util.age(self.last_connection_date, now=today)
+            if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
+                problems.append(Problem(get_rule(RuleId.TOKEN_UNUSED), self, str(self), last_cnx_age))
+        else:
+            problems.append(Problem(get_rule(RuleId.TOKEN_NEVER_USED), self, str(self), age))
+        return problems
 
 
 def search(endpoint: pf.Platform, login: str) -> list[UserToken]:

@@ -353,18 +353,7 @@ class User(sqobject.SqObject):
         today = dt.datetime.now(dt.timezone.utc).astimezone()
         problems = []
         for t in self.tokens():
-            age = util.age(t.created_at, now=today)
-            if not t.expiration_date:
-                problems.append(Problem(get_rule(RuleId.TOKEN_WITHOUT_EXPIRATION), t, str(t), age))
-            if age > settings.get("audit.tokens.maxAge", 90):
-                problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), t, str(t), age))
-            if t.last_connection_date is None and age > settings.get("audit.tokens.maxUnusedAge", 30):
-                problems.append(Problem(get_rule(RuleId.TOKEN_NEVER_USED), t, str(t), age))
-            if t.last_connection_date is None:
-                continue
-            last_cnx_age = util.age(t.last_connection_date, now=today)
-            if last_cnx_age > settings.get("audit.tokens.maxUnusedAge", 30):
-                problems.append(Problem(get_rule(RuleId.TOKEN_UNUSED), t, str(t), last_cnx_age))
+            problems += t.audit(settings=settings, today=today)
 
         if self.last_login:
             age = util.age(self.last_login, now=today)
