@@ -44,14 +44,11 @@ class UserToken(sq.SqObject):
         super().__init__(endpoint=endpoint, key=login)
         self.login = login  #: User login
         self.name = name  #: Token name
-        self.created_at = None  #: Token creation date
-        self.last_connection_date = None  #: Token last connection date
         if self.name is None:
             self.name = json_data.get("name", None)
-        if "createdAt" in json_data:
-            self.created_at = util.string_to_date(json_data["createdAt"])
-        if "lastConnectionDate" in json_data:
-            self.last_connection_date = util.string_to_date(json_data["lastConnectionDate"])
+        self.created_at = util.string_to_date(json_data["createdAt"]) if "createdAt" in json_data else None
+        self.last_connection_date = util.string_to_date(json_data["lastConnectionDate"]) if "lastConnectionDate" in json_data else None
+        self.expiration_date = util.string_to_date(json_data["expirationDate"]) if "expirationDate" in json_data else None
         self.token = json_data.get("token", None)
         log.debug("Created '%s'", str(self))
 

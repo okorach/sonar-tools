@@ -354,6 +354,8 @@ class User(sqobject.SqObject):
         problems = []
         for t in self.tokens():
             age = util.age(t.created_at, now=today)
+            if not t.expiration_date:
+                problems.append(Problem(get_rule(RuleId.TOKEN_WITHOUT_EXPIRATION), t, str(t), age))
             if age > settings.get("audit.tokens.maxAge", 90):
                 problems.append(Problem(get_rule(RuleId.TOKEN_TOO_OLD), t, str(t), age))
             if t.last_connection_date is None and age > settings.get("audit.tokens.maxUnusedAge", 30):
