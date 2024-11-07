@@ -68,18 +68,14 @@ PR_COL = fields.index("pullRequest")
 
 __GOOD_OPTS = [
     [f"--{opt.FORMAT}", "json", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
-    [f"--{opt.FORMAT}", "json", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
-    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "4", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"--{opt.FORMAT}", "json", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
+    [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "16", f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.REPORT_FILE}", util.CSV_FILE],
-    [f"--{opt.DATE_BEFORE}", "2024-05-01", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
-    [f"--{opt.DATE_AFTER}", "2023-05-01", f"--{opt.REPORT_FILE}", util.CSV_FILE],
-    [f"--{opt.RESOLUTIONS}", "FALSE-POSITIVE,REMOVED", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.TYPES}", "BUG,VULNERABILITY", f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.STATUSES}", "OPEN,CLOSED", f"--{opt.SEVERITIES}", "MINOR,MAJOR,CRITICAL", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.REPORT_FILE}", util.CSV_FILE],
+    [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    [f"--{opt.USE_FINDINGS}", "-f", util.CSV_FILE],
+    [f"--{opt.USE_FINDINGS}", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     ["--apps", f"--{opt.BRANCHES}", "*", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     ["--portfolios", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
@@ -103,7 +99,7 @@ def test_findings_export_sarif_explicit() -> None:
     """Test SARIF export"""
     util.clean(util.JSON_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.FORMAT}", "sarif"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", f"--{opt.FORMAT}", "sarif"]):
             findings_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_contains(util.JSON_FILE, "schemas/json/sarif-2.1.0-rtm.4")
@@ -114,7 +110,7 @@ def test_findings_export_sarif_implicit() -> None:
     """Test SARIF export for a single project and implicit format"""
     util.clean(SARIF_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", "okorach_sonar-tools", f"-{opt.REPORT_FILE_SHORT}", SARIF_FILE]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", f"-{opt.REPORT_FILE_SHORT}", SARIF_FILE]):
             findings_export.main()
     assert int(str(e.value)) == errcodes.OK
     assert util.file_contains(SARIF_FILE, "schemas/json/sarif-2.1.0-rtm.4")
@@ -172,6 +168,36 @@ def test_findings_filter_on_lang() -> None:
             assert lang in ("py", "ts")
     util.clean(util.CSV_FILE)
 """
+
+
+def test_findings_filter_on_date_after() -> None:
+    """test_findings_filter_on_type"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", f"--{opt.DATE_AFTER}", "2023-05-01"]):
+            findings_export.main()
+
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
+            assert line[DATE_COL] >= "2023-05-01"
+    util.clean(util.CSV_FILE)
+
+
+def test_findings_filter_on_date_before() -> None:
+    """test_findings_filter_on_type"""
+    util.clean(util.CSV_FILE)
+    with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", [f"--{opt.DATE_BEFORE}", "2024-05-01"]]):
+            findings_export.main()
+
+    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
+        csvreader = csv.reader(fh)
+        next(csvreader)
+        for line in csvreader:
+            assert line[DATE_COL] <= "2024-05-01"
+    util.clean(util.CSV_FILE)
 
 
 def test_findings_filter_on_type() -> None:
@@ -289,7 +315,7 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
         with patch.object(
-            sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "ACKNOWLEDGED, SAFE", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,pytorch"]
+            sys, "argv", CSV_OPTS + [f"--{opt.RESOLUTIONS}", "ACKNOWLEDGED, SAFE", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}"]
         ):
             findings_export.main()
 
