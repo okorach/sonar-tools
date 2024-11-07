@@ -64,6 +64,7 @@ APP_QUALIFIER = "APP"
 
 _BIND_SEP = ":::"
 _AUDIT_BRANCHES_PARAM = "audit.projects.branches"
+AUDIT_MODE_PARAM = "audit.mode"
 
 _IMPORTABLE_PROPERTIES = (
     "key",
@@ -128,6 +129,7 @@ class Project(components.Component):
 
     CACHE = cache.Cache()
     SEARCH_API = "projects/search"
+    # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
 
@@ -369,7 +371,7 @@ class Project(components.Component):
         _ = self.binding()
         return self._binding.get("has_binding", False)
 
-    def binding(self):
+    def binding(self) -> Optional[dict[str, str]]:
         """
         :return: The project DevOps platform binding
         :rtype: dict
@@ -380,11 +382,13 @@ class Project(components.Component):
                 self._binding["has_binding"] = True
                 self._binding["binding"] = json.loads(resp.text)
             except (ConnectionError, RequestException) as e:
-                util.handle_error(e, f"getting binding of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST))
+                util.handle_error(
+                    e, f"getting binding of {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND, HTTPStatus.BAD_REQUEST), log_level=log.DEBUG
+                )
                 # Hack: 8.9 returns 404, 9.x returns 400
                 self._binding["has_binding"] = False
 
-        log.debug("Binding = %s", util.json_dump(self._binding["binding"]))
+        log.debug("%s binding = %s", str(self), str(self._binding["binding"]))
         return self._binding["binding"]
 
     def is_part_of_monorepo(self) -> bool:
@@ -467,6 +471,8 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         max_age = audit_settings.get("audit.projects.pullRequests.maxLastAnalysisAge", 30)
         if max_age == 0:
             log.debug("Auditing of pull request last analysis age is disabled, skipping...")
@@ -484,6 +490,8 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         if not audit_settings.get("audit.projects.visibility", True):
             log.debug("Project visibility audit is disabled by configuration, skipping...")
             return []
@@ -502,6 +510,8 @@ class Project(components.Component):
         :return: List of problems found, or empty list
         :rtype: list[Problem]
         """
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         if not audit_settings.get("audit.projects.utilityLocs", False):
             log.debug("Utility LoCs audit disabled by configuration, skipping")
             return []
@@ -539,6 +549,8 @@ class Project(components.Component):
         return []
 
     def __audit_binding_valid(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
         if self.endpoint.edition() == "community":
             log.info("Community edition, skipping binding validation...")
             return []
@@ -622,6 +634,11 @@ class Project(components.Component):
         return self._revision
 
     def __audit_scanner(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+        if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+            return []
+        if not audit_settings.get("audit.projects.scanner", True):
+            log.debug("%s: Background task audit disabled, audit skipped", str(self))
+            return []
         proj_type, scanner = self.get_type(), self.scanner()
         log.debug("%s is of type %s and uses scanner %s", str(self), proj_type, scanner)
         if proj_type == "UNKNOWN":
@@ -1447,8 +1464,7 @@ def __audit_thread(
         __increment_processed(audit_settings)
         results += problems
         queue.task_done()
-
-    log.debug("Audit of projects completed")
+    log.debug("Project audit queue empty, ending thread")
 
 
 def __similar_keys(key1: str, key2: str) -> bool:
@@ -1460,6 +1476,8 @@ def __similar_keys(key1: str, key2: str) -> bool:
 
 def __audit_duplicates(projects_list: dict[str, Project], audit_settings: types.ConfigSettings) -> list[Problem]:
     """Audits for suspected duplicate projects"""
+    if audit_settings.get(AUDIT_MODE_PARAM, "") == "housekeeper":
+        return []
     if not audit_settings.get("audit.projects.duplicates", True):
         log.info("Project duplicates auditing was disabled by configuration")
     else:
@@ -1501,6 +1519,7 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings, **kwargs)
         worker.setName(f"ProjectAudit{i}")
         worker.start()
     audit_q.join()
+    log.debug("Projects audit complete")
     duplicates = __audit_duplicates(plist, audit_settings)
     if "write_q" in kwargs:
         kwargs["write_q"].put(duplicates)
@@ -1514,7 +1533,7 @@ def __increment_processed(counters: dict[str, str]) -> None:
         counters["PROCESSED"] += 1
     nb, tot = counters["PROCESSED"], counters["NBR_PROJECTS"]
     lvl = log.INFO if nb % 10 == 0 or tot - nb < 10 else log.DEBUG
-    log.log(lvl, "%d/%d projects exported (%d%%)", nb, tot, (nb * 100) // tot)
+    log.log(lvl, "%d/%d projects processed (%d%%)", nb, tot, (nb * 100) // tot)
 
 
 def __export_thread(queue: Queue[Project], results: dict[str, str], export_settings: types.ConfigSettings, write_q: Optional[Queue] = None) -> None:
