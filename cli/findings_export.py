@@ -32,7 +32,7 @@ from typing import TextIO
 from queue import Queue
 from threading import Thread
 from requests import RequestException
-
+from argparse import Namespace
 from cli import options
 from sonar.util.types import ConfigSettings
 import sonar.logging as log
@@ -72,7 +72,7 @@ _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS = (
 )
 
 
-def parse_args(desc: str) -> object:
+def parse_args(desc: str) -> Namespace:
     """Sets CLI parameters and parses them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
