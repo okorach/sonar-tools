@@ -76,8 +76,8 @@ __GOOD_OPTS = [
     [f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1}", f"-{opt.WITH_BRANCHES_SHORT}", "*", f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.KEYS}", "training:security", f"-{opt.WITH_BRANCHES_SHORT}", "main", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
     [f"--{opt.USE_FINDINGS}", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    ["--apps", f"--{opt.BRANCHES}", "*", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
-    ["--portfolios", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    ["--apps", f"-{opt.KEYS_SHORT}", "APP_TEST", f"--{opt.BRANCHES}", "*", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
+    ["--portfolios", f"-{opt.KEYS_SHORT}", "Banking", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
 ]
 
 __WRONG_FILTER_OPTS = [
@@ -181,7 +181,7 @@ def test_findings_filter_on_date_after() -> None:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
-            assert line[DATE_COL] >= "2023-05-01"
+            assert line[DATE_COL][:10] >= "2023-05-01"
     util.clean(util.CSV_FILE)
 
 
@@ -189,14 +189,14 @@ def test_findings_filter_on_date_before() -> None:
     """test_findings_filter_on_type"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", [f"--{opt.DATE_BEFORE}", "2024-05-01"]]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"-{opt.KEYS_SHORT}", f"{util.LIVE_PROJECT}", f"--{opt.DATE_BEFORE}", "2024-05-01"]):
             findings_export.main()
 
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
-            assert line[DATE_COL] <= "2024-05-01"
+            assert line[DATE_COL][:10] <= "2024-05-01"
     util.clean(util.CSV_FILE)
 
 
