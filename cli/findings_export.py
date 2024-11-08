@@ -31,8 +31,10 @@ import csv
 from typing import TextIO
 from queue import Queue
 from threading import Thread
-from requests import RequestException
 from argparse import Namespace
+
+from requests import RequestException
+
 from cli import options
 from sonar.util.types import ConfigSettings
 import sonar.logging as log
