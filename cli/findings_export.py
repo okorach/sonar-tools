@@ -31,6 +31,8 @@ import csv
 from typing import TextIO
 from queue import Queue
 from threading import Thread
+from argparse import Namespace
+
 from requests import RequestException
 
 from cli import options
@@ -72,7 +74,7 @@ _OPTIONS_INCOMPATIBLE_WITH_USE_FINDINGS = (
 )
 
 
-def parse_args(desc: str) -> object:
+def parse_args(desc: str) -> Namespace:
     """Sets CLI parameters and parses them"""
     parser = options.set_common_args(desc)
     parser = options.set_key_arg(parser)
