@@ -399,7 +399,7 @@ class Project(components.Component):
         bind = self.binding()
         return bind is not None and bind.get("has_binding", False) and bind.get("monorepo", False)
 
-    def binding_key(self) -> Union[str, None]:
+    def binding_key(self) -> Optional[str]:
         """Computes a unique project binding key
 
         :meta private:
@@ -502,7 +502,7 @@ class Project(components.Component):
         log.debug("%s visibility is 'private'", str(self))
         return []
 
-    def __audit_languages(self, audit_settings: types.ConfigSettings) -> list[Problem]:
+    def audit_languages(self, audit_settings: types.ConfigSettings) -> list[Problem]:
         """Audits project utility languages and returns problems if too many LoCs of these
 
         :param audit_settings: Settings (thresholds) to raise problems
@@ -784,7 +784,11 @@ class Project(components.Component):
         elif pr is not None:
             params["pullRequest"] = pr
 
-        data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
+        try:
+            data = json.loads(self.get("projects/export_findings", params=params).text)["export_findings"]
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, "getting project findings", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
+            return {}
         findings_conflicts = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
         nbr_findings = {"SECURITY_HOTSPOT": 0, "BUG": 0, "CODE_SMELL": 0, "VULNERABILITY": 0}
         log.debug(util.json_dump(data))
@@ -949,7 +953,7 @@ class Project(components.Component):
         data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
         return (data["qualityGate"]["name"], data["qualityGate"]["default"])
 
-    def webhooks(self) -> dict[webhooks.WebHook]:
+    def webhooks(self) -> dict[str, webhooks.WebHook]:
         """
         :return: Project webhooks indexed by their key
         :rtype: dict{key: WebHook}
@@ -1403,7 +1407,7 @@ def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:
     """
     new_params = {} if params is None else params.copy()
     new_params.update({"ps": 1, "p": 1})
-    util.nbr_total_elements(json.loads(endpoint.get(Project.SEARCH_API, params=params).text))
+    return util.nbr_total_elements(json.loads(endpoint.get(Project.SEARCH_API, params=params).text))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, Project]:
