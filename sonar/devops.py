@@ -230,7 +230,7 @@ def get_object(endpoint: platform.Platform, key: str) -> DevopsPlatform:
     return DevopsPlatform.read(endpoint, key)
 
 
-def exists(key: str, endpoint: platform.Platform) -> bool:
+def exists(endpoint: platform.Platform, key: str) -> bool:
     """
     :param platform.Platform endpoint: Reference to the SonarQube platform
     :param str devops_platform_key: Key of the platform (its name)

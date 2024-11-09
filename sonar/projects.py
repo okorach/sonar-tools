@@ -1248,7 +1248,7 @@ class Project(components.Component):
         if self.endpoint.edition() == "community":
             raise exceptions.UnsupportedOperation(f"{str(self)}: Can't set project binding on Community Edition")
         alm_key = data["key"]
-        if not devops.exists(alm_key, self.endpoint):
+        if not devops.exists(endpoint=self.endpoint, key=alm_key):
             log.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
             return False
         alm_type = devops.devops_type(key=alm_key, endpoint=self.endpoint)
