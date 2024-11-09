@@ -277,7 +277,7 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         o.update(**data)
 
 
-def devops_type(key: str, endpoint: platform.Platform) -> Optional[str]:
+def devops_type(endpoint: platform.Platform, key: str) -> Optional[str]:
     """
     :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES), or None if not found
     :rtype: str or None
