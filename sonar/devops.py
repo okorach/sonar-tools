@@ -218,7 +218,7 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     return DevopsPlatform.CACHE
 
 
-def get_object(key: str, endpoint: platform.Platform) -> DevopsPlatform:
+def get_object(endpoint: platform.Platform, key: str) -> DevopsPlatform:
     """
     :param platform.Platform endpoint: Reference to the SonarQube platform
     :param str devops_platform_key: Key of the platform (its name)
@@ -237,7 +237,7 @@ def exists(key: str, endpoint: platform.Platform) -> bool:
     :return: Whether the platform exists
     :rtype: bool
     """
-    return get_object(key, endpoint) is not None
+    return get_object(endpoint=endpoint, key=key) is not None
 
 
 def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -282,7 +282,7 @@ def devops_type(key: str, endpoint: platform.Platform) -> Optional[str]:
     :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES), or None if not found
     :rtype: str or None
     """
-    o = get_object(key, endpoint)
+    o = get_object(endpoint=endpoint, key=key)
     if o is None:
         return None
     return o.type
