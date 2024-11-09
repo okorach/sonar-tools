@@ -209,13 +209,11 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     """
     if endpoint.is_sonarcloud():
         raise exceptions.UnsupportedOperation("Can't get list of DevOps platforms on SonarCloud")
-    if endpoint.edition() == "community":
-        return DevopsPlatform.CACHE
     data = json.loads(endpoint.get(APIS["list"]).text)
     for alm_type in DEVOPS_PLATFORM_TYPES:
         for alm_data in data.get(alm_type, {}):
             DevopsPlatform.load(endpoint, alm_type, alm_data)
-    return DevopsPlatform.CACHE
+    return {o.key: o for o in DevopsPlatform.CACHE.values()}
 
 
 def get_object(endpoint: platform.Platform, key: str) -> DevopsPlatform:
