@@ -68,11 +68,11 @@ def test_get_object_gl() -> None:
 
 def test_count() -> None:
     """Verify count works"""
-    assert devops.count("azure") == 1
-    assert devops.count("gitlab") == 1
+    assert devops.count(util.SQ, "azure") == 1
+    assert devops.count(util.SQ, "gitlab") == 1
     nb_gh = 1 if util.SQ.edition() == "community" else 2
-    assert devops.count("github") == nb_gh
-    assert nb_gh + 2 <= devops.count() <= nb_gh + 3
+    assert devops.count(util.SQ, "github") == nb_gh
+    assert nb_gh + 2 <= devops.count(util.SQ) <= nb_gh + 3
 
 
 def test_exists() -> None:
