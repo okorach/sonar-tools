@@ -1251,7 +1251,7 @@ class Project(components.Component):
         if not devops.exists(alm_key, self.endpoint):
             log.warning("DevOps platform '%s' does not exists, can't set it for %s", alm_key, str(self))
             return False
-        alm_type = devops.devops_type(platform_key=alm_key, endpoint=self.endpoint)
+        alm_type = devops.devops_type(key=alm_key, endpoint=self.endpoint)
         mono = data.get("monorepo", False)
         repo = data["repository"]
         try:

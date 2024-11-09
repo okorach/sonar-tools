@@ -187,12 +187,13 @@ class DevopsPlatform(sq.SqObject):
         return ok
 
 
-def count(platf_type: Optional[str] = None) -> int:
+def count(endpoint: platform.Platform, platf_type: Optional[str] = None) -> int:
     """
     :param str platf_type: Filter for a specific type, defaults to None (see DEVOPS_PLATFORM_TYPES set)
     :return: Count of DevOps platforms
     :rtype: int
     """
+    get_list(endpoint=endpoint)
     if platf_type is None:
         return len(DevopsPlatform.CACHE)
     # Hack: check first 5 chars to that bitbucket cloud and bitbucket server match
@@ -217,7 +218,7 @@ def get_list(endpoint: platform.Platform) -> dict[str, DevopsPlatform]:
     return DevopsPlatform.CACHE
 
 
-def get_object(devops_platform_key: str, endpoint: platform.Platform) -> DevopsPlatform:
+def get_object(key: str, endpoint: platform.Platform) -> DevopsPlatform:
     """
     :param platform.Platform endpoint: Reference to the SonarQube platform
     :param str devops_platform_key: Key of the platform (its name)
@@ -226,17 +227,17 @@ def get_object(devops_platform_key: str, endpoint: platform.Platform) -> DevopsP
     """
     if len(DevopsPlatform.CACHE) == 0:
         get_list(endpoint)
-    return DevopsPlatform.read(endpoint, devops_platform_key)
+    return DevopsPlatform.read(endpoint, key)
 
 
-def exists(devops_platform_key: str, endpoint: platform.Platform) -> bool:
+def exists(key: str, endpoint: platform.Platform) -> bool:
     """
     :param platform.Platform endpoint: Reference to the SonarQube platform
     :param str devops_platform_key: Key of the platform (its name)
     :return: Whether the platform exists
     :rtype: bool
     """
-    return get_object(devops_platform_key, endpoint) is not None
+    return get_object(key, endpoint) is not None
 
 
 def export(endpoint: platform.Platform, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
@@ -276,12 +277,12 @@ def import_config(endpoint: platform.Platform, config_data: types.ObjectJsonRepr
         o.update(**data)
 
 
-def devops_type(platform_key: str, endpoint: platform.Platform) -> Optional[str]:
+def devops_type(key: str, endpoint: platform.Platform) -> Optional[str]:
     """
     :return: The type of a DevOps platform (see DEVOPS_PLATFORM_TYPES), or None if not found
     :rtype: str or None
     """
-    o = get_object(platform_key, endpoint)
+    o = get_object(key, endpoint)
     if o is None:
         return None
     return o.type
