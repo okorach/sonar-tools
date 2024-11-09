@@ -67,7 +67,7 @@ BRANCH_COL = fields.index("branch")
 PR_COL = fields.index("pullRequest")
 
 __GOOD_OPTS = [
-    [f"--{opt.FORMAT}", "json", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
+    [f"--{opt.FORMAT}", "json", f"--{opt.NBR_THREADS}", "16", f"-{opt.LOGFILE_SHORT}", "sonar-tools.log", f"--{opt.VERBOSE}", "DEBUG"],
     [f"--{opt.FORMAT}", "json", f"-{opt.KEYS_SHORT}", f"{util.PROJECT_1},{util.PROJECT_2}", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE],
     [f"--{opt.WITH_URL}", f"--{opt.NBR_THREADS}", "16", f"--{opt.REPORT_FILE}", util.CSV_FILE],
     [f"--{opt.CSV_SEPARATOR}", ";", "-d", f"--{opt.TAGS}", "cwe,convention", f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE],
@@ -90,8 +90,8 @@ __WRONG_FILTER_OPTS = [
 
 __WRONG_OPTS = [
     [f"-{opt.KEYS_SHORT}", "non-existing-project-key"],
-    ["--apps", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"],
-    ["--portfolios", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"],
+    ["--apps", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
+    ["--portfolios", f"-{opt.KEYS_SHORT}", util.LIVE_PROJECT],
 ]
 
 
@@ -149,25 +149,6 @@ def test_findings_export_non_existing_branch() -> None:
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "training:security", f"-{opt.BRANCHES_SHORT}", "non-existing-branch"]):
             findings_export.main()
-
-
-"""
-Language not available in CSV output
-
-def test_findings_filter_on_lang() -> None:
-    test_findings_filter_on_lang
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + ["--languages", "py,ts"]):
-            findings_export.main()
-
-    with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
-        fh.readline()
-        for line in fh.readline():
-            (_, lang, _) = line.split(maxsplit=2)
-            assert lang in ("py", "ts")
-    util.clean(util.CSV_FILE)
-"""
 
 
 def test_findings_filter_on_date_after() -> None:
@@ -236,14 +217,14 @@ def test_findings_filter_on_severity() -> None:
     """test_findings_filter_on_resolution"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.SEVERITIES}", "CRITICAL,MAJOR"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.SEVERITIES}", "BLOCKER,CRITICAL"]):
             findings_export.main()
     with open(file=util.CSV_FILE, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         next(csvreader)
         for line in csvreader:
             if util.SQ.version() < (10, 2, 0):
-                assert line[SEVERITY_COL] in ("CRITICAL", "MAJOR")
+                assert line[SEVERITY_COL] in ("BLOCKER", "CRITICAL")
             else:
                 assert "HIGH" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL] or "MEDIUM" in line[SECURITY_IMPACT_COL:OTHER_IMPACT_COL]
     util.clean(util.CSV_FILE)
@@ -324,11 +305,11 @@ def test_findings_filter_on_hotspots_multi_1() -> None:
         next(csvreader)
         for line in csvreader:
             assert line[STATUS_COL] in ("ACKNOWLEDGED", "SAFE")
-            assert line[PROJECT_COL] in ("okorach_sonar-tools", "pytorch")
+            assert line[PROJECT_COL] in (util.LIVE_PROJECT, "pytorch")
     util.clean(util.CSV_FILE)
 
 
-def test_findings_filter_hotspot_on_lang() -> None:
+def test_findings_filter_on_lang() -> None:
     """test_findings_filter_hotspot_on_lang"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit):
@@ -388,12 +369,12 @@ def test_issues_count_3() -> None:
 
 def test_search_issues_by_project() -> None:
     """test_search_issues_by_project"""
-    nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key="okorach_sonar-tools", search_findings=True))
+    nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=util.LIVE_PROJECT, search_findings=True))
     if util.SQ.version() < (10, 0, 0):
         assert 200 <= nb_issues <= 1000
     else:
         assert 500 <= nb_issues <= 1500
-    nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key="okorach_sonar-tools", params={"resolved": "false"}))
+    nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=util.LIVE_PROJECT, params={"resolved": "false"}))
     assert nb_issues < 1000
     nb_issues = len(issues.search_by_project(endpoint=util.SQ, project_key=None))
     assert nb_issues > 1000
@@ -409,7 +390,7 @@ def test_output_format_sarif() -> None:
     """test_output_format_sarif"""
     util.clean(SARIF_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", SARIF_FILE, f"--{opt.KEYS}", "okorach_sonar-tools"]):
+        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + [f"--{opt.REPORT_FILE}", SARIF_FILE, f"--{opt.KEYS}", util.LIVE_PROJECT]):
             findings_export.main()
     assert int(str(e.value)) == errcodes.OK
     with open(SARIF_FILE, encoding="utf-8") as fh:
@@ -441,7 +422,7 @@ def test_output_format_json() -> None:
     util.clean(util.JSON_FILE)
     log.set_debug_level("INFO")
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
+        with patch.object(sys, "argv", JSON_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT]):
             findings_export.main()
     assert int(str(e.value)) == errcodes.OK
     with open(util.JSON_FILE, encoding="utf-8") as fh:
@@ -467,7 +448,7 @@ def test_output_format_csv() -> None:
     """test_output_format_csv"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT]):
             findings_export.main()
     assert int(str(e.value)) == errcodes.OK
     with open(util.CSV_FILE, encoding="utf-8") as fd:
@@ -484,7 +465,7 @@ def test_output_format_branch() -> None:
     for br in "develop", "master,develop":
         util.clean(util.CSV_FILE)
         with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.BRANCHES}", br]):
+            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT, f"--{opt.BRANCHES}", br]):
                 findings_export.main()
         assert int(str(e.value)) == errcodes.OK
         br_list = utilities.csv_to_list(br)
@@ -494,7 +475,7 @@ def test_output_format_branch() -> None:
             for line in reader:
                 assert line[BRANCH_COL] in br_list
                 assert line[PR_COL] == ""
-                assert line[PROJECT_COL] == "okorach_sonar-tools"
+                assert line[PROJECT_COL] == util.LIVE_PROJECT
         util.clean(util.CSV_FILE)
 
 
@@ -502,7 +483,7 @@ def test_all_prs() -> None:
     """Tests that findings extport for all PRs of a project works"""
     util.clean(util.CSV_FILE)
     with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.PULL_REQUESTS}", "*"]):
+        with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT, f"--{opt.PULL_REQUESTS}", "*"]):
             findings_export.main()
     assert int(str(e.value)) == errcodes.OK
     with open(util.CSV_FILE, encoding="utf-8") as fd:
@@ -513,7 +494,7 @@ def test_all_prs() -> None:
                 assert len(line) == nbcol
                 assert line[BRANCH_COL] == ""
                 assert line[PR_COL] != ""
-                assert line[PROJECT_COL] == "okorach_sonar-tools"
+                assert line[PROJECT_COL] == util.LIVE_PROJECT
         except StopIteration:
             pass
     util.clean(util.CSV_FILE)
@@ -521,11 +502,11 @@ def test_all_prs() -> None:
 
 def test_one_pr() -> None:
     """Tests that findings extport for a single name PR of a project works"""
-    proj = projects.Project.get_object(endpoint=util.SQ, key="okorach_sonar-tools")
+    proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)
     for pr in proj.pull_requests().keys():
         util.clean(util.CSV_FILE)
         with pytest.raises(SystemExit) as e:
-            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", "okorach_sonar-tools", f"--{opt.PULL_REQUESTS}", pr]):
+            with patch.object(sys, "argv", CSV_OPTS + [f"--{opt.KEYS}", util.LIVE_PROJECT, f"--{opt.PULL_REQUESTS}", pr]):
                 findings_export.main()
         assert int(str(e.value)) == errcodes.OK
         with open(util.CSV_FILE, encoding="utf-8") as fd:
@@ -536,7 +517,7 @@ def test_one_pr() -> None:
                     assert len(line) == nbcol
                     assert line[BRANCH_COL] == ""
                     assert line[PR_COL] == pr
-                    assert line[PROJECT_COL] == "okorach_sonar-tools"
+                    assert line[PROJECT_COL] == util.LIVE_PROJECT
             except StopIteration:
                 pass
         util.clean(util.CSV_FILE)
