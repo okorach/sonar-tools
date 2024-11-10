@@ -49,7 +49,7 @@ def __test_project_export(arguments: list[str], file: str) -> None:
 
 def test_export_all_proj() -> None:
     """test_export_all_proj"""
-    __test_project_export(OPTS, util.JSON_FILE)
+    __test_project_export(OPTS + [f"--{opt.NBR_THREADS}", "16"], util.JSON_FILE)
 
 
 def test_export_single_proj() -> None:
@@ -71,8 +71,3 @@ def test_export_non_existing_project() -> None:
     assert int(str(e.value)) == errcodes.NO_SUCH_KEY
     assert not os.path.isfile(util.JSON_FILE)
     util.clean(util.JSON_FILE)
-
-
-def test_two_threads() -> None:
-    """test_two_threads"""
-    __test_project_export(OPTS + [f"--{opt.NBR_THREADS}", "2"], util.JSON_FILE)

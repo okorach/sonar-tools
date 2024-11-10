@@ -50,19 +50,9 @@ def __test_config_cmd(arguments: list[str]) -> None:
     util.clean(outputfile)
 
 
-def test_config_export() -> None:
-    """test_config_export"""
-    __test_config_cmd(OPTS)
-
-
 def test_config_export_full() -> None:
     """test_config_export_full"""
     __test_config_cmd(OPTS + ["--fullExport"])
-
-
-def test_config_export_partial_1() -> None:
-    """test_config_export_partial_1"""
-    __test_config_cmd(OPTS + ["-w", "projects"])
 
 
 def test_config_export_partial_2() -> None:

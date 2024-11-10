@@ -64,3 +64,6 @@ CONNECTION_ERROR = 14
 
 # Miscellaneous OS errors
 OS_ERROR = 15
+
+# Request to manipulate an object that was not found
+OBJECT_NOT_FOUND = 16
