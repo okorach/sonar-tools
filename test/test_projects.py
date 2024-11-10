@@ -104,9 +104,6 @@ def test_get_findings() -> None:
 
 def test_count_third_party_issues() -> None:
     """test_count_third_party_issues"""
-
-    # logging.set_logger("test-project.log")
-    # logging.set_debug_level("DEBUG")
     proj = projects.Project.get_object(endpoint=util.SQ, key="checkstyle-issues")
     assert len(proj.count_third_party_issues(filters={"branch": "develop"})) > 0
     assert len(proj.count_third_party_issues(filters={"branch": "non-existing-branch"})) == 0
