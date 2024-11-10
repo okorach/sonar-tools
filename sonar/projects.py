@@ -834,9 +834,10 @@ class Project(components.Component):
         return findings_list
 
     def count_third_party_issues(self, filters: Optional[dict[str, str]] = None) -> dict[str, int]:
-        for k in "branch", "pullRequest":
-            if k in filters:
-                filters[k] = [filters[k]]
+        if filters:
+            for k in "branch", "pullRequest":
+                if k in filters:
+                    filters[k] = [filters[k]]
         branches_or_prs = self.get_branches_and_prs(filters)
         if branches_or_prs is None:
             return super().count_third_party_issues(filters)
