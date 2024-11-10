@@ -469,6 +469,9 @@ def http_error_and_code(exception: requests.HTTPError) -> tuple[int, str]:
     elif code == HTTPStatus.FORBIDDEN:
         tool_msg += f"HTTP error {code} - Insufficient permissions to perform operation"
         err_code = errcodes.SONAR_API_AUTHORIZATION
+    elif code == HTTPStatus.NOT_FOUND:
+        tool_msg += f"HTTP error {code} - object not found"
+        err_code = errcodes.OBJECT_NOT_FOUND
     else:
         tool_msg += f"HTTP error {code} - "
         err_code = errcodes.SONAR_API
