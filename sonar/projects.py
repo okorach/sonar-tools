@@ -947,14 +947,18 @@ class Project(components.Component):
         qp_list = qualityprofiles.get_list(self.endpoint)
         return {qp.language: qp for qp in qp_list.values() if qp.used_by_project(self)}
 
-    def quality_gate(self) -> tuple[str, bool]:
+    def quality_gate(self) -> Optional[tuple[str, bool]]:
         """Returns the project quality gate
 
         :return: name of quality gate and whether it's the default
         :rtype: tuple(name, is_default)
         """
-        data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
-        return (data["qualityGate"]["name"], data["qualityGate"]["default"])
+        try:
+            data = json.loads(self.get(api="qualitygates/get_by_project", params={"project": self.key}).text)
+            return data["qualityGate"]["name"], data["qualityGate"]["default"]
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"getting quality gate of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            return "Error - Insufficient Permissions", False
 
     def webhooks(self) -> dict[str, webhooks.WebHook]:
         """
@@ -962,14 +966,22 @@ class Project(components.Component):
         :rtype: dict{key: WebHook}
         """
         log.debug("Getting %s webhooks", str(self))
-        return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
+        try:
+            return webhooks.get_list(endpoint=self.endpoint, project_key=self.key)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            return None
 
-    def links(self) -> list[dict[str, str]]:
+    def links(self) -> Optional[list[dict[str, str]]]:
         """
         :return: list of project links
         :rtype: list[{type, name, url}]
         """
-        data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
+        try:
+            data = json.loads(self.get(api="project_links/search", params={"projectKey": self.key}).text)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"getting links of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+            return None
         link_list = None
         for link in data["links"]:
             if link_list is None:
@@ -1007,15 +1019,20 @@ class Project(components.Component):
     def migration_export(self, export_settings: types.ConfigSettings) -> types.ObjectJsonRepr:
         """Produces the data that is exported for SQ to SC migration"""
         json_data = super().migration_export(export_settings)
+        log.debug("migration data %s 2", str(self))
         json_data["detectedCi"] = self.ci()
+        log.debug("migration data %s 2", str(self))
         json_data["revision"] = self.revision()
+        log.debug("migration data %s 3", str(self))
         last_task = self.last_task()
+        log.debug("migration data %s 4", str(self))
         json_data["backgroundTasks"] = {}
         if last_task:
             ctxt = last_task.scanner_context()
             if ctxt:
                 ctxt = {k: v for k, v in ctxt.items() if k not in _UNNEEDED_CONTEXT_DATA}
             t_hist = []
+            log.debug("migration data %s 5", str(self))
             for t in self.task_history():
                 t_hist.append({k: v for k, v in t.sq_json.items() if k not in _UNNEEDED_TASK_DATA})
             json_data["backgroundTasks"] = {
@@ -1023,6 +1040,7 @@ class Project(components.Component):
                 # "lastTaskWarnings": last_task.warnings(),
                 "taskHistory": t_hist,
             }
+        log.debug("migration data %s 6", str(self))
         return json_data
 
     def export(self, export_settings: types.ConfigSettings, settings_list: dict[str, str] = None) -> types.ObjectJsonRepr:
@@ -1049,7 +1067,11 @@ class Project(components.Component):
             if qg_is_default:
                 json_data.pop("qualityGate")
 
-            hooks = webhooks.export(self.endpoint, self.key)
+            try:
+                hooks = webhooks.export(self.endpoint, self.key)
+            except (ConnectionError, RequestException) as e:
+                util.handle_error(e, f"getting webhooks of {str(self)}", catch_http_errors=(HTTPStatus.FORBIDDEN,))
+                hooks = None
             if hooks is not None:
                 json_data["webhooks"] = hooks
             json_data = util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
