@@ -41,6 +41,14 @@ YAML_FILE = f"temp.{os.getpid()}.yaml"
 PROJECT_1 = "okorach_sonar-tools"
 PROJECT_2 = "project1"
 LIVE_PROJECT = PROJECT_1
+NON_EXISTING_KEY = "non-existing"
+
+TEST_KEY = "TEST"
+EXISTING_QG = TEST_KEY
+EXISTING_PROJECT = TEST_KEY
+EXISTING_APP = TEST_KEY
+EXISTING_PORTFOLIO = TEST_KEY
+TEMP_KEY = "TEMP"
 
 STD_OPTS = [f"-{opt.URL_SHORT}", os.getenv("SONAR_HOST_URL"), f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
