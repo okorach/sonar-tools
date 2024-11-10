@@ -846,7 +846,7 @@ class Project(components.Component):
             if not comp:
                 continue
             log.debug("Getting 3rd party issues for %s", str(comp))
-            for k, total in comp.count_third_party_issues(filters):
+            for k, total in comp.count_third_party_issues(filters).items():
                 if k not in issue_counts:
                     issue_counts[k] = 0
                 issue_counts[k] += total
