@@ -174,16 +174,16 @@ def test_set_tags(setup_data: callable) -> None:
     proj = setup_data
 
     assert proj.set_tags(["foo", "bar"])
-    assert proj._tags == ["bar", "foo"]
+    assert proj.tags() == ["bar", "foo"]
     proj.set_tags(["foo"])
-    assert proj._tags == ["foo"]
+    assert proj.tags() == ["foo"]
     proj.set_tags([])
-    assert len(proj._tags) == 0
+    assert len(proj.tags()) == 0
     assert not proj.set_tags(None)
 
     proj.key = util.NON_EXISTING_KEY
     assert not proj.set_tags(["foo", "bar"])
-    assert len(proj._tags) == 0
+    assert len(proj.tags()) == 0
 
 
 def test_set_quality_gate(setup_data: callable) -> None:
