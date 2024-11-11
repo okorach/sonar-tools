@@ -59,7 +59,6 @@ class Component(sq.SqObject):
         self.ncloc = None
         self._description = None
         self._last_analysis = None
-        self._tags = None
         self._visibility = None
         if data is not None:
             self.reload(data)
@@ -81,19 +80,8 @@ class Component(sq.SqObject):
         """String representation of object"""
         return self.key
 
-    def tags(self) -> list[str]:
-        """Returns object tags"""
-        if self._tags is None:
-            if self.sq_json is not None and "tags" in self.sq_json:
-                self._tags = self.sq_json["tags"]
-            else:
-                data = json.loads(self.get(_DETAILS_API, params={"component": self.key}).text)
-                if self.sq_json is None:
-                    self.sq_json = {}
-                self.sq_json.update(data["component"])
-                self._tags = self.sq_json["tags"]
-                settings.Setting.load(key=settings.COMPONENT_VISIBILITY, endpoint=self.endpoint, component=self, data=data["component"])
-        return self._tags if len(self._tags) > 0 else None
+    def get_tags_params(self):
+        return {"component": self.key}
 
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
         """Returns component subcomponents"""

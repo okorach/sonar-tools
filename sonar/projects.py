@@ -132,6 +132,7 @@ class Project(components.Component):
     # SEARCH_API = "components/search_projects" - This one does not require admin permission but returns APPs too
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
+    API = {"SET_TAGS": "project_tags/set", "GET_TAGS": "components/show"}
 
     def __init__(self, endpoint: pf.Platform, key: str) -> None:
         """
@@ -1148,23 +1149,6 @@ class Project(components.Component):
             return False
         return ok
 
-    def set_tags(self, tags: list[str]) -> bool:
-        """Sets project tags
-
-        :param list tags: list of tags
-        :return: Whether the operation was successful
-        """
-        if tags is None:
-            return False
-        my_tags = util.list_to_csv(tags) if isinstance(tags, list) else util.csv_normalize(tags)
-        try:
-            r = self.post("project_tags/set", params={"project": self.key, "tags": my_tags})
-            self._tags = sorted(util.csv_to_list(my_tags))
-        except (ConnectionError, RequestException) as e:
-            util.handle_error(e, f"setting tags of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
-            return False
-        return r.ok
-
     def set_quality_gate(self, quality_gate: str) -> bool:
         """Sets project quality gate
 
@@ -1409,7 +1393,7 @@ class Project(components.Component):
                 decoded_perms[ptype] = {u: perms.decode(v) for u, v in data["permissions"][ptype].items()}
             self.set_permissions(decoded_perms)
         self.set_links(data)
-        self.set_tags(data.get("tags", None))
+        self.set_tags(util.csv_to_list(data.get("tags", None)))
         self.set_quality_gate(data.get("qualityGate", None))
         for lang, qp_name in data.get("qualityProfiles", {}).items():
             self.set_quality_profile(language=lang, quality_profile=qp_name)

@@ -43,16 +43,6 @@ import sonar.utilities as util
 from sonar.audit import rules, problem
 
 _CLASS_LOCK = Lock()
-
-APIS = {
-    "search": "api/components/search_projects",
-    "get": "api/applications/show",
-    "create": "api/applications/create",
-    "delete": "api/applications/delete",
-    "create_branch": "api/applications/create_branch",
-    "update_branch": "api/applications/update_branch",
-}
-
 _IMPORTABLE_PROPERTIES = ("key", "name", "description", "visibility", "branches", "permissions", "tags")
 
 
@@ -63,9 +53,19 @@ class Application(aggr.Aggregation):
 
     CACHE = cache.Cache()
 
-    SEARCH_API = "api/components/search_projects"
+    SEARCH_API = "components/search_projects"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
+    API = {
+        "CREATE": "applications/create",
+        "GET": "applications/show",
+        "DELETE": "applications/delete",
+        "SEARCH": "components/search_projects",
+        "SET_TAGS": "applications/set_tags",
+        "GET_TAGS": "components/show",
+        "CREATE_BRANCH": "applications/create_branch",
+        "UDPATE_BRANCH": "applications/update_branch",
+    }
 
     def __init__(self, endpoint: pf.Platform, key: str, name: str) -> None:
         """Don't use this directly, go through the class methods to create Objects"""
@@ -93,7 +93,7 @@ class Application(aggr.Aggregation):
         if o:
             return o
         try:
-            data = json.loads(endpoint.get(APIS["get"], params={"application": key}).text)["application"]
+            data = json.loads(endpoint.get(Application.API["GET"], params={"application": key}).text)["application"]
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"searching application {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
@@ -132,11 +132,12 @@ class Application(aggr.Aggregation):
         """
         check_supported(endpoint)
         try:
-            endpoint.post(APIS["create"], params={"key": key, "name": name})
+            endpoint.post(Application.API["CREATE"], params={"key": key, "name": name})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"creating application {key}", catch_http_statuses=(HTTPStatus.BAD_REQUEST,))
             raise exceptions.ObjectAlreadyExists(key, e.response.text)
-        return Application(endpoint, key, name)
+        log.info("Creating object")
+        return Application(endpoint=endpoint, key=key, name=name)
 
     def refresh(self) -> None:
         """Refreshes the by re-reading SonarQube
@@ -147,7 +148,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            self.reload(json.loads(self.get(APIS["get"], params=self.search_params()).text)["application"])
+            self.reload(json.loads(self.get(Application.API["GET"], params=self.search_params()).text)["application"])
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Application.CACHE.pop(self)
@@ -225,9 +226,9 @@ class Application(aggr.Aggregation):
 
         if len(project_list) > 0:
             params = {"application": self.key, "branch": branch_name, "project": project_list, "projectBranch": branch_list}
-            api = APIS["create_branch"]
+            api = Application.API["CREATE_BRANCH"]
             if self.branch_exists(branch_name):
-                api = APIS["update_branch"]
+                api = Application.API["UPDATE_BRANCH"]
                 params["name"] = params["branch"]
             ok = ok and self.post(api, params=params).ok
         return self
@@ -257,7 +258,10 @@ class Application(aggr.Aggregation):
             for branch in self.branches().values():
                 if not branch.is_main:
                     ok = ok and branch.delete()
-        return ok and sq.delete_object(self, "applications/delete", {"application": self.key}, Application.CACHE)
+        ok = ok and sq.delete_object(self, "applications/delete", {"application": self.key}, Application.CACHE)
+        if ok:
+            Application.CACHE.pop(self)
+        return ok
 
     def get_filtered_branches(self, filters: dict[str, str]) -> Union[None, dict[str, object]]:
         """Get lists of branches according to the filter"""
@@ -365,12 +369,6 @@ class Application(aggr.Aggregation):
         """
         return self.permissions().set(data)
 
-    def set_tags(self, tags: list[str]) -> None:
-        if tags is None or len(tags) == 0:
-            return
-        self.post("applications/set_tags", params={"application": self.key, "tags": util.list_to_csv(tags)})
-        self._tags = tags
-
     def add_projects(self, project_list: list[str]) -> bool:
         """Add projects to an application"""
         current_projects = self.projects().keys()
@@ -442,7 +440,7 @@ def count(endpoint: pf.Platform) -> int:
     :rtype: int
     """
     check_supported(endpoint)
-    return util.nbr_total_elements(json.loads(endpoint.get(APIS["search"], params={"ps": 1, "filter": "qualifier = APP"}).text))
+    return util.nbr_total_elements(json.loads(endpoint.get(Application.API["GET"], params={"ps": 1, "filter": "qualifier = APP"}).text))
 
 
 def check_supported(endpoint: pf.Platform) -> None:
