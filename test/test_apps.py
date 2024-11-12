@@ -82,7 +82,7 @@ def test_get_object_non_existing() -> None:
         assert str(e.value).endswith(f"Application key '{NON_EXISTING_KEY}' not found")
 
 
-def test_exists() -> None:
+def test_exists(get_test_app) -> None:
     """Test exist"""
     if util.SQ.edition() == "community":
         with pytest.raises(exceptions.UnsupportedOperation):
@@ -90,7 +90,8 @@ def test_exists() -> None:
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.exists(endpoint=util.SQ, key=NON_EXISTING_KEY)
     else:
-        assert applications.exists(endpoint=util.SQ, key=EXISTING_KEY)
+        app = get_test_app
+        assert applications.exists(endpoint=util.SQ, key=app.key)
         assert not applications.exists(endpoint=util.SQ, key=NON_EXISTING_KEY)
 
 
@@ -109,49 +110,42 @@ def test_create_delete() -> None:
     """Test portfolio create delete"""
     if util.SQ.edition() == "community":
         with pytest.raises(exceptions.UnsupportedOperation):
-            _ = applications.Application.create(endpoint=util.SQ, name="My App", key=TEST_KEY)
+            _ = applications.Application.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
     else:
-        app = applications.Application.create(endpoint=util.SQ, name="My App", key=TEST_KEY)
+        app = applications.Application.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
         assert app is not None
-        assert app.key == TEST_KEY
-        assert app.name == "My App"
+        assert app.key == util.TEMP_KEY
+        assert app.name == util.TEMP_NAME
         app.delete()
-        assert not applications.exists(endpoint=util.SQ, key=TEST_KEY)
+        assert not applications.exists(endpoint=util.SQ, key=util.TEMP_KEY)
 
         # Test delete with 1 project in the app
-        app = applications.Application.create(endpoint=util.SQ, name="My App", key=TEST_KEY)
-        assert app is not None
-        assert app.key == TEST_KEY
-        assert app.name == "My App"
+        app = applications.Application.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
         app.add_projects(["okorach_sonar-tools"])
         app.delete()
-        assert not applications.exists(endpoint=util.SQ, key=TEST_KEY)
+        assert not applications.exists(endpoint=util.SQ, key=util.TEMP_KEY)
 
 
-def test_permissions_1() -> None:
+def test_permissions_1(get_test_app) -> None:
     """Test permissions"""
     if util.SQ.edition() == "community":
         with pytest.raises(exceptions.UnsupportedOperation):
             _ = applications.Application.create(endpoint=util.SQ, name="An app", key=TEST_KEY)
     else:
-        app = applications.Application.create(endpoint=util.SQ, name="An app", key=TEST_KEY)
+        app = get_test_app
         app.set_permissions({"groups": {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
         # assert app.permissions().to_json()["groups"] == {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}
-        app.delete()
-        assert not applications.exists(endpoint=util.SQ, key=TEST_KEY)
 
 
-def test_permissions_2() -> None:
+def test_permissions_2(get_test_app) -> None:
     """Test permissions"""
     if util.SQ.edition() == "community":
         with pytest.raises(exceptions.UnsupportedOperation):
-            _ = applications.Application.create(endpoint=util.SQ, name="An app", key=TEST_KEY)
+            _ = applications.Application.create(endpoint=util.SQ, name=util.TEMP_NAME, key=util.TEMP_KEY)
     else:
-        app = applications.Application.create(endpoint=util.SQ, name="An app", key=TEST_KEY)
+        app = get_test_app
         app.set_permissions({"groups": {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}})
         # assert app.permissions().to_json()["groups"] == {"sonar-users": ["user"], "sonar-administrators": ["user", "admin"]}
-        app.delete()
-        assert not applications.exists(endpoint=util.SQ, key=TEST_KEY)
 
 
 def test_get_projects() -> None:
@@ -188,18 +182,6 @@ def test_no_audit() -> None:
         assert len(app.audit({"audit.applications": False})) == 0
         assert len(app._audit_empty({"audit.applications.empty": False})) == 0
         assert len(app._audit_singleton({"audit.applications.singleton": False})) == 0
-
-
-def test_set_tags() -> None:
-    """Test setting tags"""
-    if util.SQ.edition() == "community":
-        with pytest.raises(exceptions.UnsupportedOperation):
-            _ = applications.Application.create(endpoint=util.SQ, name="An app", key=TEST_KEY)
-    else:
-        app = applications.Application.create(endpoint=util.SQ, name="An app", key=TEST_KEY)
-        app.set_tags(["foo", "bar"])
-        assert app._tags == ["foo", "bar"]
-        app.delete()
 
 
 def test_search_by_name() -> None:

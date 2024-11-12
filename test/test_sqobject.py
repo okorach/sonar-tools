@@ -27,40 +27,13 @@ import utilities as util
 from sonar import projects, branches, exceptions
 
 
-TAGS = ["foo", "bar"]
-
-
-def __set_unset_tags(o: object) -> None:
-    """Sets and unsets TAGS on a object, and verify that TAGS are modifed accordingly"""
-    assert o.get_tags() is None
-    o.set_tags(TAGS)
-    assert o.get_tags() == sorted(TAGS)
-    o.set_tags([])
-    assert o.get_tags() is None
-
-
-def test_tag_projects(get_test_project: callable) -> None:
-    """test_tag_projects"""
-    __set_unset_tags(get_test_project)
-
-
-def test_tag_apps(get_test_app: callable) -> None:
-    """test_tag_apps"""
-    __set_unset_tags(get_test_app)
-
-
-def test_tag_issues(get_test_issue: callable) -> None:
-    """test_tag_apps"""
-    __set_unset_tags(get_test_issue)
-
-
 def test_tag_portfolios(get_test_portfolio: callable) -> None:
     """test_tag_portfolios"""
     o = get_test_portfolio
     with pytest.raises(exceptions.UnsupportedOperation):
         o.get_tags()
     with pytest.raises(exceptions.UnsupportedOperation):
-        o.set_tags(TAGS)
+        o.set_tags(util.TAGS)
 
 
 def test_tag_project_branches() -> None:
@@ -70,4 +43,4 @@ def test_tag_project_branches() -> None:
     with pytest.raises(exceptions.UnsupportedOperation):
         o.get_tags()
     with pytest.raises(exceptions.UnsupportedOperation):
-        o.set_tags(TAGS)
+        o.set_tags(util.TAGS)

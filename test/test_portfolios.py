@@ -41,7 +41,7 @@ def test_get_object() -> None:
         assert portf.key == EXISTING_PORTFOLIO
         portf2 = portfolios.Portfolio.get_object(endpoint=util.SQ, key=EXISTING_PORTFOLIO)
         assert portf2.key == EXISTING_PORTFOLIO
-        assert portf == portf2
+        assert portf is portf2
 
 
 def test_get_object_non_existing() -> None:

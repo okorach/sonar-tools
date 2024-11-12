@@ -83,6 +83,6 @@ def test_changelog() -> None:
     assert datetime(2024, 10, 20) <= util.string_to_date(changelog.date()).replace(tzinfo=None) < datetime(2024, 10, 22)
     assert changelog.author() == "admin"
     assert not changelog.is_tag()
-    assert changelog.tags() is None
+    assert changelog.get_tags() is None
     (t, _) = changelog.changelog_type()
     assert t == "FALSE-POSITIVE"

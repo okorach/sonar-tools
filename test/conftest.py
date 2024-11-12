@@ -50,7 +50,7 @@ def get_test_app() -> Generator[applications.Application]:
     try:
         o = applications.Application.get_object(endpoint=util.SQ, key=util.TEMP_KEY)
     except exceptions.ObjectNotFound:
-        o = applications.Application.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
+        o = applications.Application.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_NAME)
     yield o
     # Teardown: Clean up resources (if any) after the test
     o.delete()
