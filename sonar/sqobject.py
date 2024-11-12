@@ -33,6 +33,7 @@ from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types, cache
+from sonar.util import constants as c
 from sonar import utilities, exceptions
 
 
@@ -154,7 +155,7 @@ class SqObject(object):
             return False
         my_tags = utilities.list_to_csv(tags) if isinstance(tags, list) else utilities.csv_normalize(tags)
         try:
-            r = self.post(self.__class__.API["SET_TAGS"], params={**self.search_params(), "tags": my_tags})
+            r = self.post(self.__class__.API[c.SET_TAGS], params={**self.search_params(), "tags": my_tags})
             if r.ok:
                 self._tags = sorted(utilities.csv_to_list(my_tags))
         except (ConnectionError, RequestException) as e:
@@ -167,7 +168,7 @@ class SqObject(object):
     def get_tags(self, **kwargs) -> list[str]:
         """Returns object tags"""
         try:
-            api = self.__class__.API["GET_TAGS"]
+            api = self.__class__.API[c.GET_TAGS]
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags")
         if self._tags is None:
@@ -176,7 +177,7 @@ class SqObject(object):
             data = json.loads(self.get(api, params=self.get_tags_params()).text)
             self.sq_json.update(data["component"])
             self._tags = self.sq_json["tags"]
-        return self._tags if len(self._tags) > 0 else None
+        return self._tags
 
 
 def __search_thread(queue: Queue) -> None:
