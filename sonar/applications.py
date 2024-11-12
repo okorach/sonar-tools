@@ -33,6 +33,7 @@ from requests import RequestException
 
 import sonar.logging as log
 import sonar.platform as pf
+import sonar.util.constants as c
 from sonar.util import types, cache
 
 from sonar import exceptions, settings, projects, branches
@@ -57,10 +58,10 @@ class Application(aggr.Aggregation):
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "components"
     API = {
-        "CREATE": "applications/create",
-        "GET": "applications/show",
-        "DELETE": "applications/delete",
-        "SEARCH": "components/search_projects",
+        c.CREATE: "applications/create",
+        c.GET: "applications/show",
+        c.DELETE: "applications/delete",
+        c.LIST: "components/search_projects",
         "SET_TAGS": "applications/set_tags",
         "GET_TAGS": "components/show",
         "CREATE_BRANCH": "applications/create_branch",
@@ -93,7 +94,7 @@ class Application(aggr.Aggregation):
         if o:
             return o
         try:
-            data = json.loads(endpoint.get(Application.API["GET"], params={"application": key}).text)["application"]
+            data = json.loads(endpoint.get(Application.API[c.GET], params={"application": key}).text)["application"]
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"searching application {key}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             raise exceptions.ObjectNotFound(key, f"Application key '{key}' not found")
@@ -355,7 +356,7 @@ class Application(aggr.Aggregation):
                 # 'projects': self.projects(),
                 "branches": {br.name: br.export() for br in self.branches().values()},
                 "permissions": self.permissions().export(export_settings=export_settings),
-                "tags": util.list_to_csv(self.tags(), separator=", ", check_for_separator=True),
+                "tags": util.list_to_csv(self.get_tags(), separator=", ", check_for_separator=True),
             }
         )
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
@@ -440,7 +441,7 @@ def count(endpoint: pf.Platform) -> int:
     :rtype: int
     """
     check_supported(endpoint)
-    return util.nbr_total_elements(json.loads(endpoint.get(Application.API["GET"], params={"ps": 1, "filter": "qualifier = APP"}).text))
+    return util.nbr_total_elements(json.loads(endpoint.get(Application.API[c.LIST], params={"ps": 1, "filter": "qualifier = APP"}).text))
 
 
 def check_supported(endpoint: pf.Platform) -> None:
