@@ -30,6 +30,7 @@ import json
 from datetime import datetime
 
 from sonar.util import types
+import sonar.util.constants as c
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
@@ -265,11 +266,15 @@ class Component(sq.SqObject):
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
 
-    def search_params(self) -> types.ApiParams:
-        """Return params used to search/create/delete for that object"""
+    def api_params(self, op: str = c.LIST) -> types.ApiParams:
         from sonar.issues import component_filter
 
-        return {component_filter(self.endpoint): self.key}
+        ops = {c.LIST: {component_filter(self.endpoint): self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
+        return ops[op] if op in ops else ops[c.LIST]
+
+    def search_params(self) -> types.ApiParams:
+        """Return params used to search/create/delete for that object"""
+        return self.api_params(c.LIST)
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
