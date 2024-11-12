@@ -192,7 +192,7 @@ class Changelog(object):
         d = self.sq_json["diffs"][0]
         return d.get("key", "") == "tag"
 
-    def tags(self) -> Optional[str]:
+    def get_tags(self) -> Optional[str]:
         """Returns the changelog tags for issue tagging items"""
         if not self.is_tag():
             return None
