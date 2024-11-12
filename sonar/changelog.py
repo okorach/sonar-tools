@@ -192,7 +192,7 @@ class Changelog(object):
         d = self.sq_json["diffs"][0]
         return d.get("key", "") == "tag"
 
-    def tags(self) -> Optional[str]:
+    def get_tags(self) -> Optional[str]:
         """Returns the changelog tags for issue tagging items"""
         if not self.is_tag():
             return None
@@ -220,7 +220,7 @@ class Changelog(object):
         elif self.is_resolve_as_wf():
             ctype = ("WONT-FIX", None)
         elif self.is_tag():
-            ctype = ("TAG", self.tags())
+            ctype = ("TAG", self.get_tags())
         elif self.is_closed():
             ctype = ("CLOSED", None)
         elif self.is_mark_as_safe():

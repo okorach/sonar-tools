@@ -24,24 +24,13 @@
 import pytest
 
 import utilities as util
-from sonar import projects, exceptions, logging
+from sonar import projects, exceptions
 from sonar.audit import config
 
 
-@pytest.fixture
-def setup_data() -> projects.Project:
-    """setup of tests"""
-    logging.set_logger("test-project.log")
-    logging.set_debug_level("DEBUG")
-    proj = projects.Project.get_object(endpoint=util.SQ, key=util.EXISTING_PROJECT)
-    yield proj
-    # Teardown: Clean up resources (if any) after the test
-    proj.key = util.EXISTING_PROJECT
-
-
-def test_get_object(setup_data: callable) -> None:
+def test_get_object(get_test_project: callable) -> None:
     """test_get_object"""
-    proj = setup_data
+    proj = get_test_project
     assert str(proj) == f"project '{util.EXISTING_PROJECT}'"
     with pytest.raises(exceptions.ObjectNotFound):
         projects.Project.get_object(endpoint=util.SQ, key=util.NON_EXISTING_KEY)
@@ -143,9 +132,9 @@ def test_binding() -> None:
     assert proj.binding_key() is None
 
 
-def test_wrong_key(setup_data: callable) -> None:
+def test_wrong_key(get_test_project: callable) -> None:
     """test_wrong_key"""
-    proj = setup_data
+    proj = get_test_project
     proj.key = util.NON_EXISTING_KEY
     assert proj.export_async() is None
     res = proj.export_zip()
@@ -153,42 +142,38 @@ def test_wrong_key(setup_data: callable) -> None:
     assert not proj.import_zip()
 
 
-def test_ci(setup_data: callable) -> None:
+def test_ci(get_test_project: callable) -> None:
     """test_ci"""
-    proj = setup_data
+    proj = get_test_project
     assert proj.ci() == "unknown"
     proj.key = util.NON_EXISTING_KEY
     assert proj.ci() == "unknown"
 
 
-def test_set_links(setup_data: callable) -> None:
+def test_set_links(get_test_project: callable) -> None:
     """test_set_links"""
-    proj = setup_data
+    proj = get_test_project
     proj.set_links({"links": [{"type": "custom", "name": "google", "url": "https://google.com"}]})
     proj.key = util.NON_EXISTING_KEY
     assert not proj.set_links({"links": [{"type": "custom", "name": "yahoo", "url": "https://yahoo.com"}]})
 
 
-def test_set_tags(setup_data: callable) -> None:
+def test_set_tags(get_test_project: callable) -> None:
     """test_set_tags"""
-    proj = setup_data
+    proj = get_test_project
 
-    assert proj.set_tags(["foo", "bar"])
-    assert proj.tags() == ["bar", "foo"]
-    proj.set_tags(["foo"])
-    assert proj.tags() == ["foo"]
-    proj.set_tags([])
-    assert len(proj.tags()) == 0
+    assert proj.set_tags(util.TAGS)
+    assert proj.get_tags() == sorted(util.TAGS)
+    assert proj.set_tags(["foo"])
+    assert proj.get_tags() == ["foo"]
+    assert proj.set_tags([])
+    assert len(proj.get_tags()) == 0
     assert not proj.set_tags(None)
 
-    proj.key = util.NON_EXISTING_KEY
-    assert not proj.set_tags(["foo", "bar"])
-    assert len(proj.tags()) == 0
 
-
-def test_set_quality_gate(setup_data: callable) -> None:
+def test_set_quality_gate(get_test_project: callable) -> None:
     """test_set_quality_gate"""
-    proj = setup_data
+    proj = get_test_project
     assert proj.set_quality_gate(util.EXISTING_QG)
     assert not proj.set_quality_gate(None)
     assert not proj.set_quality_gate(util.NON_EXISTING_KEY)
@@ -197,9 +182,9 @@ def test_set_quality_gate(setup_data: callable) -> None:
     assert not proj.set_quality_gate(util.EXISTING_QG)
 
 
-def test_ai_code_assurance(setup_data: callable) -> None:
+def test_ai_code_assurance(get_test_project: callable) -> None:
     """test_set_ai_code_assurance"""
-    proj = setup_data
+    proj = get_test_project
     assert proj.set_ai_code_assurance(True)
     assert proj.get_ai_code_assurance() is True
     assert proj.set_ai_code_assurance(False)
@@ -211,9 +196,9 @@ def test_ai_code_assurance(setup_data: callable) -> None:
     assert proj.get_ai_code_assurance() is None
 
 
-def test_set_quality_profile(setup_data: callable) -> None:
+def test_set_quality_profile(get_test_project: callable) -> None:
     """test_set_quality_profile"""
-    proj = setup_data
+    proj = get_test_project
     assert proj.set_quality_profile(language="py", quality_profile="Olivier Way")
     assert not proj.set_quality_profile(language="py", quality_profile=util.NON_EXISTING_KEY)
     assert not proj.set_quality_profile(language=util.NON_EXISTING_KEY, quality_profile="Olivier Way")

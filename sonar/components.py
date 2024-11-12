@@ -30,6 +30,7 @@ import json
 from datetime import datetime
 
 from sonar.util import types
+import sonar.util.constants as c
 import sonar.logging as log
 import sonar.sqobject as sq
 import sonar.platform as pf
@@ -59,7 +60,6 @@ class Component(sq.SqObject):
         self.ncloc = None
         self._description = None
         self._last_analysis = None
-        self._tags = None
         self._visibility = None
         if data is not None:
             self.reload(data)
@@ -81,19 +81,8 @@ class Component(sq.SqObject):
         """String representation of object"""
         return self.key
 
-    def tags(self) -> list[str]:
-        """Returns object tags"""
-        if self._tags is None:
-            if self.sq_json is not None and "tags" in self.sq_json:
-                self._tags = self.sq_json["tags"]
-            else:
-                data = json.loads(self.get(_DETAILS_API, params={"component": self.key}).text)
-                if self.sq_json is None:
-                    self.sq_json = {}
-                self.sq_json.update(data["component"])
-                self._tags = self.sq_json["tags"]
-                settings.Setting.load(key=settings.COMPONENT_VISIBILITY, endpoint=self.endpoint, component=self, data=data["component"])
-        return self._tags if len(self._tags) > 0 else None
+    def get_tags_params(self):
+        return {"component": self.key}
 
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
         """Returns component subcomponents"""
@@ -277,11 +266,15 @@ class Component(sq.SqObject):
         """Returns the history of a project metrics"""
         return measures.get_history(self, metrics_list)
 
-    def search_params(self) -> types.ApiParams:
-        """Return params used to search/create/delete for that object"""
+    def api_params(self, op: str = c.LIST) -> types.ApiParams:
         from sonar.issues import component_filter
 
-        return {component_filter(self.endpoint): self.key}
+        ops = {c.LIST: {component_filter(self.endpoint): self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
+        return ops[op] if op in ops else ops[c.LIST]
+
+    def search_params(self) -> types.ApiParams:
+        """Return params used to search/create/delete for that object"""
+        return self.api_params(c.LIST)
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""

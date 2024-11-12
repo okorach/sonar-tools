@@ -33,6 +33,7 @@ from requests import RequestException
 
 import sonar.logging as log
 from sonar.util import types, cache
+from sonar.util import constants as c
 from sonar import utilities, exceptions
 
 
@@ -45,7 +46,8 @@ class SqObject(object):
     def __init__(self, endpoint: object, key: str) -> None:
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
-        self.sq_json = None
+        self._tags = None
+        self.sq_json = {}
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
@@ -143,6 +145,39 @@ class SqObject(object):
         :return: The request response
         """
         return self.endpoint.patch(api=api, params=params, data=data, mute=mute, **kwargs)
+
+    def set_tags(self, tags: list[str]) -> bool:
+        """Sets object tags
+        :raises exceptions.UnsupportedOperation: if can't set tags on such objects
+        :return: Whether the operation was successful
+        """
+        if tags is None:
+            return False
+        my_tags = utilities.list_to_csv(tags) if isinstance(tags, list) else utilities.csv_normalize(tags)
+        try:
+            r = self.post(self.__class__.API[c.SET_TAGS], params={**self.search_params(), "tags": my_tags})
+            if r.ok:
+                self._tags = sorted(utilities.csv_to_list(my_tags))
+        except (ConnectionError, RequestException) as e:
+            utilities.handle_error(e, f"setting tags of {str(self)}", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            return False
+        except (AttributeError, KeyError):
+            raise exceptions.UnsupportedOperation(f"Can't set tags on {self.__class__.__name__.lower()}s")
+        return r.ok
+
+    def get_tags(self, **kwargs) -> list[str]:
+        """Returns object tags"""
+        try:
+            api = self.__class__.API[c.GET_TAGS]
+        except (AttributeError, KeyError):
+            raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags")
+        if self._tags is None:
+            self._tags = self.sq_json.get("tags", None)
+        if not kwargs.get("use_cache", True) or self._tags is None:
+            data = json.loads(self.get(api, params=self.get_tags_params()).text)
+            self.sq_json.update(data["component"])
+            self._tags = self.sq_json["tags"]
+        return self._tags
 
 
 def __search_thread(queue: Queue) -> None:

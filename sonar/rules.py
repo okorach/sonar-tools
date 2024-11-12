@@ -285,7 +285,7 @@ class Rule(sq.SqObject):
         log.debug("Settings custom tags of %s to '%s' ", str(self), str(tags))
         ok = self.post(_UPDATE_API, params={"key": self.key, "tags": utilities.list_to_csv(tags)}).ok
         if ok:
-            self.tags = tags if len(tags) > 0 else None
+            self.tags = sorted(tags) if len(tags) > 0 else None
         return ok
 
     def reset_tags(self) -> bool:

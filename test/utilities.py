@@ -49,6 +49,7 @@ EXISTING_PROJECT = TEST_KEY
 EXISTING_APP = TEST_KEY
 EXISTING_PORTFOLIO = TEST_KEY
 TEMP_KEY = "TEMP"
+TEMP_NAME = "Temp Name"
 
 STD_OPTS = [f"-{opt.URL_SHORT}", os.getenv("SONAR_HOST_URL"), f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
@@ -57,6 +58,8 @@ CE_OPTS = [f"-{opt.URL_SHORT}", LATEST_CE, f"-{opt.TOKEN_SHORT}", os.getenv("SON
 SQ = platform.Platform(url=os.getenv("SONAR_HOST_URL"), token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
 SC = platform.Platform(url="https://sonarcloud.io", token=os.getenv("SONAR_TOKEN_SONARCLOUD"))
 TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
+
+TAGS = ["foo", "bar"]
 
 
 def file_not_empty(file: str) -> bool:

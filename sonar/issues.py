@@ -35,12 +35,13 @@ import requests.utils
 import sonar.logging as log
 import sonar.platform as pf
 from sonar.util import cache
+import sonar.util.constants as c
+
 from sonar.util.types import ApiParams, ApiPayload, ObjectJsonRepr, ConfigSettings
 
 from sonar import users, findings, changelog, projects, rules
 import sonar.utilities as util
 
-API_SET_TAGS = "issues/set_tags"
 API_SET_TYPE = "issues/set_type"
 
 COMPONENT_FILTER_OLD = "componentKeys"
@@ -134,12 +135,12 @@ class Issue(findings.Finding):
     SEARCH_API = "issues/search"
     MAX_PAGE_SIZE = 500
     MAX_SEARCH = 10000
+    API = {"SEARCH": SEARCH_API, "GET_TAGS": SEARCH_API, "SET_TAGS": "issues/set_tags"}
 
     def __init__(self, endpoint: pf.Platform, key: str, data: ApiPayload = None, from_export: bool = False) -> None:
         """Constructor"""
         super().__init__(endpoint=endpoint, key=key, data=data, from_export=from_export)
         self._debt = None
-        self.tags = []  #: Issue tags
         Issue.CACHE.put(self)
 
     def __str__(self) -> str:
@@ -154,6 +155,13 @@ class Issue(findings.Finding):
             f"Key: {self.key} - Type: {self.type} - Severity: {self.severity}"
             f" - File/Line: {self.component}/{self.line} - Rule: {self.rule} - Project: {self.projectKey}"
         )
+
+    def api_params(self, op: str = c.LIST) -> ApiParams:
+        ops = {c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
+        return ops[op] if op in ops else ops[c.LIST]
+
+    def search_params(self) -> ApiParams:
+        return self.api_params(c.LIST)
 
     def url(self) -> str:
         """
@@ -247,14 +255,14 @@ class Issue(findings.Finding):
         elif self._comments is None:
             self._comments = {}
             seq = 0
-            for c in self.sq_json["comments"]:
+            for cmt in self.sq_json["comments"]:
                 seq += 1
                 self._comments[f"{c['createdAt']}_{seq:03}"] = {
-                    "date": c["createdAt"],
+                    "date": cmt["createdAt"],
                     "event": "comment",
-                    "value": c["markdown"],
-                    "user": c["login"],
-                    "userName": c["login"],
+                    "value": cmt["markdown"],
+                    "user": cmt["login"],
+                    "userName": cmt["login"],
                 }
         return self._comments
 
@@ -307,21 +315,16 @@ class Issue(findings.Finding):
             return False
         return r.ok
 
-    def set_tags(self, tags: list[str]) -> bool:
-        """Sets tags to an issue (Replacing all previous tags)
-        :param list tags: Tags to set
-        :return: Whether the operation succeeded
-        :rtype: bool
-        """
-        log.debug("Setting tags %s to %s", tags, str(self))
-        try:
-            r = self.post(API_SET_TAGS, {"issue": self.key, "tags": util.list_to_csv(tags)})
-            if r.ok:
-                self.tags = tags
-        except (ConnectionError, requests.RequestException) as e:
-            util.handle_error(e, "setting issue tags", catch_all=True)
-            return False
-        return r.ok
+    def get_tags(self, **kwargs) -> list[str]:
+        """Returns issues tags"""
+        api = self.__class__.API["GET_TAGS"]
+        if self._tags is None:
+            self._tags = self.sq_json.get("tags", None)
+        if not kwargs.get("use_cache", True) or self._tags is None:
+            data = json.loads(self.get(api, params=self.api_params(c.GET_TAGS)).text)
+            self.sq_json.update(data["issues"][0])
+            self._tags = self.sq_json["tags"]
+        return self._tags if len(self._tags) > 0 else None
 
     def add_tag(self, tag: str) -> bool:
         """Adds a tag to an issue
@@ -330,8 +333,8 @@ class Issue(findings.Finding):
         :rtype: bool
         """
         log.debug("Adding tag '%s' to %s", tag, str(self))
-        tags = self.tags.copy()
-        if tag not in self.tags:
+        tags = [] if not self._tags else self._tags.copy()
+        if tag not in self._tags:
             tags.append(tag)
         return self.set_tags(tags)
 
@@ -342,8 +345,8 @@ class Issue(findings.Finding):
         :rtype: bool
         """
         log.debug("Removing tag '%s' from %s", tag, str(self))
-        tags = self.tags.copy()
-        if tag in self.tags:
+        tags = [] if not self._tags else self._tags.copy()
+        if tag in self._tags:
             tags.remove(tag)
         return self.set_tags(tags)
 
