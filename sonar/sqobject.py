@@ -46,7 +46,7 @@ class SqObject(object):
         self.key = key  #: Object unique key (unique in its class)
         self.endpoint = endpoint  #: Reference to the SonarQube platform
         self._tags = None
-        self.sq_json = None
+        self.sq_json = {}
 
     def __hash__(self) -> int:
         """Default UUID for SQ objects"""
@@ -170,8 +170,6 @@ class SqObject(object):
             api = self.__class__.API["GET_TAGS"]
         except (AttributeError, KeyError):
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags")
-        if self.sq_json is None:
-            self.sq_json = {}
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get("use_cache", True) or self._tags is None:
