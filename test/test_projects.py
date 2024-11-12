@@ -24,19 +24,8 @@
 import pytest
 
 import utilities as util
-from sonar import projects, exceptions, logging
+from sonar import projects, exceptions
 from sonar.audit import config
-
-
-@pytest.fixture
-def get_test_project() -> projects.Project:
-    """setup of tests"""
-    logging.set_logger("test-project.log")
-    logging.set_debug_level("DEBUG")
-    proj = projects.Project.get_object(endpoint=util.SQ, key=util.EXISTING_PROJECT)
-    yield proj
-    # Teardown: Clean up resources (if any) after the test
-    proj.key = util.EXISTING_PROJECT
 
 
 def test_get_object(get_test_project: callable) -> None:

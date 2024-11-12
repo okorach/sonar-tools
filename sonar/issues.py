@@ -255,14 +255,14 @@ class Issue(findings.Finding):
         elif self._comments is None:
             self._comments = {}
             seq = 0
-            for c in self.sq_json["comments"]:
+            for cmt in self.sq_json["comments"]:
                 seq += 1
                 self._comments[f"{c['createdAt']}_{seq:03}"] = {
-                    "date": c["createdAt"],
+                    "date": cmt["createdAt"],
                     "event": "comment",
-                    "value": c["markdown"],
-                    "user": c["login"],
-                    "userName": c["login"],
+                    "value": cmt["markdown"],
+                    "user": cmt["login"],
+                    "userName": cmt["login"],
                 }
         return self._comments
 
