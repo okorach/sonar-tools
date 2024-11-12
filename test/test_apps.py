@@ -196,3 +196,16 @@ def test_search_by_name() -> None:
         assert len(other_apps) == 1
         first_app = list(other_apps.values())[0]
         assert app == first_app
+
+
+def test_set_tags(get_test_app: callable) -> None:
+    """test_set_tags"""
+    o = get_test_app
+
+    assert o.set_tags(util.TAGS)
+    assert o.get_tags() == sorted(util.TAGS)
+    assert o.set_tags(["foo"])
+    assert o.get_tags() == ["foo"]
+    assert o.set_tags([])
+    assert o.get_tags() == []
+    assert not o.set_tags(None)

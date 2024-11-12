@@ -59,6 +59,8 @@ SQ = platform.Platform(url=os.getenv("SONAR_HOST_URL"), token=os.getenv("SONAR_T
 SC = platform.Platform(url="https://sonarcloud.io", token=os.getenv("SONAR_TOKEN_SONARCLOUD"))
 TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
 
+TAGS = ["foo", "bar"]
+
 
 def file_not_empty(file: str) -> bool:
     """Returns whether a file exists and is not empty"""

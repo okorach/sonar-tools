@@ -133,8 +133,8 @@ def test_get_rule() -> None:
 def test_set_tags() -> None:
     """test_set_tags"""
     my_rule = rules.get_object(endpoint=util.SQ, key="java:S127")
-    assert my_rule.set_tags(["foo", "bar"])
-    assert "foo" in my_rule.tags and "bar" in my_rule.tags
+    assert my_rule.set_tags(util.TAGS)
+    assert my_rule.tags == sorted(util.TAGS)
     assert my_rule.reset_tags()
     assert my_rule.tags is None
 

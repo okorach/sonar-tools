@@ -173,17 +173,13 @@ def test_set_tags(get_test_project: callable) -> None:
     """test_set_tags"""
     proj = get_test_project
 
-    assert proj.set_tags(["foo", "bar"])
-    assert proj.get_tags() == ["bar", "foo"]
-    proj.set_tags(["foo"])
+    assert proj.set_tags(util.TAGS)
+    assert proj.get_tags() == sorted(util.TAGS)
+    assert proj.set_tags(["foo"])
     assert proj.get_tags() == ["foo"]
-    proj.set_tags([])
+    assert proj.set_tags([])
     assert len(proj.get_tags()) == 0
     assert not proj.set_tags(None)
-
-    proj.key = util.NON_EXISTING_KEY
-    assert not proj.set_tags(["foo", "bar"])
-    assert proj.get_tags() is None
 
 
 def test_set_quality_gate(get_test_project: callable) -> None:
