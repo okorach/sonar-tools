@@ -411,7 +411,7 @@ class Application(aggr.Aggregation):
             # perms = {k: permissions.decode(v) for k, v in data.get("permissions", {}).items()}
             # self.set_permissions(util.csv_to_list(perms))
         self.add_projects(_project_list(data))
-        self.set_tags(util.csv_to_list(data.get("tags", None)))
+        self.set_tags(util.csv_to_list(data.get("tags", [])))
         for name, branch_data in data.get("branches", {}).items():
             self.set_branch(name, branch_data)
 
