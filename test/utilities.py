@@ -24,8 +24,12 @@
 """
 
 import os
+import sys
 import datetime
+from unittest.mock import patch
+import pytest
 
+from sonar import errcodes
 from sonar import platform
 import cli.options as opt
 
@@ -52,6 +56,7 @@ TEMP_KEY = "TEMP"
 TEMP_NAME = "Temp Name"
 
 STD_OPTS = [f"-{opt.URL_SHORT}", os.getenv("SONAR_HOST_URL"), f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+STD_OPTS_STR = " ".join(STD_OPTS)
 TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 CE_OPTS = [f"-{opt.URL_SHORT}", LATEST_CE, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 
@@ -60,6 +65,15 @@ SC = platform.Platform(url="https://sonarcloud.io", token=os.getenv("SONAR_TOKEN
 TEST_SQ = platform.Platform(url=LATEST_TEST, token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
 
 TAGS = ["foo", "bar"]
+
+
+def clean(*files: str) -> None:
+    """Deletes a list of file if they exists"""
+    for file in files:
+        try:
+            os.remove(file)
+        except FileNotFoundError:
+            pass
 
 
 def file_not_empty(file: str) -> bool:
@@ -76,15 +90,6 @@ def file_contains(file: str, string: str) -> bool:
     with open(file=file, mode="r", encoding="utf-8") as fh:
         content = fh.read()
     return string in content
-
-
-def clean(*files: str) -> None:
-    """Deletes a list of file if they exists"""
-    for file in files:
-        try:
-            os.remove(file)
-        except FileNotFoundError:
-            pass
 
 
 def is_datetime(value: str) -> bool:
@@ -104,3 +109,20 @@ def is_integer(value: str) -> bool:
 def is_url(value: str) -> bool:
     """Returns whether a string contains an URL"""
     return value.startswith("http")
+
+
+def run_cmd(func: callable, arguments: str):
+    args = arguments.split(" ")
+    try:
+        file = args[args.index(opt.REPORT_FILE) + 1]
+    except ValueError:
+        try:
+            file = args[args.index(opt.REPORT_FILE_SHORT) + 1]
+        except ValueError:
+            file = None
+    with pytest.raises(SystemExit) as e:
+        with patch.object(sys, "argv", args):
+            func()
+    assert int(str(e.value)) == errcodes.OK
+    if file:
+        assert file_not_empty(file)

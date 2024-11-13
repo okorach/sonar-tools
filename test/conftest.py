@@ -21,12 +21,17 @@
 
 """ Test fixtures """
 
+import os
 from collections.abc import Generator
 import pytest
 
 import utilities as util
 from sonar import projects, applications, portfolios, exceptions, logging, issues
 
+TEMP_FILE_ROOT = f"temp.{os.getpid()}"
+CSV_FILE = f"{TEMP_FILE_ROOT}.csv"
+JSON_FILE = f"{TEMP_FILE_ROOT}.json"
+YAML_FILE = f"{TEMP_FILE_ROOT}.yaml"
 
 TEST_ISSUE = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 
@@ -66,8 +71,58 @@ def get_test_portfolio() -> Generator[portfolios.Portfolio]:
 
 
 @pytest.fixture
-def get_test_issue() -> issues.Issue:
+def get_test_issue() -> Generator[issues.Issue]:
     """setup of tests"""
     issues_d = issues.search_by_project(endpoint=util.SQ, project_key=util.LIVE_PROJECT)
     yield issues_d[TEST_ISSUE]
     # Teardown: Clean up resources (if any) after the test
+
+
+def rm(file: str) -> None:
+    """Removes a file if exists"""
+    try:
+        os.remove(file)
+    except FileNotFoundError:
+        pass
+
+
+@pytest.fixture
+def get_csv_file() -> Generator[str]:
+    """setup of tests"""
+    # logging.set_logger("test.log")
+    # logging.set_debug_level("DEBUG")
+    file = f"{TEMP_FILE_ROOT}.csv"
+    rm(file)
+    yield file
+    # Teardown: Clean up resources (if any) after the test
+    rm(file)
+
+
+@pytest.fixture
+def get_json_file() -> Generator[str]:
+    """setup of tests"""
+    file = f"{TEMP_FILE_ROOT}.json"
+    rm(file)
+    yield file
+    # Teardown: Clean up resources (if any) after the test
+    rm(file)
+
+
+@pytest.fixture
+def get_yaml_file() -> Generator[str]:
+    """setup of tests"""
+    file = f"{TEMP_FILE_ROOT}.yaml"
+    rm(file)
+    yield file
+    # Teardown: Clean up resources (if any) after the test
+    rm(file)
+
+
+@pytest.fixture
+def get_sarif_file() -> Generator[str]:
+    """setup of tests"""
+    file = f"{TEMP_FILE_ROOT}.sarif"
+    rm(file)
+    yield file
+    # Teardown: Clean up resources (if any) after the test
+    rm(file)
