@@ -33,7 +33,7 @@ from requests import RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log
-from sonar import metrics, platform, exceptions, errcodes, version
+from sonar import metrics, platform, exceptions, errcodes, version, measures
 from sonar import projects, applications, portfolios
 import sonar.utilities as util
 
@@ -57,33 +57,30 @@ def __last_analysis(component: object) -> str:
 def __get_json_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
     data = obj.get_measures_history(wanted_metrics)
-    convert_ratings = convert_options.get("ratings", "letters") != "letters"
-    convert_percents = convert_options.get("percents", "float") != "float"
-    if data and (convert_ratings or convert_percents):
+    ratings = convert_options.get("ratings", "letters")
+    percents = convert_options.get("percents", "float")
+    if data:
         for m in data:
-            if convert_ratings and metrics.is_a_rating(m[1]) and m[2]:
-                log.info("MEASURE = %s RATING = %s", m[1], m[2])
-                m[2] = ord(m[2]) - 64
-            if convert_percents and metrics.is_a_percent(m[1]) and m[2] != "":
-                m[2] = f"{m[2]}%"
+            m[2] = measures.format(obj.endpoint, m[1], m[2], ratings, percents)
     return {"history": data}
 
 
 def __get_object_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
-    measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
-    measures_d["lastAnalysis"] = __last_analysis(obj)
+    # measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
+    measures_d = obj.get_measures(wanted_metrics)
     measures_d.pop("quality_gate_details", None)
-    convert_ratings = convert_options.get("ratings", "letters") != "letters"
-    convert_percents = convert_options.get("percents", "float") != "float"
-    if convert_ratings or convert_percents:
-        for k, v in measures_d.items():
-            if convert_ratings and metrics.is_a_rating(k) and v:
-                measures_d[k] = ord(v) - 64
-            if convert_percents and metrics.is_a_percent(k) and v != "":
-                measures_d[k] = f"{v}%"
-    return measures_d
+    ratings = convert_options.get("ratings", "letters")
+    percents = convert_options.get("percents", "float")
+    final_measures = {}
+    for k, v in measures_d.items():
+        if v:
+            final_measures[k] = v.format(ratings, percents)
+        else:
+            final_measures[k] = None
+    final_measures["lastAnalysis"] = __last_analysis(obj)
+    return final_measures
 
 
 def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyList) -> types.KeyList:
