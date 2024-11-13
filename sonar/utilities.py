@@ -157,13 +157,11 @@ def redacted_token(token: str) -> str:
 def convert_to_type(value: any) -> any:
     """Converts a potentially string value to the corresponding int or float"""
     try:
-        newval = int(value)
-        return newval
+        return int(value)
     except ValueError:
         pass
     try:
-        newval = float(value)
-        return newval
+        return float(value)
     except ValueError:
         pass
     return value
