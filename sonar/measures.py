@@ -214,8 +214,8 @@ def format(endpoint: platform.Platform, metric_key: str, value: any, ratings: st
         metric = metrics.Metric.get_object(endpoint, metric_key)
     except exceptions.ObjectNotFound:
         return value
-    if metric.is_a_rating() and ratings == "letters":
-        return chr(int(float(value)) + 64)
+    if metric.is_a_rating():
+        return chr(int(float(value)) + 64) if ratings == "letters" else int(float(value))
     elif metric.is_a_percent():
         return f"{float(value)/100:.3f}" if percents == "float" else f"{float(value):.1f}%"
     return value
