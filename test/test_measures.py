@@ -28,7 +28,7 @@ from unittest.mock import patch
 import pytest
 
 import utilities as util
-from sonar import errcodes
+from sonar import errcodes, logging
 from cli import measures_export
 import cli.options as opt
 
@@ -40,26 +40,42 @@ TYPE_COL = 1
 KEY_COL = 0
 
 
-def test_measures_export() -> None:
+def test_measures_export(get_csv_file: callable) -> None:
     """test_measures_export"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    file = get_csv_file
+    util.run_cmd(measures_export.main, f"{CMD} {util.STD_OPTS_STR} --withTags -{opt.REPORT_FILE_SHORT} {file}")
+    with open(file=file, mode="r", encoding="utf-8") as fh:
+        csvreader = csv.reader(fh)
+        line = next(csvreader)
+        rating_col_1 = line.index("reliability_rating")
+        rating_col_2 = line.index("security_rating")
+        pct_col_1 = line.index("duplicated_lines_density")
+        pct_col_2 = line.index("sqale_debt_ratio")
+        for line in csvreader:
+            assert line[rating_col_1] == "" or "A" <= line[rating_col_1] <= "E"
+            assert line[rating_col_2] == "" or "A" <= line[rating_col_2] <= "E"
+            assert line[pct_col_1] == "" or 0.0 <= float(line[pct_col_1]) <= 1.0
+            assert line[pct_col_2] == "" or 0.0 <= float(line[pct_col_2]) <= 1.0
 
 
-def test_measures_conversion() -> None:
+def test_measures_conversion(get_csv_file: callable) -> None:
     """test_measures_conversion"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["-r", "-p", "--withTags"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    logging.set_logger("test.log")
+    logging.set_debug_level("DEBUG")
+    file = get_csv_file
+    util.run_cmd(measures_export.main, f"{CMD} {util.STD_OPTS_STR} -r -p --withTags -{opt.REPORT_FILE_SHORT} {file}")
+    with open(file=file, mode="r", encoding="utf-8") as fh:
+        csvreader = csv.reader(fh)
+        line = next(csvreader)
+        rating_col_1 = line.index("reliability_rating")
+        rating_col_2 = line.index("security_rating")
+        pct_col_1 = line.index("duplicated_lines_density")
+        pct_col_2 = line.index("sqale_debt_ratio")
+        for line in csvreader:
+            assert line[rating_col_1] == "" or 1 <= int(line[rating_col_1]) <= 5
+            assert line[rating_col_2] == "" or 1 <= int(line[rating_col_2]) <= 5
+            assert line[pct_col_1] == "" or line[pct_col_1].endswith("%")
+            assert line[pct_col_2] == "" or line[pct_col_2].endswith("%")
 
 
 def test_measures_export_with_url() -> None:
@@ -115,15 +131,10 @@ def test_measures_export_history() -> None:
     util.clean(util.CSV_FILE)
 
 
-def test_measures_export_history_as_table() -> None:
+def test_measures_export_history_as_table(get_csv_file: callable) -> None:
     """test_measures_export_history_as_table"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--history", "--asTable"]):
-            measures_export.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    file = get_csv_file
+    util.run_cmd(measures_export.main, f"{CMD} {util.STD_OPTS_STR} --history --asTable -{opt.REPORT_FILE_SHORT} {file}")
 
 
 def test_measures_export_history_as_table_no_time() -> None:

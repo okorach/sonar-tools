@@ -19,6 +19,8 @@
 #
 
 """Abstraction of the SonarQube metric concept"""
+
+from __future__ import annotations
 import json
 from threading import Lock
 
@@ -27,7 +29,7 @@ import sonar.platform as pf
 from sonar.util.types import ApiPayload
 from sonar.util import cache
 
-from sonar import sqobject, utilities
+from sonar import sqobject, utilities, exceptions
 
 #: List of what can be considered the main metrics
 MAIN_METRICS = (
@@ -94,8 +96,15 @@ class Metric(sqobject.SqObject):
         self.__load(data)
         Metric.CACHE.put(self)
 
+    @classmethod
+    def get_object(cls, endpoint: pf.Platform, key: str) -> Metric:
+        search(endpoint=endpoint)
+        o = Metric.CACHE.get(key, endpoint.url)
+        if not o:
+            raise exceptions.ObjectNotFound(key, f"Metric key '{key}' not found")
+        return o
+
     def __load(self, data: ApiPayload) -> bool:
-        log.debug("Loading metric %s", str(data))
         self.type = data["type"]
         self.name = data["name"]
         self.description = data.get("description", "")
@@ -103,49 +112,19 @@ class Metric(sqobject.SqObject):
         self.qualitative = data["qualitative"]
         self.hidden = data["hidden"]
         self.custom = data.get("custom", None)
-        if self.type not in METRICS_BY_TYPE:
-            METRICS_BY_TYPE[self.type] = set()
-        METRICS_BY_TYPE[self.type].add(self.key)
         return True
 
     def is_a_rating(self) -> bool:
-        """
-        :returns: Whether a metric is a rating
-        :rtype: bool
-        """
+        """Whether a metric is a rating"""
         return self.type == "RATING"
 
     def is_a_percent(self) -> bool:
-        """
-        :returns: Whether a metric is a percentage (or ratio or density)
-        :rtype: bool
-        """
+        """Whether a metric is a percentage (or ratio or density)"""
         return self.type == "PERCENT"
 
     def is_an_effort(self) -> bool:
-        """
-        :returns: Whether a metric is an effort
-        :rtype: bool
-        """
+        """Whether a metric is an effort"""
         return self.type == "WORK_DUR"
-
-    def is_of_type(self, metric_type: str) -> bool:
-        """
-        :param str metric_type:
-        :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
-        :rtype: bool
-        """
-        return metric_type in METRICS_BY_TYPE and self.type in METRICS_BY_TYPE[metric_type]
-
-
-def is_a_rating(metric_key: str) -> bool:
-    """
-    :param metric_key: The concerned metric key
-    :type metric_key: str
-    :returns: Whether a metric is a rating
-    :rtype: bool
-    """
-    return is_of_type(metric_key, "RATING")
 
 
 def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: bool = True) -> dict[str, Metric]:
@@ -169,34 +148,28 @@ def search(endpoint: pf.Platform, show_hidden_metrics: bool = False, use_cache: 
     return {m.key: m for m in m_list.values()}
 
 
-def is_a_percent(metric_key: str) -> bool:
-    """
-    :param metric_key: The concerned metric key
-    :type metric_key: str
-    :returns: Whether a metric is a percent
-    :rtype: bool
-    """
-    return is_of_type(metric_key, "PERCENT")
+def is_a_rating(endpoint: pf.Platform, metric_key: str) -> bool:
+    """Whether a metric is a rating"""
+    try:
+        return Metric.get_object(endpoint, metric_key).is_a_rating()
+    except exceptions.ObjectNotFound:
+        return False
 
 
-def is_an_effort(metric_key: str) -> bool:
-    """
-    :param metric_key: The concerned metric key
-    :type metric_key: str
-    :returns: Whether a metric is an effort
-    :rtype: bool
-    """
-    return is_of_type(metric_key, "WORK_DUR")
+def is_a_percent(endpoint: pf.Platform, metric_key: str) -> bool:
+    """Whether a metric is a percent"""
+    try:
+        return Metric.get_object(endpoint, metric_key).is_a_percent()
+    except exceptions.ObjectNotFound:
+        return False
 
 
-def is_of_type(metric_key: str, metric_type: str) -> bool:
-    """
-    :param str metric_key: The concerned metric key
-    :param str metric_type:
-    :returns: Whether a metric is of a given type (INT, BOOL, FLOAT, WORK_DUR, etc...)
-    :rtype: bool
-    """
-    return metric_type in METRICS_BY_TYPE and metric_key in METRICS_BY_TYPE[metric_type]
+def is_an_effort(endpoint: pf.Platform, metric_key: str) -> bool:
+    """Whether a metric is an effort"""
+    try:
+        return Metric.get_object(endpoint, metric_key).is_an_effort()
+    except exceptions.ObjectNotFound:
+        return False
 
 
 def count(endpoint: pf.Platform, use_cache: bool = True) -> int:

@@ -33,7 +33,7 @@ from requests import RequestException
 from sonar.util import types
 from cli import options
 import sonar.logging as log
-from sonar import metrics, platform, exceptions, errcodes, version
+from sonar import metrics, platform, exceptions, errcodes, version, measures
 from sonar import projects, applications, portfolios
 import sonar.utilities as util
 
@@ -54,18 +54,32 @@ def __last_analysis(component: object) -> str:
     return last_analysis
 
 
-def __get_json_measures_history(obj: object, wanted_metrics: types.KeyList) -> dict[str, str]:
+def __get_json_measures_history(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the measure history of an object (project, branch, application, portfolio)"""
-    return {"history": obj.get_measures_history(wanted_metrics)}
+    data = obj.get_measures_history(wanted_metrics)
+    ratings = convert_options.get("ratings", "letters")
+    percents = convert_options.get("percents", "float")
+    if data:
+        for m in data:
+            m[2] = measures.format(obj.endpoint, m[1], m[2], ratings, percents)
+    return {"history": data}
 
 
-def __get_object_measures(obj: object, wanted_metrics: types.KeyList) -> dict[str, str]:
+def __get_object_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
-    measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
-    measures_d["lastAnalysis"] = __last_analysis(obj)
+    measures_d = obj.get_measures(wanted_metrics)
     measures_d.pop("quality_gate_details", None)
-    return measures_d
+    ratings = convert_options.get("ratings", "letters")
+    percents = convert_options.get("percents", "float")
+    final_measures = {}
+    for k, v in measures_d.items():
+        if v:
+            final_measures[k] = v.format(ratings, percents)
+        else:
+            final_measures[k] = None
+    final_measures["lastAnalysis"] = __last_analysis(obj)
+    return final_measures
 
 
 def __get_wanted_metrics(endpoint: platform.Platform, wanted_metrics: types.KeyList) -> types.KeyList:
@@ -284,9 +298,9 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, hist: bool) -> Un
     data = obj.component_data()
     try:
         if hist:
-            data.update(__get_json_measures_history(obj, wanted_metrics))
+            data.update(__get_json_measures_history(obj, wanted_metrics, CONVERT_OPTIONS))
         else:
-            data.update(__get_object_measures(obj, wanted_metrics))
+            data.update(__get_object_measures(obj, wanted_metrics, CONVERT_OPTIONS))
     except (ConnectionError, RequestException) as e:
         util.handle_error(e, f"measure export of {str(obj)}, skipped", catch_all=True)
         return None

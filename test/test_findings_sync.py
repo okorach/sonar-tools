@@ -55,13 +55,7 @@ def test_sync_help() -> None:
     assert not os.path.isfile(util.JSON_FILE)
 
 
-def test_sync() -> None:
+def test_sync(get_json_file: callable) -> None:
     """test_sync"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", ALL_OPTS):
-            log.info("Running %s", " ".join(ALL_OPTS))
-            findings_sync.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    file = get_json_file
+    util.run_cmd(findings_sync.main, " ".join([CMD] + PLAT_OPTS + SYNC_OPTS) + f" -{opt.REPORT_FILE_SHORT} {file}")

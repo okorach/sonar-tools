@@ -27,7 +27,7 @@ import json
 import re
 from http import HTTPStatus
 from requests import RequestException
-from sonar import metrics, exceptions
+from sonar import metrics, exceptions, platform
 from sonar.util.types import ApiPayload, ApiParams, KeyList
 from sonar.util import cache
 import sonar.logging as log
@@ -55,6 +55,10 @@ class Measure(sq.SqObject):
         self.metric = key  #: Measure metric
         self.concerned_object = concerned_object  #: Object concerned by the measure
         self.value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
+        if self.is_a_rating():
+            self.value = int(float(self.value))
+        elif self.is_a_percent():
+            self.value = float(self.value) / 100
 
     @classmethod
     def load(cls, concerned_object: object, data: ApiPayload) -> Measure:
@@ -108,6 +112,18 @@ class Measure(sq.SqObject):
             nbr_pages = util.nbr_pages(data)
             page += 1
         return measures
+
+    def is_a_rating(self) -> bool:
+        return metrics.is_a_rating(self.endpoint, self.key)
+
+    def is_a_percent(self) -> bool:
+        return metrics.is_a_percent(self.endpoint, self.key)
+
+    def is_an_effort(self) -> bool:
+        return metrics.is_an_effort(self.endpoint, self.key)
+
+    def format(self, ratings: str = "letters", percents: str = "float") -> any:
+        return format(self.endpoint, self.key, self.value, ratings=ratings, percents=percents)
 
 
 def get(concerned_object: object, metrics_list: KeyList, **kwargs) -> dict[str, Measure]:
@@ -190,83 +206,16 @@ def get_rating_number(rating_letter: str) -> int:
     return rating_letter
 
 
-def as_rating_letter(metric: str, value: Union[float, int]) -> str:
-    """
-    :param str metric: Metric key
-    :param value: Measure value to convert
-    :type value: float or int
-    :return: The measure converted from number to letter, if metric is a rating
-    :rtype: str
-    """
-    if metric in metrics.METRICS_BY_TYPE["RATING"] and value not in ("A", "B", "C", "D", "E"):
-        return get_rating_letter(value)
-    return value
-
-
-def as_rating_number(metric: str, value: str) -> int:
-    """
-    :param str metric: Metric key
-    :param str value: Measure value to convert (A to E)
-    :return: The measure converted from letter to number, if metric is a rating
-    :rtype: int
-    """
-    if metric in metrics.METRICS_BY_TYPE["RATING"]:
-        return get_rating_number(value)
-    return value
-
-
-def as_ratio(metric: str, value: Union[int, float]) -> float:
-    """Converts a density or ratio metric to float percentage
-    :param str metric: Metric key
-    :param value: Measure value to convert
-    :type value: int or float
-    :return: The converted ratio or density
-    :rtype: float between 0 and 1 (0% and 100%), rounded to first decimal
-    """
-    if metric in metrics.METRICS_BY_TYPE["PERCENT"]:
-        try:
-            # Return pct with 3 significant digits
-            value = int(float(value) * 10) / 1000.0
-        except ValueError:
-            pass
-    return value
-
-
-def as_percent(metric: str, value: Union[int, float]) -> str:
-    """Converts a density or ratio metric to string percentage
-    :param str metric: Metric key
-    :param value: Measure value to convert
-    :type value: int or float
-    :return: The converted ratio or density in "x.y%" format
-    :rtype: str
-    """
+def format(endpoint: platform.Platform, metric_key: str, value: any, ratings: str = "letters", percents: str = "float") -> any:
+    """Formats a measure"""
     try:
-        if re.match(r".*(ratio|density|coverage)", metric):
-            # Return pct with one digit after decimals
-            value = str(int(float(value) * 10) / 10.0) + "%"
-    except ValueError:
-        pass
-    return value
-
-
-def format(metric: str, value: any, ratings: str = "letters", percents: str = "float", dates: str = "datetime") -> str:
-    """Formats any metric in the the preferred format for display
-
-    :param str metric: Metric key
-    :param value: Measure value to convert
-    :type value: str, int or float
-    :param str ratings: How to convert ratings, "letters" or "numbers"
-    :param str percents: How to convert percentages, "float" or "percents"
-    :param str dates: How to convert dates, "datetime" or "dateonly"
-    :return: The formatted measure
-    :rtype: str
-    """
-    if metrics.is_a_rating(metric):
-        value = as_rating_letter(metric, value) if ratings == "letters" else as_rating_number(metric, value)
-    elif metrics.is_a_percent(metric):
-        value = as_percent(metric, value) if percents == "percents" else as_ratio(metric, value)
-    elif dates == "dateonly" and metric in ("last_analysis", "createdAt", "updatedAt", "creation_date", "modification_date"):
-        value = util.date_to_string(util.string_to_date(value), False)
+        metric = metrics.Metric.get_object(endpoint, metric_key)
+    except exceptions.ObjectNotFound:
+        return value
+    if metric.is_a_rating() and ratings == "letters":
+        return chr(int(float(value)) + 64)
+    elif metric.is_a_percent():
+        return f"{float(value):.3f}" if percents == "float" else f"{float(value)*100:.1f}%"
     return value
 
 
@@ -277,6 +226,4 @@ def _search_value(data: dict[str, str]) -> any:
         value = data["periods"][0]["value"]
     elif not value and "period" in data:
         value = data["period"]["value"]
-    if metrics.is_a_rating(data["metric"]):
-        value = get_rating_letter(value)
     return value
