@@ -105,7 +105,6 @@ class Metric(sqobject.SqObject):
         return o
 
     def __load(self, data: ApiPayload) -> bool:
-        log.debug("Loading metric %s", str(data))
         self.type = data["type"]
         self.name = data["name"]
         self.description = data.get("description", "")
