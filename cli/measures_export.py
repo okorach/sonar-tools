@@ -68,7 +68,6 @@ def __get_json_measures_history(obj: object, wanted_metrics: types.KeyList, conv
 def __get_object_measures(obj: object, wanted_metrics: types.KeyList, convert_options: dict[str, str]) -> dict[str, str]:
     """Returns the list of requested measures of an object"""
     log.info("Getting measures for %s", str(obj))
-    # measures_d = {k: v.value if v else None for k, v in obj.get_measures(wanted_metrics).items()}
     measures_d = obj.get_measures(wanted_metrics)
     measures_d.pop("quality_gate_details", None)
     ratings = convert_options.get("ratings", "letters")
