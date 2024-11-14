@@ -257,7 +257,7 @@ class Issue(findings.Finding):
             seq = 0
             for cmt in self.sq_json["comments"]:
                 seq += 1
-                self._comments[f"{c['createdAt']}_{seq:03}"] = {
+                self._comments[f"{cmt['createdAt']}_{seq:03}"] = {
                     "date": cmt["createdAt"],
                     "event": "comment",
                     "value": cmt["markdown"],
