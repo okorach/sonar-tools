@@ -223,9 +223,10 @@ def __write_measures_history_csv_as_list(file: str, data: dict[str, str], **kwar
     header_list += ["metric", "value"]
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        print("# ", file=fd, end="")
         csvwriter.writerow(header_list)
         for component_data in data:
-            key = component_data["name"]
+            key = component_data["key"]
             if "history" not in component_data:
                 continue
             for metric_data in component_data["history"]:
