@@ -29,7 +29,7 @@ import datetime
 from unittest.mock import patch
 import pytest
 
-from sonar import errcodes
+from sonar import errcodes, logging
 from sonar import platform
 import cli.options as opt
 
@@ -112,6 +112,7 @@ def is_url(value: str) -> bool:
 
 
 def run_cmd(func: callable, arguments: str):
+    logging.info("RUNNING: %s", arguments)
     args = arguments.split(" ")
     try:
         file = args[args.index(opt.REPORT_FILE) + 1]
