@@ -81,7 +81,7 @@ class Component(sq.SqObject):
         """String representation of object"""
         return self.key
 
-    def get_tags_params(self):
+    def get_tags_params(self) -> dict[str, str]:
         return {"component": self.key}
 
     def get_subcomponents(self, strategy: str = "children", with_issues: bool = False) -> dict[str, Component]:
