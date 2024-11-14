@@ -30,6 +30,7 @@ from sonar.audit import config
 
 import utilities as util
 
+
 def test_get_object(get_test_project: callable) -> None:
     """test_get_object"""
     proj = get_test_project

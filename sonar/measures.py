@@ -54,11 +54,7 @@ class Measure(sq.SqObject):
         self.value = None  #: Measure value
         self.metric = key  #: Measure metric
         self.concerned_object = concerned_object  #: Object concerned by the measure
-        self.value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
-        if self.is_a_rating():
-            self.value = int(float(self.value))
-        elif self.is_a_percent():
-            self.value = float(self.value) / 100
+        self.value = self.__converted_value(value)
 
     @classmethod
     def load(cls, concerned_object: object, data: ApiPayload) -> Measure:
@@ -74,6 +70,12 @@ class Measure(sq.SqObject):
         metrics.search(concerned_object.endpoint)
         return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
+    def __converted_value(self, value) -> any:
+        value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
+        if self.is_a_rating():
+            value = int(float(value))
+        return value
+
     def refresh(self) -> any:
         """Refreshes a measure by re-reading it in SonarQube
 
@@ -82,7 +84,7 @@ class Measure(sq.SqObject):
         """
         params = util.replace_keys(_ALT_COMPONENTS, "component", self.concerned_object.search_params())
         data = json.loads(self.get(Measure.API_READ, params=params).text)["component"]["measures"]
-        self.value = _search_value(data)
+        self.value = self.__converted_value(_search_value(data))
         return self.value
 
     def count_history(self, params: ApiParams = None) -> int:
@@ -212,10 +214,10 @@ def format(endpoint: platform.Platform, metric_key: str, value: any, ratings: st
         metric = metrics.Metric.get_object(endpoint, metric_key)
     except exceptions.ObjectNotFound:
         return value
-    if metric.is_a_rating() and ratings == "letters":
-        return chr(int(float(value)) + 64)
+    if metric.is_a_rating():
+        return chr(int(float(value)) + 64) if ratings == "letters" else int(float(value))
     elif metric.is_a_percent():
-        return f"{float(value):.3f}" if percents == "float" else f"{float(value)*100:.1f}%"
+        return f"{float(value)/100:.3f}" if percents == "float" else f"{float(value):.1f}%"
     return value
 
 
