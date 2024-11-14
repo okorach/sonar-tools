@@ -31,7 +31,7 @@ from sonar.audit import config
 def test_get_object(get_test_project: callable) -> None:
     """test_get_object"""
     proj = get_test_project
-    assert str(proj) == f"project '{util.EXISTING_PROJECT}'"
+    assert str(proj) == f"project '{util.TEMP_KEY}'"
     with pytest.raises(exceptions.ObjectNotFound):
         projects.Project.get_object(endpoint=util.SQ, key=util.NON_EXISTING_KEY)
 
