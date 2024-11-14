@@ -39,7 +39,7 @@ TEST_ISSUE = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 @pytest.fixture
 def get_test_project() -> Generator[projects.Project]:
     """setup of tests"""
-    logging.set_logger("test-sqobject.log")
+    logging.set_logger("pytest.log")
     logging.set_debug_level("DEBUG")
     o = projects.Project.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
     yield o
@@ -50,7 +50,7 @@ def get_test_project() -> Generator[projects.Project]:
 @pytest.fixture
 def get_test_app() -> Generator[applications.Application]:
     """setup of tests"""
-    logging.set_logger("test-sqobject.log")
+    logging.set_logger("pytest.log")
     logging.set_debug_level("DEBUG")
     try:
         o = applications.Application.get_object(endpoint=util.SQ, key=util.TEMP_KEY)
@@ -89,8 +89,8 @@ def rm(file: str) -> None:
 @pytest.fixture
 def get_csv_file() -> Generator[str]:
     """setup of tests"""
-    # logging.set_logger("test.log")
-    # logging.set_debug_level("DEBUG")
+    logging.set_logger("pytest.log")
+    logging.set_debug_level("DEBUG")
     file = f"{TEMP_FILE_ROOT}.csv"
     rm(file)
     yield file
@@ -101,6 +101,8 @@ def get_csv_file() -> Generator[str]:
 @pytest.fixture
 def get_json_file() -> Generator[str]:
     """setup of tests"""
+    logging.set_logger("pytest.log")
+    logging.set_debug_level("DEBUG")
     file = f"{TEMP_FILE_ROOT}.json"
     rm(file)
     yield file
@@ -111,6 +113,8 @@ def get_json_file() -> Generator[str]:
 @pytest.fixture
 def get_yaml_file() -> Generator[str]:
     """setup of tests"""
+    logging.set_logger("pytest.log")
+    logging.set_debug_level("DEBUG")
     file = f"{TEMP_FILE_ROOT}.yaml"
     rm(file)
     yield file
@@ -121,6 +125,8 @@ def get_yaml_file() -> Generator[str]:
 @pytest.fixture
 def get_sarif_file() -> Generator[str]:
     """setup of tests"""
+    logging.set_logger("pytest.log")
+    logging.set_debug_level("DEBUG")
     file = f"{TEMP_FILE_ROOT}.sarif"
     rm(file)
     yield file
