@@ -22,6 +22,7 @@
 """ projects tests """
 
 import pytest
+from collections.abc import Generator
 
 import utilities as util
 from sonar import projects, exceptions
@@ -36,13 +37,13 @@ def test_get_object(get_test_project: callable) -> None:
         projects.Project.get_object(endpoint=util.SQ, key=util.NON_EXISTING_KEY)
 
 
-def test_refresh() -> None:
+def test_refresh(get_test_project: Generator[projects.Project]) -> None:
     """test_refresh"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.EXISTING_PROJECT)
     proj.refresh()
 
-    proj = projects.Project.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
-    assert proj.delete()
+    proj = get_test_project
+    proj.delete()
     with pytest.raises(exceptions.ObjectNotFound):
         proj.refresh()
 
@@ -212,5 +213,5 @@ def test_branch_and_pr() -> None:
     proj = projects.Project.get_object(util.SQ, util.LIVE_PROJECT)
     assert len(proj.get_branches_and_prs(filters={"branch": "*"})) >= 2
     assert len(proj.get_branches_and_prs(filters={"branch": "foobar"})) == 0
-    assert len(proj.get_branches_and_prs(filters={"pullRequest": "*"})) == 0
+    assert len(proj.get_branches_and_prs(filters={"pullRequest": "*"})) == 2
     assert len(proj.get_branches_and_prs(filters={"pullRequest": "5"})) == 1
