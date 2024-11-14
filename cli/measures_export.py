@@ -178,7 +178,7 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
     """Writes measures history of object list in CSV format"""
 
     w_br, w_url = kwargs[options.WITH_BRANCHES], kwargs[options.WITH_URL]
-    row = ["# key", "date", "name"]
+    row = ["key", "date", "name"]
     if w_br:
         row.append("branch")
     row += wanted_metrics
@@ -187,6 +187,7 @@ def __write_measures_history_csv_as_table(file: str, wanted_metrics: types.KeyLi
 
     with util.open_file(file) as fd:
         csvwriter = csv.writer(fd, delimiter=kwargs[options.CSV_SEPARATOR])
+        print("# ", file=fd, end="")
         csvwriter.writerow(row)
         for obj_data in data:
             hist_data = {}
