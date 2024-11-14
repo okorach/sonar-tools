@@ -28,6 +28,7 @@ import pytest
 import utilities as util
 from sonar import projects, applications, portfolios, exceptions, logging, issues
 
+TEST_LOGFILE = "pytest.log"
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
 CSV_FILE = f"{TEMP_FILE_ROOT}.csv"
 JSON_FILE = f"{TEMP_FILE_ROOT}.json"
@@ -39,9 +40,12 @@ TEST_ISSUE = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 @pytest.fixture
 def get_test_project() -> Generator[projects.Project]:
     """setup of tests"""
-    logging.set_logger("pytest.log")
+    logging.set_logger(TEST_LOGFILE)
     logging.set_debug_level("DEBUG")
-    o = projects.Project.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
+    try:
+        o = projects.Project.get_object(endpoint=util.SQ, key=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = projects.Project.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
     yield o
     # Teardown: Clean up resources (if any) after the test
     o.delete()
@@ -50,7 +54,7 @@ def get_test_project() -> Generator[projects.Project]:
 @pytest.fixture
 def get_test_app() -> Generator[applications.Application]:
     """setup of tests"""
-    logging.set_logger("pytest.log")
+    logging.set_logger(TEST_LOGFILE)
     logging.set_debug_level("DEBUG")
     try:
         o = applications.Application.get_object(endpoint=util.SQ, key=util.TEMP_KEY)
@@ -64,7 +68,10 @@ def get_test_app() -> Generator[applications.Application]:
 @pytest.fixture
 def get_test_portfolio() -> Generator[portfolios.Portfolio]:
     """setup of tests"""
-    o = portfolios.Portfolio.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
+    try:
+        o = portfolios.Portfolio.get_object(endpoint=util.SQ, key=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = portfolios.Portfolio.create(endpoint=util.SQ, key=util.TEMP_KEY, name=util.TEMP_KEY)
     yield o
     # Teardown: Clean up resources (if any) after the test
     o.delete()
