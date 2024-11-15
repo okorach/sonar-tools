@@ -271,10 +271,11 @@ class User(sqobject.SqObject):
         :return: Whether operation succeeded
         :rtype: bool
         """
-        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
-        if not group:
+        try:
+            group = groups.Group.read(endpoint=self.endpoint, name=group_name)
+        except exceptions.ObjectNotFound:
             log.warning("Group '%s' does not exists, can't add membership for %s", group_name, str(self))
-            return False
+            raise
         ok = group.add_user(self.login)
         if ok:
             self._groups.append(group_name)
@@ -352,6 +353,7 @@ class User(sqobject.SqObject):
         """
         log.debug("Auditing %s", str(self))
         protected_users = util.csv_to_list(settings.get("audit.tokens.neverExpire", ""))
+        log.debug("Auditing %s PROTECTED = %s", str(self), str(protected_users))
         if self.login in protected_users:
             log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
