@@ -179,7 +179,7 @@ class User(sqobject.SqObject):
             self._groups = data.get("groups", [])  #: User groups
         else:
             data = json.loads(self.get(_GROUPS_API_V2, {"userId": self._id, "pageSize": 500}).text)["groupMemberships"]
-            util.log.debug("Groups = %s", str(data))
+            log.debug("Groups = %s", str(data))
             self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
         return self._groups
 
@@ -194,7 +194,7 @@ class User(sqobject.SqObject):
             api = User.SEARCH_API
         else:
             api = User.SEARCH_API_V2
-        data = self.get(api, params={"q": self.login})
+        data = json.loads(self.get(api, params={"q": self.login}).text)
         for d in data["users"]:
             if d["login"] == self.login:
                 self.__load(d)
