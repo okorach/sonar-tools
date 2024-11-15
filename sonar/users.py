@@ -353,7 +353,6 @@ class User(sqobject.SqObject):
         """
         log.debug("Auditing %s", str(self))
         protected_users = util.csv_to_list(settings.get("audit.tokens.neverExpire", ""))
-        log.debug("Auditing %s PROTECTED = %s", str(self), str(protected_users))
         if self.login in protected_users:
             log.info("%s is protected, last connection date is ignored, tokens never expire", str(self))
             return []
