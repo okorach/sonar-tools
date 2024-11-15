@@ -123,6 +123,8 @@ def test_double_match(get_test_user: Generator[users.User]) -> None:
 
 def test_audit_user() -> None:
     """audit_user"""
+    logging.set_logger(util.TEST_LOGFILE)
+    logging.set_debug_level("DEBUG")
     user = users.User.get_object(util.SQ, "admin")
     assert user.audit({"audit.tokens.neverExpire": "admin"}) == []
     assert len(user.audit({})) > 0
