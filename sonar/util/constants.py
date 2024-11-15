@@ -30,3 +30,5 @@ GET = "GET"
 
 SET_TAGS = "SET_TAGS"
 GET_TAGS = "GET_TAGS"
+
+USE_CACHE = "use_cache"
