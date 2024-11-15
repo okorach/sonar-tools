@@ -26,7 +26,7 @@ from collections.abc import Generator
 import pytest
 
 import utilities as util
-from sonar import projects, applications, portfolios, exceptions, logging, issues
+from sonar import projects, applications, portfolios, exceptions, logging, issues, users
 
 TEST_LOGFILE = "pytest.log"
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
@@ -91,6 +91,20 @@ def get_test_issue() -> Generator[issues.Issue]:
     issues_d = issues.search_by_project(endpoint=util.SQ, project_key=util.LIVE_PROJECT)
     yield issues_d[TEST_ISSUE]
     # Teardown: Clean up resources (if any) after the test - Nothing in that case
+
+
+@pytest.fixture
+def get_test_user() -> Generator[users.User]:
+    """setup of tests"""
+    logging.set_logger(TEST_LOGFILE)
+    logging.set_debug_level("DEBUG")
+    try:
+        o = users.User.get_object(endpoint=util.SQ, login=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = users.User.create(endpoint=util.SQ, login=util.TEMP_KEY, name=f"User name {util.TEMP_KEY}")
+    _ = [o.remove_from_group(g) for g in o.groups() if g != "sonar-users"]
+    yield o
+    _ = [o.remove_from_group(g) for g in o.groups() if g != "sonar-users"]
 
 
 def rm(file: str) -> None:
