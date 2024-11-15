@@ -320,7 +320,7 @@ class Issue(findings.Finding):
         api = self.__class__.API["GET_TAGS"]
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
-        if not kwargs.get("use_cache", True) or self._tags is None:
+        if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
             data = json.loads(self.get(api, params=self.api_params(c.GET_TAGS)).text)
             self.sq_json.update(data["issues"][0])
             self._tags = self.sq_json["tags"]

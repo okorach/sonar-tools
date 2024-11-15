@@ -21,7 +21,12 @@
 """Abstraction of the SonarQube group concept"""
 from __future__ import annotations
 import json
+
 from typing import Optional
+
+from http import HTTPStatus
+from requests import HTTPError, RequestException
+
 import sonar.logging as log
 import sonar.platform as pf
 import sonar.sqobject as sq
@@ -79,7 +84,7 @@ class Group(sq.SqObject):
             return o
         data = util.search_by_name(endpoint, name, Group.SEARCH_API, "groups")
         if data is None:
-            raise exceptions.UnsupportedOperation(f"Group '{name}' not found.")
+            raise exceptions.ObjectNotFound(name, f"Group '{name}' not found.")
         # SonarQube 10 compatibility: "id" field is dropped, use "name" instead
         o = Group.CACHE.get(data.get("id", data["name"]), endpoint.url)
         if o:
@@ -155,7 +160,17 @@ class Group(sq.SqObject):
         :return: Whether the operation succeeded
         :rtype: bool
         """
-        return self.post(ADD_USER_API, params={"login": user_login, "name": self.name}).ok
+        try:
+            r = self.post(ADD_USER_API, params={"login": user_login, "name": self.name})
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, "adding user to group")
+            if isinstance(e, HTTPError):
+                code = e.response.status_code
+                if code == HTTPStatus.BAD_REQUEST:
+                    raise exceptions.UnsupportedOperation(util.sonar_error(e.response))
+                if code == HTTPStatus.NOT_FOUND:
+                    raise exceptions.ObjectNotFound(user_login, util.sonar_error(e.response))
+        return r.ok
 
     def remove_user(self, user_login: str) -> bool:
         """Removes a user from the group

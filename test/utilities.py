@@ -33,6 +33,8 @@ from sonar import errcodes, logging
 from sonar import platform
 import cli.options as opt
 
+TEST_LOGFILE = "pytest.log"
+
 LATEST = "http://localhost:10000"
 LATEST_TEST = "http://localhost:10020"
 LTA = "http://localhost:9000"

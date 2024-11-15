@@ -173,7 +173,7 @@ class SqObject(object):
             raise exceptions.UnsupportedOperation(f"{self.__class__.__name__.lower()}s have no tags")
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
-        if not kwargs.get("use_cache", True) or self._tags is None:
+        if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
             data = json.loads(self.get(api, params=self.get_tags_params()).text)
             self.sq_json.update(data["component"])
             self._tags = self.sq_json["tags"]

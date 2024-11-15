@@ -27,6 +27,8 @@ import json
 import sonar.logging as log
 from sonar import platform as pf
 from sonar.util import types, cache
+import sonar.util.constants as c
+
 from sonar import groups, sqobject, tokens, exceptions
 import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
@@ -146,7 +148,7 @@ class User(sqobject.SqObject):
 
     def __load(self, data: types.ApiPayload) -> None:
         self.name = data["name"]  #: User name
-        self.scm_accounts = data.pop("scmAccounts", None)  #: User SCM accounts
+        self.scm_accounts = list(set(util.csv_to_list(data.pop("scmAccounts", None))))  #: User SCM accounts
         self.email = data.get("email", None)  #: User email
         self.is_local = data.get("local", False)  #: User is local - read-only
         self.last_login = None  #: User last login - read-only
@@ -168,9 +170,9 @@ class User(sqobject.SqObject):
         self._groups = self.groups(data)  #: User groups
         self.sq_json = data
 
-    def groups(self, data: types.ApiPayload = None) -> types.KeyList:
+    def groups(self, data: types.ApiPayload = None, **kwargs) -> types.KeyList:
         """Returns the list of groups of a user"""
-        if self._groups is not None:
+        if self._groups is not None and kwargs.get(c.USE_CACHE, True):
             return self._groups
         if self.endpoint.is_sonarcloud():
             data = json.loads(self.get(_GROUPS_API_SC, {"login": self.key}).text)["groups"]
@@ -179,7 +181,7 @@ class User(sqobject.SqObject):
             self._groups = data.get("groups", [])  #: User groups
         else:
             data = json.loads(self.get(_GROUPS_API_V2, {"userId": self._id, "pageSize": 500}).text)["groupMemberships"]
-            util.log.debug("Groups = %s", str(data))
+            log.debug("Groups = %s", str(data))
             self._groups = [groups.get_object_from_id(self.endpoint, g["groupId"]).name for g in data]
         return self._groups
 
@@ -194,11 +196,12 @@ class User(sqobject.SqObject):
             api = User.SEARCH_API
         else:
             api = User.SEARCH_API_V2
-        data = self.get(api, params={"q": self.login})
+        data = json.loads(self.get(api, params={"q": self.login}).text)
         for d in data["users"]:
             if d["login"] == self.login:
                 self.__load(d)
                 break
+        self.groups(use_cache=False)
         return self
 
     def url(self) -> str:
@@ -217,12 +220,12 @@ class User(sqobject.SqObject):
         """
         return self.post(DEACTIVATE_API, {"name": self.name, "login": self.login}).ok
 
-    def tokens(self) -> list[tokens.UserToken]:
+    def tokens(self, **kwargs) -> list[tokens.UserToken]:
         """
         :return: The list of tokens of the user
         :rtype: list[Token]
         """
-        if self.__tokens is None:
+        if self.__tokens is None or not kwargs.get(c.USE_CACHE, True):
             self.__tokens = tokens.search(self.endpoint, self.login)
         return self.__tokens
 
@@ -268,11 +271,15 @@ class User(sqobject.SqObject):
         :return: Whether operation succeeded
         :rtype: bool
         """
-        group = groups.Group.read(endpoint=self.endpoint, name=group_name)
-        if not group:
+        try:
+            group = groups.Group.read(endpoint=self.endpoint, name=group_name)
+        except exceptions.ObjectNotFound:
             log.warning("Group '%s' does not exists, can't add membership for %s", group_name, str(self))
-            return False
-        return group.add_user(self.login)
+            raise
+        ok = group.add_user(self.login)
+        if ok:
+            self._groups.append(group_name)
+        return ok
 
     def remove_from_group(self, group_name: str) -> bool:
         """Removes group membership to the user
@@ -328,11 +335,11 @@ class User(sqobject.SqObject):
         :rtype: bool
         """
         log.debug("Setting SCM accounts of %s to '%s'", str(self), str(accounts_list))
-        r = self.post(UPDATE_API, params={"login": self.login, "scmAccount": ",".join(accounts_list)})
+        r = self.post(UPDATE_API, params={"login": self.login, "scmAccount": ",".join(set(accounts_list))})
         if not r.ok:
             self.scm_accounts = []
             return False
-        self.scm_accounts = accounts_list
+        self.scm_accounts = list(set(accounts_list))
         return True
 
     def audit(self, settings: types.ConfigSettings = None) -> list[Problem]:

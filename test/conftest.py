@@ -26,9 +26,8 @@ from collections.abc import Generator
 import pytest
 
 import utilities as util
-from sonar import projects, applications, portfolios, exceptions, logging, issues
+from sonar import projects, applications, portfolios, exceptions, logging, issues, users
 
-TEST_LOGFILE = "pytest.log"
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
 CSV_FILE = f"{TEMP_FILE_ROOT}.csv"
 JSON_FILE = f"{TEMP_FILE_ROOT}.json"
@@ -39,7 +38,7 @@ TEST_ISSUE = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 
 def create_test_object(a_class: type, key: str) -> any:
     """Creates a SonarQube test object of a given class"""
-    logging.set_logger(TEST_LOGFILE)
+    logging.set_logger(util.TEST_LOGFILE)
     logging.set_debug_level("DEBUG")
     try:
         o = a_class.get_object(endpoint=util.SQ, key=key)
@@ -91,6 +90,20 @@ def get_test_issue() -> Generator[issues.Issue]:
     issues_d = issues.search_by_project(endpoint=util.SQ, project_key=util.LIVE_PROJECT)
     yield issues_d[TEST_ISSUE]
     # Teardown: Clean up resources (if any) after the test - Nothing in that case
+
+
+@pytest.fixture
+def get_test_user() -> Generator[users.User]:
+    """setup of tests"""
+    logging.set_logger(util.TEST_LOGFILE)
+    logging.set_debug_level("DEBUG")
+    try:
+        o = users.User.get_object(endpoint=util.SQ, login=util.TEMP_KEY)
+    except exceptions.ObjectNotFound:
+        o = users.User.create(endpoint=util.SQ, login=util.TEMP_KEY, name=f"User name {util.TEMP_KEY}")
+    _ = [o.remove_from_group(g) for g in o.groups() if g != "sonar-users"]
+    yield o
+    _ = [o.remove_from_group(g) for g in o.groups() if g != "sonar-users"]
 
 
 def rm(file: str) -> None:
