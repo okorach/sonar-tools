@@ -168,7 +168,7 @@ class Group(sq.SqObject):
                 code = e.response.status_code
                 if code == HTTPStatus.BAD_REQUEST:
                     raise exceptions.UnsupportedOperation(util.sonar_error(e.response))
-                elif code == HTTPStatus.NOT_FOUND:
+                if code == HTTPStatus.NOT_FOUND:
                     raise exceptions.ObjectNotFound(user_login, util.sonar_error(e.response))
         return r.ok
 

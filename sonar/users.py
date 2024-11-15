@@ -225,7 +225,7 @@ class User(sqobject.SqObject):
         :return: The list of tokens of the user
         :rtype: list[Token]
         """
-        if self.__tokens is None or not kwargs(c.USE_CACHE, True):
+        if self.__tokens is None or not kwargs.get(c.USE_CACHE, True):
             self.__tokens = tokens.search(self.endpoint, self.login)
         return self.__tokens
 
