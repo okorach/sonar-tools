@@ -120,7 +120,7 @@ def get_temp_filename(ext: str) -> str:
     logging.set_debug_level("DEBUG")
     file = f"{TEMP_FILE_ROOT}.{ext}"
     rm(file)
-    return f"{TEMP_FILE_ROOT}.{ext}"
+    return file
 
 
 @pytest.fixture
