@@ -26,6 +26,7 @@
 import os
 import sys
 import datetime
+from typing import Optional
 from unittest.mock import patch
 import pytest
 
@@ -58,9 +59,11 @@ TEMP_KEY = "TEMP"
 TEMP_NAME = "Temp Name"
 
 STD_OPTS = [f"-{opt.URL_SHORT}", os.getenv("SONAR_HOST_URL"), f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
-STD_OPTS_STR = " ".join(STD_OPTS)
+SQS_OPTS = " ".join(STD_OPTS)
 TEST_OPTS = [f"-{opt.URL_SHORT}", LATEST_TEST, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
 CE_OPTS = [f"-{opt.URL_SHORT}", LATEST_CE, f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
+
+SC_OPTS = f'--{opt.URL} https://sonarcloud.io --{opt.TOKEN} {os.getenv("SONAR_TOKEN_SONARCLOUD")} --{opt.ORG} okorach'
 
 SQ = platform.Platform(url=os.getenv("SONAR_HOST_URL"), token=os.getenv("SONAR_TOKEN_ADMIN_USER"))
 SC = platform.Platform(url="https://sonarcloud.io", token=os.getenv("SONAR_TOKEN_SONARCLOUD"))
@@ -113,9 +116,9 @@ def is_url(value: str) -> bool:
     return value.startswith("http")
 
 
-def run_cmd(func: callable, arguments: str):
-    logging.info("RUNNING: %s", arguments)
-    args = arguments.split(" ")
+def __get_args_and_file(string_arguments: str) -> tuple[Optional[str], list[str]]:
+    """Gets the list arguments and output file of a sonar-tools cmd"""
+    args = string_arguments.split(" ")
     try:
         file = args[args.index(opt.REPORT_FILE) + 1]
     except ValueError:
@@ -123,9 +126,29 @@ def run_cmd(func: callable, arguments: str):
             file = args[args.index(opt.REPORT_FILE_SHORT) + 1]
         except ValueError:
             file = None
+    return file, args
+
+
+def run_cmd(func: callable, arguments: str, expected_code: int) -> Optional[str]:
+    """Runs a sonar-tools command, verifies it raises the right exception, and returns the expected code"""
+    logging.info("RUNNING: %s", arguments)
+    file, args = __get_args_and_file(arguments)
     with pytest.raises(SystemExit) as e:
         with patch.object(sys, "argv", args):
             func()
-    assert int(str(e.value)) == errcodes.OK
+    assert int(str(e.value)) == expected_code
+    return file
+
+
+def run_success_cmd(func: callable, arguments: str) -> None:
+    """Runs a command that's suppose to end in success"""
+    file = run_cmd(func, arguments, errcodes.OK)
     if file:
         assert file_not_empty(file)
+
+
+def run_failed_cmd(func: callable, arguments: str, expected_code: int) -> None:
+    """Runs a command that's suppose to end in failure"""
+    file = run_cmd(func, arguments, expected_code)
+    if file:
+        assert not os.path.isfile(file)
