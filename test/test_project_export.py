@@ -65,8 +65,8 @@ def test_export_non_existing_project(get_json_file: Generator[str]) -> None:
     util.run_failed_cmd(projects_cli.main, cmd, errcodes.NO_SUCH_KEY)
 
 
-def test_export_sonarcloud(get_json_file: Generator[str]) -> None:
-    """test_export_sonarcloud"""
+def test_export_sq_cloud(get_json_file: Generator[str]) -> None:
+    """test_export_sq_cloud"""
     cmd = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {get_json_file} {util.SC_OPTS}"
     util.run_failed_cmd(projects_cli.main, cmd, errcodes.UNSUPPORTED_OPERATION)
 
