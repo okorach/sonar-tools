@@ -160,9 +160,6 @@ class Issue(findings.Finding):
         ops = {c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
         return ops[op] if op in ops else ops[c.LIST]
 
-    def search_params(self) -> ApiParams:
-        return self.api_params(c.LIST)
-
     def url(self) -> str:
         """
         :return: A permalink URL to the issue in the SonarQube platform
@@ -317,7 +314,7 @@ class Issue(findings.Finding):
 
     def get_tags(self, **kwargs) -> list[str]:
         """Returns issues tags"""
-        api = self.__class__.API["GET_TAGS"]
+        api = self.__class__.API[c.GET_TAGS]
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
