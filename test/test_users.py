@@ -139,7 +139,7 @@ def test_audit_disabled() -> None:
 
 def test_login_from_name(get_test_user: Generator[users.User]) -> None:
     """test_login_from_name"""
-    user = get_test_user
+    _ = get_test_user
     name = f"User name {util.TEMP_KEY}"
     assert users.get_login_from_name(util.SQ, name) == util.TEMP_KEY
 
