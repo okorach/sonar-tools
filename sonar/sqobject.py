@@ -155,7 +155,7 @@ class SqObject(object):
             return False
         my_tags = utilities.list_to_csv(tags) if isinstance(tags, list) else utilities.csv_normalize(tags)
         try:
-            r = self.post(self.__class__.API[c.SET_TAGS], params={**self.search_params(), "tags": my_tags})
+            r = self.post(self.__class__.API[c.SET_TAGS], params={**self.api_params(c.SET_TAGS), "tags": my_tags})
             if r.ok:
                 self._tags = sorted(utilities.csv_to_list(my_tags))
         except (ConnectionError, RequestException) as e:

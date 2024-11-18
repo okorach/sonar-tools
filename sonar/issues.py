@@ -290,7 +290,7 @@ class Issue(findings.Finding):
         """
         try:
             log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, severity)
-            r = self.post("issues/set_severity", {"issue": self.key, "severity": severity}).ok
+            r = self.post("issues/set_severity", {"issue": self.key, "severity": severity})
             if r.ok:
                 self.severity = severity
         except (ConnectionError, requests.RequestException) as e:
@@ -324,7 +324,7 @@ class Issue(findings.Finding):
             data = json.loads(self.get(api, params=self.api_params(c.GET_TAGS)).text)
             self.sq_json.update(data["issues"][0])
             self._tags = self.sq_json["tags"]
-        return self._tags if len(self._tags) > 0 else None
+        return self._tags
 
     def add_tag(self, tag: str) -> bool:
         """Adds a tag to an issue
@@ -345,7 +345,9 @@ class Issue(findings.Finding):
         :rtype: bool
         """
         log.debug("Removing tag '%s' from %s", tag, str(self))
-        tags = [] if not self._tags else self._tags.copy()
+        if self._tags is None:
+            self._tags = []
+        tags = self._tags.copy()
         if tag in self._tags:
             tags.remove(tag)
         return self.set_tags(tags)
