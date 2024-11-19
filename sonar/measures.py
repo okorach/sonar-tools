@@ -70,7 +70,7 @@ class Measure(sq.SqObject):
         metrics.search(concerned_object.endpoint)
         return cls(concerned_object=concerned_object, key=data["metric"], value=_search_value(data))
 
-    def __converted_value(self, value) -> any:
+    def __converted_value(self, value: any) -> any:
         value = util.string_to_date(value) if self.metric in DATETIME_METRICS else util.convert_to_type(value)
         if self.is_a_rating():
             value = int(float(value))
