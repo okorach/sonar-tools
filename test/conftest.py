@@ -38,8 +38,7 @@ TEST_ISSUE = "a1fddba4-9e70-46c6-ac95-e815104ead59"
 
 def create_test_object(a_class: type, key: str) -> any:
     """Creates a SonarQube test object of a given class"""
-    logging.set_logger(util.TEST_LOGFILE)
-    logging.set_debug_level("DEBUG")
+    util.start_logging()
     try:
         o = a_class.get_object(endpoint=util.SQ, key=key)
     except exceptions.ObjectNotFound:
@@ -80,6 +79,36 @@ def get_test_portfolio() -> Generator[portfolios.Portfolio]:
     o.key = util.TEMP_KEY
     try:
         o.delete()
+    except exceptions.ObjectNotFound:
+        pass
+
+
+@pytest.fixture
+def get_test_portfolio_2() -> Generator[portfolios.Portfolio]:
+    """setup of tests"""
+    o = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY_2)
+    yield o
+    o.key = util.TEMP_KEY_2
+    try:
+        o.delete()
+    except exceptions.ObjectNotFound:
+        pass
+
+
+@pytest.fixture
+def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
+    """setup of tests"""
+    parent = create_test_object(portfolios.Portfolio, key=util.TEMP_KEY)
+    subp = parent.add_standard_subportfolio(key=util.TEMP_KEY_3, name=util.TEMP_KEY_3)
+    yield subp
+    subp.key = util.TEMP_KEY_3
+    try:
+        subp.delete()
+    except exceptions.ObjectNotFound:
+        pass
+    parent.key = util.TEMP_KEY
+    try:
+        parent.delete()
     except exceptions.ObjectNotFound:
         pass
 

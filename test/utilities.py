@@ -35,6 +35,7 @@ from sonar import platform
 import cli.options as opt
 
 TEST_LOGFILE = "pytest.log"
+LOGGER_COUNT = 0
 
 LATEST = "http://localhost:10000"
 LATEST_TEST = "http://localhost:10020"
@@ -56,6 +57,8 @@ EXISTING_PROJECT = TEST_KEY
 EXISTING_APP = TEST_KEY
 EXISTING_PORTFOLIO = TEST_KEY
 TEMP_KEY = "TEMP"
+TEMP_KEY_2 = "TEMP2"
+TEMP_KEY_3 = "TEMP3"
 TEMP_NAME = "Temp Name"
 
 STD_OPTS = [f"-{opt.URL_SHORT}", os.getenv("SONAR_HOST_URL"), f"-{opt.TOKEN_SHORT}", os.getenv("SONAR_TOKEN_ADMIN_USER")]
@@ -152,3 +155,12 @@ def run_failed_cmd(func: callable, arguments: str, expected_code: int) -> None:
     file = run_cmd(func, arguments, expected_code)
     if file:
         assert not os.path.isfile(file)
+
+
+def start_logging() -> None:
+    """start_logging"""
+    global LOGGER_COUNT
+    if LOGGER_COUNT == 0:
+        logging.set_logger(TEST_LOGFILE)
+        logging.set_debug_level("DEBUG")
+        LOGGER_COUNT = 1
