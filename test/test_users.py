@@ -146,9 +146,11 @@ def test_login_from_name(get_test_user: Generator[users.User]) -> None:
     name = "Non existing name"
     assert users.get_login_from_name(util.SQ, name) is None
 
-    user2 = users.User.create(endpoint=util.SQ, login=f"bb{util.TEMP_KEY}aa", name=f"User name bb{util.TEMP_KEY}aa")
-    assert users.get_login_from_name(util.SQ, util.TEMP_KEY) is not None
-    user2.delete()
+    try:
+        user2 = users.User.create(endpoint=util.SQ, login=f"bb{util.TEMP_KEY}aa", name=f"User name bb{util.TEMP_KEY}aa")
+    except exceptions.ObjectAlreadyExists:
+        user2 = users.User.get_object(util.SQ, login=f"bb{util.TEMP_KEY}aa")
+    assert users.get_login_from_name(util.SQ, f"User name bb{util.TEMP_KEY}aa") == user2.login
 
 
 def test_convert_for_yaml() -> None:
