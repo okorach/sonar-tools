@@ -758,6 +758,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             o.update(data=data, recurse=True)
         except exceptions.ObjectNotFound as e:
             log.error(e.message)
+    return True
 
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:
