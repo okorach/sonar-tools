@@ -622,7 +622,6 @@ class Portfolio(aggregations.Aggregation):
         self.set_visibility(data.get("visibility", None))
         if "permissions" in data:
             self.set_permissions(perms.decode_full(data["permissions"]))
-        self.root_portfolio = self.root_portfolio
         log.debug("1.Setting root of %s is %s", str(self), str(self.root_portfolio))
         self.set_selection_mode(data)
         for app_key, branches in data.get("applications", {}).items():
