@@ -26,7 +26,7 @@ from collections.abc import Generator
 import pytest
 
 import utilities as util
-from sonar import projects, applications, portfolios, exceptions, logging, issues, users
+from sonar import projects, applications, portfolios, qualityprofiles, exceptions, logging, issues, users
 
 TEMP_FILE_ROOT = f"temp.{os.getpid()}"
 CSV_FILE = f"{TEMP_FILE_ROOT}.csv"
@@ -109,6 +109,21 @@ def get_test_subportfolio() -> Generator[portfolios.Portfolio]:
     parent.key = util.TEMP_KEY
     try:
         parent.delete()
+    except exceptions.ObjectNotFound:
+        pass
+
+
+@pytest.fixture
+def get_test_qp() -> Generator[qualityprofiles.QualityProfile]:
+    """setup of tests"""
+    util.start_logging()
+    try:
+        o = qualityprofiles.get_object(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
+    except exceptions.ObjectNotFound:
+        o = qualityprofiles.QualityProfile.create(endpoint=util.SQ, name=util.TEMP_KEY, language="py")
+    yield o
+    try:
+        o.delete()
     except exceptions.ObjectNotFound:
         pass
 
