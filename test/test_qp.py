@@ -144,13 +144,13 @@ def test_import() -> None:
 def test_add_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_add_rules"""
     qp = get_test_qp
-    ruleset = {"python:S6542": "HIGH", "python:FunctionComplexity": "HIGH"}
+    ruleset = {"python:S6542": "MAJOR", "python:FunctionComplexity": "MAJOR"}
     qp.activate_rules(ruleset)
     rules = qp.rules()
-    assert sorted(rules.keys()) == sorted(ruleset)
-    qp.activate_rule("python:S139")
-    ruleset["python:S139"] = ""
-    assert sorted(qp.rules().keys()) == sorted(ruleset)
+    assert sorted(list(rules.keys())) == sorted(list(ruleset.keys()))
+    qp.activate_rule("python:S139", "MAJOR")
+    ruleset["python:S139"] = "MAJOR"
+    assert sorted(list(qp.rules().keys())) == sorted(list(ruleset.keys()))
     assert qp.set_parent("Sonar way")
     assert len(qp.rules()) > 250
 
