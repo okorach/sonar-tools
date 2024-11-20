@@ -116,7 +116,7 @@ def test_set_default(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> 
 
 
 def test_export() -> None:
-    """test_convert_for_yaml"""
+    """test_export"""
     json_exp = qualityprofiles.export(endpoint=util.SQ, export_settings={})
     yaml_exp = qualityprofiles.convert_for_yaml(json_exp)
     assert len(json_exp) > 0
