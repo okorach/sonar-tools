@@ -147,17 +147,11 @@ def test_config_import_portfolios(get_json_file: Generator[str]) -> None:
         json_config = json.loads(fh.read())
 
     # delete all portfolios in test
-    util.start_logging()
     logging.info("Deleting all portfolios")
     portfolios.Portfolio.clear_cache()
-    #portfolios.recompute(util.TEST_SQ)
-    #plist = portfolios.get_list(util.TEST_SQ).values()
-    #logging.debug("Nbr portfolios = %s", len(plist))
     _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
     # Import config
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", [CMD] + util.TEST_OPTS + ["-i", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE, "-l", "test.log"]):
-            config.main()
+    util.run_success_cmd(config.main, f"{CMD} {util.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {file}")
 
     # Compare portfolios
     portfolio_list = portfolios.get_list(util.TEST_SQ)
