@@ -125,6 +125,35 @@ def test_export() -> None:
     assert len(yaml_exp) == len(json_exp)
 
 
+def test_import() -> None:
+    """test_import"""
+    json_exp = qualityprofiles.export(util.SQ, {})
+    # delete all portfolios in test
+    logging.info("Deleting all quality profiles")
+    qualityprofiles.QualityProfile.clear_cache()
+    _ = [o.delete() for o in qualityprofiles.get_list(util.TEST_SQ, use_cache=False).values() if not o.is_built_in()]
+    assert qualityprofiles.import_config(util.TEST_SQ, json_exp)
+
+    # Compare QP list
+    o_list = qualityprofiles.get_list(util.TEST_SQ)
+    assert len(o_list) == len(json_exp)
+    assert sorted(list(o_list.keys())) == sorted(list(json_exp.keys()))
+
+
+def test_add_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+    """test_add_rules"""
+    qp = get_test_qp
+    ruleset = {"python:S6542": "HIGH", "python:FunctionComplexity": "HIGH"}
+    qp.activate_rules(ruleset)
+    rules = qp.rules()
+    assert sorted(rules.keys()) == sorted(ruleset)
+    qp.activate_rule("python:S139")
+    ruleset["python:S139"] = ""
+    assert sorted(qp.rules().keys()) == sorted(ruleset)
+    assert qp.set_parent("Sonar way")
+    assert len(qp.rules()) > 250
+
+
 # def test_attributes(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
 #     """Test regexp mode"""
 #     if util.SQ.edition() in ("community", "developer"):
