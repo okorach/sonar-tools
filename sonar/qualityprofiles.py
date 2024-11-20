@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import Optional
 import json
 from datetime import datetime
+from http import HTTPStatus
 
 from queue import Queue
 from threading import Thread, Lock
@@ -31,7 +32,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 from sonar import exceptions
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
@@ -41,7 +42,6 @@ import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-_CREATE_API = "qualityprofiles/create"
 _DETAILS_API = "qualityprofiles/show"
 
 _KEY_PARENT = "parent"
@@ -62,6 +62,13 @@ class QualityProfile(sq.SqObject):
     SEARCH_API = "qualityprofiles/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
+    API = {
+        c.CREATE: "qualityprofiles/create",
+        c.LIST: "qualityprofiles/search",
+        c.GET: "qualityprofiles/search",
+        c.DELETE: "qualityprofiles/delete",
+        c.RENAME: "qualityprofiles/rename",
+    }
 
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Do not use, use class methods to create objects"""
@@ -108,7 +115,9 @@ class QualityProfile(sq.SqObject):
         o = QualityProfile.CACHE.get(name, language, endpoint.url)
         if o:
             return o
-        data = util.search_by_name(endpoint, name, QualityProfile.SEARCH_API, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
+        data = util.search_by_name(
+            endpoint, name, QualityProfile.API[c.LIST], QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language}
+        )
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
@@ -125,9 +134,11 @@ class QualityProfile(sq.SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
-        r = endpoint.post(_CREATE_API, params={"name": name, "language": language})
-        if not r.ok:
-            return None
+        try:
+            endpoint.post(QualityProfile.API[c.CREATE], params={"name": name, "language": language})
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating quality profile '{language}:{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -178,14 +189,18 @@ class QualityProfile(sq.SqObject):
         :return: Whether setting the parent was successful or not
         :rtype: bool
         """
+        log.info("Setting parent %s to %s", str(parent_name), self.parent_name)
         if parent_name is None:
             return False
         if get_object(endpoint=self.endpoint, name=parent_name, language=self.language) is None:
             log.warning("Can't set parent name '%s' to %s, parent not found", str(parent_name), str(self))
             return False
-        if self.parent_name is None or self.parent_name != parent_name:
-            params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
-            r = self.post("qualityprofiles/change_parent", params=params)
+        if parent_name == self.name:
+            log.error("Can't set %s as parent of itself", str(self))
+            return False
+        elif self.parent_name is None or self.parent_name != parent_name:
+            r = self.post("qualityprofiles/change_parent", params={**self.api_params(c.GET), "parentQualityProfile": parent_name})
+            self.parent_name = parent_name
             return r.ok
         else:
             log.debug("Won't set parent of %s. It's the same as currently", str(self))
@@ -196,8 +211,7 @@ class QualityProfile(sq.SqObject):
         :return: Whether setting as default quality profile was successful
         :rtype: bool
         """
-        params = {"qualityProfile": self.name, "language": self.language}
-        r = self.post("qualityprofiles/set_default", params=params)
+        r = self.post("qualityprofiles/set_default", params=self.api_params(c.GET))
         if r.ok:
             self.is_default = True
             # Turn off default for all other profiles except the current profile
@@ -290,7 +304,7 @@ class QualityProfile(sq.SqObject):
             log.debug("Updating %s with %s", str(self), str(data))
             if "name" in data and data["name"] != self.name:
                 log.info("Renaming %s with %s", str(self), data["name"])
-                self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
+                self.post(QualityProfile.API[c.RENAME], params={"id": self.key, "name": data["name"]})
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
@@ -334,6 +348,14 @@ class QualityProfile(sq.SqObject):
             for k in ("name", "pluginKey", "pluginName", "languageKey", "languageName"):
                 r.pop(k, None)
         return data
+
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        operations = {
+            c.GET: {"qualityProfile": self.name, "language": self.language},
+            c.LIST: {"q": self.name, "language": self.language},
+            c.DELETE: {"qualityProfile": self.name, "language": self.language},
+        }
+        return operations[op] if op in operations else operations[c.GET]
 
     def _treat_added_rules(self, added_rules: dict[str:str], added_flag: bool = True) -> dict[str:str]:
         diff_rules = {}
