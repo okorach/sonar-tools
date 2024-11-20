@@ -219,13 +219,13 @@ def test_audit(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
     if util.SQ.edition() in ("community", "developer"):
         return
     p = get_test_portfolio
-    settings = {}
-    assert len(p.audit(settings)) > 0
-    settings["audit.portfolios.empty"] = False
-    settings["audit.portfolios.singleton"] = False
-    p.audit(settings)
-    settings["audit.portfolios"] = False
-    assert len(portfolios.audit(util.SQ, settings)) == 0
+    audit_settings = {}
+    assert len(p.audit(audit_settings)) > 0
+    audit_settings["audit.portfolios.empty"] = False
+    audit_settings["audit.portfolios.singleton"] = False
+    p.audit(audit_settings)
+    audit_settings["audit.portfolios"] = False
+    assert len(portfolios.audit(util.SQ, audit_settings)) == 0
 
 
 def test_add_standard_subp(get_test_subportfolio: Generator[portfolios.Portfolio]) -> None:
