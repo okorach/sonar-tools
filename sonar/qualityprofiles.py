@@ -201,6 +201,7 @@ class QualityProfile(sq.SqObject):
         elif self.parent_name is None or self.parent_name != parent_name:
             r = self.post("qualityprofiles/change_parent", params={**self.api_params(c.GET), "parentQualityProfile": parent_name})
             self.parent_name = parent_name
+            self.rules(use_cache=False)
             return r.ok
         else:
             log.debug("Won't set parent of %s. It's the same as currently", str(self))
@@ -246,12 +247,12 @@ class QualityProfile(sq.SqObject):
             return None
         return get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language).built_in_parent()
 
-    def rules(self) -> dict[str, rules.Rule]:
+    def rules(self, use_cache: bool = False) -> dict[str, rules.Rule]:
         """
         :return: The list of rules active in the quality profile
         :rtype: dict{<rule_key>: <rule_data>}
         """
-        if self._rules is not None:
+        if self._rules is not None and use_cache:
             # Assume nobody changed QP during execution
             return self._rules
         rule_key_list = rules.search_keys(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
@@ -277,6 +278,9 @@ class QualityProfile(sq.SqObject):
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"activating rule {rule_key} in {str(self)}", catch_all=True)
             return False
+        if self._rules is None:
+            self._rules = {}
+        self._rules[rule_key] = rules.get_object(self.endpoint, rule_key)
         return r.ok
 
     def activate_rules(self, ruleset: dict[str, str]) -> bool:
