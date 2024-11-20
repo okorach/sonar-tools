@@ -214,18 +214,6 @@ class Portfolio(aggregations.Aggregation):
         self.root_portfolio.reload_sub_portfolios()
         self.applications()
 
-    def last_analysis(self) -> datetime.datetime:
-        """Returns the portfolio last computation date"""
-        if self._last_analysis is None:
-            super().refresh()
-        return self._last_analysis
-
-    def load_parent(self, parent_portfolio: Portfolio) -> None:
-        """Sets the parent portfolio of a subportfolio"""
-        self.parent_portfolio = parent_portfolio
-        self.root_portfolio = parent_portfolio.root_portfolio
-        log.debug("%s: Parent = %s, Root = %s", str(self), str(self.parent_portfolio), str(self.root_portfolio))
-
     def url(self) -> str:
         """Returns the object permalink"""
         return f"{self.endpoint.url}/portfolio?id={self.key}"
