@@ -131,12 +131,13 @@ def test_import() -> None:
     # delete all portfolios in test
     logging.info("Deleting all quality profiles")
     qualityprofiles.QualityProfile.clear_cache()
-    _ = [o.delete() for o in qualityprofiles.get_list(util.TEST_SQ, use_cache=False).values() if not o.is_built_in()]
-    assert qualityprofiles.import_config(util.TEST_SQ, json_exp)
+    qp_list = set(o for o in qualityprofiles.get_list(util.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default)
+    _ = [o.delete() for o in qp_list]
+    assert qualityprofiles.import_config(util.TEST_SQ, {"qualityProfiles": json_exp})
 
     # Compare QP list
     o_list = qualityprofiles.get_list(util.TEST_SQ)
-    assert len(o_list) == len(json_exp)
+    assert len(o_list) >= len(json_exp)
     assert sorted(list(o_list.keys())) == sorted(list(json_exp.keys()))
 
 
