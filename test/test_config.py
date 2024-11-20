@@ -23,6 +23,8 @@
 
 import os
 import sys
+from collections.abc import Generator
+
 import json
 from unittest.mock import patch
 import pytest
@@ -137,20 +139,21 @@ def test_config_dont_inline_lists() -> None:
     util.clean(util.JSON_FILE)
 
 
-def test_config_import_portfolios() -> None:
+def test_config_import_portfolios(get_json_file: Generator[str]) -> None:
     """test_config_non_existing_project"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit):
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS + ["-e", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE, f"--{opt.WHAT}", "portfolios"]):
-            config.main()
-    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+    file = get_json_file
+    util.run_success_cmd(config.main, f"{CMD} {util.SQS_OPTS} --{opt.EXPORT} -{opt.REPORT_FILE_SHORT} {file} --{opt.WHAT} portfolios")
+    with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
     # delete all portfolios in test
-    logging.set_debug_level("DEBUG")
+    util.start_logging()
     logging.info("Deleting all portfolios")
     portfolios.Portfolio.clear_cache()
-    _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ).values() if p.is_toplevel()]
+    #portfolios.recompute(util.TEST_SQ)
+    #plist = portfolios.get_list(util.TEST_SQ).values()
+    #logging.debug("Nbr portfolios = %s", len(plist))
+    _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
     # Import config
     with pytest.raises(SystemExit):
         with patch.object(sys, "argv", [CMD] + util.TEST_OPTS + ["-i", f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE, "-l", "test.log"]):
