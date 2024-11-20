@@ -290,10 +290,10 @@ def test_import(get_json_file: Generator[str]) -> None:
     # delete all portfolios in test
     logging.info("Deleting all portfolios")
     portfolios.Portfolio.clear_cache()
-    _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
+    _ = [o.delete() for o in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if o.is_toplevel()]
     assert portfolios.import_config(util.TEST_SQ, json_exp)
 
     # Compare portfolios
-    portfolio_list = portfolios.get_list(util.TEST_SQ)
-    assert len(portfolio_list) == len(json_exp)
-    assert sorted(list(portfolio_list.keys())) == sorted(list(json_exp.keys()))
+    o_list = portfolios.get_list(util.TEST_SQ)
+    assert len(o_list) == len(json_exp)
+    assert sorted(list(o_list.keys())) == sorted(list(json_exp.keys()))
