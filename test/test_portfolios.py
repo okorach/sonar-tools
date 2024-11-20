@@ -233,7 +233,7 @@ def test_add_standard_subp(get_test_subportfolio: Generator[portfolios.Portfolio
     if util.SQ.edition() in ("community", "developer"):
         return
     subp = get_test_subportfolio
-    assert subp.parent.key == util.TEMP_KEY
+    assert subp.parent_portfolio.key == util.TEMP_KEY
     parent = portfolios.Portfolio.get_object(util.SQ, key=util.TEMP_KEY)
     subp_d = parent.sub_portfolios()
     assert len(subp_d) == 1
