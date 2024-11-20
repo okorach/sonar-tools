@@ -218,17 +218,6 @@ class Portfolio(aggregations.Aggregation):
         """Returns the object permalink"""
         return f"{self.endpoint.url}/portfolio?id={self.key}"
 
-    def zoot_portfolio(self) -> Portfolio:
-        """Returns the root portfolio of a portfolio in a hierarchy"""
-        if self.parent_portfolio is None or self.parent_portfolio.key == self.key:
-            log.debug("Found root for %s, parent = %s", self.key, str(self.parent_portfolio))
-            self.root_portfolio = self
-        else:
-            log.debug("recursing root for %s, parent = %s", self.key, str(self.parent_portfolio))
-            self.root_portfolio = self.parent_portfolio.root_portfolio
-        log.debug("%s root portfolio is %s", str(self), str(self.root_portfolio))
-        return self.root_portfolio
-
     def projects(self) -> Optional[dict[str, str]]:
         """Returns list of projects and their branches if selection mode is manual, None otherwise"""
         if not self._selection_mode or _SELECTION_MODE_MANUAL not in self._selection_mode:
