@@ -278,5 +278,22 @@ def test_export() -> None:
         return
     json_exp = portfolios.export(util.SQ, {})
     yaml_exp = portfolios.convert_for_yaml(json_exp)
+    assert len(json_exp) > 0
+    assert isinstance(json_exp, dict)
     assert isinstance(yaml_exp, list)
     assert len(yaml_exp) == len(json_exp)
+
+
+def test_import(get_json_file: Generator[str]) -> None:
+    """test_import"""
+    json_exp = portfolios.export(util.SQ, {})
+    # delete all portfolios in test
+    logging.info("Deleting all portfolios")
+    portfolios.Portfolio.clear_cache()
+    _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
+    assert portfolios.import_config(util.TEST_SQ, json_exp)
+
+    # Compare portfolios
+    portfolio_list = portfolios.get_list(util.TEST_SQ)
+    assert len(portfolio_list) == len(json_exp)
+    assert sorted(list(portfolio_list.keys())) == sorted(list(json_exp.keys()))
