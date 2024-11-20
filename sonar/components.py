@@ -65,10 +65,10 @@ class Component(sq.SqObject):
             self.reload(data)
 
     def reload(self, data: types.ApiPayload) -> Component:
-        if self.sq_json:
-            self.sq_json.update(data)
-        else:
-            self.sq_json = data
+        log.debug("Reloading %s with %s", str(self), utilities.json_dump(data))
+        if not self.sq_json:
+            self.sq_json = {}
+        self.sq_json.update(data)
         if "name" in data:
             self.name = data["name"]
         if "visibility" in data:
