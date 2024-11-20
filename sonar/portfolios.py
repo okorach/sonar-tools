@@ -146,6 +146,9 @@ class Portfolio(aggregations.Aggregation):
             parent_p = Portfolio.get_object(endpoint, parent_key)
             o.parent_portfolio = parent_p
             o.root_portfolio = parent_p.root_portfolio
+        else:
+            o.parent_portfolio = None
+            o.root_portfolio = o
         # TODO - Allow on the fly selection mode
         return o
 
