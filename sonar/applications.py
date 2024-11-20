@@ -62,8 +62,8 @@ class Application(aggr.Aggregation):
         c.GET: "applications/show",
         c.DELETE: "applications/delete",
         c.LIST: "components/search_projects",
-        "SET_TAGS": "applications/set_tags",
-        "GET_TAGS": "components/show",
+        c.SET_TAGS: "applications/set_tags",
+        c.GET_TAGS: "applications/show",
         "CREATE_BRANCH": "applications/create_branch",
         "UDPATE_BRANCH": "applications/update_branch",
     }
@@ -149,7 +149,7 @@ class Application(aggr.Aggregation):
         """
         try:
             self.reload(json.loads(self.get("navigation/component", params={"component": self.key}).text))
-            self.reload(json.loads(self.get(Application.API["GET"], params=self.search_params()).text)["application"])
+            self.reload(json.loads(self.get(Application.API[c.GET], params=self.api_params(c.GET)).text)["application"])
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"refreshing {str(self)}", catch_http_statuses=(HTTPStatus.NOT_FOUND,))
             Application.CACHE.pop(self)
@@ -415,9 +415,13 @@ class Application(aggr.Aggregation):
         for name, branch_data in data.get("branches", {}).items():
             self.set_branch(name, branch_data)
 
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        ops = {c.GET: {"application": self.key}, c.SET_TAGS: {"application": self.key}, c.GET_TAGS: {"application": self.key}}
+        return ops[op] if op in ops else ops[c.GET]
+
     def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        return {"application": self.key}
+        return self.api_params(c.GET)
 
 
 def _project_list(data: types.ObjectJsonRepr) -> types.KeyList:

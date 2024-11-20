@@ -25,6 +25,7 @@ from datetime import datetime
 import utilities as tutil
 from sonar import issues
 from sonar import utilities as util
+from sonar.util import constants as c
 
 
 ISSUE_WITH_CHANGELOG = "402452b7-fd3a-4487-97cc-1c996697b397"
@@ -46,9 +47,78 @@ def test_issue() -> None:
     assert not issue.is_wont_fix()
     assert issue.is_false_positive()
     assert issue.refresh()
+    assert issue.api_params(c.LIST) == {"issues": ISSUE_WITH_CHANGELOG}
+    assert issue.api_params(c.SET_TAGS) == {"issue": ISSUE_WITH_CHANGELOG}
+    assert issue.api_params(c.GET_TAGS) == {"issues": ISSUE_WITH_CHANGELOG}
+
     assert ISSUE_2 in issues_d
     issue2 = issues_d[ISSUE_2]
     assert not issue.almost_identical_to(issue2)
+
+
+def test_add_comments() -> None:
+    """Test issue comments manipulations"""
+    issues_d = issues.search_by_project(
+        endpoint=tutil.SQ, project_key="pytorch", params={"impactSeverities": "HIGH", "impactSoftwareQualities": "RELIABILITY"}
+    )
+    issue = list(issues_d.values())[0]
+    comment = f"NOW is {str(datetime.now())}"
+    assert issue.add_comment(comment)
+    issue.refresh()
+    issue_comments = [cmt["value"] for cmt in issue.comments().values()]
+    assert comment in issue_comments
+    issue_wo_comments = list(issues_d.values())[1]
+    assert issue_wo_comments.comments() == {}
+
+
+def test_set_severity() -> None:
+    """Test issue severity"""
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key="project1")
+    issue = list(issues_d.values())[0]
+    old_sev = issue.severity
+    new_sev = "MINOR" if old_sev == "CRITICAL" else "CRITICAL"
+    assert issue.set_severity(new_sev)
+    issue.refresh()
+    assert issue.severity == new_sev
+    assert not issue.set_severity("NON_EXISTING")
+    issue.set_severity(old_sev)
+
+
+def test_add_remove_tag() -> None:
+    """test_add_remove_tag"""
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key="project1")
+    issue = list(issues_d.values())[0]
+    tag = "test-tag"
+    issue.remove_tag(tag)
+    assert tag not in issue.get_tags()
+    issue.add_tag(tag)
+    assert tag in issue.get_tags(use_cache=False)
+    issue.remove_tag(tag)
+
+
+def test_set_type() -> None:
+    """test_set_type"""
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key="project1")
+    issue = list(issues_d.values())[0]
+    old_type = issue.type
+    new_type = c.VULN if old_type == c.BUG else c.BUG
+    assert issue.set_type(new_type)
+    issue.refresh()
+    assert issue.type == new_type
+    assert not issue.set_type("NON_EXISTING")
+    issue.set_type(old_type)
+
+
+def test_assign() -> None:
+    """test_assign"""
+    issues_d = issues.search_by_project(endpoint=tutil.SQ, project_key="project1")
+    issue = list(issues_d.values())[0]
+    old_assignee = issue.assignee
+    new_assignee = "olivier" if old_assignee is None or old_assignee != "olivier" else "michal"
+    assert issue.assign(new_assignee)
+    issue.refresh()
+    assert issue.assignee == new_assignee
+    issue.assign("michal")
 
 
 def test_changelog() -> None:

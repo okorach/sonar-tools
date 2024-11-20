@@ -160,9 +160,6 @@ class Issue(findings.Finding):
         ops = {c.LIST: {"issues": self.key}, c.SET_TAGS: {"issue": self.key}, c.GET_TAGS: {"issues": self.key}}
         return ops[op] if op in ops else ops[c.LIST]
 
-    def search_params(self) -> ApiParams:
-        return self.api_params(c.LIST)
-
     def url(self) -> str:
         """
         :return: A permalink URL to the issue in the SonarQube platform
@@ -290,7 +287,7 @@ class Issue(findings.Finding):
         """
         try:
             log.debug("Changing severity of %s from '%s' to '%s'", str(self), self.severity, severity)
-            r = self.post("issues/set_severity", {"issue": self.key, "severity": severity}).ok
+            r = self.post("issues/set_severity", {"issue": self.key, "severity": severity})
             if r.ok:
                 self.severity = severity
         except (ConnectionError, requests.RequestException) as e:
@@ -317,14 +314,14 @@ class Issue(findings.Finding):
 
     def get_tags(self, **kwargs) -> list[str]:
         """Returns issues tags"""
-        api = self.__class__.API["GET_TAGS"]
+        api = self.__class__.API[c.GET_TAGS]
         if self._tags is None:
             self._tags = self.sq_json.get("tags", None)
         if not kwargs.get(c.USE_CACHE, True) or self._tags is None:
             data = json.loads(self.get(api, params=self.api_params(c.GET_TAGS)).text)
             self.sq_json.update(data["issues"][0])
             self._tags = self.sq_json["tags"]
-        return self._tags if len(self._tags) > 0 else None
+        return self._tags
 
     def add_tag(self, tag: str) -> bool:
         """Adds a tag to an issue
@@ -345,7 +342,9 @@ class Issue(findings.Finding):
         :rtype: bool
         """
         log.debug("Removing tag '%s' from %s", tag, str(self))
-        tags = [] if not self._tags else self._tags.copy()
+        if self._tags is None:
+            self._tags = []
+        tags = self._tags.copy()
         if tag in self._tags:
             tags.remove(tag)
         return self.set_tags(tags)

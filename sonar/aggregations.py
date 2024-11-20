@@ -48,7 +48,7 @@ class Aggregation(comp.Component):
         """Reloads an Aggregation (Application or Portfolio) from the result of a search or get
 
         :return: self
-        :rtype: Application or Portfolio
+        :rtype: None
         """
         super().reload(data)
         for d in ("description", "desc"):

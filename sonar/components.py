@@ -65,10 +65,10 @@ class Component(sq.SqObject):
             self.reload(data)
 
     def reload(self, data: types.ApiPayload) -> Component:
-        if self.sq_json:
-            self.sq_json.update(data)
-        else:
-            self.sq_json = data
+        log.debug("Reloading %s with %s", str(self), utilities.json_dump(data))
+        if not self.sq_json:
+            self.sq_json = {}
+        self.sq_json.update(data)
         if "name" in data:
             self.name = data["name"]
         if "visibility" in data:
@@ -213,15 +213,23 @@ class Component(sq.SqObject):
             self.ncloc = int(self.get_measure("ncloc", fallback=0))
         return self.ncloc
 
+    def get_navigation_data(self) -> types.ApiPayload:
+        """Returns a component navigation data"""
+        params = utilities.replace_keys(_ALT_COMPONENTS, "component", self.search_params())
+        data = json.loads(self.get("navigation/component", params=params).text)
+        self.sq_json.update(data)
+        return data
+
     def refresh(self) -> Component:
         """Refreshes a component data"""
-        params = utilities.replace_keys(_ALT_COMPONENTS, "component", self.search_params())
-        return self.reload(json.loads(self.endpoint.get("navigation/component", params=params).text))
+        return self.reload(self.get_navigation_data)
 
     def last_analysis(self) -> datetime:
         """Returns a component last analysis"""
         if not self._last_analysis:
-            self.refresh()
+            self.get_navigation_data()
+            if "analysisDate" in self.sq_json:
+                self._last_analysis = utilities.string_to_date(self.sq_json["analysisDate"])
         return self._last_analysis
 
     def url(self) -> str:

@@ -27,6 +27,8 @@
 import sys
 import json
 
+from requests import RequestException
+
 from cli import options
 import sonar.logging as log
 from sonar import errcodes, exceptions, utilities, version
@@ -39,28 +41,21 @@ def __export_projects(endpoint: platform.Platform, **kwargs) -> None:
     """Exports a list (or all) of projects into zip files"""
     ed = endpoint.edition()
     if ed == "sonarcloud":
-        utilities.exit_fatal("Can't export projects on SonarCloud, aborting...", errcodes.UNSUPPORTED_OPERATION)
+        raise exceptions.UnsupportedOperation("Can't export projects on SonarCloud, aborting...")
     if ed in ("community", "developer") and endpoint.version()[:2] < (9, 2):
-        utilities.exit_fatal(f"Can't export projects on {ed} Edition before 9.2, aborting...", errcodes.UNSUPPORTED_OPERATION)
-    try:
-        dump = projects.export_zip(
-            endpoint=endpoint, key_list=kwargs[options.KEYS], export_timeout=kwargs["exportTimeout"], threads=kwargs[options.NBR_THREADS]
-        )
-    except exceptions.ObjectNotFound:
-        sys.exit(errcodes.NO_SUCH_KEY)
-
-    try:
-        with utilities.open_file(kwargs[options.REPORT_FILE]) as fd:
-            print(utilities.json_dump(dump), file=fd)
-    except (PermissionError, FileNotFoundError) as e:
-        utilities.exit_fatal(f"OS error while projects export file: {e}", exit_code=errcodes.OS_ERROR)
+        raise exceptions.UnsupportedOperation(f"Can't export projects on {ed} Edition before 9.2, aborting...")
+    dump = projects.export_zip(
+        endpoint=endpoint, key_list=kwargs[options.KEYS], export_timeout=kwargs["exportTimeout"], threads=kwargs[options.NBR_THREADS]
+    )
+    with utilities.open_file(kwargs[options.REPORT_FILE]) as fd:
+        print(utilities.json_dump(dump), file=fd)
 
 
 def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, str]) -> None:
     """Checks if export and import environments are compatibles"""
     imp_version = utilities.version_to_string(import_sq.version(digits=2))
     if imp_version != export_sq["version"]:
-        utilities.exit_fatal("Export was not performed with same SonarQube version, aborting...", errcodes.UNSUPPORTED_OPERATION)
+        raise exceptions.UnsupportedOperation("Export was not performed with same SonarQube version, aborting...")
     for export_plugin in export_sq["plugins"]:
         e_name = export_plugin["name"]
         e_vers = export_plugin["version"]
@@ -70,9 +65,8 @@ def __check_sq_environments(import_sq: platform.Platform, export_sq: dict[str, s
                 found = True
                 break
         if not found:
-            utilities.exit_fatal(
-                f"Plugin '{e_name}' version '{e_vers}' was not found or not in same version on import platform, aborting...",
-                errcodes.UNSUPPORTED_OPERATION,
+            raise exceptions.UnsupportedOperation(
+                f"Plugin '{e_name}' version '{e_vers}' was not found or not in same version on import platform, aborting..."
             )
 
 
@@ -80,15 +74,12 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
     """Imports a list of projects in SonarQube EE+"""
     file = kwargs[options.REPORT_FILE]
     if not file:
-        utilities.exit_fatal(f"Option --{options.REPORT_FILE} is mandatory to import", exit_code=errcodes.ARGS_ERROR)
-
+        raise options.ArgumentsError(f"Option --{options.REPORT_FILE} is mandatory to import")
     try:
         with open(file, "r", encoding="utf-8") as fd:
             data = json.load(fd)
-    except (FileNotFoundError, PermissionError) as e:
-        utilities.exit_fatal(f"OS error while reading file '{file}': {e}", exit_code=errcodes.OS_ERROR)
     except json.JSONDecodeError as e:
-        utilities.exit_fatal(f"JSON decoding error while reading file '{file}': {e}", exit_code=errcodes.OS_ERROR)
+        raise options.ArgumentsError(f"JSON decoding error while reading file '{file}': {str(e)}")
     project_list = data["project_exports"]
     __check_sq_environments(endpoint, data["sonarqube_environment"])
 
@@ -115,35 +106,38 @@ def __import_projects(endpoint: platform.Platform, **kwargs) -> None:
 def main() -> None:
     """Main entry point of sonar-projects"""
     start_time = utilities.start_clock()
-    parser = options.set_common_args("Exports all projects of a SonarQube platform")
-    parser = options.set_key_arg(parser)
-    parser = options.add_import_export_arg(parser, "projects zip")
-    parser = options.set_output_file_args(parser, allowed_formats=("json",))
-    parser = options.add_thread_arg(parser, "projects zip export")
-    parser.add_argument(
-        "--exportTimeout",
-        required=False,
-        type=int,
-        default=180,
-        help="Maximum wait time for export of 1 project",
-    )
     try:
+        parser = options.set_common_args("Exports all projects of a SonarQube platform")
+        parser = options.set_key_arg(parser)
+        parser = options.add_import_export_arg(parser, "projects zip")
+        parser = options.set_output_file_args(parser, allowed_formats=("json",))
+        parser = options.add_thread_arg(parser, "projects zip export")
+        parser.add_argument(
+            "--exportTimeout",
+            required=False,
+            type=int,
+            default=180,
+            help="Maximum wait time for export of 1 project",
+        )
         kwargs = utilities.convert_args(options.parse_and_check(parser=parser, logger_name=TOOL_NAME))
         sq = platform.Platform(**kwargs)
         sq.verify_connection()
         sq.set_user_agent(f"{TOOL_NAME} {version.PACKAGE_VERSION}")
-    except (options.ArgumentsError, exceptions.ObjectNotFound) as e:
+
+        if kwargs[options.EXPORT]:
+            __export_projects(sq, **kwargs)
+        elif kwargs[options.IMPORT]:
+            __import_projects(sq, **kwargs)
+        else:
+            raise options.ArgumentsError(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen")
+    except (PermissionError, FileNotFoundError) as e:
+        utilities.exit_fatal(f'OS error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}', errcodes.OS_ERROR)
+    except (exceptions.ConnectionError, options.ArgumentsError, exceptions.ObjectNotFound, exceptions.UnsupportedOperation) as e:
         utilities.exit_fatal(e.message, e.errcode)
-
-    if kwargs[options.EXPORT]:
-        __export_projects(sq, **kwargs)
-    elif kwargs[options.IMPORT]:
-        __import_projects(sq, **kwargs)
-    else:
-        utilities.exit_fatal(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen", exit_code=errcodes.ARGS_ERROR)
-
+    except RequestException as e:
+        utilities.exit_fatal(f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {str(e)}', errcodes.SONAR_API)
     utilities.stop_clock(start_time)
-    sys.exit(0)
+    sys.exit(errcodes.OK)
 
 
 if __name__ == "__main__":

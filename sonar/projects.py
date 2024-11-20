@@ -30,7 +30,7 @@ import re
 import json
 from datetime import datetime
 
-from typing import Union, Optional
+from typing import Optional
 from http import HTTPStatus
 from threading import Thread, Lock
 from queue import Queue
@@ -40,8 +40,7 @@ import Levenshtein
 import sonar.logging as log
 import sonar.platform as pf
 
-from sonar.util import types, cache
-
+from sonar.util import types, cache, constants as c
 from sonar import exceptions, errcodes
 from sonar import sqobject, components, qualitygates, qualityprofiles, tasks, settings, webhooks, devops
 import sonar.permissions.permissions as perms
@@ -1415,9 +1414,13 @@ class Project(components.Component):
         # TODO: Set branch settings
         self.set_settings(settings_to_apply)
 
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        ops = {c.GET: {"project": self.key}, c.SET_TAGS: {"project": self.key}, c.GET_TAGS: {"project": self.key}}
+        return ops[op] if op in ops else ops[c.GET]
+
     def search_params(self) -> types.ApiParams:
         """Return params used to search/create/delete for that object"""
-        return {"project": self.key}
+        return self.api_params(c.GET)
 
 
 def count(endpoint: pf.Platform, params: types.ApiParams = None) -> int:

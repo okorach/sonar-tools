@@ -43,7 +43,7 @@ KEY_COL = 0
 def test_measures_export(get_csv_file: callable) -> None:
     """test_measures_export"""
     file = get_csv_file
-    util.run_cmd(measures_export.main, f"{CMD} {util.STD_OPTS_STR} --withTags -{opt.REPORT_FILE_SHORT} {file}")
+    util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} --withTags -{opt.REPORT_FILE_SHORT} {file}")
     with open(file=file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         line = next(csvreader)
@@ -63,7 +63,7 @@ def test_measures_conversion(get_csv_file: callable) -> None:
     logging.set_logger("test.log")
     logging.set_debug_level("DEBUG")
     file = get_csv_file
-    util.run_cmd(measures_export.main, f"{CMD} {util.STD_OPTS_STR} -r -p --withTags -{opt.REPORT_FILE_SHORT} {file}")
+    util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} -r -p --withTags -{opt.REPORT_FILE_SHORT} {file}")
     with open(file=file, mode="r", encoding="utf-8") as fh:
         csvreader = csv.reader(fh)
         line = next(csvreader)
@@ -134,7 +134,7 @@ def test_measures_export_history() -> None:
 def test_measures_export_history_as_table(get_csv_file: callable) -> None:
     """test_measures_export_history_as_table"""
     file = get_csv_file
-    util.run_cmd(measures_export.main, f"{CMD} {util.STD_OPTS_STR} --history --asTable -{opt.REPORT_FILE_SHORT} {file}")
+    util.run_success_cmd(measures_export.main, f"{CMD} {util.SQS_OPTS} --history --asTable -{opt.REPORT_FILE_SHORT} {file}")
 
 
 def test_measures_export_history_as_table_no_time() -> None:

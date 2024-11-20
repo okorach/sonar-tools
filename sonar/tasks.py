@@ -184,6 +184,8 @@ class Task(sq.SqObject):
         super().__init__(endpoint=endpoint, key=task_id)
         self.sq_json = data
         self.concerned_object = concerned_object
+        if data is not None:
+            self.component_key = data.get("componentKey", None)
         self._context = None
         self._error = None
         self._submitted_at = None
@@ -202,20 +204,25 @@ class Task(sq.SqObject):
         :return: the SonarQube permalink URL to the background task
         :rtype: str
         """
-        return f"{self.endpoint.url}/project/background_tasks?id={self.concerned_object.key}"
+        u = f"{self.endpoint.url}/project/background_tasks"
+        if self.component_key:
+            u += f"?id={self.component_key}"
+        return u
 
-    def __load(self) -> None:
+    def _load(self) -> None:
         """Loads a task context"""
         if self.sq_json is not None:
             return
-        self.__load_context()
+        self._load_context()
 
-    def __load_context(self, force: bool = False) -> None:
+    def _load_context(self, force: bool = False) -> None:
         """Loads a task context"""
         if not force and self.sq_json is not None and ("scannerContext" in self.sq_json or not self.has_scanner_context()):
             # Context already retrieved or not available
             return
         params = {"id": self.key, "additionalFields": "scannerContext,stacktrace"}
+        if self.sq_json is None:
+            self.sq_json = {}
         self.sq_json.update(json.loads(self.get("ce/task", params=params).text)["task"])
 
     def id(self) -> str:
@@ -227,9 +234,9 @@ class Task(sq.SqObject):
 
     def __json_field(self, field: str) -> str:
         """Returns a background task scanner context field"""
-        self.__load()
+        self._load()
         if field not in self.sq_json:
-            self.__load_context(force=True)
+            self._load_context(force=True)
         return self.sq_json[field]
 
     def type(self) -> str:
@@ -265,7 +272,7 @@ class Task(sq.SqObject):
         :return: the background task submitter
         :rtype: str
         """
-        self.__load()
+        self._load()
         return self.sq_json.get("submitterLogin", "anonymous")
 
     def has_scanner_context(self) -> bool:
@@ -273,7 +280,7 @@ class Task(sq.SqObject):
         :return: Whether the background task has a scanner context
         :rtype: bool
         """
-        self.__load()
+        self._load()
         return self.sq_json.get("hasScannerContext", False)
 
     def warnings(self) -> list[str]:
@@ -331,7 +338,7 @@ class Task(sq.SqObject):
         """
         if not self.has_scanner_context():
             return None
-        self.__load_context()
+        self._load_context()
         context_line = self.sq_json.get("scannerContext", None)
         if context_line is None:
             return None
@@ -355,7 +362,7 @@ class Task(sq.SqObject):
         :return: The background task error details
         :rtype: tuple (errorMsg (str), stackTrace (str)
         """
-        self.__load_context()
+        self._load_context()
         return (self.sq_json.get("errorMessage", None), self.sq_json.get("errorStacktrace", None))
 
     def error_message(self) -> Optional[str]:
@@ -363,7 +370,7 @@ class Task(sq.SqObject):
         :return: The background task error message
         :rtype: str
         """
-        self.__load_context()
+        self._load_context()
         return self.sq_json.get("errorMessage", None)
 
     def __audit_exclusions(self, exclusion_pattern: str, susp_exclusions: str, susp_exceptions: str) -> list[Problem]:

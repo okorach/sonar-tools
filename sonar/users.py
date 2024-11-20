@@ -24,6 +24,9 @@ from typing import Union, Optional
 import datetime as dt
 import json
 
+from http import HTTPStatus
+from requests import RequestException
+
 import sonar.logging as log
 from sonar import platform as pf
 from sonar.util import types, cache
@@ -108,7 +111,11 @@ class User(sqobject.SqObject):
         params = {"login": login, "local": str(is_local).lower(), "name": name}
         if is_local:
             params["password"] = password if password else login
-        endpoint.post(CREATE_API, params=params)
+        try:
+            endpoint.post(CREATE_API, params=params)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating user '{login}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(login, util.sonar_error(e.response))
         return cls.get_object(endpoint=endpoint, login=login)
 
     @classmethod
@@ -386,7 +393,7 @@ class User(sqobject.SqObject):
             json_data.pop("local")
         for key in "sonarQubeLastConnectionDate", "externalLogin", "externalProvider", "id", "managed":
             json_data.pop(key, None)
-        return util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings["FULL_EXPORT"])
+        return util.filter_export(json_data, SETTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False))
 
 
 def search(endpoint: pf.Platform, params: types.ApiParams = None) -> dict[str, User]:
