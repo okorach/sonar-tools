@@ -609,6 +609,27 @@ def hierarchize(qp_list: types.ObjectJsonRepr, endpoint: pf.Platform) -> types.O
     return hierarchy
 
 
+def flatten_language(language: str, qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Converts a hierarchical list of QP of a given language into a flat list"""
+    flat_list = {}
+    for qp_name, qp_data in qp_list.copy().items():
+        if _CHILDREN_KEY in qp_data:
+            children = flatten_language(language, qp_data[_CHILDREN_KEY])
+            for child in children:
+                child["parent"] = f"{language}:{qp_name}"
+            qp_data.pop(_CHILDREN_KEY)
+        flat_list[f"{language}:{qp_name}"] = qp_data
+    return flat_list
+
+
+def flatten(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Organize a hierarchical list of QP in a flat list"""
+    flat_list = {}
+    for lang, lang_qp_list in qp_list.items():
+        flat_list.update(flatten_language(lang, lang_qp_list))
+    return flat_list
+
+
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
@@ -727,9 +748,9 @@ def exists(endpoint: pf.Platform, name: str, language: str) -> bool:
 def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Converts a QP in a modified version more suitable for YAML export"""
 
-    if "children" in qp:
-        qp["children"] = {k: convert_one_qp_yaml(q) for k, q in qp["children"].items()}
-        qp["children"] = util.dict_to_list(qp["children"], "name")
+    if _CHILDREN_KEY in qp:
+        qp[_CHILDREN_KEY] = {k: convert_one_qp_yaml(q) for k, q in qp[_CHILDREN_KEY].items()}
+        qp[_CHILDREN_KEY] = util.dict_to_list(qp[_CHILDREN_KEY], "name")
     for rule_group in "rules", "modifiedRules", "addedRules", "removedRules":
         if rule_group in qp:
             qp[rule_group] = rules.convert_rule_list_for_yaml(qp[rule_group])
