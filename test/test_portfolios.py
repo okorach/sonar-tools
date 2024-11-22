@@ -291,7 +291,7 @@ def test_import(get_json_file: Generator[str]) -> None:
     logging.info("Deleting all portfolios")
     portfolios.Portfolio.clear_cache()
     _ = [o.delete() for o in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if o.is_toplevel()]
-    assert portfolios.import_config(util.TEST_SQ, json_exp)
+    assert portfolios.import_config(util.TEST_SQ, {"portfolios": json_exp})
 
     # Compare portfolios
     o_list = portfolios.get_list(util.TEST_SQ)
