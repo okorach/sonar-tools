@@ -160,10 +160,10 @@ def run_failed_cmd(func: callable, arguments: str, expected_code: int) -> None:
         assert not os.path.isfile(file)
 
 
-def start_logging() -> None:
+def start_logging(level: str = "DEBUG") -> None:
     """start_logging"""
     global LOGGER_COUNT
     if LOGGER_COUNT == 0:
         logging.set_logger(TEST_LOGFILE)
-        logging.set_debug_level("DEBUG")
+        logging.set_debug_level(level)
         LOGGER_COUNT = 1
