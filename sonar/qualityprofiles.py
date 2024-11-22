@@ -615,9 +615,11 @@ def flatten_language(language: str, qp_list: types.ObjectJsonRepr) -> types.Obje
     for qp_name, qp_data in qp_list.copy().items():
         if _CHILDREN_KEY in qp_data:
             children = flatten_language(language, qp_data[_CHILDREN_KEY])
-            for child in children:
-                child["parent"] = f"{language}:{qp_name}"
+            for child in children.values():
+                if "parent" not in child:
+                    child["parent"] = f"{language}:{qp_name}"
             qp_data.pop(_CHILDREN_KEY)
+            flat_list.update(children)
         flat_list[f"{language}:{qp_name}"] = qp_data
     return flat_list
 
