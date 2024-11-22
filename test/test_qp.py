@@ -127,6 +127,7 @@ def test_export() -> None:
 
 def test_import() -> None:
     """test_import"""
+    util.start_logging("INFO")
     json_exp = qualityprofiles.export(util.SQ, {})
     # delete all portfolios in test
     logging.info("Deleting all quality profiles")
@@ -136,9 +137,11 @@ def test_import() -> None:
     assert qualityprofiles.import_config(util.TEST_SQ, {"qualityProfiles": json_exp})
 
     # Compare QP list
-    o_list = qualityprofiles.get_list(util.TEST_SQ)
-    assert len(o_list) >= len(json_exp)
-    assert sorted(list(o_list.keys())) == sorted(list(json_exp.keys()))
+    json_name_list = sorted([k for k, v in qualityprofiles.flatten(json_exp).items() if not v.get("isBuiltIn", False)])
+    qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(util.TEST_SQ).values() if not o.is_built_in])
+    logging.info("QP_NAME_LIST = %s", str(qp_name_list))
+    logging.info("JS_NAME_LIST = %s", str(json_name_list))
+    assert json_name_list == qp_name_list
 
 
 def test_add_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
