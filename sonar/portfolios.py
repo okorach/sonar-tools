@@ -723,11 +723,11 @@ def delete(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports portfolio configuration described in a JSON"""
     if "portfolios" not in config_data:
         log.info("No portfolios to import")
-        return
+        return False
     check_supported(endpoint)
 
     log.info("Importing portfolios - pass 1: Create all top level portfolios")
