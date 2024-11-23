@@ -23,6 +23,7 @@
 
 from collections.abc import Generator
 import time
+import json
 import pytest
 
 import utilities as util
@@ -286,7 +287,8 @@ def test_export() -> None:
 
 def test_import(get_json_file: Generator[str]) -> None:
     """test_import"""
-    json_exp = portfolios.export(util.SQ, {})
+    with open("test/files/config.json", "r", encoding="utf-8") as f:
+        json_exp = json.loads(f.read())["portfolios"]
     # delete all portfolios in test
     logging.info("Deleting all portfolios")
     portfolios.Portfolio.clear_cache()
