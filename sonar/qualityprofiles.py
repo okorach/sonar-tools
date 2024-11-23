@@ -349,9 +349,9 @@ class QualityProfile(sq.SqObject):
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
+            self.set_parent(data.pop(_KEY_PARENT, None))
             self.set_rules(data.get("rules", []))
             self.set_permissions(data.get("permissions", []))
-            self.set_parent(data.pop(_KEY_PARENT, None))
             self.is_built_in = data.get("isBuiltIn", False)
             if data.get("isDefault", False):
                 self.set_as_default()
