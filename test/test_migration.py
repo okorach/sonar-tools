@@ -84,11 +84,17 @@ def test_migration(get_json_file: Generator[str]) -> None:
         assert "lastConnectionDate" in u
     assert json_config["users"]["olivier"]["externalProvider"] == "sonarqube"
 
-    u = json_config["users"]["olivier-korach65532"]
+    GH_USER = "olivier-korach65532"
+    GL_USER = "olivier-korach22656"
+    USER = GL_USER
+    u = json_config["users"][USER]
     assert u["name"] == "Olivier Korach"
     assert not u["local"]
     if util.SQ.version() >= (10, 0, 0):
-        assert u["externalProvider"] == "github"
+        if USER == GL_USER:
+            assert u["externalProvider"] == "gitlab"
+        else:
+            assert u["externalProvider"] == "github"
         assert u["externalLogin"] == "okorach"
         assert u["email"] == "olivier.korach@gmail.com"
     else:
