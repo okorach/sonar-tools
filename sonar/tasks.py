@@ -209,6 +209,10 @@ class Task(sq.SqObject):
             u += f"?id={self.component_key}"
         return u
 
+    def project(self) -> object:
+        """Returns the project of the background task"""
+        return self.concerned_object
+
     def _load(self) -> None:
         """Loads a task context"""
         if self.sq_json is not None:
