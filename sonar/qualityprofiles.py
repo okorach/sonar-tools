@@ -283,6 +283,21 @@ class QualityProfile(sq.SqObject):
         self._rules[rule_key] = rules.get_object(self.endpoint, rule_key)
         return r.ok
 
+    def deactivate_rule(self, rule_key: str) -> bool:
+        """Deactivates a rule in the quality profile
+
+        :param str rule_key: Rule key to activate
+        :return: Whether the deactivation succeeded
+        :rtype: bool
+        """
+        api_params = {"key": self.key, "rule": rule_key}
+        try:
+            r = self.post("qualityprofiles/deactivate_rule", params=api_params)
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"deactivating rule {rule_key} in {str(self)}", catch_all=True)
+            return False
+        return r.ok
+
     def activate_rules(self, ruleset: dict[str, str]) -> bool:
         """Activates a list of rules in the quality profile
         :return: Whether the activation of all rules was successful
@@ -298,6 +313,15 @@ class QualityProfile(sq.SqObject):
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
             else:
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
+
+        activerules = self.rules()
+        for r_key, r_data in activerules.items():
+            if r_key in ruleset:
+                log.debug("Rule %s exists in quality profile", r_key)
+            else:
+                log.debug("Deactivating rule %s in QG %s", r_key, str(self))
+                self.deactivate_rule(rule_key=r_key)
+
         return ok
 
     def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:
