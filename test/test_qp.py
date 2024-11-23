@@ -125,6 +125,20 @@ def test_export() -> None:
     assert len(yaml_exp) == len(json_exp)
 
 
+def test_add_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+    """test_add_rules"""
+    qp = get_test_qp
+    ruleset = {"python:S6542": "MAJOR", "python:FunctionComplexity": "MAJOR"}
+    qp.activate_rules(ruleset)
+    rules = qp.rules()
+    assert sorted(list(rules.keys())) == sorted(list(ruleset.keys()))
+    qp.activate_rule("python:S139", "MAJOR")
+    ruleset["python:S139"] = "MAJOR"
+    assert sorted(list(qp.rules().keys())) == sorted(list(ruleset.keys()))
+    assert qp.set_parent("Sonar way")
+    assert len(qp.rules()) > 250
+
+
 def test_import() -> None:
     """test_import"""
     util.start_logging("INFO")
@@ -139,23 +153,8 @@ def test_import() -> None:
     # Compare QP list
     json_name_list = sorted([k for k, v in qualityprofiles.flatten(json_exp).items() if not v.get("isBuiltIn", False)])
     qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(util.TEST_SQ).values() if not o.is_built_in])
-    logging.info("QP_NAME_LIST = %s", str(qp_name_list))
-    logging.info("JS_NAME_LIST = %s", str(json_name_list))
     assert json_name_list == qp_name_list
 
-
-def test_add_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
-    """test_add_rules"""
-    qp = get_test_qp
-    ruleset = {"python:S6542": "MAJOR", "python:FunctionComplexity": "MAJOR"}
-    qp.activate_rules(ruleset)
-    rules = qp.rules()
-    assert sorted(list(rules.keys())) == sorted(list(ruleset.keys()))
-    qp.activate_rule("python:S139", "MAJOR")
-    ruleset["python:S139"] = "MAJOR"
-    assert sorted(list(qp.rules().keys())) == sorted(list(ruleset.keys()))
-    assert qp.set_parent("Sonar way")
-    assert len(qp.rules()) > 250
 
 
 # def test_attributes(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
