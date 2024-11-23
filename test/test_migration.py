@@ -83,10 +83,7 @@ def test_migration(get_json_file: Generator[str]) -> None:
     assert u["name"] == "Olivier Korach"
     assert not u["local"]
     if util.SQ.version() >= (10, 0, 0):
-        if USER == GL_USER:
-            assert u["externalProvider"] == "gitlab"
-        else:
-            assert u["externalProvider"] == "github"
+        assert u["externalProvider"] == ("gitlab" if USER == GL_USER else "github")
         assert u["externalLogin"] == "okorach"
         assert u["email"] == "olivier.korach@gmail.com"
     else:
