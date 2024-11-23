@@ -360,7 +360,6 @@ class QualityProfile(sq.SqObject):
         rules_to_deactivate = util.difference(current_rules, list(ruleset.keys()))
         ok = self.activate_rules(rules_to_activate)
         ok = ok and self.deactivate_rules(rules_to_deactivate)
-        self.rules(use_cache=False)
         return ok
 
     def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:
