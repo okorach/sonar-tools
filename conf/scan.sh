@@ -25,6 +25,7 @@ CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 dolint=true
 dotest=false
+localbuild=false
 
 scanOpts=()
 
@@ -36,6 +37,7 @@ do
       ;;
     -test)
       dotest=true
+      localbuild=true
       ;;
     *)
       scanOpts=("${scanOpts[@]}" "$1")
@@ -60,7 +62,7 @@ if [ "$dotest" == "true" ]; then
 fi
 
 if [ "$dolint" != "false" ]; then
-  $CONFDIR/run_linters.sh
+  $CONFDIR/run_linters.sh "$localbuild"
 fi
 
 version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
