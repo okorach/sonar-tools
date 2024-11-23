@@ -328,6 +328,7 @@ class QualityProfile(sq.SqObject):
         ok = True
         for r_key in ruleset:
             ok = ok and self.deactivate_rule(rule_key=r_key)
+        self.rules(use_cache=False)
         return ok
 
     def activate_rules(self, ruleset: dict[str, str]) -> bool:
@@ -342,6 +343,7 @@ class QualityProfile(sq.SqObject):
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
             else:
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
+        self.rules(use_cache=False)
         return ok
 
     def set_rules(self, ruleset: dict[str, str]) -> bool:
@@ -358,6 +360,7 @@ class QualityProfile(sq.SqObject):
         rules_to_deactivate = util.difference(current_rules, list(ruleset.keys()))
         ok = self.activate_rules(rules_to_activate)
         ok = ok and self.deactivate_rules(rules_to_deactivate)
+        self.rules(use_cache=False)
         return ok
 
     def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:
