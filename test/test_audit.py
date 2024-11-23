@@ -21,14 +21,11 @@
 
 """ sonar-audit tests """
 
-import sys, os, stat
+import os, stat
 from collections.abc import Generator
 
-from unittest.mock import patch
-import pytest
-
 import utilities as util
-from sonar import errcodes, utilities
+from sonar import errcodes, utilities, logging
 import cli.options as opt
 from cli import audit
 
@@ -41,7 +38,8 @@ JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE
 def test_audit(get_csv_file: Generator[str]) -> None:
     """test_audit"""
     file = get_csv_file
-    util.run_success_cmd(audit.main(), f"{CMD_CREDS} --{opt.REPORT_FILE} {file}")
+    logging.debug(f"{CMD_CREDS} --{opt.REPORT_FILE} {file}")
+    util.run_success_cmd(audit.main, f"{CMD_CREDS} --{opt.REPORT_FILE} {file}")
     # Ensure no duplicate alarms #1478
     lines = []
     with open(util.CSV_FILE, mode="r", encoding="utf-8") as fd:
@@ -52,28 +50,28 @@ def test_audit(get_csv_file: Generator[str]) -> None:
 
 def test_audit_stdout() -> None:
     """test_audit_stdout"""
-    util.run_success_cmd(audit.main(), CMD_CREDS)
+    util.run_success_cmd(audit.main, CMD_CREDS)
 
 
 def test_audit_json(get_json_file: Generator[str]) -> None:
     """test_audit_json"""
-    util.run_success_cmd(audit.main(), f"{CMD_CREDS} --{opt.REPORT_FILE} {get_json_file}")
+    util.run_success_cmd(audit.main, f"{CMD_CREDS} --{opt.REPORT_FILE} {get_json_file}")
 
 
 def test_audit_proj_key(get_csv_file: Generator[str]) -> None:
     """test_audit_proj_key"""
-    util.run_success_cmd(audit.main(), f"{CMD_CREDS} --{opt.REPORT_FILE} {get_csv_file} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools")
+    util.run_success_cmd(audit.main, f"{CMD_CREDS} --{opt.REPORT_FILE} {get_csv_file} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools")
 
 
 def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
-    util.run_failed_cmd(audit.main(), f"{CMD_CREDS} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools,bad_key", errcodes.NO_SUCH_KEY)
+    util.run_failed_cmd(audit.main, f"{CMD_CREDS} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools,bad_key", errcodes.NO_SUCH_KEY)
 
 
 def test_sif_broken(get_csv_file: Generator[str]) -> None:
     """test_sif_broken"""
     file = get_csv_file
-    util.run_failed_cmd(audit.main(), f"{CMD_CREDS} --{opt.REPORT_FILE} {file} --sif test/sif_broken.json", errcodes.SIF_AUDIT_ERROR)
+    util.run_failed_cmd(audit.main, f"{CMD_CREDS} --{opt.REPORT_FILE} {file} --sif test/sif_broken.json", errcodes.SIF_AUDIT_ERROR)
 
 
 def test_deduct_fmt() -> None:
@@ -90,7 +88,7 @@ def test_sif_non_existing(get_csv_file: Generator[str]) -> None:
     """test_sif_non_existing"""
     file = get_csv_file
     non_existing_file = "test/sif_non_existing.json"
-    util.run_failed_cmd(audit.main(), f"{CMD_CREDS} --{opt.REPORT_FILE} {file} --sif {non_existing_file}", errcodes.SIF_AUDIT_ERROR)
+    util.run_failed_cmd(audit.main, f"{CMD_CREDS} --{opt.REPORT_FILE} {file} --sif {non_existing_file}", errcodes.SIF_AUDIT_ERROR)
 
 
 def test_sif_not_readable(get_json_file: Generator[str]) -> None:
@@ -100,5 +98,5 @@ def test_sif_not_readable(get_json_file: Generator[str]) -> None:
     NO_PERMS = ~stat.S_IRUSR & ~stat.S_IWUSR
     current_permissions = stat.S_IMODE(os.lstat(unreadable_file).st_mode)
     os.chmod(unreadable_file, current_permissions & NO_PERMS)
-    util.run_failed_cmd(audit.main(), f"{CMD_CREDS} --{opt.REPORT_FILE} {file} --sif {unreadable_file}", errcodes.SIF_AUDIT_ERROR)
+    util.run_failed_cmd(audit.main, f"{CMD_CREDS} --{opt.REPORT_FILE} {file} --sif {unreadable_file}", errcodes.SIF_AUDIT_ERROR)
     os.chmod(unreadable_file, current_permissions)
