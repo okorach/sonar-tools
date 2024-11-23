@@ -156,7 +156,6 @@ def test_import() -> None:
     assert json_name_list == qp_name_list
 
 
-
 # def test_attributes(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
 #     """Test regexp mode"""
 #     if util.SQ.edition() in ("community", "developer"):
