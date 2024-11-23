@@ -142,6 +142,30 @@ class QualityProfile(sq.SqObject):
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
+    def clone(cls, endpoint: pf.Platform, name: str, language: str, original_qp_name: str) -> Optional[QualityProfile]:
+        """Creates a new quality profile in SonarQube with rules copied from original_key
+
+        :param Platform endpoint: Reference to the SonarQube platform
+        :param str name: Quality profile name
+        :param str language: Quality profile language
+        :param str original_qp_name: Original quality profile name
+        :return: The cloned quality profile object
+        :rtype: QualityProfile
+        """
+        log.info("Cloning quality profile name '%s' into quality profile name '%s'", original_qp_name, name)
+        l = [qp for qp in get_list(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
+        if len(l) != 1:
+            raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
+        original_qp = l[0]
+        log.debug("Found QP to clone: %s", str(original_qp))
+        try:
+            endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"cloning {str(original_qp)} into name '{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
+        return cls.read(endpoint=endpoint, name=name, language=language)
+
+    @classmethod
     def load(cls, endpoint: pf.Platform, data: types.ApiPayload) -> None:
         """Creates a QualityProfile object from the result of a SonarQube API quality profile search data
 
@@ -305,6 +329,7 @@ class QualityProfile(sq.SqObject):
         ok = True
         for r_key in ruleset:
             ok = ok and self.deactivate_rule(rule_key=r_key)
+        self.rules(use_cache=False)
         return ok
 
     def activate_rules(self, ruleset: dict[str, str]) -> bool:
@@ -319,6 +344,7 @@ class QualityProfile(sq.SqObject):
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
             else:
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
+        self.rules(use_cache=False)
         return ok
 
     def set_rules(self, ruleset: dict[str, str]) -> bool:
@@ -329,10 +355,11 @@ class QualityProfile(sq.SqObject):
         """
         if not ruleset:
             return False
-        current_rules = list(self.rules().keys())
+        current_rules = list(self.rules(use_cache=False).keys())
         keys_to_activate = util.difference(list(ruleset.keys()), current_rules)
         rules_to_activate = {k: ruleset[k] for k in keys_to_activate}
         rules_to_deactivate = util.difference(current_rules, list(ruleset.keys()))
+        log.info("set_rules: Activating %d rules and deactivating %d rules", len(rules_to_activate), len(rules_to_deactivate))
         ok = self.activate_rules(rules_to_activate)
         ok = ok and self.deactivate_rules(rules_to_deactivate)
         return ok
@@ -349,9 +376,9 @@ class QualityProfile(sq.SqObject):
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
+            self.set_parent(data.pop(_KEY_PARENT, None))
             self.set_rules(data.get("rules", []))
             self.set_permissions(data.get("permissions", []))
-            self.set_parent(data.pop(_KEY_PARENT, None))
             self.is_built_in = data.get("isBuiltIn", False)
             if data.get("isDefault", False):
                 self.set_as_default()
@@ -731,7 +758,12 @@ def __import_thread(queue: Queue) -> None:
                 queue.task_done()
                 continue
             log.info("Qualiy profile '%s' of language '%s' does not exist, creating it", name, lang)
-            o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
+            try:
+                # Statistically a new QP is close to Sonar way so better start with the Sonar way ruleset and
+                # add/remove a few rules, than adding all rules from 0
+                o = QualityProfile.clone(endpoint=endpoint, name=name, language=lang, original_qp_name="Sonar way")
+            except Exception:
+                o = QualityProfile.create(endpoint=endpoint, name=name, language=lang)
         log.info("Importing quality profile '%s' of language '%s'", name, lang)
         o.update(qp_data, queue)
         log.info("Imported quality profile '%s' of language '%s'", name, lang)

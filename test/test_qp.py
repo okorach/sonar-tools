@@ -22,11 +22,11 @@
 """ quality profiles tests """
 
 from collections.abc import Generator
-import time
+import json
 import pytest
 
 import utilities as util
-from sonar import qualityprofiles, exceptions, logging
+from sonar import qualityprofiles, rules, exceptions, logging
 
 
 def test_get_object(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
@@ -126,13 +126,13 @@ def test_export() -> None:
 
 
 def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
-    """test_add_rules"""
+    """test_add_remove_rules"""
     qp = get_test_qp
     RULE1, RULE2, RULE3 = "python:S6542", "python:FunctionComplexity", "python:S139"
     ruleset = {RULE1: "MAJOR", RULE2: "MAJOR"}
     qp.activate_rules(ruleset)
-    rules = qp.rules()
-    assert sorted(list(rules.keys())) == sorted(list(ruleset.keys()))
+    qp_rules = qp.rules()
+    assert sorted(list(qp_rules.keys())) == sorted(list(ruleset.keys()))
 
     qp.activate_rule(RULE3, "MAJOR")
     ruleset[RULE3] = "MAJOR"
@@ -157,17 +157,19 @@ def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]
 def test_import() -> None:
     """test_import"""
     util.start_logging("INFO")
-    json_exp = qualityprofiles.export(util.SQ, {})
+    rules.get_list(util.TEST_SQ)
     # delete all portfolios in test
-    logging.info("Deleting all quality profiles")
-    qualityprofiles.QualityProfile.clear_cache()
     qp_list = set(o for o in qualityprofiles.get_list(util.TEST_SQ, use_cache=False).values() if not o.is_built_in and not o.is_default)
     _ = [o.delete() for o in qp_list]
+    with open("test/files/config.json", "r", encoding="utf-8") as f:
+        json_exp = json.loads(f.read())["qualityProfiles"]
     assert qualityprofiles.import_config(util.TEST_SQ, {"qualityProfiles": json_exp})
 
     # Compare QP list
     json_name_list = sorted([k for k, v in qualityprofiles.flatten(json_exp).items() if not v.get("isBuiltIn", False)])
     qp_name_list = sorted([f"{o.language}:{o.name}" for o in qualityprofiles.get_list(util.TEST_SQ).values() if not o.is_built_in])
+    logging.info("FLAT LIST2 = %s", str(json_name_list))
+    logging.info("FLAT LIST2 = %s", str(qp_name_list))
     assert json_name_list == qp_name_list
 
 
