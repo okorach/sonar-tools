@@ -1,8 +1,19 @@
 # Version 3.7
 
 * Numerous hardening, functional and performance improvements on `sonar-audit`, `sonar-measures-export`, `sonar-findings-export`
-* `sonar-config` import improvements (should be stable on portfolios now and much faster on quality profiles)
-
+* `sonar-config`:
+  * import of portfolios should be more stable
+  * import of quality profiles should be much faster
+* `sonar-audit`:
+  * Fix several cases of crash
+  * New check: Tokens with no expiration date
+* `sonar-measures-export`:
+  * Fixed export with `--ratingsAsNumbers` and `--percentsAsString`
+  * Measures that are % are now exported as a float between 0 and 1 (instead of 0 and 100). When `--percentsAsString` it is exported as `0%` to `100%` with rounding to 0.1%
+  * In CSV, added header with all field names
+  * Additional measures are sorted to always come in same order
+* `sonar-findings-export`:
+  * Issue tags are sorted to 
 
 # Version 3.6
 
