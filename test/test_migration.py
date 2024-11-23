@@ -34,6 +34,7 @@ CMD = f"migration.py {util.SQS_OPTS}"
 
 GLOBAL_ITEMS = ("platform", "globalSettings", "rules", "qualityProfiles", "qualityGates", "projects", "applications", "portfolios", "users", "groups")
 
+
 def test_migration_help(get_json_file: Generator[str]) -> None:
     """test_migration_help"""
     util.run_failed_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file} -h", errcodes.ARGS_ERROR)
