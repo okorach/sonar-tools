@@ -21,40 +21,27 @@
 
 """ sonar-migration tests """
 
-import os
-import sys
+from collections.abc import Generator
+
 import json
-from unittest.mock import patch
-import pytest
 
 import utilities as util
 from sonar import errcodes
 import cli.options as opt
 from migration import migration
 
-CMD = "migration.py"
-OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+CMD = f"migration.py {util.SQS_OPTS}"
 
-
-def test_migration_help() -> None:
+def test_migration_help(get_json_file: Generator[str]) -> None:
     """test_migration_help"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS + ["-h"]):
-            migration.main()
-    assert int(str(e.value)) == 10
-    assert not os.path.isfile(util.JSON_FILE)
+    util.run_failed_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file} -h", errcodes.ARGS_ERROR)
 
 
-def test_migration() -> None:
+def test_migration(get_json_file: Generator[str]) -> None:
     """test_config_export"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS):
-            migration.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+    file = get_json_file
+    util.run_success_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file}")
+    with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
     for item in (
@@ -140,15 +127,11 @@ def test_migration() -> None:
     util.clean(util.JSON_FILE)
 
 
-def test_migration_skip_issues() -> None:
-    """test_config_export"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", OPTS + ["--skipIssues"]):
-            migration.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    with open(file=util.JSON_FILE, mode="r", encoding="utf-8") as fh:
+def test_migration_skip_issues(get_json_file: Generator[str]) -> None:
+    """test_migration_skip_issues"""
+    file = get_json_file
+    util.run_success_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {file} --skipIssues")
+    with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
     for item in (
@@ -169,4 +152,3 @@ def test_migration_skip_issues() -> None:
         assert "issues" not in p
         assert "hotspots" not in p
 
-    util.clean(util.JSON_FILE)
