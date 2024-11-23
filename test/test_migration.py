@@ -32,6 +32,7 @@ from migration import migration
 
 CMD = f"migration.py {util.SQS_OPTS}"
 
+
 def test_migration_help(get_json_file: Generator[str]) -> None:
     """test_migration_help"""
     util.run_failed_cmd(migration.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file} -h", errcodes.ARGS_ERROR)
@@ -157,4 +158,3 @@ def test_migration_skip_issues(get_json_file: Generator[str]) -> None:
     for p in json_config["projects"].values():
         assert "issues" not in p
         assert "hotspots" not in p
-
