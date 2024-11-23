@@ -730,7 +730,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         return False
     check_supported(endpoint)
 
-    log.info("Importing portfolios - pass 1: Create all top level portfolios")
+    log.info("Importing portfolios - pass 1: Create all toplevel portfolios")
     search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
     new_key_list = util.csv_to_list(key_list)
