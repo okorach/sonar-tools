@@ -24,10 +24,11 @@ ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 buildDir="$ROOTDIR/build"
 coverageReport="$buildDir/coverage.xml"
-
+utReport="$buildDir/xunit-results.xml"
 [ ! -d $buildDir ] && mkdir $buildDir
 
 echo "Running tests"
 export SONAR_HOST_URL=${1:-${SONAR_HOST_URL}}
-coverage run --source=$ROOTDIR -m pytest $ROOTDIR/test/
+coverage run --source=$ROOTDIR -m pytest $ROOTDIR/test/ --junit-xml="$utReport"
+
 coverage xml -o $coverageReport
