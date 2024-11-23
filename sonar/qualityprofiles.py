@@ -259,17 +259,16 @@ class QualityProfile(sq.SqObject):
         self._rules = {k: rules.get_object(self.endpoint, k) for k in rule_key_list}
         return self._rules
 
-    def activate_rule(self, rule_key: str, severity: str = None, **params) -> bool:
+    def activate_rule(self, rule_key: str, severity: Optional[str] = None, **params) -> bool:
         """Activates a rule in the quality profile
 
         :param str rule_key: Rule key to activate
-        :param severity: Severity of the rule in the quality profiles, defaults to the rule default severity
-        :type severity: str, optional
+        :param str severity: Severity of the rule in the quality profiles, defaults to the rule default severity
         :param params: List of parameters associated to the rules, defaults to None
-        :type params: dict, optional
         :return: Whether the activation succeeded
         :rtype: bool
         """
+        log.debug("Activating rule %s in %s", rule_key, str(self))
         api_params = {"key": self.key, "rule": rule_key, "severity": severity}
         if len(params) > 0:
             api_params["params"] = ";".join([f"{k}={v}" for k, v in params.items()])
@@ -286,42 +285,56 @@ class QualityProfile(sq.SqObject):
     def deactivate_rule(self, rule_key: str) -> bool:
         """Deactivates a rule in the quality profile
 
-        :param str rule_key: Rule key to activate
+        :param str rule_key: Rule key to deactivate
         :return: Whether the deactivation succeeded
         :rtype: bool
         """
-        api_params = {"key": self.key, "rule": rule_key}
+        log.debug("Deactivating rule %s in %s", rule_key, str(self))
         try:
-            r = self.post("qualityprofiles/deactivate_rule", params=api_params)
+            r = self.post("qualityprofiles/deactivate_rule", params={"key": self.key, "rule": rule_key})
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"deactivating rule {rule_key} in {str(self)}", catch_all=True)
             return False
         return r.ok
+
+    def deactivate_rules(self, ruleset: list[str]) -> bool:
+        """Deactivates a list of rules in the quality profile
+        :return: Whether the deactivation of all rules was successful
+        :rtype: bool
+        """
+        ok = True
+        for r_key in ruleset:
+            ok = ok and self.deactivate_rule(rule_key=r_key)
+        return ok
 
     def activate_rules(self, ruleset: dict[str, str]) -> bool:
         """Activates a list of rules in the quality profile
         :return: Whether the activation of all rules was successful
         :rtype: bool
         """
-        if not ruleset:
-            return False
         ok = True
         for r_key, r_data in ruleset.items():
-            log.debug("Activating rule %s in QG %s data %s", r_key, str(self), str(r_data))
             sev = r_data if isinstance(r_data, str) else r_data.get("severity", None)
             if "params" in r_data:
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev, **r_data["params"])
             else:
                 ok = ok and self.activate_rule(rule_key=r_key, severity=sev)
+        return ok
 
-        activerules = self.rules()
-        for r_key, r_data in activerules.items():
-            if r_key in ruleset:
-                log.debug("Rule %s exists in quality profile", r_key)
-            else:
-                log.debug("Deactivating rule %s in QG %s", r_key, str(self))
-                self.deactivate_rule(rule_key=r_key)
-
+    def set_rules(self, ruleset: dict[str, str]) -> bool:
+        """Sets the quality profile with a set of rules. If the quality profile current has rules
+        not in the ruleset these rules are deactivated
+        :return: Whether the quality profile was set with all the given rules
+        :rtype: bool
+        """
+        if not ruleset:
+            return False
+        current_rules = list(self.rules().keys())
+        keys_to_activate = util.difference(list(ruleset.keys()), current_rules)
+        rules_to_activate = {k: ruleset[k] for k in keys_to_activate}
+        rules_to_deactivate = util.difference(current_rules, list(ruleset.keys()))
+        ok = self.activate_rules(rules_to_activate)
+        ok = ok and self.deactivate_rules(rules_to_deactivate)
         return ok
 
     def update(self, data: types.ObjectJsonRepr, queue: Queue) -> QualityProfile:
@@ -336,7 +349,7 @@ class QualityProfile(sq.SqObject):
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
-            self.activate_rules(data.get("rules", []))
+            self.set_rules(data.get("rules", []))
             self.set_permissions(data.get("permissions", []))
             self.set_parent(data.pop(_KEY_PARENT, None))
             self.is_built_in = data.get("isBuiltIn", False)

@@ -125,18 +125,33 @@ def test_export() -> None:
     assert len(yaml_exp) == len(json_exp)
 
 
-def test_add_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
+def test_add_remove_rules(get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_add_rules"""
     qp = get_test_qp
-    ruleset = {"python:S6542": "MAJOR", "python:FunctionComplexity": "MAJOR"}
+    RULE1, RULE2, RULE3 = "python:S6542", "python:FunctionComplexity", "python:S139"
+    ruleset = {RULE1: "MAJOR", RULE2: "MAJOR"}
     qp.activate_rules(ruleset)
     rules = qp.rules()
     assert sorted(list(rules.keys())) == sorted(list(ruleset.keys()))
-    qp.activate_rule("python:S139", "MAJOR")
-    ruleset["python:S139"] = "MAJOR"
+
+    qp.activate_rule(RULE3, "MAJOR")
+    ruleset[RULE3] = "MAJOR"
     assert sorted(list(qp.rules().keys())) == sorted(list(ruleset.keys()))
+
+    assert len(qp.rules()) == 3
+    qp.set_rules({RULE1: "MAJOR", RULE2: "MAJOR"})
+    assert len(qp.rules()) == 2
+    qp.set_rules(ruleset)
+    assert len(qp.rules()) == 3
+    qp.deactivate_rules([RULE1, RULE2])
+    assert len(qp.rules()) == 1
+
     assert qp.set_parent("Sonar way")
-    assert len(qp.rules()) > 250
+    rulecount = len(qp.rules())
+    assert rulecount > 250
+
+    assert qp.deactivate_rule(RULE3)
+    assert len(qp.rules()) == rulecount - 1
 
 
 def test_import() -> None:
