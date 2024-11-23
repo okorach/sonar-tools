@@ -1,6 +1,12 @@
+# Version 3.7
+
+* Numerous hardening, functional and performance improvements on `sonar-audit`, `sonar-measures-export`, `sonar-findings-export`
+* `sonar-config` import improvements (should be stable on portfolios now and much faster on quality profiles)
+
+
 # Version 3.6
 
-* Numerous hardening and improvemenst on `sonar-audit`, `sonar-measures-export`, `sonar-findings-sync`, `sonar-config`
+* Numerous hardening and improvements on `sonar-audit`, `sonar-measures-export`, `sonar-findings-sync`, `sonar-config`
   See https://github.com/okorach/sonar-tools/milestone/40?closed=1
 * Added documentation of `sonar-rules`
 
