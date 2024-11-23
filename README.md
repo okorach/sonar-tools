@@ -1,5 +1,5 @@
 # sonar-tools
-Command line tools to help in SonarQube administration tasks.
+Command line tools to help in SonarQube administration tasks. Available as a **pypi.org** package or a **docker** image
 
 ![Downloads](https://img.shields.io/pypi/dm/sonar-tools?color=informational)
 ![Python-Versions](https://img.shields.io/pypi/pyversions/sonar-tools)
@@ -46,6 +46,9 @@ deletes tokens created since more than a certain number of days
   - On the install machine, run `python3 -m pip install sonar_tools-<VERSION>-py3-none-any.whl`
   - Note: The package is dependent upon `argparse`, `datetime`, `python-dateutil`, `requests` and `jprops` python packages that are automatically installed when installing `sonar-tools`
 - `sonar-tools` is now also available as a docker image. See [Using sonar-tools in Docker](#docker)
+
+# Docker install
+See [Docker section](#docker) at the end of this read me
 
 # Common command line parameters
 
