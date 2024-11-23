@@ -24,16 +24,17 @@ env=${1:-gen}
 DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source "$DIR/test-tools.sh"
 
-DOCKER_COMMON="docker run --rm -w `pwd` -v `pwd`:/home/sonar olivierkorach/sonar-tools"
+# DOCKER_COMMON="docker run --rm -w `pwd` -v `pwd`:/home/sonar olivierkorach/sonar-tools"
+DOCKER_COMMON="docker run --rm olivierkorach/sonar-tools"
 CREDS="-u $SONAR_HOST_URL -t $SONAR_TOKEN"
 
 for cmd in loc measures-export findings-export audit rules
 do
-    f="docker-$env-$cmd.csv"; run_test "$f" $DOCKER_COMMON "sonar-$cmd" $CREDS
+    f="docker-$env-$cmd.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-$cmd" $CREDS
     mv "$f" "$TMP"
 done
 
-f="docker-$env-config.json"; run_test "$f" $DOCKER_COMMON "sonar-config" $CREDS
+f="docker-$env-config.json"; run_test_stdout "$f" $DOCKER_COMMON "sonar-config -e" $CREDS
 mv "$f" "$TMP"
 
 f="docker-$env-housekeeper.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-housekeeper" $CREDS
