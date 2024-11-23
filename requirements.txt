@@ -4,3 +4,4 @@ python-dateutil
 requests
 jprops
 levenshtein
+PyYAML
