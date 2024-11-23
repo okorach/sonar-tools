@@ -27,7 +27,8 @@ buildDir="$ROOTDIR/build"
 pylintReport="$buildDir/pylint-report.out"
 # banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
-externalIssueReport="$buildDir/shellcheck.json"
+shellcheckReport="$buildDir/shellcheck.json"
+trivyReport="$buildDir/trivy.json"
 [ ! -d "$buildDir" ] && mkdir "$buildDir"
 # rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  tests/__pycache__
 
@@ -46,7 +47,7 @@ rm -f "$flake8Report"
 flake8 --config "$CONFIG/.flake8" "$ROOTDIR" >"$flake8Report"
 
 echo "Running shellcheck"
-shellcheck "$ROOTDIR"/*.sh "$ROOTDIR"/*/*.sh -s bash -f json | "$CONFDIR"/shellcheck2sonar.py >"$externalIssueReport"
+shellcheck "$ROOTDIR"/*.sh "$ROOTDIR"/*/*.sh -s bash -f json | "$CONFDIR"/shellcheck2sonar.py >"$shellcheckReport"
 
 echo "Running checkov"
 checkov -d . --framework dockerfile -o sarif --output-file-path "$buildDir"
@@ -54,4 +55,4 @@ checkov -d . --framework dockerfile -o sarif --output-file-path "$buildDir"
 echo "Running trivy"
 "$CONFDIR"/build.sh docker
 trivy image -f json -o "$buildDir"/trivy_results.json olivierkorach/sonar-tools:latest
-python3 "$CONFDIR"/trivy2sonar.py < "$buildDir"/trivy_results.json > "$buildDir"/trivy.json
+python3 "$CONFDIR"/trivy2sonar.py < "$buildDir"/trivy_results.json > "$trivyReport"

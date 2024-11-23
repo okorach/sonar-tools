@@ -49,6 +49,8 @@ pylintReport="$buildDir/pylint-report.out"
 banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
 coverageReport="$buildDir/coverage.xml"
+shellcheckReport="$buildDir/shellcheck.json"
+trivyReport="$buildDir/trivy.json"
 
 [ ! -d $buildDir ] && mkdir $buildDir
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
@@ -66,6 +68,7 @@ version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
+  -Dsonar.externalIssuesReportPaths=$shellcheckReport,$trivyReport \
   -Dsonar.login=$SONAR_TOKEN \
   -Dsonar.token=$SONAR_TOKEN \
   "${scanOpts[*]}""
