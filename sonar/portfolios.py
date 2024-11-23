@@ -723,14 +723,14 @@ def delete(endpoint: pf.Platform, key: str) -> bool:
         return False
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports portfolio configuration described in a JSON"""
     if "portfolios" not in config_data:
         log.info("No portfolios to import")
-        return
+        return False
     check_supported(endpoint)
 
-    log.info("Importing portfolios - pass 1: Create all top level portfolios")
+    log.info("Importing portfolios - pass 1: Create all toplevel portfolios")
     search(endpoint=endpoint)
     # First pass to create all top level porfolios that may be referenced
     new_key_list = util.csv_to_list(key_list)
@@ -758,6 +758,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
             o.update(data=data, recurse=True)
         except exceptions.ObjectNotFound as e:
             log.error(e.message)
+    return True
 
 
 def search_by_name(endpoint: pf.Platform, name: str) -> types.ApiPayload:

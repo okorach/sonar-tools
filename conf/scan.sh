@@ -25,6 +25,7 @@ CONFDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 dolint=true
 dotest=false
+localbuild=false
 
 scanOpts=()
 
@@ -36,6 +37,7 @@ do
       ;;
     -test)
       dotest=true
+      localbuild=true
       ;;
     *)
       scanOpts=("${scanOpts[@]}" "$1")
@@ -49,7 +51,8 @@ pylintReport="$buildDir/pylint-report.out"
 banditReport="$buildDir/bandit-report.json"
 flake8Report="$buildDir/flake8-report.out"
 coverageReport="$buildDir/coverage.xml"
-externalIssuesReport="$buildDir/external-issue-report.json"
+shellcheckReport="$buildDir/shellcheck.json"
+trivyReport="$buildDir/trivy.json"
 
 [ ! -d $buildDir ] && mkdir $buildDir
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
@@ -59,7 +62,7 @@ if [ "$dotest" == "true" ]; then
 fi
 
 if [ "$dolint" != "false" ]; then
-  $CONFDIR/run_linters.sh
+  $CONFDIR/run_linters.sh "$localbuild"
 fi
 
 version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
@@ -67,8 +70,7 @@ version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed
 cmd="sonar-scanner -Dsonar.projectVersion=$version \
   -Dsonar.python.flake8.reportPaths=$flake8Report \
   -Dsonar.python.pylint.reportPaths=$pylintReport \
-  -Dsonar.python.bandit.reportPaths=$banditReport \
-  -Dsonar.externalIssuesReportPaths=$externalIssuesReport \
+  -Dsonar.externalIssuesReportPaths=$shellcheckReport,$trivyReport \
   -Dsonar.login=$SONAR_TOKEN \
   -Dsonar.token=$SONAR_TOKEN \
   "${scanOpts[*]}""

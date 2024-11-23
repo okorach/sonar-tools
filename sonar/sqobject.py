@@ -146,6 +146,21 @@ class SqObject(object):
         """
         return self.endpoint.patch(api=api, params=params, data=data, mute=mute, **kwargs)
 
+    def delete(self) -> bool:
+        """Deletes an object, returns whether the operation succeeded"""
+        log.info("Deleting %s", str(self))
+        try:
+            ok = self.post(api=self.__class__.API[c.DELETE], params=self.api_params(c.DELETE)).ok
+            if ok:
+                log.info("Removing from %s cache", str(self.__class__.__name__))
+                self.__class__.CACHE.pop(self)
+        except (ConnectionError, RequestException) as e:
+            utilities.handle_error(e, f"deleting {str(self)}", catch_http_errors=(HTTPStatus.NOT_FOUND,))
+            raise exceptions.ObjectNotFound(self.key, f"{str(self)} not found")
+        except (AttributeError, KeyError):
+            raise exceptions.UnsupportedOperation(f"Can't delete {self.__class__.__name__.lower()}s")
+        return ok
+
     def set_tags(self, tags: list[str]) -> bool:
         """Sets object tags
         :raises exceptions.UnsupportedOperation: if can't set tags on such objects

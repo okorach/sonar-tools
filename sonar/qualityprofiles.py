@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import Optional
 import json
 from datetime import datetime
+from http import HTTPStatus
 
 from queue import Queue
 from threading import Thread, Lock
@@ -31,7 +32,7 @@ import requests.utils
 
 import sonar.logging as log
 import sonar.platform as pf
-from sonar.util import types, cache
+from sonar.util import types, cache, constants as c
 from sonar import exceptions
 from sonar import rules, languages
 import sonar.permissions.qualityprofile_permissions as permissions
@@ -41,7 +42,6 @@ import sonar.utilities as util
 from sonar.audit.rules import get_rule, RuleId
 from sonar.audit.problem import Problem
 
-_CREATE_API = "qualityprofiles/create"
 _DETAILS_API = "qualityprofiles/show"
 
 _KEY_PARENT = "parent"
@@ -62,6 +62,13 @@ class QualityProfile(sq.SqObject):
     SEARCH_API = "qualityprofiles/search"
     SEARCH_KEY_FIELD = "key"
     SEARCH_RETURN_FIELD = "profiles"
+    API = {
+        c.CREATE: "qualityprofiles/create",
+        c.LIST: "qualityprofiles/search",
+        c.GET: "qualityprofiles/search",
+        c.DELETE: "qualityprofiles/delete",
+        c.RENAME: "qualityprofiles/rename",
+    }
 
     def __init__(self, endpoint: pf.Platform, key: str, data: types.ApiPayload = None) -> None:
         """Do not use, use class methods to create objects"""
@@ -108,7 +115,9 @@ class QualityProfile(sq.SqObject):
         o = QualityProfile.CACHE.get(name, language, endpoint.url)
         if o:
             return o
-        data = util.search_by_name(endpoint, name, QualityProfile.SEARCH_API, QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language})
+        data = util.search_by_name(
+            endpoint, name, QualityProfile.API[c.LIST], QualityProfile.SEARCH_RETURN_FIELD, extra_params={"language": language}
+        )
         return cls(key=data["key"], endpoint=endpoint, data=data)
 
     @classmethod
@@ -125,9 +134,11 @@ class QualityProfile(sq.SqObject):
             log.error("Language '%s' does not exist, quality profile creation aborted")
             return None
         log.debug("Creating quality profile '%s' of language '%s'", name, language)
-        r = endpoint.post(_CREATE_API, params={"name": name, "language": language})
-        if not r.ok:
-            return None
+        try:
+            endpoint.post(QualityProfile.API[c.CREATE], params={"name": name, "language": language})
+        except (ConnectionError, RequestException) as e:
+            util.handle_error(e, f"creating quality profile '{language}:{name}'", catch_http_errors=(HTTPStatus.BAD_REQUEST,))
+            raise exceptions.ObjectAlreadyExists(f"{language}:{name}", e.response.text)
         return cls.read(endpoint=endpoint, name=name, language=language)
 
     @classmethod
@@ -178,14 +189,19 @@ class QualityProfile(sq.SqObject):
         :return: Whether setting the parent was successful or not
         :rtype: bool
         """
+        log.info("Setting parent %s to %s", str(parent_name), self.parent_name)
         if parent_name is None:
             return False
         if get_object(endpoint=self.endpoint, name=parent_name, language=self.language) is None:
             log.warning("Can't set parent name '%s' to %s, parent not found", str(parent_name), str(self))
             return False
-        if self.parent_name is None or self.parent_name != parent_name:
-            params = {"qualityProfile": self.name, "language": self.language, "parentQualityProfile": parent_name}
-            r = self.post("qualityprofiles/change_parent", params=params)
+        if parent_name == self.name:
+            log.error("Can't set %s as parent of itself", str(self))
+            return False
+        elif self.parent_name is None or self.parent_name != parent_name:
+            r = self.post("qualityprofiles/change_parent", params={**self.api_params(c.GET), "parentQualityProfile": parent_name})
+            self.parent_name = parent_name
+            self.rules(use_cache=False)
             return r.ok
         else:
             log.debug("Won't set parent of %s. It's the same as currently", str(self))
@@ -196,8 +212,7 @@ class QualityProfile(sq.SqObject):
         :return: Whether setting as default quality profile was successful
         :rtype: bool
         """
-        params = {"qualityProfile": self.name, "language": self.language}
-        r = self.post("qualityprofiles/set_default", params=params)
+        r = self.post("qualityprofiles/set_default", params=self.api_params(c.GET))
         if r.ok:
             self.is_default = True
             # Turn off default for all other profiles except the current profile
@@ -232,12 +247,12 @@ class QualityProfile(sq.SqObject):
             return None
         return get_object(endpoint=self.endpoint, name=self.parent_name, language=self.language).built_in_parent()
 
-    def rules(self) -> dict[str, rules.Rule]:
+    def rules(self, use_cache: bool = False) -> dict[str, rules.Rule]:
         """
         :return: The list of rules active in the quality profile
         :rtype: dict{<rule_key>: <rule_data>}
         """
-        if self._rules is not None:
+        if self._rules is not None and use_cache:
             # Assume nobody changed QP during execution
             return self._rules
         rule_key_list = rules.search_keys(self.endpoint, activation="true", qprofile=self.key, s="key", languages=self.language)
@@ -263,6 +278,9 @@ class QualityProfile(sq.SqObject):
         except (ConnectionError, RequestException) as e:
             util.handle_error(e, f"activating rule {rule_key} in {str(self)}", catch_all=True)
             return False
+        if self._rules is None:
+            self._rules = {}
+        self._rules[rule_key] = rules.get_object(self.endpoint, rule_key)
         return r.ok
 
     def activate_rules(self, ruleset: dict[str, str]) -> bool:
@@ -290,7 +308,7 @@ class QualityProfile(sq.SqObject):
             log.debug("Updating %s with %s", str(self), str(data))
             if "name" in data and data["name"] != self.name:
                 log.info("Renaming %s with %s", str(self), data["name"])
-                self.post("qualitygates/rename", params={"id": self.key, "name": data["name"]})
+                self.post(QualityProfile.API[c.RENAME], params={"id": self.key, "name": data["name"]})
                 QualityProfile.CACHE.pop(self)
                 self.name = data["name"]
                 QualityProfile.CACHE.put(self)
@@ -334,6 +352,14 @@ class QualityProfile(sq.SqObject):
             for k in ("name", "pluginKey", "pluginName", "languageKey", "languageName"):
                 r.pop(k, None)
         return data
+
+    def api_params(self, op: str = c.GET) -> types.ApiParams:
+        operations = {
+            c.GET: {"qualityProfile": self.name, "language": self.language},
+            c.LIST: {"q": self.name, "language": self.language},
+            c.DELETE: {"qualityProfile": self.name, "language": self.language},
+        }
+        return operations[op] if op in operations else operations[c.GET]
 
     def _treat_added_rules(self, added_rules: dict[str:str], added_flag: bool = True) -> dict[str:str]:
         diff_rules = {}
@@ -583,6 +609,29 @@ def hierarchize(qp_list: types.ObjectJsonRepr, endpoint: pf.Platform) -> types.O
     return hierarchy
 
 
+def flatten_language(language: str, qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Converts a hierarchical list of QP of a given language into a flat list"""
+    flat_list = {}
+    for qp_name, qp_data in qp_list.copy().items():
+        if _CHILDREN_KEY in qp_data:
+            children = flatten_language(language, qp_data[_CHILDREN_KEY])
+            for child in children.values():
+                if "parent" not in child:
+                    child["parent"] = f"{language}:{qp_name}"
+            qp_data.pop(_CHILDREN_KEY)
+            flat_list.update(children)
+        flat_list[f"{language}:{qp_name}"] = qp_data
+    return flat_list
+
+
+def flatten(qp_list: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
+    """Organize a hierarchical list of QP in a flat list"""
+    flat_list = {}
+    for lang, lang_qp_list in qp_list.items():
+        flat_list.update(flatten_language(lang, lang_qp_list))
+    return flat_list
+
+
 def export(endpoint: pf.Platform, export_settings: types.ConfigSettings, **kwargs) -> types.ObjectJsonRepr:
     """Exports all or a list of quality profiles configuration as dict
 
@@ -652,7 +701,7 @@ def __import_thread(queue: Queue) -> None:
         queue.task_done()
 
 
-def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> None:
+def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_list: types.KeyList = None) -> bool:
     """Imports a configuration in SonarQube
 
     :param Platform endpoint: reference to the SonarQube platform
@@ -664,7 +713,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
     threads = 8
     if "qualityProfiles" not in config_data:
         log.info("No quality profiles to import")
-        return
+        return False
     log.info("Importing quality profiles")
     q = Queue(maxsize=0)
     get_list(endpoint=endpoint)
@@ -680,6 +729,7 @@ def import_config(endpoint: pf.Platform, config_data: types.ObjectJsonRepr, key_
         worker.setDaemon(True)
         worker.start()
     q.join()
+    return True
 
 
 def exists(endpoint: pf.Platform, name: str, language: str) -> bool:
@@ -700,9 +750,9 @@ def exists(endpoint: pf.Platform, name: str, language: str) -> bool:
 def convert_one_qp_yaml(qp: types.ObjectJsonRepr) -> types.ObjectJsonRepr:
     """Converts a QP in a modified version more suitable for YAML export"""
 
-    if "children" in qp:
-        qp["children"] = {k: convert_one_qp_yaml(q) for k, q in qp["children"].items()}
-        qp["children"] = util.dict_to_list(qp["children"], "name")
+    if _CHILDREN_KEY in qp:
+        qp[_CHILDREN_KEY] = {k: convert_one_qp_yaml(q) for k, q in qp[_CHILDREN_KEY].items()}
+        qp[_CHILDREN_KEY] = util.dict_to_list(qp[_CHILDREN_KEY], "name")
     for rule_group in "rules", "modifiedRules", "addedRules", "removedRules":
         if rule_group in qp:
             qp[rule_group] = rules.convert_rule_list_for_yaml(qp[rule_group])

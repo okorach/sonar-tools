@@ -21,29 +21,22 @@
 
 """ sonar-audit tests """
 
-import sys, os, stat
-from unittest.mock import patch
-import pytest
+import os, stat
+from collections.abc import Generator
 
 import utilities as util
-from sonar import errcodes, utilities
+from sonar import errcodes, utilities, logging
 import cli.options as opt
 from cli import audit
 
-CMD = "sonar-audit.py"
-CSV_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.CSV_FILE]
-JSON_OPTS = [CMD] + util.STD_OPTS + [f"-{opt.REPORT_FILE_SHORT}", util.JSON_FILE]
+CMD = f"sonar-audit.py {util.SQS_OPTS}"
 
 
-def test_audit() -> None:
+def test_audit(get_csv_file: Generator[str]) -> None:
     """test_audit"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-
+    file = get_csv_file
+    logging.debug(f"{CMD} --{opt.REPORT_FILE} {file}")
+    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {file}")
     # Ensure no duplicate alarms #1478
     lines = []
     with open(util.CSV_FILE, mode="r", encoding="utf-8") as fd:
@@ -51,55 +44,30 @@ def test_audit() -> None:
         assert line not in lines
         lines.append(line)
 
-    util.clean(util.CSV_FILE)
-
 
 def test_audit_stdout() -> None:
     """test_audit_stdout"""
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", [CMD] + util.STD_OPTS):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
+    util.run_success_cmd(audit.main, CMD)
 
 
-def test_audit_json() -> None:
+def test_audit_json(get_json_file: Generator[str]) -> None:
     """test_audit_json"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.JSON_FILE)
-    util.clean(util.JSON_FILE)
+    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file}")
 
 
-def test_audit_proj_key() -> None:
+def test_audit_proj_key(get_csv_file: Generator[str]) -> None:
     """test_audit_proj_key"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools"]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.OK
-    assert util.file_not_empty(util.CSV_FILE)
-    util.clean(util.CSV_FILE)
+    util.run_success_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_csv_file} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools")
 
 
 def test_audit_proj_non_existing_key() -> None:
     """test_audit_proj_non_existing_key"""
-    util.clean(util.CSV_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", CSV_OPTS + ["--what", "projects", f"-{opt.KEYS_SHORT}", "okorach_sonar-tools,bad_key"]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.NO_SUCH_KEY
+    util.run_failed_cmd(audit.main, f"{CMD} --{opt.WHAT} projects --{opt.KEYS} okorach_sonar-tools,bad_key", errcodes.NO_SUCH_KEY)
 
 
-def test_sif_broken() -> None:
+def test_sif_broken(get_csv_file: Generator[str]) -> None:
     """test_sif_broken"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_broken.json"]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.SIF_AUDIT_ERROR
+    util.run_failed_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_csv_file} --sif test/sif_broken.json", errcodes.SIF_AUDIT_ERROR)
 
 
 def test_deduct_fmt() -> None:
@@ -112,23 +80,17 @@ def test_deduct_fmt() -> None:
     assert utilities.deduct_format(None, "file.txt") == "csv"
 
 
-def test_sif_non_existing() -> None:
+def test_sif_non_existing(get_csv_file: Generator[str]) -> None:
     """test_sif_non_existing"""
-    util.clean(util.JSON_FILE)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_non_existing.json"]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.SIF_AUDIT_ERROR
+    non_existing_file = "test/sif_non_existing.json"
+    util.run_failed_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_csv_file} --sif {non_existing_file}", errcodes.SIF_AUDIT_ERROR)
 
 
-def test_sif_not_readable() -> None:
+def test_sif_not_readable(get_json_file: Generator[str]) -> None:
     """test_sif_not_readable"""
-    util.clean(util.JSON_FILE)
+    unreadable_file = "test/sif_not_readable.json"
     NO_PERMS = ~stat.S_IRUSR & ~stat.S_IWUSR
-    current_permissions = stat.S_IMODE(os.lstat("test/sif_not_readable.json").st_mode)
-    os.chmod("test/sif_not_readable.json", current_permissions & NO_PERMS)
-    with pytest.raises(SystemExit) as e:
-        with patch.object(sys, "argv", JSON_OPTS + ["--sif", "test/sif_not_readable.json"]):
-            audit.main()
-    assert int(str(e.value)) == errcodes.SIF_AUDIT_ERROR
-    os.chmod("test/sif_not_readable.json", current_permissions)
+    current_permissions = stat.S_IMODE(os.lstat(unreadable_file).st_mode)
+    os.chmod(unreadable_file, current_permissions & NO_PERMS)
+    util.run_failed_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_json_file} --sif {unreadable_file}", errcodes.SIF_AUDIT_ERROR)
+    os.chmod(unreadable_file, current_permissions)

@@ -155,7 +155,9 @@ def test_login_from_name(get_test_user: Generator[users.User]) -> None:
 
 def test_convert_for_yaml() -> None:
     """test_convert_for_yaml"""
-    u_json = users.export(util.SQ, export_settings={"FULL_EXPORT": True})
-    assert len(u_json) > 0
-    assert isinstance(u_json, dict)
-    assert isinstance(users.convert_for_yaml(u_json), list)
+    json_exp = users.export(util.SQ, export_settings={"FULL_EXPORT": True})
+    yaml_exp = users.convert_for_yaml(json_exp)
+    assert len(json_exp) > 0
+    assert isinstance(json_exp, dict)
+    assert isinstance(yaml_exp, list)
+    assert len(yaml_exp) == len(json_exp)
