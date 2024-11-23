@@ -171,6 +171,8 @@ do
         f2="findings-$env-user.csv";    run_test "$f2" sonar-findings-export -v DEBUG -k okorach_audio-video-tools,okorach_sonar-tools
     fi
 
+    source it-docker.sh "$env"
+
     # Restore admin token as long as previous version is 2.9 or less
     logmsg "Restore sonar-tools last released version"
     pip install --force-reinstall sonar-tools 1>$IT_LOG_FILE 2>&1; 
@@ -201,6 +203,7 @@ do
     done
     announce_test "findings-$env admin vs user diff"
     test_passed_if_identical "$TMP/findings-$env-admin.csv" "$TMP/findings-$env-user.csv"
+
     if [ "$env" != "sonarcloud" ]; then
         logmsg "Deleting environment sonarId $id"
         sonar delete -i "$id" 1>$IT_LOG_FILE 2>&1
