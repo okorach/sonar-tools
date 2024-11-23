@@ -153,10 +153,11 @@ class QualityProfile(sq.SqObject):
         :rtype: QualityProfile
         """
         log.info("Cloning quality profile name '%s' into quality profile name '%s'", original_qp_name, name)
-        l = [qp for qp in QualityProfile.get_list(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
+        l = [qp for qp in get_list(endpoint, use_cache=False).values() if qp.name == original_qp_name and qp.language == language]
         if len(l) != 1:
             raise exceptions.ObjectNotFound(f"{language}:{original_qp_name}", f"Quality profile {language}:{original_qp_name} not found")
         original_qp = l[0]
+        log.debug("Found QP to clone: %s", str(original_qp))
         try:
             endpoint.post("qualityprofiles/copy", params={"toName": name, "fromKey": original_qp.key})
         except (ConnectionError, RequestException) as e:
@@ -354,10 +355,11 @@ class QualityProfile(sq.SqObject):
         """
         if not ruleset:
             return False
-        current_rules = list(self.rules().keys())
+        current_rules = list(self.rules(use_cache=False).keys())
         keys_to_activate = util.difference(list(ruleset.keys()), current_rules)
         rules_to_activate = {k: ruleset[k] for k in keys_to_activate}
         rules_to_deactivate = util.difference(current_rules, list(ruleset.keys()))
+        log.info("set_rules: Activating %d rules and deactivating %d rules", len(rules_to_activate), len(rules_to_deactivate))
         ok = self.activate_rules(rules_to_activate)
         ok = ok and self.deactivate_rules(rules_to_deactivate)
         return ok
