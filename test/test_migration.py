@@ -32,6 +32,7 @@ from migration import migration
 
 CMD = f"migration.py {util.SQS_OPTS}"
 
+GLOBAL_ITEMS = ("platform", "globalSettings", "rules", "qualityProfiles", "qualityGates", "projects", "applications", "portfolios", "users", "groups")
 
 def test_migration_help(get_json_file: Generator[str]) -> None:
     """test_migration_help"""
@@ -45,18 +46,7 @@ def test_migration(get_json_file: Generator[str]) -> None:
     with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
-    for item in (
-        "platform",
-        "globalSettings",
-        "rules",
-        "qualityProfiles",
-        "qualityGates",
-        "projects",
-        "applications",
-        "portfolios",
-        "users",
-        "groups",
-    ):
+    for item in GLOBAL_ITEMS:
         assert item in json_config
 
     for p in json_config["projects"].values():
@@ -131,8 +121,6 @@ def test_migration(get_json_file: Generator[str]) -> None:
         assert "projects" in p
         assert "keys" in p["projects"]
 
-    util.clean(util.JSON_FILE)
-
 
 def test_migration_skip_issues(get_json_file: Generator[str]) -> None:
     """test_migration_skip_issues"""
@@ -141,18 +129,7 @@ def test_migration_skip_issues(get_json_file: Generator[str]) -> None:
     with open(file=file, mode="r", encoding="utf-8") as fh:
         json_config = json.loads(fh.read())
 
-    for item in (
-        "platform",
-        "globalSettings",
-        "rules",
-        "qualityProfiles",
-        "qualityGates",
-        "projects",
-        "applications",
-        "portfolios",
-        "users",
-        "groups",
-    ):
+    for item in GLOBAL_ITEMS:
         assert item in json_config
 
     for p in json_config["projects"].values():
