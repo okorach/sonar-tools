@@ -36,4 +36,6 @@ RUN pip install --upgrade pip \
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
 
+HEALTHCHECK --interval=180s --timeout=5s CMD [ "sonar-migration", "-h" ]
+
 ENTRYPOINT ["sonar-migration"]

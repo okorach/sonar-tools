@@ -53,16 +53,17 @@ flake8Report="$buildDir/flake8-report.out"
 coverageReport="$buildDir/coverage.xml"
 shellcheckReport="$buildDir/shellcheck.json"
 trivyReport="$buildDir/trivy.json"
+utReport="$buildDir/xunit-results.xml"
 
 [ ! -d $buildDir ] && mkdir $buildDir
 rm -rf -- ${buildDir:?"."}/* .coverage */__pycache__ */*.pyc # mediatools/__pycache__  testpytest/__pycache__ testunittest/__pycache__
 
 if [ "$dotest" == "true" ]; then
-  $CONFDIR/run_tests.sh
+  "$CONFDIR"/run_tests.sh
 fi
 
 if [ "$dolint" != "false" ]; then
-  $CONFDIR/run_linters.sh "$localbuild"
+  "$CONFDIR"/run_linters.sh "$localbuild"
 fi
 
 version=$(grep PACKAGE_VERSION $ROOTDIR/sonar/version.py | cut -d "=" -f 2 | sed -e "s/[\'\" ]//g" -e "s/^ +//" -e "s/ +$//")
@@ -76,7 +77,12 @@ cmd="sonar-scanner -Dsonar.projectVersion=$version \
   "${scanOpts[*]}""
 
 if [ -f "$coverageReport" ]; then
-   cmd="$cmd -Dsonar.python.coverage.reportPaths=$coverageReport"
+  cmd="$cmd -Dsonar.python.coverage.reportPaths=$coverageReport"
+fi
+if [ -f "$utReport" ]; then
+  cmd="$cmd -Dsonar.python.xunit.reportPath=$utReport"
+else
+  cmd="$cmd -Dsonar.python.xunit.reportPath="
 fi
 
 echo "Running: $cmd"
