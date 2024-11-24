@@ -141,19 +141,20 @@ def test_config_dont_inline_lists() -> None:
 
 def test_config_import_portfolios(get_json_file: Generator[str]) -> None:
     """test_config_non_existing_project"""
-    file = get_json_file
-    util.run_success_cmd(config.main, f"{CMD} {util.SQS_OPTS} --{opt.EXPORT} -{opt.REPORT_FILE_SHORT} {file} --{opt.WHAT} portfolios")
-    with open(file=file, mode="r", encoding="utf-8") as fh:
-        json_config = json.loads(fh.read())
+    with open("test/files/config.json", "r", encoding="utf-8") as f:
+        json_config = json.loads(f.read())["portfolios"]
 
     # delete all portfolios in test
+    p_list = portfolios.get_list(util.TEST_SQ, use_cache=False)
+    logging.info("PORTFOLIOS = %s", str(list(p_list.keys())))
     logging.info("Deleting all portfolios")
-    portfolios.Portfolio.clear_cache()
     _ = [p.delete() for p in portfolios.get_list(util.TEST_SQ, use_cache=False).values() if p.is_toplevel()]
     # Import config
-    util.run_success_cmd(config.main, f"{CMD} {util.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} {file}")
+    util.run_success_cmd(
+        config.main, f"{CMD} {util.SQS_TEST_OPTS} --{opt.IMPORT} --{opt.REPORT_FILE} test/files/config.json --{opt.WHAT} {opt.WHAT_PORTFOLIOS}"
+    )
 
     # Compare portfolios
     portfolio_list = portfolios.get_list(util.TEST_SQ)
-    assert len(portfolio_list) == len(json_config["portfolios"])
-    assert sorted(list(portfolio_list.keys())) == sorted(list(json_config["portfolios"].keys()))
+    assert len(portfolio_list) == len(json_config)
+    assert sorted(list(portfolio_list.keys())) == sorted(list(json_config.keys()))
