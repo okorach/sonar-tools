@@ -135,7 +135,6 @@ def test_audit_disabled() -> None:
     assert len(users.audit(util.SQ, {"audit.users": False})) == 0
 
 
-
 def test_login_from_name(get_test_user: Generator[users.User]) -> None:
     """test_login_from_name"""
     _ = get_test_user
@@ -160,4 +159,3 @@ def test_convert_for_yaml() -> None:
     assert isinstance(json_exp, dict)
     assert isinstance(yaml_exp, list)
     assert len(yaml_exp) == len(json_exp)
-
