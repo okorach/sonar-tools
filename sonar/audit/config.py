@@ -59,8 +59,14 @@ def load(config_name: Optional[str] = None, settings: types.ConfigSettings = Non
     _CONFIG_SETTINGS.update(_load_properties_file(f"{os.getcwd()}{os.sep}.{config_name}.properties"))
     _CONFIG_SETTINGS.update(settings)
 
-    for key, value in _CONFIG_SETTINGS.items():
-        _CONFIG_SETTINGS[key] = util.convert_string(value)
+    _CONFIG_SETTINGS = {k: util.convert_string(v) for k, v in _CONFIG_SETTINGS.items()}
+    for item in "globalSettings", "qualityGates", "qualityProfiles", "projects", "applications", "portfolios", "users", "groups", "plugins":
+        main_switch = f"audit.{item}"
+        if _CONFIG_SETTINGS.get(main_switch, True):
+            continue
+        for k in _CONFIG_SETTINGS.copy().keys():
+            if k != main_switch and k.lower().startswith(main_switch.lower()):
+                _CONFIG_SETTINGS.pop(k)
 
     log.info("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
     return _CONFIG_SETTINGS
