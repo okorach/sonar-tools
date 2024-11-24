@@ -31,6 +31,27 @@ from cli import audit
 
 CMD = f"sonar-audit.py {util.SQS_OPTS}"
 
+AUDIT_DISABLED = """
+audit.globalSettings = no
+audit.projects = false
+audit.qualityGates = no
+audit.qualityProfiles = no
+audit.users = no
+audit.groups = no
+audit.portfolios = no
+audit.applications = no
+audit.logs = no
+audit.plugins = no"""
+
+
+def test_audit_disabled(get_csv_file: Generator[str]) -> None:
+    """test_audit_disabled"""
+    with open(".sonar-audit.properties", mode="w", encoding="utf-8") as fd:
+        print(AUDIT_DISABLED, file=fd)
+    file = util.run_cmd(audit.main, f"{CMD} --{opt.REPORT_FILE} {get_csv_file}", errcodes.OK)
+    assert util.file_empty(file)
+    os.remove(".sonar-audit.properties")
+
 
 def test_audit(get_csv_file: Generator[str]) -> None:
     """test_audit"""
