@@ -74,6 +74,11 @@ def test_audit() -> None:
     assert len(proj.audit_languages(audit_settings=settings)) == 0
 
 
+def test_audit_disabled() -> None:
+    """test_audit_disabled"""
+    assert len(projects.audit(util.SQ, {"audit.projects": False})) == 0
+
+
 def test_revision() -> None:
     """test_revision"""
     proj = projects.Project.get_object(endpoint=util.SQ, key=util.LIVE_PROJECT)

@@ -299,3 +299,8 @@ def test_import(get_json_file: Generator[str]) -> None:
     o_list = portfolios.get_list(util.TEST_SQ)
     assert len(o_list) == len(json_exp)
     assert sorted(list(o_list.keys())) == sorted(list(json_exp.keys()))
+
+
+def test_audit_disabled() -> None:
+    """test_audit_disabled"""
+    assert len(portfolios.audit(util.SQ, {"audit.portfolios": False})) == 0

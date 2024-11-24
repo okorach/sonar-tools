@@ -173,52 +173,7 @@ def test_import() -> None:
     assert json_name_list == qp_name_list
 
 
-# def test_attributes(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
-#     """Test regexp mode"""
-#     if util.SQ.edition() in ("community", "developer"):
-#         return
-#     p = get_test_portfolio
-#     new_name = "foobar"
-#     p.set_name(new_name)
-#     p.refresh()
-#     assert p.name == new_name
-#     p.recompute()  # New name is not update in search if portfolio is not recomputed
-#     time.sleep(3)
-#     data = portfolios.search_by_name(util.SQ, new_name)
-#     assert data["key"] == p.key
-#     p.set_description("some description of a portfolio")
-#     p.refresh()
-#     assert p._description == "some description of a portfolio"
+def test_audit_disabled() -> None:
+    """test_audit_disabled"""
+    assert len(qualityprofiles.audit(util.SQ, {"audit.qualityProfiles": False})) == 0
 
-
-# def test_permissions_1(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
-#     """Test permissions"""
-#     if util.SQ.edition() in ("community", "developer"):
-#         return
-#     p = get_test_portfolio
-#     p.set_permissions({"groups": {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}})
-#     # assert p.permissions().to_json()["groups"] == {"sonar-users": ["user", "admin"], "sonar-administrators": ["user", "admin"]}
-
-
-# def test_audit(get_test_portfolio: Generator[portfolios.Portfolio]) -> None:
-#     """test_audit"""
-#     if util.SQ.edition() in ("community", "developer"):
-#         return
-#     p = get_test_portfolio
-#     audit_settings = {}
-#     assert len(p.audit(audit_settings)) > 0
-#     audit_settings["audit.portfolios.empty"] = False
-#     audit_settings["audit.portfolios.singleton"] = False
-#     p.audit(audit_settings)
-#     audit_settings["audit.portfolios"] = False
-#     assert len(portfolios.audit(util.SQ, audit_settings)) == 0
-
-
-# def test_export() -> None:
-#     """test_export"""
-#     if util.SQ.edition() in ("community", "developer"):
-#         return
-#     json_exp = portfolios.export(util.SQ, {})
-#     yaml_exp = portfolios.convert_for_yaml(json_exp)
-#     assert isinstance(yaml_exp, list)
-#     assert len(yaml_exp) == len(json_exp)
