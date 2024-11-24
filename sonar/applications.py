@@ -356,9 +356,11 @@ class Application(aggr.Aggregation):
                 # 'projects': self.projects(),
                 "branches": {br.name: br.export() for br in self.branches().values()},
                 "permissions": self.permissions().export(export_settings=export_settings),
-                "tags": util.list_to_csv(self.get_tags(), separator=", ", check_for_separator=True),
             }
         )
+        tags = util.list_to_csv(self.get_tags(), separator=", ", check_for_separator=True)
+        if tags != "":
+            json_data["tags"] = tags
         return util.remove_nones(util.filter_export(json_data, _IMPORTABLE_PROPERTIES, export_settings.get("FULL_EXPORT", False)))
 
     def set_permissions(self, data: types.JsonPermissions) -> application_permissions.ApplicationPermissions:
