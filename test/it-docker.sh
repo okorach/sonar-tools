@@ -31,15 +31,30 @@ root="docker-$env"
 
 for cmd in loc measures-export rules
 do
-    f="$root-$cmd.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-$cmd" $CREDS
+    f="$root-$cmd-stdout.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-$cmd" $CREDS
 done
 
-f="$root-audit.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-audit -w settings,users,groups,qualitygates $CREDS
+f="$root-audit-stdout.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-audit -w settings,users,groups,qualitygates $CREDS
 
-f="$root-findings.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-findings-export --severities BLOCKER,CRITICAL $CREDS
+f="$root-findings-stdout.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-findings-export --severities BLOCKER,CRITICAL $CREDS
 
-f="$root-config.json"; run_test_stdout "$f" $DOCKER_COMMON sonar-config -e -w qualitygates,users,groups $CREDS
+f="$root-config-stdout.json"; run_test_stdout "$f" $DOCKER_COMMON sonar-config -e -w qualitygates,users,groups $CREDS
 
-f="$root-housekeeper.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-housekeeper" $CREDS
+f="$root-housekeeper-stdout.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-housekeeper" $CREDS
 
 f="$root-tools.txt"; run_test_stdout "$f" $DOCKER_COMMON
+
+DOCKER_COMMON="docker run -w /home/sonar -v `pwd`:/home/sonar --rm olivierkorach/sonar-tools"
+
+for cmd in loc measures-export rules
+do
+    f="$root-$cmd-file.csv"; run_test "$f" $DOCKER_COMMON "sonar-$cmd" $CREDS
+    mv "$f" "$TMP"
+done
+
+f="$root-audit-file.csv"; run_test "$f" $DOCKER_COMMON sonar-audit -w settings,users,groups,qualitygates $CREDS
+mv "$f" "$TMP"
+f="$root-findings-file.csv"; run_test "$f" $DOCKER_COMMON sonar-findings-export --severities BLOCKER,CRITICAL $CREDS
+mv "$f" "$TMP"
+f="$root-config-file.json"; run_test "$f" $DOCKER_COMMON sonar-config -e -w qualitygates,users,groups $CREDS
+mv "$f" "$TMP"
