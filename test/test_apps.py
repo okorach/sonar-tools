@@ -209,3 +209,8 @@ def test_set_tags(get_test_app: callable) -> None:
     assert o.set_tags([])
     assert o.get_tags() == []
     assert not o.set_tags(None)
+
+
+def test_audit_disabled() -> None:
+    """test_audit_disabled"""
+    assert len(applications.audit(util.SQ, {"audit.applications": False})) == 0

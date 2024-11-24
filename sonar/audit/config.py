@@ -54,16 +54,21 @@ def load(config_name: Optional[str] = None, settings: types.ConfigSettings = Non
     if settings is None:
         settings = {}
 
-    default_conf = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
-    home_conf = _load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties")
-    local_conf = _load_properties_file(f"{os.getcwd()}{os.sep}{config_name}.properties")
+    _CONFIG_SETTINGS = _load_properties_file(pathlib.Path(__file__).parent / f"{config_name}.properties")
+    _CONFIG_SETTINGS.update(_load_properties_file(f"{os.path.expanduser('~')}{os.sep}.{config_name}.properties"))
+    _CONFIG_SETTINGS.update(_load_properties_file(f"{os.getcwd()}{os.sep}.{config_name}.properties"))
+    _CONFIG_SETTINGS.update(settings)
 
-    _CONFIG_SETTINGS = {**default_conf, **home_conf, **local_conf, **settings}
+    _CONFIG_SETTINGS = {k: util.convert_string(v) for k, v in _CONFIG_SETTINGS.items()}
+    for item in "globalSettings", "qualityGates", "qualityProfiles", "projects", "applications", "portfolios", "users", "groups", "plugins":
+        main_switch = f"audit.{item}"
+        if _CONFIG_SETTINGS.get(main_switch, True):
+            continue
+        for k in _CONFIG_SETTINGS.copy().keys():
+            if k != main_switch and k.lower().startswith(main_switch.lower()):
+                _CONFIG_SETTINGS.pop(k)
 
-    for key, value in _CONFIG_SETTINGS.items():
-        _CONFIG_SETTINGS[key] = util.convert_string(value)
-
-    log.debug("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
+    log.info("Audit settings = %s", util.json_dump(_CONFIG_SETTINGS))
     return _CONFIG_SETTINGS
 
 

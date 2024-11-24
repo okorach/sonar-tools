@@ -618,6 +618,9 @@ def audit(endpoint: pf.Platform, audit_settings: types.ConfigSettings = None, **
     :return: list of problems found
     :rtype: list[Problem]
     """
+    if not audit_settings.get("audit.qualityProfiles", True):
+        log.info("Auditing quality profiles is disabled, audit skipped...")
+        return []
     log.info("--- Auditing quality profiles ---")
     rules.get_list(endpoint=endpoint)
     problems = []

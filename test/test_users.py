@@ -131,10 +131,8 @@ def test_audit_user() -> None:
 
 
 def test_audit_disabled() -> None:
-    "test_audit_disabled"
-    settings = {"audit.users": False}
-    problems = users.audit(util.SQ, settings)
-    assert problems == []
+    """test_audit_disabled"""
+    assert len(users.audit(util.SQ, {"audit.users": False})) == 0
 
 
 def test_login_from_name(get_test_user: Generator[users.User]) -> None:
