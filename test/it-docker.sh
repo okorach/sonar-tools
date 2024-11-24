@@ -34,10 +34,12 @@ do
     f="$root-$cmd.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-$cmd" $CREDS
 done
 
-f="$root-findings.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-audit -w settings,users,groups,qualitygates $CREDS
+f="$root-audit.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-audit -w settings,users,groups,qualitygates $CREDS
 
 f="$root-findings.csv"; run_test_stdout "$f" $DOCKER_COMMON sonar-findings-export --severities BLOCKER,CRITICAL $CREDS
 
-f="$root-config.json"; run_test_stdout "$f" $DOCKER_COMMON "sonar-config" "-e" $CREDS
+f="$root-config.json"; run_test_stdout "$f" $DOCKER_COMMON sonar-config -e -w qualitygates,users,groups $CREDS
 
 f="$root-housekeeper.csv"; run_test_stdout "$f" $DOCKER_COMMON "sonar-housekeeper" $CREDS
+
+f="$root-tools.txt"; run_test_stdout "$f" $DOCKER_COMMON
