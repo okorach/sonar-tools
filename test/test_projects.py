@@ -25,7 +25,7 @@ from collections.abc import Generator
 
 import pytest
 
-from sonar import projects, exceptions
+from sonar import projects, exceptions, qualityprofiles
 from sonar.audit import config
 
 import utilities as util
@@ -208,15 +208,16 @@ def test_ai_code_assurance(get_test_project: callable) -> None:
     assert proj.get_ai_code_assurance() is None
 
 
-def test_set_quality_profile(get_test_project: callable) -> None:
+def test_set_quality_profile(get_test_project: Generator[projects.Project], get_test_qp: Generator[qualityprofiles.QualityProfile]) -> None:
     """test_set_quality_profile"""
     proj = get_test_project
-    assert proj.set_quality_profile(language="py", quality_profile="Olivier Way")
+    new_qp = get_test_qp
+    assert proj.set_quality_profile(language=new_qp.language, quality_profile=new_qp.name)
     assert not proj.set_quality_profile(language="py", quality_profile=util.NON_EXISTING_KEY)
-    assert not proj.set_quality_profile(language=util.NON_EXISTING_KEY, quality_profile="Olivier Way")
+    assert not proj.set_quality_profile(language=util.NON_EXISTING_KEY, quality_profile=new_qp.name)
     proj.key = util.NON_EXISTING_KEY
     with pytest.raises(exceptions.ObjectNotFound):
-        proj.set_quality_profile(language="py", quality_profile="Olivier Way")
+        proj.set_quality_profile(language="py", quality_profile=new_qp.name)
 
 
 def test_branch_and_pr() -> None:
