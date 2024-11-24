@@ -52,7 +52,18 @@ function run_test {
 
 function run_test_stdout {
     file=$1; shift
-    announce_test "$@ >$file"
+    skipnext="false"
+    announced_args=""
+    for arg in $@; do
+        if [ "$arg" = "-t" ] ||  [ "$arg" = "-u" ]; then
+            skipnext="true"
+        elif [ "$skipnext" = "true" ]; then
+            skipnext="false"
+        else
+            announced_args="$announced_args $arg"
+        fi
+    done    
+    announce_test "$announced_args >$file"
     file="$REPO_ROOT/tmp/$file"
     
     # logmsg "========================================="
