@@ -36,33 +36,52 @@ function logmsg {
 
 function run_test {
     file=$1; shift
-    announce_test "$@ -f $file"
-    file="$REPO_ROOT/tmp/$file"
+    announced_args=$(get_announced_args $@)  
+    announce_test "$announced_args"
+    if [ "$1" != "docker" ]; then
+        file="$REPO_ROOT/tmp/$file"
+    fi
+    announce_test "$announced_args -f $file"
     # logmsg "========================================="
     # logmsg "$@"
     # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -l $IT_LOG_FILE -f "$file" >/dev/null
+        "$@" -o okorach -f "$file" 2>$IT_LOG_FILE
     else
         # echo "$@" -o okorach -l $IT_LOG_FILE -f "$file"
-        "$@" -l $IT_LOG_FILE -f "$file" 2>/dev/null
+        "$@" -f "$file" 2>$IT_LOG_FILE
     fi
     test_passed_if_file_not_empty "$file"
 }
 
+function get_announced_args {
+    skipnext="false"
+    announced_args=""
+    for arg in $@; do
+        if [ "$arg" = "-t" ] ||  [ "$arg" = "-u" ]; then
+            skipnext="true"
+        elif [ "$skipnext" = "true" ]; then
+            skipnext="false"
+        else
+            announced_args="$announced_args $arg"
+        fi
+    done
+    echo $announced_args 
+}
+
 function run_test_stdout {
     file=$1; shift
-    announce_test "$@ >$file"
+    announced_args=$(get_announced_args $@)  
+    announce_test "$announced_args >$file"
     file="$REPO_ROOT/tmp/$file"
-    
     # logmsg "========================================="
     # logmsg "$@ >$file"
     # logmsg "========================================="
     if [ "$SONAR_HOST_URL" == "$SONAR_HOST_URL_SONARCLOUD" ]; then
-        "$@" -o okorach -l $IT_LOG_FILE >"$file" 2>/dev/null
+        "$@" -o okorach >"$file" 2>$IT_LOG_FILE
     else
         # echo "$@" -o okorach -l $IT_LOG_FILE "> $file"
-        "$@" -l $IT_LOG_FILE >"$file" 2>/dev/null
+        "$@" >"$file" 2>$IT_LOG_FILE
     fi
     test_passed_if_file_not_empty "$file"
 }
